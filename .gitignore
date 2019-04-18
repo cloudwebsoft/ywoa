@@ -1,0 +1,24 @@
+﻿# compiled output
+# 忽略 build/ 文件夹下的所有文件
+build/
+/target
+/out
+
+# IDEs and editors
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+/.idea
+/oa.iml
+/*.txt
+/WebRoot/others
+/待办.txt
+/日志.txt
+/WebRoot/public/robot
+/待办.txt
+/日志.txt
+/WebRoot/others
+/WebRoot/public/robot
