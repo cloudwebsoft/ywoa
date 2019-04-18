@@ -1,0 +1,127 @@
+/*
+swfupload 样式问题
+*/
+#logList {
+	margin: 0;
+	padding: 0;
+	width: 350px
+}
+#logList li {
+	list-style-position: inside;
+	margin: 2px;
+	padding: 10px;
+	color: #888;
+	font-size: 12px;
+	background: #FFF;
+	position: relative;
+}
+#logList li .progressBars{
+	margin-top:10px;
+	width:50%;
+	height:15px;
+	border:1px solid #449cde;
+	float:left;
+	margin-right:10px;
+	
+}
+ 
+#logList li .progressValue {
+	margin:10px;
+	color: #449cde;
+} 
+
+#logList li .progress {
+	background:#449cde;
+	width:0%;
+	margin:1px;
+	height:13px;
+}
+
+.window_upload {
+	position: fixed;
+	z-index:2000;
+}
+
+#SD_window {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	z-index: 1000;
+	overflow: hidden;
+	display: none;
+}
+
+#upload_container {
+	position: relative;
+	z-index: 2005;
+	background: #FFFFFF;
+	border: 1px solid #888888;
+	float: left;
+	width: 100%
+}
+
+
+#upload_container h3 {
+	height: 30px;
+	line-height: 30px;
+	background: #F6F6F6;
+	border-bottom: 1px solid #CDCDCD;
+	text-indent: 10px;
+	color: #336699;
+	font-size: 14px;
+	font-weight: bold;
+	cursor: move;
+}
+
+#upload_body {
+	padding: 15px;
+	white-space: normal;
+}
+
+#upload_body,#upload_body div,#upload_body p,#upload_body td {
+	color: #000000;
+}
+
+#SD_button {
+	padding: 10px 0px;
+	background: #F6F6F6;
+	border-top: 1px solid #CDCDCD;
+	text-align: right;
+	z-index:2000;
+}
+
+#SD_button a {
+	margin-right: 10px;
+	padding: 6px 10px 4px;
+	background: #005EAC;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #D8DFEA #0E1F5B #0E1F5B #D8DFEA;
+	white-space: nowrap;
+	display: inline-block;
+	color: #FFFFFF;
+	font-size: 14px;
+	text-align: center;
+	cursor: pointer;
+}
+
+#SD_button a:hover {
+	text-decoration: none;
+}
+
+#upload_close {
+	position: absolute;
+	top: 6px;
+	right: 10px;
+	overflow: hidden;
+	z-index: 1805;
+	width: 17px;
+	height: 17px;
+	overflow: hidden;
+	border: none;
+	background: url(showDialog/sd_close.png) no-repeat 0px 0px;
+}
+
+#upload_close:hover {
+	background-position: 0px -17px;
+}

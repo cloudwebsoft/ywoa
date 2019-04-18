@@ -1,0 +1,182 @@
+@charset "utf-8";
+/* CSS Document */
+@charset "utf-8";
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td {margin:0;padding:0;} 
+table {border-collapse:collapse;border-spacing:0;} 
+fieldset,img {border:0px; margin:0px; vertical-align:middle; } 
+address,caption,cite,code,dfn,em,strong,th,var {font-style:normal;font-weight:normal} 
+ol,ul {list-style:none} 
+caption,th {text-align:left} 
+h1,h2,h3,h4,h5,h6 {font-size:100%;font-weight:normal} 
+q:before,q:after {content:''} 
+abbr,acronym { border:0}
+body { 
+	margin:0;
+	padding:0;
+	font-family:"微软雅黑";
+	font-size: 14px;
+	color: #606060;
+	background-color: #dbf3fa;
+	overflow: hidden;
+}
+.clear {
+	clear: both;
+}
+ a {color: #606060; text-decoration: none;}
+ a:hover {color: #F60; text-decoration: none;}
+
+/*登录界面样式*/
+.logincontent {
+	background-image: url(images/login/login_bgimg.jpg);
+	overflow: hidden;
+	padding-bottom: 30px;
+	background-repeat: no-repeat;
+	background-position: top center;
+	height: 800px;
+	z-index:1;
+}
+.logincontent .login_topbox {
+	height: 130px;
+	padding-top: 30px;
+	text-align:center;
+}
+.logincontent .login_topbox .login_topleft {
+	float: left;
+	width: 100%;
+	margin-top: 80px;
+}
+.logincontent .login_topbox .login_topright {
+	float: right;
+	width: 132px;
+	height: 44px;
+	margin-right: 20px;
+}
+
+.logincontent .loginbar_frame {
+	width: 1210px;
+	margin-top: 50px;
+	margin-right: auto;
+	margin-left: auto;
+	height: 517px;
+}
+.logincontent .loginbar_frame .loginbar_computer_bg {
+	background-image: url(images/login/login_computer.png);
+	height: 517px;
+	width: 580px;
+	float: left;
+	background-position: bottom;
+	background-repeat: no-repeat;
+	display:none;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox {
+	background-image: url(images/login/loginbar_bg.png);
+	height: 390px;
+	width: 441px;
+	background-repeat: no-repeat;
+	margin:0px auto;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_posit {
+	position: relative;
+	height: 517px;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case {
+	position: absolute;
+	height: 300px;
+	width: 300px;
+	left: 70px;
+	top: 50px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box1 {
+	line-height: 25px;
+	color: #F30;
+	height: 30px;
+	text-align: center;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 {
+	line-height: 43px;
+	border: 1px solid #d5d5d5;
+	height: 43px;
+	margin-bottom: 15px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 input {
+	float:right;
+	margin:0;
+	-webkit-box-shadow: 0 0 0px 1000px white inset;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	height: 40px;
+	width: 254px;
+	color: #999;
+	text-indent: 10px;
+	vertical-align:middle;
+	line-height:40px
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 input:focus { 
+	outline: none; 
+} 
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 .span_user {
+	background-image: url(images/login/login_userico.png);
+	height: 43px;
+	width: 43px;
+	float: left;
+	background-repeat:no-repeat;
+	background-position:center;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 .span_code {
+	background-image: url(images/login/login_codeico.png);
+	height: 43px;
+	width: 43px;
+	float: left;
+	background-repeat:no-repeat;
+	background-position:center;	
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .login_button {
+	margin-right: auto;
+	margin-left: auto;
+	margin-top: 60px;
+	margin-bottom: 10px;
+	background-image: url(images/login/loginbutton.png);
+	background-repeat: no-repeat;
+	width: 317px;
+	height: 43px;
+	cursor:pointer;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .QRcode {
+	float: right;
+	height: 28px;
+	width: 82px;
+}
+
+.logincontent-footer {
+	background-repeat: no-repeat;
+	height: 43px;
+	color: #606060;
+	text-align: center;
+	position:fixed;
+	bottom:0px;
+	top:auto;
+	background-position: center top;
+	width: 100%;
+	z-index:0;
+}
+
+.input_box4{
+	position: relative;
+}
+.input_box4  #send_to_desktop{
+	position:absolute;
+	right:0;
+	width:28px;
+	height:22px;
+	/*background:url("images/send_to_desktop.png");*/
+}

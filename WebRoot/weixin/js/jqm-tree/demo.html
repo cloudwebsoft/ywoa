@@ -1,0 +1,39 @@
+﻿<!doctype html>
+<html>
+	<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>jqm-tree demo</title>
+    <link rel="Stylesheet" href="css/jquery.mobile-1.4.2.min.css" />  
+    <script src="js/jquery-1.11.0.min.js" ></script>
+    <script src="js/jquery.mobile-1.4.2.min.js" ></script>
+    <script src="js/jqm-tree.js" ></script>
+</head>
+<body>
+<div data-role="page">
+	<div data-role="header">
+		<h1>jqm-tree</h1>
+	</div>
+	<div id="divContent" data-role="content">        Static Tree:        <div data-role="collapsible" data-collapsed="false"><h4>Items</h4>            <a class="ui-btn ui-corner-all" href="javascript:void(0)">item1</a>            <a class="ui-btn ui-corner-all" href="javascript:void(0)">item2</a>            <div data-role="collapsible"><h4>item3</h4>                <a class="ui-btn ui-corner-all" href="javascript:void(0)">item3_1</a>                <a class="ui-btn ui-corner-all" href="javascript:void(0)">item3_2</a>            </div>        </div>        Dynamic Tree:        <div id="tree"></div>    </div>
+    <div style="font-size:1em;text-align:center;padding:0.5em" data-role="footer" data-position="fixed" data-tap-toggle="false">
+        87036211@qq.com
+    </div>
+</div>
+</body>
+</html>
+<script type="text/javascript">
+
+    $("#tree").jqmtree({
+        title : 'Items',
+        collapsed: false,
+        data: [
+            { "id": 1, "title": "item1" },
+            { "id": 2, "title": "item1_1", "pid":1 },
+            { "id": 3, "title": "item1_2", "pid": 1 },
+            { "id": 4, "title": "item2", "pid": 0 },
+            { "id": 5, "title": "item3", "pid": 0 },
+            { "id": 6, "title": "item1_2_1", "pid": 3 }
+        ]
+    });
+
+</script>

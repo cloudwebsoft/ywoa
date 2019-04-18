@@ -1,0 +1,146 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>:: ExoBUD MP(II) 播放清单 ::</title>
+<meta name="Author" content="ExoBUD, Jinwoong Yu">
+<meta name="Keywords" content="ExoBUD MP">
+<meta name="Description" content="asf,asx,wma,wmx,wmv,wvx,mp3,wav,mid 网站媒体播放程式">
+<link rel="stylesheet" type="text/css" href="exobudpl.css">
+<!--
+
+============================================================【程式资讯及版权宣告】====
+  ExoBUD MP(II) v4.1tc+ [Traditional Chinese Version]
+  Copyright(Pe) 1999-2003 Jinwoong Yu[ExoBUD], Kendrick Wong[kiddiken.net].
+======================================================================================
+  程式原作者: 庾珍雄(Jinwoong Yu)         繁体中文化作者: 惊直(Kendrick Wong/kiddiken)
+    个人网站: http://exobud.nayana.org          个人网站: http://kiddiken.net
+    电子邮件: exobud@hanmail.net                电子邮件: webmaster@kiddiken.net
+    ICQ 帐号: 96138429                          MSN 帐号: kiddiken@msn.com
+    发表日期: 2003.01.10(此版本原韩文版)        发表日期: 2003.03.23(繁体中文首个版本)
+======================================================================================
+
+    版权所有。
+    请尊重智慧财产权： 无论您对本程式 ExoBUD MP(II) 作任何修改、制作(或翻译)面板，请您
+    *必须*保留此段版权宣告的内容，包括程式(及面板)原作者及中文化作者的名字和网站连结。
+
+    如果您想要以这个繁体中文版的程式为基础，翻译成其他语言的版本，及／或在网际网路上，
+    公开发表您所修改过的版本，请您首先以传送电子邮件的方式，征求我们的同意。
+
+    请不要将程式(或面板)原作者或中文化作者的名字改成您自己的名字，
+    然后以另一程式名称重新命名后在网路上公开发表及散播本程式，因为这是严重的侵权行为。
+
+    这是公益免费程式，所以请不要使用在商业用途上。
+    另外，您亦不可将本程式(全部或部份)复制到其他储存媒体(例如光碟片)上作贩卖获利用途。
+
+    假如因为使用本程式而令您蒙受资料遗失或损毁，程式原作者及中文化作者均不用对其负责。
+
+======================================================================================
+
+-->
+
+<script language="JavaScript">
+<!--
+var via = opener;
+var write_via = "opener";
+var iLoc = self.location.href;
+
+// 如果您是面板制作者(或播放器的进阶使用者)，想要将播放清单的内容，固定显示在页面上某个框架，
+// 则上面这几个变数可能会对你有帮助。
+
+// "via" 这个变数，是代表播放器本身 (exobud.htm) 的位置，相对于播放清单 (exobudpl.htm) 而言。
+// 如果您想要将播放清单嵌入使用者定义的框架 (frameset或iframe)，
+// "via" 的设定值应为 "top.使用者定义的框架名称..." ，而 top 就是指以 index.htm(php) 为起始。
+
+function playSel(){via.wmpStop();via.startExobud();}
+function refreshPl(){self.location=iLoc;}
+function chkSel(){via.chkAllSel();refreshPl();}
+function chkDesel(){via.chkAllDesel();refreshPl();}
+
+function dspList(n){
+ var elmABlock = 15; // 设定每页可显示多少个播放项目
+ var totElm = via.intMmCnt;
+ var totBlock = Math.floor((via.intMmCnt-1) / elmABlock)+1;
+ var cblock;
+ if(n==null){cblock=1;} else {cblock=n;}
+ var seed;
+ var limit;
+ if(cblock < totBlock){
+   seed=elmABlock*(cblock-1); limit=cblock*elmABlock-1;
+ } else {
+   seed=elmABlock*(cblock-1); limit=totElm-1;
+ }
+
+ if(via.intMmCnt > 0){
+   var list_num=0;
+   mmList.innerHTML="<p>";
+   pageList.innerHTML=" &nbsp;跳页: ";
+   for (var i=seed; i <= limit; i++){
+     list_num = i + 1;
+     if(via.objMmInfo[i].selMm=="t"){
+       elm = "&nbsp;<input type=checkbox onClick=\"" + write_via + ".chkItemSel(" + i + ");\" checked";
+       elm += " title='切换是否要播放此曲目' style='cursor:hand'>";
+     } else {
+       elm = "&nbsp;<input type=checkbox onClick=\"" + write_via + ".chkItemSel(" + i + ");\"";
+       elm += " title='切换是否要播放此曲目' style='cursor:hand'>";
+     }
+     elm += "&nbsp;<span lang=ko>&#9836;</span>" + list_num + ". ";
+     elm += "<a href=\"javascript:" + write_via + ".selPlPlay(" + i + ");\"";
+     elm += " title='点一下播放此单一曲目'>";
+     if(via.objMmInfo[i].mmTit =="nAnT"){
+       elm += "未指定媒体标题(等待自动取得媒体资讯)";
+     } else {
+       elm += via.objMmInfo[i].mmTit;
+     }
+     elm += "</a><br>";
+     mmList.innerHTML=mmList.innerHTML+elm;
+   }
+   for(var j=1; j<=totBlock; j++){
+     page = "<a href=\"javascript:dspList(" + j + ")\">[" + j + "]<a> ";
+     pageList.innerHTML=pageList.innerHTML+page;
+   }
+   pageInfo.innerHTML = "页次: " + cblock + " / " + totBlock;
+ } else {
+   mmList.innerHTML = "<br><div align=center style='color:white'>播放清单上没有设定任何曲目。</div>";
+ }
+}
+
+//-->
+</script>
+</head>
+
+<body onLoad="dspList()" onDragStart="return false" onSelectStart="return false"
+  topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
+
+<!-- 在播放清单视窗显示播放清单内容、跳页及其他选项的部份 -->
+
+<table width=100% height=100% cellpadding=0 cellspacing=0 border=0>
+  <tr>
+    <td colspan=2 width=100% height=25 align=center background="./img/bg.gif">
+      <img src="./img/pl_mac_logo.gif" width=21 height=20 align=absmiddle>
+      <img src="./img/pl_mac_title.gif" width=160 height=25 align=absmiddle alt="ExoBUD MP(II) 播放清单">
+    </td>
+  </tr>
+  <tr><td colspan=2 valign=top><div id="mmList"></div></td></tr>
+  <tr>
+	<td colspan=2 height=21 valign=top bgcolor="#172434" style="padding-top:2px"><div id="pageList"></div></td></tr>
+  <tr>
+    <td height=25 align=center background="./img/bg.gif" nowrap>
+      &nbsp;
+      <span id="pageInfo"></span>
+      &nbsp;
+    </td>
+    <td align=center background="./img/bg.gif">
+      <img src="./img/pl_btn_allsel.gif"   width=43 height=25 align=absmiddle border=0
+        onClick="chkSel()"       style="cursor:hand" title="全部选取 (Select All)">
+      <img src="./img/pl_btn_desel.gif"    width=43 height=25 align=absmiddle border=0
+        onClick="chkDesel()"     style="cursor:hand" title="全部不选 (Deselect All)">
+      <img src="./img/pl_btn_playsel.gif"  width=43 height=25 align=absmiddle border=0
+        onClick="playSel()"      style="cursor:hand" title="播放已选取的曲目 (Play Selected)">
+      <img src="./img/pl_btn_winclose.gif" width=43 height=25 align=absmiddle border=0
+        onClick="window.close()" style="cursor:hand" title="关闭播放清单视窗 (Close Playlist)">
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

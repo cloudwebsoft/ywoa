@@ -1,0 +1,87 @@
+BODY {
+	FONT-SIZE: 9pt; COLOR: #000000; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif, ËÎÌו
+}
+P {
+	FONT-SIZE: 9pt; COLOR: #000000; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif, ËÎÌו
+}
+TD {
+	FONT-SIZE: 9pt; COLOR: #000000; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif, ËÎÌו
+}
+BODY {
+	BACKGROUND-COLOR: #d4d0c8
+}
+TR {
+	BACKGROUND-COLOR: #e7e7e7
+}
+.bg {
+	BACKGROUND-COLOR: #d4d0c8
+}
+.bg_2 {
+	BACKGROUND-COLOR: #e7e7e7
+}
+.tables {
+	BORDER-RIGHT: 1px; BORDER-TOP: 1px; BORDER-LEFT: 1px; BORDER-BOTTOM: 1px; BACKGROUND-COLOR: #d4d0c8
+}
+.table {
+	BORDER-RIGHT: 1px; BORDER-TOP: 1px; BORDER-LEFT: 1px; WIDTH: 98%; BORDER-BOTTOM: 1px; BACKGROUND-COLOR: #d4d0c8
+}
+.table0 {
+	BORDER-RIGHT: 1px; BORDER-TOP: 1px; BORDER-LEFT: 1px; WIDTH: 100%; BORDER-BOTTOM: 1px; BACKGROUND-COLOR: #d4d0c8
+}
+.table1 {
+	BORDER-RIGHT: 0px; BORDER-TOP: 0px; BORDER-LEFT: 0px; WIDTH: 90%; BORDER-BOTTOM: 0px; BACKGROUND-COLOR: #e7e7e7
+}
+.table2 {
+	BORDER-RIGHT: 0px; BORDER-TOP: 0px; BORDER-LEFT: 0px; WIDTH: 85%; BORDER-BOTTOM: 0px
+}
+.table3 {
+	WIDTH: 98%
+}
+.tr {
+	HEIGHT: 20px; BACKGROUND-COLOR: #e7e7e7
+}
+.tr0 {
+	BACKGROUND-COLOR: #d4d0c8
+}
+.tr1 {
+	BACKGROUND-COLOR: #dddddd
+}
+.tr2 {
+	HEIGHT: 20px; BACKGROUND-COLOR: #d7d7d7
+}
+.tr3 {
+	HEIGHT: 20px; BACKGROUND-COLOR: #f7f7f7
+}
+.td {
+	FONT-WEIGHT: bold; CURSOR: hand; COLOR: #ffffff; HEIGHT: 24px; BACKGROUND-COLOR: #d0770b
+}
+.div_alt {
+	BORDER-RIGHT: black 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: black 1px solid; PADDING-LEFT: 2px; PADDING-BOTTOM: 2px; MARGIN-LEFT: 18px; BORDER-LEFT: black 1px solid; WIDTH: 240px; COLOR: #000000; PADDING-TOP: 2px; BORDER-BOTTOM: black 1px solid; BACKGROUND-COLOR: #ffffe1
+}
+.tims {
+	FONT-SIZE: 7pt; COLOR: #808080
+}
+.htd {
+	LINE-HEIGHT: 180%
+}
+.red {
+	COLOR: #ff3300
+}
+.red2 {
+	COLOR: #cc3300
+}
+.read {
+	COLOR: #3131ce
+}
+.blue {
+	COLOR: #0066cc
+}
+.gray {
+	COLOR: #808080
+}
+A {
+	COLOR: #000000; TEXT-DECORATION: underline
+}
+A:hover {
+	COLOR: #ff3300; TEXT-DECORATION: underline
+}

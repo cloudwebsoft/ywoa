@@ -1,0 +1,132 @@
+/* Generic context menu styles */
+.contextMenu {
+	position: absolute;
+	width: 120px;
+	z-index: 1000;
+	border: solid 1px #CCC;
+	background: #EEE;
+	padding: 0px;
+	margin: 0px;
+	font-family: 宋体,黑体Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	display: none;
+	cursor:default;
+}
+
+.contextMenu LI {
+	list-style: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+.contextMenu A {
+	color: #333;
+	text-decoration: none;
+	display: block;
+	line-height: 20px;
+	height: 20px;
+	background-position: 6px center;
+	background-repeat: no-repeat;
+	outline: none;
+	padding: 1px 5px;
+	padding-left: 28px;
+	border: 1px #EEE solid;
+}
+
+.contextMenu LI:hover A {
+	background-color: #D2E6FF;
+	color: black;
+	border: 1px #84ACDD solid;
+	opacity: 0.8;
+	filter: alpha(opacity = 80);
+}
+
+.contextMenu LI.disabled A {
+	color: #AAA;
+	cursor: default;
+}
+
+.contextMenu LI.disabled :hover A {
+	color: #FFF;
+	background-color: transparent;
+}
+
+.contextMenu LI.separator {
+	border-top: solid 1px #CCC;
+}
+
+/*
+	Adding Icons
+	
+	You can add icons to the context menu by adding
+	classes to the respective LI element(s)
+*/
+.contextMenu LI.edit A {
+	background-image: url(../images/page_white_edit.png);
+}
+
+.contextMenu LI.cut A {
+	background-image: url(../images/cut.png);
+}
+
+.contextMenu LI.copy A {
+	background-image: url(../images/page_white_copy.png);
+}
+
+.contextMenu LI.paste A {
+	background-image: url(../images/page_white_paste.png);
+}
+
+.contextMenu LI.delete A {
+	background-image: url(../images/delete.png);
+}
+.contextMenu LI.cooperateFolder A {
+	background-image: url(../images/cooperate.png);
+}
+.contextMenu LI.deCooperateFolder A {
+	background-image: url(../images/deCooperate.png);
+}
+.contextMenu LI.down A {
+	background-image: url(../images/down.png);
+}
+
+
+.contextMenu LI.refresh A {
+	background-image: url(../images/refresh.png);
+}
+.contextMenu LI.up A {
+	background-image: url(../images/up.png);
+}
+.contextMenu LI.rename A {
+	background-image: url(../images/rename.png);
+}
+.contextMenu LI.move A {
+	background-image: url(../images/move.png);
+}
+.contextMenu LI.history A {
+	background-image: url(../images/history.png);
+}
+.contextMenu LI.restore A {
+	background-image: url(../images/restore.png);
+}
+.contextMenu LI.tdelete A {
+	background-image: url(../images/thoroughly_delete.png);
+}
+.contextMenu LI.open A {
+	background-image: url(../images/open.png);
+}
+
+
+
+.contextMenu LI.quit A {
+	background-image: url(../images/door.png);
+}
+.contextMenu LI.release A {
+	background-image: url(../images/release.png);
+} 
+.contextMenu LI.edit A {
+	background-image: url(../images/edit.png);
+} 
+.contextMenu LI.setup A {
+	background-image: url(../images/setup.png);
+} 

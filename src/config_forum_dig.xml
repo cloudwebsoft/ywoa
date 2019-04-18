@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <canDigSelf>true</canDigSelf>
+    <digRecordSecretLevel>0</digRecordSecretLevel>
+    <!--0 public 1 owner 2 manager-->
+    <digRecordShowInTopicCount>5</digRecordShowInTopicCount>
+    <dig>
+        <score type="credit">
+            <pay>20</pay>
+            <reward>0.8</reward>
+        </score>
+        <score type="experience">
+            <pay>20</pay>
+            <reward>0.5</reward>
+        </score>
+        <score type="gold">
+            <pay>20</pay>
+            <reward>0.2</reward>
+        </score>
+    </dig>
+    <undig>
+        <score type="experience">
+            <pay>20</pay>
+            <reward>-0.5</reward>
+        </score>
+        <score type="credit">
+            <pay>20</pay>
+            <reward>-0.8</reward>
+        </score>
+        <score type="gold">
+            <pay>20</pay>
+            <reward>-0.2</reward>
+        </score>
+    </undig>
+</config>
+

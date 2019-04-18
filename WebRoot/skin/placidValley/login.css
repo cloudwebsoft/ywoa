@@ -1,0 +1,173 @@
+@charset "utf-8";
+/* CSS Document */
+@charset "utf-8";
+
+/*登录界面样式*/
+body {
+	background-image: url(images/login/login_bgimg.jpg);
+	background-repeat: no-repeat;
+	background-color: #273447;
+	overflow: hidden;
+	background-position: center top;
+}
+
+.logincontent {
+	overflow: hidden;
+	padding-bottom: 30px;
+	background-repeat: no-repeat;
+	height: 700px;
+	background-position: bottom;
+	z-index:1;
+}
+.logincontent .login_topbox {
+	height: 60px;
+	padding-top: 30px;
+}
+.logincontent .login_topbox .login_topleft {
+	float: left;
+	width: 60%;
+	padding-left: 60px;
+}
+.logincontent .login_topbox .login_topright {
+	float: right;
+	width: 132px;
+	height: 44px;
+	margin-right: 20px;
+}
+.logincontent .loginbar_frame {
+	width: 1210px;
+	margin-top: 0px;
+	margin-right: auto;
+	margin-left: auto;
+	height: 517px;
+	background-image: url(images/login/login_hill.gif);
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+.logincontent .loginbar_frame .loginbar_computer_bg {
+	height: 517px;
+	width: 580px;
+	float: left;
+	background-position: bottom;
+	background-repeat: no-repeat;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox {
+	background-image: url(images/login/loginbar_bg.png);
+	height: 517px;
+	background-repeat: no-repeat;
+	float: right;
+	width: 600px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_posit {
+	position: relative;
+	height: 517px;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case {
+	position: absolute;
+	height: 318px;
+	width: 318px;
+	left: 44px;
+	top: 60px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box1 {
+	line-height: 25px;
+	color: #F30;
+	height: 30px;
+	text-align: center;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 {
+	line-height: 43px;
+	height: 43px;
+	color: #333;
+	background-image: url(images/login/login_input.png);
+	background-repeat: no-repeat;
+	margin-bottom: 15px;
+	padding-top: 2px;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 input {
+	margin-right:2px;
+	margin-top:2px;
+	float:right;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	height: 34px;
+	width: 270px;
+	color: #999;
+	text-indent: 10px;
+	line-height: 35px;
+	display: inline;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 .span_user {
+	background-image: url(images/login/login_userico.png);
+	height: 43px;
+	width: 43px;
+	float: left;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 .span_code {
+	background-image: url(images/login/login_codeico.png);
+	height: 43px;
+	width: 43px;
+	float: left;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .login_button {
+	margin-right: auto;
+	margin-left: auto;
+	margin-top: 60px;
+	background-image: url(images/login/loginbutton.png);
+	background-repeat: no-repeat;
+	width: 319px;
+	height: 45px;
+	cursor:pointer;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .QRcode {
+	float: right;
+	height: 28px;
+	width: 82px;
+	margin-top: 10px;
+}
+.logincontent-footer {
+	background-repeat: no-repeat;
+	height: 43px;
+	color: #FFF;
+	text-align: center;
+	position:fixed;
+	bottom:0px;
+	top:auto;
+	background-position: center top;
+	width: 100%;
+	z-index:0;
+}
+.input_box4 {
+	color: #FFF;
+}
+
+.input_box4{
+	position: relative;
+}
+.input_box4  #send_to_desktop{
+	position:absolute;
+	right:0;
+	width:28px;
+	height:22px;
+	background:url("images/send_to_desktop.png");
+}
+#loginDownload { padding-top:10px;}
+#loginDownload a:link {color:#FFF;}
+

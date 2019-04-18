@@ -1,0 +1,231 @@
+﻿@charset "utf-8";
+@import "css/common/common.css";
+.toolbar {
+  width: 100%;
+  white-space: nowrap;
+  background: url(tabpanel-image/Toolbar/gantt_toolbar_bg.jpg) repeat-x;
+  position: relative;
+  height: 38px;
+  background-repeat: repeat-x;
+}
+
+.toolbar .button_table {
+  cursor: pointer;
+  height:37px;
+}
+.toolbar .toolbar_disabled {
+  filter: alpha(opacity = 60);
+  -moz-opacity: 0.6;
+  opacity: 0.6;
+}
+.toolbar .toolbar_disabled * {
+  cursor: no-drop;
+}
+
+.toolbar td {
+  vertical-align: middle;
+}
+
+.toolbar .spacer {
+  height: 24px;
+  font-size: 1px;
+  border-left: solid 1px #9AC6FF;
+  border-right: solid 1px white;
+  display: block;
+  margin: 0 2px;
+  padding: 0;
+}
+
+.toolbar .textfield {
+  padding: 2px 3px 1px 3px;
+  background: #FFFFFF url(tabpanel-image/text-bg.gif) repeat-x 0 0;
+  border: 1px solid #B5B8C8;
+  width: 140px;
+}
+
+.toolbar .b_left {
+
+}
+
+.toolbar .b_right {
+
+}
+
+.toolbar .b_center {
+	padding-left:3px;
+	padding-right:3px;
+}
+
+.toolbar .over .b_left {
+
+}
+
+.toolbar .over .b_right {
+
+}
+
+.toolbar .over .b_center {
+   padding-left:3px;
+   padding-right:3px;
+}
+
+.toolbar .b_center a {
+	display:block;
+	vertical-align:middle;
+	padding-top: 3px;
+	padding-bottom: 4px;
+	margin-left: 2px;
+	margin-right: 2px;
+	text-decoration:none;
+	white-space:nowrap;
+	*height:auto;
+	height:25px;
+	color:#333;
+	
+}
+
+
+.toolbar .down .b_left {
+    
+}
+
+.toolbar .down .b_right {
+    
+}
+
+.toolbar .down .b_center {
+}
+
+.toolbar .filterTable {
+	position: absolute;
+	right:2px;
+	top:2px;
+}
+.toolbar .filterTable {
+	cursor: pointer;
+}
+
+.toolbar .filter-spacer {
+  height: 18px;
+  font-size: 1px;
+  border-left: solid 1px #84A4CE;
+  border-right: solid 1px white;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.toolbar .border-center-active {
+	background: url(tabpanel-image/Toolbar/tb_border.gif) repeat-x 0px -105px !important;
+}
+
+.toolbar .border-left-active {
+  background: url(tabpanel-image/Toolbar/tb_border.gif) no-repeat 0 -63px !important;
+}
+
+.toolbar .border-right-active {
+  background: url(tabpanel-image/Toolbar/tb_border.gif) no-repeat 0 -84px !important;
+}
+
+.clearGantt {
+  background: transparent url(tabpanel-image/clear.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.dustbin {
+  background: transparent url(tabpanel-image/dustbin.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.fullscreen {
+  background: transparent url(tabpanel-image/fullscreen.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.zoom_in {
+  background: transparent url(tabpanel-image/zoom_in.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.zoom_out {
+  background: transparent url(tabpanel-image/zoom_out.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.moveup {
+  background: transparent url(tabpanel-image/moveup.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.movedown {
+  background: transparent url(tabpanel-image/movedown.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.indent {
+  background: transparent url(tabpanel-image/moveright.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.outdent {
+  background: transparent url(tabpanel-image/moveleft.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.insert_above {
+  background: transparent url(tabpanel-image/insert_above.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.insert_below {
+  background: transparent url(tabpanel-image/insert_below.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.undo {
+  background: transparent url(tabpanel-image/undo.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.redo {
+  background: transparent url(tabpanel-image/redo.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+
+/*甘特图tab标签样式*/
+
+.gantt_tabbox{
+    height: 39px;
+}
+.gantt_tabbox  li {
+    float: left;
+    width: 90px;
+    text-align: center;
+    line-height: 36px;
+    background-color: #F3F3F3;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-top-style: solid;
+    border-right-style: solid;
+    border-top-color: #DDD;
+    border-right-color: #DDD;
+   
+}
+.gantt_tabbox .gantt_tab_sel {
+    color: #3fb4ff;
+    background-color: #FFF;
+    border-top-width: 3px;
+    border-right-width: 1px;
+    border-left-width: 1px;
+    border-top-style: solid;
+    border-right-style: solid;
+    border-left-style: solid;
+    border-top-color: #3fb4ff;
+    border-right-color: #3fb4ff;
+    border-left-color: #3fb4ff;
+    font-weight: bold;
+    margin-bottom: -3px;
+    height: 35px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #FFF;
+    box-sizing:content-box;
+}
+.gantt_tabbox .gatt_tab_over {
+    border: 1px solid #3FB4FF;
+}/*鼠标经过样式*/
+.gantt_tabbox .gantt_line {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #3FB4FF;
+    height: 38px;
+}
+

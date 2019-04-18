@@ -1,0 +1,73 @@
+@charset "utf-8";
+.submenu-wrap {
+	border: 1px solid #a4a19d;
+	line-height: normal;
+	overflow-x: hidden;
+	overflow-y: auto;
+	padding: 10px;
+	width:490px;
+	height:630px;
+	margin: 0px;
+	-moz-opacity:0.9; -webkit-opacity:0.9; opacity:0.9; filter:progid:DXImageTransform.Microsoft.Alpha(Opacity=90);
+	background-color: #FFF;
+	z-index:9999;
+	position:absolute;
+	top:0;
+	left:0;
+}
+
+.submenu-wrap hr{
+	width:100%;
+	background-color:#D1D1D1;
+	height:1px;
+	border:none;
+	float:left;
+}
+
+.submenu-wrap-box {
+	line-height: 28px;
+	margin-bottom: 10px;
+	clear:both;
+}
+
+.submenu-wrap-box a{
+	color:black;
+}
+
+.submenu-wrap-box .submenu-wrap-box-div{
+	padding:0 5px;
+}
+
+.submenu-wrap-box .submenu-wrap-box-div:hover {
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	behavior: url(ie-css3.htc);
+	background-color:#7a8dc2;
+	font-weight: bold;
+}
+
+.submenu-wrap-box .submenu-wrap-box-div:hover a{
+	color: #FFF;
+}
+
+.submenu-wrap-box-title {
+	font-weight: bold;
+	color: #ff6000;
+	clear:both;
+}
+
+.submenu-wrap-box-title div{
+	float:left;
+}
+
+.submenu-wrap-thirdmenu {
+	line-height: 30px;
+	max-width:550px; 
+    width:expression_r(document.body.clientWidth >550 ? "550px": "auto" ); 
+    clear:both;
+}
+.submenu-wrap-thirdmenu div {
+	margin-right: 10px;
+	float:left;
+}

@@ -1,0 +1,18 @@
+<chart lowerLimit='0' upperLimit='100' lowerLimitDisplay='Bad' upperLimitDisplay='Good' gaugeStartAngle='180' gaugeEndAngle='0' palette='1' numberSuffix='%' tickValueDistance='20' showValue='1' decimals='0' editMode='1'>
+   <colorRange>
+      <color minValue='0' maxValue='75' code='FF654F'/>
+      <color minValue='75' maxValue='90' code='F6BD0F'/>
+      <color minValue='90' maxValue='100' code='8BBA00'/>
+   </colorRange>
+   <dials>
+      <dial id='CS' value='92' rearExtension='10'/>
+   </dials>
+<styles>
+   <definition>
+      <style type='font' name='myValueFont' bgColor='F1f1f1' borderColor='999999' />
+   </definition>
+   <application>
+      <apply toObject='Value' styles='myValueFont' />
+   </application>
+</styles>
+</chart>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="gb2312"?>
+<env>
+    <oa>
+        <enterprise desc="系统名称">OA</enterprise>
+        <styleMode desc="界面风格" isDisplay="true" options="1|自选,2|指定">1</styleMode>
+        <styleSpecified desc="界面指定的风格" isDisplay="true" options="1|经典型简洁菜单,2|时尚型,3|绚丽型,4|经典型传统菜单,5|轻简型"></styleSpecified>
+        <version desc="版本号" isDisplay="false">5.0</version>
+        <versionOld desc="原版本号，即采用升级包升级前的版本号，如果是从低于3.0的版本升级上来，则应置为3.0" isDisplay="false">3.0</versionOld>
+        <canUserSeeDesignerWhenDispose desc="用户处理流程时能否看到流程设计器">true</canUserSeeDesignerWhenDispose>
+        <canUserModifyFlow desc="用户能否修改流程(该功能暂不支持)" isDisplay="false">false</canUserModifyFlow>
+        <file_folder desc="文件柜路径" isDisplay="false">upfile/file_folder</file_folder>
+        <file_flow desc="流程文档路径" isDisplay="false">upfile/file_flow</file_flow>
+        <file_task desc="任务文档路径" isDisplay="false">upfile/file_task</file_task>
+        <file_netdisk desc="网络硬盘路径" isDisplay="false">upfile/file_netdisk</file_netdisk>
+        <file_netdisk_public desc="公共硬盘路径" isDisplay="false">upfile/file_netdisk_public</file_netdisk_public>
+        <file_message desc="短消息文件路径" isDisplay="false">upfile/file_message</file_message>
+        <file_workplan desc="工作计划文件路径" isDisplay="false">upfile/file_workplan</file_workplan>
+        <file_archive desc="人事管理文件路径" isDisplay="false">upfile/file_archive</file_archive>
+        <file_email desc="邮件附件路径" isDisplay="false">upfile/file_email</file_email>
+        <defaultroom desc="默认讨论房间" isDisplay="false">办公室</defaultroom>
+        <refresh_talk desc="讨论室发言刷新间隔时间(毫秒)" isDisplay="false">3000</refresh_talk>
+        <refresh_userlist desc="讨论室用户列表刷新间隔时间(秒)" isDisplay="false">6</refresh_userlist>
+        <refresh_offline desc="讨论室用户超时退出刷新间隔时间(秒)" isDisplay="false">60</refresh_offline>
+        <refresh_message desc="短消息刷新间隔时间(秒)">20</refresh_message>
+        <morningbegin desc="上午上班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">09:00</morningbegin>
+        <morningend desc="上午下班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">12:00</morningend>
+        <afternoonbegin desc="下午上班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">14:00</afternoonbegin>
+        <afternoonend desc="下午下班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">18:00</afternoonend>
+        <nightbegin desc="晚上上班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">19:00</nightbegin>
+        <nightend desc="晚上下班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">21:00</nightend>
+        <latevalue desc="迟到或早退时间(分钟)">10</latevalue>
+        <mins_ahead_of_workbegin desc="上班前多少分钟前可以打卡" isDisplay="false">15</mins_ahead_of_workbegin>
+        <mins_after_workbegin desc="上班后多少分钟内可以打卡">15</mins_after_workbegin>
+        <mins_ahead_of_workend desc="下班前多少分钟内可以打卡">15</mins_ahead_of_workend>
+        <mins_after_workend desc="下班后多少分钟内可以打卡" isDisplay="false">15</mins_after_workend>
+        <netdisk_space_allowed isDisplay="false" desc="默认网络硬盘空间(10M)">10240000</netdisk_space_allowed>
+        <msg_space_allowed isDisplay="false" desc="默认内部消息空间(10M)">10240000</msg_space_allowed>
+        <interval_remind_user_plan desc="用户日程提醒消息间隔(毫秒)">300000</interval_remind_user_plan>
+        <!--用户日程提醒间隔 5分钟-->
+        <interval_clear_proxy_expired desc="清除用户代理到期间隔(毫秒)">300000</interval_clear_proxy_expired>
+        <interval_flow_hurry desc="流程催办消息间隔(毫秒)">1800000</interval_flow_hurry>
+        <interval_clear_message desc="删除用户短消息超出最大条数的时间间隔(毫秒)">86400000</interval_clear_message>
+        <!--1小时-->
+        <message_to_max_user desc="短消息群发的默认最大用户数">5000</message_to_max_user>
+        <message_user_max_count desc="用户短消息能保留的最大条数">800000</message_user_max_count>
+        <filearkFileExt desc="文件柜上传文件的合法扩展名，为空表示不限">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</filearkFileExt>
+        <netdisk_ext desc="网络硬盘上传文件的合法扩展名，为空表示不限">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,wpt,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql,pbm,pgm,pcx,jpe,tif,tiff,psd,pdd,apk,ipk</netdisk_ext>
+        <!--<mailserver desc="邮件服务器">ttoactxy</mailserver>
+        <pop3_port desc="pop3 端口">111</pop3_port>
+        <smtp_port desc="smtp 端口">26</smtp_port>-->
+        <!--<restrictpcinoffice desc="限制从办公电脑登录">no</restrictpcinoffice>-->
+        <shortMsgTitleLengthMin desc="短消息标题最短字数">1</shortMsgTitleLengthMin>
+        <shortMsgTitleLengthMax desc="短消息标题最长字数">500</shortMsgTitleLengthMax>
+        <shortMsgContentLengthMin desc="短消息内容最短字数">1</shortMsgContentLengthMin>
+        <shortMsgContentLengthMax desc="短消息内容最长字数">1000000</shortMsgContentLengthMax>
+        <shortMsgFileSize desc="短消息附件大小(K)">2048000</shortMsgFileSize>
+        <shortMsgFileExt desc="短消息上传文件的合法扩展名">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</shortMsgFileExt>
+        <restrictUserDept desc="限制用户所见部门（关联发送短消息设置）">false</restrictUserDept>
+        <flowActionExpireRemindInterval desc="流程动作到期提醒时间间隔（分钟），小于等于0，则不提醒">180</flowActionExpireRemindInterval>
+        <flowActionExpireRemindBeforeMinute desc="在流程动作到期前多少分钟开始提醒">360</flowActionExpireRemindBeforeMinute>
+        <flowActionExpireDay desc="在多少天内的未处理的流程动作快到期时发出提醒">30</flowActionExpireDay>
+        <flowActionExpireRemindTitle desc="流程到期提醒标题">系统提醒：流程%s快要到期了</flowActionExpireRemindTitle>
+        <flowActionExpireRemindContent desc="流程到期提醒内容">流程动作为%s，到期时间为%s，快要到期了，请及时办理</flowActionExpireRemindContent>
+        <atFlowActionExpireRemindContent desc="工作交办到期提醒内容">流程：%s，到期时间：%s，快要到期了，请及时办理</atFlowActionExpireRemindContent>
+        <flowActionExpireAutoDeliverInterval desc="流程到期自动转交（分钟）">5</flowActionExpireAutoDeliverInterval>
+        <flowFileExt desc="流程中上传文件的合法扩展名，为空表示不限">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</flowFileExt>
+        <flowPerformanceFormula desc="流程绩效计算公式：a表示流程节点完成所用时间，b表示流程节点到期时间">1-a/b</flowPerformanceFormula>
+        <flowNotifyByEmail desc="流程交办时是否发Email提醒">true</flowNotifyByEmail>
+        <refreshOnlineExpire desc="删除在线用户时，用户的超时时间（秒）">180</refreshOnlineExpire>
+        <refreshOnlineUserNotify desc="浏览器每隔多长时间，向服务器通报一次在线（秒）">10</refreshOnlineUserNotify>
+        <refreshOnlineInterval desc="每隔多长时间刷新一次在线用户（秒）">10</refreshOnlineInterval>
+        <isRTXUsed desc="是否启用腾讯通" isDisplay="false">false</isRTXUsed>
+        <isLarkUsed desc="是否启用一米精灵" isDisplay="false">false</isLarkUsed>
+        <larkType desc="一米精灵类型" isDisplay="false">Lark</larkType>
+        <isRecordLarkMsg desc="是否记录一米精灵的消息" isDisplay="false">false</isRecordLarkMsg>
+        <isBirthdayRemindUsed desc="是否启用生日提醒">true</isBirthdayRemindUsed>
+        <isBirthdayRemindDate desc="生日提醒已发送日期">09.02</isBirthdayRemindDate>
+        <birthdayRemindContent desc="生日提醒内容">今天是您的生日,祝您生日快乐!</birthdayRemindContent>
+        <!--到期时间单位day天、hour小时-->
+        <flowExpireUnit desc="流程到期时间单位" options="day|天,hour|小时">hour</flowExpireUnit>
+        <flowExpireRelateOACalendar desc="流程到期与工作日历相关联，休息时间不算在内">true</flowExpireRelateOACalendar>
+        <workplan_ext desc="工作计划上传文件的合法扩展名">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</workplan_ext>
+        <canMultiLogin desc="是否允许同一帐户同时多重登录">true</canMultiLogin>
+        <weatherCode type="textarea" desc="天气预报代码">&lt;iframe src="http://www.thinkpage.cn/weather/weather.aspx?uid=&amp;c=CHXX0008&amp;l=&amp;p=CMA&amp;a=1&amp;u=C&amp;s=1&amp;m=0&amp;x=1&amp;d=0&amp;fc=&amp;bgc=&amp;bc=&amp;ti=1&amp;in=1&amp;li=2&amp;ct=iframe" frameborder="0" scrolling="no" width="100%" height="100%" allowTransparency="true"&gt;&lt;/iframe&gt;</weatherCode>
+        <clockCode type="textarea" desc="时钟代码">&lt;embed src="flash/clock.swf" width="200" height="200" quality=high pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" type="application/x-shockwave-flash" wmode="transparent"&gt;&lt;/embed&gt;</clockCode>
+        <calendarCode type="textarea" desc="日历代码">&lt;embed src="http://www.blogclock.cn/swf/S100159f1bf6d59-8.swf" Width="180px" Height="170px" type="application/x-shockwave-flash" quality="high" wmode="transparent"&gt;&lt;/embed&gt;</calendarCode>
+        <isUseNTKO desc="是否采用NTKO文档编辑控件">true</isUseNTKO>
+        <flowActionPlan desc="流程待办日程标题">流程：%s</flowActionPlan>
+        <flowActionPlanContent desc="流程待办日程内容">发起人：%s，最后办理：%s</flowActionPlanContent>
+        <flowAutoSMSRemind desc="流程中自动短信提醒">true</flowAutoSMSRemind>
+        <flowAutoMsgRemind desc="流程中自动消息提醒">true</flowAutoMsgRemind>
+
+        <workplan_annex_day_add_limit desc="工作计划日报可超期几天汇报">1</workplan_annex_day_add_limit>
+        <workplan_annex_day_edit_limit desc="工作计划日报几天内可修改">1</workplan_annex_day_edit_limit>
+        <workplan_annex_week_add_limit desc="工作计划周报可超期几天汇报">1</workplan_annex_week_add_limit>
+        <workplan_annex_week_edit_limit desc="工作计划周报几天内可修改">1</workplan_annex_week_edit_limit>
+        <workplan_annex_month_add_limit desc="工作计划月报可超期几天汇报">1</workplan_annex_month_add_limit>
+        <workplan_annex_month_edit_limit desc="工作计划月报几天内可修改">1</workplan_annex_month_edit_limit>
+
+        <workplan_annex_week_remind desc="是否启用工作计划周报提醒，提醒时间为每周一、二的上午九点">true</workplan_annex_week_remind>
+        <workplan_annex_week_remind_title desc="周报填写提醒标题">系统提醒：请及时填写工作计划：$title的周报</workplan_annex_week_remind_title>
+        <workplan_annex_week_remind_content desc="周报填写提醒内容">系统提醒：您上周的周报尚未填写，请及时填写！该计划的内容如下：$content</workplan_annex_week_remind_content>
+        <workplan_annex_month_remind desc="是否启用工作计划月报提醒，提醒时间为每月1、2、3号的上午九点">true</workplan_annex_month_remind>
+        <workplan_annex_month_remind_title desc="月报填写提醒标题">系统提醒：请及时填写工作计划：$title的月报</workplan_annex_month_remind_title>
+        <workplan_annex_month_remind_content desc="月报填写提醒内容">系统提醒：您上月的月报尚未填写，请及时填写！该计划的内容如下：$content</workplan_annex_month_remind_content>
+        <canConvertToPDF desc="流程中是否支持将Word转换为PDF文件">false</canConvertToPDF>
+		<canOfficeFilePreview desc="流程中是否支持Word/Excel附件生成预览">false</canOfficeFilePreview>
+        <aceTheme desc="脚本设计器的主题" isDisplay="false">ace/theme/eclipse</aceTheme>
+        <fullTextSearchTime desc="文档中心全文检索的时间戳" isDisplay="false">2014-08-22 12:00:00</fullTextSearchTime>
+        <fullTextSearchDir desc="文档中心全文检索存放的文件夹" isDisplay="false">search/fileark</fullTextSearchDir>
+        <isIntegrateEmail desc="是否集成邮箱" isDisplay="false">false</isIntegrateEmail>
+        <formRemindInterval desc="FormRemindJob提醒任务的刷新间隔（分钟）" isDisplay="false">1</formRemindInterval>
+        <systemIsOpen desc="系统是否启用">true</systemIsOpen>
+        <systemStatus desc="系统停用时提示信息">系统正在维护中.....</systemStatus>
+        <systemLoginParam desc="系统停用时管理员登录URL中的附加参数，如：http://.../index.jsp?op=admin">admin</systemLoginParam>
+        <file_role_template desc="角色模板，将角色模板通过云盘同步至其客户端" isDisplay="false">upfile/file_role_template</file_role_template>
+   		<qrcode_andriod_png_path  desc="生成二维码中 android的图片路径" isDisplay="false">yimioa_android.png</qrcode_andriod_png_path>
+   		<qrcode_andriod_download_path desc="android下载路径" isDisplay="false">activex/yimioa.apk</qrcode_andriod_download_path>
+   		<qrcode_ios_png_path  desc="生成二维码中 ios的图片路径" isDisplay="false">yimioa_ios.png</qrcode_ios_png_path>
+   		<qrcode_mobile_png_path  desc="生成手机客户端下载路径图片" isDisplay="false">yimioa_mobile_qrcode.png</qrcode_mobile_png_path>
+   		<qrcode_ios_download_path desc="ios下载路径" isDisplay="false">http://itunes.apple.com/cn/app/</qrcode_ios_download_path>
+        <isRestart desc="是否需要重启tomcat" isDisplay="false">0</isRestart>
+   		<personNoAutoCreate desc="员工编号是否自动生成">true</personNoAutoCreate>
+		<personNoLen desc="员工编号用0向左补齐的长度">4</personNoLen>   		
+        <firstUseDate desc="启用时间" isDisplay="false"></firstUseDate>
+   		<upgradeRemindMsg_success_title desc="更新成功标题" isDisplay="false">更新成功</upgradeRemindMsg_success_title>
+   		<upgradeRemindMsg_success_content desc="更新成功内容" isDisplay="false">更新成功,更新内容如下：$content</upgradeRemindMsg_success_content>
+   		<upgradeRemindMsg_error_title desc="更新失败标题" isDisplay="false">更新失败</upgradeRemindMsg_error_title>
+        <upgradeRemindMsg_error_content desc="更新失败内容" isDisplay="false"></upgradeRemindMsg_error_content>
+        <isAutoUpgrade desc="自动更新系统">true</isAutoUpgrade>
+        <export_dept_levels desc="导出导入用户的部门层级分为列，最大不能超过12，0表示导出时部门之间用\号分隔，因影响导入已不能再启用，只能为0" isDisplay="false">0</export_dept_levels>
+        <isArchiveUserSynAccount desc="人力资源档案信息是否与帐户同步">true</isArchiveUserSynAccount>
+		<isKaoqinNight desc="控制晚上是否考勤" isDisplay="true">true</isKaoqinNight>
+		<autoRefresh desc="自动刷新时间">600000</autoRefresh>
+		<firtstUserAfterReg desc="注册后第一次使用时间" isDisplay="false"></firtstUserAfterReg>
+		<isProjectUsed desc="是否启用项目" isDisplay="false">false</isProjectUsed>
+		<file_size_limit desc="文件上传大小限制">2048000</file_size_limit>
+    	<file_upload_limit desc="文件上传数目">10</file_upload_limit>
+    	<yimihome_url desc="一米oa服务器" isDisplay="false">http://www.yimihome.com</yimihome_url>
+    	<is_bind_mobile desc="手机端是否绑定手机">false</is_bind_mobile>
+    	<access_id_android desc="腾讯信鸽帐号（android）" isDisplay="false">2100136837</access_id_android>
+    	<secret_key_android desc="腾讯信鸽帐号key（android）" isDisplay="false">e10b672ab00b5bdd96be701fa64166a8</secret_key_android>
+    	<access_id_ios desc="腾讯信鸽帐号（ios）" isDisplay="false">2200134054</access_id_ios>
+    	<secret_key_ios desc="腾讯信鸽帐号key（ios）" isDisplay="false">709dbb134a34c65e57746cc5b1e47600</secret_key_ios>
+		<oem_filesEncrypt_validate desc="oem文件加密校验是否通过" isDisplay="false">true</oem_filesEncrypt_validate>
+		<usbKey desc="是否显示usbKey配置项" >false</usbKey>
+		<email_file_size_limit desc="文件上传大小限制">30720</email_file_size_limit>
+		<project_with_forum desc="项目发布至论坛" isDisplay="false">false</project_with_forum>
+		<show_dept_user_sort desc="根据部门人员序号排序，否则根据角色大小排序">true</show_dept_user_sort>
+		<del_log_days desc="删除多久之前的log日志,为0不删除">30</del_log_days>
+		<opinion_ctl_order desc="意见输入框显示的排序方式,0为默认，表示按时间倒序,1为按时间顺序">0</opinion_ctl_order>
+		<flow_seq_default desc="流程自动编号,数据库和表单不一致时,0 默认以表单为准, 1 以数据库为准">1</flow_seq_default>
+		<canDelUser desc="能否删除用户" isDisplay="true">true</canDelUser>
+		
+		<proxy_add_msg_title desc="设置代理提醒标题" isDisplay="true">设置代理提醒</proxy_add_msg_title>
+		<proxy_add_msg_content desc="设置代理提醒内容" isDisplay="true">%beginDate至%endDate，%fromUser设置了工作流程由%proxy代理</proxy_add_msg_content>
+		<proxy_del_msg_title desc="取消代理提醒标题" isDisplay="true">取消代理提醒</proxy_del_msg_title>
+		<proxy_del_msg_content desc="取消代理提醒内容" isDisplay="true">%fromUser取消了%proxy代理</proxy_del_msg_content>
+		
+		<isUseAccount desc="工号是否启用" isDisplay="true">true</isUseAccount>
+		<canFlowDisposeBatch desc="流程能否批处理" isDisplay="false">false</canFlowDisposeBatch>
+		
+		<isCloud desc="是否接入云平台" isDisplay="false">true</isCloud>
+		<cloudUrl desc="云平台地址，默认http://cloud.yimihome.com" isDisplay="false">http://www.xiaocaicloud.com</cloudUrl>
+		
+		<canPdfFilePreview desc="流程中是否支持pdf附件生成预览">false</canPdfFilePreview>
+		
+		<isFlowReturnWithRemark desc="流程返回时，是否必须填写备注">false</isFlowReturnWithRemark>
+		
+		<isUseClient desc="是否启用手机客户端（不启用，则发通知时不推送消息）" isDisplay="false">false</isUseClient>
+		
+		<fullTextSearchSupported desc="是否支持全文检索">false</fullTextSearchSupported>
+		
+		<isMobileGridView desc="手机端是否采用九宫格视图">true</isMobileGridView>
+		
+		<isFlowLevelDisplay desc="是否显示流程等级">true</isFlowLevelDisplay>
+		<isNetdiskUsed desc="是否使用云盘">false</isNetdiskUsed>
+		
+		<isSegmentEnabled desc="中文分词是否启用">true</isSegmentEnabled>
+		<segmentKeywordsExcepted desc="中文分词排除的关键词，以逗号分隔">公司</segmentKeywordsExcepted>
+		
+		<canWebedit desc="文件柜是否可以采用高级方式（需结合360浏览器兼容模式使用，F12文档模式中需用8，才能拷贝粘贴图片）" isDisplay="false">true</canWebedit>
+		
+		<workLogRemindTitle desc="工作汇报提醒标题">系统提醒：来自于%s的评论，%s</workLogRemindTitle>
+		<filearkHighlightDirShow desc="文件柜中文章显示高亮目录" isDisplay="false">true</filearkHighlightDirShow>
+		
+		<opinionCtlDefaultValOnFinish desc="意见输入框宏控件，当提交时，如果为空，则自动赋予值" isDisplay="false">同意</opinionCtlDefaultValOnFinish>
+		
+		<fontFamily desc="字体，用于模块导出">微软雅黑,黑体,宋体,仿宋体</fontFamily>
+		<isUseKqj desc="是否启用考勤机，如果启用，需注意用户的编号需与考勤机设置的一致" isDisplay="false">false</isUseKqj>
+    	<debugLevel desc="系统调试等级，-1不输出，0通过System.out及日志输出info及error，1通过System.out及日志输出error, 2通过日志输出info及error，3通过日志输出error" isDisplay="false">0</debugLevel>
+    	
+    	<realNameShowWithDeptLayer desc="0或1表示不显示部门，根节点的层级为1" isDisplay="false">0</realNameShowWithDeptLayer>
+
+        <isUseRedis desc="是否使用redis缓存">false</isUseRedis>
+        <redisHost desc="redis地址">127.0.0.1</redisHost>
+        <redisPort desc="redis端口">6379</redisPort>
+        <redisPassword desc="redis密码，如果有则配置，没有则为空"></redisPassword>
+
+        <exam_file_Path desc="考卷选项的图片路径">upfile/file_exam</exam_file_Path>
+    </oa>
+</env>

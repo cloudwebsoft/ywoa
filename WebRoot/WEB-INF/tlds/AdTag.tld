@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="gb2312" ?>
+  <!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.1//EN" "http://java.sun.com/j2ee/dtds/web-jsptaglibrary_1_1.dtd">
+  
+<!-- a tag library descriptor -->
+  
+<taglib>
+   <tlibversion>1.0</tlibversion>
+   <jspversion>1.1</jspversion>
+   <shortname>AdTag</shortname>
+   <uri></uri>
+   <info>AdTag</info>
+
+  <tag>
+    <name>AdTag</name>
+    <tagclass>com.redmoon.forum.ad.AdTag</tagclass>
+    <bodycontent>JSP</bodycontent>
+    <info>AdTag</info>
+    <attribute>
+	<name>type</name>
+	<required>true</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>boardCode</name>
+	<required>true</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+  </tag>
+</taglib>
+

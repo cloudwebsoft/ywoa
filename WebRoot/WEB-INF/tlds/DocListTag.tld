@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="gb2312" ?>
+  <!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.1//EN" "http://java.sun.com/j2ee/dtds/web-jsptaglibrary_1_1.dtd">
+  
+<!-- a tag library descriptor -->
+  
+<taglib>
+   <tlibversion>1.0</tlibversion>
+   <jspversion>1.1</jspversion>
+   <shortname>DocListTag</shortname>
+   <uri></uri>
+   <info>DocListTag</info>
+
+  <tag>
+    <name>DocListTag</name>
+    <tagclass>com.redmoon.oa.fileark.DocListTag</tagclass>
+    <bodycontent>JSP</bodycontent>
+    <info>DocListTag</info>
+    <attribute>
+	<name>dirCode</name>
+	<required>false</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>subjectCode</name>
+	<required>false</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>	
+    <attribute>
+	<name>start</name>
+	<required>true</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>end</name>
+	<required>true</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>query</name>
+	<required>true</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>action</name>
+	<required>true</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+  </tag>
+  <tag>
+    <name>DocListItemTag</name>
+    <tagclass>com.redmoon.oa.fileark.DocListItemTag</tagclass>
+    <bodycontent>JSP</bodycontent>
+    <info>DocListItemTag</info>
+    <attribute>
+	<name>field</name>
+	<required>true</required>
+	<rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>mode</name>
+	<required>false</required>
+	<rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>length</name>
+	<required>false</required>
+	<rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+</taglib>
+

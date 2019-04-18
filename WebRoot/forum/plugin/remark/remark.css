@@ -1,0 +1,8 @@
+.img_sign {
+position:relative;
+top:0px;
+filter:ALPHA(opacity=80);
+-moz-opacity:0.8;
+float:right;
+margin-right:50px;
+}

@@ -1,0 +1,136 @@
+/* edit.css */
+.p9
+{
+    FONT-SIZE: 9pt
+}
+#cws_edit div.quote{margin:5px 20px;border:1px solid #CCCCCC;padding:5px;background:#F3F3F3 ;line-height : normal ;
+}
+#cws_edit div.HtmlCode{margin:5px 20px;border:1px solid #CCCCCC;padding:5px; background:#FDFDDF ;
+font-size:14px;font-family:Tahoma;font-style : oblique;line-height : normal ;font-weight:bold;
+}
+
+#cws_edit
+{
+	background-color:gainsboro;
+	border:1px solid #CCCCCC;
+	
+	text-align: left;
+	width:98%;
+	margin:0 auto;
+}
+#cws_edit li{
+display: inline;
+padding: 0;
+text-align:center;
+}
+#cws_edit ul{
+	margin: 1px!important;
+	text-align: left;
+	width: 100%;
+	padding:0;
+}
+#cws_edit ul li img{
+	vertical-align:middle;
+}
+#cws_edit iframe.cws_Composition
+{
+	border: 1px inset #cccccc;
+
+}
+#cws_edit .cws_Reply
+{
+	border : 1px dashed buttonface;
+}
+
+}
+#cws_edit .cws_Btn
+{
+	BACKGROUND-COLOR: gainsboro;
+	Text-align: center;
+	HEIGHT: 23px;
+	WIDTH: 23px;
+	margin-top: 0px;
+	padding-top: 5;
+}
+
+#cws_edit .cws_BtnMouseOverUp
+{
+	background-color : #B5BED6;
+	Text-align: center;
+	cursor: hand;
+	HEIGHT: 23px;
+	WIDTH: 23px;
+	margin-top: 0px;
+	padding-top: 3;
+	border : 1px solid transparent;
+}
+
+#cws_edit .cws_Ico
+{
+	cursor: pointer;
+}
+#cws_edit .cws_TBGen
+{
+	FONT: 10pt "verdana", "arial", "sans-serif";
+	margin: 0px;
+}
+
+#cws_edit .cws_BtnMouseOverDown
+{
+	border : 1px solid transparent;
+	BACKGROUND-COLOR: #EEEEEE;
+	Text-align: center;
+	cursor: pointer;
+	HEIGHT: 22px;
+	WIDTH: 22px;
+}
+
+#cws_edit .BtnDown
+{
+	BACKGROUND-COLOR:  #8592B5;
+	cursor: pointer;
+	Text-align: center;
+}
+
+#cws_edit .cws_IcoDown
+{
+	cursor: pointer;
+	
+}
+
+#cws_edit .cws_IcoDownPressed
+{
+	cursor: pointer;
+	
+}
+
+#cws_edit li.cws_TabOn {
+	font: 8pt MS Sans Serif;
+	padding:1px 5px;
+	border:1px inset;
+	background-color: #EEEEEE;
+}
+
+#cws_edit li.cws_TabOff {
+	font: 8pt MS Sans Serif;
+	padding:1px 5px;
+	cursor: pointer;
+	border-top: 1px solid #FFFFFF;
+	border-right: 1px solid #848284;
+	border-bottom: 1px solid #848284;
+	border-left: 1px solid #FFFFFF;
+}
+#cws_edit li.cws_SmileOn {
+	font: 9pt MS Sans Serif;
+	border:1px inset;
+	background-color: #FFD988;
+	cursor: pointer;
+	
+
+}
+#cws_edit li.cws_SmileOff {
+	font: 9pt MS Sans Serif;
+}
+TD {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 9pt; FONT-FAMILY:   
+}

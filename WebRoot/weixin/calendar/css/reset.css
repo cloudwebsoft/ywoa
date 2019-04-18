@@ -1,0 +1,295 @@
+﻿html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,
+address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,
+var,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+html,body {
+	font-family: "Microsoft YaHei", Arial, Helvetica, sans-serif;
+	color: #333;
+	font: 14px/1.5;
+}
+body{
+	font-size: 12px;
+}
+h1,h2,h3,h4,h5,h6 {
+	font-size: 100%;
+}
+
+article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section {
+	display: block;
+}
+
+input,textarea{
+	margin: 0;
+	padding: 0;
+	outline: 0;
+	-webkit-appearance: none;
+	border-radius: 0;
+	font-family: "Microsoft YaHei";
+}
+
+a,a:link,a:visited,a:hover,a:active {
+	text-decoration: none;
+	color: #333;
+	-webkit-tap-highlight-color: transparent;
+}
+
+table {
+	border-collapse: separate;
+	border-spacing: 0;
+}
+
+ol,ul {
+	list-style: none;
+}
+
+hr {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: #000;
+	background-color: #000;
+	height: 1px
+}
+
+.Absolute-Center {
+	margin: auto;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+}
+
+.clear {
+	clear: both;
+	height: 0px;
+	font-size: 0px;
+	line-height: 0px;
+	overflow: hidden;
+}
+
+.clearfix:after {
+	content: "";
+	display: block;
+	height: 0;
+	clear: both;
+	visibility: hidden;
+}
+.clearfix:after {
+	clear: both;
+}
+.clearfix {
+	zoom: 1;
+}
+
+/* IE 6/7 */
+.fl {
+	float: left;
+}
+.fr {
+	float: right;
+}
+
+/*单行文本省略号*/
+.word {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.words2 {
+	display: -webkit-box;
+	display: box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	word-break: break-all;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+/*多行文本省略号*/
+.words3 {
+	display: -webkit-box;
+	display: box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	word-break: break-all;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+}
+
+/*垂直居中,容器设置宽高*/
+.ycenter {
+	align-items: center;
+	display: -webkit-flex;
+}
+/*水平居中,容器设置宽高*/
+.xcenter {
+	justify-content: center;
+	display: -webkit-flex;
+}
+/*盒子布局*/
+.flexbox{
+	display: -webkit-box; 
+    display: -moz-box; 
+    display: -ms-flexbox; 
+    display: -webkit-flex; 
+    display: flex;
+}
+/*弹性布局水平垂直居中 兼容性高*/
+.xycenterbox{
+	display: -webkit-box; /* 老版本语法: Safari, iOS, Android browser, older WebKit browsers. */
+    display: -moz-box; /* 老版本语法: Firefox (buggy) */
+    display: -ms-flexbox; /* 混合版本语法: IE 10 */
+    display: -webkit-flex; /* 新版本语法: Chrome 21+ */
+    display: flex; /* 新版本语法: Opera 12.1, Firefox 22+ */
+	-webkit-box-pack: center;
+    -moz-justify-content: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -moz-align-items: center;
+    -webkit-align-items: center;
+    align-items: center;
+}
+/*弹性布局水平居中 兼容性高*/
+.xcenterbox{
+	display: -webkit-box; /* 老版本语法: Safari, iOS, Android browser, older WebKit browsers. */
+    display: -moz-box; /* 老版本语法: Firefox (buggy) */
+    display: -ms-flexbox; /* 混合版本语法: IE 10 */
+    display: -webkit-flex; /* 新版本语法: Chrome 21+ */
+    display: flex; /* 新版本语法: Opera 12.1, Firefox 22+ */
+    -webkit-box-pack: center;
+    -moz-justify-content: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+}
+/*弹性布局垂直居中 兼容性高*/
+.ycenterbox{
+	display: -webkit-box; /* 老版本语法: Safari, iOS, Android browser, older WebKit browsers. */
+    display: -moz-box; /* 老版本语法: Firefox (buggy) */
+    display: -ms-flexbox; /* 混合版本语法: IE 10 */
+    display: -webkit-flex; /* 新版本语法: Chrome 21+ */
+    display: flex; /* 新版本语法: Opera 12.1, Firefox 22+ */
+    -webkit-box-align: center;
+    -moz-align-items: center;
+    -webkit-align-items: center;
+    align-items: center;
+}
+
+/*0.5px底边框*/
+.bottomLine{
+	background: -webkit-linear-gradient(top,transparent 50%,#ebebeb 50%) center bottom no-repeat;
+	background: -moz-linear-gradient(top, transparent 50%, #ebebeb 50%) center bottom no-repeat;
+	background: -ms-linear-gradient(top, transparent 50%, #ebebeb 50%) center bottom no-repeat;
+	background-size: 100% 1px;
+}
+
+/*设置隐藏*/
+.none {
+	display: none;
+}
+.hidden {
+	visibility: hidden;
+}
+
+/*加载更多动画*/
+.pullUp {
+	height: 40px;
+	line-height: 40px;
+	font-size: 14px;
+	text-align: center;
+	color: #b3b3b3;
+}
+.pullUp .pullUpIcon {
+	display: inline-block;
+	vertical-align: top;
+	width: 16px;
+	height: 16px;
+	margin: 12px 9px 0 0;
+	background: url(http://img.learn.16q.cn/home/2/new/refresh.png) no-repeat;
+	background-size: contain;
+	-webkit-transform: rotate(0deg) translateZ(0);
+	-webkit-transition-duration: 0ms;
+	-webkit-animation-name: loading;
+	-webkit-animation-duration: 2s;
+	-webkit-animation-iteration-count: infinite;
+	-webkit-animation-timing-function: linear;
+}
+@-webkit-keyframes loading {
+	from {
+		-webkit-transform: rotate(0deg) translateZ(0);
+	}
+	to {
+		-webkit-transform: rotate(360deg) translateZ(0);
+	}
+}
+
+/*媒体查询*/
+@media screen and (min-width: 212px) {
+	html {
+		font-size: 28.4px
+	}
+}
+@media screen and (min-width: 319px) {
+	html {
+		font-size: 42.67px
+	}
+}
+@media screen and (min-width: 359px) {
+	html {
+		font-size: 48px
+	}
+}
+@media screen and (min-width: 374px) {
+	html {
+		font-size: 50px
+	}
+}
+@media screen and (min-width: 383px) {
+	html {
+		font-size: 51.2px
+	}
+}
+@media screen and (min-width: 399px) {
+	html {
+		font-size: 53.2px
+	}
+}
+@media screen and (min-width: 414px) {
+	html {
+		font-size: 55.2px
+	}
+}
+@media screen and (min-width: 423px) {
+	html {
+		font-size: 56.53px
+	}
+}
+@media screen and (min-width: 479px) {
+	html {
+		font-size: 64px
+	}
+}
+@media screen and (min-width: 539px) {
+	html {
+		font-size: 72px
+	}
+}
+@media screen and (min-width: 639px) {
+	html {
+		font-size: 85.33px
+	}
+}
+@media only screen and (min-width: 750px) {
+	.wrapMax {
+		width: 640px;
+		margin: 0 auto;
+	}
+}

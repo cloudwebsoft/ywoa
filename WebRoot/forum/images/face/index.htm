@@ -1,0 +1,39 @@
+<html><head><title>头像列表</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<LINK href=../../images/main.css rel=stylesheet></head><div align="center"><center>
+<br></center>
+<script language=javascript>
+<!--
+function changeface(face)
+{
+	window.opener.document.frmAnnounce.userface.value = face;
+	window.opener.showimage();
+}
+//-->
+</script>
+<table border="1" width=80% cellpadding="1" cellspacing="1" bordercolorlight=#333333 bordercolordark=#f8f8f8><center>
+<tr><td align=center>社区所有头像列表</td><tr><td valign="center">
+<table border="1" width="100%" cellspacing="1" cellpadding="1" bordercolorlight=#999999 bordercolordark=#f8f8f8>
+<tbody>
+<script language=javascript>
+<!--
+    var	i,k = 0
+	for (i=0; i<=199; i++)
+	{
+		if (k==0)
+			document.write("<tr align=center>")
+		if (i==0)
+			document.write("<td><img style='cursor:hand' alt='点击选定' language=javascript onclick=changeface('') src=face.gif width=32 height=32></td>")		
+		else
+			document.write("<td><img style='cursor:hand' alt='点击选定' language=javascript onclick=changeface('"+i+"') src=face"+i+".gif width=32 height=32></td>")
+		k++;
+		if (k==10)
+			document.write("</tr>")
+		if (k==10) k=0;
+	}
+//-->
+</script>
+</tbody>
+</table></center>
+</table>
+<p align=center>点击选定</p>
+</div></body>

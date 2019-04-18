@@ -1,0 +1,69 @@
+@charset "utf-8";
+@import url("../../common/common.css");
+div {word-break: break-all; word-wrap:break-word;
+}
+
+/*权限中心一级样式*/
+.priv_center_layout {
+	padding-top: 20px;
+	padding-left: 20px;
+}
+.priv_center_boxnormal {
+	height: 90px;
+	width: 235px;
+	float: left;
+	margin-right: 25px;
+	margin-bottom: 20px;
+	position: relative;
+	background-color: #FFF;
+	border: 1px solid #d5d5d5;
+	line-height: 25px;
+}
+.priv_center_boxsel {
+	height: 90px;
+	width: 235px;
+	float: left;
+	margin-right: 25px;
+	margin-bottom: 20px;
+	position: relative;
+	background-color: #f2f7ff;
+	border: 1px solid #0eabf7;
+	line-height: 25px;
+	cursor:pointer;
+}
+
+.priv_center_box1_icon {
+	position: absolute;
+	height: 50px;
+	width: 50px;
+	left: 18px;
+	top: 17px;
+}
+.priv_center_box1_text {
+	position: absolute;
+	width: 147px;
+	top: 10px;
+	right: 10px;
+}
+
+.priv_center_blue18 a:link {
+	font-weight: bold;
+}
+
+.priv_center_blue18 a:hover {
+	font-weight: bold;
+}
+
+.priv_center_blue18 a:visited {
+	font-weight: bold;
+}
+
+.priv_center_grey {
+	color: #8A8A8A;
+}
+
+.priv_center_font16 {
+	font-size: 16px;
+	font-weight: bold;
+	color: #3595EC;
+}

@@ -1,0 +1,247 @@
+@charset "utf-8";
+/* CSS Document */
+*{ margin:0; padding:0;}
+html,body{
+	overflow:hidden;
+	height:100%;
+	width:100%;
+	font-size:12px;
+	}
+#wallpaper{
+	position:absolute;
+	overflow:hidden;
+	z-index:-10;
+	width:100%;
+	height:100%;
+	}
+#desktopWrapper{
+	position:absolute;
+	z-index:10;
+	width:100%;
+	height:100%;
+	left:0;
+	top:0
+	}
+#desktopsContainer{
+	    position: absolute;
+		left:0;
+		top:0;
+		z-index:50;
+ 		}	
+#desktopContainer{
+		position:absolute;
+		background:url(../images/transparent.gif) repeat;
+		left:0;
+		top:0;
+		}			
+.desktop{
+	width:100%;
+	height:100%;
+	position:absolute;
+	background:url(../images/bg.png) repeat;
+	left:2000px;
+	top:0;
+	}
+.innerDesktop{
+	width:100%;
+	height:100%;
+	position:relative;
+	}	 
+.outerDesktop{
+	width:100%;
+	height:100%;
+	position:relative;
+	overflow:hidden;
+	}	
+.desktopIcon{
+	width:86px;
+	height:88px;
+	cursor:pointer;
+	text-align:center;
+	float:left;
+	margin:60px 0 0 80px;
+	}
+
+.desktopIcon span {
+	display:block;
+}
+.desktopIcon .icon {
+	width:50px;
+	height:50px;
+	margin:5px auto;
+	outline:none;
+	-moz-user-select:none;
+	position:relative;
+}
+
+.desktopIcon .icon .txInfo{
+	width:30px;
+	height:32px;
+	text-align:center;
+	line-height:28px;
+	color:#fff;
+	font-size:12px;
+	position:absolute;
+	right:-8px;
+	top:-8px;
+	background:url(../images/tixing.png) no-repeat center center;
+	font-family:Arial, Helvetica, sans-serif
+	}
+
+.desktopIcon .icon img{
+	width:50px;
+	height:50px;
+	}
+.desktopIcon .text {
+	display:inline-block;
+	width:auto;
+	height:22px;
+	line-height:22px;
+	text-align:center;
+	color:#fff;
+	background:url(../images/iconTextbg.png) no-repeat left center;
+	position:relative;
+	padding-left:10px;
+	margin-right:10px;
+	outline:none;
+	-moz-user-select:none;
+	font-size:12px
+}
+.desktopIcon s{
+	display:inline-block;
+	width:10px;
+	height:22px;
+	position:absolute;
+	right:-10px;
+	top:0;
+	background:url(../images/iconTextbg_right.png) left center no-repeat;
+	}
+.desktopIcon .text span{
+	width:100%;
+	height:22px;
+	overflow:hidden;
+	}	
+.desktopIconOver {
+	background:url(../images/icon_over.png) no-repeat center center;
+}
+
+#bottomBarBgTask{
+	position:absolute;
+	height:60px;
+	width:100%;
+	left:0;
+	bottom:0;
+	z-index:45;
+	background:url(../images/task_b.png) repeat-x left bottom;
+	}	
+#taskBlock{
+	position:absolute;
+	height:60px;
+	right:0;
+	bottom:0;
+	z-index:90;
+ 	}	
+.taskTab{
+	width:112px;
+	height:60px;
+ 	float:right;
+	}
+#taskOuterBlock{
+	float:right;
+	overflow:hidden;
+	height:60px;
+	position:relative;
+	}	
+#taskInnnerBlock{
+    float: right;
+    height: 100%;
+	margin-right:0;
+	}	
+.taskItem{
+	display:block;
+	width:112px;
+	height:60px;
+	background:url(../images/bg_task_nor.png) no-repeat left 0;
+	outline:none
+	}
+.taskItem:hover,.taskCurrent .taskItem:hover{
+	background:url(../images/bg_task_over.png) no-repeat left 0;
+	}
+.taskCurrent .taskItem {
+    background: url("../images/bg_task_cur.png") no-repeat scroll 0 0 transparent;
+}	
+.tabIcon{
+	float:left;
+	width:40px;
+	height:60px;
+	line-height:60px;
+	}	
+.tabIcon img{
+	width:32px;
+	height:32px;
+	margin-top:14px;
+	margin-left:10px;
+	}	
+.tabTxt{
+	margin-left:50px;
+	margin-right:6px;
+	line-height:60px;
+	font-size:12px;
+	color:#FFF;
+	}	
+.tabTxt span{
+	display:inline-block;
+	overflow:hidden;
+	 }	
+
+.taskPreBox {
+    background: url("../images/bg_task_page_l.png") no-repeat scroll 0 0 transparent;
+    display: none;
+    float: right;
+    height: 100%;
+    margin-right: 2px;
+    overflow: hidden;
+    width: 54px;
+ }
+
+.taskPre {
+    background: url("../images/bg_task_page.png") no-repeat scroll -15px -50px transparent;
+    display: block;
+    height: 35px;
+    margin-left: 17px;
+    margin-top: 20px;
+    width: 20px;
+	outline:none
+}
+
+.taskPre:hover {
+    background-position: -15px -2px;
+}
+
+.taskNextBox {
+    background: url("../images/bg_task_page_r.png") no-repeat scroll 0 0 transparent;
+    display: none;
+    float: right;
+    height: 100%;
+    margin-left: 2px;
+    overflow: hidden;
+    width: 54px;
+}
+.taskNext {
+    background: url("../images/bg_task_page.png") no-repeat scroll -65px -50px transparent;
+    display: block;
+    height: 35px;
+    margin-left: 15px;
+    margin-top: 20px;
+    width: 45px;
+	outline:none
+}
+
+.taskNext:hover {
+    background-position: -65px -2px;
+}
+
+#ascrail2000{
+	z-index:-1;
+	}
+	

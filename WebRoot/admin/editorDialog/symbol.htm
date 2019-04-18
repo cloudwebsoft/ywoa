@@ -1,0 +1,714 @@
+<HTML><HEAD><TITLE>插入特殊符号</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=gb2312">
+<STYLE type=text/css>BODY {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+A {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TABLE {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+DIV {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SPAN {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TD {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TH {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+INPUT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SELECT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+BODY {
+	PADDING-RIGHT: 5px; PADDING-LEFT: 5px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px
+}
+TABLE.content {
+	WIDTH: 100%; BACKGROUND-COLOR: #000000
+}
+TABLE.content TD {
+	VERTICAL-ALIGN: middle; WIDTH: 18px; CURSOR: hand; HEIGHT: 18px; BACKGROUND-COLOR: #ffffff; TEXT-ALIGN: center
+}
+.card {
+	CURSOR: hand; BACKGROUND-COLOR: #3a6ea5; TEXT-ALIGN: center
+}
+</STYLE>
+<script language="javascript" event="onerror(msg, url, line)" for="window">
+return true ;	 // 隐藏错误
+</script>
+
+<SCRIPT language=JavaScript>
+
+// 选项卡点击事件
+function cardClick(cardID){
+	var obj;
+	for (var i=1;i<7;i++){
+		obj=document.all("card"+i);
+		obj.style.backgroundColor="#3A6EA5";
+		obj.style.color="#FFFFFF";
+	}
+	obj=document.all("card"+cardID);
+	obj.style.backgroundColor="#FFFFFF";
+	obj.style.color="#3A6EA5";
+
+	for (var i=1;i<7;i++){
+		obj=document.all("content"+i);
+		obj.style.display="none";
+	}
+	obj=document.all("content"+cardID);
+	obj.style.display="";
+}
+
+// 预览
+function SymbolOver(){
+	var el=event.srcElement;
+	preview.innerHTML=el.innerHTML;
+}
+
+// 点击返回
+function SymbolClick(){
+	var el=event.srcElement;
+	if (el.innerHTML=="&nbsp;") return;
+	dialogArguments.insertHTML(el.innerHTML);
+	window.returnValue = null;
+	window.close();
+}
+
+</SCRIPT>
+
+<META content="MSHTML 6.00.3790.118" name=GENERATOR></HEAD>
+<BODY bgColor=menu>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+  <TBODY>
+  <TR vAlign=top>
+    <TD>
+      <TABLE cellSpacing=0 cellPadding=3 border=0>
+        <TBODY>
+        <TR align=middle>
+          <TD class=card id=card1 onclick=cardClick(1)>特殊</TD>
+          <TD width=2></TD>
+          <TD class=card id=card2 onclick=cardClick(2)>标点</TD>
+          <TD width=2></TD>
+          <TD class=card id=card3 onclick=cardClick(3)>数学</TD>
+          <TD width=2></TD>
+          <TD class=card id=card4 onclick=cardClick(4)>单位</TD>
+          <TD width=2></TD>
+          <TD class=card id=card5 onclick=cardClick(5)>数字</TD>
+          <TD width=2></TD>
+          <TD class=card id=card6 onclick=cardClick(6)>拼音</TD></TR>
+        <TR>
+          <TD vAlign=center align=middle bgColor=#ffffff colSpan=11>
+            <TABLE class=content id=content1 cellSpacing=1 cellPadding=3 
+            border=0>
+              <TBODY>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＃</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＆</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＊</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>※</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>§</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〃</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>№</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〓</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>○</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>●</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>△</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>▲</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>◎</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>☆</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>★</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>◇</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>◆</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>□</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>■</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>▽</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>▼</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㊣</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>℅</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ˉ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>￣</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＿</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹉</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹊</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹍</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹎</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹋</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹌</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹟</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹡</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>♀</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>♂</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⊕</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⊙</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>↑</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>↓</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>←</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>→</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>↖</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>↗</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>↙</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>↘</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∣</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>／</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＼</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∕</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹨</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>�</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&yen;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&pound;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&#8482;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&reg;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&copy;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+              onclick=SymbolClick()>&nbsp;</TD></TR></TBODY></TABLE>
+            <TABLE class=content id=content2 cellSpacing=1 cellPadding=3 
+            border=0>
+              <TBODY>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>，</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>、</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>。</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>．</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>；</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>：</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>？</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>！</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︰</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>…</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>‥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>′</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>‵</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>々</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>～</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>‖</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ˇ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ˉ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹐</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹑</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹒</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>·</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹔</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹕</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹖</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹗</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>｜</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>-</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︱</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>-</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︳</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︴</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹏</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>（</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>）</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︵</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︶</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>｛</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>｝</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︷</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︸</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〔</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〕</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︹</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︺</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>【</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>】</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︻</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︼</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>《</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>》</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︽</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︾</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〈</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〉</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>︿</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹀</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>「</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>」</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹁</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹂</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>『</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>』</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹃</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹄</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹙</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹚</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹛</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹜</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹝</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹞</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>'</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>'</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>"</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>"</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〝</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〞</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ˋ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ˊ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+              onclick=SymbolClick()>&nbsp;</TD></TR></TBODY></TABLE>
+            <TABLE class=content id=content3 cellSpacing=1 cellPadding=3 
+            border=0>
+              <TBODY>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≈</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≡</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＝</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≤</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＜</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＞</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≮</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≯</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∷</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>±</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＋</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>－</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>×</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>÷</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>／</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∫</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∮</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∝</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∞</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∧</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∨</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∑</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∏</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∪</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∩</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∈</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∵</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∴</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⊥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⌒</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⊙</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≌</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∽</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>√</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≦</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≧</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≒</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>≡</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹢</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹣</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹤</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹦</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>～</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>∟</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⊿</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㏒</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㏑</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+              onclick=SymbolClick()>&nbsp;</TD></TR></TBODY></TABLE>
+            <TABLE class=content id=content4 cellSpacing=1 cellPadding=3 
+            border=0>
+              <TBODY>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>°</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>′</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>″</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＄</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>￥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>〒</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>￠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>￡</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>％</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>＠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>℃</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>℉</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹩</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹪</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>‰</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>﹫</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㏕</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㎜</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㎝</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㎞</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㏎</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㎡</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㎎</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㎏</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㏄</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>°</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>○</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>¤</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+              onclick=SymbolClick()>&nbsp;</TD></TR></TBODY></TABLE>
+            <TABLE class=content id=content5 cellSpacing=1 cellPadding=3 
+            border=0>
+              <TBODY>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅰ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅱ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅲ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅳ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅴ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅵ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅶ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅷ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅸ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ⅹ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅰ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅱ</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅲ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅳ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅴ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅵ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅶ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅷ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅸ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅹ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅺ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>Ⅻ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒈</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒉</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒊</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒋</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒌</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒍</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒎</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒏</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒐</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒑</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒒</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒓</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒔</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒕</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒖</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒗</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒘</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒙</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒚</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒛</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑴</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑵</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑶</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑷</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑸</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑹</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑺</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑻</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑼</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑽</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑾</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑿</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒀</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒁</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒂</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒃</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒄</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒅</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒆</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⒇</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>①</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>②</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>③</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>④</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑤</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑦</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑧</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑨</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>⑩</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈠</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈡</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈢</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈣</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈤</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈥</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈦</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈧</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈨</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>㈩</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+              onclick=SymbolClick()>&nbsp;</TD></TR></TBODY></TABLE>
+            <TABLE class=content id=content6 cellSpacing=1 cellPadding=3 
+            border=0>
+              <TBODY>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ā</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>á</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǎ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>à</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ō</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ó</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǒ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ò</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ē</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>é</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ě</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>è</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ī</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>í</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǐ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ì</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ū</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ú</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǔ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ù</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǖ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǘ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǚ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǜ</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ü</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ê</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ɑ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()></TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ń</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ň</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ǹ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>ɡ</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+onclick=SymbolClick()>&nbsp;</TD></TR>
+              <TR>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() onclick=SymbolClick()>&nbsp;</TD>
+                <TD onmouseover=SymbolOver() 
+              onclick=SymbolClick()>&nbsp;</TD></TR></TBODY></TABLE></TD></TR></TBODY></TABLE></TD>
+    <TD width=10></TD>
+    <TD>
+      <TABLE cellSpacing=0 cellPadding=0 border=0>
+        <TBODY>
+        <TR>
+          <TD height=25></TD></TR>
+        <TR>
+          <TD align=middle>预览</TD></TR>
+        <TR>
+          <TD height=10></TD></TR>
+        <TR>
+          <TD vAlign=center align=middle>
+            <TABLE cellSpacing=1 cellPadding=0 bgColor=#000000 border=0>
+              <TBODY>
+              <TR>
+                <TD id=preview style="FONT-SIZE: 32px; COLOR: #0000ff" 
+                vAlign=center align=middle width=50 bgColor=#ffffff 
+                height=50></TD></TR></TBODY></TABLE></TD></TR>
+        <TR>
+          <TD height=52></TD></TR>
+        <TR>
+          <TD align=middle><INPUT onclick=window.close(); type=button value="  取消  "></TD></TR></TBODY></TABLE></TD></TR></TBODY></TABLE>
+<SCRIPT language=javascript>
+cardClick(1);
+</SCRIPT>
+</BODY></HTML>

@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+<!-- 
+	<plugin code="sms">
+		<author>Fan Gang-feng</author>
+		<classUnit>com.redmoon.oa.fileark.plugin.sms.SMSUnit</classUnit>		
+		<version>1.0</version>
+		<jar>sms.jar</jar>
+		<resource>res.cms.plugin.sms</resource>
+		<type>dir</type>
+		<adminEntrance></adminEntrance>
+		<page>
+			<add>fileark/plugin/sms/add.jsp</add>
+			<edit>fileark/plugin/sms/edit.jsp</edit>
+			<view>doc_show.jsp</view>
+		</page>		
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author>Fan Gang-feng</author>
+				<path>skin/default</path>
+			</skin>
+		</skins>
+	</plugin>
+ -->	
+	<plugin code="wiki">
+		<author></author>
+		<classUnit>cn.js.fan.module.cms.plugin.wiki.WikiUnit</classUnit>		
+		<version>1.0</version>
+		<jar></jar>
+		<resource>res.cms.plugin.wiki</resource>
+		<type>dir</type>
+		<adminEntrance>plugin/wiki/admin/wiki_frame.jsp</adminEntrance>
+		<page>
+			<add>cms/plugin/wiki/add.jsp</add>
+			<edit>cms/plugin/wiki/edit.jsp</edit>
+			<view>wiki_show.jsp</view>
+		</page>
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author></author>
+				<path>skin/default</path>
+			</skin>
+		</skins>
+	</plugin>	
+		
+</config>

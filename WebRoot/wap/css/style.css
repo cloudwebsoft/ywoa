@@ -1,0 +1,110 @@
+body,h1,h2,h3,h4,h5,h6,hr,p,blockquote,dl,dt,dd,ul,ol,li,pre,form,fieldset,legend,button,input,textarea,th,td{margin:0;padding:0; list-style:none;font-family: "微软雅黑"; -webkit-appearance: none;}
+a{color:#2b2b2b; text-decoration:none}
+body{ font-size:12px; background-color: #323542;}
+img { border:0px;}
+
+.whole{
+	width:100%;
+	overflow:hidden;
+	margin:0 auto;
+}
+.title{
+	width:100%;
+	height:auto;
+	overflow:hidden;
+	font-size:36px;
+	text-align:center;
+	line-height:200px;
+	color:#fff;
+}
+.coordinates-icon{
+	width:400px;
+	margin:20px auto;
+	position:relative;
+}
+.coordinates{
+	width:144px;
+	height:190px;
+	overflow:hidden;
+	position:absolute;
+	z-index:8;
+	margin-left:134px;
+	top:-60px;
+}
+.coordinates img{
+	width:100%;
+	height:auto;
+}
+
+.login-form{
+	width:458px;
+	height:auto;
+	margin:90px auto 20px auto;
+}
+.common-div{
+	width:100%;
+	height:82px;
+	overflow:hidden;
+	border-radius:4px;
+	-webkit-border-radius:4px;
+	margin-bottom:40px;
+}
+.user-name,.user-pasw{
+	background-color:rgba(255,255,255,0.1);
+}
+.common-div >.common-icon{
+	float:left;
+	width:44px;
+	height:44px;
+	overflow:hidden;
+	margin:19px;
+}
+.common-div >.common-icon img{
+	width:24px;
+	height:auto;
+}
+.common-div >input{
+	float:left;
+	width:360px;
+	height:44px;
+	margin:19px 8px;
+	background-color:transparent;
+	border:none;
+	outline:none;
+	font-size:26px;
+	color:#fff;
+}
+.login-btn{
+	background-color:#09C0F8;
+	color:#fff;
+	font-size:28px;
+	text-align:center;
+	line-height:82px;
+	cursor: pointer;	
+}
+.forgets{
+	width:458px;
+	height:auto;
+	margin:0 auto;
+	margin-bottom: 20px;
+	text-align:left;
+}
+.forgets >img{
+	vertical-align:middle;
+}
+.forgets >a{
+	color:#fff;
+	opacity:0.2;
+	font-size:24px;
+}
+
+.img-autologin {
+	cursor:pointer;
+	margin-right:10px;
+	margin-bottom:10px;
+}
+
+/***layer css***/
+.layui-m-layercont,.layui-m-layerbtn >span{
+	font-size:24px !important;
+}

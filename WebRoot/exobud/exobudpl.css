@@ -1,0 +1,23 @@
+@charset "utf-8";
+<!-- /* ExoBUD MP(II) 播放清单样式表 */
+
+a,a:link  { color: #A0B0FF; text-decoration: none; }
+a:visited { color: #CCCCCC; text-decoration: none; }
+a:active  { color: #A0B0F0; text-decoration: none; }
+a:hover   { color: orange;  text-decoration: none; border: 1px dotted white; }
+
+body      { margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px;
+            background-image: url(./img/musicbg.gif);
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            cursor: crosshair; }
+
+body      { font-family: 'Tahoma','Verdana','Arial'; font-size: 9pt; color: silver; }
+
+td        { font-family: 'Tahoma','Verdana','Arial'; font-size: 9pt; color: #90A0B0; }
+
+/* ８点迷你中文字型，请在有需要时，以 <span lang=zh-tw> 语法一起使用 */
+/* .minichi  { font-family: '新宋体','PMingLiU'; font-size: 8pt; } */
+
+//-->

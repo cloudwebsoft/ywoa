@@ -1,0 +1,57 @@
+BODY {
+	FONT-SIZE: 9pt; SCROLLBAR-HIGHLIGHT-COLOR: buttonface; CURSOR: default; SCROLLBAR-SHADOW-COLOR: buttonface; SCROLLBAR-3DLIGHT-COLOR: buttonhighlight; SCROLLBAR-TRACK-COLOR: #eeeeee; FONT-FAMILY: Tahoma; SCROLLBAR-DARKSHADOW-COLOR: buttonshadow
+}
+A:visited {
+	TEXT-DECORATION: none
+}
+A:active {
+	TEXT-DECORATION: none
+}
+A:hover {
+	TEXT-DECORATION: underline overline
+}
+A:link {
+	TEXT-DECORATION: none
+}
+A.normal:hover {
+	TEXT-DECORATION: none
+}
+.smalltext {
+	COLOR: #000000
+}
+.text {
+	COLOR: #000000
+}
+.subject {
+	
+}
+DIV {
+	FONT-SIZE: 9pt
+}
+FORM {
+	FONT-SIZE: 9pt
+}
+P {
+	FONT-SIZE: 9pt
+}
+TD {
+	FONT-SIZE: 9pt
+}
+SELECT {
+	BORDER-RIGHT: #cccccc 0px double; BORDER-TOP: #cccccc 0px double; FONT-SIZE: 9pt; BORDER-LEFT: #cccccc 0px double; COLOR: #000000; BORDER-BOTTOM: #cccccc 0px double; BACKGROUND-COLOR: #ffffff
+}
+INPUT {
+	BORDER-RIGHT: #cccccc 1px double; BORDER-TOP: #cccccc 1px double; FONT-SIZE: 9pt; BORDER-LEFT: #cccccc 1px double; COLOR: #000000; BORDER-BOTTOM: #cccccc 1px double; FONT-FAMILY: Tahoma; HEIGHT: 20px; BACKGROUND-COLOR: #ffffff
+}
+.input1 {
+	BORDER-RIGHT: #cccccc 0px double; BORDER-TOP: #cccccc 0px double; BORDER-LEFT: #cccccc 0px double; WIDTH: 13px; BORDER-BOTTOM: #cccccc 0px double; HEIGHT: 13px
+}
+TEXTAREA {
+	BORDER-RIGHT: #cccccc 1px double; BORDER-TOP: #cccccc 1px double; FONT-SIZE: 9pt; BORDER-LEFT: #cccccc 1px double; COLOR: #000000; BORDER-BOTTOM: #cccccc 1px double; FONT-FAMILY: Tahoma; BACKGROUND-COLOR: #ffffff
+}
+OPTION {
+	FONT-SIZE: 9pt; COLOR: #51485f; BACKGROUND-COLOR: #f3f3f3
+}
+TABLE.quote {
+	border: thin dashed;
+}

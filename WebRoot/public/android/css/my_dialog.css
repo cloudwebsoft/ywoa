@@ -1,0 +1,100 @@
+body{
+	font-family: "Î¢ÈíÑÅºÚ";
+}
+
+.my-confirm-box {
+	background-color: #E2E2E2;
+	-webkit-box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.4);
+	-moz-border-radius: 10px;
+	-moz-box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.4);
+	-webkit-border-radius: 10px;
+	position: absolute;
+	z-index: 5000;
+}
+
+.my-confirm-box .my-confirm-title {
+	width: 100%;
+	text-align: center;
+	font-size: 1.2rem;
+	font-size: 1.2em\9;
+	margin: 1.5rem 0 1rem;
+	margin: 1.5em 0 1em\9;
+}
+
+.my-confirm-box .my-confirm-content {
+	text-align: left;
+	font-size: 1rem;
+	font-size: 1em\9;
+	margin: 0 1rem 4.5rem;
+	margin: 0 1em 4.5em\9;
+}
+
+.my-confirm-box .my-confirm-button-wrap {}
+
+.my-confirm-box button {
+	background: transparent;
+	border: none;
+	height: 3rem;
+	height: 3em\9;
+	font-size: 1rem;
+	font-size: 1em\9;
+	width: 50%;
+	position: absolute;
+	bottom: 0;
+	display: block;
+	text-align: center;
+	border-top: 1px solid #B4B4B4;
+	cursor: pointer;
+	color: #1678E5;
+}
+
+.my-confirm-box .my-confirm-button-wrap button.my-confirm-btn-right {
+	right: 0;
+	border-radius: 0 0 10px 0;
+}
+
+.my-confirm-box .my-confirm-button-wrap button.my-confirm-btn-left {
+	left: 0;
+	border-right: 1px solid #B4B4B4;
+	border-radius: 0 0 0 10px;
+}
+
+.my-confirm-box .my-confirm-button-wrap button:focus,
+.my-confirm-box .my-confirm-button-wrap button:hover {
+	font-weight: bold;
+	background: #EFEFEF;
+}
+
+.my-confirm-box .my-confirm-button-wrap button:active {
+	background: #D6D6D6;
+}
+
+.my-confirm-box .my-confirm-button-wrap button.my-confirm-btn-full-width {
+	width: 100%;
+	border-radius: 0 0 10px 10px;
+}
+
+.my-loading-box {
+	background-color: #5e5e5e;
+	-moz-border-radius: 10px;
+	color: #000;
+	-webkit-border-radius: 10px;
+	position: absolute;
+	z-index: 5000;
+	text-align: center;
+	min-width: 10em;
+	padding: 15px;
+	
+}
+
+.my-loading-box .my-loading-img {
+	background-image: url('loading.gif');
+	height: 31px;
+	width: 31px;
+	margin: 0 auto;
+}
+
+.my-loading-box .my-loading-title {
+	font-size: 1rem\9;
+	padding-top: 5px;
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <isUse desc="是否启用">false</isUse>
+    <url desc="网站路径">http://localhost:8080/cwbbs</url>
+    <key desc="加密密钥，须与网站配置config_forum.xml中的一致">cloudwebcloudwebcloudweb</key>
+</config>
+

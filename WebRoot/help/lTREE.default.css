@@ -1,0 +1,71 @@
+A {
+	TEXT-DECORATION: none
+}
+A {
+	COLOR: #000
+}
+A:visited {
+	COLOR: #000
+}
+BODY {
+	PADDING:20px 0px 20px 0px; MARGIN: 0px; FONT: 12px tahoma,宋体,sans-serif;
+}
+H4 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; FONT-SIZE: 18px; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px
+}
+P {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 18px; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px
+}
+P A {
+	COLOR: #00f
+}
+P A:visited {
+	COLOR: #00f
+}
+.lTREEMenu DL {
+	CLEAR: both; PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px 0px 0px 17px; PADDING-TOP: 0px
+}
+.lTREEMenu A {
+	BACKGROUND: none transparent scroll repeat 0% 0%
+}
+.lTREEMenu DD {
+	CLEAR: both; PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px; LIST-STYLE-TYPE: none
+}
+.lTREEMenu DD BUTTON {
+	BACKGROUND: url(images/folder-opened.gif) no-repeat 0px 1px; VERTICAL-ALIGN: middle; OVERFLOW: hidden; WIDTH: 35px; CURSOR: pointer; BORDER-TOP-STYLE: none; BORDER-RIGHT-STYLE: none; BORDER-LEFT-STYLE: none; HEIGHT: 18px; BORDER-BOTTOM-STYLE: none;
+	/*展开*/
+}
+.lTREEMenu DD.folderClose DL {
+	DISPLAY: none
+}
+.lTREEMenu DD.folderClose BUTTON {
+	BACKGROUND-IMAGE: url(images/folder-closed.gif);
+	/*闭合*/
+}
+.lTREEMenu DD {
+	BACKGROUND: url(images/elbow-line.jpg) repeat-y 0px 0px
+	/*二级及以下竖线*/
+}
+.lTREEMenu DD.lastChild {
+	BACKGROUND: url(images/folder-last.jpg) no-repeat 0px 0px
+}
+.lTREEMenu DT {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 36px; BACKGROUND: url(images/leaf-normal.gif) no-repeat 0px 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; LINE-HEIGHT: 18px; PADDING-TOP: 0px;
+	/*叶*/
+}
+.lTREEMenu DT.lastChild {
+	BACKGROUND: url(images/leaf-last.jpg) no-repeat 0px 0px
+	/*最后一个叶*/
+}
+.lTREEMenu DD A {
+	FONT-WEIGHT: bold; COLOR: #0594e7
+}
+.lTREEMenu DD A:visited {
+	FONT-WEIGHT: bold; COLOR: #0594e7
+}
+.lTREEMenu DT A {
+	FONT-WEIGHT: normal; COLOR: #000
+}
+.lTREEMenu DT A:visited {
+	FONT-WEIGHT: normal; COLOR: #000
+}

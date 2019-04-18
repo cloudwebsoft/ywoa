@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>复选框</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" >
+    <meta name="generator" content="www.leipi.org" />
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="leipi.style.css">
+    <script type="text/javascript" src="../dialogs/internal.js"></script>
+    <script type="text/javascript">
+	function createElement(type, name) {     
+	    var element = null;     
+	    try {        
+	        element = document.createElement('<'+type+' name="'+name+'">');     
+	    } catch (e) {}   
+	    if(element==null) {     
+	        element = document.createElement(type);     
+	        element.name = name;     
+	    } 
+	    return element;     
+	}
+    </script>
+</head>
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+     <tr>
+        <th width="50%">控件字段&nbsp;<span class="label label-important">*</span></th>
+        <th width="50%"><span>控件名称</span><span class="label label-important">*</span></th>
+    </tr>
+    <tr>
+        <td><input id="orgname" placeholder="必填项" type="text"/> </td>
+        <td><input type="text" id="orgtitle" placeholder="必填项"></td>
+    </tr>
+    <tr class="table table-bordered table-striped table-hover">
+      <th><span>选中状态</span></th>
+      <th><span>组名</span></th>
+    </tr>
+    <tr>
+      <td>
+        <label class="radio"><input id="orgchecked0" checked="checked" name="checked" type="radio"> 不选中 </label>
+      <label class="radio"><input id="orgchecked1" name="checked" type="radio"> 选中 </label></td>
+      <td><input id="description" name="description" type="text"/></td>
+    </tr>
+    <tr class="table table-bordered table-striped table-hover">
+      <th><span>显示</span></th>
+      <th>&nbsp;</th>
+    </tr>
+    <tr>
+      <td>
+      <input id="present0" name="present0" type="text" style="width:50px" title="值为0时的显示" value="否"/>
+      /
+      <input id="present1" name="present1" type="text" style="width:50px" title="值为1时的显示" value="是"/>
+      </td>
+      <td>&nbsp;</td>
+    </tr>
+    </table>
+</div>
+<script type="text/javascript">
+var oNode = null,thePlugins = 'checkbox';
+window.onload = function() {
+    if( UE.plugins[thePlugins].editdom ){
+        oNode = UE.plugins[thePlugins].editdom;
+		
+        var gTitle=oNode.getAttribute('title').replace(/&quot;/g,"\"");
+        var gName=oNode.getAttribute('name').replace(/&quot;/g,"\"");
+        var gDesc = oNode.getAttribute("description");
+        if (gDesc!=null)
+        	gDesc = gDesc.replace(/&quot;/g,"\"");
+        var present = oNode.getAttribute("present");
+
+        $G('orgname').value = gName;
+        $G('orgtitle').value = gTitle;
+        $G('description').value = gDesc;
+		
+		$G('orgname').setAttribute("readonly", true);
+
+		if (present) {
+		    var ary = present.split("|");
+		    if (ary!=null && ary.length==2) {
+                $G('present0').value = ary[0];
+                $G('present1').value = ary[1];
+            }
+        }
+		
+        var checked = oNode.getAttribute('checked');
+		if (checked!=null) {
+			checked = true;
+		}
+        checked ? $G('orgchecked1').checked = true : $G('orgchecked0').checked = true;
+    }
+}
+dialog.oncancel = function () {
+    if( UE.plugins[thePlugins].editdom ) {
+        delete UE.plugins[thePlugins].editdom;
+    }
+};
+dialog.onok = function (){
+    var gName=$G('orgname').value.replace(/\"/g,"&quot;");
+    if(gName.value==''){
+        alert('请输入控件字段');
+        return false;
+    }
+	var gTitle=$G('orgtitle').value.replace(/\"/g,"&quot;");
+    if(gTitle.value==''){
+        alert('请输入控件名称');
+        return false;
+    }	
+    var gDesc = $G('description').value.replace(/\"/g,"&quot;");
+
+    if( !oNode ) {
+        try {
+            oNode = createElement('input',gName);
+            oNode.setAttribute('title',gTitle);
+            oNode.setAttribute('cwsPlugins',thePlugins );
+            oNode.setAttribute('type','checkbox');
+            if ($G('orgchecked1').checked) {
+                oNode.setAttribute('checked','');
+            } else {
+                oNode.checked = false;
+            }
+            oNode.setAttribute("description", gDesc);
+			
+			oNode.value = "1";
+			oNode.setAttribute("canNull", "1");
+			oNode.setAttribute("present", $G('present0').value + "|" + $G('present1').value);
+            editor.execCommand('insertHtml',oNode.outerHTML);
+            return true ;
+        } catch ( e ) {
+            try {
+                editor.execCommand('error');
+            } catch ( e ) {
+                alert('控件异常！');
+            }
+            return false;
+        }
+    } else {
+        oNode.setAttribute('title',gTitle);
+        if ($G('orgchecked1').checked) {
+            oNode.setAttribute('checked','');
+        } else {
+            oNode.removeAttribute('checked');
+        }
+        oNode.setAttribute('description', gDesc);
+        oNode.setAttribute("present", $G('present0').value + "|" + $G('present1').value);
+        delete UE.plugins[thePlugins].editdom;
+        return true;
+    }
+};
+</script>
+</body>
+</html>

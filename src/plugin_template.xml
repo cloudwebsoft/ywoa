@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<plugin code="list.doc">
+		<classUnit>cn.js.fan.module.cms.template.ListDocTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="list.subject">
+		<classUnit>cn.js.fan.module.cms.template.ListSubjectTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="doc">
+		<classUnit>cn.js.fan.module.cms.template.DocTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="Global">
+		<classUnit>cn.js.fan.module.cms.template.GlobalTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="request">
+		<classUnit>cn.js.fan.module.cms.template.RequestTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="imgDoc">
+		<classUnit>cn.js.fan.module.cms.plugin.img.ImgDocTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="softDoc">
+		<classUnit>cn.js.fan.module.cms.plugin.software.SoftwareDocTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="nav">
+		<classUnit>cn.js.fan.module.cms.template.NavTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="ad">
+		<classUnit>cn.js.fan.module.cms.ad.AdTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="desktop">
+		<classUnit>cn.js.fan.module.cms.template.DesktopTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>		
+	<plugin code="list.dir">
+		<classUnit>cn.js.fan.module.cms.template.DirTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="list.blog">
+		<classUnit>com.redmoon.blog.template.ListBlogTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+		<plugin code="list.blogDir">
+		<classUnit>com.redmoon.blog.template.ListBlogDirTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="list.blogMsg">
+		<classUnit>com.redmoon.blog.template.ListBlogMsgTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="list.blogPhoto">
+		<classUnit>com.redmoon.blog.template.ListBlogPhotoTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="list.link">
+		<classUnit>cn.js.fan.module.cms.template.ListLinkTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="leaf">
+		<classUnit>cn.js.fan.module.cms.template.LeafTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="cms">
+		<classUnit>cn.js.fan.module.cms.template.CMSTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="blog">
+		<classUnit>com.redmoon.blog.template.BlogTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="boke">
+		<classUnit>com.redmoon.blog.template.BokeTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="article">
+		<classUnit>com.redmoon.blog.template.ArticleTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>
+	<plugin code="forum">
+		<classUnit>com.redmoon.forum.ui.ForumTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+	<plugin code="list.blogUser">
+		<classUnit>com.redmoon.blog.template.ListBlogUserTemplateImpl</classUnit>
+		<desc></desc>
+	</plugin>	
+</config>

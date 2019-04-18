@@ -1,0 +1,495 @@
+@charset "utf-8";
+html body {height:100%; margin:0; padding:0;}
+.flowbodybg{
+	/*background-color: #bde1fb;*/
+	background-color: #eaeaea;
+}
+.flowbgfram {
+	/*background-image: url(images/@bluebg.png);*/
+	background-repeat: no-repeat;
+	background-position: left;
+	/*background-color: #97ccf3;*/
+	height:100%;
+	width:100%;	
+	position:relative;
+}
+.flowbgfram .flowwhitebg {
+	/*background-image: url(images/flowwhitebg.png);*/
+	background-repeat: repeat-y;
+	background-position: left;
+	width: 100%;
+	min-height:320px;
+	_min-height:320px;
+	height:100%;
+	position: relative;
+	/*height:auto !important;*/
+}
+.flowbgfram .flowwhitebg  .flowleft {
+	width: 67%;
+	padding-left:10px;
+	margin-left: 10px;
+	margin-top: 10px;
+	margin-bottom: 17px;
+	float: left;
+	background-color:white;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .box {
+	position: relative;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .span1 {
+	font-size: 14px;
+	font-weight: bold;
+	color: #ffaa3b;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .spanExpire {
+	float: right;
+	position: absolute;
+	width: 320px;
+	right: 101px;
+	top: 0px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .span2 {
+	float: right;
+	position: absolute;
+	width: 80px;
+	right: 10px;
+	top: 0px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .span3 {
+	float: right;
+	margin-right: 20px;
+	position: absolute;
+	width: 80px;
+	right: -18px;
+	top: 0px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .textbox  {
+	height: 210px;
+	width: 98%;
+	/*background-image: url(images/@flowtextbg.png);*/
+	background-repeat: no-repeat;
+	font-size: 14px;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .textbox textarea {
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	width: 98%;
+	line-height: 25px;
+	height: 120px;
+	padding: 0px;
+	margin-top: 5px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+	margin-left: 5px;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .icobox {
+	position: relative;
+	margin-top: 5px;
+	margin-bottom: 10px;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 span {
+	cursor:pointer;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .button {
+	background-image: url(images/@submitbtn.png);
+	background-repeat: no-repeat;
+	height: 35px;
+	width: 107px;
+	line-height: 35px;
+	text-align: center;
+	font-size: 14px;
+	font-weight: bold;
+	color: #FFF;
+	top: 0px;
+	right: 0px;
+	float:right;
+	margin-right:15px;
+	cursor:pointer;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .button_save {
+	background-image: url(images/@savebtn.png);
+	background-repeat: no-repeat;
+	height: 36px;
+	width: 107px;
+	line-height: 35px;
+	text-align: center;
+	font-size: 14px;
+	font-weight: bold;
+	color: #FFF;
+	top: 0px;
+	right: 0px;
+	float:right;
+	margin-right:15px;
+	cursor:pointer;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .button_save a{
+	margin-left:20px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .button a{
+	color: #FFF;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-1 .nextActionUserDiv{
+	width:60%;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	position: relative;
+	padding-left: 10px;
+	behavior: url(skin/commom/ie-css3.htc);
+	background-color: #dbe2f5;
+	line-height:25px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-2 {
+	margin-bottom: 10px;
+	height: 35px;
+	width: 220px;
+	line-height: 35px;
+	background-image: url(images/@addbtn.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	font-size: 14px;
+	position: relative;	
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 {
+	margin-top: 10px;
+	margin-bottom: 10px;
+	display:inline;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .tabbox {
+	background-image: url(images/@tabline.png);
+	background-repeat: repeat-x;
+	background-position: bottom;
+	height: 37px;
+	clear:both;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .tabbox .select {
+	float: left;
+	line-height: 34px;
+	color: #FFF;
+	background-image: url(images/@tabsel.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	height: 34px;
+	width: 103px;
+	font-size: 14px;
+	font-weight: bold;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .tabbox .normol {
+	line-height: 34px;
+	background-image: url(images/@tabnormal.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	height: 34px;
+	width: 103px;
+	float: left;
+	font-size: 14px;
+	font-weight: bold;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox {
+	padding-top: 10px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .det_avatar {
+	float: left;
+	width: 44px;
+	margin-right:5px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .detailbox{
+	clear:both;
+	padding:5px;
+	margin-bottom:5px;
+	min-height:60px;
+}
+
+.priv_myaction{
+	border:1px dashed orange;
+	padding:5px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right {
+	/*float: right;         
+	width: 510px;*/
+	margin-bottom:15px;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right .timebox {
+	position: relative;
+	/*border-bottom:1px dashed #cccccc;    虚线*/
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right .timebox .div_r {
+	position: absolute;
+	width: 420px;
+	top: 0px;
+	right: 0px;
+	color: #979797;
+	text-align: right;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right .timebox  .span-1 {
+	font-size: 14px;
+	font-weight: bold;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right .timebox .div_r .span-2 {
+	margin-right: 10px;
+}
+
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right  .span-3 {
+	color:#42A9DB;
+	margin-bottom:10px;
+}
+.flowbgfram .flowwhitebg .flowleft .leftbox-3 .detailsbox .det_right .span-3 a {
+	color: #42A9DB;
+}
+
+.flowright {
+	width: 29%;
+	height:97%;
+	margin-left: 10px;
+	margin-right:10px;
+	margin-top:10px;
+	background-color: white;
+	word-wrap:break-word;
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	z-index:999;
+	overflow:auto;
+}
+.task {
+	font-size: 14px;
+	/*font-weight: bold;*/
+	position: relative;
+}
+
+.enclosure {
+	position: relative;
+	padding: 5px;
+	z-index: 2;
+	height: 25px;
+	line-height: 25px;
+	font-weight: bold;
+}
+
+.flowbottom {
+	/*background-image: url(images/flowbottombg.png);*/
+	background-repeat: no-repeat;
+	background-position: left;
+	height: 40px;
+}
+
+.flowf-1 {
+	font-size: 14px;
+	line-height: 25px;
+}
+.flowf-1 img {
+	margin-left:5px;
+}
+.flowf-1 a:link {
+	color:#40BFEF;
+	text-decoration:none;
+}
+.flowf-1 a:visited {
+	color:#40BFEF;
+	text-decoration:none;
+}
+.flowf-1 a:hover {
+	color:#40BFEF;
+	text-decoration:none;
+}
+
+.uploadFileFlow{
+    border: medium none;
+    cursor: pointer;
+    font-size: 30px;
+    height: 45px;
+    margin: 0px 0 0 -20px;
+    opacity: 0;
+	filter:alpha(opacity=0);
+    padding: 0;
+    text-align: left;
+    width: 181px;
+    float:left;
+}
+
+.userRealName {
+	display: -moz-inline-box;
+	display: inline-block;
+	width: 150px;
+}
+
+.tabStyle_1 td{
+	border:1px solid #cccccc;
+	word-break:break-all;
+}
+.replyDiv{
+	/*background-image:url(images/dateline/commentup.png);*/
+	background-position: top;
+	background-color:#efefef;
+	width:94%;
+	padding:5px 10px 10px 20px;
+	position:relative;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(skin/commom/ie-css3.htc);
+}
+
+.commentup{
+	width: 0;
+	height: 0;
+	border-left: 8px solid transparent;
+	border-right: 8px solid transparent;
+	border-bottom: 8px solid #efefef;
+	margin-left: 50px;
+}
+.replyDiv p{
+	word-break:break-all;
+}
+
+.suggestionStyle{
+	overflow:hidden;
+	background-color:#efefef;
+	padding-top:5px;
+	padding-bottom:5px;
+	padding-left:8px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(skin/commom/ie-css3.htc);
+}
+.mybtn{
+	color: white;
+	background-color: #ffc24d;
+	text-align: center;
+	font-weight: bold;
+	line-height: 20px;
+	padding-right: 10px;
+	padding-left: 10px;
+	height: 24px;
+	border: 1px solid #ffc24d;
+	cursor: pointer;
+	position:absolute;
+	right:1px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	behavior: url(skin/commom/ie-css3.htc);
+}
+
+.mybtn2{
+	color: white;
+	background-color: #85c4f0;
+	text-align: center;
+	font-weight: bold;
+	line-height: 20px;
+	padding-right: 10px;
+	padding-left: 10px;
+	height: 24px;
+	border: 1px solid #85c4f0;
+	cursor: pointer;
+	right:1px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	behavior: url(skin/commom/ie-css3.htc);
+}
+
+
+.flowmodeswitch{
+	background-color:white;
+	overflow:hidden;
+	margin-right:10px;
+	margin-left:10px;
+	height:41px;
+}
+.flowmodeswitchbtn{
+	background-image:url(images/dateline/flowmodeswitch.png);
+	height:31px;
+	width:117px;
+	line-height: 31px;
+	text-align:center;
+	font-weight:bold;
+	float:right;
+	cursor:pointer;
+	margin-top:10px;
+	margin-right:10px;
+}
+
+.flowmodeswitchAtBtn{
+	line-height: 31px;
+	text-align:center;
+	font-weight:bold;
+	float:left;
+	cursor:pointer;
+	margin-top:10px;
+	margin-right:10px;
+	margin-left: 10px;
+}
+
+.flowmodeswitch:hover{
+	opacity: 0.8;
+	filter:alpha(Opacity=80);
+}
+
+.flowwhitebg1 {
+	background-repeat: repeat-y; 
+	background-position: left;
+	width: 100%;
+	height:100%;
+	position: relative;
+}
+.flowright1 {
+	margin-left: 10px;
+	margin-right:10px;
+	margin-bottom:10px;
+	border: 1px solid #c3c3c3;
+	word-wrap:break-word;
+	background-color:white;
+}
+
+.myTextarea{ 
+    display: block;
+    margin:8px auto;
+    overflow: hidden; 
+    width: 100%; 
+    font-size: 14px;
+    line-height: 24px;
+    text-indent:1em;
+    height:48px;
+    border: solid 1px #ffa200;
+    -moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(skin/commom/ie-css3.htc);
+}
+
+.nameColor{ 
+	color: #85c4f0;
+}
+
+.hrLine{ 
+		height:1px;
+		border:none;
+		border-top:1px solid #efefef;
+}

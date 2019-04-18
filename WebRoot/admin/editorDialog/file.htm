@@ -1,0 +1,174 @@
+<HTML><HEAD><TITLE>文件属性</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=gb2312">
+<STYLE type=text/css>BODY {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+A {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TABLE {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+DIV {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SPAN {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TD {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TH {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+INPUT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SELECT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+BODY {
+	PADDING-RIGHT: 5px; PADDING-LEFT: 5px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px
+}
+</STYLE>
+
+<SCRIPT language=JavaScript src="../editorDialog/dialog.js"></SCRIPT>
+
+<script language="javascript" event="onerror(msg, url, line)" for="window">
+return true ;	 // 隐藏错误
+</script>
+
+<SCRIPT language=JavaScript>
+
+// 本窗口返回值
+function ReturnValue(){
+	var sFromUrl = GetLink(d_fromurl.value);	
+	dialogArguments.insertHTML(sFromUrl);	
+	window.returnValue = null;
+	window.close();
+}
+
+// 点确定时执行
+function ok(){
+	if (d_checkfromurl.checked){
+		// 取文件名
+		GetFileName(d_fromurl.value, "/");
+		// 返回值
+		ReturnValue();
+	}
+}
+
+// 按文件扩展名取图，并产生链接
+function GetLink(url){
+	var sExt;
+	sExt=url.substr(url.lastIndexOf(".")+1);
+	sExt=sExt.toUpperCase();
+	var sPicName;
+	switch(sExt){
+	case "TXT":
+		sPicName = "txt.gif"
+		break;
+	case "CHM":
+	case "HLP":
+		sPicName = "hlp.gif"
+		break;
+	case "DOC":
+		sPicName = "doc.gif"
+		break;
+	case "PDF":
+		sPicName = "pdf.gif"
+		break;
+	case "MDB":
+		sPicName = "mdb.gif"
+		break;
+	case "GIF":
+	case "JPG":
+	case "PNG":
+	case "BMP":
+		sPicName = "pic.gif"
+		break;
+	case "ASP":
+	case "JSP":
+	case "JS":
+	case "PHP":
+	case "PHP3":
+	case "ASPX":
+		sPicName = "code.gif"
+		break;
+	case "HTM":
+	case "HTML":
+	case "SHTML":
+		sPicName = "htm.gif"
+		break;
+	case "ZIP":
+	case "RAR":
+		sPicName = "zip.gif"
+		break;
+	case "EXE":
+		sPicName = "exe.gif"
+		break;
+	case "AVI":
+	case "MPG":
+	case "MPEG":
+	case "ASF":
+		sPicName = "mp.gif"
+		break;
+	case "RA":
+	case "RM":
+		sPicName = "rm.gif"
+		break;
+	case "MID":
+	case "WAV":
+	case "MP3":
+	case "MIDI":
+		sPicName = "audio.gif"
+		break;
+	case "XLS":
+		sPicName = "xls.gif"
+		break;
+	case "PPT":
+	case "PPS":
+		sPicName = "ppt.gif"
+		break;
+	default:
+		sPicName = "unknow.gif"
+		break;
+	}
+	return "<img border=0 src='"+GetHttpUrl("sysimage/file/"+sPicName)+"'><a href='"+url+"' target=_blank>"+d_filename.value+"</a>";
+
+}
+
+// 取文件名到隐藏的输入框
+function GetFileName(url, opt){
+	d_filename.value=url.substr(url.lastIndexOf(opt)+1);
+}
+</SCRIPT>
+
+<META content="MSHTML 6.00.3790.118" name=GENERATOR></HEAD>
+<BODY bgColor=menu onload="d_fromurl.focus();d_fromurl.value='http://';">
+<TABLE cellSpacing=0 cellPadding=0 align=center border=0>
+  <TBODY>
+  <TR>
+    <TD>
+      <FIELDSET><LEGEND>文件来源</LEGEND>
+      <TABLE cellSpacing=0 cellPadding=0 border=0>
+        <TBODY>
+        <TR>
+          <TD colSpan=9 height=5></TD></TR>
+        <TR>
+          <TD colSpan=9 height=5></TD></TR>
+        <TR>
+          <TD width=7></TD>
+          <TD align=right width=54><INPUT id=d_checkfromurl type=radio CHECKED 
+            value=1>网络:</TD>
+          <TD width=5></TD>
+          <TD colSpan=5><INPUT id=d_fromurl style="WIDTH: 243px" size=30></TD>
+          <TD width=7></TD></TR>
+        <TR>
+          <TD colSpan=9 height=5></TD></TR></TBODY></TABLE></FIELDSET> </TD></TR>
+  <TR>
+    <TD height=5></TD></TR>
+  <TR>
+    <TD 
+      align=right><INPUT id=Ok onclick=ok() type=submit value="  确定  ">&nbsp;&nbsp;<INPUT onclick=window.close(); type=button value="  取消  "></TD></TR></TBODY></TABLE><INPUT 
+id=d_filename type=hidden> </BODY></HTML>

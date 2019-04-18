@@ -1,0 +1,26 @@
+@charset "utf-8";
+#cwsNestTable{
+	font-size: 9pt;
+	word-break:break-all;
+	cursor: default;
+	BORDER: black 1px solid;
+	background-color:#ffffff;
+	border-collapse:collapse;
+	border-Color:#999999;
+	align:center;
+}
+#cwsNestTable td {
+height:18px;
+}
+.cwsThead {
+background-color:#eeeeee;
+}
+.resizeTd {
+	background-color:#eeeeee;   
+	width:2px;
+	position:relative;
+	left:expression(this.parentElement.offsetWidth-4);
+	z-index:1;
+	cursor:e-resize;
+	float:left;
+}

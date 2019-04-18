@@ -1,0 +1,140 @@
+.lavaLampWithImage {
+position: relative;
+/*
+background: url("images/lava_bg.gif") no-repeat top;
+*/
+padding: 0px;
+margin: 3px 0px 0px 0px;
+overflow: hidden;
+width:100%;
+height:100%;
+
+}
+.lavaLampWithImage li {
+float: left;
+list-style: none;
+}
+.lavaLampWithImage li.back {
+background: url("images/lava.gif") no-repeat right -20px;
+width: 9px; height: 30px;
+z-index: 8;
+position: absolute;
+}
+.lavaLampWithImage li.back .left {
+background: url("images/lava.gif") no-repeat top left;
+height: 30px;
+margin-right: 9px; /* 7px is the width of the rounded shape */
+}
+.lavaLampWithImage li a {
+font: 12px;
+text-decoration: none;
+color: #3B90B7;
+outline: none;
+text-align: center;
+top: 5px;
+text-transform: uppercase;
+letter-spacing: 0;
+z-index: 10;
+display: block;
+float: left;
+height: 30px;
+position: relative;
+overflow: hidden;
+margin: auto 10px;    
+border: none;
+}
+.lavaLampWithImage li a:hover, .lavaLampWithImage li a:active {
+color: #ffffff;
+}
+
+        .lavaLampNoImage {
+            position: relative;
+            height: 29px;
+            width: 421px;
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            overflow: hidden;
+            border: 1px solid gray;
+        }
+                .lavaLampNoImage li {
+                    float: left;
+                    list-style: none;
+                }
+                    .lavaLampNoImage li.back {
+                        border: 1px solid #000;
+                        background-color: #e6e8ea;
+                        width: 9px;
+                        height: 30px;
+                        z-index: 8;
+                        position: absolute;
+                    }
+                    .lavaLampNoImage li a {
+                        font: bold 14px arial;
+                        text-decoration: none;
+                        color: #000;
+                        outline: none;
+                        text-align: center;
+                        top: 7px;
+                        text-transform: uppercase;
+                        letter-spacing: 0;
+                        z-index: 10;
+                        display: block;
+                        float: left;
+                        height: 30px;
+                        position: relative;
+                        overflow: hidden;
+                        margin: auto 10px;
+                    }
+                        .lavaLampNoImage li a:hover, .lavaLampNoImage li a:active, .lavaLampNoImage li a:visited {
+                            border: none;
+                        }                    
+
+        .lavaLampBottomStyle {
+            position: relative;
+			padding: 0px;
+			margin: -5px 0px 0px 0px;
+            padding-bottom: 5px;
+            overflow: hidden;
+        }
+                .lavaLampBottomStyle li {
+                    float: left;
+                    list-style: none;
+					height:25px;
+					line-height:25px;
+                }
+                    .lavaLampBottomStyle li.back {
+						padding-bottom:2px;
+                        border-bottom: 3px solid #FF7400;
+                        width: 9px;
+                        height: 26px;
+                        z-index: 8;
+                        position: absolute;
+                    }
+                    .lavaLampBottomStyle li a {
+                        font: 12px;
+                        text-decoration: none;
+                        outline: none;
+                        text-align: center;
+                        top: 7px;
+                        text-transform: uppercase;
+                        letter-spacing: 0;
+                        z-index: 10;
+                        display: block;
+                        float: left;
+                        height: 30px;
+                        position: relative;
+                        overflow: hidden;
+                        margin: auto 10px;
+                    }   
+					.lavaLampBottomStyle li a:hover, .lavaLampBottomStyle li a:active, .lavaLampBottomStyle li a:visited {
+						border: none;
+					}      
+					
+					.lavaLampBottomStyle li a:hover, .lavaLampBottomStyle li a:active, .lavaLampBottomStyle li a:visited {
+						color: #3B90B7;
+					}
+					
+					.lavaLampBottomStyle li a:hover {
+						color:FFCA57;
+					}

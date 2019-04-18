@@ -1,0 +1,28 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>属性</title>
+	<script type="text/javascript" src="../../tiny_mce_popup.js"></script>
+	<script type="text/javascript" src="js/dialog.js"></script>
+</head>
+<body>
+
+<form onsubmit="CellDialog.insert();return false;" action="#">
+	<p>控件属性</p>
+	<p>标题: <input id="someval" name="someval" type="text" class="text" /></p>
+	<p>宽度: <input id="width" name="width" type="text" class="text" />px</p>
+	<p>合计类型: 
+    <select id="sumType" name="sumType">
+    <option value="">无</option>
+    <option value="sum">求和</option>
+    </select></p>
+	<p style="display:none">Custom arg: <input id="somearg" name="somearg" type="text" class="text" /></p>
+
+	<div class="mceActionPanel">
+		<input type="button" id="insert" name="insert" value="{#insert}" onclick="CellDialog.insert();" />
+		<input type="button" id="cancel" name="cancel" value="{#cancel}" onclick="tinyMCEPopup.close();" />
+	</div>
+</form>
+
+</body>
+</html>

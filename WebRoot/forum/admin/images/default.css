@@ -1,0 +1,72 @@
+BODY {
+	FONT-SIZE: 12px; COLOR: #4b4b4b; FONT-FAMILY: "Sans-Serif", 宋体
+}
+TD {
+	FONT-SIZE: 12px; COLOR: #4b4b4b; FONT-FAMILY: "Sans-Serif", 宋体
+}
+P {
+	FONT-SIZE: 12px; COLOR: #4b4b4b; FONT-FAMILY: "Sans-Serif", 宋体
+}
+FORM {
+	DISPLAY: inline; MARGIN: 0px
+}
+INPUT {
+	FONT-SIZE: 9pt; COLOR: #4b4b4b; FONT-FAMILY: "Sans-Serif", 宋体
+}
+INPUT.button {
+	COLOR: #4b4b4b; PADDING-TOP: 2px
+}
+SELECT {
+	FONT-SIZE: 9pt; COLOR: #4b4b4b; FONT-FAMILY: "Sans-Serif", 宋体
+}
+TEXTAREA {
+	FONT-SIZE: 9pt; COLOR: #4b4b4b; FONT-FAMILY: "Sans-Serif", 宋体
+}
+A:visited {
+	COLOR: #445980; TEXT-DECORATION: none
+}
+A:link {
+	COLOR: #333333; TEXT-DECORATION: none
+}
+A:hover {
+	COLOR: #faaa05; TEXT-DECORATION: underline
+}
+.wht {
+	COLOR: #ffffff
+}
+.wht A:visited {
+	COLOR: #ffffff; TEXT-DECORATION: none
+}
+.wht A:link {
+	COLOR: #ffffff; TEXT-DECORATION: none
+}
+.wht A:hover {
+	COLOR: #efefef; TEXT-DECORATION: underline
+}
+.head {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 15px; FONT-WEIGHT: bold; FONT-SIZE: 14px; BACKGROUND-IMAGE: url(../images/head_bg.gif); PADDING-BOTTOM: 0px; COLOR: #666666; PADDING-TOP: 8px; HEIGHT: 31px
+}
+.thead {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 5px; FONT-WEIGHT: bold; BACKGROUND-IMAGE: url(../images/thead_bg.gif); PADDING-BOTTOM: 0px; COLOR: #666666; PADDING-TOP: 4px; HEIGHT: 28px
+}
+.theadsel {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 5px; FONT-WEIGHT: bold; BACKGROUND-IMAGE: url(../images/thead_bg1.gif); PADDING-BOTTOM: 0px; COLOR: #445980; PADDING-TOP: 4px; HEIGHT: 28px
+}
+.tfoot {
+	PADDING-RIGHT: 10px; BACKGROUND-IMAGE: url(../images/thead_bg.gif); COLOR: #666666; PADDING-TOP: 3px; HEIGHT: 28px
+}
+.row {
+	PADDING-LEFT: 5px; HEIGHT: 16px; ; BACKGROUND-COLOR: expression(rowIndex%2==1?'#FAFAFA':'#FFFFFF')
+}
+.cmt {
+	COLOR: #445980
+}
+.note {
+	COLOR: #fa9900
+}
+.notfound {
+	PADDING-RIGHT: 30px; PADDING-LEFT: 30px; PADDING-BOTTOM: 30px; COLOR: #445980; PADDING-TOP: 30px; TEXT-ALIGN: center
+}
+.p105 {
+	FONT-SIZE: 10.5pt
+}

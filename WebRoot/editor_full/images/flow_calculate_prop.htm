@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML><HEAD>
+<META http-equiv=Content-Type content="text/html; charset=utf-8"><LINK 
+href="img_files/pop.css" type=text/css rel=stylesheet>
+<STYLE type=text/css>BODY {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+A {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TABLE {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+DIV {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SPAN {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TD {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TH {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+INPUT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SELECT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+BODY {
+	PADDING-RIGHT: 5px; PADDING-LEFT: 5px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px
+}
+</STYLE>
+
+<SCRIPT language=JavaScript>
+var parentWin;
+var mode;
+var ctlType;
+var editObj;
+
+function ok() {
+	if (ctlName.value=="") {
+		alert("请填写标识！");
+		return;
+	}
+	if (ctlTitle.value=="") {
+		alert("请填写名称！");
+		return;
+	}
+	if (ctlTitle.value.indexOf(" ")!=-1) {
+		alert("名称中不能含有空格！");
+		return;
+	}
+
+	if (mode=="create") {
+		parentWin.CreateCalculateCtl(ctlName.value, ctlTitle.value, defaultValue.value, fieldType.value, canNull.value, minT.value,minV.value,maxT.value,maxV.value);
+	}
+	else {
+		editObj.name = ctlName.value;
+		editObj.title = ctlTitle.value;
+		editObj.value = defaultValue.value;
+		
+		editObj.setAttribute("canNull", canNull.value);
+		editObj.setAttribute("minT", minT.value);
+		editObj.setAttribute("minV", minV.value);
+		editObj.setAttribute("maxT", maxT.value);
+		editObj.setAttribute("maxV", maxV.value);
+		
+		editObj.setAttribute("formula", defaultValue.value);
+	}
+	window.close();
+}
+
+function window_onload() {
+	parentWin =	dialogArguments[0];
+	mode = dialogArguments[1];
+	if (mode=="create") {
+	}
+	else {
+		editObj = dialogArguments[2];
+		ctlName.value = editObj.name;
+		ctlTitle.value = editObj.title;
+		defaultValue.value = editObj.value;
+		fieldType.disabled = true;
+		
+		fieldType.value = editObj.getAttribute("fieldType");		
+		if (fieldType.value=="")
+			fieldType.value = "0"		
+		
+		canNull.value = editObj.getAttribute("canNull");
+		if (canNull.value=="")
+			canNull.value = "1";
+		
+		minT.value = editObj.getAttribute("minT");
+		if (minT.value=="")
+			minT.value = "d=";
+		
+		minV.value = editObj.getAttribute("minV");
+		if (minV.value=="undefined")
+			minV.value = "";
+			
+		maxT.value = editObj.getAttribute("maxT");
+		if (maxT.value=="")
+			maxT.value = "x="
+		
+		maxV.value = editObj.getAttribute("maxV");
+		if (maxV.value=="undefined")
+			maxV.value = "";
+		
+	}
+}
+</SCRIPT>
+<META content="MSHTML 6.00.3790.373" name=GENERATOR></HEAD>
+<BODY bgColor=menu onLoad="window_onload()">
+<TABLE width="293" border=0 align=center cellPadding=0 cellSpacing=0>
+  <TBODY>
+  <TR>
+    <TD height="28" align=center>控件字段：</TD>
+    <TD height="28" align=left><input name="ctlName" type="text" style="width: 200px; height:22px" maxlength="30"></TD>
+  </TR>
+  <TR>
+<TD width="86" height="28" align=center>控件名称：</TD>
+<TD width="207" height="28" align=left><input type="text" name="ctlTitle" style="width: 200px; height:22px"></TD>
+  </TR>
+  <TR>
+    <TD width="86" height="28" align=center>算&nbsp;&nbsp;&nbsp;&nbsp;式：</TD>
+    <TD width="207" height="28" align=left><input type="text" name="defaultValue" style="width: 200px; height:22px"></TD>
+  </TR>
+  <TR>
+    <TD height="28" align=center>数据类型：</TD>
+    <TD height="28" align=left>
+	<input id="fieldType" name="fieldType" value="6" type=hidden>
+	<input id="canNull" name="canNull" value="1" type=hidden>
+	<input id="minT" name="minT" value="d=" type=hidden>
+	<input id="minV" name="minV" value="" type=hidden>
+	<input id="maxT" name="maxT" value="x=" type=hidden>
+	<input id="maxV" name="maxV" value="" type=hidden>
+	双精度型	</TD>
+  </TR>
+  
+
+  <TR>
+    <TD colspan="2" align=center><input name="submit" type=submit id=Ok onClick=ok() value=确定>
+&nbsp;&nbsp;
+<input name="button" type=button onClick=window.close(); value=取消></TD>
+  </TR>
+</TBODY></TABLE>
+</BODY></HTML>

@@ -1,0 +1,87 @@
+#popup_container {
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+	min-width: 350px; /* Dialog will be no smaller than this */
+	max-width: 650px; /* Dialog will wrap after this width */
+	height:180px;
+	background: #FFF;
+	/*border: solid 5px #999;*/
+	border: solid 2px #c8d5e3;
+	color: #000;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+}
+
+#popup_title {
+	font-size: 15px;
+	font-family:"微软雅黑";
+	font-weight: bold;
+	text-align: center;
+	line-height: 2.75em;
+	color: #fff;
+	/*background: #CCC url(images/title.gif) top repeat-x;*/
+	background : #87c3f1;
+	border: solid 0px #FFF;
+	border-bottom: solid 2px #63a8dc;
+	cursor: default;
+	padding: 0em;
+	margin: 0em;
+}
+
+
+#popup_content {
+	background: 16px 16px no-repeat url(images/info.gif);
+	padding: 1em 1.75em;
+	margin: 0em;
+}
+
+#popup_content.alert {
+	background-image: url(images/info.gif);
+}
+
+#popup_content.confirm {
+	background-image: url(images/important.gif);
+}
+
+#popup_content.prompt {
+	background-image: url(images/help.gif);
+}
+
+#popup_message {
+	font-size:13px;
+	padding-top:10px;
+	padding-left:20px;
+	padding-bottom:10px;
+	margin:0em auto 1.5em auto;
+	text-align:center;
+	font-family:"微软雅黑" !important;
+	color:#666;
+}
+
+#popup_panel {
+	padding-top:5px;
+	height:40px;
+	text-align: center;
+	margin: 1em auto;
+	positon:relative
+}
+
+#popup_ok{ width:121px; height:30px; background:#87c3f1;color:#fff;display:inline-block; 
+line-height:28px;font-size:13px;border-radius:3px;font-family:"微软雅黑"; border:0px;
+}
+#popup_confirm{
+width:81px; height:30px;float:none; display:inline-block;background:#87c3f1;color:#fff;
+line-height:28px;font-size:13px;border-radius:3px;font-family:"微软雅黑";
+}
+#popup_cancel{
+width:81px; height:30px;float:none; background:#87c3f1;color:#fff;margin-left:10%;
+line-height:28px;font-size:13px; display:inline-block;border-radius:3px;font-family:"微软雅黑";
+}
+#popup_never{
+width:81px; height:30px;float:none; background:#87c3f1;color:#fff;margin-left:10%;
+line-height:28px;font-size:13px; display:inline-block;border-radius:3px;font-family:"微软雅黑";
+}
+#popup_prompt {
+	margin: .5em 0em;
+}

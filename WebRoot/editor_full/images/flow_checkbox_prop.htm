@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML><HEAD>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<LINK href="img_files/pop.css" type=text/css rel=stylesheet>
+<STYLE type=text/css>
+BODY {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+A {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TABLE {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+DIV {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SPAN {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TD {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+TH {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+INPUT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+SELECT {
+	FONT: 9pt "宋体", Verdana, Arial, Helvetica, sans-serif
+}
+BODY {
+	PADDING-RIGHT: 5px; PADDING-LEFT: 5px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px
+}
+</STYLE>
+<script src="../../inc/common.js"></script>
+<script src="../../js/jquery.js"></script>
+<SCRIPT language=JavaScript>
+var parentWin;
+var mode;
+var ctlType;
+var editObj;
+
+function ok() {
+	if (ctlName.value=="") {
+		alert("请填写标识！");
+		return;
+	}
+	if (ctlTitle.value=="") {
+		alert("请填写名称！");
+		return;
+	}
+	if (mode=="create") {
+		parentWin.CreateCheckboxCtl(ctlType, ctlName.value, ctlTitle.value, defaultValue.value, canNull.value);
+	}
+	else {
+		// ie11下面通过editObj.checked = true，无效
+		if (isIE11) {
+			if (parentWin.IframeID.getSelection) {
+				if (parentWin.IframeID.getSelection().rangeCount > 0) {
+					var oControlRange = parentWin.IframeID.getSelection().getRangeAt(0);
+					oControlRange.extractContents();
+				}
+			}
+			parentWin.CreateCheckboxCtl(ctlType, ctlName.value, ctlTitle.value, defaultValue.value, canNull.value);
+		}
+		else {
+			editObj.name = ctlName.value;
+			editObj.title = ctlTitle.value;
+	
+			if ( defaultValue.value=="checked" )
+				editObj.checked = true;
+			else
+				editObj.checked = false;
+			editObj.setAttribute("canNull", canNull.value);
+		}
+	}
+	window.close();
+}
+
+function window_onload() {
+	parentWin =	dialogArguments[0];
+	mode = dialogArguments[1];
+	if (mode=="create")
+		ctlType = dialogArguments[2];
+	else {
+		editObj = dialogArguments[2];
+		ctlName.value = editObj.name;
+		ctlTitle.value = editObj.title;
+		if (editObj.checked)
+			defaultValue.value = "checked";
+		else
+			defaultValue.value = "";
+			
+		canNull.value = editObj.getAttribute("canNull");
+	}
+}
+</SCRIPT>
+</HEAD>
+<BODY bgColor=menu onLoad="window_onload()">
+<TABLE width="293" border=0 align=center cellPadding=0 cellSpacing=0>
+  <TBODY>
+  <TR>
+    <TD height="28" align=center>控件字段：</TD>
+    <TD height="28" align=left><input name="ctlName" type="text" style="width: 200px; height:22px" maxlength="30"></TD>
+  </TR>
+  <TR>
+<TD width="86" height="28" align=center>控件名称：</TD>
+<TD width="207" height="28" align=left><input type="text" name="ctlTitle" style="width: 200px; height:22px"></TD>
+  </TR>
+  <TR>
+    <TD width="86" height="28" align=center>默&nbsp;认&nbsp;值：</TD>
+    <TD width="207" height="28" align=left>
+	<select id="defaultValue" name="defaultValue">
+	<option value="checked">选  中</option>
+	<option value="">不选中</option>
+	</select>	</TD>
+  </TR>
+  <TR>
+    <TD height="28" align=center>必&nbsp;填&nbsp;项：</TD>
+    <TD height="28" align=left><select id="canNull" name="canNull">
+        <option value="1">否</option>
+        <option value="0">是</option>
+      </select>    </TD>
+  </TR>
+  <TR>
+    <TD height="28" colspan="2" align=center>&nbsp;</TD>
+  </TR>
+  <TR>
+    <TD colspan="2" align=center><input name="submit" type=submit id=Ok onClick=ok() value=确定>
+&nbsp;&nbsp;
+<input name="button" type=button onClick=window.close(); value=取消></TD>
+  </TR>
+</TBODY></TABLE>
+</BODY></HTML>

@@ -1,0 +1,653 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <module code="fileark">
+        <name>文件柜</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>fileark/document_list_m.jsp?dir_code=</pageList>
+        <pageShow>doc_show.jsp</pageShow>
+        <className>com.redmoon.oa.fileark.Document</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="plan">
+        <name>日程安排</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>plan/plan.jsp</pageList>
+        <pageShow>plan/plan_show.jsp</pageShow>
+        <className>com.redmoon.oa.person.PlanDb</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="flow">
+        <name>待办流程</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>flow/flow_list.jsp?displayMode=1</pageList>
+        <pageShow>flow_dispose.jsp?myActionId=</pageShow>
+        <className>com.redmoon.oa.flow.MyActionDb</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>0</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="flowMine">
+        <name>我发起的流程</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>flow/flow_list.jsp?displayMode=3</pageList>
+        <pageShow>flow_modify.jsp?flowId=</pageShow>
+        <className>com.redmoon.oa.flow.WorkflowDb</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>3</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="flowAttended">
+        <name>我参与的流程</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>flow/flow_list.jsp?displayMode=2</pageList>
+        <pageShow>flow_modify.jsp?flowId=</pageShow>
+        <className>com.redmoon.oa.flow.WorkflowAttendedDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>3</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    
+    <module code="flowFavorite">
+        <name>我关注的流程</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>flow/flow_list?displayMode=4</pageList>
+        <pageShow>flow_modify.jsp?flowId=</pageShow>
+        <className>com.redmoon.oa.flow.WorkflowFavoriteDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>3</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>	
+	
+    <module code="task">
+        <name>任务督办</name>
+        <isDisplay>false</isDisplay>
+        <isSystem />
+        <pageList>task.jsp</pageList>
+        <pageShow>task_show.jsp</pageShow>
+        <className>com.redmoon.oa.task.TaskDb</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="msg">
+        <name>内部邮件</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>message_oa/message_frame.jsp</pageList>
+        <pageShow>message_oa/showmsg.jsp</pageShow>
+        <className>com.redmoon.oa.message.MessageDb</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+     <module code="mail">
+        <name>我的邮箱</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>mail/in_box.jsp</pageList>
+        <pageShow>mail/mail_show.jsp</pageShow>
+        <className>com.redmoon.oa.emailpop3.MailMsgDb</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="forum">
+        <name>论坛</name>
+        <isDisplay>false</isDisplay>
+        <isSystem />
+        <pageList>jump.jsp?fromWhere=oa&amp;toWhere=forum</pageList>
+        <pageShow>jump.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.ForumDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="blog">
+        <name>博客</name>
+        <isDisplay>false</isDisplay>
+        <isSystem />
+        <pageList>jump.jsp?fromWhere=oa&amp;toWhere=blog</pageList>
+        <pageShow>jump.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.BlogDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="document">
+        <name>文件柜目录中的最新文章</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>fileark/document_list_m.jsp?dir_code=</pageList>
+        <pageShow>doc_show.jsp?id=</pageShow>
+        <className>com.redmoon.oa.ui.desktop.DocumentDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="workplan">
+        <name>工作计划</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>workplan/workplan_list.jsp</pageList>
+        <pageShow>workplan/workplan_show.jsp?id=</pageShow>
+        <className>com.redmoon.oa.ui.desktop.WorkplanDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="notice">
+        <name>通知</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>notice/notice_list.jsp</pageList>
+        <pageShow>notice/notice_detail.jsp?id=</pageShow>
+        <className>com.redmoon.oa.ui.desktop.NoticeDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>0</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+
+    <module code="sales.summary">
+        <name>销售工作概况</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>sales/</pageList>
+        <pageShow>sales/sales_summary_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+
+    <module code="sales.achievement">
+        <name>本年度业绩</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>sales/</pageList>
+        <pageShow>sales/sales_achievement_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+
+    <module code="sales.user_chance">
+        <name>最新商机</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>sales/sales_user_chance_list.jsp</pageList>
+        <pageShow>sales/sales_user_chance_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+
+    <module code="sales.user_customer">
+        <name>最新客户</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>sales/customer_list.jsp</pageList>
+        <pageShow>sales/sales_user_customer_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="sales.user_order">
+        <name>最新订单</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>sales/sales_user_order_list.jsp</pageList>
+        <pageShow>sales/sales_user_order_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>	
+	
+    <module code="sales.user_action">
+        <name>最新行动</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>sales/sales_user_action_list.jsp</pageList>
+        <pageShow>sales/sales_user_action_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="plan_calendar">
+        <name>日程安排日历</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>plan/plan_list.jsp</pageList>
+        <pageShow>plan/plan_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>2</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="leave">
+        <name>请假人员</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>attendance/leave_list.jsp</pageList>
+        <pageShow>attendance/leave_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>3</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="online_rank">
+        <name>在线排行</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>user/user_online_list.jsp</pageList>
+        <pageShow>user/user_online_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>2</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="mywork">
+        <name>工作日报</name>
+        <isDisplay>false</isDisplay>
+        <isSystem />
+        <pageList>mywork/mywork_list.jsp</pageList>
+        <pageShow>mywork/mywork_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+
+    <module code="mywork.week">
+        <name>工作周报</name>
+        <isDisplay>false</isDisplay>
+        <isSystem />
+        <pageList>mywork/mywork_list_week.jsp</pageList>
+        <pageShow>mywork/mywork_desktop_week.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+
+    <module code="mywork.month">
+        <name>工作月报</name>
+        <isDisplay>false</isDisplay>
+        <isSystem />
+        <pageList>mywork/mywork_list_month.jsp</pageList>
+        <pageShow>mywork/mywork_desktop_month.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="weather">
+        <name>天气</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>user/weather_list.jsp</pageList>
+        <pageShow>user/desktop_weather.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>2</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>0</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="clock">
+        <name>时钟</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>user/clock_list.jsp</pageList>
+        <pageShow>user/desktop_clock.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    <module code="calendar">
+        <name>日历</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>user/calendar_list.jsp</pageList>
+        <pageShow>user/desktop_calendar.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+    
+    <module code="notepaper">
+        <name>便笺</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>plan/plan_list.jsp</pageList>
+        <pageShow>plan/notepaper_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>2</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="flashImage">
+        <name>Flash图片轮播</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>cms/flash_list.jsp</pageList>
+        <pageShow>cms/flash_image_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>2</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>1</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="workplan.task">
+        <name>我的计划项</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>workplan/workplan_task_list.jsp</pageList>
+        <pageShow>workplan/workplan_task_desktop.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.IncludeDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>	
+	
+    <module code="query.script">
+        <name>自由查询</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>flow/form_query_script_list_do.jsp?op=query&amp;id=</pageList>
+        <pageShow></pageShow>
+        <className>com.redmoon.oa.flow.FormQueryDesktopUnit</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>false</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>
+	
+    <module code="todolist">
+        <name>待办事项</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>plan/plan_todo_list.jsp</pageList>
+        <pageShow>plan/plan_show.jsp</pageShow>
+        <className>com.redmoon.oa.person.PlanToDoList</className>
+        <type>list</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>1</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>3</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>	
+    
+    <module code="visual">
+        <name>智能模块</name>
+        <isDisplay>true</isDisplay>
+        <isSystem />
+        <pageList>visual/module_list.jsp</pageList>
+        <pageShow>visual/module_show.jsp</pageShow>
+        <className>com.redmoon.oa.ui.desktop.VisualDesktopUnit</className>
+        <type>document</type>
+        <!--list or document-->
+        <icon />
+        <!--置于标题栏的图标-->
+        <isDefault>true</isDefault>
+        <!--初始化用户桌面时，是否显示-->
+        <defaultCol>0</defaultCol>
+        <!--初始化用户桌面时，显示于哪一列-->
+        <defaultOrder>2</defaultOrder>
+        <!--初始化用户桌面时，在列中的序号-->
+    </module>	    
+</config>
+

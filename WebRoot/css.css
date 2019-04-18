@@ -1,0 +1,60 @@
+BODY {
+SCROLLBAR-FACE-COLOR:#F7F7F7;
+SCROLLBAR-HIGHLIGHT-COLOR:#FFFFFF;
+SCROLLBAR-SHADOW-COLOR:#FFFFFF;
+SCROLLBAR-3DLIGHT-COLOR:#D4D0C8;
+SCROLLBAR-ARROW-COLOR:#808080;
+SCROLLBAR-TRACK-COLOR:#ffffff;
+SCROLLBAR-DARKSHADOW-COLOR:#D4D0C8;
+}
+table {
+	font-size: 9pt;
+	text-decoration: none;
+	line-height: 140%;
+}
+.right-title {
+	font-size: 10pt;
+	font-weight: bold;
+	color: #FFFFFF;
+	filter: Glow(Color=000000, Strength=2);
+	height: 12px;
+}
+.menu {
+	font-size: 9pt;
+	line-height: 150%;
+	text-decoration: none;
+}
+a {
+	color: #333333;
+	text-decoration: none;
+}
+a:hover {
+	color: #FF0000;
+}
+.title1 {
+	height: 12px;
+	filter: DropShadow(Color=ffffff, OffX=1, OffY=1, Positive=1);
+	margin-top: 2px;
+
+}
+.stable {
+	border-top-width: 1px;
+	border-right-width: 1px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-right-style: solid;
+	border-bottom-style: solid;
+	border-left-style: solid;
+	border-top-color: #F6F6F6;
+	border-right-color: #999999;
+	border-bottom-color: #999999;
+	border-left-color: #F6F6F6;
+
+}
+.fblank {
+	border: 0px none;
+}
+.help_title {font-size: 12pt;
+        	font-weight:bold;
+}

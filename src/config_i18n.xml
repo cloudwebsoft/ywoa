@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <support>
+    	<locale>
+				<lang>zh</lang>
+				<country>cn</country>
+			</locale>
+    	<locale>
+				<lang>zh</lang>
+				<country>tw</country>
+			</locale>
+    </support>
+</config>
+

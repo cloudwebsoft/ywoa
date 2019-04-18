@@ -1,0 +1,13 @@
+<script>
+var doc_html_html="";
+if(parent.parent && parent.parent.doc_html_html)
+doc_html_html=parent.parent.doc_html_html;
+else
+document.write("<script src=web.js><\/script>");
+</script>
+<script>
+if(doc_html_html=="")
+setTimeout("location.reload()",1000);
+else 
+document.write(doc_html_html);
+</script>

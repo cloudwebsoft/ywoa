@@ -1,0 +1,48 @@
+body		{ font-family: "Sans-Serif",   ; font-size: 12px; color: #4B4B4B; background-color:#eeeeee}
+td			{ font-family: "Sans-Serif",   ; font-size: 12px; color: #4B4B4B;}
+p			{ font-family: "Sans-Serif",   ; font-size: 12px; color: #4B4B4B}
+.p14		{ font-family: "Sans-Serif",   ; font-size: 14px; color: #4B4B4B}
+
+form		{ display: inline; margin: 0px; }
+
+input		{ font-family: "Sans-Serif",   ; font-size: 9pt; color: #4B4B4B }
+input.button{ padding-top: 2px; color: #4B4B4B; }
+select		{ font-family: "Sans-Serif",   ; font-size: 9pt; color: #4B4B4B}
+textarea	{ font-family: "Sans-Serif",   ; font-size: 9pt; color: #4B4B4B}
+
+a:visited	{ color: #636366; text-decoration: none } 
+a:link		{ color: #131380; text-decoration: none }
+a:hover		{ color: #FAAA05; text-decoration: underline }
+
+.wht			{ color:#ffffff }
+.wht a:visited	{ color:#ffffff; text-decoration: none }
+.wht a:link		{ color:#ffffff; text-decoration: none }
+.wht a:hover	{ color: #EFEFEF; text-decoration: underline }
+
+.head		{ background-image: url(images/head_bg.gif); height: 23px; font-size: 14px; font-weight: bold; color: #666666; padding: 8px 0px 0px 15px}
+.thead		{ background-image: url(../images/top-right.gif); height: 24px; font-weight: bold; color: #666666; padding: 4px 0 0 5px}
+.theadsel	{ background-image: url(images/thead_bg1.gif); height: 23px; font-weight: bold; color: #445980; padding: 4px 0 0 5px}
+.tfoot		{ background-image: url(images/thead_bg.gif); height: 23px; color: #666666; padding-top: 3px; padding-right: 10px}
+
+.tbg1		{ height: 18px; background-color: #f8f8f8; padding: 0px 0 0 0px}
+.tbg1sel	{ height: 18px; background-color: #FFE8E8; padding: 0px 0 0 0px}
+
+.row		{ background-color:expression(rowIndex%2==1?'#FAFAFA':'#FFFFFF') ; height: 16px; padding-left: 5px;} 
+
+.cmt		{ color: #445980;}
+.note		{ color: #FA9900; }
+.notfound	{ color: #445980; text-align: center; padding: 30px}
+
+.p105		{ font-size: 10.5pt; }
+.frame_gray { BORDER-RIGHT: #999999 1px solid; BORDER-TOP: #999999 1px solid; BORDER-LEFT: #999999 1px solid; BORDER-BOTTOM: #999999 1px solid; BACKGROUND-COLOR: #ffffff }
+body {	margin-top: 0px; margin-left: 0px;}
+.singleboarder
+{
+    BORDER-RIGHT: #4a3163 1px solid;
+    BORDER-TOP: #4a3163 1px solid;
+    FONT-SIZE: 9pt;
+    BORDER-LEFT: #4a3163 1px solid;
+    BORDER-BOTTOM: #4a3163 1px solid
+}
+
+

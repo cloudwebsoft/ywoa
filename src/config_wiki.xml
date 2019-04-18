@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<isUse>true</isUse>
+    <recommand>156</recommand>
+    <statInterval>10</statInterval>
+    <!--minute-->
+    <defaultCreateScore>2.0</defaultCreateScore>
+    <defaultEditScore>3.0</defaultEditScore>
+</config>
+

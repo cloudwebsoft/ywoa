@@ -1,0 +1,71 @@
+@charset "utf-8";
+body{
+    background-color:#FFF;
+}
+.bgCss{
+    height:482px;
+    width:100%;
+    padding-top:30px;
+    background-repeat: no-repeat;
+}
+
+.imgCss{
+    margin-left:30px;
+    margin-right:10px;
+}
+.txt{ height:22px; border:1px solid #cdcdcd; width:180px;} 
+.btn{ background-color:#FFF; border:1px solid #CDCDCD;height:24px; width:70px;} 
+.file{   
+	width:50px;  
+	height:22px;  
+	position:absolute ;  
+	filter: alpha(opacity = 0);  
+	-moz-opacity:0;  
+	opacity: 0;  
+	z-index: 110; 
+
+}
+.remarkCss{
+	color:#008de7;
+	margin-left:20px;
+	} 
+.submitCss{
+   width:210px;
+   height:46px;
+   border:none;
+   border-width:0;
+   background-image: url(../../../images/admin/manuallyUpdate/update_btn.png);
+   background-repeat: no-repeat;
+   opacity:0.8;
+   filter(alpha=80);
+   cursor:pointer;  
+}
+
+.submitCss:hover{
+	opacity:1;
+   filter(alpha=100)
+}
+.resetCss{
+   width:210px;
+   height:47px;
+   border:none;
+   border-width:0;
+   background-image: url(../../../images/admin/manuallyUpdate/reset_btn.png); 
+   background-repeat: no-repeat;
+   margin-left:20px;
+   opacity:0.8;
+   filter(alpha=80);
+   cursor:pointer;  
+}
+.resetCss:hover{
+   opacity:1;
+   filter(alpha=100)
+}
+.buttonsDiv{
+    margin-left:110px;
+    margin-top:50px;
+}
+.versionDivCss{
+    color:#ff490a;
+    margin-left:30px;
+}

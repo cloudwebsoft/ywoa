@@ -1,0 +1,114 @@
+@charset "utf-8";
+/* CSS Document */
+
+#infoBlock{
+	height: 32px;
+	line-height:32px;
+    position: absolute;
+    width: 300px;
+	left:50%;
+	margin-left:-150px;
+	bottom:50px;
+	z-index:900;
+	color:#fff;
+	background: url("../images/msgbubble_bg.png") no-repeat scroll 0 1px transparent;
+    cursor: move;
+    font-family: tahoma;
+	display:none;
+ 	}	
+.infoC{
+	height: 32px;
+	line-height:32px;
+    width: 300px;
+	}	
+#infoBlock .infoList{
+	list-style:none;
+	width:190px;
+	height:20px;
+	margin-top:5px;
+	line-height:20px;
+	margin-left:5px;
+	overflow:hidden;
+	float:left
+	}
+#infoBlock .count {
+    display: inline-block;
+    vertical-align: middle;
+}		
+#infoBlock .icon {
+    background: url("../images/msgbubble_icons.png?t=20111011001") no-repeat scroll 0 0 transparent;
+    display: block;
+    float: left;
+    height: 16px;
+    margin: 3px 4px 0;
+    vertical-align: middle;
+    width: 16px;
+} 
+#infoBlock .group {
+    background-position: 0 -32px;
+	margin:8px 0 0 12px;
+}
+#infoBlock .setting {
+    background-position: 0 -64px;
+    cursor: pointer;
+    float: right;
+    margin-top:9px;
+	margin-right:15px;
+}
+
+#messageBubble_bubbleMsgList{
+	background: url("../images/msgbubble_list_bg.png") no-repeat scroll 0 0 transparent;
+    cursor: default;
+    height: 210px;
+    left: 10px;
+    position: absolute;
+    top: -210px;
+    width: 280px;
+	display:none;
+	}
+	
+#messageBubble_bubbleMsgList h3 {
+    color: #FFFFFF;
+    font-size: 12px;
+    height: 24px;
+    line-height: 24px;
+    margin: 0;
+    padding: 0 0 0 12px;
+	font-weight:900
+}
+
+.bubbleMsgListInner {
+    background: url("../images/msgbubble_list_bg_inner.png") repeat-x scroll 0 0 #FFFFFF;
+    height: 180px;
+    margin: 0 auto;
+    width: 270px;
+}
+
+.bubbleMsgListContainer{
+	height:170px;
+	padding:5px 0;
+	width:98%;
+	overflow-y: auto;
+	margin:0 auto;
+	}
+
+.bubbleMsgListContainer a {
+    display: block;
+    padding: 3px 5px 3px 7px;
+    text-decoration: none;
+	color: #06C
+}
+.bubbleMsgListContainer a:hover{
+	text-decoration:underline;
+	color: #F30;
+	}
+.bubbleMsgListContainer ul {
+    padding:0px 5px 0;
+	line-height:24px;
+}
+.bubbleMsgListContainer ul li{
+	border-bottom:1px dashed #CCC;
+	height:30px;
+	overflow:hidden;
+	}
+	

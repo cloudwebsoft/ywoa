@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<basic>
+    <item code="people" name="民族">
+        <options>
+            <option value="汉族">汉族</option>
+            <option value="蒙古族">蒙古族</option>
+            <option value="回族">回族</option>
+            <option value="藏族">藏族</option>
+            <option value="维吾尔族">维吾尔族</option>
+            <option value="苗族">苗族</option>
+            <option value="彝族">彝族</option>
+            <option value="壮族">壮族</option>
+            <option value="1">1</option>
+        </options>
+        <defaultValue value="汉族">汉族</defaultValue>
+    </item>
+    <item code="healthState" name="健康状况">
+        <options>
+            <option value="健康">健康</option>
+            <option value="良好">良好</option>
+            <option value="一般">一般</option>
+            <option value="较弱">较弱</option>
+            <option value="心血管病">心血管病</option>
+            <option value="脑血管病">脑血管病</option>
+            <option value="慢性呼吸系统病">慢性呼吸系统病</option>
+            <option value="慢性消化系统病">慢性消化系统病</option>
+            <option value="慢性肾炎">慢性肾炎</option>
+            <option value="结核病">结核病</option>
+            <option value="糖尿病">糖尿病</option>
+            <option value="其他慢性病">其他慢性病</option>
+            <option value="聋哑">聋哑</option>
+            <option value="盲人">盲人</option>
+            <option value="高度近视">高度近视</option>
+            <option value="其他缺陷">其他缺陷</option>
+            <option value="伤残">伤残</option>
+            <option value="特等残废">特等残废</option>
+            <option value="一等残废">一等残废</option>
+            <option value="二等甲级残废">二等甲级残废</option>
+            <option value="二等乙级残废">二等乙级残废</option>
+            <option value="三等甲级残废">三等甲级残废</option>
+            <option value="三等乙级残废">三等乙级残废</option>
+            <option value="其他残废">其他残废</option>
+            <option value="严重疾病">严重疾病</option>
+            <option value="其他">其他</option>
+        </options>
+        <defaultValue value="健康">健康</defaultValue>
+    </item>
+    <item code="culture" name="文化程度">
+        <options>
+            <option value="研究生">研究生</option>
+            <option value="大学">大学</option>
+            <option value="大专">大专</option>
+            <option value="高中">高中</option>
+            <option value="初中">初中</option>
+            <option value="小学">小学</option>
+        </options>
+        <defaultValue value="大学">大学</defaultValue>
+    </item>
+    <item code="insupportCadreLevel" name="后备干部级别">
+        <options>
+            <option value="县处级">县处级</option>
+            <option value="乡科级">乡科级</option>
+        </options>
+        <defaultValue value="" />
+    </item>
+    <item code="polity" name="政治面貌">
+        <options>
+            <option value="中共党员">中共党员</option>
+            <option value="中共预备党员">中共预备党员</option>
+            <option value="共青团员">共青团员</option>
+            <option value="民革会员">民革会员</option>
+            <option value="民盟盟员">民盟盟员</option>
+            <option value="民建会员">民建会员</option>
+            <option value="民进会员">民进会员</option>
+            <option value="农工党党员">农工党党员</option>
+            <option value="致公党党员">致公党党员</option>
+            <option value="九三学社社员">九三学社社员</option>
+            <option value="台盟盟员">台盟盟员</option>
+            <option value="无党派民主人士">无党派民主人士</option>
+            <option value="群众">群众</option>
+            <option value="其他">其他</option>
+            <option value="" />
+        </options>
+        <defaultValue value="中共党员">中共党员</defaultValue>
+    </item>
+    <item code="typeOfWork" name="编制情况">
+        <options>
+            <option value="行政">行政</option>
+            <option value="行政附属">行政附属</option>
+            <option value="事业">事业</option>
+            <option value="临时工">临时工</option>
+        </options>
+        <defaultValue value="行政">行政</defaultValue>
+    </item>
+    <item code="sex" name="性别">
+        <options>
+            <option value="男">男</option>
+            <option value="女">女</option>
+        </options>
+        <defaultValue />
+    </item>
+    <item code="inActiveService" name="在职情况">
+        <options>
+            <option value="退休">退休</option>
+            <option value="退养">退养</option>
+            <option value="在职">在职</option>
+            <option value="调出人员">调出人员</option>
+            <option value="开除">开除</option>
+            <option value="辞退">辞退</option>
+            <option value="辞职">辞职</option>
+            <option value="离职">离职</option>
+            <option value="死亡">死亡</option>
+            <option value="单位领导体制变化减少的">单位领导体制变化减少的</option>
+            <option value="出国出境不归">出国出境不归</option>
+        </options>
+        <defaultValue value="在职">在职</defaultValue>
+    </item>
+    <item code="grade" name="学历">
+        <options>
+            <option value="研究生毕业">研究生毕业</option>
+            <option value="研究生肄业">研究生肄业</option>
+            <option value="大学毕业">大学毕业</option>
+            <option value="大学普通班毕业">大学普通班毕业</option>
+            <option value="相当大学毕业">相当大学毕业</option>
+            <option value="专科毕业">专科毕业</option>
+            <option value="相当专科毕业">相当专科毕业</option>
+            <option value="专科肄业">专科肄业</option>
+            <option value="中专毕业">中专毕业</option>
+            <option value="中专肄业">中专肄业</option>
+            <option value="技校毕业">技校毕业</option>
+            <option value="技校肄业">技校肄业</option>
+            <option value="高中毕业">高中毕业</option>
+            <option value="职高毕业">职高毕业</option>
+            <option value="农业高中毕业">农业高中毕业</option>
+            <option value="相当高中毕业">相当高中毕业</option>
+            <option value="高中肄业">高中肄业</option>
+            <option value="初中毕业">初中毕业</option>
+            <option value="职业初中毕业">职业初中毕业</option>
+            <option value="农业初中毕业">农业初中毕业</option>
+            <option value="相当初中毕业">相当初中毕业</option>
+            <option value="初中肄业">初中肄业</option>
+            <option value="小学毕业">小学毕业</option>
+            <option value="相当小学毕业">相当小学毕业</option>
+            <option value="小学肄业">小学肄业</option>
+            <option value="文盲或半">文盲或半</option>
+        </options>
+        <defaultValue value="大学毕业">大学毕业</defaultValue>
+    </item>
+    <item code="degree" name="学位">
+        <options>
+            <option value="硕士">硕士</option>
+            <option value="学士">学士</option>
+        </options>
+        <defaultValue value="硕士">硕士</defaultValue>
+    </item>
+    <item code="appellation" name="称谓">
+        <options>
+            <option value="丈夫">丈夫</option>
+            <option value="妻子">妻子</option>
+            <option value="父亲">父亲</option>
+            <option value="母亲">母亲</option>
+            <option value="儿子">儿子</option>
+            <option value="长子">长子</option>
+            <option value="次子">次子</option>
+            <option value="长女">长女</option>
+            <option value="次女">次女</option>
+            <option value="哥哥">哥哥</option>
+            <option value="弟弟">弟弟</option>
+            <option value="姐姐">姐姐</option>
+            <option value="妹妹">妹妹</option>
+            <option value="祖父">祖父</option>
+            <option value="祖母">祖母</option>
+            <option value="外公">外公</option>
+            <option value="外婆">外婆</option>
+            <option value="岳父">岳父</option>
+            <option value="岳母">岳母</option>
+            <option value="女儿">女儿</option>
+        </options>
+        <defaultValue value="母亲">母亲</defaultValue>
+    </item>
+    <item code="profession" name="专业技术职务">
+        <options>
+            <option value="初职">初职</option>
+            <option value="高职">高职</option>
+        </options>
+        <defaultValue value="中职">中职</defaultValue>
+    </item>
+    <item code="result" name="考核结果">
+        <options>
+            <option value="优秀">优秀</option>
+            <option value="称职">称职</option>
+            <option value="基本称职">基本称职</option>
+            <option value="不称职">不称职</option>
+            <option value="合格">合格</option>
+            <option value="基本合格">基本合格</option>
+            <option value="不合格">不合格</option>
+        </options>
+        <defaultValue />
+    </item>
+    <item code="cadresSource" name="干部来源">
+        <options>
+            <option value="过渡人员">过渡人员</option>
+            <option value="公开招录人员">公开招录人员</option>
+            <option value="工转干招录人员">工转干招录人员</option>
+            <option value="军转干部安置">军转干部安置</option>
+            <option value="公选干部">公选干部</option>
+            <option value="省选调生">省选调生</option>
+            <option value="调任人员">调任人员</option>
+            <option value="其他调入人员">其他调入人员</option>
+        </options>
+        <defaultValue value="招考">招考</defaultValue>
+    </item>
+    <item code="isJob" name="是否在职">
+        <options>
+            <option value="是">是</option>
+            <option value="否">否</option>
+        </options>
+        <defaultValue value="是">是</defaultValue>
+    </item>
+    <item code="rank" name="职级">
+        <options>
+            <option value="正处">正处</option>
+            <option value="副处">副处</option>
+            <option value="正科">正科</option>
+            <option value="副科">副科</option>
+            <option value="正股">正股</option>
+            <option value="副股">副股</option>
+            <option value="科员">科员</option>
+            <option value="办事员">办事员</option>
+        </options>
+        <defaultValue value="" />
+    </item>
+    <item code="politic" name="政治面貌">
+        <options>
+            <option value="中共党员">中共党员</option>
+            <option value="中共预备党员">中共预备党员</option>
+            <option value="共青团员">共青团员</option>
+            <option value="民革会员">民革会员</option>
+            <option value="民盟盟员">民盟盟员</option>
+            <option value="民建会员">民建会员</option>
+            <option value="民进会员">民进会员</option>
+            <option value="农工党党员">农工党党员</option>
+            <option value="致公党党员">致公党党员</option>
+            <option value="九三学社社员">九三学社社员</option>
+            <option value="台盟盟员">台盟盟员</option>
+            <option value="无党派民主人士">无党派民主人士</option>
+            <option value="群众">群众</option>
+            <option value="其他">其他</option>
+        </options>
+        <defaultValue value="中共党员">中共党员</defaultValue>
+    </item>
+    <item code="mostgrade" name="最高学历">
+        <options>
+            <option value="研究生毕业">研究生毕业</option>
+            <option value="研究生肄业">研究生肄业</option>
+            <option value="大学毕业">大学毕业</option>
+            <option value="大学普通班毕业">大学普通班毕业</option>
+            <option value="相当大学毕业">相当大学毕业</option>
+            <option value="专科毕业">专科毕业</option>
+            <option value="相当专科毕业">相当专科毕业</option>
+            <option value="专科肄业">专科肄业</option>
+            <option value="中专毕业">中专毕业</option>
+            <option value="中专肄业">中专肄业</option>
+            <option value="技校毕业">技校毕业</option>
+            <option value="技校肄业">技校肄业</option>
+            <option value="高中毕业">高中毕业</option>
+            <option value="职高毕业">职高毕业</option>
+            <option value="农业高中毕业">农业高中毕业</option>
+            <option value="相当高中毕业">相当高中毕业</option>
+            <option value="高中肄业">高中肄业</option>
+            <option value="初中毕业">初中毕业</option>
+            <option value="职业初中毕业">职业初中毕业</option>
+            <option value="农业初中毕业">农业初中毕业</option>
+            <option value="相当初中毕业">相当初中毕业</option>
+            <option value="初中肄业">初中肄业</option>
+            <option value="小学毕业">小学毕业</option>
+            <option value="相当小学毕业">相当小学毕业</option>
+            <option value="小学肄业">小学肄业</option>
+            <option value="文盲或半">文盲或半</option>
+        </options>
+        <defaultValue value="大学毕业">大学毕业</defaultValue>
+    </item>
+</basic>
+

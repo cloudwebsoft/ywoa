@@ -1,0 +1,148 @@
+@charset "utf-8";
+/*快速入口样式*/
+.entry_bgbox {
+	width: 920px;
+}
+.entry_bgbox a:link {
+	color: #a7a7a7;
+	text-decoration: none;
+}
+.entry_bgbox a:hover {
+	color: #FC0;
+}
+
+.entry_bgbox img {vertical-align:middle; }
+.entry_bgbox .arr {
+	text-align: right;
+	padding-right: 3px;
+	height: 10px;
+}
+
+.entry_bgbox .bgcol { background-color:#1f1f1f;} /*正常背景色*/
+.entry_bgbox .bgcol_op { background-color:#9fdaf0;}  /*编辑状态背景色*/
+.entry_bgbox .toggleStyle  {cursor:pointer; border: 2px solid #0FF;} /*鼠标经过样式*/
+
+.entry_bgbox .bg {
+	position: relative;
+	overflow: hidden;
+	height: 450px;
+	font-family: "微软雅黑";
+	color: #FFF;
+	font-size: 16px;
+}
+.entry_bgbox .bg_op {
+	background-color: #ffcd93;
+	position: relative;
+	overflow: hidden;
+	height: 450px;
+	font-family: "微软雅黑";
+	color: #FFF;
+	font-size: 16px;
+}
+
+.entry_bgbox .bg .op {
+	text-align: right;
+	margin-right: 20px;
+	margin-top: 5px;
+}
+.entry_bgbox .bg .op span {
+	padding-right: 10px;
+	font-size: 12px;
+	color: #a7a7a7;
+}
+
+.entry_bgbox .bg .block_1 {
+	background-color: #0099d7;
+	position: absolute;
+	height: 256px;
+	width: 282px;
+	left: 30px;
+	top: 35px;
+}
+.entry_bgbox .bg .block_2 {
+	background-color: #75a81d;
+	position: absolute;
+	height: 123px;
+	width: 280px;
+	left: 320px;
+	top: 35px;
+}
+.entry_bgbox .bg .block_3 {
+	background-color: #0099a7;
+	position: absolute;
+	height: 123px;
+	width: 280px;
+	left: 610px;
+	top: 35px;
+}
+.entry_bgbox .bg .block_4 {
+	background-color: #565656;
+	position: absolute;
+	height: 123px;
+	width: 280px;
+	left: 320px;
+	top: 168px;
+}
+.entry_bgbox .bg .block_5 {
+	background-color: #fb8922;
+	position: absolute;
+	height: 123px;
+	width: 280px;
+	left: 610px;
+	top: 168px;
+}
+.entry_bgbox .bg .block_6 {
+	background-color: #fb8922;
+	position: absolute;
+	height: 123px;
+	width: 135px;
+	left: 30px;
+	top: 301px;
+}
+.entry_bgbox .bg .block_7 {
+	background-color: #324b80;
+	position: absolute;
+	height: 123px;
+	width: 135px;
+	left: 175px;
+	top: 301px;
+}
+.entry_bgbox .bg .block_8 {
+	background-color: #e56b98;
+	position: absolute;
+	height: 123px;
+	width: 280px;
+	left: 320px;
+	top: 301px;
+}
+.entry_bgbox .bg .block_9 {
+	background-color: #00a6e7;
+	position: absolute;
+	height: 123px;
+	width: 135px;
+	left: 610px;
+	top: 301px;
+}
+.entry_bgbox .bg .block_10 {
+	background-color: #620f6a;
+	position: absolute;
+	height: 123px;
+	width: 135px;
+	left: 753px;
+	top: 301px;
+}
+.entry_bgbox .bg .block_1 .text {
+	position:absolute;
+	top:224px;
+	left:5px;
+}
+ 
+.block_2 .text, .block_3 .text, .block_4 .text, .block_5 .text, .block_6 .text, .block_7 .text, .block_8 .text, .block_9 .text, .block_10 .text {
+	position:absolute;
+	top:96px;
+	left:5px;
+ }
+.block_1 .icobox, .block_2 .icobox, .block_3 .icobox, .block_4 .icobox, .block_5 .icobox, .block_6 .icobox, .block_7 .icobox, .block_8 .icobox, .block_9 .icobox, .block_10 .icobox {
+	text-align:center;
+	margin-top: 20px;
+ }

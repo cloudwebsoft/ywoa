@@ -1,0 +1,363 @@
+@charset "utf-8";
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td {margin:0;padding:0;} 
+table {border-collapse:collapse;border-spacing:0;} 
+fieldset,img {border:0px; margin:0px; vertical-align:middle; } 
+address,caption,cite,code,dfn,em,strong,th,var {font-style:normal;font-weight:normal} 
+ol,ul {list-style:none} 
+caption,th {text-align:left} 
+h1,h2,h3,h4,h5,h6 {font-size:100%;font-weight:normal} 
+q:before,q:after {content:''} 
+abbr,acronym { border:0}
+body {
+	margin:0;
+	padding:0;
+	font-family:"微软雅黑";
+	font-size: 12px;
+	color: #606060;
+}
+.clear {
+	clear: both;
+}
+ a {color: #606060; text-decoration: none;}
+ a:hover {color: #F60; text-decoration: none;}
+
+/*顶部样式开始*/
+.oatop {
+	background-color: #0076e3;
+	background-image: url(images/top_bg.jpg);
+	background-repeat: no-repeat;
+	background-position: left;
+	height: 99px;
+	color: #FFF;
+}
+.oatop a {color: #FFF;text-decoration: none;}
+.oatop .upbox {
+	height: 60px;
+	overflow: hidden;
+	min-width:1000px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<1000?"1000px":"");
+}
+
+.oatop .topleft {
+	float: left;
+	width: 430px;
+	margin-top: 10px;
+	margin-left: 20px;
+	display:inline;
+}
+.oatop .topright {
+	float: right;
+	margin-top: 10px;
+	width: auto;
+	display:inline;
+}
+.oatop .topright .icobox-1 {
+	scolor: #FFF;
+	float: right;
+	text-align: right;
+	width: auto;
+	height: 30px;
+}
+.oatop .topright .icobox-1 span {
+	line-height: 25px;
+	margin-right: 20px;
+}
+.oatop .topright .icobox-2 {
+	float:right;
+	width: 310px;
+	height: 30px;
+}
+.oatop .topright .icobox-2  span {
+	line-height: 25px;
+	margin-right: 20px;
+	display:inline;
+}
+.oatop .downbox {
+	height: 39px;
+	overflow: hidden;
+	min-width:1000px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<1000?"1000px":"");
+}
+.oatop .downbox .menutab {
+	float: left;
+	width: 222px;
+	margin-left: 20px;
+	font-size: 15px;
+	font-weight: bold;
+	color: #606060;
+	display:inline;
+}
+.oatop .downbox .menutab a {
+	color: #606060;
+}
+
+.oatop .downbox .menutab ul {
+	background-image: url(images/submenutab.png);
+	background-repeat: no-repeat;
+	height: 39px;
+	line-height: 39px;
+}
+.oatop .downbox .menutab li {
+	float: left;
+	width: 104px;
+	text-align: center;
+}
+
+.oatop .downbox .menutab .selected-1 {/*左侧导航tab标签“菜单”选中状态*/
+	background-image: url(images/menutab-1.png);
+	background-repeat: no-repeat;
+	height: 39px;
+	width: 104px;
+	color: #ff530f;
+}
+.oatop .downbox .menutab .selected-2 {/*左侧导航tab标签"在线"选中状态*/
+	background-image: url(images/menutab-2.png);
+	background-repeat: no-repeat;
+	height: 39px;
+	width: 104px;
+	color: #ff530f;
+}
+.oatop .downbox .menutab ul .selected-1, .selected-2 a {
+	color: #ff530f;
+}
+.oatop .downbox .userinf {
+	margin-left: 242px;
+	display:inline;
+}
+.oatop .downbox .userinf .putaway {
+	float: left;
+	margin-right: 15px;
+	margin-top: 5px;
+	display:inline;
+}
+
+.oatop .downbox .userinf .username {
+	width: auto;
+	height: 39px;
+	line-height: 39px;
+	float: left;
+}
+.oatop .downbox .userinf .entrance {
+	background-image: url(images/entrybtn.png);
+	background-repeat: no-repeat;
+	height: 34px;
+	width: 123px;
+	float: right;
+	margin-right: 20px;
+	display:inline;
+}
+/*顶部样式结束*/
+
+.v2main { overflow:visible;
+	min-width:1000px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<1000?"1000px":""); }
+.v2main .leftsub {
+	folat:left;
+	width:230px;
+	background-color:#FFF;
+	margin-left: 20px;
+	display:inline;
+	line-height: 60px;
+	font-size: 16px;
+	float: left;
+	margin-right: 20px;
+}
+.v2main .leftsub .boxbg {
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #e9e9e9;
+	padding-left: 20px;
+	height: 60px;
+}
+
+.v2main .leftsub .span-1 {
+	margin-right: 25px;
+}
+.v2main .leftsub .boxbg .span-2 {
+	width: 120px;
+	display:-moz-inline-box;
+	display:inline-block;
+}
+
+.v2main .leftsub .submenuul {
+	tical-align:middle;
+	background-color: #f2f2f2;
+
+}
+.v2main .leftsub .submenuul .listbox {
+	padding-left: 70px;
+}
+.v2main .leftsub .submenuul .listbox1 {
+	padding-left: 95px;
+}
+
+.v2main .leftsub .submenuul li {
+	border-bottom-style: solid;
+	border-bottom-color: #FFF;
+	line-height: 40px;
+	border-bottom-width: 1px;
+}
+ .v2main .leftsub .submenuul .3level {
+	padding-left: 20px;
+
+}
+.v2main .leftsub  .selbg {
+	background-color: #d6dadc;
+}
+.v2main .leftsub .divsel {
+	background-color: #F5F5F5;
+}
+.v2main .right {
+	background-color: #FFF;
+	width: auto;
+	display:inline;
+	padding-left: 20px;
+	display: block;
+	overflow: hidden;
+}
+.v2main .right .navtab {
+	line-height: 40px;
+	padding-top: 10px;
+	height: 40px;
+}
+.v2main .right .navtab .closebut {
+	position: absolute;
+	height: 10px;
+	width: 10px;
+	top: 2px;
+	right: 2px;
+}
+
+.v2main .right .navtab li {
+	float: left;
+	height: 32px;
+	width: 114px;
+	background-color: #f0f0f0;
+	border: 1px solid #e1e1e1;
+	margin-right: 5px;
+	font-weight: bold;
+	text-align: center;
+	font-size: 14px;
+	line-height: 32px;
+	position: relative;
+	display:inline
+}
+.v2main .right .navtab .selli {
+	background-color: #FFF;
+	border: 1px solid #00a7f7;
+}
+.v2main .right .contbox {
+	line-height: 30px;
+	overflow: hidden;
+}
+.v2main .right .contbox .left {
+	margin:0 auto;
+	width:auto;
+	float: left;
+}
+.v2main .right .contbox .left .bor, .contbox .middle .bor, .contbox .right .bor {
+	border: 1px solid #e3e3e3;
+	margin-bottom: 15px;
+	min-width:390px;
+    min-height:200px;
+	height:100%;
+	_height:200px;
+
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<390?"390px":"");
+	margin-right: 20px;
+}
+.v2main .right .contbox .left .bor .titletxt, .contbox .middle .bor .titletxt, .contbox .right .bor .titletxt {
+	font-size: 14px;
+	font-weight: bold;
+	padding-left: 10px;
+}
+.v2main .right .contbox .left .bor .box, .contbox .middle .bor .box, .contbox .right .bor .box {
+	position: relative;
+	background-color: #f5f5f5;
+	height: 35px;
+}
+.v2main .right .contbox .left .bor .opbut-1, .contbox .middle .bor .opbut-1, .contbox .right .bor .opbut-1 {
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	top: 5px;
+	right: 65px;
+}
+.v2main .right .contbox .left .bor .opbut-2, .contbox .middle .bor .opbut-2, .contbox .right .bor .opbut-2 {
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	top: 5px;
+	right: 40px;
+}
+
+.v2main .right .contbox .left .bor .opbut-3, .contbox .middle .bor .opbut-3, .contbox .right .bor .opbut-3 {
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	top: 5px;
+	right: 15px;
+}
+.v2main .right .contbox .left .bor .article, .contbox .middle .bor .article, .contbox .right .bor .article {
+	line-height: 30px;
+	text-indent: 10px;
+}
+
+
+.v2main .right .contbox .middle {
+	width: 41%;
+	float: left;
+	 
+}
+.v2main .right .contbox .right {
+	width: 250px;
+	float: right;
+}
+.v2main .right .contbox .right .note {
+	background-image: url(images/notebg.png);
+	height: 268px;
+	width: 249px;
+	margin-bottom: 15px;
+}
+.v2main .right .contbox .right .note .uptitle {
+	text-align: center;
+	font-size: 14px;
+	font-weight: bold;
+	position: relative;
+}
+.v2main .right .contbox .right .note .uptitle .icobox-1 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	left: 5px;
+	top: 5px;
+
+}
+
+.v2main .right .contbox .right .note .uptitle .icobox-2 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	right:40px;
+	top: 5px;
+}
+.v2main .right .contbox .right .note .uptitle .icobox-3 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	right:5px;
+	top: 5px;
+}
+
+.new_f-1 {
+	color: #02A8F6;
+	font-size: 11px;
+}
+.a_font {
+	color: #F90;
+}
+
+.qqFace{margin-top:4px;background:#fff;padding:2px;border:1px #dfe6f6 solid;} 
+.qqFace table td{padding:0px;} 
+.qqFace table td img{cursor:pointer;border:1px #fff solid;} 
+.qqFace table td img:hover{border:1px #0066cc solid;} 		  

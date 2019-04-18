@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<all>
+	<render code="default">
+		<name>默认显示</name>
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.forum.plugin.DefaultRender</className>
+	</render>
+	<render code="RenderMM">
+		<name>多媒体方式显示附件</name>
+		<author></author>
+		<className>com.redmoon.forum.plugin.render.RenderMM</className>
+	</render>
+</all>
+

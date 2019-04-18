@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <isRobotOpen desc="是否开启QQ群机器人">true</isRobotOpen>
+    <key desc="密钥">123abc</key>
+    <robotId desc="机器人的QQ号">2601053210</robotId>
+    <apiNotOpen desc="接口未启动提示">[@%s]API接口未启动！</apiNotOpen>
+    <docShowTip desc="用户浏览分享在QQ群中的文章未登录时的提示">加 管理员：小菜头 为好友，在群中发送“登录”，可直接登录群OA
+        登录后可在文件柜中下载电子书、PPT等资料，同时请点击右上角齿轮图标，修改密码！</docShowTip>
+    <signExceed desc="签到次数超出提示">今日签到次数已超过%s次，不能再签啦！</signExceed>
+    <signMaxOneDay desc="每天最多能签到次数">2</signMaxOneDay>
+    <cardNotValid desc="群名片不规范提示">[@%s]你的群名片不规范，正确格式为：南京-小菜头，注意用减号联接！[Face:29]</cardNotValid>
+    <loginRemind desc="登录未加机器人为好友提示" type="textarea">[@%s] 群OA一键登录链接已发至机器人与您的会话，加机器人米宝为好友才可以收到会话消息!
+        登录：http://partner.yimihome.com</loginRemind>
+    <urlRobot desc="机器人地址，用于调用API">http://www.yimihome.com:9990</urlRobot>
+    <noteJoin desc="进群需知" type="textarea">[@%s] 欢迎加入我们!&#xD;
+        进群须知：&#xD;
+        1、进群请自我介绍，改马甲，格式：地区-产品-昵称，如：南京-小菜头&#xD;
+        2、签到时间为上午6~9点，晚上6~7点，签到积分可用于在群OA中下载电子书及相互赠分&#xD;
+        3、签到成功后，加机器人小菜头为好友，在群里发“登录”，可登录群OA&#xD;
+        4、更多详情请见http://www.yimihome.com/doc_show.jsp?id=3185</noteJoin>
+    <signTimeFrameStart1 desc="签到时间段开始1">06:00</signTimeFrameStart1>
+    <signTimeFrameEnd1 desc="签到时间段结束1">09:00</signTimeFrameEnd1>
+    <signTimeFrameStart2 desc="签到时间段开始2">18:00</signTimeFrameStart2>
+    <signTimeFrameEnd2 desc="签到时间段结束2">19:00</signTimeFrameEnd2>
+    <signMsg desc="签到消息" type="textarea">[@%s] 恭喜，签到成功！
+        [Face:E29894] 累计签到%s次
+        [Face:E29894] 连续签到%s天
+        [Face:E29894] 排名第%s位
+        [Face:E29894] 积分共%s分
+        注意：签到时间为上午6~9点，晚上6~7点</signMsg>
+    <signInfo desc="签到信息" type="textarea">[@%s] 签到信息
+        [Face:E29894] 累计签到%s次
+        [Face:E29894] 连续签到%s天
+        [Face:E29894] 排名第%s位
+        [Face:E29894] 积分共%s分
+        注意：签到时间为上午6~9点，晚上6~7点</signInfo>
+    <docUpload desc="上传文件播报">【播报】 %s 上传了文件：%s，积%s分</docUpload>
+    <productAdd desc="发布产品播报">【播报】 %s 发布了产品 %s</productAdd>
+    <productStick desc="产品置顶提示">【播报】 %s 置顶了产品 %s</productStick>
+    <connectionAdd desc="发布人脉资源播报">【播报】 %s 发布了人脉资源： %s</connectionAdd>
+    <connectionStick desc="人脉资源置顶提示">【播报】 %s 置顶了人脉资源： %s</connectionStick>
+    <redBagNotice desc="抢红包活动提示">【通知】“%s”活动开始啦，距离结束还有%s分钟，%s  点击进入</redBagNotice>
+    <redBagNoticeUrl desc="抢红包链接地址">http://partner.yimihome.com/public/robot/red_bag/red_bag.jsp?batchNo=</redBagNoticeUrl>
+    <redBagGrabFail desc="红包已被抢走提示">已经被别人抢走啦</redBagGrabFail>
+    <redBagGrabExpire desc="抢红包活动过期提示">抢红包活动已过期，结束时间为%s</redBagGrabExpire>
+    <redBagGrabMaxCount desc="抢红包活动最多能抢红包数">本次活动最多只能抢%s个红包</redBagGrabMaxCount>
+    <redBagGrabNotice desc="抢红包成功提示">【播报】恭喜，%s抢到了红包：%s</redBagGrabNotice>
+    <filearkShareNotice desc="群OA文件分享至QQ群提示" type="textarea">【播报】%s
+        来自群OA的文件分享《%s》, 作者：%s
+        %s</filearkShareNotice>
+    <joinGiftNote desc="大礼包通知">[@%s]您的大礼包已送达，积分500分，3张米票，即3套一米OA免费优惠券，请进群OA查看“我的红包”，记住要在有效期内使用哦</joinGiftNote>
+    <joinGiftMailTitle desc="大礼包邮件通知">您的大礼包已送达，3张米票，即3套一米OA免费优惠券</joinGiftMailTitle>
+    <joinGiftMailContent desc="大礼包邮件通知" type="richtext">&lt;p&gt;请进群OA查看“我的红包”，记住要在有效期内使用哦&lt;/p&gt;</joinGiftMailContent>
+    <docShareNote desc="分享有礼通知">【播报】[@%s]分享了文章《%s》给朋友，送免费米票1张，1月内有效，5折菜票1张，3个月内有效</docShareNote>
+    <docShareTitle desc="分享有礼邮件通知">感谢您分享了文章《%s》至朋友圈，送免费米票1张，1月内有效，5折菜票1张，3个月内有效</docShareTitle>
+    <docShareContent desc="分享有礼邮件通知" type="richtext">请进群OA查看“我的红包”，记住要在有效期内使用哦</docShareContent>
+    <docShareTimelineNote desc="分享有礼通知">【播报】[@%s]分享了文章《%s》至朋友圈，送免费米票3张，5折菜票1张</docShareTimelineNote>
+    <docShareTimelineTitle desc="分享有礼邮件通知">感谢您分享了文章《%s》至朋友圈，送免费米票3张，5折菜票1张</docShareTimelineTitle>
+    <docShareTimelineContent desc="分享有礼邮件通知" type="richtext">请进群OA查看“我的红包”，记住要在有效期内使用哦</docShareTimelineContent>
+    <isBizCardAuthGif desc="名片认证是否送礼">true</isBizCardAuthGif>
+    <bizCardGiftNote desc="大礼包通知">[@%s]认证通过，您的大礼包已送达，3张米票，即3套一米OA免费优惠券，请进群OA查看“我的红包”，记住要在有效期内使用哦</bizCardGiftNote>
+    <bizCardGiftMailTitle desc="大礼包邮件通知">认证通过，您的大礼包已送达，3张米票，即3套一米OA免费优惠券</bizCardGiftMailTitle>
+    <bizCardGiftMailContent desc="大礼包邮件通知" type="richtext">请进群OA查看“我的红包”，记住要在有效期内使用哦</bizCardGiftMailContent>
+    <getBackPwdAddFriend desc="提示加机器人可收密码">[@%s] 请加机器人为好友，您将可以收到密码信息</getBackPwdAddFriend>
+    <getBackPwdSuccess desc="找回密码提示">[@%s] 找回密码成功，如未收到，请加机器人小菜头为好友</getBackPwdSuccess>
+    <getBackPwd desc="找回密码成功提示">找回密码成功，您的密码是：%s</getBackPwd>
+    <redBagShareDelayDays desc="红包分享给朋友米票、菜票的延期天数">30</redBagShareDelayDays>
+    <redBagShareNote desc="红包分享播报标题">【播报】[@%s]分享了%s给朋友，延期%s天</redBagShareNote>
+    <redBagShareTitle desc="红包分享通知消息标题">感谢您分享了%s给朋友，延期%s天</redBagShareTitle>
+    <redBagShareContent desc="红包分享通知消息内容">红包ID：%s，原有效期从%s至%s，现延长至%s。请进群OA查看“我的红包”，记住要在有效期内使用哦!</redBagShareContent>
+    <redBagShareTimelineDelayDays desc="红包分享至朋友圈米票、菜票的延期天数">120</redBagShareTimelineDelayDays>
+    <redBagShareTimelineNote desc="红包分享至朋友圈播报标题">【播报】[@%s]分享了%s至朋友圈，延期%s天</redBagShareTimelineNote>
+    <redBagShareTimelineTitle desc="红包分享至朋友圈通知消息标题">感谢您分享了%s至朋友圈，延期%s天</redBagShareTimelineTitle>
+    <redBagShareTimelineContent desc="红包分享至朋友圈通知消息内容">红包ID：%s，原有效期从%s至%s，现延长至%s。请进群OA查看“我的红包”，记住要在有效期内使用哦!</redBagShareTimelineContent>
+    <groups isDisplay="false">
+        <group id="220692725" name="小菜园1号">
+            <loginUrlAuto>请点击登录群OA
+                http://partner.yimihome.com/public/robot/spark_login.jsp?op=login</loginUrlAuto>
+            <loginUrl>[@%s]请点击登录群OA
+                http://partner.yimihome.com，加小菜头（2601053210）为好友可以一键登录</loginUrl>
+            <docShowUrl>http://partner.yimihome.com/public/robot/doc_show.jsp?id=</docShowUrl>
+            <isRedbagOpen desc="是否开启红包功能">true</isRedbagOpen>
+            <isFilearkShareOpen desc="文件柜共享是否开启">true</isFilearkShareOpen>
+            <filearkShareDefaultImg>http://partner.yimihome.com/images/fileark_share.png</filearkShareDefaultImg>
+            <isJoinGift desc="进群是否送大礼包">true</isJoinGift>
+            <isDocShare desc="是否分享文章至朋友圈有礼">true</isDocShare>
+        </group>
+    </groups>
+</config>
+

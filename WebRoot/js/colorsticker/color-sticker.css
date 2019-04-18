@@ -1,0 +1,174 @@
+		body{
+			margin: 0;
+			padding: 0;
+			font-family: 'Microsoft Yahei';
+			background-image: url(images/bg.jpg);		
+		}
+		
+		.sticker{
+			position: absolute;
+			z-index: 100;
+			top:100px;
+			left:100px
+			font-family: 'Microsoft Yahei';
+		}
+		.sticker textarea{
+			-moz-box-shadow: 5px 5px 7px rgba(33,33,33,0.7);
+			-webkit-box-shadow: 5px 5px 7px rgba(33,33,33,0.7);
+			box-shadow: 5px 5px 7px rgba(33,33,33,0.7);
+			-moz-transition: -moz-transform .15s linear;
+			-webkit-transition: -webkit-transform .15s linear;
+			-o-transition: -o-transform .15s linear;
+			-ms-transition: -ms-transform .15s linear;
+			transition: transform .15s linear;
+			position:absolute;
+			display:inline-block;
+			height:90%;
+			width:90%;
+			font-size:14px;
+			text-decoration:none;
+			color:#000;
+			background-color:#ffc;
+			padding:30px 5% 12px 5%;
+			border-color: transparent;
+			resize: none;
+			z-index: 1;
+			overflow-y: auto;
+			font-family: 'Microsoft Yahei';
+		}
+		.sticker .date-input {
+			position:absolute;
+			left: 0px;
+			top: 0px;
+			width: 80%;
+			height: 20px;	
+			padding-left: 5%;
+			color: #aaa;
+			font-size:14px;
+			background-color:#ffc;
+			border-color: transparent;
+			cursor: pointer;
+			z-index: 2;
+		}
+		.sticker .tape {
+			position:absolute;
+			left: 20%;
+			top: -20px;
+			width: 60%;
+			height: 40px;
+			background-color:rgba(255, 255, 204,0.5);			
+			border-left: 1px dashed rgba(0, 0, 0, 0.1);
+			border-right: 1px dashed rgba(0, 0, 0, 0.1);
+			-webkit-box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.2);
+			-moz-box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.2);
+			box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.2);
+			z-index: 2;
+			cursor: pointer;
+		}
+		.sticker.pink textarea{
+			background-color: #ffd8cc !important;
+		}
+		.sticker.pink .tape{
+			background-color:rgba(255, 219, 204, 0.5) !important;
+		}
+		.sticker.green textarea{
+			background-color: #ccffe8;
+		}
+		.sticker.green .tape{
+			background-color: rgba(204, 255, 239, 0.5);
+		}
+		.sticker.blue textarea{
+			background-color: #ccf0ff;
+		}
+		.sticker.blue .tape{
+			background-color:rgba(204, 245, 255, 0.5);
+		}
+		.sticker.purple textarea{
+			background-color: #d2ccff;
+		}
+		.sticker.purple .tape{
+			background-color:rgba(222, 204, 255, 0.5);
+		}
+		.sticker .close-btn{
+			-webkit-appearance: none;
+			padding: 0;
+			cursor: pointer;
+			background: 0 0;
+			border: 0;
+			font-size: 20px;
+			color: #aaa;
+			position: absolute;
+			z-index: 3;
+			right: 4px;
+		}	
+		.sticker .save-btn{
+			-webkit-appearance: none;
+			padding: 0;
+			cursor: pointer;
+			background: 0 0;
+			border: 0;
+			font-size: 20px;
+			color: #aaa;
+			position: absolute;
+			z-index: 3;
+			right: 2px;
+			bottom: -18px;
+			width: 16px;
+			height: 16px;
+			background-image: url(images/save-btn.png);
+		}
+		.sticker .share-btn{
+			-webkit-appearance: none;
+			padding: 0;
+			cursor: pointer;
+			background: 0 0;
+			border: 0;
+			font-size: 20px;
+			color: #aaa;
+			position: absolute;
+			z-index: 3;
+			right: 22px;
+			bottom: -18px;
+			width: 16px;
+			height: 16px;
+			background-image: url(images/share.png);
+		}	
+		.sticker .unshare-btn{
+			-webkit-appearance: none;
+			padding: 0;
+			cursor: pointer;
+			background: 0 0;
+			border: 0;
+			font-size: 20px;
+			color: #aaa;
+			position: absolute;
+			z-index: 3;
+			right: 22px;
+			bottom: -18px;
+			width: 16px;
+			height: 16px;
+			background-image: url(images/unshare.png);
+		}			
+		.sticker-adding-btn{
+			width: 50px;
+			height: 50px;
+			background: #0cd3ec;
+			text-align: center;
+			font-size: 40px;
+			border-radius: 50%;
+			padding: 0;
+			color: #fff;
+			position: fixed;
+			right: 10px;
+			top:10px;
+			font-weight: 700;
+			-moz-box-shadow: 3px 3px 5px rgba(33,33,33,0.7);
+			-webkit-box-shadow: 3px 3px 5px rgba(33,33,33,0.7);
+			box-shadow: 3px 3px 5px rgba(33,33,33,0.7);
+			cursor: pointer;
+			line-height: 45px;
+		}
+		.sticker-adding-btn:hover{
+			background: #0badc1;
+		}
+		

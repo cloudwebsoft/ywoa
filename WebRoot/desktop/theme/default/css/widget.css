@@ -1,0 +1,66 @@
+@charset "utf-8";
+/*version: mydesktop 3.0
+ *author: muzilei
+ *email: 530624206@qq.com
+ *blog: http://www.muzilei.com/
+ *date:2013-1-24
+ */
+.myWidget{
+	width:200px;
+	height:200px;
+	position:absolute;
+	right:15px;
+	top:50px;
+	background:url(../images/bg.png) repeat
+	}
+.myWidget .loading{
+	width:100%;
+	position:absolute;
+	top:50px;
+	height:25px;
+	padding-top:35px;
+	font-size:12px;
+	margin-top:-30px;
+	background:url(../images/loading.gif) no-repeat center top;
+	text-align:center;
+	}	
+.widgetTitle{
+	width:100%;
+	height:30px;
+	line-height:30px;
+	cursor:pointer;
+ 	}
+.innerWidgetTitle{
+	width:100%;
+	height:30px;
+	display:none;
+    background:url(../images/bg_task_b.png) repeat-x left center;
+	}	
+.widgetTitle  b{
+	float:left;
+	height:30px;
+	line-height:30px;
+	display:inline-block;
+	color:#fff;
+	font-size:12px;
+	text-indent:10px;
+ 	}	
+.widgetTitle span{
+	float:right;
+	display:inline-block;
+	height:20px;
+	margin-top:5px;
+	}
+.widgetTitle span a{
+	display:block;
+	width:20px;
+	height:20px;
+	}
+
+.widgetClose{
+	background:url(../images/contrlBtn.png) no-repeat -64px -58px;
+	}				
+.widgetClose:hover{
+	background:url(../images/contrlBtn.png) no-repeat -64px -2px;
+	}	
+

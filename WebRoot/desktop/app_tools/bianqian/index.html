@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>无标题文档</title>
+<style type="text/css">
+<!--
+body, td, th {
+	font-size: 14px;
+}
+* {
+	margin:0;
+	padding:0;
+}
+
+.memo_area {
+    background: url("memo_background.png") no-repeat scroll left 0 transparent;
+    bottom: 0;
+    left: 0;
+    padding: 20px 10px 10px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 0;
+}
+html.ie6_0 .memo_area {
+    background: none repeat scroll 0 center transparent;
+}
+.memo_area textarea, input {
+    outline: 0 none;
+    resize: none;
+}
+.memo_area_content {
+    background: none repeat scroll 0 0 transparent;
+    border: medium none;
+    cursor: pointer;
+    font: 12px/1.5 tahoma,helvetica,clean,sans-serif;
+    height: 122px;
+    overflow: hidden;
+    padding: 0;
+    width: 141px;
+    word-wrap: break-word;
+}
+.memo_area_tips {
+    color: #666666;
+    float: left;
+    font-size: 12px;
+    height: 12px;
+    line-height: 12px;
+    margin-top: 2px;
+    width: 100px;
+}
+.memo_area_tips_over {
+    color: red;
+}
+.memo_area_content_plus {
+    cursor: text;
+    margin: 0;
+    overflow-x: inherit;
+    overflow-y: scroll;
+    padding: 0;
+    width: 160px;
+}
+ 
+-->
+</style>
+</head>
+<body>
+<div class="memo_area" id="memo_area_3">
+  <div class="memo_area_content" id="div_memo_area_content_3" ></div>
+  <div class="memo_area_content" id="textarea_memo" style="display:none">
+    <textarea class="memo_area_content memo_area_content_plus" id="textarea_memo_area_content_3"></textarea>
+  </div>
+  <div id="memo_area_tips_3" class="memo_area_tips" style="display:none">0/200</div>
+</div>
+<script type="text/javascript">
+ function stopBubble(e) {
+        //如果提供了事件对象，则这是一个非IE浏览器
+        if ( e && e.stopPropagation )
+            //因此它支持W3C的stopPropagation()方法
+            e.stopPropagation();
+        else
+            //否则，我们需要使用IE的方式来取消事件冒泡
+            window.event.cancelBubble = true;
+    }
+
+var div_memo=document.getElementById("div_memo_area_content_3"),
+    textarea_memo=document.getElementById("textarea_memo"),
+	memo_area_3=document.getElementById("memo_area_3"),
+	memo_area_tips_3=document.getElementById("memo_area_tips_3")
+	textarea=document.getElementById("textarea_memo_area_content_3");
+ 	
+memo_area_3.onclick=function(e){
+		stopBubble(e);
+		memo_area_tips_3.innerHTML=textarea.value.substring(0,200).length+"/200";
+		div_memo.style.display="none";
+		textarea_memo.style.display="block";
+		memo_area_tips_3.style.display="block";
+		div_memo.innerHTML="";
+ 		};
+
+function countChar(){
+	var zs=textarea.value.length;
+	var t=textarea.value;
+    if(zs<=200){
+      memo_area_tips_3.innerHTML=zs+"/200";
+	 }else{
+	 div_memo.style.display="block";
+	 textarea_memo.style.display="none";
+ 	 div_memo.innerHTML=t;
+	 textarea.value=t.substring(0,200);
+	 memo_area_tips_3.innerHTML="200/200";
+ 	 }
+}
+
+textarea.onkeydown=function(){
+ 	countChar();
+ 	};
+ 
+</script>
+</body>
+</html>

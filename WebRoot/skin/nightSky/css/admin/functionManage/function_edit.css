@@ -1,0 +1,99 @@
+@charset "utf-8";
+@import url("../../common/common.css");
+.functionbox {
+	width: 1000px;
+	margin-left: 20px;
+	overflow: hidden;
+	line-height: 35px;
+}
+.functionbox .function_top {
+	background-image: url(../../../images/admin/functionManage/function_top.png);
+	background-repeat: no-repeat;
+	height: 119px;
+	position: relative;
+	margin-bottom: 10px;
+}
+.functionbox .function_top .function_btn {
+	height: 52px;
+	width: 147px;
+	position: absolute;
+	left: 813px;
+	top: 16px;
+}
+.functionbox .function_left {
+	float: left;
+	width: 242px;
+	border: 1px solid #e3e3e3;
+	margin-left: 43px;
+	min-height:600px;
+	_height:600px;
+	padding-right: 20px;
+	padding-left: 20px;
+}
+.functionbox .function_left .span_font, .function_middle .span_font, .function_right .span_font {
+	color: #ff6600;
+}
+.functionbox .function_left .function_title, .function_middle .function_title, .function_right .function_title {
+	background-image: url(../../../images/admin/functionManage/function_listbg.jpg);
+	height: 30px;
+	width: 241px;
+	line-height: 30px;
+	position: relative;
+	background-repeat: no-repeat;
+	margin-top: 10px;
+	font-size: 16px;
+	cursor:pointer;
+}
+.functionbox .function_left .function_list, .function_middle .function_list, .function_right .function_list {
+	text-indent: 20px;
+}
+
+.functionbox .function_left .function_title .function_arrow, .function_middle .function_arrow, .function_right .function_arrow {
+	position: absolute;
+    height: 10px;
+    width: 10px;
+    left: 204px;
+    top: 12px;
+    background-image: url(../../../images/admin/functionManage/arrow_up.jpg);
+    background-repeat: no-repeat;
+    background-position: center center;
+}
+.functionbox .function_left .function_title .function_down, .function_middle .function_down, .function_right .function_down {
+	position: absolute;
+    height: 10px;
+    width: 10px;
+    left: 204px;
+    top: 12px;
+    background-image: url(../../../images/admin/functionManage/arrow_down.jpg);
+    background-repeat: no-repeat;
+    background-position: center center;
+
+}	
+
+.functionbox .function_left .checkbox, .function_middle .checkbox, .function_right .checkbox {
+	margin-right: 10px;
+}
+
+.functionbox .function_middle {
+	float: left;
+	width: 242px;
+	border: 1px solid #e3e3e3;
+	margin-left: 30px;
+	min-height:600px;
+	_height:600px;
+	padding-right: 20px;
+	padding-left: 20px;
+}
+.functionbox .function_right {
+	float: right;
+	width: 242px;
+	border: 1px solid #e3e3e3;
+	margin-right: 43px;
+	min-height:600px;
+	_height:600px;
+	padding-right: 20px;
+	padding-left: 20px;
+}
+.allCheck{
+    cursor:pointer;
+}

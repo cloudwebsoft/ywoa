@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  xmlns="http://www.w3.org/1999/xhtml">
+<head>
+		<title>FusionWidgets XT - Edit Mode</title>
+		
+		<script type="text/javascript" language="Javascript" src="../assets/ui/js/jquery.min.js"></script>
+		<script type="text/javascript" src="../../Charts/FusionCharts.js"></script>
+		<script type="text/javascript" language="Javascript" src="../assets/ui/js/lib.js"></script>
+
+        <link href="../assets/ui/css/style.css" rel="stylesheet" type="text/css" />
+
+        <!--[if IE 6]>
+        <script type="text/javascript" src="../assets/ui/js/DD_belatedPNG_0.0.8a-min.js"></script>
+
+		<script>
+          /* select the element name, css selector, background etc */
+          DD_belatedPNG.fix('img');
+
+          /* string argument can be any CSS selector */
+        </script>
+        <![endif]-->
+		
+		<style type="text/css">
+            h2.headline {
+                font: normal 110%/137.5% "Trebuchet MS", Arial, Helvetica, sans-serif;
+                padding: 0;
+                margin: 25px 0 25px 0;
+                color: #7d7c8b;
+                text-align: center;
+            }
+            p.small {
+                font: normal 68.75%/150% Verdana, Geneva, sans-serif;
+                color: #919191;
+                padding: 0;
+                margin: 0 auto;
+                width: 664px;
+                text-align: center;
+            }
+        </style>
+		<script language="javascript">
+			//FC_ChartUpdated method is called when user has changed dial value.
+			function FC_ChartUpdated(DOMId){
+				//Check if DOMId is that of the chart we want
+				if (DOMId=="ChId1"){
+					//Get reference to the chart
+					var chartRef = getChartFromId(DOMId);
+					//Get the current value
+					var dialValue = chartRef.getData(1);			
+					//You can also use getDataForId method as commented below, to get the dial value. However, for this, a dial needs to be have an ID
+					//var dialValue = chartRef.getDataForId("CS");				
+					//Update display
+					var divToUpdate = document.getElementById("contentDiv");
+					divToUpdate.innerHTML = "<span class='text'>Your satisfaction index: <b>" + Math.round(dialValue) + "%</b></span>";
+					
+				}
+			}	
+		</script>		
+		</head>
+<body>
+<div id="wrapper">
+
+            <div id="header">
+                
+
+               <div class="logo"><a class="imagelink"  href="http://www.fusioncharts.com/widgets" target="_blank"><img src="../assets/ui/images/fwxt-logo.png" width="73" height="74" alt="FusionWidgets XT logo" /></a></div>
+				 <h1 class="brand-name">FusionWidgets XT</h1>
+                <h1 class="logo-text">First editable Angular gauge</h1>
+            </div>
+			
+			 <div class="content-area">
+                <div id="content-area-inner-main">
+				<p class="text" align="center">The sample displays an editable angular gauge.</p>
+				<div id="messageBox" style="margin-left:130px; margin-right:130px; display:none;"></div>
+
+				<div class="highlightBlock" id="contentDiv" style="margin-left:130px; margin-right:130px; text-align:center;">Drag and move the dial to indicate your satisfaction index.</div>
+
+                <div class="gen-chart-render">
+
+                        <div id="chartContainer">FusionWidgets XT will load here!</div>
+						<script type="text/javascript"><!--
+							var editModeXML ='<chart lowerLimit="0" upperLimit="100" lowerLimitDisplay="Bad" upperLimitDisplay="Good" gaugeStartAngle="180" gaugeEndAngle="0" palette="1" numberSuffix="%" tickValueDistance="20" showValue="1" decimals="0" editMode="1">\n\
+							   <colorRange>\n\
+								  <color minValue="0" maxValue="75" code="FF654F"/>\n\
+								  <color minValue="75" maxValue="90" code="F6BD0F"/>\n\
+								  <color minValue="90" maxValue="100" code="8BBA00"/>\n\
+							   </colorRange>\n\
+							   <dials>\n\
+								  <dial id="CS" value="92" rearExtension="10"/>\n\
+							   </dials>\n\
+							<styles>\n\
+							   <definition>\n\
+								  <style type="font" name="myValueFont" bgColor="F1f1f1" borderColor="999999" />\n\
+							   </definition>\n\
+							   <application>\n\
+								  <apply toObject="Value" styles="myValueFont" />\n\
+							   </application>\n\
+							</styles>\n\
+							</chart>';
+						   
+						   // Render chart 	
+						   var chart1 = new FusionCharts("../../Charts/AngularGauge.swf", "ChId1", "400", "200", "0", "1");
+						   chart1.setXMLData(editModeXML);
+						   chart1.render("chartContainer");
+						   
+						   // -->
+						</script>
+					</div>
+ 					<div class="clear"></div>
+                    <p>&nbsp;</p>
+                    <div class="underline-dull"></div>
+                </div>
+            </div>
+			</div>
+			<div id="footer">
+                <p class="highlightBlock">The above sample showcases the edit mode of Angular gauge. Click <a href="../../Contents/Index.html?Angular/Edit.html" target="_blank">here</a> to know more on how the code of this example works.</p>
+            </div>
+        
+	<script type="text/javascript"><!--//
+			$(document).ready ( function() {
+			   showConditionalMessage( "Your browser does not seem to have Flash Player support. JavaScript chart is rendered instead.", isJSRenderer(chart1) );
+			});	
+		// -->
+		</script>	
+		
+</body>
+</html>

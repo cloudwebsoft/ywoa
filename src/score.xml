@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+注册金钱数：100  登录增加金钱：8  发帖增加金钱：15  
+跟帖增加金钱：12  精华增加金钱：25  删帖减少金钱：12
+
+注册经验数：60  登录增加经验：6  发帖增加经验：10  
+跟帖增加经验：5  精华增加经验：20  删帖减少经验：5
+-->
+<all>
+    <score code="experience">
+        <name>经验值</name>
+        <author>Blue Wind</author>
+        <className>com.redmoon.forum.plugin.score.Experience</className>
+        <type>forum</type>
+        <!-- 是论坛通用型的forum，还是版块型的board -->
+        <exchange>1</exchange>
+        <!-- 能否用于交易 -->
+        <real>0</real>
+        <!-- 是否为真实币 -->
+        <danWei>点</danWei>
+        <desc>经验值</desc>
+        <regist>60</regist>
+        <login>6</login>
+        <add>10</add>
+        <reply>5</reply>
+        <elite>20</elite>
+        <del>-5</del>
+        <advertiseLink>0</advertiseLink>
+        <attachment_add>5</attachment_add>
+        <attachment_del>-5</attachment_del>
+        <ratio>1</ratio>
+        <isDisplay>1</isDisplay>
+    </score>
+    <score code="credit">
+        <name>信用值</name>
+        <author>Blue Wind</author>
+        <className>com.redmoon.forum.plugin.score.Credit</className>
+        <type>forum</type>
+        <exchange>1</exchange>
+        <real>0</real>
+        <dummy>1</dummy>
+        <danWei>点</danWei>
+        <desc>信用</desc>
+        <regist>0</regist>
+        <login>0</login>
+        <add>2</add>
+        <reply>1</reply>
+        <elite>5</elite>
+        <del>-20</del>
+        <advertiseLink>0</advertiseLink>
+        <attachment_add>5</attachment_add>
+        <attachment_del>-5</attachment_del>
+        <ratio>2</ratio>
+        <isDisplay>1</isDisplay>
+    </score>
+    <score code="gold">
+        <name>金币</name>
+        <author>Blue Wind</author>
+        <className>com.redmoon.forum.plugin.score.Gold</className>
+        <type>forum</type>
+        <exchange>1</exchange>
+        <real>0</real>
+        <danWei>元</danWei>
+        <desc>金币</desc>
+        <regist>100</regist>
+        <login>8</login>
+        <add>15</add>
+        <reply>12</reply>
+        <elite>25</elite>
+        <del>-12</del>
+        <advertiseLink>0</advertiseLink>
+        <attachment_add>5</attachment_add>
+        <attachment_del>-5</attachment_del>
+        <ratio>5</ratio>
+        <isDisplay>1</isDisplay>
+    </score>
+    <score code="point">
+        <name>点卡</name>
+        <author>Blue Wind</author>
+        <className>com.redmoon.forum.plugin.score.Point</className>
+        <type>board</type>
+        <exchange>0</exchange>
+        <real>0</real>
+        <danWei>元</danWei>
+        <desc>点卡</desc>
+        <regist>100</regist>
+        <login>8</login>
+        <add>15</add>
+        <reply>12</reply>
+        <elite>25</elite>
+        <del>-12</del>
+        <advertiseLink>0</advertiseLink>
+        <attachment_add>5</attachment_add>
+        <attachment_del>-5</attachment_del>
+        <ratio>10</ratio>
+        <isDisplay>1</isDisplay>
+    </score>
+    <score code="rmb">
+        <name>人民币</name>
+        <author>Fan Gang-feng</author>
+        <className>com.redmoon.forum.plugin.score.RMB</className>
+        <type>board</type>
+        <exchange>1</exchange>
+        <real>1</real>
+        <danWei>元</danWei>
+        <desc>人民币</desc>
+        <regist>0</regist>
+        <login>0</login>
+        <add>0</add>
+        <reply>0</reply>
+        <elite>0</elite>
+        <del>0</del>
+        <advertiseLink>0</advertiseLink>
+        <attachment_add>5</attachment_add>
+        <attachment_del>-5</attachment_del>
+        <ratio>100</ratio>
+        <isDisplay>0</isDisplay>
+    </score>
+</all>
+

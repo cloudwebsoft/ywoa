@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <swRoles desc="收文角色"></swRoles>
+    <swNoticeTitle desc="收文消息标题">请注意接收%s来文：%s</swNoticeTitle>
+    <swNoticeContent desc="收文消息内容">发文单位：%s 
+	文件标题：%s
+	发文时间：%s
+	</swNoticeContent>
+	<swPlanTitle desc="收文日程安排标题">收文：%s</swPlanTitle>
+	<swPlanContent desc="收文日程安排内容">
+	发文单位：%s 
+	文件标题：%s
+	发文时间：%s
+	</swPlanContent>
+</config>
+

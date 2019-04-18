@@ -1,0 +1,93 @@
+@charset "utf-8";
+/*引导页面样式*/
+.introduction-layout {
+	background-image: url(../../images/introduction/introduction-bg.jpg);
+	background-repeat: no-repeat;
+	background-position: left top;
+	overflow: hidden;
+	width: 100%;
+}.introduction-stepnor {
+	height: 155px;
+	position: relative;
+	cursor:pointer;
+}
+.introduction-stepsel {
+	height: 155px;
+	border: 1px solid #cccccc;
+	position: relative;
+	cursor:pointer
+}
+.introduction-step1 {
+	position: absolute;
+	height: 120px;
+	left: 212px;
+	top: 20px;
+	width: 100%;
+}
+.introduction-step2 {
+	position: absolute;
+	height: 120px;
+	left: 615px;
+	top: 20px;
+	width: 100%;
+}
+.introduction-step3 {
+	position: absolute;
+	height: 120px;
+	left: 316px;
+	top: 20px;
+	width: 100%;
+}
+.introduction-step4 {
+	position: absolute;
+	height: 120px;
+	left: 695px;
+	top: 20px;
+	width: 100%;
+}
+.introduction-step5 {
+	position: absolute;
+	height: 120px;
+	left: 226px;
+	top: 20px;
+	width: 100%;
+}
+.introduction-step6 {
+	position: absolute;
+	height: 120px;
+	left: 590px;
+	top: 20px;
+	width: 100%;
+}
+.introduction-step7 {
+	position: absolute;
+	height: 68px;
+	left: 294px;
+	top: 50px;
+	width: 100%;
+}
+.introduction-p1 {
+	font-size: 20px;
+}
+.introduction-p2 {
+	color: #979797;
+	width: 320px;
+	word-wrap: break-word;
+}
+
+body {
+	font-family: "微软雅黑";
+	margin: 0px;
+	padding: 0px;
+	color: #505050;
+	font-size: 14px;
+}
+a {
+	color: #505050;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #F60;
+	text-decoration: none;
+}

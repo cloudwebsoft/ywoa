@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<title> 选择时间 </title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script>
+function onOk() {
+	window.returnValue = "";
+}
+</script>
+<style>
+*{
+ font:12px;
+ letter-spacing:0px;
+}
+body{
+ background-color:#E5E9F2;
+ overflow:hidden;
+ margin:0;
+ border:0px;
+}
+#titleYear{
+ text-align:center;
+ padding-top:3px;
+ width:120px;
+ height:20px;
+ border:solid #E5E9F2;
+ border-width:0px 1px 1px 0px;
+ background-color:#A4B9D7;
+ color:#000;
+ cursor:default;
+}
+#weekNameBox{
+ width:282px;
+ border-bottom:0;
+}
+.weekName{
+ text-align:center;
+ padding-top:4px;
+ width:40px;
+ height:20px;
+ border:solid #E5E9F2;
+ border-width:0px 1px 1px 0px;
+ background-color:#C0D0E8;
+ color:#243F65;
+ cursor:default;
+}
+.controlButton{
+ font-family: Webdings;
+ font:9px;
+ text-align:center;
+ padding-top:2px;
+ width:40px;
+ height:20px;
+ border:solid #E5E9F2;
+ border-width:0px 1px 1px 0px;
+ background-color:#A4B9D7;
+ color:#243F65;
+ cursor:default;
+}
+
+.Ctable{
+ width:282px;
+ margin-bottom:20px;
+}
+.Ctable span{
+ font:9px verdana;
+ font-weight:bold;
+ color:#243F65;
+ text-align:center;
+ padding-top:4px;
+ width:40px;
+ height:26px;
+ border:solid #C0D0E8;
+ border-width:0px 1px 1px 0px;
+ cursor:default;
+}
+.Cdate{
+ background-color:#E5E9F2;
+}
+.Ctable span.OtherMonthDate{
+ color:#999;
+ background-color:#f6f6f6;
+}
+
+.selectBox{
+ cursor:hand;
+ font:9px verdana;
+ width:80px;
+ position:absolute;
+ border:1px solid #425E87;
+ overflow-y:scroll;
+ overflow-x:hidden;
+ background-color:#fff;
+ FILTER:progid:DXImageTransform.Microsoft.Shadow(Color=#999999,offX=10,offY=10,direction=120,Strength=5);
+ SCROLLBAR-FACE-COLOR: #E5E9F2;
+ SCROLLBAR-HIGHLIGHT-COLOR: #E5E9F2;
+ SCROLLBAR-SHADOW-COLOR: #A4B9D7; 
+ SCROLLBAR-3DLIGHT-COLOR: #A4B9D7; 
+ SCROLLBAR-ARROW-COLOR:  #000000; 
+ SCROLLBAR-TRACK-COLOR: #eeeee6; 
+ SCROLLBAR-DARKSHADOW-COLOR: #ffffff;
+}
+.selectBox nobr{
+ padding:0px 0px 2px 5px;
+ width:100%;
+ color:#000;
+ letter-spacing:2px;
+ text-decoration:none;
+}
+
+.STYLE1 {
+	color: #FFFFFF;
+	font-weight: bold;
+}
+</style>
+<body onselectstart="return false">
+<table width="260" height="105" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td height="24" colspan="3" align="center" bgcolor="#7C93D3"><span class="STYLE1">请选择时间</span></td>
+  </tr>
+  <tr>
+    <td width="92" height="30">小时
+	<select name="hour" id="hour">
+	<script>
+	for (var i=0; i<=23; i++) {
+		var h = i;
+		if (i<10)
+			h = "0" + i;
+		document.write("<option value='" + h + "'>" + h + "</option>");
+	}
+	</script></select>	</td>
+    <td width="92">分钟
+	<select name="minute" id="minute">
+	<script>
+	for (var i=0; i<=59; i++) {
+		var h = i;
+		if (i<10)
+			h = "0" + i;
+		document.write("<option value='" + h + "'>" + h + "</option>");
+	}
+	</script></select>	</td>
+    <td width="76">秒
+	<select name="second" id="second">
+	<script>
+	for (var i=0; i<=59; i++) {
+		var h = i;
+		if (i<10)
+			h = "0" + i;
+		document.write("<option value='" + h + "'>" + h + "</option>");
+	}
+	hour.value = "12";
+	minute.value = "00";
+	second.value = "00"; 
+	function returnValue()
+	{
+	   try
+	   {
+	   var param = getParameter("divId");  
+	   if (window.opener)
+	   {
+		   try
+		   {
+		     if (param != "")
+		     {
+		          window.opener.sel(document.getElementById("hour").value+':'+document.getElementById("minute").value+':' +document.getElementById("second").value, param);
+		     }
+		     else
+		     {
+		          window.opener.sel(document.getElementById("hour").value+':'+document.getElementById("minute").value+':' +document.getElementById("second").value);
+		     }
+		      window.close();
+		    }
+		    catch(e)
+		    {
+		       alert(e);   
+		    }
+	    }
+	    else
+	    {
+	       window.returnValue=document.getElementById("hour").value+':'+document.getElementById("minute").value+':' +document.getElementById("second").value;
+	       window.close();
+	    }
+	    }
+	    catch(e)
+	    {
+	       alert(e);
+	    }
+	}
+	function getParameter(param)  
+    {  
+    try
+    {
+        var query = window.location.search;//获取URL地址中？后的所有字符  
+        var iLen = param.length;//获取你的参数名称长度  
+        var iStart = query.indexOf(param);//获取你该参数名称的其实索引  
+        if (iStart == -1)//-1为没有该参数  
+            return "";  
+        iStart += iLen + 1;  
+        var iEnd = query.indexOf("&", iStart);//获取第二个参数的其实索引  
+        if (iEnd == -1)//只有一个参数  
+            return query.substring(iStart-1);//获取单个参数的参数值  
+        return query.substring(iStart, iEnd);//获取第二个参数的值  
+        }
+        catch(e)
+        {
+            alert(e);
+        }
+    } 
+	
+	</script></select>	</td>
+  </tr>
+  <tr>
+    <td height="30" colspan="3" align="center"><input type="button" value="确定" onClick="returnValue()" >
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <input type=button value="关闭" onClick="window.close()"></td>
+  </tr>
+</table>
+</body>
+</HTML>

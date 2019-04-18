@@ -1,0 +1,380 @@
+﻿FusionWidgets XT - http://www.fusioncharts.com/products/suite/fusionwidgets-xt/
+==============================================================================
+Current Version: FusionWidgets XT (v3.3.1 - Service Release 1) (Released on 18th April, 2013)
+==============================================================================
+
+Version History
+
+FusionWidgets XT (v3.3.1 - Service Release 1) (18th April, 2013):
+--------------------------------------------
+
+New Features:
+
+* Added two new events taskClicked and connectorClicked for JavaScript Gantt chart.
+
+Improved:
+
+* Optimized rendering of line charts.
+
+Fix:
+
+* Hot-fix in VML Rendering Library.
+* Trendline labels for Secondary Y-Axis are now positioned correctly.
+
+
+
+FusionWidgets XT (v3.3.1) (4th April, 2013): 
+--------------------------------------------
+
+New Features:
+
+* Support for JavaScript variant of Gantt Chart having new features like:
+    - Vertical scrolling.
+	- Mouse hover effect on tasks, connectors, processes, categories.
+* Support for Message logger in JavaScript Realtime charts and gauges.
+* Added 'showOnTop' attribute to display the trendline on top or bottom of the dataplots in Flash Spark Column/Line charts.
+
+Fix:
+
+* Minor fix in 'taskDatePadding' attribute of Flash Gantt chart. 
+* Minor fix in 'width' attribute within <process> element of Flash Gantt chart.
+* Font cosmetics can now be applied to start and end date within <tasks> and <task> element of Flash Gantt chart.
+* Minor fix in rendering of annotations in iPad.
+* Minor fix in data plot representation when <set> element has zero value in JavaScript Funnel and Pyramid chart.
+* Minor fix for shadow not being clipped during initial animation of JavaScript Real-time Stacked Area charts.
+* JavaScript Realtime charts will now update after its container is re-sized.
+* Minor fix in rendering of canvas shadow while using useRoundEdges='1' in VML Browsers.
+* Unspecified values are no longer displayed in JavaScript Spark Win/Loss chart.
+* 'manageLabelOverflow' attribute now works properly when set along with 'baseFontSize', in JavaScript charts.
+
+
+
+
+FusionWidgets XT (v3.3.0) (30th January, 2013) : 
+----------------------------------------
+
+New Features:
+
+* Exported JavaScript charts and gauges can now be saved to a server (using PHP and JAVA).
+
+Improved:
+
+* Better and crisp visualization of JavaScript charts and gauges.
+* Improved display of low and high anchors in Spark Line chart.
+* Added support to customize export related context-menu items of JavaScript charts and gauges.
+* Default value of refreshInterval attribute for Real-Time charts is set to 1 second.
+
+Fix:
+
+* Links are no more invoked in drag events for Flash charts and gauges.
+* Common alpha can be set on gradient colors in Flash charts and gauges.
+* Minor fix for yAxisMinValue in Flash Real-time Stacked charts.
+* Minor fix in overlapping of divisional line labels for Flash Real-time charts.
+* Minor fix for sFormatNumberScale in Flash Real-time Dual Y-Axis charts.
+* showFullDataTable='1' now works correctly in <process> element of Flash Gantt chart.
+* Trendlines now appear behind the data plots when showOnTop='0' in JavaScript Real-time charts.
+* Minor fix related to displacement of data plot in JavaScript Real-time Line and Real-time Area charts.
+* getSVGString() and exportChart() can now be invoked multiple times in JavaScript charts and gauges.
+* Chart API and context menu items are now functioning as expected after exporting in JavaScript Real-Time charts.
+
+
+
+
+FusionWidgets XT (v3.2) Service Release 2 (1st November, 2012) : 
+----------------------------------------
+
+New Features:
+
+* JavaScript Real-time charts now show context menu to start, stop and clear chart updates.
+* New jQuery API to manage Real-time charts.
+* Ability to turn off url-decoding of links using the unescapeLinks attribute in JavaScript charts.
+
+Improved:
+
+* Normalized the default font sizes of caption and sub-caption in Flash Funnel, Pyramid and Real-time charts.
+* JavaScript Real-time charts now render with smoother visualization and better performance.
+* Enhanced management of the open, close, high and low anchors in Spark Line chart.
+
+Fix:
+
+* jQuery 1.8 compatibility issues.
+* Mixed content browser warning on Internet Explorer when using charts within secured (https) pages.
+* Exporting issues related to JavaScript LinkedCharts.
+* Minor fix in label position while using stagger label display mode.
+* Minor fix related to legend interactivity in JavaScript charts.
+* Minor fix to improve auto-calculation of axis limits in JavaScript Real-time Stacked charts.
+* Minor fix related to displacement of dataplot in Line and Area charts.
+* Flash LinkedCharts overlay button does not disappear anymore while exporting.
+* Links are no longer invoked when mouse is dragged onto chart from foreign elements.
+* Real-time JavaScript charts no longer display redundant divisional grid color during real-time data update.
+* A single dataplot in JavaScript Spark Win/Loss chart no more spreads across the total canvas height.
+* setAdaptiveYMin now remains disabled by default in Flash charts when all the values are negative.
+* JavaScript charts now export the current state of the charts.
+* Data labels of JavaScript Real-time charts are now properly visible in the exported images/PDF.
+* Alpha is now correctly applied when defined through colorRange in Flash Bulb gauge.
+* Pointer and trend-point labels are now positioned correctly in JavaScript HLinear Gauge.
+* Bold and Italics styles can now be applied to tool tips in Flash charts.
+* Flash Real-time charts can now display multiple vLines.
+
+
+
+
+FusionWidgets XT (v3.2) Service Release 1 (23rd April, 2012): 
+----------------------------------------
+
+New Features:
+
+* Support for real-time JavaScript charts that include:
+   - Real-time Line chart
+   - Real-time Area chart
+   - Real-time Column chart
+   - Real-time Stacked Area chart
+   - Real-time Stacked Column chart       
+   - Real-time Dual Y-Axis Line chart 
+* Ability to control number formatting for Indian and East Asian thousand/lac separation formats.
+
+
+Improved:
+
+* Considerable reduction of memory leaks upon resize, data-update and dispose of charts.
+* Text-selection (I-beam) cursor does not appear when hovered over text.
+
+
+Fix:
+
+* ExportReady event not being raised in advanced event model.
+
+
+
+
+FusionWidgets XT (v3.2) - (24th January, 2012):
+---------------------------------------------
+
+* Automatic rendering of JavaScript gauges and charts (except Gantt and Real-time charts) on devices (like iPad and 
+  iPhone) where Flash player is not supported.
+* Support for JSON data format.
+* Support for LinkedCharts, where a single data source controls multiple charts.
+* Advanced print management using JavaScript.
+* Additional options for efficient event handling using JavaScript.
+* Support for dynamic update of chart properties using JavaScript.
+* Better management of the position of labels in charts and gauges.
+* Long labels are truncated to prevent cropping of labels or cluttered looks.
+* Charts and gauges now support percentage (%) based sizes along with 
+  dynamic resizing of charts and gauges when parent containers resize.
+* Background image can now be used to fill the charts and gauges in different modes, and custom alignment is possible.
+* Annotations can now be positioned using Macros - variables with dynamic values.
+* Real-times charts and gauges can start updating data instantly after first rendering.
+* Real-time stacked charts now support 100% stacked mode.
+* Adjustment of minimum Y-axis value in stacked charts now supported.
+* In Line charts, data values can now be positioned either above or below the dataplots. 
+  Automatic positioning of data values is also supported.
+* Custom alignment of caption and sub caption using STYLES.
+* Added option to set round edge effect to all charts having columns.
+
+
+For information on how to use the newly introduced features of this release, please read Contents/Intorduction/Upgrading.html.
+
+
+
+FusionWidgets v3.1.1 (9th April, 2009)
+---------------------------
+
+* Improved: FusionCharts Server Side Export Handlers.
+* Fix: Context menu bug in Cylinder, Thermometer and data-streaming charts. 
+* Fix: In FusionCharts Client Side Export Handler (FCExporter.swf) and JavaScript class. 
+* Fix: In data-streaming charts, clear chart was not removing text-fields. 
+
+
+
+
+FusionWidgets v3.1 (6th March, 2009)
+---------------------------
+
+* New: Ability to export charts as PNG/JPG/PDF at client side or server side. 
+  We've also devised a batch export mechanism at client side, which allows you to export 
+  all the charts in a page as a single image/PDF using one-click.
+* New: Ability to use multi-lingual text in rotated fonts as well. 
+  We now use bitmap fonts to render all UTF-8 characters.
+* New: Ability to copy data from chart as CSV using context menu, or JavaScript function.
+* New: Personalization of chart - you can now add your logos over the chart, and 
+  also add an "About your company" to chart's context menu and link it to your URL.
+* Improved: Support for automatic wrapping in caption/sub-caption and tool-tips.
+* Improved: More control over chart using JavaScript - many new APIs and events exposed by chart.
+
+
+
+
+FusionWidgets v3.0.2 (31st March, 2008)
+---------------------------
+
+* Product name changed from FusionGadgets to FusionWidgets. 
+* New: Ability to invoke Image saving feature from JavaScript. 
+* New: Ability to print chart using JavaScript. 
+* New: ColdFusion, JSP and Perl scripts for image saving. 
+* New: Ability to remove "Print Chart" context menu item. 
+* New: Ability to track clicks and rendering event of chart in other Flash movies. 
+* Bug Fix: Minor bug fix in PHP image saving script.	
+
+
+
+
+FusionWidgets v3.0.1 (26th December, 2007)
+---------------------------
+
+* New: Image saving feature to allow export of charts as images. 
+* Improvement: FusionCharts JavaScript v1.2 with support for charts within FORMs and transparent mode. 
+* Fix: Security fix that restricts XSS attacks. FusionCharts now loads data from only relative URLs. Absolute URLs are not allowed. 
+* Fix: External Interface bug fix that was raising JavaScript errors when chart was placed inside a FORM. 
+
+
+
+
+FusionWidgets v3 (17th August, 2007)
+---------------------------
+
+Core Changes: 
+
+7 new charts: Real-time stacked column and real-time dual Y line chart 
+	- Bullet graphs - horizontal and vertical 
+	- Spark Line, Spark Column and Spark Win/Loss charts 
+	- Made using FusionCharts v3 framework, thereby offering: Easy but advanced integration with JavaScript 
+* STYLE support from FusionCharts v3 framework 
+	- Built in Adobe Flash 8 using ActionScript 2 
+	- New Debug Mode 
+	- Gradient Support 
+	- Palette Support 
+	- Dashed Line Support 
+	- Number scale support 
+	- Better printing support 
+	- Advanced drill down features 
+	- Entire chart as a hotspot 
+	- Custom tool tip for each data plot item 
+	- Multiple language support for application messages 
+* Edit mode supported for angular and linear gauges .
+* Message logger supported in all real-time charts for streaming real-time messages from server to client.
+* Alert Manager supported in all real-time charts.
+* More control over Annotations (previously custom objects) using XML and JavaScript.
+* Context Menu in all real-time charts to stop/start update, clear chart. 
+  Helps user stop an update, if he feels that this counter is not needed to monitor 
+  for the given timeframe. After stopping, he can also restart the update dynamically. 
+* JavaScript API in all real-time charts to stop/start update, clear chart, reload chart etc. at client side. 
+* New JavaScript API to feed data to chart.
+* Single color theme introduced to help you create your own color palettes for the chart, based on a single color. 
+* In real-time charts - ability to add a data stamp (similar to timestamp) 
+  at the end of real-time data stream URL - for easy tracking of "what value was last sent to chart?" 
+  No need to use registers, sessions or database fields to control this. 
+  Use this simple and effective technique over stateless environment.	
+
+Data-streaming chart specific changes:
+ 
+* Axis updates each time to reflect the limits from data in current view. 
+* Annotations introduced - helps you draw any custom shapes, objects, load images anywhere on the chart. 
+* Canvas Margins can be adjusted allowing you to set increased canvas margins so that if you've larger data labels or y-axis values, you can adjust the margins accordingly. 
+* Selectable (Interactive) Legend - so that you can opt to show/hide a full data-set at client side. 
+  Helps if you're comparing multiple streams of input and just want to focus on one - but keep others in frame. 
+* Real-time vLines with labels. 
+* Ability to send clear command from server - so that chart can be cleared as and when required.
+* Ability to send stopUpdate command from server, if you need to stop update of a specific chart. 
+* Ability to retrieve the chart's current data view using client side JavaScript. 
+* JavaScript event FC_ChartUpdated raised when new data feed is received by chart. 
+  You can use this event to update your other display containers whenever the chart updates in real-time. 
+* Ability to specify different updateInterval and clearInterval (apart from refreshInterval) - 
+  helps you specify when data is retrieved and queued - and when chart is refreshed to show new data. 
+  Also, you can set pre-defined clear intervals to clear the chart. 
+
+
+Angular Gauge specific changes:
+
+* Gauge can now be drawn in any angle and any direction.
+* Auto-scale facility for the gauge and annotations.
+* Customizable gradient fill mix for color scale.
+* Customizable gradient properties for pivot.
+* Percent based gauge radius supported.
+* Edit mode supported.
+* Option to show value for each dial, with customizable co-ordinates.
+* Ability to add trend-points, trend-arcs & trend-markers.
+* Option to show tick and trend values inside or outside gauge.
+* Message logger supported.
+* Alert Manager supported.
+* Rear-extension supported for each dial to render more realistic gauges.
+
+
+Gantt chart specific changes 
+
+* Supports both date & time now. 
+* Customizable output date format. 
+* Ability to show each task’s completion in percentage as either empty bar or using a different fill color (slack fill color).
+* Scrolling support for both data table and Gantt pane. 
+* Ability to show individual task bars as groups – to indicate task groups. 
+* Customizable tooltip properties – also, you can opt to show whether to show task date as part of tool tip content. 
+* Ability to add a legend to the chart to show color keys. Fully customizable legend cosmetics. 
+* Ability to define each task’s height and top-padding in percentage, instead of just pixels. 
+* Pre-define palettes and single color theme selectors to help you easily set colors for the chart. 
+* Round edged task bars supported.
+* Customizable gradient mix & shadow for task bars. 
+* Ability to define annotations over the Gantt chart to show further information. 
+
+Funnel Chart specific changes 
+
+* Ability to draw the same data as either streamlined funnel chart or as section funnel chart.
+* Interactive funnel slices, when clicked can separate from the main funnel. 
+* Option to plot funnel slices as hollow or filled.
+* Option to set same slant angle for each funnel slice (or make them dependent on data).
+* Ability to seamlessly convert 3D funnel to 2D funnel, by right clicking on chart and selecting View 2D.
+* Option to render the funnel in 2D mode itself with more control over border and fill properties.
+* Option to show values as actual values or in percentage.
+* If shown as percentage, you can opt to show it as percentage of the first value or percentage of previous value. 
+* Smart labels to avoid overlapping of funnel labels.
+* Option to place labels at side or at center.
+* Custom tool text for each funnel slice.
+
+
+Pyramid Chart specific changes 
+
+* Interactive pyramid slices, when clicked can separate from the main pyramid. 
+* Ability to seamlessly convert 3D pyramid to 2D pyramid, by right clicking on chart and selecting View 2D.
+* Option to render the pyramid in 2D mode itself with more control over border and fill properties.
+* Option to show values as actual values or in percentage.
+* Smart labels to avoid overlapping of pyramid labels.
+* Option to place labels at side or at center.
+* Custom tool text for each pyramid slice.
+
+Linear Gauge specific changes 
+
+* Multiple pointers supported.
+* Each pointer can have tool text and link.
+* Edit mode supported.
+* Customizable gradient fill for gauge.
+* Round edged gauges supported.
+* Much better control over tick marks & tick values.
+* Ablity to show pointer above or below gauge.
+* Option to create trend-lines/zones.
+
+
+LED Gauge specific changes
+
+* Better control over tick marks & values.
+* Single color fill supported for entire LED.
+
+Thermometer Gauge specific changes 
+
+* 2D/3D fill mode. 
+* Better control over tick marks & values. 
+
+
+Cylinder Gauge specific changes 
+
+* Enhanced and realistic 3D look.
+* Better control over tick marks and values.
+* Animation supported for fill.
+
+
+Bulb Gauge specific changes
+
+* Ability to show value inside or outside the bulb.
+* Option to show color range label as chart value, instead of actual numerical value.
+
+
+=========================================================================
+
+

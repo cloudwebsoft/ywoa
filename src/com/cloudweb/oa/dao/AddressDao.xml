@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.dao.AddressDao">
+    <sql id="params">
+        id,person,firstname, familyname, middleName,job,tel,nickname,fax,mobile,web,companyStreet,companyCity,companyPostcode,companyProvice,companyCountry,operationweb,operationPhone,operationFax,BeepPager,company,email,city,street,address,country,postalcode,province,introduction,userName,department,type,addDate,typeId,qq,msn,weixin
+    </sql>
+    <select id="getAddress" parameterType="int" resultType="com.cloudweb.oa.bean.Address">
+        select
+        <include refid="params"/>,
+         unit_code as unitcode
+        from address
+        where id = #{id}
+    </select>
+    <select id="getAddressByMobile" parameterType="string" resultType="com.cloudweb.oa.bean.Address">
+        select
+        <include refid="params"/>,
+        unit_code as unitcode
+        from address
+        where MOBILE = #{mobile}
+    </select>
+    <insert id="create" parameterType="com.cloudweb.oa.bean.Address" >
+        insert into
+        address(
+        <include refid="params"/>,unit_code
+        )
+        values(#{id},#{person},#{firstname},#{familyname},#{middleName},#{job},#{tel},#{nickname},#{fax},#{mobile},#{web},#{companyStreet},#{companyCity},#{companyPostcode},#{companyProvice},#{companyCountry},#{operationweb},#{operationPhone},#{operationFax},#{BeepPager},#{company},#{email},#{city},#{street},#{address},#{country},#{postalcode},#{province},#{introduction},#{userName},#{department},#{type},#{addDate},#{typeId},#{QQ},#{MSN},#{weixin},#{unitCode})
+    </insert>
+    <delete id="del">
+        delete from address where ID = #{id}
+    </delete>
+    <update id="save" parameterType="com.cloudweb.oa.bean.Address">
+        update address set
+                           person=#{person},firstname=#{firstname},familyname=#{familyname}, middleName=#{middleName},job=#{job},tel=#{tel},nickname=#{nickname},
+                           fax=#{fax},mobile=#{mobile},web=#{web},companyStreet=#{companyStreet},companyCity=#{companyCity},companyPostcode=#{companyPostcode},
+                           companyProvice=#{companyProvice},companyCountry=#{companyCountry},operationweb=#{operationweb},operationPhone=#{operationPhone},operationFax=#{operationFax},
+                           BeepPager=#{BeepPager},company=#{company},email=#{email},city=#{city},street=#{street},address=#{address},country=#{country},postalcode=#{postalcode},
+                           province=#{province},introduction=#{introduction},userName=#{userName},department=#{department},type=#{type},typeId=#{typeId},qq=#{QQ},msn=#{MSN},weixin=#{weixin}
+        where ID = #{id}
+    </update>
+    <select id="count" resultType="int" parameterType="string">
+        ${sql}
+    </select>
+    <!--<select id="listResult" resultType="com.cloudweb.oa.bean.Address">-->
+        <!--select-->
+        <!--<include refid="params"/>,unit_code as unitcode-->
+        <!--from address-->
+        <!--<where>-->
+            <!--<if test="type == 0">-->
+                <!--userName = #{userName}-->
+            <!--</if>-->
+            <!--<if test="type == 1">-->
+                <!--and unit_code = #{userName}-->
+            <!--</if>-->
+            <!--<if test="type != null and type != ''">-->
+                <!--and type = #{type}-->
+            <!--</if>-->
+            <!--<if test="typeId != null and typeId != ''">-->
+                <!--and typeId = #{typeId}-->
+            <!--</if>-->
+            <!--<if test="person != null and person != ''">-->
+                <!--and person like #{person}-->
+            <!--</if>-->
+            <!--<if test="company != null and company != ''">-->
+                <!--and company like #{company}-->
+            <!--</if>-->
+            <!--<if test="mobile != null and mobile != ''">-->
+                <!--and mobile like #{mobile}-->
+            <!--</if>-->
+        <!--</where>-->
+        <!--<if test="orderBy != null and sort != null">-->
+            <!--order by ${orderBy} ${sort}-->
+        <!--</if>-->
+        <!--limit #{start},#{pageSize}-->
+    <!--</select>-->
+    <select id="listSql" parameterType="string" resultType="java.lang.Integer">
+        ${sql}
+    </select>
+</mapper>

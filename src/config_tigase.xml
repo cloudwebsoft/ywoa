@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<tigase>
+		<isUse desc="是否启用">false</isUse>
+		<tigaseHost desc="tigase服务器地址">18552052867.xicp.net</tigaseHost>
+		<tigasePort desc="tigase服务器端口">5222</tigasePort>
+		<!-- <tigaseHost desc="tigase服务器地址">192.168.1.10</tigaseHost>
+		<tigasePort desc="tigase服务器端口">5222</tigasePort> -->
+		<exceptions desc="不删除的人员信息">admin,system</exceptions>
+		<defaultPwd desc="system用户默认的密码">1</defaultPwd>
+		<fileTigase desc="tigase文件路径">upfile/tigase</fileTigase>
+		<imageFilter desc="图片">gif,jpg,jpeg,bmp,png</imageFilter>
+		<videoFilter desc="视频">mp4,flv,wmv</videoFilter>
+		<audioFilter desc="音频">acc,amr,mp3</audioFilter>
+		<amr2mp3 desc="arm转mp3格式">false</amr2mp3>
+	</tigase>
+</root>

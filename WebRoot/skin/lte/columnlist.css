@@ -1,0 +1,117 @@
+@charset "utf-8";
+.webfx-columnlist {
+	border: 1px solid;
+	border-color: #78A2C8;
+	overflow: hidden;
+	display: block;
+	-moz-user-select: none;
+	-moz-user-focus: normal;
+	-moz-user-input: enabled;
+}
+
+.webfx-columnlist td {
+	font: menu;
+	padding: 1px;
+	white-space: nowrap;
+}
+
+.webfx-columnlist-head {
+	position: absolute;
+	background-image:url(images/webfx-columnlist-head.png);
+	overflow: hidden;
+	-moz-user-select: none;
+}
+
+.webfx-columnlist-head table {
+	table-layout: fixed;
+}
+
+.webfx-columnlist-head td {
+	border:1px solid;
+	border-color: threedhighlight #78A2C8 #78A2C8 threedhighlight;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height:21px;
+	font-weight:bold;
+}
+
+.webfx-columnlist-head td img {
+	width:    8px;
+	height:   7px;
+	margin:   0px 5px 0px 5px;
+	display:  none;
+}
+
+.webfx-columnlist-body {
+	border: 1px solid;
+	border-color: threedhighlight threedhighlight threedhighlight threedhighlight;
+	background: window;
+	overflow: auto;
+}
+
+.webfx-columnlist-body table {
+	table-layout: fixed;
+}
+
+.webfx-columnlist-body td {
+	border-bottom: solid white;
+	border-width:  0px 1px 1px 0px;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   no-wrap;
+	height:22px;
+}
+
+.webfx-columnlist-body a:link {
+color:#0066FF;
+text-decoration:none;
+}
+.webfx-columnlist-body a:visited {
+color:#0066FF;
+text-decoration:none;
+}
+.webfx-columnlist-body a:hover {
+color:#FF0000;
+text-decoration:none;
+}
+
+.webfx-columnlist-body tr.selected td {
+	background:   #ECFBD4;
+}
+
+.webfx-columnlist-body tr.odd td {
+	background:   #F8FBFC;
+}
+
+.webfx-columnlist-body tr.even td {
+	background:   #E5F1F4;
+}
+
+.webfx-columnlist-move-header {
+	position: absolute;
+	background: threedshadow;
+	top: 0px;
+	font: menu;
+	padding: 2px;
+	height: 1em;
+	filter: Alpha(Opacity=50);
+	-moz-opacity: 0.5;
+	-moz-user-select: none;
+	height:22px;
+}
+
+.webfx-columnlist-active-header {
+	border-color: threedface !important;
+}
+
+.webfx-columnlist-separator-header {
+	position: absolute;
+	top: 0px;
+	left: 10px;
+	font: menu;
+	height: 1em;
+	width: 1px;
+	overflow: hidden;
+	background: blue;
+	padding: 3px 0px;
+}

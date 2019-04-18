@@ -1,0 +1,52 @@
+@import url("../common/common.css");
+
+.formdesigner-menu {
+	background-color: #e8e8e8;
+	height: 100%;
+	overflow:auto;
+	position:absolute;
+	padding: 5px 15px 15px 15px;
+	float:left;
+	margin-left:-20px;
+}
+.span2{
+	position:fixed;
+	top:0;
+	right:220px;
+	z-index:100;
+}
+
+
+.formdesigner-menutitle {
+	background-image: url(../../images/form_designer/form_designer_t.png);
+	background-repeat: no-repeat;
+	font-weight: bold;
+	text-indent: 10px;
+	height: 35px;
+	width: 217px;
+	line-height: 35px;
+	margin-bottom: 5px;
+}
+.formdesigner-menubox {
+	background-color: #f6f6f6;
+	overflow: hidden;
+	padding-bottom: 20px;
+	padding-left: 15px;
+	border: 1px solid #bbbbbb;
+	padding-right: 15px;
+	_zoom:1;
+}
+.formdesigner-menubox li {
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #d9d9d9;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+.formdesigner-menu-btn {
+	margin-top: 20px;
+}
+.formdesigner-menu-btn div {
+	float: left;
+	margin-right: 2px;
+}

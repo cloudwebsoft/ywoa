@@ -1,0 +1,56 @@
+@charset "utf-8";
+.QRcodeContent{
+	width:330px;
+	height:360px;
+	margin:20px auto;
+	background-color:#eeeeee;
+	border:1px solid #e3e3e3;
+	-moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	border-radius: 8px;
+	behavior: url(ie-css3.htc);
+}
+
+.QRcodeContent .QRCodeimgRange{
+	background-image: url(../../images/QRcode_bg.png);
+	background-repeat: no-repeat;
+	text-align:center;
+	width:166px;
+	height:160px;
+	margin:30px auto;
+}
+
+.QRcodeContent .QRCodeimgRange img{
+	width:139px;
+	height:139px;
+	margin-top:10px;
+}
+
+.QRcodeContent .QRcodeTitle{
+	margin: 10px;
+}
+
+.QRcodeContent .QRcodeBtn{
+	text-align:center;
+	position:relative;
+}
+
+.QRcodeContent .QRcodeBtn .QRcodeBtn_a{
+	cursor:pointer;
+	background-color: #87c3f1;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	behavior: url(skin/common/ie-css3.htc);
+	height: 35px;
+	width:120px;
+	line-height:35px;
+	float:left;
+	margin-left:30px;
+}
+
+.QRcodeContent .QRcodeBtn .QRcodeBtn_a a{
+	font-weight: bold;
+	color:#fff;
+}
+

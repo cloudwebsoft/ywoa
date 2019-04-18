@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0035)http://www.mugou.com/images/wmv.htm -->
+<HTML><HEAD><TITLE>多功能编辑器--插入 MediaPlayer 播放器</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=gb2312"><LINK 
+href="wmv_files/pop.css" type=text/css rel=stylesheet>
+<SCRIPT language=JavaScript event=onclick for=Ok>
+	var s=path.value
+	if (s.length<10 )
+	{
+		alert("请输入正确的文件链接地址！");
+	}else{
+	var autostart
+		autostart=document.getElementById("autostart").checked
+		window.returnValue = path.value+"*"+ autostart +"*"+width.value+"*"+height.value
+		window.close();
+	}
+</SCRIPT>
+
+<SCRIPT>
+function IsDigit()
+{
+  return ((event.keyCode >= 48) && (event.keyCode <= 57));
+}
+</SCRIPT>
+
+<META content="MSHTML 6.00.3790.373" name=GENERATOR></HEAD>
+<BODY bgColor=menu>
+<TABLE style="PADDING-LEFT: 5px; WIDTH: 98%" cellSpacing=5 cellPadding=0 
+align=center border=0>
+  <TBODY>
+  <TR>
+    <TD colSpan=2><FONT class=title>插入 MediaPlayer 播放器</FONT> 
+      <HR width="100%">
+      文件后缀 : avi, wmv, asf, mov</TD></TR>
+  <TR>
+    <TD colSpan=2>文件地址 : <INPUT id=path size=40 value=http://></TD></TR>
+  <TR>
+    <TD>文件宽度 : <INPUT onkeypress=event.returnValue=IsDigit(); id=width size=7 
+      value=480></TD></TR>
+  <TR>
+    <TD>文件高度 : <INPUT onkeypress=event.returnValue=IsDigit(); id=height size=7 
+      value=360></TD></TR>
+  <TR>
+    <TD>播放模式 : <INPUT type=radio CHECKED value=1 name=autostart>自动 <INPUT 
+      type=radio value=0 name=autostart>手动</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2><BUTTON id=Ok type=submit>确定</BUTTON>&nbsp; 
+      &nbsp;<BUTTON 
+onclick=window.close();>关闭</BUTTON></TD></TR></TBODY></TABLE></BODY></HTML>

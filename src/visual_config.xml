@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="gb2312"?>
+<config>
+	<module code="contract">
+		<attachmentPath>upfile/contract</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>contract/contract_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_customer">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.visual.module.CustomerChecker</checker>
+		<view>
+			<list>sales/customer_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_linkman">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.visual.module.LinkmanChecker</checker>
+		<view>
+			<list>sales/linkman_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_provider_info">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/provider_info_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_provider_name">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/provider_contact_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_product_info">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/product_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_product_service">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/product_service_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_contract">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/contract_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_product_sell">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/product_sell_list.jsp</list>
+		</view>
+	</module>
+	<module code="sales_product_service_sell">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker></checker>
+		<view>
+			<list>sales/product_service_sell_list.jsp</list>
+		</view>
+	</module>
+	<module code="day_lxr">
+		<attachmentPath>upfile/day_lxr</attachmentPath>
+		<checker>com.redmoon.oa.crm.DayLinkmanChecker</checker>
+		<view>
+			<list>crm/day_lxr.jsp</list>
+		</view>
+	</module>
+	<module code="vip_contract">
+		<attachmentPath>upfile/vip_contract</attachmentPath>
+		<checker>com.redmoon.oa.crm.DayVIPContactChecker</checker>
+		<view>
+			<list>crm/vip_contract.jsp</list>
+		</view>
+	</module>
+	<module code="ywzgd_contact">
+		<attachmentPath>upfile/ywzgd_contract</attachmentPath>
+		<checker>com.redmoon.oa.crm.DayYwzgdContactChecker</checker>
+		<view>
+			<list>crm/ywzgd_contact.jsp</list>
+		</view>
+	</module>
+	<module code="ysjt_contact">
+		<attachmentPath>upfile/ysjt_contact</attachmentPath>
+		<checker>com.redmoon.oa.crm.DayYsjtContactChecker</checker>
+		<view>
+			<list>crm/ysjt_contact.jsp</list>
+		</view>
+	</module>
+	
+	<module code="project">
+		<attachmentPath>upfile/project</attachmentPath>
+		<checker>com.redmoon.oa.project.ProjectChecker</checker>
+		<view>
+			<list>project/project_list.jsp</list>
+		</view>
+	</module>
+	
+	<module code="project_members">
+		<attachmentPath>upfile/project</attachmentPath>
+		<checker>com.redmoon.oa.project.ProjectMemberChecker</checker>
+		<view>
+			<list></list>
+		</view>
+	</module>
+	
+	<module code="sales_order">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesOrderChecker</checker>
+		<view>
+			<list>sales/sales_user_order_list.jsp</list>
+		</view>
+	</module>	
+
+	<module code="sales_ord_product">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesOrderRelateModuleChecker</checker>
+		<view>
+			<list>sales/sales_user_order_list.jsp</list>
+		</view>
+	</module>	
+		
+	<module code="sales_ord_huikuan">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesOrderRelateModuleChecker</checker>
+		<view>
+			<list>sales/sales_user_order_list.jsp</list>
+		</view>
+	</module>	
+	
+	<module code="sales_ord_pay_plan">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesOrderRelateModuleChecker</checker>
+		<view>
+			<list>sales/sales_user_order_list.jsp</list>
+		</view>
+	</module>
+	
+	<module code="sales_ord_invoice">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesOrderRelateModuleChecker</checker>
+		<view>
+			<list>sales/sales_user_order_list.jsp</list>
+		</view>
+	</module>
+	
+	<module code="sales_stock_info">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesStockInfoChecker</checker>
+		<view>
+			<list>sales/sales_stock_info_list.jsp</list>
+		</view>
+	</module>
+	
+	<module code="sales_purchase">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesPurchaseChecker</checker>
+		<view>
+			<list>sales/sales_purchase_list.jsp</list>
+		</view>
+	</module>
+	
+	<module code="sales_service">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesServiceChecker</checker>
+		<view>
+			<list>sales/sales_service_list.jsp</list>
+		</view>
+	</module>		
+	
+	<module code="sales_chance">
+		<attachmentPath>upfile/prj</attachmentPath>
+		<checker>com.redmoon.oa.sale.SalesChanceChecker</checker>
+		<view>
+			<list>sales/sales_chance_list.jsp</list>
+		</view>
+	</module>	
+	
+	<module code="prj_task_ctl_list">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.prj.PrjTaskCtlListChecker</checker>
+		<view>
+			<list></list>
+		</view>
+	</module>
+	
+<!--	<module code="personbasic">
+		<attachmentPath>upfile/hr</attachmentPath>
+		<checker>com.redmoon.oa.hr.PersonbasicChecker</checker>
+		<view>
+			<list></list>
+		</view>
+	</module>-->
+
+	<module code="sales_daily_lxr">
+		<attachmentPath>upfile/sales</attachmentPath>
+		<checker>com.redmoon.oa.sales.SalesDailyReportChecker</checker>
+		<view>
+			<list></list>
+		</view>
+	</module>
+	
+	<module code="prj_task">
+		<attachmentPath>upfile/prj</attachmentPath>
+		<checker>com.redmoon.oa.prj.ProjectTaskChecker</checker>
+		<view>
+			<list></list>
+		</view>
+	</module>
+</config>

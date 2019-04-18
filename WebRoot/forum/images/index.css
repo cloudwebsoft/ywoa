@@ -1,0 +1,49 @@
+BODY {
+	FONT-SIZE: 12px; FONT-FAMILY: 宋体
+}
+TD {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+P {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+INPUT {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+FONT {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+SELECT {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+OPTION {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+TEXTAREA {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+FORM {
+	TABLE-LAYOUT: fixed; FONT-SIZE: 12px; WORD-BREAK: break-all; FONT-FAMILY: 宋体
+}
+SELECT {
+	COLOR: #000000; BACKGROUND-COLOR: #ffffff
+}
+.button1 {
+	BORDER-TOP-WIDTH: 1px; BORDER-LEFT-WIDTH: 1px; BORDER-LEFT-COLOR: #eeeeee; BACKGROUND: url(/images/button_bak.gif); BORDER-BOTTOM-WIDTH: 1px; BORDER-BOTTOM-COLOR: #5a6ca2; BORDER-TOP-COLOR: #eeeeee; FONT-FAMILY: Arial; HEIGHT: 22px; BORDER-RIGHT-WIDTH: 1px; BORDER-RIGHT-COLOR: #5a6ca2
+}
+A:active {
+	FONT-SIZE: 12px; COLOR: darkblue
+}
+A:visited {
+	FONT-SIZE: 12px; COLOR: darkblue; TEXT-DECORATION: none
+}
+A:hover {
+	COLOR: #669900; TEXT-DECORATION: none
+}
+A:link {
+	COLOR: darkblue; TEXT-DECORATION: none
+}
+INPUT.radio {
+	BACKGROUND: paleturquoise; COLOR: #000000
+}
+.button1 {  background: #cccccc; border-bottom: #665b8e 1px solid; border-left: #ffffff 1px solid; border-right: #665b8e 1px solid; border-top: #ffffff 1px solid; color: #333333; cursor: hand; font-family: "MS Shell Dlg", "Tahoma", "宋体"; font-size: 12px; height: 20px; padding: 1px}

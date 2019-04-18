@@ -1,0 +1,214 @@
+@charset "utf-8";
+/* CSS Document */
+
+body,div,h1,h2,h3,h4,h5,h6,hr,p,dl,dt,dd,ul,ol,li,form,fieldset,legend,button,input,textarea,th,td{
+	margin:0;
+	padding:0;
+}
+button,input,select,textarea{
+	font-family:"微软雅黑";
+	font-size: 14px;
+	background-repeat:repeat
+}
+h1,h2,h3,h4,h5,h6{font-size:100%;}
+em,i{font-style:normal;}
+ul,ol,li{list-style:none;}
+button,input,select,textarea{font-size:100%;outline:none;}
+textarea{
+	resize:none;
+}
+table{
+	border-collapse:collapse;
+	border-spacing:0;
+}
+fieldset,img {border:0px; margin:0px; vertical-align:middle; } 
+
+body {
+	margin:0;
+	padding:0;
+	font-family:"微软雅黑";
+	font-size: 14px;
+	color: #606060;
+	word-break:break-all;
+}
+.clear {
+		clear:both;
+	display:block;
+	height:0;
+	overflow:hidden;
+	font-size:0;
+}
+ a {color: #606060; text-decoration: none;}
+ a:hover {color: #F60; text-decoration: none;}
+
+
+.grey1{
+	color: #000;
+}
+.grey2{
+	color: #333;
+}
+.grey3{
+	color: #676767;
+}
+.grey4{
+	color: #A2A2A2;
+}
+.grey5{
+	color: #CDCDCD;
+}
+.green1{
+	color: #71A809;
+}
+.red1{
+	color: #F93C3C;
+}
+.red2 {
+	color: #FC4545;
+}
+.orange1 {
+	color: #F60;
+}
+.orange2 {
+	color: #F90;
+}
+.red1_bg{
+	color: #FFF;
+	background-color: #D02828;
+	padding:0 3px;
+	margin-right: 3px;
+	line-height: 16px;
+}
+.blue2{
+	color: #0996EA;
+}
+
+.blue1{
+	color: #005EA7;
+}
+.blue1:hover{
+	color: #1A92F4;
+	text-decoration: underline;
+}
+.yellow1{
+	color: #F40;
+}
+.violet{
+	color: #ED277E;
+}
+.font_12 {
+	font-family: "Microsoft YaHei";
+	font-size: 12px;
+}
+.font_14 {
+	font-family: "Microsoft YaHei";
+	font-size: 14px;
+}
+.font_16 {
+	font-family: "Microsoft YaHei";
+	font-size: 16px;
+}
+.font_18 {
+	font-family: "Microsoft YaHei";
+	font-size: 18px;
+}
+.font_22 {
+	font-family: "Microsoft YaHei";
+	font-size: 22px;
+}
+.font_24 {
+	font-family: "Microsoft YaHei";
+	font-size: 24px;
+}
+.blue_btn_90 {
+	line-height: 30px;
+	background-image: url(../../images/blue_btn_90.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	height: 30px;
+	width: 90px;
+	color: #FFF;
+	font-weight:bold;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	cursor:pointer;
+}
+.blue_btn_55 {
+	line-height: 30px;
+	background-image: url(../../images/blue_btn_55.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	height: 30px;
+	width: 55px;
+	color: #FFF;
+	font-weight:bold;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	cursor:pointer;
+}
+.grey_btn_90 {
+	line-height: 30px;
+	background-image: url(../../images/grey_btn_90.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	height: 30px;
+	width: 90px;
+	font-weight:bold;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	cursor:pointer;
+	color: #666;
+	cursor:pointer;
+}
+.grey_btn_55 {
+	line-height: 30px;
+	background-image: url(../../images/grey_btn_55.png);
+	background-repeat: no-repeat;
+	text-align: center;
+	height: 30px;
+	width: 55px;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	cursor:pointer;
+}
+
+.grey_btn_55:hover {
+    line-height: 30px;
+    background-image: url(../../images/grey_btn_55.png);
+    background-repeat: no-repeat;
+    text-align: center;
+    border-top-width: 0px;
+    border-right-width: 0px;
+    border-bottom-width: 0px;
+    border-left-width: 0px;
+    height: 30px;
+    width: 55px;
+    filter:alpha(opacity=80); 
+    -moz-opacity:0.8; 
+    opacity:0.8;
+    color:#F60;
+}

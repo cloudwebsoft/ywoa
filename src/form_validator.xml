@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<form code="vehicle_apply">
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.vehicle.VehicleFormValidator</className>
+		<desc>用于检查流程中车辆派遣是否有时间上的重叠</desc>
+		<date>2006-4-27</date>
+		<extraData></extraData>
+		<isUsed>true</isUsed>
+	</form>
+	<form code="qjsqd">
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.kaoqin.LeaveFormValidator</className>
+		<desc>用于年假的检查</desc>
+		<extraData>{"isCheckNJ":"false"}</extraData>
+		<date>2013-5-11</date>
+		<isUsed>true</isUsed>
+	</form>
+
+<!--	<form code="lzsqb">
+		<author>wys</author>
+		<className>com.redmoon.oa.hr.LeaveFormValidator</className>
+		<desc>用于离职成功后将人事基本信息表中人员在职情况改为离职</desc>
+		<date>2013-08</date>
+	</form>
+	<form code="rsxxb">
+		<author>wys</author>
+		<className>com.redmoon.oa.hr.JoinFormValidator</className>
+		<desc>用于入职申请流程开始后将入职申请表中picture字段的值复制到人员基本信息表中</desc>
+		<date>2013-08</date>
+	</form>-->
+	
+	<form code="lydj">
+		<author>tbl</author>
+		<className>com.redmoon.oa.officeequip.validator.OfficeLyFormValidator</className>
+		<desc>用于办公用品领用流程开始后将办公用品领用表单中的值复制到办公用品领用登记表中</desc>
+		<date>2015-05</date>
+	</form>
+		<form code="rkdj">
+		<author>tbl</author>
+		<className>com.redmoon.oa.officeequip.validator.OfficeAddFormValidator</className>
+		<desc>用于办公用品入库流程开始后将办公用品入库表单中的值复制到办公用品入库表中</desc>
+		<date>2015-05</date>
+	</form>
+		<form code="jcdj">
+		<author>tbl</author>
+		<className>com.redmoon.oa.officeequip.validator.OfficeJcFormValidator</className>
+		<desc>用于办公用品借出流程开始后将办公用品借出表单中的值复制到办公用品借出表中</desc>
+		<date>2015-05</date>
+	</form>
+		<form code="ghwpex">
+		<author>tbl</author>
+		<className>com.redmoon.oa.officeequip.validator.OfficeGhFormValidator</className>
+		<desc>用于办公用品归还流程开始后将办公用品归还表单中的值复制到办公用品归还表中</desc>
+		<date>2015-05</date>
+	</form>
+		<form code="bgyppd">
+		<author>tbl</author>
+		<className>com.redmoon.oa.officeequip.validator.OfficePdFormValidator</className>
+		<desc>用于办公用品库存盘点流程开始后将盘点表单中的值复制到盘点表中</desc>
+		<date>2015-05</date>
+	</form>
+
+	<form code="tzgg">
+		<author>wm</author>
+		<className>com.redmoon.oa.notice.NoticeValidator</className>
+		<desc>用于发通知流程结束后将通知信息同步到oa_notice表中</desc>
+		<date>2015-05</date>
+	</form>
+	
+	<form code="sales_contract_new">
+		<author>wm</author>
+		<className>com.redmoon.oa.contract.ContractValidator</className>
+		<desc>用于发合同流程结束后将合同信息同步到通知表中</desc>
+		<date>2015-05</date>
+	</form>
+	
+	<form code="hysqd">
+		<author>古月圣</author>
+		<className>com.redmoon.oa.meeting.MeetingValidator</className>
+		<desc>用于会议室申请的时候会议室是否使用的校验</desc>
+		<date>2015-09</date>
+	</form>
+	
+	<form code="prj_taskremoved">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjTaskRemovedValidator</className>
+		<desc>用于撤销任务的校验</desc>
+		<date>2016-01</date>
+	</form>
+	
+	<form code="prj_taskdelayed">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjTaskDelayedValidator</className>
+		<desc>用于任务的延期</desc>
+		<date>2016-01</date>
+	</form>	
+
+	<form code="prj_task">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjTaskValidator</className>
+		<desc>用于任务的校验</desc>
+		<date>2016-01</date>
+	</form>
+
+	<form code="prj">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjValidator</className>
+		<desc>用于项目的校验</desc>
+		<date>2016-01</date>
+	</form>
+	
+	<form code="prj_delayed">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjDelayedValidator</className>
+		<desc>用于项目的延期</desc>
+		<date>2016-01</date>
+	</form>
+
+	<form code="prj_removed">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjRemovedValidator</className>
+		<desc>用于撤销项目的校验</desc>
+		<date>2016-01</date>
+	</form>
+
+	<form code="prj_transfer">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjTransferValidator</className>
+		<desc>用于项目移交的校验</desc>
+		<date>2016-02</date>
+	</form>
+
+	<form code="prj_tasktransfer">
+		<author>fgf</author>
+		<className>com.redmoon.oa.prj.PrjTaskTransferValidator</className>
+		<desc>用于任务移交的校验</desc>
+		<date>2016-02</date>
+	</form>
+	
+	<form code="sales_daily_report">
+		<author>fgf</author>
+		<className>com.redmoon.oa.sale.SalesDailyReportValidator</className>
+		<desc>用于销售日报提交的校验</desc>
+		<date>2016-03-29</date>
+	</form>	
+
+	<form code="" flowTypeCode="performance">
+		<author>古月圣</author>
+		<className>com.redmoon.oa.post.PostKPIValidator</className>
+		<desc>用于岗位绩效考核结束后,数据回写至积分表</desc>
+		<date>2016-04</date>
+	</form>
+
+	<form code="score_reported">
+		<author>古月圣</author>
+		<className>com.redmoon.oa.pointsys.PointReportValidator</className>
+		<desc>积分加分减分流程结束后,数据回写至积分表</desc>
+		<date>2016-04</date>
+	</form>
+	
+	<form code="integration_exchan">
+		<author>古月圣</author>
+		<className>com.redmoon.oa.pointsys.PointExchangeValidator</className>
+		<desc>积分加分减分流程结束后,数据回写至积分表</desc>
+		<date>2016-04</date>
+	</form>
+</config>

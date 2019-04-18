@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app  
+        version="3.0"  
+        xmlns="http://java.sun.com/xml/ns/javaee"  
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"> 
+
+	<display-name>App Init</display-name>
+
+	<context-param>
+		<param-name>xmlFile</param-name>
+		<param-value>WEB-INF/proxool.xml</param-value>
+	</context-param>
+	
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>
+			classpath:com/cloudweb/config/applicationContext.xml
+		</param-value>
+	</context-param>
+	
+	<filter>
+		<filter-name>linkFilter</filter-name>
+		<filter-class>com.redmoon.forum.LinkFilter</filter-class>
+	</filter>
+
+	<filter>
+		<filter-name>downloadfilter</filter-name>
+		<filter-class>com.redmoon.oa.DownloadFilter</filter-class>
+	</filter>
+	
+	<filter>
+		<filter-name>protectFilter</filter-name>
+		<filter-class>com.cloudwebsoft.framework.security.ProtectFilter</filter-class>
+	</filter>
+
+	<filter>
+		<filter-name>struts-cleanup</filter-name>
+		<filter-class>
+			org.apache.struts2.dispatcher.ActionContextCleanUp
+		</filter-class>
+	</filter>
+
+	<filter>
+		<filter-name>struts2</filter-name>
+		<filter-class>
+			org.apache.struts2.dispatcher.FilterDispatcher
+		</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>linkFilter</filter-name>
+		<url-pattern>/forum/*</url-pattern>
+	</filter-mapping>
+
+	<filter-mapping>
+		<filter-name>downloadfilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<filter-mapping>
+		<filter-name>protectFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<filter-mapping>
+		<filter-name>struts-cleanup</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<filter-mapping>
+		<filter-name>struts2</filter-name>
+		<url-pattern>/public/android/*</url-pattern>
+	</filter-mapping>
+
+	<filter-mapping>
+		<filter-name>struts2</filter-name>
+		<url-pattern>/report/*</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+        <filter-name>struts2</filter-name>
+        <url-pattern>/update/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>struts2</filter-name>
+        <url-pattern>/ymoa/*</url-pattern>
+    </filter-mapping>
+
+
+	<listener>
+		<listener-class>com.redmoon.oa.SessionListener</listener-class>
+	</listener>
+
+	<listener>
+		<listener-class>
+			com.cloudweb.listener.ProxoolListener
+		</listener-class>
+	</listener>
+
+
+	<!-- Spring mcv listener begin -->
+	<listener>
+		<listener-class>
+			org.springframework.web.context.ContextLoaderListener
+		</listener-class>
+	</listener>
+	<!-- Spring mcv listener end -->
+
+	<servlet>
+		<servlet-name>SpringMVC</servlet-name>
+		<servlet-class>
+			org.springframework.web.servlet.DispatcherServlet
+		</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>
+				classpath:com/cloudweb/config/spring_dispatcher_servlet.xml
+			</param-value>
+		</init-param>
+		<load-on-startup>21</load-on-startup>
+	</servlet>
+
+	<!-- Spring mvc end -->
+
+	<servlet>
+		<servlet-name>log4j-init</servlet-name>
+		<servlet-class>cn.js.fan.util.Log4jInit</servlet-class>
+		<init-param>
+			<param-name>log4j</param-name>
+			<param-value>WEB-INF/log4j.properties</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet>
+		<servlet-name>DisplayChart</servlet-name>
+		<servlet-class>
+			org.jfree.chart.servlet.DisplayChart
+		</servlet-class>
+	</servlet>
+
+	<servlet>
+		<servlet-name>chatservice</servlet-name>
+		<servlet-class>com.redmoon.chat.ChatService</servlet-class>
+	</servlet>
+
+	<servlet>
+		<description>Direct Web Remoter Servlet</description>
+		<display-name>DWR Servlet</display-name>
+		<servlet-name>dwr-invoker</servlet-name>
+
+		<servlet-class>uk.ltd.getahead.dwr.DWRServlet</servlet-class>
+		<init-param>
+			<param-name>debug</param-name>
+			<param-value>true</param-value>
+		</init-param>
+	</servlet>
+
+	<!--<servlet>
+		<servlet-name>ServletConfigurator</servlet-name>
+		<servlet-class>
+			org.logicalcobwebs.proxool.configuration.ServletConfigurator
+		</servlet-class>
+		<init-param>
+			<param-name>xmlFile</param-name>
+			<param-value>WEB-INF/proxool.xml</param-value>
+		</init-param>
+		<load-on-startup>2</load-on-startup>
+	</servlet>-->
+
+
+	<servlet>
+		<servlet-name>proxool_Admin</servlet-name>
+		<servlet-class>
+			org.logicalcobwebs.proxool.admin.servlet.AdminServlet
+		</servlet-class>
+	</servlet>
+
+	<servlet>
+		<servlet-name>AppInit</servlet-name>
+		<servlet-class>com.redmoon.oa.AppInit</servlet-class>
+		<load-on-startup>3</load-on-startup>
+	</servlet>
+
+	<servlet>
+		<servlet-name>SetContextServlet</servlet-name>
+		<servlet-class>
+			com.runqian.util.webutil.SetContextServlet
+		</servlet-class>
+		<load-on-startup>2</load-on-startup>
+	</servlet>
+	<servlet>
+		<servlet-name>reportServlet</servlet-name>
+		<servlet-class>
+			com.runqian.report4.view.ReportServlet
+		</servlet-class>
+		<init-param>
+			<param-name>configFile</param-name>
+			<param-value>/WEB-INF/reportConfig.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet>
+		<servlet-name>DMServlet</servlet-name>
+		<servlet-class>com.raq.web.view.DMServlet</servlet-class>
+		<init-param>
+			<param-name>configFile</param-name>
+			<param-value>/WEB-INF/dmConfig.xml</param-value>
+		</init-param>
+		<load-on-startup>10</load-on-startup>
+	</servlet>
+
+	<servlet>
+		<description>This is the description of my J2EE component</description>
+		<display-name>This is the display name of my J2EE component</display-name>
+		<servlet-name>WXCallBack</servlet-name>
+		<servlet-class>com.redmoon.weixin.servlet.WXCallBackServlet</servlet-class>
+	</servlet>
+	<servlet>
+		<description></description>
+		<display-name></display-name>
+		<servlet-name>WXAddressCallBackServlet</servlet-name>
+		<servlet-class>com.redmoon.weixin.servlet.WXAddressCallBackServlet</servlet-class>
+	</servlet>
+	<servlet>
+		<description></description>
+		<display-name></display-name>
+		<servlet-name>DdEventChangeReceiveServlet</servlet-name>
+		<servlet-class>com.redmoon.dingding.servlet.EventChangeReceiveServlet</servlet-class>
+	</servlet>
+	<servlet>
+		<description>This is the description of my J2EE component</description>
+		<display-name>This is the display name of my J2EE component</display-name>
+		<servlet-name>UploadFile</servlet-name>
+		<servlet-class>com.redmoon.oa.ue.UploadFile</servlet-class>
+	</servlet>
+  	<servlet>
+		<description>This is the description of my J2EE component</description>
+		<display-name>This is the display name of my J2EE component</display-name>
+		<servlet-name>ExamUploadFile</servlet-name>
+		<servlet-class>com.redmoon.oa.exam.UploadFile</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>SpringMVC</servlet-name>
+		<url-pattern>*.do</url-pattern>
+	</servlet-mapping>
+		
+    <servlet-mapping>
+        <servlet-name>DisplayChart</servlet-name>
+        <url-pattern>/servlet/DisplayChart</url-pattern>
+    </servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>chatservice</servlet-name>
+		<url-pattern>/servlet/chatservice</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>dwr-invoker</servlet-name>
+		<url-pattern>/dwr/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>proxool_Admin</servlet-name>
+		<url-pattern>/proxoolAdmin</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>reportServlet</servlet-name>
+		<url-pattern>/reportServlet</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>DMServlet</servlet-name>
+		<url-pattern>/DMServlet</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>DMServlet</servlet-name>
+		<url-pattern>/DMServletAjax</url-pattern>
+	</servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>WXCallBack</servlet-name>
+    <url-pattern>/servlet/WXCallBack</url-pattern>
+  </servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>WXAddressCallBackServlet</servlet-name>
+		<url-pattern>/servlet/WXAddressCallBackServlet</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>DdEventChangeReceiveServlet</servlet-name>
+		<url-pattern>/servlet/DdEventChangeReceiveServlet</url-pattern>
+	</servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>UploadFile</servlet-name>
+    <url-pattern>/ueditor/UploadFile</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>ExamUploadFile</servlet-name>
+    <url-pattern>/ueditor/ExamUploadFile</url-pattern>
+  </servlet-mapping>
+
+	<error-page> 
+		<error-code>500</error-code> 
+		<location>/exception.jsp</location> 
+	</error-page> 
+	
+	<jsp-config>
+		<taglib>
+			<taglib-uri>/WEB-INF/runqianReport4.tld</taglib-uri>
+			<taglib-location>
+				/WEB-INF/runqianReport4.tld
+			</taglib-location>
+		</taglib>
+
+		<!-- JSTL tag begin -->
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/fmt</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/fmt.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/fmt-rt</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/fmt-rt.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/core</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/c.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/core-rt</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/c-rt.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/sql</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/sql.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/sql-rt</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/sql-rt.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/x</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/x.tld</taglib-location>
+		</taglib>
+
+		<taglib>
+			<taglib-uri>http://java.sun.com/jstl/x-rt</taglib-uri>
+			<taglib-location>/WEB-INF/tlds/x-rt.tld</taglib-location>
+		</taglib>
+		<!-- JSTL tag end -->
+
+	</jsp-config>		
+	
+	<resource-ref>
+		<description>GuestBook</description>
+		<res-ref-name>jdbc/oa</res-ref-name>
+		<res-type>javax.sql.DataSource</res-type>
+		<res-auth>Container</res-auth>
+	</resource-ref>
+
+</web-app>
+
+

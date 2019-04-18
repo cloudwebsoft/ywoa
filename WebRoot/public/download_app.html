@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.0//EN" "http://www.wapforum.org/DTD/xhtml-mobile10.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1, user-scalable=no"/>
+<meta charset="utf-8">
+<title>app下载</title>
+<script src="../js/jquery.js"></script>
+<script>
+  $(document).ready(function() {
+try {
+    var urlhash = window.location.hash;
+    if (!urlhash.match("fromapp")) {
+        if ((navigator.userAgent.match(/(iPhone|iPod|Android|ios|iPad)/i))) {
+           $(window).bind('resize load', function(){
+				$("body").css("zoom", $(window).width() / 640);
+				$("body").css("display" , "block");
+		   });
+        }
+    }
+} catch(err) {
+
+}	
+	
+});
+</script>
+
+</head>
+
+<body>
+<span>如使用微信扫描，无法跳转下载页面，请点击右上方更多按钮，选择在浏览器中打开，进行下载...</span>
+</body>
+<script language="javascript">
+    window.location = "mobile_scan_download.jsp";
+</script>
+
+</html>

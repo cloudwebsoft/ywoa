@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<plugin code="reward">
+		<author>Blue Wind</author>
+		<classUnit>com.redmoon.forum.plugin.reward.RewardUnit</classUnit>		
+		<version>1.0</version>
+		<resource>res.forum.plugin.reward</resource>
+		<type>topic</type>
+		<adminEntrance>../plugin/reward/admin/manager.jsp</adminEntrance>
+		<desc></desc>
+		<button>images/reward</button>
+		<page>
+			<addtopic>plugin/reward/addtopic.jsp</addtopic>
+			<edittopic>plugin/reward/edittopic.jsp</edittopic>
+			<addreply>plugin/reward/addreply.jsp</addreply>
+		</page>
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author>Blue Wind</author>
+				<path>skin/default</path>
+			</skin>
+		</skins>	
+        <isShowName>false</isShowName>
+        <renderCode />				
+	</plugin>	
+	<plugin code="flower">
+		<author>Blue Wind</author>
+		<classUnit>com.redmoon.forum.plugin.flower.FlowerUnit</classUnit>		
+		<version>1.0</version>
+		<resource>res.forum.plugin.flower</resource>
+		<type>board</type>
+		<adminEntrance>../plugin/flower/admin/manager.jsp</adminEntrance>
+		<desc></desc>
+		<button></button>
+		<page>
+			<addtopic></addtopic>
+			<edittopic></edittopic>
+			<addreply></addreply>
+		</page>
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author>Blue Wind</author>
+				<path>skin/default</path>
+			</skin>
+		</skins>	
+        <isShowName>false</isShowName>
+        <renderCode />			
+	</plugin>		
+	<plugin code="activity">
+		<author>Blue Wind</author>
+		<classUnit>com.redmoon.forum.plugin.activity.ActivityUnit</classUnit>		
+		<version>1.0</version>
+		<resource>res.forum.plugin.activity</resource>
+		<type>topic</type>
+		<adminEntrance>../plugin/activity/admin/manager.jsp</adminEntrance>
+		<desc></desc>
+		<button>images/activity</button>
+		<page>
+			<addtopic>plugin/activity/addtopic.jsp</addtopic>
+			<edittopic>plugin/activity/edittopic.jsp</edittopic>
+			<addreply>plugin/activity/addreply.jsp</addreply>
+		</page>
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author>Blue Wind</author>
+				<path>skin/default</path>
+			</skin>
+		</skins>	
+        <isShowName>false</isShowName>
+        <renderCode />			
+	</plugin>	
+	<plugin code="debate">
+		<author>Blue Wind</author>
+		<classUnit>com.redmoon.forum.plugin.debate.DebateUnit</classUnit>		
+		<version>1.0</version>
+		<resource>res.forum.plugin.debate</resource>
+		<type>topic</type>
+		<adminEntrance>../plugin/debate/admin/manager.jsp</adminEntrance>
+		<desc></desc>
+		<button>images/debate</button>
+		<page>
+			<addtopic>plugin/debate/addtopic.jsp</addtopic>
+			<edittopic>plugin/debate/edittopic.jsp</edittopic>
+			<addreply>plugin/debate/addreply.jsp</addreply>
+			<showtopic></showtopic>
+		</page>
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author>Blue Wind</author>
+				<path>skin/default</path>
+			</skin>
+		</skins>	
+        <isShowName>false</isShowName>
+        <renderCode />			
+	</plugin>
+	
+	<plugin code="project">
+		<author>Blue Wind</author>
+		<classUnit>com.redmoon.oa.project.forum.ProjectUnit</classUnit>
+		<version>1.0</version>
+		<resource>res.forum.plugin.project</resource>
+		<type>board</type>
+		<adminEntrance>../plugin/project/admin/manager.jsp</adminEntrance>
+		<desc></desc>
+		<button>images/debate</button>
+		<page>
+			<addtopic>plugin/project/addtopic.jsp</addtopic>
+			<edittopic></edittopic>
+			<addreply></addreply>
+			<showtopic></showtopic>
+		</page>
+		<skins>
+			<skin code="default">
+				<name>默认皮肤</name>
+				<author>Blue Wind</author>
+				<path>skin/default</path>
+			</skin>
+		</skins>	
+        <isShowName>false</isShowName>
+        <renderCode />			
+	</plugin>		
+</config>
+

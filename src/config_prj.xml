@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <prjTransferMsgTitle desc="项目移交提醒标题">系统提醒：项目 %s 已经由 %s 移交给您</prjTransferMsgTitle>
+    <prjTransferMsgContent desc="项目移交提醒内容">项目 %s 已经由 %s 移交给您，请及时办理！</prjTransferMsgContent>
+    
+    <taskTransferMsgTitle desc="任务移交提醒标题">系统提醒：任务 %s 已经由 %s 移交给您</taskTransferMsgTitle>
+    <taskTransferMsgContent desc="任务移交提醒内容">任务 %s 已经由 %s 移交给您，请及时办理！</taskTransferMsgContent>
+    
+    <prjRemovedMsgTitle desc="项目作废提醒标题">系统提醒：项目 %s 已作废</prjRemovedMsgTitle>
+    <prjRemovedMsgContent desc="项目作废提醒内容">项目  %s 已作废！</prjRemovedMsgContent>
+ 
+    <taskRemovedMsgTitle desc="任务作废提醒标题">系统提醒：任务 %s 已作废</taskRemovedMsgTitle>
+    <taskRemovedMsgContent desc="任务作废提醒内容">任务 %s 已作废！</taskRemovedMsgContent>
+     
+</config>

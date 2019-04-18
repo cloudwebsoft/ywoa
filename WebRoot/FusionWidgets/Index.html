@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>Welcome to FusionWidgets XT</title>
+
+<link href="Contents/assets/ui/css/uistyle.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="Contents/assets/ui/js/jquery.min.js"></script>
+
+<!--[if IE 6]>
+
+<script type="text/javascript" src="Contents/assets/ui/js/DD_belatedPNG_0.0.8a-min.js"></script>
+<script>
+  /* select the element name, css selector, background etc */
+  DD_belatedPNG.fix('img');
+
+  /* string argument can be any CSS selector */
+</script>
+<![endif]-->
+
+<script type="text/javascript">
+$(document).ready(function() {
+	$("dl#middle-link-block dt").each(function(i){
+		$(this).css({
+			"background-position": '0 -' + (i * 44).toString() + 'px'
+		});
+	});
+
+	changeStructure ("middle-link-block");
+
+})
+
+	 var changeStructure = function (id) {
+		 var dtCont = [], ddCont = [], dtContTemp = [], ddContTemp = [];
+		 $("#" + id).children().each ( function () {
+			 if ($(this).is("dt")) {
+				 dtCont.push($(this));
+			 }
+			 if ($(this).is("dd")) {
+				 ddCont.push( $(this) );
+			 }
+		 })
+
+		 for (var j in dtCont) {
+			 dtContTemp.push(dtCont[j]);
+			 ddContTemp.push(ddCont[j]);
+			 if ((j+1) % 3 == 0) {
+				 for (i in dtContTemp) {
+					 $("#" + id).append( dtContTemp[i] );
+				 }
+				 for (i in ddContTemp) {
+					 $("#" + id).append( ddContTemp[i] );
+				 }
+				 dtContTemp = [];
+				 ddContTemp = [];
+			 }
+		 }
+	 }
+</script>
+
+</head>
+<body>
+<!-- wrapper -->
+<div id="wrapper">
+  <!-- header -->
+  <div id="header"> 
+	<div class="logo"><a href="http://www.fusioncharts.com/widgets/?BS=OfflineDocsLogo"><img src="Contents/assets/ui/Images/fwxt-logo.png" width="73" height="74" alt="FusionWidgets XT logo" /></a></div>
+    <h1 class="logo-text-home">&nbsp;FusionWidgets XT</h1>
+   </div>
+  <!-- content area -->
+  <div class="content-area">
+  <div id="content-area-inner-main">
+     <h2 class="headline">Thank you for choosing FusionWidgets XT! Please use the links below to learn how to add wow to your applications.</h2>
+      <dl class="m-cl" id="middle-link-block">
+        <dt class="m-cl-1 link-icon" id="how-to-install"><a href="Contents/assets/ui/howtoinstall.html">How to Install</a></dt>
+        <dd class="m-cl-1"><a href="Contents/assets/ui/howtoinstall.html">Get started with FusionWidgets XT with simple copy-n-paste installation - it takes all of 15 minutes to create your first chart!</a></dd>
+        <dt class="m-cl-2 link-icon" id="documentation"><a href="Contents/Index.html" target="_blank" >Documentation</a></dt>
+        <dd class="m-cl-2"><a href="Contents/Index.html" target="_blank">Get complete implementation details of FusionWidgets XT, its powerful capabilities and customizable options </a></dd>
+        <dt class="m-cl-2 link-icon" id="chart-gallery"><a href="Gallery/index.html">Chart Gallery</a></dt>
+        <dd class="m-cl-2"><a href="Gallery/index.html">See funnel, pyramid, angular gauge, LED gauges, spark, bulb and all the other charts offered in FusionWidgets XT</a></dd>
+        <dt class="m-cl-1 link-icon" id="live-demos"><a href="Contents/assets/ui/demos.html">Live Demos</a></dt>
+        <dd class="m-cl-1"><a href="Contents/assets/ui/demos.html">View real-life business scenarios using FusionWidgets XT for a stunning and powerful charting experience</a></dd>
+        <dt class="m-cl-2 link-icon" id="help-and-support"><a href="Contents/assets/ui/support.html">Help &amp; Support</a></dt>
+        <dd class="m-cl-2"><a href="Contents/assets/ui/support.html">Got a technical query? Use our self-help options (Documentation/Forum) or write directly to our support team</a></dd>
+        <dt class="m-cl-2 link-icon" id="license-and-upgradation"><a href="Contents/assets/ui/license.html">License &amp; Price</a></dt>
+        <dd class="m-cl-2"><a href="Contents/assets/ui/license.html">Learn about the various licenses available for FusionCharts Suite XT or its individual products</a></dd>
+      </dl>
+      <div class="underline-dull"></div>      <!-- open folder links -->
+      <ul class="folder-access-link">
+        <li class="link-icon" style="background-position: 0 -277px;"><a href="Charts/">Open Charts Folder</a></li>
+        <li class="link-icon" style="background-position: 0 -354px;"><a href="Code/">Open Samples Folder</a></li>
+        <li class="link-icon" style="background-position: 0 -425px;"><a href="Tools/" class="last">Open Tools Folder</a></li>
+      </ul>
+      <div class="underline-dull"></div>
+    </div>
+  </div>
+  <!-- footer -->
+     <div id="footer">
+     <ul>
+	  <li>Related Links:</li>
+      <li><a href="http://www.fusioncharts.com" target="_blank">Web</a></li>
+      <li class="pipe">|</li>
+      <li><a href="http://blog.fusioncharts.com/" target="_blank">Blog</a></li>
+      <li class="pipe">|</li>
+      <li><a href="http://www.fusioncharts.com/success-stories/case-studies/" target="_blank">Case Studies</a></li>
+      <li class="pipe">|</li>
+      <li><a href="http://www.fusioncharts.com/success-stories/showcase/" target="_blank">Third Party Integration</a></li>
+    </ul>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,210 @@
+/*!
+* jquery.fixheadertable
+*
+* Copyright (c) 2010 Benjamin Léouzon
+* http://www.tablefixedheader.com/
+*
+* Licensed under MIT
+* http://www.opensource.org/licenses/mit-license.php
+*
+* Launch  : December 2010
+* Version : 2.0
+*/
+
+/* CALCULATE SCROLLBAR WIDTH */
+
+p.t_fixed_header_scroll_inner {
+	width			: 100%;
+	height			: 200px;
+}
+
+div.t_fixed_header_scroll_outer {
+	top 			: 0;
+	left 			: 0;
+	visibility 		: hidden;
+	width 			: 200px;
+	height 			: 150px;
+	overflow 		: hidden;
+}
+
+/* BASE */
+
+div.t_fixed_header {
+	position		: relative;
+	margin 			: 0; 
+	width			: 100%;
+}
+
+div.t_fixed_header * {
+	margin			: 0;
+	padding			: 0;
+}
+
+div.t_fixed_header table.head {
+	position		: relative;	
+}
+
+div.t_fixed_header table {
+	width			: 100%;
+	table-layout 	: fixed;
+	empty-cells 	: show;
+	border-collapse	: collapse;
+	border-spacing	: 0;
+}
+
+div.t_fixed_header table.headtable td.fillScrollbar {
+	font-size		: 0px;
+	-o-text-overflow: inherit; /* IE TRAFF */
+	text-overflow 	: inherit; /* IE TRAFF */
+}
+
+div.t_fixed_header tr th, div.t_fixed_header tr td {
+	overflow		: hidden;
+	white-space		: nowrap;	
+	-o-text-overflow: ellipsis;
+	text-overflow 	: ellipsis;
+}
+
+div.t_fixed_header.t_fixed_header_wrap tr th, div.t_fixed_header.t_fixed_header_wrap tr td {
+	white-space		: normal;
+}
+
+div.t_fixed_header div.body {
+	padding			: 0;
+	width			: 100%;
+	overflow-x		: auto;
+}
+
+div.t_fixed_header_main_wrapper {
+	position 		: relative; 
+	overflow 		: hidden; 
+}
+
+div.t_fixed_header_main_wrapper_child {
+	position 		: relative; 
+	width 			: 100% 
+}
+
+/* BASE THEME : UI */
+
+div.t_fixed_header_main_wrapper.ui {
+	border-width 	: 1px 1px 1px 1px;
+	border-style 	: solid;
+	font-weight		: normal;
+	font-size		: 1.1em;
+}
+
+div.t_fixed_header_main_wrapper.ui  div.t_fixed_header_caption {
+	text-align		: center;
+	font-weight		: bold;
+	padding			: 0 5px;
+	height			: 30px;
+	line-height		: 30px;
+	border-width 	: 0 0 1px 0;
+	border-style 	: solid;
+}
+
+div.t_fixed_header_main_wrapper.ui  div.t_fixed_header_caption.toggle {
+	border-width 	: 0;	
+}
+
+div.t_fixed_header div.headtable {
+	border			: 0;	
+	overflow-x		: hidden;
+    overflow-y		: auto;
+}
+
+div.t_fixed_header.ui .body {
+	border-width 	: 1px 0 0 0;
+	border-style 	: solid;
+	background-image : none;
+}
+
+div.t_fixed_header.ui .headtable th {
+	padding			: 5px;
+	text-align 		: center;
+	border-width 	: 0 1px 0 0;
+	border-style 	: solid;
+}
+
+div.t_fixed_header.ui .headtable .hover {
+	cursor			: pointer;
+	height			: 16px;
+}
+
+div.t_fixed_header.ui .headtable th span.ui-resize {
+	background		: transparent;
+	cursor			: col-resize;
+	display			: inline;
+	float			: right;
+	height			: 20px;
+	margin			: -3px -5px -5px 0;
+	width			: 5px;
+	z-index			: 10000;
+}
+
+div.t_fixed_header.ui div.ui-resize-ghost {
+	display 		: none; 
+	position 		: absolute; 
+	top 			: 0; 
+	width 			: 2px; 
+	border			: none;
+}
+
+div.t_fixed_header.ui .body tr {
+	border			: 0px;
+}
+
+div.t_fixed_header.ui .body td {
+	padding			: 5px;
+	text-align 		: left;
+	line-height		: 15px;
+}
+
+div.t_fixed_header.ui .body tr td {
+	border-width 	: 0 1px 1px 0;
+	border-style 	: solid;
+	background		: none;
+}
+
+div.t_fixed_header.ui .body tr:last-child td {
+	border-bottom-width : 0px;
+}
+
+div.t_fixed_header.ui.default .headtable th:last-child, div.t_fixed_header.ui.default .body td:last-child  {
+	border-right-width : 0px;
+}
+
+div.t_fixed_header.ui .body td.last_td, div.t_fixed_header.ui .headtable th.last_td {
+	border-right-width : 0px;
+}
+
+div.t_fixed_header_main_wrapper.ui div.pager {
+	border-width	: 0 0 0 0;
+	padding			: 4px 2px 2px 3px;
+	overflow		: hidden;
+	background-image: none;
+}
+
+div.t_fixed_header_main_wrapper.ui div.pager .button {
+	float			: right;
+	padding			: 4px 0;
+	cursor			: pointer;
+}
+
+div.t_fixed_header_main_wrapper.ui div.pager .button.noborder {
+	border-right-width : 0px;
+}
+
+div.t_fixed_header_main_wrapper.ui div.pager .button span {
+	margin			: 0 4px;
+}
+
+div.t_fixed_header_main_wrapper.ui div.pager div.page_infos {
+	height			: 27px;
+	line-height		: 27px;
+	float			: right;
+	margin-right	: 10px;
+	font-weight		: normal;
+}
+

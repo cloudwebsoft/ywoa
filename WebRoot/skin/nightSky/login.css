@@ -1,0 +1,224 @@
+@charset "utf-8";
+
+/* CSS Document */
+@charset "utf-8";
+body{
+	background-image: url(images/login/login_bgimg.jpg);
+	background-repeat: no-repeat;
+	background-position: left top;
+    overflow: hidden;
+    background-position: center top;
+}
+
+
+/*登录界面样式*/
+.logincontent {
+
+	padding-bottom: 30px;
+	background-repeat: no-repeat;
+	height: 700px;
+	background-position: bottom;
+	z-index:1;
+}
+.logincontent .login_topbox {
+	height: 75px;
+	padding-top: 30px;
+}
+.logincontent .login_topbox .login_topleft {
+	float: left;
+	width: 60%;
+	padding-left: 0px;
+}
+.logincontent .login_topbox .login_topright {
+	float: right;
+	height: 44px;
+	margin-right: 20px;
+	width: 132px;
+}
+.logincontent .loginbar_frame {
+	width: 1210px;
+	margin-top: 0px;
+	margin-right: auto;
+	margin-left: auto;
+	height: 517px;
+	background-repeat: no-repeat;
+	background-position: center center;
+
+}
+.logincontent .loginbar_frame .loginbar_computer_bg {
+	height: 517px;
+	float: left;
+	width: 300px;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox {
+	background-image: url(images/login/loginbar_bg.png);
+	height: 517px;
+	background-repeat: no-repeat;
+	float: right;
+	width: 650px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_posit {
+	position: relative;
+	height: 517px;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case {
+	position: absolute;
+	height: 300px;
+	width: 297px;
+	left: 141px;
+	top: 159px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box1 {
+	line-height: 25px;
+	color: #F30;
+	height: 30px;
+	text-align: center;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 {
+	line-height: 43px;
+	border: 1px solid #d5d5d5;
+	height: 43px;
+	margin-bottom: 15px;
+	color: #333;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 input {
+	float:right;
+	margin:0;
+	padding-top:2px;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	height: 40px;
+	width: 249px;
+	color: #999;
+	text-indent: 10px;
+	line-height: 43px;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 .span_user {
+	background-image: url(images/login/login_userico.png);
+	height: 43px;
+	width: 43px;
+	float: left;
+}
+
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .input_box2 .span_code {
+	background-image: url(images/login/login_codeico.png);
+	height: 43px;
+	width: 43px;
+	float: left;
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .login_button {
+	margin-top: 50px;
+	margin-bottom: 10px;
+	margin-right: auto;
+	margin-left: auto;
+	background-image: url(images/login/loginbutton.png);
+	background-repeat: no-repeat;
+	width: 317px;
+	height: 43px;
+	cursor:pointer;
+	
+}
+.logincontent .loginbar_frame .loginbar_bgbox .loginbar_case .QRcode {
+	float: right;
+	height: 28px;
+	width: 82px;
+}
+	
+.logincontent-footer {
+	background-repeat: no-repeat;
+	height: 43px;
+	color: #FFF;
+	text-align: center;
+	position:fixed;
+	bottom:0px;
+	top:auto;
+	background-position: center top;
+	width: 100%;
+	z-index:0;
+}
+
+.input_box4{
+	position: relative;
+}
+.input_box4  #send_to_desktop{
+	position:absolute;
+	right:0;
+	width:28px;
+	height:22px;
+	background:url("images/send_to_desktop.png");
+}
+
+.star {
+	position: absolute;
+	background-image: url(images/login/star.png);
+	height: 73px;
+	width: 73px;
+	top:-73px;
+	left:600px;
+	opacity : 0.3;
+	filter:alpha(opacity=30); 
+	-moz-opacity:0.3; 
+	z-index: 0;
+}
+
+.star1 {
+	position: absolute;
+	background-image: url(images/login/star.png);
+	height: 73px;
+	width: 73px;
+	top:-73px;
+	left:400px;
+	opacity : 0.3;
+	filter:alpha(opacity=30); 
+	-moz-opacity:0.3; 
+	z-index: 0;
+}
+
+.star2 {
+	position: absolute;
+	background-image: url(images/login/star.png);
+	height: 73px;
+	width: 73px;
+	top:-73px;
+	left:200px;
+	opacity : 0.3;
+	filter:alpha(opacity=30); 
+	-moz-opacity:0.3; 
+	z-index: 0;
+}
+
+.star3 {
+	position: absolute;
+	background-image: url(images/login/star.png);
+	height: 73px;
+	width: 73px;
+	top:150px;
+	left:-73px;
+	opacity : 0.3;
+	filter:alpha(opacity=30); 
+	-moz-opacity:0.3; 
+	z-index: 0;
+}
+
+.star4 {
+	position: absolute;
+	background-image: url(images/login/star.png);
+	height: 73px;
+	width: 73px;
+	top:-73px;
+	left:800px;
+	opacity: 0.3;
+	filter:alpha(opacity=30); 
+	-moz-opacity:0.3; 
+	z-index: 0;
+}
+

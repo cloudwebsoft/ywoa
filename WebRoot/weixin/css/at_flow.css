@@ -1,0 +1,143 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+ul li {
+	list-style: none;
+}
+
+.at_flow {
+	margin: 0.6rem;
+	font-size: 14px;
+	color: #333;
+}
+
+.at_flow li {
+	border-left: 1px solid #e0e0e0;
+	margin-left: 10px;
+	vertical-align: middle;
+}
+
+.at_flow li:before {
+	content: '';
+	border: 5px solid #f3f3f3;
+	background-color: #d9d9d9;
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 10px;
+	margin-left: -12px;
+	margin-right: 10px;
+}
+
+.at_flow  li.light:before {
+	background-color: #fe4300;
+	border-color: #f8e9e4;
+}
+
+.at_flow li.light .time {
+	color: #fe4300;
+}
+
+.at_flow li .contain {
+	width: 80%;
+	float: right;
+}
+
+.at_flow li .time {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.at_flow li .contain .avaterDiv {
+	width: 48px;
+	height: 48px;
+	float: left;
+	border-radius: 50%;
+	border: 1px solid #eee;
+	overflow: hidden;
+}
+
+.at_flow li .contain .userName {
+	height: 48px;
+	display: inline-block;
+	vertical-align: middle;
+	line-height: 48px;
+	text-align: center;
+	padding-left: 10px;
+}
+
+.at_flow li .contain .comment {
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+	float: right;
+	background: url(../images/comment_icon.png) no-repeat;
+}
+
+.at_flow li .contain .content,.reply_content {
+	background: #E0E0E0;
+	padding: 10px;
+	margin: 10px 0;
+}
+
+.reply_content {
+	position: relative;
+}
+
+.reply_content:before {
+	position: absolute;
+	content: "";
+	line-height: 0;
+	font-size: 0;
+	border-width: 10px;
+	border-color: transparent transparent #e0e0e0 transparent;
+	border-style: solid dashed dashed;
+	left: 20px;
+	top: -20px;
+	display: block;
+}
+
+.re_content {
+	padding: 10px 10px;
+}
+
+.clearfix {
+	zoom: 1;
+}
+
+.clearfix:before,.clearfix:after {
+	content: '';
+	display: table;
+}
+
+.clearfix:after {
+	clear: both;
+}
+
+.text-right {
+	float: right;
+}
+
+.at_textarea {
+	min-height: 40%;
+	padding: 10px;
+	text-align:left;
+	border: 0px solid rgba(0, 0, 0, .2) !important;
+}
+
+.at_user_div {
+	width: 100%;
+	background: #fff;
+	padding: 10px;
+}
+
+.at_user_div:hover {
+	background: gainsboro;
+}
+
+.userDiv {
+	float: right;
+	width: 60%;
+}

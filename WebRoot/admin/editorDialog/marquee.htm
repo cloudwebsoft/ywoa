@@ -1,0 +1,105 @@
+<HTML><HEAD>
+<META http-equiv=Content-Type content="text/html; charset=gb2312">
+<STYLE>BODY {
+	PADDING-RIGHT: 5px; PADDING-LEFT: 5px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px
+}
+TD {
+	FONT-SIZE: 9pt
+}
+BODY {
+	FONT-SIZE: 9pt
+}
+SELECT {
+	FONT-SIZE: 9pt
+}
+P {
+	FONT-SIZE: 9pt
+}
+INPUT {
+	FONT-SIZE: 9pt
+}
+</STYLE>
+<SCRIPT language=JavaScript src="../editorDialog/dialog.js"></SCRIPT>
+<script language="javascript" event="onerror(msg, url, line)" for="window">
+return true ;	 // 隐藏错误
+</script>
+<SCRIPT language=javascript>
+var sAction = "INSERT";
+var sTitle = "插入";
+var el;
+var sText = "";
+var sBehavior = "";
+
+var sel = dialogArguments.WebEditor.document.selection.createRange();
+sel.type = dialogArguments.WebEditor.document.selection.type;
+if (sel.type=="Control") {
+	if (sel.item(0).tagName=="MARQUEE"){
+		sAction = "MODI";
+		sTitle = "修改";
+		el = sel.item(0);
+		sBehavior = el.behavior;
+		sText = el.innerHTML;
+	}
+}
+
+document.write("<title>字幕属性（" + sTitle + "）</title>");
+
+
+// 单选的点击事件
+function check(){
+	sBehavior = event.srcElement.value;
+}
+
+// 初始值
+function InitDocument() {
+	d_text.value = sText;
+	switch (sBehavior) {
+	case "scroll":
+		document.all("d_behavior")[0].checked = true;
+		break;
+	case "slide":
+		document.all("d_behavior")[1].checked = true;
+		break;
+	default:
+		sBehavior = "alternate";
+		document.all("d_behavior")[2].checked = true;
+		break;
+	}
+
+}
+</SCRIPT>
+
+<SCRIPT language=JavaScript event=onclick for=Ok>
+	sText = d_text.value;
+	if (sAction == "MODI") {
+		el.behavior = sBehavior;
+		el.innerHTML = sText;
+	}else{
+		dialogArguments.insertHTML("<marquee behavior='"+sBehavior+"'>"+sText+"</marquee>");
+	}
+	window.returnValue = null;
+	window.close();
+</SCRIPT>
+
+<META content="MSHTML 6.00.3790.118" name=GENERATOR></HEAD>
+<BODY bgColor=menu onload=InitDocument()>
+<TABLE cellSpacing=0 cellPadding=0 align=center border=0>
+  <TBODY>
+  <TR>
+    <TD>
+      <FIELDSET align=left><LEGEND></LEGEND>
+      <TABLE cellSpacing=5 cellPadding=0 border=0>
+        <TBODY>
+        <TR vAlign=center>
+          <TD>文本:&nbsp;</TD>
+          <TD><INPUT id=d_text size=50></TD></TR>
+        <TR vAlign=center>
+          <TD>表现:&nbsp;</TD>
+          <TD><INPUT onclick=check() type=radio value=scroll name=d_behavior> 
+            滚动条 <INPUT onclick=check() type=radio value=slide name=d_behavior> 
+            幻灯片 <INPUT onclick=check() type=radio value=alternate 
+            name=d_behavior> 交替</TD></TR></TBODY></TABLE></FIELDSET> </TD></TR>
+  <TR>
+    <TD height=10></TD></TR>
+  <TR>
+    <TD align=right><INPUT id=Ok type=submit value="  确定  ">&nbsp;&nbsp;<INPUT onclick=window.close(); type=button value="  取消  "></TD></TR></TBODY></TABLE></BODY></HTML>

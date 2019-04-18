@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="gb2312" ?>
+  <!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.1//EN" "http://java.sun.com/j2ee/dtds/web-jsptaglibrary_1_1.dtd">
+  
+<!-- a tag library descriptor -->
+  
+<taglib>
+   <tlibversion>1.0</tlibversion>
+   <jspversion>1.1</jspversion>
+   <shortname>DocumentTag</shortname>
+   <uri></uri>
+   <info>DocumentTag</info>
+
+  <tag>
+    <name>DocumentTag</name>
+    <tagclass>com.redmoon.oa.fileark.DocumentTag</tagclass>
+    <bodycontent>JSP</bodycontent>
+    <info>DocumentTag</info>
+    <attribute>
+	<name>id</name>
+	<required>false</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+	<name>dirCode</name>
+	<required>false</required>
+	<rtexprvalue>true</rtexprvalue>
+    </attribute>
+  </tag>
+</taglib>
+

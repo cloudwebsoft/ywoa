@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>无标题文档</title>
+<style type="text/css">
+<!--
+body,td,th {
+	font-size: 14px;
+}
+*{
+	margin:0;
+	padding:0;
+	}
+.login_con{
+	list-style:none;
+	width:240px;
+	margin:0 auto;
+	}
+.login_con li{
+	padding:8px 0;
+	overflow:hidden;
+	zoom:-1
+	}
+.login_con li label{
+	float:left;
+	}	
+.login_con li .input{
+	border: 1px solid #CCCCCC;
+    color: #868686;
+    font-size: 16px;
+    outline: medium none;
+    padding: 2px;
+    width: 170px;
+	}
+.login_con li span{
+	display:inline-block;
+	width:60px;
+	float:left;
+	font-family: "微软雅黑","黑体", "宋体", "幼圆";
+	color:#333
+	}
+.verify_text,.pic{
+	font-size:12px;
+	padding-left:60px;
+	color:#333;
+	}	
+.pic a{
+	color:#069;
+	}	
+.logins{
+	margin-top:15px;
+	}	
+.signup-btn{
+    background: url("theme/default/images/login_btn.png") no-repeat scroll 0 0 transparent;
+    border: 0 none;
+    color: #0C4E7C;
+    cursor: pointer;
+    display: block;
+    float: left;
+    height: 36px;
+    line-height: 20px;
+    outline: medium none;
+    text-align: center;
+    width: 111px;}
+
+.signin-btn {
+    background: url("theme/default/images/login_btn.png") no-repeat scroll -111px 0 transparent;
+    border: 0 none;
+    color: #0C4E7C;
+    cursor: pointer;
+    height: 36px;
+    line-height: 20px;
+    margin-left: 14px;
+    text-align: center;
+    width: 111px;
+}
+-->
+</style></head>
+
+<body>
+<form id="loginform"  method="post" action="" name="loginform">
+<ul class="login_con">
+  <li><span>账号:</span>
+    <label>
+      <input name="textfield" type="text" class="input" id="textfield" value=" "/>
+    </label>
+  </li>
+  <li><span>密码:</span>    <label>
+      <input type="password" name="textfield" id="textfield" class="input"/>
+    </label></li>
+  <li><span>验证码:</span>    <label>
+      <input type="password" name="textfield" id="textfield" class="input"/>
+    </label></li>
+  <li> 
+ <div id="verifytip" class="verify_text">输入下图中的字符，不区分大小写</div>
+  <div id="verifyshow" class="pic">
+  <img width="130" height="53" onload="imgLoadReport()" id="imgVerify" src="https://ssl.captcha.qq.com/getimage?aid=1003903&amp;r=0.4291120514874198&amp;uin=1140997676">
+ <a href="javascript:ptui_changeImg('qq.com', 1002101, true);" id="changeimg_link">换一张</a>
+ </div>		
+ 
+ <div class="logins">
+ <a title="注册新用户" target="_blank" href="#" tabindex="5" class="signup-btn"></a>
+ <input type="submit" id="login_button" tabindex="6" value="" class="signin-btn">
+						</div>
+				 </li>  
+</ul>
+</form>
+ </body>
+</html>

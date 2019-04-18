@@ -1,0 +1,18 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>无标题文档</title>
+</head>
+
+<body>
+主题页面,单击图片更换
+<img src="../../theme/default/images/wallpaper.jpg" width="190"  onclick="upWallpaper(this)" />
+<img src="../../theme/default/images/wallpaper1.jpg" width="190" onclick="upWallpaper(this)" />
+<script type="text/javascript">
+function upWallpaper(o){
+	parent.myDesktop.wallpaper.updateWallpaper(o.src);
+	}
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+body         { background-color: #ffffff }
+body, p, td, input { font-size: 9pt; color: #000000; margin-top:0px; margin-left:0px }
+a:link   { COLOR: darkblue; TEXT-DECORATION: none }
+a:active { text-decoration: none; font-size: 9pt; color: #ff0000 }
+a:visited { color: #003399; text-decoration: none font-size 9pt }
+a:hover  { COLOR: #669900; TEXT-DECORATION: none }
+a.toolbar:link   { COLOR: darkblue; TEXT-DECORATION: none }
+a.toolbar:active { text-decoration: none; font-size: 9pt; color: #ff0000 }
+a.toolbar:visited { color: #ffffff; text-decoration: none font-size 9pt }
+a.toolbar:hover  { text-decoration: underline; font-size: 9pt; color: #ff0000 }
+.inputnormal { border:1px solid #C0C0C0; text-align:center; background-color:#F1F1F1}
+.inputedit   { border:1px solid #6699CC; background-color:#CDDEED }
+.areanormal { border-style: solid; border-width: 0; background-color:#ffffff}
+BODY {scrollbar-face-color:#6699cc;
+scrollbar-highlight-color:#0099ff;
+scrollbar-3dlight-color:#99ccff;
+scrollbar-darkshadow-color:#000000;
+scrollbar-shadow-color:#006699;
+scrollbar-arrow-color:#ffffff;
+scrollbar-track-color:#FFFFFF;}
+.s01 {border-style:inset; border-width:1px; FONT-SIZE: 12px; HEIGHT: 14pt}
+.button1 { BORDER-TOP: 1px ridge #FFFFFF; FONT-SIZE: 12px; BORDER-LEFT: 1px ridge #FFFFFF; HEIGHT: 16pt; BACKGROUND-COLOR: #D4D0C8; border-right-style:ridge; border-right-width:1px; border-bottom-style:ridge; border-bottom-width:1px; padding-top:2}

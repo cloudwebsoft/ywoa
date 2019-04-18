@@ -1,0 +1,90 @@
+@charset "utf-8";
+@charset "utf-8";
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td {margin:0;padding:0;} 
+table {border-collapse:collapse;border-spacing:0;} 
+fieldset,img {border:0px; margin:0px; vertical-align:middle; } 
+address,caption,cite,code,dfn,em,strong,th,var {font-style:normal;font-weight:normal} 
+ol,ul {list-style:none} 
+caption,th {text-align:left} 
+h1,h2,h3,h4,h5,h6 {font-size:100%;font-weight:normal} 
+q:before,q:after {content:''} 
+abbr,acronym { border:0}
+body {
+	margin:0;
+	padding:0;
+	font-family:"微软雅黑";
+	font-size: 14px;
+	color: #606060;
+}
+
+/*登录选择界面模式*/
+.interface_mode_fram {
+	height: 90%;
+	width: 80%;
+	background-color: #FFF;
+	border: 1px solid #dddddd;
+	text-align: center;
+	overflow: hidden;
+	min-width:1000px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<1000?"1000px":"");
+}
+#interface_mode .modetitle {
+	height: 35px;
+	margin-top: 30px;
+	margin-bottom: 30px;
+	text-align: center;
+	font-size: 18px;
+	color: #00aae2;
+}
+#interface_mode .mode_img_stencil {
+	height: 300px;
+	margin-top: 0px;
+	margin-right: auto;
+	margin-left: auto;
+	width: 888px;
+}
+#interface_mode .mode_img_stencil .mode_imgbox {
+	float: left;
+	text-align: center;
+	color: #00aae2;
+	font-size: 18px;
+	width: 276px;
+}
+#interface_mode .mode_img_stencil .mode_imgbox .mode_border {
+	border: 3px solid #98d9ee;
+	margin-bottom: 10px;
+}
+#interface_mode .mode_img_stencil .mode_imgbox .mode_selected {
+	border: 3px solid #ff811b;
+	margin-bottom: 10px;
+}
+
+#interface_mode .comments {
+	font-size: 16px;
+	color: #777673;
+	height: 50px;
+	line-height: 50px;
+}
+#interface_mode  .mode_btnbox {
+	width: 403px;
+	margin-right: auto;
+	margin-left: auto;
+	cursor:pointer;
+}
+
+#interface_mode .mode_button {
+	background-image: url(images/mode_button.png);
+	background-repeat: no-repeat;
+	height: 63px;
+	width: 403px;
+	margin: 0px;
+	padding: 0px;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+}

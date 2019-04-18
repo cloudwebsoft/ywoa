@@ -1,0 +1,107 @@
+/*@import url("../css/common/common.css");*/
+ul,ol,li{list-style:none;}
+.compare-layout {
+	overflow: hidden;
+	width: 1000px;
+	margin-top: 15px;
+	padding-left: 50px;
+}
+.compare-row-left, .compare-row-middle, .compare-row-right {
+	float: left;
+	/*height: px;*/
+	width: 230px;
+	margin-right: 40px;
+}
+.compare-rowbox-1, .compare-rowbox-2 {
+	background-color:#d4dde2;
+	height: 340px;
+	padding: 20px;
+	overflow-y:auto;
+}
+.compare-rowbox-3  {
+	background-color:#d6cec8;
+	height: 340px;
+	padding: 20px;
+	overflow-y:auto;
+}
+.compare-row-left .compare-normal, .compare-row-middle .compare-normal {
+	color: #59676b;
+	background-color: #FFF;
+	text-align: center;
+	height: 40px;
+	width: 180px;
+	margin-bottom: 18px;
+	line-height: 45px;
+	padding-right: 5px;
+	padding-left: 5px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+.compare-row-right .compare-normal {
+	color: #59676b;
+	background-color: #FFF;
+	text-align: center;
+	height: 40px;
+	width: 180px;
+	margin-bottom: 18px;
+	line-height: 45px;
+	padding-right: 5px;
+	padding-left: 5px;
+	white-space:nowrap; 
+	overflow:hidden; 
+	text-overflow:ellipsis;
+}
+
+/*鼠标经过样式*/
+.compare-row-left .compare-select, .compare-row-middle .compare-select {
+	color: #59676b;
+	background-color: #47beef;
+	text-align: center;
+	height: 40px;
+	width: 180px;
+	margin-bottom: 18px;
+	line-height: 45px;
+	padding-right: 5px;
+	padding-left: 5px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+/*鼠标经过样式-gray*/
+.compare-row-right .compare-select {
+	color: #59676b;
+	background-color: #fff1da;
+	text-align: center;
+	height: 40px;
+	width: 180px;
+	margin-bottom: 18px;
+	line-height: 40px;
+	padding-right: 5px;
+	padding-left: 5px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+
+}
+.compare-row-left .compare-title, .compare-row-middle .compare-title {
+	font-size: 16px;
+	line-height: 40px;
+	background-color: #e5ebee;
+	text-align: center;
+	height: 40px;
+	border-bottom-width: 2px;
+	border-bottom-style: solid;
+	border-bottom-color: #47BEEF;
+}
+
+.compare-row-right .compare-title {
+	font-size: 16px;
+	line-height: 40px;
+	background-color: #efe3d9;
+	text-align: center;
+	height: 40px;
+	border-bottom-width: 2px;
+	border-bottom-style: solid;
+	border-bottom-color: #C2B7AD;
+}

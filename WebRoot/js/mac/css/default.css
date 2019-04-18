@@ -1,0 +1,58 @@
+.grid .main { overflow-x: auto; overflow-y: hidden; color: #000; }
+.grid .head {
+	white-space: nowrap; height: 26px; line-height: 26px; overflow: hidden;
+	float: left; border-left: 1px solid #93C3CD; border-right: none;
+}
+.grid .head input { float: left; }
+.grid>.main>.body { overflow: hidden; }
+.grid .tt {
+	overflow-x: hidden; overflow-y: hidden;
+	border-left: 1px solid #93C3CD;
+}
+.grid .tr {
+	white-space: nowrap; display: inline-block;
+	border-bottom: 1px solid #93C3CD;
+}
+.grid .th, .grid .td {
+	white-space: nowrap; display: inline-block; cursor: default;
+	overflow: hidden; border-right: 1px solid #97bbd4;
+}
+.grid .th {
+	text-align: center; height: 26px; line-height: 26px; -moz-user-select: none;
+	color: #000; vertical-align: middle; background-color: #c6e1f4;
+	border-top: 1px solid #97bbd4; border-bottom: 1px solid #97bbd4;
+}
+.grid .tth>div>.title { border-right: 1px solid #97bbd4; }
+.grid .tr>.td {
+	height: 24px; line-height: 24px; vertical-align: middle;
+}
+.grid .ybar { width: 18px; float: right; overflow-y: auto; margin-top: 24px; }
+.grid .td input { float: left; }
+.grid .sort {
+	float: right; height: 22px; padding-top: 2px; border-left: 1px solid #CAE5E8;
+}
+.grid .sort:hover { background-color: #97CBFF; }
+.grid .sizer {
+	cursor: e-resize; width: 2px; float: right; height: 24px;
+}
+.grid .dropable { background-color: #97CBFF; }
+.grid .title { overflow: hidden; }
+.grid .title:hover { background-color: #97CBFF; }
+.grid .h1 { background-color: #CEE3F6; }
+.grid .tr.h2o .td { background-color: #EEF; }
+.grid .tr.h2e .td { background-color: #EFE; }
+.grid .tr:hover .td { background-color: #FBCC88; }
+.grid .tr.selected .td { background-color: #FBEC88; }
+
+.dragHelper {
+	border: 1px dashed #DDD; background-color: #FFF; position: absolute;
+	padding: 2px 4px 2px 4px; float: left; z-index: 99;
+}
+
+.pager { margin-top: 8px; height: 24px; }
+.pager .pageNo { margin: 2px 2px; padding: 2px; border: 1px solid transparent; }
+.pager .pageNo[action]:hover { border: 1px solid #DDD; }
+.pager .button {
+	height: 24px; line-height: 24px; padding: 4px 8px; cursor: pointer; border: 1px solid #DDD;
+}
+.pager input { margin: 0 4px 0 12px; width: 40px; }

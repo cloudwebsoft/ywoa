@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <Application>
+        <name>OA</name>
+        <author>Fan Gang-feng</author>
+        <server>localhost</server>
+        <port>8888</port>
+        <virtualPath>oa</virtualPath>
+        <bak_path>bak</bak_path>
+        <FileSize>2048000</FileSize>
+        <WebEdit>
+            <MaxSize>2048000000</MaxSize>
+            <maxUploadingFileCount>30</maxUploadingFileCount>
+        </WebEdit>
+        <hasBlog>false</hasBlog>
+        <smtpServer>smtp.exmail.qq.com</smtpServer>
+        <smtpPort>465</smtpPort>
+        <smtpUser>service@yimihome.com</smtpUser>
+        <smtpPwd>Cloudweb956956</smtpPwd>
+        <smtpSSL>true</smtpSSL>        
+        <email>service@yimihome.com</email>
+        <realPath>D:/oa_git/target/oa-0.0.1-SNAPSHOT/</realPath>
+        <desc />
+        <copyright></copyright>
+        <version>3.0</version>
+        <internetFlag>no</internetFlag>
+        <isRequestSupportCN>false</isRequestSupportCN>
+        <useCache>false</useCache>
+        <title />
+        <isSubDomainSupported>false</isSubDomainSupported>
+        <isTransactionSupported>true</isTransactionSupported>
+        <isGZIPEnabled>true</isGZIPEnabled>
+        <isCluster>false</isCluster>
+        <db>MySQL</db>
+        <dbVersion>5.1</dbVersion>
+        <hasBlog>true</hasBlog>
+		<platformRelated>OA</platformRelated>
+		<isProxy>false</isProxy>
+		<proxy>
+			<ip></ip>
+			<port></port>
+			<name></name>
+			<pwd></pwd>
+		</proxy>
+    </Application>
+    <DataBase>
+        <db>
+            <name>oa</name>
+            <Default>true</Default>
+            <UsePool>false</UsePool>
+            <PoolName />
+            <DBDriver>org.logicalcobwebs.proxool.ProxoolDriver</DBDriver>
+            <ConnStr>proxool.oa</ConnStr>
+        </db>
+        <db>
+            <name>zjrj</name>
+            <Default>false</Default>
+            <UsePool>false</UsePool>
+            <PoolName />
+            <DBDriver>org.logicalcobwebs.proxool.ProxoolDriver</DBDriver>
+            <ConnStr>proxool.zjrj</ConnStr>
+        </db>
+        <db>
+            <name>zjrj3</name>
+            <Default>false</Default>
+            <UsePool>false</UsePool>
+            <PoolName />
+            <DBDriver>org.logicalcobwebs.proxool.ProxoolDriver</DBDriver>
+            <ConnStr>proxool.zjrj3</ConnStr>
+        </db>
+    </DataBase>
+    <scheduler>
+        <className>com.redmoon.forum.ForumSchedulerUnit</className>
+        <className>com.redmoon.oa.OASchedulerUnit</className>
+        <className>com.redmoon.oa.OASchedulerBirthday</className>
+    </scheduler>
+    <i18n>
+        <lang>zh</lang>
+        <country>cn</country>
+        <timeZone>GMT+08:00</timeZone>
+        <isSpecified>false</isSpecified>
+    </i18n>
+</config>
+

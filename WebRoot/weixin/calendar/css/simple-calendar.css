@@ -1,0 +1,221 @@
+@charset "utf-8";
+body{
+	font-size: 12px;
+	background: #efeff4;
+}
+.sc-calendar {
+	width: 100%;
+	text-align: center;
+	font-family: "Microsoft Yahei";
+	color: #4A4A4A;
+	background-color: white;
+	font-size: 10px;
+}
+.sc-body.showmonth5{
+	overflow: hidden;
+}
+.sc-body.showmonth6{
+	height: 6.92rem;
+}
+
+.sc-header {
+	background:#4e9fee;
+	width: 100%;
+	height: 1.55rem;
+}
+
+.sc-title {
+	height: 1rem;
+	border-bottom: 0;
+	color: white;
+	padding: 0.3rem 0.4rem;
+}
+.year {
+	float: left;
+	position: relative;
+	font-size: 15px;
+}
+
+.month {
+	float: right;
+	position: relative;
+	box-sizing: border-box;
+	font-size: 15px;
+}
+
+.monthdiv {
+	position: relative;
+	top: -5px;
+	display: inline-block;
+	min-width: 1.3rem;
+}
+
+.month .arrow {
+	display: inline-block;
+	width: 0.4rem;
+	height: 0.4rem;
+}
+
+.sc-mleft {
+	background: url(../images/arrowLeftCircle.png) center top no-repeat;
+	background-size: 100% 100%;
+	width: 0.4rem;
+	height: 0.4rem;
+}
+
+.sc-mright {
+	background: url(../images/arrowRightCircle.png) center top no-repeat;
+	background-size: 100% 100%;
+	width: 0.4rem;
+	height: 0.4rem;
+}
+
+.year span {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	font-family: "Microsoft Yahei";
+	color: white;
+}
+
+.sc-body {
+	height: 5.7rem;
+	clear: both;
+}
+
+/*星期*/
+.sc-week {
+	height: 0.55rem;
+	font-weight: 400;
+	font-size: 10px;
+	line-height: 0.55rem;
+	color: #4A4A4A;
+}
+
+.sc-week-item {
+	height: 100%;
+	float: left;
+	width: 14.285%;
+	color: white;
+	box-sizing: border-box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+/*日*/
+.sc-days {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.sc-item {
+	width: 13.5%;
+	height: 1.1rem;
+	float: left;
+	color: #565555;
+	background-color: #ffffff;
+	box-sizing: border-box;
+	margin: 0.39%;
+	
+}
+
+.sc-item .day {
+	font-size: 16px;
+	color: #333333;
+	font-weight: normal;
+	line-height: 0.45rem;
+}
+.sc-item .lunar-day {
+	font-size: 9px;
+	line-height: 0.24rem;
+	color: #b2b2b2;
+	font-weight: normal;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.sc-item-small {
+	font-size: 0.416666rem !important;
+}
+.item-nolunar {
+	padding-top: 0.833333rem;
+}
+
+.sc-vocation {
+	background-color: #FFEBEC;
+}
+
+.sc-mark {
+	background-color: #E5FBFA;
+}
+.mark{
+	/*background: url(../img/blueBg.png) center center no-repeat;
+	background-size: 0.88rem 0.88rem;*/
+	height: 0.16rem;
+	font-size: 14px;
+	color: rgba(241, 43, 43, 1);
+}
+.sc-mark-show {
+	visibility: visible;
+}
+
+.sc-mark-hide {
+	visibility: hidden;
+}
+
+.sc-vocation:before {
+	content: '休';
+	display: block;
+	position: absolute;
+	font-size: 0.7em;
+	width: 1.2em;
+	font-weight: 100;
+	color: white;
+	background-color: #E00808;
+	margin-top: -0.416666rem;
+}
+.sc-premonth , .sc-nextmonth {
+	color: #C1C0C0 !important;
+}
+
+.sc-premonth .day , .sc-nextmonth .day,
+.sc-premonth .day, .sc-nextmonth .lunar-day {
+	color: #C1C0C0 !important;
+}
+
+.sc-active-day{
+	background: url(../images/whitebg.png) center center no-repeat;
+	background-size: 0.88rem 0.88rem;
+	background: cover;
+}
+.sc-today {
+	background: url(../images/blueBg.png) center center no-repeat;
+	background-size: 0.88rem 0.88rem;
+	color: white;
+}
+
+.sc-today .day {
+	color: white !important;
+}
+.sc-today .lunar-day{
+	color: white;
+}
+.sc-festival .lunar-day {
+	color: #E00808;
+}
+
+.btnBox{
+	width: 100%;
+	padding: 0.5rem 0.4rem;
+	background: white;
+}
+.returnBtn{
+	display: block;
+	width: 100%;
+	height: 0.8rem;
+	text-align: center;
+	background: #4e9fee;
+	color: white;
+	font-size: 15px;
+	line-height: 0.8rem;
+	border-radius: 0.08rem;
+}

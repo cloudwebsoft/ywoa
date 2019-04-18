@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.redmoon.oa.upgrade.dao.UpgradeDao">
+
+	<!-- String customer, String version, String url -->
+	<insert id="saveBeginUpgrade">
+		insert into update_log(update_begin_time,
+		customer_id, version_no, url, result)
+		values(now(), #{param1},
+		#{param2}, #{param3}, -1)
+	</insert>
+
+	<!-- String customer, String version, String url, boolean result, String 
+		message -->
+	<update id="saveEndUpgrade">
+		update update_log set update_end_time = now(),
+		result = #{param4},
+		message = #{param5}
+		where id = ( select id  from ( select id from update_log where result = -1 and
+		customer_id = #{param1} and
+		version_no = #{param2} and url = #{param3}
+		order by id desc
+		limit 0,1) as t )
+	</update>
+
+	<select id="isUpgrading" resultType="boolean">
+		select * from (select case result when -1 then 1 else 0 end 
+		from update_log where
+		update_end_time is not null and
+		TIME_TO_SEC(update_end_time) > TIME_TO_SEC(now()) - 36000 order by
+		update_begin_time desc limit 0,1) a
+		union select 0 as result
+	</select>
+
+	<select id="getCurrentVersion" resultType="string">
+		select version_no from update_log where result = 1
+		order by update_end_time limit 0,1
+	</select>
+	
+	<select id="getAllUsers" resultType="int">
+		SELECT count(*)  FROM users
+	</select>
+	<select id="getLoginTotals" resultType="int">
+		SELECT count(*)  FROM log where LOG_TYPE='0'
+	</select>
+	<select id="getPhoneloginTotals" resultType="int">
+		SELECT count(*) FROM log where LOG_TYPE='0' and device='100'
+	</select>
+	<select id="getPhoneUsers" resultType="int">
+		SELECT count(distinct(USER_NAME)) FROM log where LOG_TYPE='0' and device='100'
+	</select>
+	<select id="getFlowNums" resultType="int">
+		SELECT count(*) FROM `flow` where `status` &lt;&gt; -10
+	</select>
+	<select id="getDocumentNums" resultType="int">
+		SELECT count(*) FROM `document`
+	</select>
+	<select id="getMessageNums" resultType="int">
+		SELECT count(*) FROM oa_message 
+	</select>
+	<select id="getNoticeNums" resultType="int">
+		select count(*) from oa_notice
+	</select>
+	<select id="getWorkNoteCount" resultType="int">
+		select count(*) from work_log
+	</select>
+</mapper>

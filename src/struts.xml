@@ -1,0 +1,698 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+	<constant name="struts.i18n.encoding" value="UTF-8"></constant>
+	<constant name="struts.enable.DynamicMethodInvocation" value="true" />
+	<constant name="struts.devMode" value="true" />
+	<constant name="struts.multipart.maxSize" value="2048000000" />
+	<package name="default" namespace="/public/android/notice"
+		extends="struts-default">
+
+		<action name="getlist" class="com.redmoon.oa.android.NoticeListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!--
+			<action name="process"
+			class="com.redmoon.oa.android.FlowProcessAction"> <result
+			name="SUCCESS" >/android/result.jsp</result> </action>
+		-->
+		<action name="getdetail" class="com.redmoon.oa.android.NoticeDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="setreadflag" class="com.redmoon.oa.android.NoticeReadFlagAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.NoticeDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="edit" class="com.redmoon.oa.android.NoticeEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="add" class="com.redmoon.oa.android.NoticeAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+
+	<package name="login" namespace="/public/android" extends="default">
+		<action name="login" class="com.redmoon.oa.android.LoginAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="maindetail" class="com.redmoon.oa.android.MainInfoAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+
+	<package name="filecase" namespace="/public/android/filecase"
+		extends="default">
+		<action name="getdircode" class="com.redmoon.oa.android.FilecaseDirCodeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getlist" class="com.redmoon.oa.android.FilecaseListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getdetail" class="com.redmoon.oa.android.FilecaseDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="upload" class="com.redmoon.oa.android.FilecaseUploadAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.FilecaseDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="netdisk" namespace="/public/android/netdisk"
+		extends="default">
+		<action name="getdircode" class="com.redmoon.oa.android.NetdiskDirCodeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getlist" class="com.redmoon.oa.android.NetdiskListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="upload" class="com.redmoon.oa.android.NetdiskUploadAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.NetdiskDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="messages" namespace="/public/android/messages"
+		extends="default">
+		<action name="getinbox" class="com.redmoon.oa.android.MessageInBoxAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getsysorinnerinbox"
+			class="com.redmoon.oa.android.MessageInnerBoxOrSysBoxAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+
+		<action name="getoutbox" class="com.redmoon.oa.android.MessageOutBoxAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getdetail" class="com.redmoon.oa.android.MessageDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="send" class="com.redmoon.oa.android.MessageSendAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="transmit" class="com.redmoon.oa.android.MessageTransmitAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.MessageDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="changeReadStatus" class="com.redmoon.oa.android.MessageReadFlagAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="users" namespace="/public/android/users"
+		extends="default">
+		<action name="getlist" class="com.redmoon.oa.android.UsersListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="sales" namespace="/public/android/sales"
+		extends="default">
+		<!-- 客户列表 -->
+		<action name="customerList" class="com.redmoon.oa.android.sales.CustomersListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 联系人列表 -->
+		<action name="linkManList" class="com.redmoon.oa.android.sales.LinkmanListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 商机列表 -->
+		<action name="salesChanceList" class="com.redmoon.oa.android.sales.SalesChanceListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 销售行动 -->
+		<action name="salesActionList"
+			class="com.redmoon.oa.android.sales.SalesActionListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 合同列表占时禁用 -->
+		<action name="salesContractList"
+			class="com.redmoon.oa.android.sales.SalesContractListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 合同 付款 占时禁用 -->
+		<action name="salesContractPayList"
+			class="com.redmoon.oa.android.sales.SalesContractPayListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 订单列表 -->
+		<action name="salesOrderList"
+			class="com.redmoon.oa.android.sales.SalesOrdersListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 订单付款记录 -->
+		<action name="salesOrdPayRecordList"
+			class="com.redmoon.oa.android.sales.SalesOrdPayRecordListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 订单回款计划 -->
+		<action name="salesOrdPayPlanList"
+			class="com.redmoon.oa.android.sales.SalesOrdPayPlanListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 订单产品 -->
+		<action name="salesOrdProductList"
+			class="com.redmoon.oa.android.sales.SalesOrderProdouctListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 产品列表 -->
+		<action name="prodouctList" class="com.redmoon.oa.android.sales.ProdouctListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 当月销售额统计 -->
+		<action name="monthStatis"
+			class="com.redmoon.oa.android.sales.SalesMonthStatisAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 客户详情 -->
+		<action name="customerDetail"
+			class="com.redmoon.oa.android.sales.SalesCusDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 商机详情 -->
+		<action name="chanceDetail"
+			class="com.redmoon.oa.android.sales.SalesChanceDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 订单详情 -->
+		<action name="orderDetail"
+			class="com.redmoon.oa.android.sales.SalesOrderDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 产品详情 -->
+		<action name="productDetail"
+		  class="com.redmoon.oa.android.sales.ProductDetailAction">
+		  <result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!--联系人详情 -->
+		<action name="contactDetail"
+		  class="com.redmoon.oa.android.sales.SalesContactDetailAction">
+		  <result name="SUCCESS">/android/result.jsp</result>
+		</action>
+
+	</package>
+	
+	<package name="module" namespace="/public/android/module" extends="default">
+		<action name="list" class="com.redmoon.oa.android.module.ModuleListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="add" class="com.redmoon.oa.android.module.ModuleAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>			
+		<action name="del" class="com.redmoon.oa.android.module.ModuleDelAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>		
+		<action name="edit" class="com.redmoon.oa.android.module.ModuleEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>		
+		<action name="show" class="com.redmoon.oa.android.module.ModuleShowAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 删除附件 -->
+		<action name="attDel" class="com.redmoon.oa.android.module.AttDelAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>		
+		<!-- 关联模块列表 -->
+		<action name="listRelate" class="com.redmoon.oa.android.module.RelateListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>		
+		<!-- 关联模块增加 -->
+		<action name="addRelate" class="com.redmoon.oa.android.module.RelateAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>	
+		<action name="editRelate" class="com.redmoon.oa.android.module.RelateEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>		
+	
+	</package>	
+	
+	<package name="visual" namespace="/public/android/visual" extends="default">
+		<action name="initModule" class="com.redmoon.oa.android.visual.ModuleInitAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="editModule" class="com.redmoon.oa.android.visual.ModuleEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="listModule" class="com.redmoon.oa.android.visual.ModuleListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="basicOption" class="com.redmoon.oa.android.visual.BasicOptionAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<!-- 智能表单附件列表 -->
+		<action name="visualAttachList"
+			class="com.redmoon.oa.android.visual.ModuleAttachsAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="visualAttachDelete"
+			class="com.redmoon.oa.android.visual.ModuleAttDelAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="initNestSheet" class="com.redmoon.oa.android.visual.NestSheetInitAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delNestSheet" class="com.redmoon.oa.android.visual.NestSheetDelAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="address" namespace="/public/android/address"
+		extends="default">
+		<action name="getgroup" class="com.redmoon.oa.android.AddressGroupAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getorganize" class="com.redmoon.oa.android.AddressOrganizeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getlist" class="com.redmoon.oa.android.AddressListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getorganizelist" class="com.redmoon.oa.android.AddressOrganizeListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="add" class="com.redmoon.oa.android.AddressAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="edit" class="com.redmoon.oa.android.AddressEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getdetail" class="com.redmoon.oa.android.AddressDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.AddressDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="typeadd" class="com.redmoon.oa.android.AddressTypeAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="typeedit" class="com.redmoon.oa.android.AddressTypeEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="typedelete" class="com.redmoon.oa.android.AddressTypeDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="sms" namespace="/public/android/sms" extends="default">
+		<action name="send" class="com.redmoon.oa.android.SmsSendAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="sys" namespace="/public/android/system" extends="default">
+		<action name="upgrade" class="com.redmoon.oa.android.SysUpgradeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="plan" namespace="/public/android/plan" extends="default">
+		<action name="month" class="com.redmoon.oa.android.PlanMonthAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="week" class="com.redmoon.oa.android.PlanWeekAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getdetail" class="com.redmoon.oa.android.PlandDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="today" class="com.redmoon.oa.android.PlandTodayAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="setclosed" class="com.redmoon.oa.android.PlandClosedAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="add" class="com.redmoon.oa.android.PlandAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="edit" class="com.redmoon.oa.android.PlandEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.PlandDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="list" class="com.redmoon.oa.android.PlandListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="flow" namespace="/public/android/flow" extends="default">
+		<action name="doingorreturn" class="com.redmoon.oa.android.FlowDoingOrReturnAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="attend" class="com.redmoon.oa.android.FlowAttendAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="dispose" class="com.redmoon.oa.android.FlowDisposeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="modify" class="com.redmoon.oa.android.FlowModifyAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getlist" class="com.redmoon.oa.android.FlowListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="init" class="com.redmoon.oa.android.FlowInitAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getreturn" class="com.redmoon.oa.android.FlowReturnAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="multiDept" class="com.redmoon.oa.android.FlowMutilDeptAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="addReply" class="com.redmoon.oa.android.FlowAddReplyAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="mywork" namespace="/public/android/mywork"
+		extends="default">
+		<action name="getlist" class="com.redmoon.oa.android.MyworkListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="add" class="com.redmoon.oa.android.MyworkAddAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		
+		<action name="edit" class="com.redmoon.oa.android.MyworkEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getdetail" class="com.redmoon.oa.android.MyworkDetailAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="delete" class="com.redmoon.oa.android.MyworkDeleteAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="leaderView" class="com.redmoon.oa.android.work.LeaderViewWorkAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workLogPrjList" class="com.redmoon.oa.android.work.WorkLogPrjListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workLogPrj" class="com.redmoon.oa.android.work.WorkLogPrjAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workList" class="com.redmoon.oa.android.work.MyWorkByTypeListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workReview" class="com.redmoon.oa.android.work.WorkReviewAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workPraiseOrCancel" class="com.redmoon.oa.android.work.WorkPraiseOrCancelAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workInfo" class="com.redmoon.oa.android.work.WorkInfoByIdAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workAdd" class="com.redmoon.oa.android.work.AddWorkAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="orgSupervise" class="com.redmoon.oa.android.work.OrgBySuperviseAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="leaderViewByName" class="com.redmoon.oa.android.work.LeaderWorkByNameListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="WorkInsertOrEdit" class="com.redmoon.oa.android.work.WorkInsertOrEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="workLogPrjUpdate" class="com.redmoon.oa.android.work.WorkLogPrjUpdateAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="myinfo" namespace="/public/android/myinfo"
+		extends="default">
+		<action name="getlist" class="com.redmoon.oa.android.MyinfoListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="edit" class="com.redmoon.oa.android.MyinfoEditAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+
+	<package name="location" namespace="/public/android/location"
+		extends="default">
+		<action name="getlist" class="com.redmoon.oa.android.LocationListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="skins" namespace="/public/android/skins"
+		extends="default">
+		<action name="skinsDetail"
+			class="com.redmoon.oa.android.MobileSkinDetailInfoAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<!--report	manager  -->
+	<package name="report" namespace="/report" extends="json-default">
+		<action name="report_*" class="com.redmoon.oa.report.ReportAction"
+			method="{1}">
+			<result name="create" type="json">
+				<param name="contentType">text/html</param>
+			</result>
+			<result name="edit" type="json">
+				<param name="contentType">text/html</param>
+			</result>
+			<result name="download" type="stream">
+				<param name="contentType">application/octet-stream</param>
+				<param name="inputName">inputStream</param>
+				<param name="contentDisposition">attachment;filename="${downloadFileName}"</param>
+				<param name="bufferSize">4096</param>
+			</result>
+			<result name="input">/report/error.jsp</result>
+		</action>
+	</package>
+	<!--report	manager  -->
+	<package name="update" namespace="/update" extends="json-default">
+		<action name="updateSytem"
+			class="com.redmoon.oa.manuallyUpdate.ManuallyUpdateAction" method="manuallyUpdate">
+			<result name="success" type="json">
+				<param name="contentType">text/html</param>
+			</result>
+		</action>
+	</package>
+	<!-- add by lichao 20150616 start-->
+	<package name="registAndApproval" namespace="/public/android/registrationApproval" extends="default">
+		<action name="getVerifiCode" class="com.redmoon.oa.android.registrationApproval.GetVerificationCodeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="checkVerifiCode" class="com.redmoon.oa.android.registrationApproval.CheckVerifiCodeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="checkRegistStatus" class="com.redmoon.oa.android.registrationApproval.CheckRegistStatusAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="passAndLogin" class="com.redmoon.oa.android.registrationApproval.PassAndLoginAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="examineRegistStatus" class="com.redmoon.oa.android.registrationApproval.ExamineRegistStatusAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="setClientAndToken" class="com.redmoon.oa.android.registrationApproval.SetClientAndTokenAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="installAndClearToken" class="com.redmoon.oa.android.registrationApproval.InstallAndClearTokenAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="liscenseByType" class="com.redmoon.oa.android.registrationApproval.LiscenseByTypeAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="system" namespace="/public/android/system" extends="default">
+		<action name="getMobileAppIcon" class="com.redmoon.oa.android.system.GetMobileAppIconAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getMobileAppIconCanStart" class="com.redmoon.oa.android.system.GetMobileAppIconCanStartAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getMobileFlowIcon" class="com.redmoon.oa.android.system.GetMobileFlowIconAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="general" namespace="/public/android/general" extends="default">
+		<action name="getRecentlyPerson" class="com.redmoon.oa.android.general.GetRecentlyPersonAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getAllPerson" class="com.redmoon.oa.android.general.GetAllPersonAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getDepartment" class="com.redmoon.oa.android.general.GetDepartmentAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<package name="i" namespace="/public/android/i" extends="default">
+		<action name="forgetPassword" class="com.redmoon.oa.android.i.ForgetPasswordAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="resetPassword" class="com.redmoon.oa.android.i.ResetPasswordAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getPersonInfor" class="com.redmoon.oa.android.i.GetPersonInforAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="modifyPersonInfor" class="com.redmoon.oa.android.i.ModifyPersonInforAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="changeMobile" class="com.redmoon.oa.android.i.ChangeMobileAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="uploadHeadImage" class="com.redmoon.oa.android.i.UploadHeadImageAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+		<action name="getInforList" class="com.redmoon.oa.android.i.GetInforListAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	<!-- add by luozhumin 2016-4-15积分 -->
+	<package name="score" namespace="/public/android/score" extends="default">
+		<action name="myScore" class="com.redmoon.oa.android.score.MyScoreAction">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+	
+	<!-- add by lichao 20150616 end-->
+	<package name="ymoa" namespace="/ymoa" extends="json-default">
+        <!-- add by jfy 20150709 begin -->
+	    <action name="myWorkManageInit" class="com.redmoon.oa.worklog.MyWorkManageAction" method="init">
+            <result name="success">
+                /mywork/myDayWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="queryMyWork" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success">
+                /mywork/myDayWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="queryMoreMyWork" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="createMyWork" class="com.redmoon.oa.worklog.MyWorkManageAction" method="createMyWork">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="saveMyWork" class="com.redmoon.oa.worklog.MyWorkManageAction" method="saveWorkLog">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="delAttach" class="com.redmoon.oa.worklog.MyWorkManageAction" method="delAttach">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="savePraise" class="com.redmoon.oa.worklog.MyWorkManageAction" method="savePraise">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name ="apraiseWorkLog" class="com.redmoon.oa.worklog.MyWorkManageAction" method="praiseWorkLog">
+        	 <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="checkCando" class="com.redmoon.oa.worklog.MyWorkManageAction" method="checkCando">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="saveReviewExpands" class="com.redmoon.oa.worklog.MyWorkManageAction" method="saveReviewExpands">
+            <result name="success" type="json">
+                <param name="contentType">text/html</param>
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="queryMyWeekWork" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success">
+                /mywork/myWeekWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="queryMyMonthWork" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success">
+                /mywork/myMonthWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="showWorkLogInfo" class="com.redmoon.oa.worklog.MyWorkManageAction" method="showWorkLog">
+            <result name="success">
+                /mywork/mywork_show/myDayWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+         <action name="queryMyWorkForShow" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success">
+                /mywork/mywork_show/myDayWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="queryMyWeekWorkForShow" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success">
+                /mywork/mywork_show/myWeekWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+        <action name="queryMyMonthWorkForShow" class="com.redmoon.oa.worklog.MyWorkManageAction" method="queryMyWork">
+            <result name="success">
+                /mywork/mywork_show/myMonthWork.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action>
+        <action name="showWorkLogById" class="com.redmoon.oa.worklog.MyWorkManageAction" method="getWorkLogById">
+            <result name="success">
+                /mywork/mywork_show/myWorkLogShow.jsp
+            </result>
+            <result name="error">/exception.jsp</result>
+            <result name="nologin">/index.jsp</result>
+        </action> 
+	<!--  add by jfy 20150709 end -->
+	</package>
+	<!-- 组织机构 begin-->
+	<package name="organization" namespace="/ymoa/organization" extends="json-default">
+	  	<action name="addDepartment" class="com.redmoon.oa.organization.DeptTreeAction" method="addDepartment">
+           <result  type="json">
+				<param name="contentType">text/html</param>
+			</result>
+        </action> 
+		<action name="modifyDepartment" class="com.redmoon.oa.organization.DeptTreeAction" method="modifyDepartment">
+           <result  type="json">
+				<param name="contentType">text/html</param>
+			</result>
+        </action> 
+	</package>
+	<!-- 组织机构 end-->
+
+	<!-- tigase -->
+	<package name="tigase" namespace="/public/android/tigase/upload" extends="json-default">
+		<action name="uploadServlet" class="com.redmoon.oa.tigase.upload.servlet.UploadServlet">
+			<result name="SUCCESS">/android/result.jsp</result>
+		</action>
+	</package>
+</struts>

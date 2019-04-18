@@ -1,0 +1,34 @@
+html,body {height:100%; font-family:"微软雅黑"}
+body {
+	padding: 3px 3px 0px 5px;
+	scrollbar-face-color: #DEE3E7;
+	scrollbar-highlight-color: #FFFFFF;
+	scrollbar-shadow-color: #DEE3E7;
+	scrollbar-3dlight-color: #D1D7DC;
+	scrollbar-arrow-color:  #006699;
+	scrollbar-track-color: #EFEFEF;
+	scrollbar-darkshadow-color: #98AAB1;
+	background:#009cef;
+}
+td {
+	color:#FFFFFF;
+	font-size:12px;
+}
+A:active {
+	FONT-SIZE: 12px;
+	COLOR: #ffffff;
+}
+A:visited {
+	FONT-SIZE: 12px;
+	COLOR: #ffffff;
+	TEXT-DECORATION: none
+}
+A:hover {
+	COLOR: blue;
+	COLOR: #ffffff;
+	TEXT-DECORATION: underline;
+}
+A:link {
+	COLOR: #ffffff;
+	TEXT-DECORATION: none
+}

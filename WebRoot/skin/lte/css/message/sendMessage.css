@@ -1,0 +1,86 @@
+@charset "utf-8";
+@import url("../common/common.css");
+.message_list {
+	width: 141px;
+	line-height: 36px;
+	float: left;
+
+}
+.message_list .message_list_bgtop {
+	background-image: url(../../images/message/message_list_bgtop.png);
+	background-repeat: no-repeat;
+	background-position: top;
+	height: 14px;
+	font-size:1px; 
+}
+.message_list .message_list_bgmiddle {
+	background-image: url(../../images/message/message_list_bgmidd.png);
+	background-repeat: repeat-y;
+		min-height:572px;
+	_min-height:572px;
+	
+}
+
+.message_list .message_list_bgbottom {
+	background-image: url(../../images/message/message_list_bgbottom.png);
+	background-repeat: no-repeat;
+	background-position: bottom;
+	height: 14px;
+	font-size:1px; 
+}
+.message_list .message_list_bgmiddle .message_list_det {
+	width: 130px;
+	margin-top: 0px;
+	margin-right: auto;
+	margin-left: auto;
+	overflow: hidden;
+}
+
+.message_list .message_list_bgmiddle .message_list_det dd {
+	float: right;
+	height: 36px;
+}
+.message_list .message_list_bgmiddle .message_list_det dt {
+	margin-bottom: 10px;
+}
+.message_list .message_list_bgmiddle .message_list_det .message_list_selbg {
+	background-color: #f4e2cd;
+}
+.message_content {
+	border: 1px solid #e0e0e0;
+	overflow: hidden;
+	float: left;
+	margin-left: 10px;
+	display:inline;
+	padding: 10px;
+	min-width:850px;
+	_min-width:850px;
+}
+.message_content .message_btnbox {
+	background-color: #e7eff6;
+	height: 41px;
+	padding-right: 8px;
+	padding-left: 8px;
+	vertical-align: middle;
+	padding-top: 3px;
+	margin-bottom: 10px;
+
+}
+.message_content .message_fj_btn {
+	background-image: url(../../images/message/message_fj_btn.png);
+	background-repeat: no-repeat;
+	height: 33px;
+	width: 118px;
+	line-height: 31px;
+	padding-left: 40px;
+	cursor:pointer;
+}
+.message_content .message_fj_btn2 {
+	background-image: url(../../images/message/message_fj_btn2.png);
+	background-repeat: no-repeat;
+	height: 33px;
+	width: 118px;
+	line-height: 31px;
+	padding-left: 40px;
+	cursor:pointer;
+}

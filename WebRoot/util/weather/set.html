@@ -1,0 +1,48 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<script language="JavaScript" src="js/js.js"></script>
+<script language="JavaScript" src="js/city.js"></script>
+</head>
+
+<body style="background-color:#FFF; padding-top:22px!important; padding-top:25px; ">
+<form name="userform" method="post">
+<div class="wet_all">
+	<div class="wetTop">
+		<div class="wetTopTit fLeft"><span class="wetCityName">设置</span><!-- <span class="wetDate">9月11日星期一</span>--></div>
+		</div>
+	<div class="wetMain">
+		<div class="fLeft">
+			<div class="selRow">
+				地区：
+				<select class="wetSel" name="gn" onChange="setbar(this.value,this.form.area)">
+					<option>请选择</option>
+					<option value="1">国内城市</option>
+					<option value="2">国外城市</option>
+					<option value="3">旅游景点</option>
+				</select>
+			</div>
+			<div class="selRow">	
+				城市：
+				<select class="wetSel" name="area">
+					<option>请选择</option>
+				</select>
+			</div>
+			<div class="selRow"><!--
+				时间：
+				<select class="wetSel" name="flag">
+					<option>24小时</option>
+					<option value="_detail">48小时</option>
+				</select>
+			--></div>
+		</div>
+		<div class="fRig wetQuery">
+			<input type="button" value=" 查 询 " class="btnWet" onClick="query(this.form)" />
+			<input type="button" value="设为默认" class="btnWet" onClick="setup(this.form)" />
+			<a href="http://post.travel.163.com/weather/weather.jsp" target="_blank" class="seeMore">查看更多...</a><input name="sid" type="hidden"><input name="app_city" type="hidden"><input type="hidden" name="tempname" value="options/userattr.htm"><input type="hidden" name="funcid" value="opuserattr"><input type="hidden" name="optype" value="set">
+		</div>
+	</div>	
+</div>	
+</form>
+</body>
+</html>

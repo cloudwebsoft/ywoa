@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<all>
+    <score>
+        <tax desc="积分交易税" help="">0</tax>
+        <transfermin desc="转账最低余额" help="">100</transfermin>
+        <exchangemin desc="兑换最低余额" help="">100</exchangemin>
+        <maxearningthread desc="单主题最高收入" help="">20</maxearningthread>
+    </score>
+</all>
+

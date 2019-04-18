@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <hot>57870,57863,57788,58086</hot>
+    <blocks>
+        <block id="1" desc="区块1" />
+        <block id="2" desc="区块2">custom</block>
+        <block id="3" desc="区块3">newelite</block>
+        <block id="4" desc="区块4">newtop</block>
+        <block id="ids2">591,601,571,581</block>
+        <block id="ids3">411,431,421</block>
+        <block id="ids4">431,421</block>
+        <block id="name2">贴子11</block>
+        <block id="name3">贴子22</block>
+        <block id="name4">贴子32</block>
+    </blocks>
+    <userDefine>
+        <content>&lt;p&gt;aaaaaaaaaaa&lt;/p&gt;</content>
+    </userDefine>
+    <flash>
+        <images id="1">
+            <url>http://localhost:8080/cwbbs/forum/upfile/media/2008/6/1212730617765155141844.jpg</url>
+            <text>宏村南湖</text>
+            <link>http://bbs.zj3000.cn/forum/t-0-57910-1.html</link>
+        </images>
+        <images id="2">
+            <url>http://bbs.zj3000.cn/forum/upfile/2007/10/11925301518902109127884.jpg</url>
+            <text>塔川晨秋</text>
+            <link>http://bbs.zj3000.cn/forum/t-0-57910-1.html</link>
+        </images>
+        <images id="3">
+            <url>http://bbs.zj3000.cn/forum/upfile/2007/9/11889138780611405800440.jpg</url>
+            <text>云山之南</text>
+            <link>http://bbs.zj3000.cn/forum/t-0-50987-1.html</link>
+        </images>
+        <images id="4">
+            <url>http://bbs.zj3000.cn/forum/upfile/2007/10/11925390953901626760716.jpg</url>
+            <text>江苏大学</text>
+            <link>http://bbs.zj3000.cn/forum/t-0-57925-1.html</link>
+        </images>
+        <images id="5">
+            <url>http://bbs.zj3000.cn/forum/attachments/ext_jpg/0115_jfKdUHGDZ4R3.jpg</url>
+            <text>露营肖坑</text>
+            <link>http://bbs.zj3000.cn/forum/t-0-57435-1.html</link>
+        </images>
+    </flash>
+</config>
+

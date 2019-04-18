@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <isUsed desc="是否启用云盘">false</isUsed>
+    <key_days desc="云盘客户端密钥时限，单位为天（记住密码）">15</key_days>
+    <clouddiskPort desc="云盘端口号">36666</clouddiskPort>
+    <isCloudDiskRoot desc="云盘是否为根目录，否则为一级子目录">true</isCloudDiskRoot>	
+    <url_days desc="下载链接的有效期">3</url_days>
+    <shareLogCount desc="协作动态的客户端默认显示条数">20</shareLogCount>
+    <webShareLogCount desc="协作动态的web端默认显示条数">30</webShareLogCount>
+    <historyCount desc="历史版本客户端默认显示条数">100</historyCount>
+    <isRenameBak desc="文件重命名后是否保存原文件，如保存则置deleted为1(true则deleted为1，false则物理删除)">true</isRenameBak>
+    <exttype_1 desc="图片文件类型">jpe,jpeg,gif,bmp,jpg,png</exttype_1>
+    <exttype_2 desc="文档文件类型">txt,zip,rar,doc,docx,xls,xlsx,ppt,pptx,jnt,pub,mpp,vsd,et,wps,wpt,dps,rft</exttype_2>
+    <exttype_3 desc="视频文件类型">avi,mov,asf,wmv,3gp,mp4,rmvb,flv</exttype_3>
+    <exttype_4 desc="音频文件类型">mp3,wma</exttype_4>
+    <exttype_5 desc="可预览文件类型">txt,pdf</exttype_5>
+    <exttype_6 desc="可编辑文件类型">doc,docx,xls,xlsx,wps,wpt,ppt,pptx,dps,et</exttype_6>
+    <show_all_depts desc="是否显示全部部门">true</show_all_depts>
+    <file_size_limit desc="文件上传大小限制">102400</file_size_limit>
+    <file_upload_limit desc="文件上传数目">10</file_upload_limit>
+    <is_openSideDiy desc="是否启用云盘客户端侧边栏的自定义">false</is_openSideDiy>
+    <is_openSideHTML desc="是否启用云盘客户端侧边栏的html">false</is_openSideHTML>
+    <init_sidebar_imgs desc="初始化侧边栏图片">myclouddisk_default.png,myshare_default.png,myrecycle_default.png,login_default.png,start_default.png,doing_default.png,notice_default.png,schedule_default.png,fileark_default.png,plan_default.png,worklog_default.png,message_default.png</init_sidebar_imgs>
+    <init_sidebar_hrefs desc="初始化侧边栏路径">netdisk/clouddisk.jsp,netdisk/clouddisk.jsp?page_no=2,netdisk/clouddisk.jsp?page_no=4,oa.jsp,flow_initiate1.jsp,flow/flow_list.jsp?displayMode=1,notice/notice_list.jsp,plan/plan_month.jsp,fileark/fileark_frame.jsp,workplan/workplan_list.jsp,mywork/mywork.jsp,message_oa/message_frame.jsp</init_sidebar_hrefs>
+ 	<init_sidebar_titles desc="初始化侧边栏图片标题">我的云盘,我参与的协作,我的回收站,一米OA,发起流程,待办流程,通知公告,日程安排,文件柜,工作计划,工作记事,短消息</init_sidebar_titles>
+    <sidebar_flow_count desc="侧边栏待办流程的最大条数">2</sidebar_flow_count>
+    <sidebar_msg_count desc="侧边栏内部消息的最大条数">1</sidebar_msg_count>
+</config>
+

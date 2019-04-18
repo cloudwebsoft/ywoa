@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<lark>
+		<msgTargetUrl desc="目标地址">http://127.0.0.1:9090/MessageUtil</msgTargetUrl>
+	</lark>
+</root>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<basic>
+    <item code="type" name="类型">
+        <options>
+			<option value="考勤" checked="checked">考勤</option>
+			<!--
+			<option value="外出">外出</option>
+			<option value="请假">请假</option>
+			<option value="加班">加班</option>
+			<option value="其他原因">其他原因</option>
+			-->
+		</options>
+        <defaultValue value="考勤">考勤</defaultValue>
+    </item>
+    <item code="direction" name="去向">
+        <options>
+        <option value="c">来到单位</option>
+        <option value="l">离开单位</option>
+		<!--
+        <option value="none"></option>
+		-->
+        </options>
+        <defaultValue value="c">来到单位</defaultValue>
+    </item>
+</basic>
+

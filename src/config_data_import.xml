@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<importModule code="officeequip">
+		<name>办公用品</name>
+		<author>古月圣</author>
+		<table>office_equipment</table>
+		<className>com.redmoon.oa.dataimport.service.impl.OfficeequipDataImportImpl</className>
+		<fields>officeName,price,storageCount,measureUnit,unit_code</fields>
+		<fieldsName>用品名称,单价,数量,计量单位,所属单位</fieldsName>
+		<splitFields>officeName</splitFields>
+		<notEmptyFields>officeName,measureUnit</notEmptyFields>
+		<uniqueFields>officeName</uniqueFields>
+		<floatFields>price</floatFields>
+		<integerFields>storageCount</integerFields>
+		<unitCodeFields>unit_code</unitCodeFields>
+		<ranges>
+			<!-- <range code='price'>min&gt;1.0, max&lt;260.0</range> -->
+			<range code='price'>min&gt;=0.00</range>
+			<range code='storageCount'>min&gt;0</range>
+		</ranges>
+		<hint></hint>
+		<returnURL>/officeequip/officeequip_all_list.jsp</returnURL>
+	</importModule>	
+</config>

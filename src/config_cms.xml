@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <cms>
+        <refresh_doc_relate_interval desc="刷新相关文章时间间隔(分钟)">60</refresh_doc_relate_interval>
+        <isRelateShow desc="是否显示相关文章">true</isRelateShow>
+        <isRelatePath desc="WebEdit采集文件后在html内容中的生成的路径">2</isRelatePath>
+        <html_doc desc="文章使用静态页面">false</html_doc>
+        <html_auto desc="添加、修改、删除文章时，自动生成或删除静态页面">true</html_auto>
+        <html_ext desc="静态页面文件扩展名">htm</html_ext>
+        <file_webedit desc="WebEdit控件采集文件存放的路径">upfile/webeditimg</file_webedit>
+        <file_img desc="图片型文档文件存放的路径">upfile/image</file_img>
+        <ext_img desc="图片文件的合法扩展名">gif,jpg,png,bmp</ext_img>
+        <file_software desc="软件型文档文件存放的路径">upfile/software</file_software>
+        <ext_software desc="软件文件的合法扩展名">rar,zip,doc,txt,gif,jpg,png,bmp</ext_software>
+        <fullTextSearchTime desc="全文检索的时间戳">2007-3-23 14:00:00</fullTextSearchTime>
+        <fullTextSearchDir desc="全文检索存放的文件夹">search/cms</fullTextSearchDir>
+        <imgMaxCount desc="最大图片数">30</imgMaxCount>
+        <imgDefaultCount desc="默认图片数">5</imgDefaultCount>
+        <softwareMaxCount desc="最大软件数">10</softwareMaxCount>
+        <softwareDefaultCount desc="默认软件数">3</softwareDefaultCount>
+        <canUserDownloadAttach desc="初始化用户组权限时，能否下载附件">false</canUserDownloadAttach>
+        <canUserViewDoc desc="初始化用户组权限时，能否查看文章">false</canUserViewDoc>
+        <isWebEditShowHighOption desc="WebEdit编辑时显示高级用户按钮">false</isWebEditShowHighOption>
+        <homeCreateHtmlInterval desc="生成首页静态页面的时间间隔(分钟),小于等于0表示不生成">5</homeCreateHtmlInterval>
+        <commentValidateCode desc="发表评论时是否需验证码">true</commentValidateCode>
+        <fckeditorSkin desc="编辑器皮肤">office2003</fckeditorSkin>
+        <listPageSize desc="分页时每页文章数">20</listPageSize>
+        <listPageHtmlCreateCount desc="每次添加文章时重新生成前几页">3</listPageHtmlCreateCount>
+        <file_doc_attach desc="非WEBEDIT编辑的文章附件存放的路径">upfile/att</file_doc_attach>
+        <editor_default_webedit desc="采用高级编辑方式">false</editor_default_webedit>
+        <is_att_image_show desc="附件中的图片，是否作为附件显示（当使用普通编辑方式时，文章中插入的图片会作为附件）">true</is_att_image_show>
+        <file_flash desc="Flash文件存放的路径">upfile/flash</file_flash>
+        <is_subsite desc="是否能够自助建站">true</is_subsite>
+        <site_apply_user_Level desc="允许自助建站的用户等级">0</site_apply_user_Level>
+        <site_apply_user_count desc="允许用户自助建站的数量">2</site_apply_user_count>
+        <site_apply_need_check desc="用户自助建站后，是否需审核后才开通">true</site_apply_need_check>
+        <site_guestbook_validate_code desc="留言簿启用验证码">true</site_guestbook_validate_code>
+        <guestbook_content_len desc="留言簿内容最大字数">200</guestbook_content_len>
+        <isDocRemarkable desc="文章能否被评论">true</isDocRemarkable>
+    </cms>
+</config>
+

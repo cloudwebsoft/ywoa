@@ -1,0 +1,97 @@
+@import url("../common/common.css");
+
+
+/*文件柜搜索样式*/
+.document_cont {
+	overflow: hidden;
+	width: 280px;
+	background-color: #e0e7f2;
+	padding: 10px 10px 15px 10px;
+	font-size: 12px;
+}  
+.document_cont h1 {
+	text-align: center;
+	font-size: 16px;
+	margin-bottom: 10px;
+}
+.document_sch {
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	position: relative;
+	padding: 10px;
+	z-index: 2;
+	behavior: url(ie-css3.htc);
+	background-color: #FFF;
+	margin-bottom: 10px;
+}
+.document_sch_title {
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #afbeea;
+	height: 25px;
+	margin-bottom: 8px;
+}
+
+.document_sch li{
+	margin-bottom: 8px;
+
+}
+.document_sch_ul {
+	width: 120px;
+	float: left;
+}
+
+.document_sch input[type="text"] {
+	width: 190px;
+	height: 20px;
+	border: 1px solid #E4E4E4;
+	color: #B4B4B4;
+	text-indent: 5px;
+}
+.document_sch_p {
+	text-align: center;
+	height: 30px;
+	margin-top: 10px;
+	width: 158px;
+	margin-right: auto;
+	margin-left: auto;
+}
+.document_sch_btn {
+	line-height: 25px;
+	background-color: #ececec;
+	text-align: center;
+	height: 28px;
+	width: 68px;
+	float: left;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+    behavior: url(ie-css3.htc);
+}
+.document_sch_btn:hover {
+	background-color: #9FBFE3;
+}
+#search_div{ 
+position:absolute;
+z-index:1;
+top:39px;
+border:1px solid #eeeeee;
+width:300px;
+background-color:#eeeeee;
+/*left:200px;*/
+}
+.upload_sel{
+position:absolute;
+z-index:1;
+background-color:#e0e7f2;
+top:39px;
+/*left:450px;*/
+width:55px;
+text-align:center;
+border:1px solid #afbeea;
+}
+.clfT{
+	padding-bottom:5px;
+}
+

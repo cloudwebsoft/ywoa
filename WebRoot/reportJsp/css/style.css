@@ -1,0 +1,220 @@
+@charset "utf-8";
+
+
+*{margin:0; padding:0; font-size:12px; font-family:Verdana, Geneva, sans-serif;}
+.btnBar{width:100%; height:30px; background:url(../images/btnBarBg.jpg) repeat-x #C1D8FA;border:#86B6DB solid 1px;}
+ul{list-style:none; margin:0; padding:0;}
+ul li{float:left;}
+.borderRight{border-right:#728DB4 solid 1px;}
+.borderLeft{border-left:#728DB4 solid 1px;}
+a.ICOhover{width:24px; height:23px;display:inline-block;border: 0px;}
+a.ICOhover:hover{background:url(../images/hoverBg.jpg) repeat-x; border:#B8AE7D solid 1px; margin-left:-2px; margin-top:-2px;}
+
+.left ul{padding:0px 5px; }
+.left ul li{width:24px; height:23px; margin:2px 2px;padding-bottom:2px;}
+.submitLi{}
+a.submit{height:23px; margin:5px 5px; width:72px;background:url(../images/ViewReport-ICO.gif) -15px -42px no-repeat;  display:inline-block;}
+
+.refreshActBtn{ width:16px; height:16px; margin:4px 4px 3px 4px;background:url(../images/ViewReport-ICO.gif) -313px -49px no-repeat;display:inline-block; cursor:pointer;}
+.refreshBtn{ width:16px; height:16px; margin:4px 4px 3px 4px; background:url(../images/ViewReport-ICO.gif) -371px -49px no-repeat;display:inline-block;}
+
+.toggleBtn{float:left;width:78px; height:23px; margin:5px;background:url(../images/ViewReport-ICO.gif) -107px -43px no-repeat; cursor:pointer;}
+.toggleBg{background:url(../images/localBg.jpg) repeat-x;}
+.floatRight{ float:right;}
+
+ul.fileOper li span{width:16px; height:16px; margin:4px 4px 3px 4px;display:inline-block;}
+.word{background:url(../images/ViewReport-ICO.gif) -398px -48px no-repeat;}
+.excel{background:url(../images/ViewReport-ICO.gif) -423px -48px no-repeat;}
+.pdf{background:url(../images/ViewReport-ICO.gif) -447px -48px no-repeat;}
+.txt{background:url(../images/ViewReport-ICO.gif) -473px -48px no-repeat;}
+.print{background:url(../images/ViewReport-ICO.gif) -495px -47px no-repeat;}
+.operator{background:url(../images/pivot.png) no-repeat 0px 0px;}
+
+.fillTxt{float:left; line-height:33px; display:inline-block; margin:auto 3px auto 10px;}
+ul.rowFill li span{width:16px; height:16px; margin:4px 4px 3px 4px;display:inline-block;}
+.rowFillHor{background:url(../images/ViewReport-ICO.gif) -315px -84px no-repeat;}
+.rowFillVer{background:url(../images/ViewReport-ICO.gif) -343px -85px no-repeat;}
+.rowFillDel{background:url(../images/ViewReport-ICO.gif) -372px -84px no-repeat;}
+
+ul.pageList{margin:auto 5px;}
+ul.pageList li span{height:17px;padding:0px 4px;margin:3px 4px 3px 4px;display:inline-block; line-height:16px; }
+.page{background:url(../images/ViewReport-ICO.gif) -399px -84px no-repeat;}
+.pageCurrent{background:url(../images/ViewReport-ICO.gif) -451px -84px no-repeat;}
+.pageHover{background:url(../images/ViewReport-ICO.gif) -425px -84px no-repeat;}
+.changePageClass{}
+.changeScaleClass{}
+.right{float:right;}
+.right ul li{height:23px; width:24px;margin:5px 2px;padding-bottom:5px;}
+
+.right a{display:inline-block;width:24px; height:23px;}
+.right a:hover{background-color:#FC6;border:#B8AE7D solid 1px; margin-left:-2px; margin-top:-2px;}
+.right a span{margin:4px 5px 3px 5px;}
+.begin{ width:14px;background:url(../images/ViewReport-ICO.gif) -315px -126px no-repeat;}
+.pre{width:14px;background:url(../images/ViewReport-ICO.gif) -346px -126px no-repeat;}
+.next{width:14px;background:url(../images/ViewReport-ICO.gif) -374px -126px no-repeat;}
+.end{width:14px;background:url(../images/ViewReport-ICO.gif) -402px -126px no-repeat;}
+.larger{width:15px;background:url(../images/ViewReport-ICO.gif) -455px -126px no-repeat;}
+.smaller{width:15px;background:url(../images/ViewReport-ICO.gif) -429px -126px no-repeat;}
+
+
+/*整个ViewReport组件DIV*/
+.reportContentDivClass{
+	
+}
+
+/*上工具条DIV*/
+.toolbarDivTopClass{
+	
+}
+
+/*上查询表单*/
+.queryDivTopClass{
+	
+}
+
+/*通用查询DIV*/
+.commonQueryDivClass{
+	float:left; 
+	width:950px; 
+	height:550px;
+	margin-top:0;
+	background:#E8F1FF;
+}
+
+/*通用查询按钮DIV*/
+.commonButtonDivClass{
+	 width:100%;
+	 height:30px; 
+	 padding-left:10px;
+	 border-bottom: solid 1px #EDEDED;
+	 margin-bottom: 10px;
+	 margin-top: 5px;
+}
+
+/*通用查询查询按钮*/
+.commonQueryButtonClass{
+	width:80;
+	height:25;
+	/*background:#F7FBFF;*/
+}
+/*通用查询重置按钮*/
+.commonResetButtonClass{
+	width:80;
+	height:25;
+	/*background:#F7FBFF;*/
+}
+
+/*报表内容*/
+.reportDivClass{
+	
+}
+
+/*下工具条DIV*/
+.toolbarDivBottomClass{
+	
+}
+
+/*上查询表单*/
+.queryDivBottomClass{
+	
+}
+
+/*jsDIV*/
+.scriptDiv{
+	
+}
+
+
+
+
+
+
+
+
+
+/*等待提示窗口需要的css*/
+#boxBg {
+	filter:alpha(opacity=50);
+	opacity:0.5;
+	background:#000;
+}
+.boxLoading,.boxError {
+	position: absolute;
+	display: block;
+	width: 90px;
+	height: 30px;
+	line-height: 30px;
+	margin-left: -45px;
+	margin-top: -15px;
+	left: 50%;
+	top: 50%;
+	color: #f00;
+}
+.boxLoading{
+	width:28px;
+	margin-left: -14px;
+	background:url(../images/loading.gif) no-repeat;
+	text-indent: -999em;
+	text-align: center;
+}
+.boxTitle {
+	position: relative;
+	border: 1px solid #A6C9E1;
+	background: url(../images/ico.png) 0 0 repeat-x;
+	height: 30px;
+	line-height: 30px;
+}
+.boxTitle h3 {
+	float: left;
+	font-weight: normal;
+	color: #666;
+	font-size: 14px;
+	margin: 0;
+	text-indent: 10px;
+}
+.boxTitle span {
+	position: absolute;
+	width: 10px;
+	background: url(../images/ico.png) -80px -40px no-repeat;
+	text-indent: -10em;
+	right: 10px;
+	top: 10px;
+	height: 16px;
+	overflow: hidden;
+	cursor: pointer;
+}
+.boxTitle span.hover {
+	background: url(../images/ico.png) -90px -40px no-repeat;
+}
+.boxContent {
+	padding:0px;
+	border: 1px solid #A6C9E1;
+	border-top: none;
+	text-align: center;
+	overflow: auto;
+}
+.shadow {
+	box-shadow:3px 3px 5px #bfbfbf;
+	-moz-box-shadow: 3px 3px 5px #bfbfbf;
+	-webkit-box-shadow:3px 3px 5px #bfbfbf;
+}
+
+//弹出气泡
+.bubble{position:relative;}
+
+.triangle{position:absolute; width:20px; height:43px;background:url(../images/bubbletriangle.gif) no-repeat;}
+
+.bubbleTop{height:6px;}
+.bubbleTopL{float:left; background:url(../images/bubbleTopL.png) no-repeat; width:12px; height:6px;_margin-bottom:-8px;}
+.bubbleTopC{float:left; background-color:#fff; border-top:#A8C8E8 solid 1px;height:5px;_margin-bottom:-8px;}
+.bubbleTopR{float:left; background:url(../images/bubbleTopR.png) no-repeat; width:28px; height:6px;_margin-bottom:-8px;}
+
+.bubbleMiddle{clear:both;}
+.bubbleMiddleL{float:left; background:#fff;border-left:#A8C8E8 solid 1px;width:11px;}
+.bubbleMiddleC{float:left; background:#fff;}
+.bubbleMiddleR{float:left; background:url(../images/bubbleMiddleR.png) repeat-y;width:28px; }
+
+.bubbleBottom{height:30px;clear:both;}
+.bubbleBottomL{float:left; background:url(../images/bubbleBottomL.png) no-repeat; width:12px; height:30px;}
+.bubbleBottomC{float:left; background:url(../images/bubbleBottomC.png) repeat-x; height:30px;}
+.bubbleBottomR{float:left; background:url(../images/bubbleBottomR.png) no-repeat; width:28px; height:30px;}

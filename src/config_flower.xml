@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="gb2312"?>
+<config>
+    <moneyCode desc="使用的币种">experience</moneyCode>
+    <flower desc="送鲜花需使用的币数">200</flower>
+    <egg desc="送鸡蛋需使用的币数">100</egg>
+</config>
+

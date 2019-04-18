@@ -1,0 +1,59 @@
+.treeMenu img.s
+{
+	cursor:hand;
+	vertical-align:middle;
+}
+.treeMenu ul
+{
+	padding:0;
+}
+.treeMenu li
+{
+	list-style:none;
+	padding:0;
+}
+.Closed ul
+{
+	display:none;
+}
+.Child img.s
+{
+	background:none;
+	cursor:default;
+}
+
+#dir ul
+{
+	margin:0 0 0 17px;
+	list-style-type:none;
+}
+#dir img.s
+{
+	width:34px;
+	height:18px;
+}
+#dir .Opened img.s
+{
+	background:url(images/wiki/opened.gif) no-repeat 0 1px;
+}
+#dir .Closed img.s
+{
+	background:url(images/wiki/closed.gif) no-repeat 0 1px;
+}
+#dir .Child img.s
+{
+	background:url(images/wiki/child.gif) no-repeat 13px 2px;
+}
+#dir ul li a{
+	cursor:pointer;
+}
+#dir
+{
+	float:left;
+	width:249px;
+	border:1px solid #99BEEF;
+	background:#D2E4FC;
+	color:inherit;
+	margin:3px;
+	padding:3px;
+}

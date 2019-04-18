@@ -1,0 +1,241 @@
+body { font-family: "ËÎÌו",Arial, Helvetica, sans-serif; color:#000; margin:0; padding:0; background:#fff; text-align:center; font-size:13px;}
+img { border:0;}
+form, p, ul, li { margin:0; padding:0;}
+ul {list-style:none;}
+
+.xw { width:950px; margin:0 auto; text-align:left; clear:both;}
+.l { float:left;}
+.r { float:right;}
+.lw { width:210px; float:left;}
+.rw { width:730px; float:right;}
+.rw11 { float:left; width:510px;}
+.rw12 { float:right; width:210px;}
+.yspace { margin:10px 0 0 0;}
+.hackbox { clear:both; font-size:0px; line-height:0px;}
+.inputBtn { height:22px; line-height:18px;}
+
+a:link,a:visited { color:#6A0A70; text-decoration:none;}
+a:hover { color:#EF4EDB; text-decoration:underline;}
+.whiteLink a:link, .whiteLink a:visited { color:#fff;}
+.blackLink a:link, .blackLink a:visited { color:#333;}
+.greenLink a:link, .greenLink a:visited { color:#186118;}
+.siteLink a:link, .siteLink a:visited { color:#18465C;}
+.yellowLink a:link, .yellowLink a:visited { color:#ff0;}
+
+.leftBlock { border:1px solid #F5B3F4; background:#fff; padding:10px;}
+.leftBlock1 {}
+	.leftBlock1 .title { background:url(title.jpg) repeat-x;height:31px; border-left:1px solid #F5B3F4; border-right:1px solid #F5B3F4;}
+		.leftBlock1 .title .cName { font-size:13px; padding:8px 0 0 10px; font-weight:bold;}
+	.leftBlock1 .title li { float:left; text-align:center; background:#FAF2F8; font-size:13px; line-height:24px; border:1px solid #E4F1CF; border-bottom:1px solid #B6DF9F;}
+		.leftBlock1 .title li a:link, .leftBlock1 .title li a:visited { color:#4E6D1F;}
+	.leftBlock1 .title li.current { border:1px solid #B6DF9F; border-bottom:1px solid #FAF2F8; background:#fff; font-weight:bold;}
+		.leftBlock1 .title li.current a:link, .leftBlock1 .title li.current a:visited { color:#000;}
+		.leftBlock1 .title li a { display:block; width:103px;}
+	.leftBlock1 .txt { clear:both; border:1px solid #F5B3F4; border-top:none; padding:10px; background:#fff;}
+.block {}
+	.block .title { background:url(title.jpg) repeat-x; height:31px; border-left:1px solid #F5B3F4; border-right:1px solid #F5B3F4;}
+		.block .title .cName { font-size:13px; font-weight:bold; padding:8px 0 0 10px;}
+		.block .title .btn { padding:5px 10px 0 0;}
+		.block .title ul { padding:6px 0 0 10px !important; padding:5px 0 0 10px;}
+			.block .title li { float:left; width:75px; line-height:24px; text-align:center; font-size:13px;}
+				.block .title li a:link, .block .title li a:visited { color:#186118;}
+			.block .title li.current { border:1px solid #B6DF9F; border-bottom:#FAF2F8; background:#FAF2F8; font-weight:bold;}
+				.block .title li.current a:link, .block .title li.current a:visited { color:#000;}
+	.block .txt { background:#FAF2F8; padding:15px; border:1px solid #F5B3F4; border-top:none;}
+	.block .more { padding:5px 10px 5px 0; text-align:center;}
+
+.top { border-bottom:1px solid #000; background:#333; width:100%; text-align:center; color:#ccc;}
+.liveNav { height:28px; position:relative;}
+	.liveNav .logo { margin:6px 0 0 2px;}
+	.liveNav .nav { font-size:12px; color:#ccc; padding:8px 8px 0 0;}
+	
+.myGp { position:absolute; left:211px; top:0; border:1px solid #000; border-top:#333; background:#666; padding:7px 10px 10px 10px; width:150px;}
+	.myGp a:link, .myGp a:visited { color:#fff;}
+	.myGp li { padding:0 0 6px 0;}
+	
+.name { padding:15px 0;}
+	.name h1 { font-size:20px; padding:0 0 8px 0; margin:0}
+	.name h1 span { font-size:13px; font-weight:normal;}
+	.name h2 { font-size:14px; padding:0; margin:0; font-weight:normal; line-height:1.5em; color:#666;}
+
+.gpMenu { background:url(menu.jpg) repeat-x; width:100%; text-align:center;}
+	.gpMenu .xw {}
+	.gpMenu .menu { padding:0 0 0 10px;}
+		.gpMenu .menu li { float:left; line-height:29px; height:29px; padding-right:15px; text-align:center;}
+			.gpMenu .menu li.current a:link, .gpMenu .menu li.current a:visited { color:#ff0;}
+			.gpMenu .menu li a:link, .gpMenu .menu li a:visited { color:#ffffff;}
+	.gpMenu .other {}
+		.gpMenu .other img { margin:2px 0 0 10px;}
+		
+.content { padding:10px 0 0 0;}
+
+.baseInfo { padding:10px;}
+	#circleName { font-size:14px; font-weight:bold;}
+	.baseInfo .image {padding: 10px 0; text-align:center; margin:0 auto;}
+		.baseInfo .image img { padding:3px; border:1px solid #ccc;}
+			.baseInfo .image div { margin:0 8px; line-height:1.5em;}
+	.baseInfo .info { text-align:left; line-height:1.7em; padding:8px 0; color:#666; border-top:1px solid #ddd;}
+	/*\*/* html .baseInfo .info {  height: 1%;}/**/
+	
+
+.party { padding:10px 0 0 0;}
+	.partyList li { line-height:1.6em;}
+		.partyList li.more { text-align:right; border-bottom:1px solid #F7DBF3;}
+		.partyList li strong { font-weight:normal; color:#f00;}
+
+.member { padding:10px 0 0 0;}
+	.member .txt { padding:15px 8px;}
+.memberList { display:block;}
+	.memberList span { float:left; width:67px; text-align:center; height:95px;}
+		.memberList span img { display:block; margin:0 auto 5px auto; padding:1px; border:1px solid #ccc;}
+.member .more { clear:both; text-align:right;}
+
+.note { line-height:1.5em;}
+
+.photo {}
+	.photo .txt { padding:15px 0 5px 0;}
+		.photoList { display:block;}
+			.photoList span { float:left; width:167px; height:124px; text-align:center;}
+			
+table { border-collapse:collapse; padding:0;}
+	th { background:#F7DBF3; color:#666; text-align:left; padding:5px 0; vertical-align:top;}
+	td { text-align:left; vertical-align:top;}
+	.countAndSort { height:30px;}
+		.countAndSort .l { color:#666;}
+			.countAndSort .l span { color:#f00; font-size:13px;}
+			
+.topic {}
+	.topic .txt { padding:15px 10px;}
+	.topicList { width:100%;}
+		.topicList th { text-align:center;}
+		.topicList th.name { text-align:left; padding:5px 0 5px 8px;}
+		.topicList th.postPerson { width:120px;}
+		.topicList th.count { width:80px;}
+		.topicList th.latest { width:120px;}
+		.topicList td { vertical-align:middle; line-height:1.5em; padding:10px 0 4px 0; text-align:center; border-bottom:1px solid #F3CDF3;}
+		.topicList td.name { text-align:left; padding:12px 0 4px 8px; color:#666;}
+		.topicList td.latest { text-align:center; font-size:12px;}
+		.topicList td.postPerson, .topicList td.count { font-size:12px;}
+.topicShow { width:100%; border:1px solid #B6DF9F;}
+	.topicShow th { padding:5px 0 5px 8px;}
+	.topicShow td { vertical-align:top; border-bottom:1px solid #B6DF9F; }
+		.topicShow td.name { padding:10px 15px; background:#EFFCEF; border-bottom:none;}
+			.topicShow td.name .user { padding:0 0 8px 0;}
+		.topicShow td.topicInfo { padding:8px; width:80%; line-height:1.5em; border-bottom:none;}
+			.topicShow td.topicInfo p { margin:0 0 8px 0;}
+			.topicShow td.topicInfo h2 { font-size:14px; font-weight:bold; margin:0; padding:0 0 8px 0;}
+			.topicShow td.bot { padding:4px 10px; text-align:right; color:#666;}
+			.topicShow td.botL { background:#EFFCEF;}
+.topicPostComment { border:1px solid #B6DF9F; padding:10px; margin:25px 0 0 0;}
+		.topicPostComment .cmTitle { font-size:13px; font-weight:bold; padding:0px 0 10px 0;}
+
+		
+	.partyList { width:100%;}
+		.partyList th { text-align:center;}
+		.partyList th.name { text-align:left; padding:5px 0 5px 8px;}
+		.partyList th.postPerson { width:120px;}
+		.partyList th.reg { width:100px;}
+		.partyList th.count { width:50px;}
+		.partyList th.join { width:50px;}
+		.partyList td { vertical-align:middle; line-height:1.5em; padding:10px 0 4px 0; text-align:center; border-bottom:1px solid #F3CDF3;}
+		.partyList td.name { text-align:left; padding:12px 0 4px 8px;}
+		.partyList td.name a {}
+		.partyList td.reg { color:#f00;}
+		
+.subPhoto .txt { padding:15px 0 0 15px;}
+	.subPhoto .txt .countAndSort { padding:0 15px 0 0;}
+	
+		.photoCatalog { display:block;}
+			.photoCatalog span { float:left; width:163px; padding:0 0 20px 0;}
+				.photoCatalog span .name { background:url(folder.gif) 0 0 no-repeat; padding:0 0 6px 18px; color:#666;}
+				.photoCatalog span .create{ background:url(people.gif) 0 6px no-repeat; padding:8px 0 0 18px; color:#666; font-size:12px;}
+				
+		.subPhotoList { display:block;}
+			.subPhotoList span { float:left; width:163px; padding:0 0 20px 0;}
+				.subPhotoList span .name { padding:8px 0 0 0;}
+				.subPhotoList span .create{ padding:8px 0 0 0; color:#666; font-size:12px;}
+
+	.photoShow .txt { float:left;}
+	.photoShow .txt h1 { padding:0; margin:0 0 10px 0; font-size:16px;}
+	.photoShow .otherInfo { margin:8px 0 0 0;}
+		.photoShow .otherInfo p { line-height:1.5em;}
+			.photoShow .otherInfo p span { font-weight:bold; color:#666;}
+		.photoShow .otherInfo div { margin:8px 0 0 0; font-size:12px; color:#666;}
+	.photoShow .comment {}
+		.comment .cmTitle { font-size:13px; font-weight:bold; padding:25px 0 10px 0; width:686px;}
+		.commentList{ display:block;}
+		.commentList span { display:block; padding:8px 0 15px 0; border-top:1px solid #ccc;}
+			.commentList span .photo {}
+			.commentList span .commentBody { padding:0 0 0 10px;}
+				.commentList span .commentBody p { line-height:1.5em;}
+				.commentList span .commentBody .author { color:#666;}
+				.commentList span .commentBody .commentInfo {}
+		.postComment .cmTitle { font-size:13px; font-weight:bold; padding:25px 0 10px 0; width:686px;}
+		
+.partyShow .comment { padding:25px 0 0 0;}
+.partyInfo { float:left; width:420px;}
+	.partyShow .txt h1 { padding:0; margin:0 0 6px 0; font-size:16px;}
+	.partyShow .txt h2 { padding:0; margin:0 0 10px 0; font-size:12px; color:#666; font-weight:normal;}
+	.partyInfo li span { font-weight:bold; color:#666;}
+	.partyInfo li { line-height:1.8em;}
+.haveJoin { width:180px; border:1px solid #B6DF9F; background:#FAF2F8;}
+	.haveJoin h3 { font-size:13px; font-weight:normal; margin:10px;}
+.haveJoinMember { margin:0 10px 10px 10px; display:block; padding:0 0 1px 0;}
+	.haveJoinMember span { display:block; background:url(rightListDot.gif) 0 9px no-repeat; padding:0 0 0 13px; line-height:1.8em; color:#666}
+	.haveJoinMember span.more { text-align:right; background:none;}
+	.waitJoin { padding:8px 0 0 0; text-align:right;}
+
+
+	.admin .txt li { padding-bottom:10px;}
+		.admin .txt li label {}
+	.admin .addsubmit { text-align:center; padding:8px 0; background:#EFFCEF;}
+	
+	.groupList1 { width:100%;}
+		.groupList1 td { vertical-align:middle;  border-bottom:1px solid #F3CDF3; padding:8px 0;}
+		.groupList1 th.selectBox { padding:5px 0 5px 8px; width:40px;}
+		.groupList1 th.image { width:73px;}
+		.groupList1 th.membername {}
+		.groupList1 th.postPerson { width:74px;}
+		.groupList1 th.topic { width:74px;}
+		.groupList1 th.count { width:45px;}
+		.groupList1 th.tag { width:160px;}
+		.groupList1 th.join { width:50px;}
+		.groupList1 th.sex { width:50px;}
+		.groupList1 th.joinTime { width:120px;}
+		.groupList1 td.selectBox { padding:8px 0 8px 8px; width:40px;}
+		.groupList1 td.image {}
+		.groupList1 td.membername {}
+		.groupList1 td.count { color:#f00;}
+		.groupList1 td.topic { color:#f00;}
+		
+	.memberNote { padding:0 0 8px 0;}
+	.adminOperater { padding:8px 0 8px 8px;}
+	
+.botNav { text-align:center; color:#666; padding:20px 0 0 0; font-size:12px;}
+	.botNav a:link, .botNav a:visited { color:#666;}
+
+.copyright { margin:6px 0 0 0; padding:10px 0 0 0; text-align:center; border-top:1px solid #ddd; line-height:1.6em; font-size:12px;}
+	.copyright a:link, .copyright a:visited { color:#000;}
+	
+.picListAll { width:100%;}
+	.picListAll td { width:25%; padding-bottom:10px;}
+	
+
+
+.imgList1 td { padding:0 6px 20px 6px;}
+.imgsrcname { text-align:center; border:1px solid #eee; height:150px; margin:0 0 6px 0; line-height:150px; font-size:150px;}
+.imgsrcname img { vertical-align:middle}
+
+.alumList { border:1px solid #ddd; padding:10px; background:#fbfbfb;}
+.alumList .imgsrcname1 { text-align:center; height:150px; line-height:150px; font-size:150px;}
+.alumList .imgsrcname1 img { vertical-align:middle}
+
+.photoShow1 { text-align:center; border:1px solid #eee; background:#fff; padding:10px;}
+
+.adAutoServer li { border-bottom:1px dashed #ccc; padding:6px 0;}
+
+.adAutoServerImg { float:left; width:93px;}
+
+.groupList11111 {}
+.groupList11111 td { width:33%; line-height:1.6em; vertical-align:top; padding:10px 15px 10px 0;}
+.groupList11111 td img { float:left; border:1px solid #ccc; padding:1px; margin:0 6px 6px 0;}

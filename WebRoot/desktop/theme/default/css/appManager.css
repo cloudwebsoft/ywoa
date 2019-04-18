@@ -1,0 +1,187 @@
+@charset "utf-8";
+/*version: mydesktop 3.0
+ *author: muzilei
+ *email: 530624206@qq.com
+ *blog: http://www.muzilei.com/
+ *date:2013-1-24
+ */
+.appManagerPanel {
+	height:100%;
+	width:100%;
+	position:absolute;
+	left:0;
+	top:-9999px;
+	z-index:1000000;
+	overflow:hidden;
+}
+.appManagerPanel .scrollBar {
+	right:1px
+}
+.aMg_dock_container {
+	height:60px;
+	overflow:hidden;
+	padding:10px;
+	background:url(../images/amg_top.png) repeat-x
+}
+.ie7_0 .aMg_dock_container, .ie6_0 .aMg_dock_container {
+	background:0
+}
+.aMg_dock_container #default_app{
+	width:auto;
+	margin-right:110px;
+	height:100%;
+	float: left;
+	}
+.aMg_dock_container #default_app .desktopIcon{
+	float:left;
+	margin:0 5px;
+	}
+.aMg_line_x {
+	background:none repeat scroll 0 0 transparent;
+	border-bottom:1px solid #666;
+	font-size:0;
+	height:0;
+	width:100%
+}
+.aMg_line_y {
+	width:3px;
+	height:100%;
+	position:absolute;
+	left:-1px;
+	top:0;
+	background:url(../images/line_y.png) repeat-y
+}
+.ie7_0 .aMg_line_y, .ie6_0 .aMg_line_y {
+	width:2px;
+	background:#666
+}
+.aMg_folder_container {
+	overflow:hidden;
+	background:url(../images/amg_body.png) repeat
+}
+.ie7_0 .aMg_folder_container, .ie6_0 .aMg_folder_container {
+	background:0
+}
+.folderItem {
+	height:100%;
+	overflow:hidden;
+	float:left;
+	border:1px soild #666;
+	position:relative;
+}
+
+
+.folder_bg {
+	width:70px;
+	height:100px;
+	top:0;
+	right:0;
+	position:absolute;
+	font-size:100px;
+	color:#fff;
+ 	filter:alpha(opacity=20);
+	-moz-opacity: 0.2;
+	opacity: 0.2;
+	font-family:"黑体", "宋体", "幼圆"
+}
+ 
+.folderOuter {
+	height:100%;
+	position:relative;
+	overflow:hidden
+}
+.folderInner {
+	min-width:180px;
+	margin:10px 0;
+	position:relative;
+	z-index:1
+}
+ 
+.aMg_close {
+	position:absolute;
+	top:25px;
+	right:10px;
+	width:90px;
+	height:37px;
+	display:inline-block;
+	background:url(../images/back_normal.png);
+	cursor:pointer;
+	_background:0;
+    _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../images/back_normal.png', sizingMethod='crop')
+}
+
+.aMg_close:hover {
+	background:url(../images/back_hover.png);
+	_background:0;
+    _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../images/back_hover.png', sizingMethod='crop')
+}
+.aMg_close:active {
+	background:url(../images/back_click.png);
+	_background:0;
+    _filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../images/back_click.png', sizingMethod='crop')
+}	
+#aMg_prev,#aMg_next{
+	display:block;
+	width:39px;
+	height:80px;
+	position:absolute;
+	top:50%;
+	margin-top:-40px;
+	display:none;
+	outline:none;
+	z-index:100000
+ 	}
+#aMg_prev{
+	background:url(../images/btnL_1.png) no-repeat left center;
+	left:0;
+	}
+#aMg_next{
+	background:url(../images/btnR_1.png) no-repeat left center;
+	right:0;
+	}
+
+.folderInner .desktopIcon {
+	display: block;
+    float: none;
+    height: 30px;
+    margin-bottom: 5px;
+    width:100%;
+	margin-top:0;
+	}
+.folderInner .desktopIcon .icon .txInfo{
+	width:20px;
+	height:21px;
+ 	line-height:18px;
+ 	right:-5px;
+	top:-5px;
+	background:url(../images/tixingMin.png) no-repeat center center;
+ 	}
+	
+.folderInner .desktopIcon span{
+	overflow:inherit;
+	}	
+.folderInner .icon{
+	background: none repeat scroll 0 0 transparent !important;
+    display: inline;
+    float: left;
+    height: 26px;
+    margin: 2px 0 0 20px;
+    width: 26px;
+	} 
+.folderInner .icon img{
+	width:26px;
+	height:26px;
+	}	
+.folderInner .text{
+	float: left;
+    margin-left: 10px;
+    margin-top: 6px;
+    text-align: left;
+	background:none;
+	}	
+.folderInner .text span,.folderInner .text s{
+	background:none;
+	}	
+.folderInner .hover{
+	background:url(../images/appbutton_mouseover_bg5.png) repeat-x left center;
+	}	

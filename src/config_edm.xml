@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <root>
+        <isSend desc="是否发送EDM邮件" isDisplay="false">true</isSend>
+        <sendInterval desc="每几天发送1次邮件" isDisplay="false">1</sendInterval>
+        <sendTotal desc="去掉试用验证邮件，共几封邮件" isDisplay="false">2</sendTotal>
+        <sendTime desc="发送时间" isDisplay="false">8:30</sendTime>
+        <redbagReceiveSubject desc="红包兑奖一米OA邮件标题">兑奖成功！</redbagReceiveSubject>
+        <redbagReceiveContent type="textarea" desc="红包兑奖一米OA邮件内容">&lt;html&gt;&#xD;
+	&lt;head&gt;&#xD;
+		&lt;title&gt;&lt;/title&gt;&#xD;
+	&lt;/head&gt;&#xD;
+	&lt;body&gt;&#xD;
+		&lt;div style="width: 600px;"&gt;&#xD;
+			&lt;div style="background: url(&amp;quot;http://www.yimihome.com/images/email_top.jpg&amp;quot;); height: 70px;"&gt;&#xD;
+				&amp;nbsp;&lt;/div&gt;&#xD;
+			&lt;div style="width: 598px;"&gt;&#xD;
+				&lt;div style="margin: 10px auto 0px; width: 732px; height: 272px; font-family: &amp;quot;微软雅黑&amp;quot;; font-size: 16px;"&gt;&#xD;
+					&lt;p style="line-height: 22.5pt;"&gt;&#xD;
+						&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;您好！&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt;"&gt;&#xD;
+						&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;span style="mso-tab-count: 1;"&gt;&lt;font size="3"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; &lt;/font&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;我是一米&lt;span lang="EN-US"&gt;OA&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;高级顾问唐广辉，欢迎您试用一米&lt;/font&gt;&lt;span lang="EN-US"&gt;&lt;font size="3"&gt;OA&lt;/font&gt;&lt;/span&gt;&lt;font size="3"&gt;。我服务过众多的企业客户，包括：中兴通讯、中南集团、安徽申博集团、华邦涂料、千红制药、上海裸心酒店管理集团、苏州港口集团等上百家企业，相信我的经验一定可以帮到您。&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt; text-indent: 21pt;"&gt;&#xD;
+						&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;我们地处六朝古都南京，迄今发展已十年有余，是&lt;span lang="EN-US"&gt;OA&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;行业的老牌厂商。技术上我们不断开拓、积累和创新，坚持&amp;quot;不积跬步，无以至千里&amp;quot;的理念。&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt; text-indent: 21pt;"&gt;&#xD;
+						&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;一米&lt;span lang="EN-US"&gt;OA&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;目前最高版本是&lt;/font&gt;&lt;span lang="EN-US"&gt;&lt;font size="3"&gt;3.0&lt;/font&gt;&lt;/span&gt;&lt;font size="3"&gt;，后端接入了&amp;quot;&lt;/font&gt;&lt;font size="3"&gt;云开发平台&amp;quot;，该平台是我们技术团队历经多年研发推出的二次开发平台，也是国内首家推出的开发平台，使&lt;/font&gt;&lt;span lang="EN-US"&gt;&lt;font size="3"&gt;OA&lt;/font&gt;&lt;/span&gt;&lt;font size="3"&gt;系统的可扩展性上升到了一个全新的高度，是行业技术发展的里程碑。&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt; text-indent: 21pt;"&gt;&#xD;
+						&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;一米&lt;span lang="EN-US"&gt;OA&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;除了丰富的标准功能模块外，还内置了多种业务模型，结合自定义平台可快速生成更适合于您的解决方案。这些模型是我们基于众多客户需求基础上提炼而来的，在个性化经济越来越蓬勃的今天，为企业打造更加适合于自己的个性化解决方案已成业内趋势。&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt;"&gt;&#xD;
+						&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; &lt;/font&gt;&lt;/span&gt;&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;请&lt;span lang="EN-US"&gt;&lt;a href="http://www.yimihome.com/analog_experience.jsp?email=%s"&gt;&lt;span lang="EN-US"&gt;&lt;span lang="EN-US"&gt;&lt;font color="#0000ff"&gt;点击此处&lt;/font&gt;&lt;/span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;开启您的一米&lt;/font&gt;&lt;span lang="EN-US"&gt;&lt;font size="3"&gt;OA&lt;/font&gt;&lt;/span&gt;&lt;font size="3"&gt;试用之旅！&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt;"&gt;&#xD;
+						&lt;font size="3"&gt;&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; &lt;/span&gt;&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;如果点击无效，请复制下面的地址至浏览器地址栏：&lt;/span&gt;&lt;/font&gt;&lt;br /&gt;&#xD;
+						&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; &lt;/font&gt;&lt;a href="http://www.yimihome.com/analog_experience.jsp?email=%s"&gt;&lt;font color="#0000ff" size="3"&gt;http://www.yimihome.com/analog_experience.jsp?email=%s&lt;/font&gt;&lt;/a&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="line-height: 22.5pt;"&gt;&#xD;
+						&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/font&gt;&lt;/span&gt;&lt;br /&gt;&#xD;
+						&lt;strong&gt;&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;特别提醒：&lt;/font&gt;&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&#xD;
+					&lt;p style="background: white; line-height: 22.5pt; text-indent: 21pt;"&gt;&#xD;
+						&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;一米&lt;span lang="EN-US"&gt;OA&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;共有&lt;/font&gt;&lt;span lang="EN-US"&gt;&lt;font size="3"&gt;40&lt;/font&gt;&lt;/span&gt;&lt;font size="3"&gt;大模块，&lt;/font&gt;&lt;span lang="EN-US"&gt;&lt;font size="3"&gt;1000&lt;/font&gt;&lt;/span&gt;&lt;font size="3"&gt;多个功能点，全部体验工作量巨大，建议您先从界面上简单了解一下，后续我将发几封邮件给您作个详细介绍。&lt;/font&gt;&lt;/span&gt;&lt;br /&gt;&#xD;
+						&lt;font size="3"&gt;&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;或者您&lt;span style="color: black;"&gt;也可以直接与我联系，手机号&lt;/span&gt;&lt;strong&gt;&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-family: 宋体;"&gt;：&lt;/span&gt;&lt;/strong&gt;&lt;/span&gt;&lt;span lang="EN-US" style="color: black; font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-size: 10.5pt;"&gt;15371027962，QQ号：2328973894&lt;br /&gt;&#xD;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;如果本邮件被置入垃圾邮箱，请标记为非垃圾邮件。&lt;/span&gt;&lt;/font&gt;&lt;br type="_moz" /&gt;&#xD;
+						&amp;nbsp;&lt;/p&gt;&#xD;
+					&lt;p style="background: white; line-height: 22.5pt; text-indent: 21pt;"&gt;&#xD;
+						&lt;span style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;再次感谢您的关注！&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="background: white; line-height: 22.5pt; text-indent: 21pt;"&gt;&#xD;
+						&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;&amp;nbsp;&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p style="background: white; line-height: 22.5pt;"&gt;&#xD;
+						&lt;span lang="EN-US" style="font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;;"&gt;&lt;font size="3"&gt;-----------------------------&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p align="left" style="background: white; margin: 0cm 0cm 0pt; text-align: left; line-height: 15.75pt; mso-pagination: widow-orphan;"&gt;&#xD;
+						&lt;span style="color: black; font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-family: 宋体; mso-bidi-font-size: 10.5pt; mso-font-kerning: 0pt;"&gt;&lt;font size="3"&gt;南京云网汇联软件技术有限公司&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p align="left" style="background: white; margin: 0cm 0cm 0pt; text-align: left; line-height: 15.75pt; mso-pagination: widow-orphan;"&gt;&#xD;
+						&lt;font size="3"&gt;&lt;span lang="EN-US" style="color: black; font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-family: 宋体; mso-bidi-font-size: 10.5pt; mso-font-kerning: 0pt;"&gt;Site&lt;/span&gt;&lt;span style="color: black; font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-family: 宋体; mso-bidi-font-size: 10.5pt; mso-font-kerning: 0pt;"&gt;： &lt;span lang="EN-US"&gt;&lt;span style="mso-tab-count: 1;"&gt;&amp;nbsp;&amp;nbsp; &lt;/span&gt;&lt;span style="mso-spacerun: yes;"&gt;&amp;nbsp;&lt;/span&gt;&lt;a href="http://www.yimihome.com/"&gt;&lt;font color="#0000ff"&gt;www.yimihome.com&lt;/font&gt;&lt;/a&gt;&lt;/span&gt;&lt;/span&gt;&lt;/font&gt;&lt;/p&gt;&#xD;
+					&lt;p align="left" style="background: white; margin: 0cm 0cm 0pt; text-align: left; line-height: 15.75pt; mso-pagination: widow-orphan;"&gt;&#xD;
+						&lt;span lang="EN-US" style="color: black; font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-family: 宋体; mso-bidi-font-size: 10.5pt; mso-font-kerning: 0pt;"&gt;&lt;font size="3"&gt;Mobile: &lt;span style="mso-spacerun: yes;"&gt;&amp;nbsp;&lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;15371027962&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+					&lt;p align="left" style="background: white; margin: 0cm 0cm 0pt; text-align: left; line-height: 15.75pt; mso-pagination: widow-orphan;"&gt;&#xD;
+						&lt;span lang="EN-US" style="color: black; font-family: &amp;quot;微软雅黑&amp;quot;,&amp;quot;sans-serif&amp;quot;; mso-bidi-font-family: 宋体; mso-bidi-font-size: 10.5pt; mso-font-kerning: 0pt;"&gt;&lt;font size="3"&gt;Email: &lt;span style="mso-spacerun: yes;"&gt;&amp;nbsp;&lt;/span&gt;&lt;span style="mso-tab-count: 1;"&gt; &lt;/span&gt;&lt;span style="mso-spacerun: yes;"&gt;&amp;nbsp; &lt;/span&gt;&lt;/font&gt;&lt;font size="3"&gt;tgh@yimihome.com&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&#xD;
+				&lt;/div&gt;&#xD;
+			&lt;/div&gt;&#xD;
+		&lt;/div&gt;&#xD;
+		&lt;br type="_moz" /&gt;&#xD;
+	&lt;/body&gt;&#xD;
+&lt;/html&gt;</redbagReceiveContent>
+    </root>
+</config>
+

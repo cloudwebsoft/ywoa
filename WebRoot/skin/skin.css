@@ -1,0 +1,42 @@
+@charset "utf-8";
+@import url("common.css");
+.skin-wrapper {
+	width: 1000px;
+	margin-top: 20px;
+	margin-left: 20px;
+	overflow: hidden;
+}
+.skin-wrapper-box {
+	width: 305px;
+	float: left;
+	margin-right: 20px;
+	margin-bottom: 20px;
+	position: relative;
+}
+.skin-wrapper-box-img {
+	border: 3px solid #E0E0E0;
+	height: 190px;
+	z-index:0;
+}
+
+.skin-wrapper-box-text {
+	text-align: center;
+	height: 40px;
+	font-size: 18px;
+	margin-top: 15px;
+}
+.skin-wrapper-box-hook {
+	height: 40px;
+	width: 46px;
+	position: absolute;
+	z-index:1;
+	top: 153px;
+	left: 256px;
+}
+
+.skin-select {
+	border: 3px solid #ff551a;
+	height: 190px;
+	cursor: pointer;
+	opacity: 0.8;
+}
