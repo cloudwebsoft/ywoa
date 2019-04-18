@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <homeRefreshInterval>1</homeRefreshInterval>
+    <!--five minute-->
+    <iconWidth>120</iconWidth>
+    <iconHeight>100</iconHeight>
+    <footprintDisplayCount>10</footprintDisplayCount>
+    <lastVisitDisplayCount>10</lastVisitDisplayCount>
+    <isBlogOpen>false</isBlogOpen>
+    <createHtmlWhenRefreshHome>true</createHtmlWhenRefreshHome>
+    <modifyTemplateUserLevel>0</modifyTemplateUserLevel>
+    <digPhotoScoreMax>10</digPhotoScoreMax>
+    <undigPhotoScoreMax>10</undigPhotoScoreMax>
+    <digPhotoCost>5</digPhotoCost>
+    <undigPhotoCost>5</undigPhotoCost>
+    <photoSize>2048</photoSize>
+    <miniatureWidth>75</miniatureWidth>
+    <miniatureHeight>75</miniatureHeight>
+    <digMusicScoreMax>10</digMusicScoreMax>
+    <undigMusicScoreMax>10</undigMusicScoreMax>
+    <digMusicCost>5</digMusicCost>
+    <undigMusicCost>5</undigMusicCost>
+    <digVideoScoreMax>10</digVideoScoreMax>
+    <undigVideoScoreMax>10</undigVideoScoreMax>
+    <digVideoCost>5</digVideoCost>
+    <undigVideoCost>5</undigVideoCost>
+    <isDomainMapToPath>true</isDomainMapToPath>
+    <createBlogUserLevel>0</createBlogUserLevel>
+	<isLogVisit>true</isLogVisit>
+</config>
+

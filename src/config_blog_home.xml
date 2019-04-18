@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <focus />
+    <notice />
+    <verticalScroller />
+    <flash>
+        <images id="1">
+            <url>images/home/flash/blog_flash01.jpg</url>
+            <text>test</text>
+            <link>test</link>
+        </images>
+        <images id="2">
+            <url>images/home/flash/blog_flash02.jpg</url>
+            <text>test</text>
+            <link>test</link>
+        </images>
+        <images id="3">
+            <url>images/home/flash/blog_flash03.jpg</url>
+            <text>test</text>
+            <link>test</link>
+        </images>
+        <images id="4">
+            <url>images/home/flash/blog_flash04.jpg</url>
+            <text>test</text>
+            <link>test</link>
+        </images>
+        <images id="5">
+            <url>images/home/flash/blog_flash05.jpg</url>
+            <text>test</text>
+            <link>test</link>
+        </images>
+    </flash>
+    <ads>
+        <ad id="1">&lt;p&gt;&lt;img alt="" border="0" src="/cwbbs/blog/template/images/middleAd.png" /&gt;&lt;/p&gt;</ad>
+        <ad id="2">&lt;p&gt;&lt;img alt="" border="0" src="/cwbbs/blog/template/images/middle_main_ad.png" /&gt;&lt;/p&gt;</ad>
+        <ad id="3" />
+        <ad id="4" />
+        <ad id="5" />
+        <ad id="6" />
+        <ad id="7" />
+    </ads>
+    <images>
+        <img id="11835210387812119804">
+            <url>http://localhost:8080/cwbbs/blog/images/home/ada.gif</url>
+            <link>http://localhost:8080/cwbbs/blog/images/home/ada.gif</link>
+            <text>vv</text>
+            <order>0</order>
+        </img>
+        <img id="11835184077651595865">
+            <url>222</url>
+            <link>555</link>
+            <text>333</text>
+            <order>1</order>
+        </img>
+        <img id="11835214636711665413">
+            <url>2</url>
+            <link>2</link>
+            <text>2</text>
+            <order>2</order>
+        </img>
+        <img id="11835215025621059510">
+            <url>3</url>
+            <link>3</link>
+            <text>3</text>
+            <order>3</order>
+        </img>
+        <img id="11835244072651308073">
+            <url>5</url>
+            <link>5</link>
+            <text>5</text>
+            <order>5</order>
+        </img>
+        <img id="11835243932185734278">
+            <url>6</url>
+            <link>6</link>
+            <text>6</text>
+            <order>6</order>
+        </img>
+        <img id="11835218252651834943">
+            <url>6</url>
+            <link>6</link>
+            <text>6</text>
+            <order>7</order>
+        </img>
+        <img id="11835242314681951611">
+            <url>8</url>
+            <link>8</link>
+            <text>8</text>
+            <order>8</order>
+        </img>
+    </images>
+</config>
+
