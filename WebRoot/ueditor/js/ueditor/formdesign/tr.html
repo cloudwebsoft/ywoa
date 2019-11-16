@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>表格行</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" >
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="leipi.style.css">
+    <script type="text/javascript" src="../dialogs/internal.js"></script>
+    <script type="text/javascript">
+/* Thank you by  
+http://www.alt-tag.com/blog/2006/02/ie-dom-bugs/ */
+function createElement(type, name)
+{     
+    var element = null;     
+    try {        
+        element = document.createElement('<'+type+' name="'+name+'">');     
+    } catch (e) {}   
+    if(element==null) {     
+        element = document.createElement(type);     
+        element.name = name;     
+    } 
+    return element;     
+}
+    </script>
+</head>
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+     <tr>
+       <th width="50%">表格行ID&nbsp;<span class="label label-important">*</span></th>
+       <th><span>表格行名称&nbsp;</span><span class="label label-important">*</span></th>
+     </tr>
+     <tr>
+       <th><input type="text" id="orgname" placeholder="必填项"></th>
+       <th><input type="text" id="orgtitle" placeholder="必填项"></th>
+     </tr>
+     <tr>
+        <th>可见性</th>
+        <th>&nbsp;</th>
+    </tr>    
+    <tr>
+        <td>
+            <label class="checkbox inline"><input id="orghide" name="orghide" type="checkbox"/>隐藏</label>        
+        </td>
+        <td>
+         &nbsp;
+        </td>
+    </tr>
+    </table>
+</div>
+<script type="text/javascript">
+var oNode = null, thePlugins = 'tr';
+window.onload = function() {
+    if( UE.plugins[thePlugins].editdom ){
+        oNode = UE.plugins[thePlugins].editdom;
+		
+		var gId=oNode.parentNode.getAttribute('id');
+		if (gId)
+			gId = gId.replace(/&quot;/g,"\"");
+		else
+		    gId = "";
+		var gName=oNode.parentNode.getAttribute('name');
+		if (gName)
+		    gName = gName.replace(/&quot;/g,"\"");
+		else
+		    gName = "";
+		$G('orgname').value = gId;
+		$G('orgtitle').value = gName;
+		if (oNode.parentNode.style.display=="none") {
+            $G('orghide').checked = true;
+        }
+    }
+}
+dialog.oncancel = function () {
+    if( UE.plugins[thePlugins].editdom ) {
+        delete UE.plugins[thePlugins].editdom;
+    }
+};
+dialog.onok = function (){
+    var gName=$G('orgname').value.replace(/\"/g,"&quot;");
+    if(gName==''){
+        alert('请输入表格行的ID');
+        return false;
+    }	
+    var gTitle=$G('orgtitle').value.replace(/\"/g,"&quot;");
+    if(gName==''){
+        // gTitle('请输入表格行的名称');
+        // return false;
+    }
+
+	oNode.parentNode.setAttribute('id', gName);
+	oNode.parentNode.setAttribute('name', gTitle);
+	if( $G('orghide' ).checked ) {
+        oNode.parentNode.style.display = "none";
+	} else {
+        oNode.parentNode.style.display = "";
+	}
+};
+</script>
+</body>
+</html>
