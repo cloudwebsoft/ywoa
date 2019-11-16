@@ -11,6 +11,44 @@
 				 com.redmoon.oa.ui.*,
 				 com.cloudwebsoft.framework.base.*"
 %>
+<%@ page import="org.json.JSONObject" %>
+<jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
+<%
+    String priv="admin";
+    if (!privilege.isUserPrivValid(request,priv)) {
+        out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+        return;
+    }
+    
+    String op = ParamUtil.get(request, "op");
+    
+    if (op.equals("add")) {
+        JSONObject json = new JSONObject();
+        QObjectMgr qom = new QObjectMgr();
+        JobUnitDb ju = new JobUnitDb();
+        try {
+            if (qom.create(request, ju, "scheduler_add")) {
+                SchedulerManager sm = SchedulerManager.getInstance();
+                sm.shutdown(); // 结束调度
+                sm.startWhenIsShutdown(); // 重启调度
+    
+                json.put("ret", 1);
+                json.put("msg", "操作成功");
+            }
+            else {
+                json.put("ret", 0);
+                json.put("msg", "操作失败");
+            }
+        }
+        catch (ErrMsgException e) {
+            json.put("ret", 0);
+            json.put("msg", e.getMessage());
+        }
+        out.print(json.toString());
+        return;
+    }
+    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -36,80 +74,38 @@
 <script src="../inc/common.js"></script>
 <script type="text/javascript" src="../js/jquery1.7.2.min.js"></script>
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
+<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet"	type="text/css" media="screen" />
+<script src="../js/ace-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
+<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
 <script src="../js/ace-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
-function findObj(theObj, theDoc)
-{
-  var p, i, foundObj;
-  
-  if(!theDoc) theDoc = document;
-  if( (p = theObj.indexOf("?")) > 0 && parent.frames.length)
-  {
-    theDoc = parent.frames[theObj.substring(p+1)].document;
-    theObj = theObj.substring(0,p);
-  }
-  if(!(foundObj = theDoc[theObj]) && theDoc.all) foundObj = theDoc.all[theObj];
-  for (i=0; !foundObj && i < theDoc.forms.length; i++) 
-    foundObj = theDoc.forms[i][theObj];
-  for(i=0; !foundObj && theDoc.layers && i < theDoc.layers.length; i++) 
-    foundObj = findObj(theObj,theDoc.layers[i].document);
-  if(!foundObj && document.getElementById) foundObj = document.getElementById(theObj);
-  
-  return foundObj;
-}
-function SelectDateTime(objName) {
-	var dt = openWin("../util/calendar/time.htm","266px","185px");//showModalDialog("../util/calendar/time.htm", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
-}
-function sel(dt) {
-    if (dt!=null)
-        findObj("time").value = dt;
-}
-function openWin(url,width,height,divId)
-{
-  var newwin=window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width="+width+",height="+height);
-  return newwin;
-}
-function trimOptionText(strValue) 
-{
-	// 注意option中有全角的空格，所以不直接用trim
-	var r = strValue.replace(/^　*|\s*|\s*$/g,"");
-	return r;
-}
+    function SelectDateTime(objName) {
+        var dt = openWin("../util/calendar/time.htm", "266px", "185px");
+    }
+
+    function sel(dt) {
+        if (dt != null)
+            o("time").value = dt;
+    }
+
+    function openWin(url, width, height, divId) {
+        var newwin = window.open(url, "_blank", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=" + width + ",height=" + height);
+        return newwin;
+    }
+
+    function trimOptionText(strValue) {
+        // 注意option中有全角的空格，所以不直接用trim
+        var r = strValue.replace(/^　*|\s*|\s*$/g, "");
+        return r;
+    }
 
 </script>
 </head>
 <body>
-<jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
-<%
-String priv="admin";
-if (!privilege.isUserPrivValid(request,priv)) {
-    out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-	return;
-}
-
-String op = ParamUtil.get(request, "op");
-
-if (op.equals("add")) {
-	QObjectMgr qom = new QObjectMgr();
-	JobUnitDb ju = new JobUnitDb();
-	try {
-	if (qom.create(request, ju, "scheduler_add")) {
-		SchedulerManager sm = SchedulerManager.getInstance();
-		sm.shutdown(); // 结束调度
-		sm.startWhenIsShutdown(); // 重启调度			
-		out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "scheduler_list.jsp"));
-	}
-	else
-		out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.Alert_Back(e.getMessage()));
-	}
-	return;
-}
-com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-%>
 <%@ include file="scheduler_inc_menu_top.jsp"%>
 <script>
 o("menu3").className="current";
@@ -128,10 +124,10 @@ o("menu3").className="current";
     &nbsp;
     <span id="spanKind">
     类型：
-	<input id="kind" name="kind" value="0" type="radio" checked />按日期
-	<input id="kind" name="kind" value="1" type="radio" />按星期
-	<input id="kind" name="kind" value="2" type="radio" />按间隔
-	<input id="kind" name="kind" value="3" type="radio" />按cron表达式
+	<input id="kind0" name="kind" value="0" type="radio" checked />按日期
+	<input id="kind1" name="kind" value="1" type="radio" />按星期
+	<input id="kind2" name="kind" value="2" type="radio" />按间隔
+	<input id="kind3" name="kind" value="3" type="radio" />按cron表达式
     </span>    
     </td>
     </tr>
@@ -166,10 +162,10 @@ o("menu3").className="current";
       <div id="divInterval" style="display:none">
       每隔
       <input id="interval" name="interval" size="3" />
-      <input type="radio" id="intervalType" name="intervalType" value="d" />天
-      <input type="radio" id="intervalType" name="intervalType" value="h" />时
-      <input type="radio" id="intervalType" name="intervalType" value="m" />分
-      <input type="radio" id="intervalType" name="intervalType" value="s" />秒
+      <input type="radio" id="intervalTypeD" name="intervalType" value="d" />天
+      <input type="radio" id="intervalTypeH" name="intervalType" value="h" />时
+      <input type="radio" id="intervalTypeM" name="intervalType" value="m" />分
+      <input type="radio" id="intervalTypeS" name="intervalType" value="s" />秒
       </div>
       <div id="divCron" style="display:none">
       cron表达式
@@ -235,11 +231,11 @@ editor.renderer.$cursorLayer.element.style.opacity=0;
 	
 function form1_onsubmit() {
 	if (o("job_name").value=="") {
-		alert("名称不能为空！");
+		jAlert("名称不能为空！", "提示");
 		o("job_name").focus();
 		return false;
 	}
-	var t = form1.time.value;
+	var t = o("time").value;
 	var ary = t.split(":");
 	if (ary[2].indexOf("0")==0 && ary[2].length>1)
 		ary[2] = ary[2].substring(1, ary[2].length);
@@ -252,18 +248,18 @@ function form1_onsubmit() {
 	var kind = getRadioValue("kind");
 	if (kind=="0") {
 		if (dayOfMonth=="") {
-			alert("请填写每月几号！");
+			jAlert("请填写每月几号！", "提示");
 			o("month_day").focus();
 			return false;
 		}
 		if (dayOfMonth!="" && (parseInt(dayOfMonth)>31 || parseInt(dayOfMonth)<0)) {
-			alert("每月天数不能小于0，且不能大于31");
+			jAlert("每月天数不能小于0，且不能大于31", "提示");
 			return false;
 		}
 		if (dayOfMonth=="")
 			dayOfMonth = "?";
 		var cron = ary[2] + " " + ary[1] + " " + ary[0] + " " + dayOfMonth + " * ?";
-		form1.cron.value = cron;
+		o("cron").value = cron;
 	}
 	else if (kind=="1") {
 		if (weekDay=="") {
@@ -273,17 +269,17 @@ function form1_onsubmit() {
 		if (dayOfMonth=="")
 			dayOfMonth = "?";
 		var cron = ary[2] + " " + ary[1] + " " + ary[0] + " ? * " + weekDay;
-		form1.cron.value = cron;
+		o("cron").value = cron;
 	}
 	else if (kind=="2") {
 		var type = getRadioValue("intervalType");
 		if (type=="") {
-			alert("请选择天、时、分或秒！");
+			jAlert("请选择天、时、分或秒！", "提示");
 			return false;
 		}
 		var val = o("interval").value;
 		if (val=="") {
-			alert("请输入时间间隔！");
+            jAlert("请输入时间间隔！", "提示");
 			o("interval").focus();
 			return false;
 		}
@@ -300,7 +296,7 @@ function form1_onsubmit() {
 		else if (type=="d") {
 			cron = "* * * 0/" + val + " * ?";
 		}
-		form1.cron.value = cron;
+		o("cron").value = cron;
 	}
 	else if (kind=="3") {
 		if (o("mycron").value=="") {
@@ -311,7 +307,29 @@ function form1_onsubmit() {
 		o("cron").value = o("mycron").value;
 	}
 	
-	form1.data_map.value = editor.getValue();
+	o("data_map").value = editor.getValue();
+
+    $.ajax({
+        url: "scheduler_add_script.jsp?op=add",
+        type: "post",
+        dataType: "json",
+        contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+        data: $('#form1').serialize(),
+        beforeSend: function (XMLHttpRequest) {
+            $('body').showLoading();
+        },
+        success: function(data, status) {
+            jAlert_Redirect(data.msg, "提示", "scheduler_list.jsp");
+        },
+        complete: function (XMLHttpRequest, status) {
+            $('body').hideLoading();
+        },
+        error: function(XMLHttpRequest, textStatus) {
+            alert(XMLHttpRequest.responseText);
+        }
+    });
+
+    return false;
 }	
 
 $(function() {

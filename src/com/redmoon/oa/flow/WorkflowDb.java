@@ -1,36 +1,6 @@
 package com.redmoon.oa.flow;
 
-import java.io.File;
-import java.io.Serializable;
-import java.io.StringReader;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.*;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
-import com.redmoon.oa.base.IFormMacroCtl;
-import com.redmoon.oa.sys.DebugUtil;
-import com.redmoon.oa.ui.LocalUtil;
-import com.redmoon.oa.visual.SQLBuilder;
-import org.apache.log4j.Logger;
-import org.jdom.Element;
-import org.jdom.input.SAXBuilder;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.xml.sax.InputSource;
-
-import bsh.EvalError;
-import bsh.Interpreter;
-import cn.js.fan.db.Conn;
-import cn.js.fan.db.ListResult;
-import cn.js.fan.db.ResultIterator;
-import cn.js.fan.db.ResultRecord;
-import cn.js.fan.db.SQLFilter;
+import cn.js.fan.db.*;
 import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
@@ -38,12 +8,14 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
-
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.IPUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.cloudwebsoft.framework.web.UserAgentParser;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.Config;
+import com.redmoon.oa.base.IFormMacroCtl;
 import com.redmoon.oa.base.IFormValidator;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.dept.DeptDb;
@@ -52,11 +24,7 @@ import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
 import com.redmoon.oa.message.MessageDb;
-import com.redmoon.oa.person.PlanDb;
-import com.redmoon.oa.person.UserDb;
-import com.redmoon.oa.person.UserDesktopSetupDb;
-import com.redmoon.oa.person.UserMgr;
-import com.redmoon.oa.person.UserProxyMgr;
+import com.redmoon.oa.person.*;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.shell.BSHShell;
@@ -65,16 +33,75 @@ import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.ui.DesktopMgr;
 import com.redmoon.oa.ui.DesktopUnit;
 import com.redmoon.oa.ui.IDesktopUnit;
+import com.redmoon.oa.ui.LocalUtil;
 import com.redmoon.oa.util.BeanShellUtil;
+import com.redmoon.oa.visual.SQLBuilder;
+import org.apache.log4j.Logger;
+import org.jdom.Element;
+import org.jdom.input.SAXBuilder;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.xml.sax.InputSource;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.Serializable;
+import java.io.StringReader;
+import java.sql.*;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 public class WorkflowDb implements Serializable,IDesktopUnit {
     String connname;
+
+    public String getDelUser() {
+        return delUser;
+    }
+
+    public void setDelUser(String delUser) {
+        this.delUser = delUser;
+    }
+
+    public java.util.Date getDelDate() {
+        return delDate;
+    }
+
+    public void setDelDate(java.util.Date delDate) {
+        this.delDate = delDate;
+    }
+
+    private String delUser;
+    private java.util.Date delDate;
+
+    public boolean isRenewed() {
+        return renewed;
+    }
+
+    public void setRenewed(boolean renewed) {
+        this.renewed = renewed;
+    }
+
+    boolean renewed;
+
+    public String getImgVisualPath() {
+        return imgVisualPath;
+    }
+
+    public void setImgVisualPath(String imgVisualPath) {
+        this.imgVisualPath = imgVisualPath;
+    }
+
+    String imgVisualPath;
+
     final String INSERT =
             "insert into flow (id, type_code, title, userName, jobCode, resultValue, return_back, mydate, project_id, unit_code, flow_level, parent_action_id,status) values (?,?,?,?,?," + WorkflowActionDb.RESULT_VALUE_NOT_ACCESSED + ",?,?,?,?,?,?," + STATUS_NONE + ")";
     final String LOAD =
-            "select type_code,title,doc_id,userName,flow_string,status,resultValue,checkUserName,mydate,remark,return_back,BEGIN_DATE,END_DATE,project_id,unit_code,flow_level,parent_action_id,locker from flow where id=?";
+            "select type_code,title,doc_id,userName,flow_string,status,resultValue,checkUserName,mydate,remark,return_back,BEGIN_DATE,END_DATE,project_id,unit_code,flow_level,parent_action_id,locker,del_user,del_date,is_renewed,img_visual_path from flow where id=?";
     private java.util.Date mydate;
-    final String SAVE = "update flow set type_code=?,title=?,doc_id=?,userName=?,flow_string=?,status=?,resultValue=?,checkUserName=?,remark=?,return_back=?,BEGIN_DATE=?,END_DATE=?,project_id=?,flow_level=?,parent_action_id=?,locker=? where id=?";
+    final String SAVE = "update flow set type_code=?,title=?,doc_id=?,userName=?,flow_string=?,status=?,resultValue=?,checkUserName=?,remark=?,return_back=?,BEGIN_DATE=?,END_DATE=?,project_id=?,flow_level=?,parent_action_id=?,locker=?,del_user=?,del_date=?,is_renewed=?,img_visual_path=? where id=?";
     final String DELETE = "delete from flow where id=?";
 
     /**
@@ -291,6 +318,13 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 level = rs.getInt(16);
                 parentActionId = rs.getInt(17);
                 locker = StrUtil.getNullStr(rs.getString(18));
+                delUser = StrUtil.getNullStr(rs.getString(19));
+                ts = rs.getTimestamp(20);
+                if (ts!=null) {
+                    delDate = new java.util.Date((ts.getTime()));
+                }
+                renewed = rs.getInt(21)==1;
+                imgVisualPath = StrUtil.getNullStr(rs.getString(22));
 
                 if (rs!=null) {
                     rs.close();
@@ -353,8 +387,16 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
 
         remark += ud.getRealName() + " 放弃流程于" +
                 DateUtil.format(Calendar.getInstance(), "yyyy-MM-dd HH:mm:ss");
+        endDate = new java.util.Date();
         status = STATUS_DISCARDED;
         save();
+
+        Leaf lf = new Leaf(typeCode);
+        FormDAO fdao = new FormDAO();
+        fdao = fdao.getFormDAO(id, new FormDb(lf.getFormCode()));
+        fdao.setStatus(FormDAO.STATUS_DISCARD);
+        fdao.save();
+
         // 更新缓存
         WorkflowCacheMgr wfc = new WorkflowCacheMgr();
         wfc.refreshDel(id);
@@ -378,6 +420,12 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         // 置myAction为已check状态
         MyActionDb mad = new MyActionDb();
         mad = mad.getMyActionDb(myActionId);
+
+        mad.setIp(IPUtil.getRemoteAddr(request));
+        String ua = request.getHeader("User-Agent");
+        mad.setOs(UserAgentParser.getOS(ua));
+        mad.setBrowser(UserAgentParser.getBrowser(ua));
+
         mad.onWorkflowManualFinished(id, userName, isFinishAgree);
 
         UserMgr um = new UserMgr();
@@ -439,7 +487,14 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             pstmt.setInt(14, level);
             pstmt.setLong(15, parentActionId);
             pstmt.setString(16, locker);
-            pstmt.setInt(17, id);
+            pstmt.setString(17, delUser);
+            if (delDate!=null)
+                pstmt.setTimestamp(18, new Timestamp(delDate.getTime()));
+            else
+                pstmt.setTimestamp(18, null);
+            pstmt.setInt(19, renewed?1:0);
+            pstmt.setString(20, imgVisualPath);
+            pstmt.setInt(21, id);
             int r = pstmt.executeUpdate();
             if (r == 1) {
                 // 更新缓存
@@ -547,11 +602,33 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
     }
 
     public boolean changeStatus(HttpServletRequest request, int status, WorkflowActionDb lastAction) {
+        int oldStatus = this.status;
+
         setStatus(status);
         setCheckUserName(lastAction.getCheckUserName());
         setResultValue(lastAction.getResultValue());
-        if (status==STATUS_FINISHED || status==STATUS_DISCARDED || status==STATUS_REFUSED)
+        if (status==STATUS_FINISHED || status==STATUS_DISCARDED || status==STATUS_REFUSED) {
             endDate = new java.util.Date();
+        }
+
+        // 如果原先是已完成状态，现切换为未完成状态，则置fdao的cws_status为0
+        if (oldStatus==WorkflowDb.STATUS_FINISHED && oldStatus!=status) {
+            if (status==WorkflowDb.STATUS_STARTED) {
+                com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+                Leaf lf = new Leaf();
+                lf = lf.getLeaf(getTypeCode());
+                FormDb fd = new FormDb();
+                fd = fd.getFormDb(lf.getFormCode());
+                fdao = fdao.getFormDAO(id, fd);
+                fdao.setStatus(FormDAO.STATUS_NOT);
+                try {
+                    fdao.save();
+                } catch (ErrMsgException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         boolean re = save();
         if (re) {
             // 当流程处理完毕时，通过IFormValidator作进一步的数据处理
@@ -589,6 +666,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                int cwsStatus = FormDAO.STATUS_NOT;
                if (status==STATUS_FINISHED) {
             	   cwsStatus = FormDAO.STATUS_DONE;
+            	   fdao.setCwsFinishDate(new java.util.Date());
                }
                else if (status==STATUS_REFUSED) {
             	   cwsStatus = FormDAO.STATUS_REFUSED;
@@ -1193,7 +1271,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
      * @param privAction WorkflowActionDb 待办节点的上一节点，当发起流程时，privAction=null
      * @param actionToDo WorkflowActionDb 下一节点动作
      * @param actionStatus int 动作状态
-     * @param flowId long 流程ID
+     * @param flowId long 流程号
      * @param subMyActionId long 子流程中对应的myActionId
      * @return boolean
      */
@@ -1680,8 +1758,10 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             for (int i=0; i<len; i++) {
                 flowString += flowary[i] + "\r\n";
             }
-            if (isSaveFlow)
+            if (isSaveFlow) {
+                renewed = true;
                 save();
+            }
         }
         return true;
     }
@@ -2390,6 +2470,17 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         MyActionDb mad = new MyActionDb();
         mad.delMyActionOfFlow(id);
 
+        // 删除流程图片
+        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+        boolean isGenerateFlowImage = cfg.getBooleanProperty("isGenerateFlowImage");
+        if (isGenerateFlowImage) {
+            String filePath = Global.getRealPath() + getImgVisualPath() + "/" + id + ".jpg";
+            File f = new File(filePath);
+            if (f.exists()) {
+                f.delete();
+            }
+        }
+
         Conn conn = new Conn(connname);
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -2865,12 +2956,13 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         if (myname.equals("")) {
             myname = privilege.getUser(request);
         }
-        String title = ParamUtil.get(request, "f.title");
-        String starter = ParamUtil.get(request, "f.starter");
+        String title = ParamUtil.getParam(request, "f.title");
+        String starter = ParamUtil.getParam(request, "f.starter");
         String by = ParamUtil.get(request, "f.by");
         String fromDate = ParamUtil.get(request, "f.fromDate");
         String toDate = ParamUtil.get(request, "f.toDate");
         String orderBy = ParamUtil.get(request, "orderBy");
+        int actionStatus = ParamUtil.getInt(request, "actionStatus", -1);
         boolean hasFormCol = false;
         if (orderBy.equals(""))
             orderBy = "m.receive_date";
@@ -2942,6 +3034,9 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             if (!"".equals(starter)) {
                 sql += " and u.realname like " + StrUtil.sqlstr("%" + starter + "%");
             }
+            if (actionStatus!=-1) {
+                sql += " and m.action_status=" + actionStatus;
+            }
 
             if (!formConds.equals("")) {
                 sql += " and " + formConds;
@@ -2974,9 +3069,9 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         else {
             typeCode = ParamUtil.get(request, "typeCode");
         }
-        String starter = ParamUtil.get(request, "f.starter"); // 发起人
+        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
         String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.get(request, "f.title");
+        String title = ParamUtil.getParam(request, "f.title");
         String fromDate = ParamUtil.get(request, "f.fromDate");
         String toDate = ParamUtil.get(request, "f.toDate");
         int status = ParamUtil.getInt(request, "f.status", 1000);
@@ -3081,7 +3176,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             }
         }
         // 如果未指定status，则过滤掉已删除的
-        if (sql.indexOf("f.status=")==-1) {
+        if (true || sql.indexOf("f.status=")==-1) {
             sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
         }
 
@@ -3103,9 +3198,9 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         else {
             typeCode = ParamUtil.get(request, "typeCode");
         }
-        String starter = ParamUtil.get(request, "f.starter"); // 发起人
+        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
         String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.get(request, "f.title");
+        String title = ParamUtil.getParam(request, "f.title");
         String fromDate = ParamUtil.get(request, "f.fromDate");
         String toDate = ParamUtil.get(request, "f.toDate");
         int status = ParamUtil.getInt(request, "f.status", 1000);
@@ -3201,7 +3296,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
     }
 
     /**
-     * 我参与的流程
+     * 我发起的流程
      * @param request
      * @return
      */
@@ -3219,9 +3314,9 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         else {
             typeCode = ParamUtil.get(request, "typeCode");
         }
-        String starter = ParamUtil.get(request, "f.starter"); // 发起人
+        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
         String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.get(request, "f.title");
+        String title = ParamUtil.getParam(request, "f.title");
         String fromDate = ParamUtil.get(request, "f.fromDate");
         String toDate = ParamUtil.get(request, "f.toDate");
         int status = ParamUtil.getInt(request, "f.status", 1000);
@@ -3307,7 +3402,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 sql += " and " + formConds;
             }
         }
-        if (sql.indexOf("f.status")==-1) {
+        if (true || sql.indexOf("f.status")==-1) {
             sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
         }
 
@@ -3330,9 +3425,9 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         else {
             typeCode = ParamUtil.get(request, "typeCode");
         }
-        String starter = ParamUtil.get(request, "f.starter"); // 发起人
+        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
         String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.get(request, "f.title");
+        String title = ParamUtil.getParam(request, "f.title");
         String fromDate = ParamUtil.get(request, "f.fromDate");
         String toDate = ParamUtil.get(request, "f.toDate");
         int status = ParamUtil.getInt(request, "f.status", 1000);
@@ -3344,7 +3439,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         else {
             if ("f.id".equals(orderBy)
                     || "f.flow_level".equals(orderBy) || "f.title".equals(orderBy) || "f.type_code".equals(orderBy)
-                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy))
+                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy) || "f.end_date".equals(orderBy))
                 ;
             else {
                 orderBy = "t1." + orderBy;
@@ -3431,7 +3526,10 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             } else if (!fromDate.equals("")) {
                 sql += " and f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd");
             } else if (fromDate.equals("") && !toDate.equals("")) {
-                sql += " and f.BEGIN_DATE<=" + SQLFilter.getDateStr(toDate, "yyyy-MM-dd");
+                java.util.Date d = DateUtil.parse(toDate, "yyyy-MM-dd");
+                d = DateUtil.addDate(d, 1);
+                String toDate2 = DateUtil.format(d, "yyyy-MM-dd");
+                sql += " and f.BEGIN_DATE<=" + SQLFilter.getDateStr(toDate2, "yyyy-MM-dd");
             }
 
             if (status != 1000) {
@@ -3525,11 +3623,25 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                         }
                     }
                     if (!tDate.equals("")) {
-                        if (cond.equals("")) {
-                            cond += tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
-                        } else {
-                            cond += " and " + tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
-                        }
+                        // 如果是日期型的，则需加1天，然后用<符号
+                        // if (ff.getType().equals(FormField.TYPE_DATE)) {
+                            java.util.Date d = DateUtil.parse(tDate, "yyyy-MM-dd");
+                            d = DateUtil.addDate(d, 1);
+                            String tDate1 = DateUtil.format(d, "yyyy-MM-dd");
+                            if (cond.equals("")) {
+                                cond += tableAlias + "." + ff.getName() + "<" + StrUtil.sqlstr(tDate1);
+                            } else {
+                                cond += " and " + tableAlias + "." + ff.getName() + "<" + StrUtil.sqlstr(tDate1);
+                            }
+                        // }
+                        // 查询条件传入的为yyyy-MM-dd格式，所以无需判断是否为TYPE_DATE_TIME型
+/*                        else {
+                            if (cond.equals("")) {
+                                cond += tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
+                            } else {
+                                cond += " and " + tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
+                            }
+                        }*/
                     }
                 } else {
                     // 时间点

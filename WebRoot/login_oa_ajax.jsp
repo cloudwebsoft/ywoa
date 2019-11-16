@@ -83,7 +83,7 @@ try{
 	if(!ver.equals(version) || !sp_ver.equals(sp_version)){
 		JSONObject json = new JSONObject();
 	    json.put("ret", "0");
-	    json.put("msg", ver + "(" + sp_ver + ")与数据库版本" + version + "(" + sp_version + ")不匹配，请联系" + (License.getInstance().isOem() ? "" : "一米") + "客服");
+	    json.put("msg", ver + "(" + sp_ver + ")与数据库版本" + version + "(" + sp_version + ")不匹配，请联系客服");
 	    out.print(json);
 	    return;
 	}

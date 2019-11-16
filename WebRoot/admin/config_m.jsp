@@ -158,9 +158,6 @@ while (ir.hasNext()) {
   	continue;
   }  
   desc = e.getAttributeValue("desc");
-  if (lic.isOem() && desc.indexOf("一米") > -1) {
-	  desc = desc.replaceAll("一米", "");
-  }
   String type = StrUtil.getNullStr(e.getAttributeValue("type"));
   name = e.getName();
   value = e.getValue(); 

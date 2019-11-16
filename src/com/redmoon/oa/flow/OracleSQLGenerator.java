@@ -90,7 +90,13 @@ public class OracleSQLGenerator implements ISQLGenerator {
         // 创建拉单后自动冲抵标志位
         str += "cws_flag int default 0 NOT NULL,";     
         // 创建进度字段
-        str += "cws_progress int DEFAULT 0 NOT NULL,";      
+        str += "cws_progress int DEFAULT 0 NOT NULL,";
+        // 创建创建时间字段
+        str += "cws_create_date date DEFAULT sysdate,";
+        // 创建修改时间字段
+        str += "cws_modify_date date,";
+        // 创建流程结束时间字段
+        str += "cws_finish_date date,";
         
         String ffstr = "";
         while (ir.hasNext()) {

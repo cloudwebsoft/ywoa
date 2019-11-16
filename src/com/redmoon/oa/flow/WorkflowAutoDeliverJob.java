@@ -1,5 +1,6 @@
 package com.redmoon.oa.flow;
 
+import com.redmoon.oa.ui.LocalUtil;
 import org.quartz.Job;
 import org.quartz.JobExecutionException;
 import org.quartz.JobExecutionContext;
@@ -97,6 +98,7 @@ public class WorkflowAutoDeliverJob implements Job {
                     mad.setChecked(true);
                     mad.setCheckDate(new java.util.Date());
                     mad.setChecker(UserDb.SYSTEM);
+                    mad.setResult(LocalUtil.LoadString(null, "res.flow.Flow", "skipOverTime"));
                     mad.save();
 
                     // 结束日程
@@ -261,7 +263,9 @@ public class WorkflowAutoDeliverJob implements Job {
                     mad.setChecked(true);
                     mad.setCheckDate(new java.util.Date());
                     mad.setChecker(UserDb.SYSTEM);
-                    mad.setResult("超期未能处理，系统自动返回给发起人");
+                    // mad.setResult("超期未能处理，系统自动返回给发起人");
+                    mad.setResult(LocalUtil.LoadString(null, "res.flow.Flow", "skipOverTimeReturnToStarter"));
+
                     mad.save();
 
                     // 结束日程

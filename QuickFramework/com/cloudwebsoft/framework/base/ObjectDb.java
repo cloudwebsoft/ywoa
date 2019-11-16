@@ -52,7 +52,7 @@ public abstract class ObjectDb implements IObjectDb {
     }
 
     /**
-     * µ±´Ó»º´æÖĞÈ¡³öºó£¬ÓÃÒÔ³õÊ¼»¯transientµÄ±äÁ¿
+     * å½“ä»ç¼“å­˜ä¸­å–å‡ºåï¼Œç”¨ä»¥åˆå§‹åŒ–transientçš„å˜é‡
      * @return Logger
      */
     public void renew() {
@@ -93,12 +93,12 @@ public abstract class ObjectDb implements IObjectDb {
     }
 
     /**
-     * ´ÓÊı¾İ¿âÖĞÈ¡³ö¼ÇÂ¼Êı
-     * @param query String ÒÑ¾­¹ıgetCountSql×ª»»
-     * @return int -1 ±íÊ¾sqlÓï¾ä²»ºÏ·¨
+     * ä»æ•°æ®åº“ä¸­å–å‡ºè®°å½•æ•°
+     * @param query String å·²ç»è¿‡getCountSqlè½¬æ¢
+     * @return int -1 è¡¨ç¤ºsqlè¯­å¥ä¸åˆæ³•
      */
     public int getObjectCountRaw(String query) {
-        // ¸ù¾İsqlÓï¾äµÃ³ö¼ÆËã×ÜÊıµÄsql²éÑ¯Óï¾ä
+        // æ ¹æ®sqlè¯­å¥å¾—å‡ºè®¡ç®—æ€»æ•°çš„sqlæŸ¥è¯¢è¯­å¥
         // Otherwise, we have to load the count from the db.
         int docCount = 0;
         Connection conn = new Connection(connname);
@@ -129,7 +129,7 @@ public abstract class ObjectDb implements IObjectDb {
      *
      * @param sql String
      * @param startIndex int
-     * @return Object[] ´æ·ÅµÄÊÇ¶ÔÓ¦ÓÚÖ÷¼üµÄÖµ
+     * @return Object[] å­˜æ”¾çš„æ˜¯å¯¹åº”äºä¸»é”®çš„å€¼
      */
     // abstract public Object[] getObjectBlock(String sql, int startIndex);
     public Object[] getObjectBlock(String query, String groupKey,
@@ -153,7 +153,7 @@ public abstract class ObjectDb implements IObjectDb {
     public ObjectBlockIterator getObjects(String query, String groupKey,
                                           int startIndex,
                                           int endIndex) {
-        // ¿ÉÄÜÈ¡µÃµÄinfoBlockÖĞµÄÔªËØµÄË³ĞòºÅĞ¡ÓÚendIndex
+        // å¯èƒ½å–å¾—çš„infoBlockä¸­çš„å…ƒç´ çš„é¡ºåºå·å°äºendIndex
         Object[] blockValues = getObjectBlock(query, groupKey, startIndex);
         // for (int i=0; i<blockValues.length; i++)
         //     logger.info("getObjects i=" + i + " " + blockValues[i]);
@@ -197,7 +197,7 @@ public abstract class ObjectDb implements IObjectDb {
             ResKeyException;
 
     /**
-     * ´ÓÊı¾İ¿âÖĞÈ¡µÃ¶ÔÏó
+     * ä»æ•°æ®åº“ä¸­å–å¾—å¯¹è±¡
      * @param objKey Object
      * @return Object
      */
@@ -218,7 +218,7 @@ public abstract class ObjectDb implements IObjectDb {
     }
 
     /**
-     * È«²¿µÄ¼ÇÂ¼ÁĞ±í£¬µ±¼ÇÂ¼²»¶àÊ±£¬¿ÉÒÔÊ¹ÓÃ±¾·½·¨£¬ÈçÁĞ³öÓÑÇéÁ´½Ó£¬¶øµ±¼ÇÂ¼ºÜ¶àÊ±£¬Ôò²»ÒËÊ¹ÓÃ
+     * å…¨éƒ¨çš„è®°å½•åˆ—è¡¨ï¼Œå½“è®°å½•ä¸å¤šæ—¶ï¼Œå¯ä»¥ä½¿ç”¨æœ¬æ–¹æ³•ï¼Œå¦‚åˆ—å‡ºå‹æƒ…é“¾æ¥ï¼Œè€Œå½“è®°å½•å¾ˆå¤šæ—¶ï¼Œåˆ™ä¸å®œä½¿ç”¨
      * @param QUERY_LIST String
      * @return Vector
      */
@@ -228,7 +228,7 @@ public abstract class ObjectDb implements IObjectDb {
         Vector result = new Vector();
         Connection conn = new Connection(connname);
         try {
-            // È¡µÃ×Ü¼ÇÂ¼ÌõÊı
+            // å–å¾—æ€»è®°å½•æ¡æ•°
             String countsql = SQLFilter.getCountSql(QUERY_LIST);
             rs = conn.executeQuery(countsql);
             if (rs != null && rs.next()) {
@@ -242,14 +242,14 @@ public abstract class ObjectDb implements IObjectDb {
             conn.prepareStatement(QUERY_LIST);
             if (total != 0) {
                 // sets the limit of the maximum number of rows in a ResultSet object
-                conn.setMaxRows(total); // ¾¡Á¿¼õÉÙÄÚ´æµÄÊ¹ÓÃ
+                conn.setMaxRows(total); // å°½é‡å‡å°‘å†…å­˜çš„ä½¿ç”¨
             }
             rs = conn.executePreQuery();
             if (rs == null) {
                 return result;
             } else {
                 // defines the number of rows that will be read from the database when the ResultSet needs more rows
-                rs.setFetchSize(total); // rsÒ»´Î´ÓPOOLÖĞËù»ñÈ¡µÄ¼ÇÂ¼Êı
+                rs.setFetchSize(total); // rsä¸€æ¬¡ä»POOLä¸­æ‰€è·å–çš„è®°å½•æ•°
                 if (rs.absolute(1) == false) {
                     return result;
                 }
@@ -310,11 +310,11 @@ public abstract class ObjectDb implements IObjectDb {
     }
 
     /**
-     * ÀàËÆÓÚHiebernateÖĞµÄlist£¬´Ó»º´æÖĞÈ¡³ö¶ÔÏó£¬µ«ÓÖÓĞËùÇø±ğ£¬ÒòÎª×Ü¼ÇÂ¼ÌõÊıÒ²ÊÇÈ¡×Ô»º´æ
-     * È¡µÃµÄ¼ÇÂ¼ÔÚResultSetÖĞµÄË÷ÒıÎª start+1 ~ end+1£¬×Ü¹²Îªend-start+1Ìõ
+     * ç±»ä¼¼äºHiebernateä¸­çš„listï¼Œä»ç¼“å­˜ä¸­å–å‡ºå¯¹è±¡ï¼Œä½†åˆæœ‰æ‰€åŒºåˆ«ï¼Œå› ä¸ºæ€»è®°å½•æ¡æ•°ä¹Ÿæ˜¯å–è‡ªç¼“å­˜
+     * å–å¾—çš„è®°å½•åœ¨ResultSetä¸­çš„ç´¢å¼•ä¸º start+1 ~ end+1ï¼Œæ€»å…±ä¸ºend-start+1æ¡
      * @param sql String
-     * @param start int ´Ó0¿ªÊ¼ËãÆğ
-     * @param end int µ±ÄÜ¹»È¡Âúend-start+1ÌõÊı¾İÊ±£¬listµÄ×îºóÒ»Ìõ¼ÇÂ¼ÔÚResultSetÖĞµÄË÷ÒıÎªend+1
+     * @param start int ä»0å¼€å§‹ç®—èµ·
+     * @param end int å½“èƒ½å¤Ÿå–æ»¡end-start+1æ¡æ•°æ®æ—¶ï¼Œlistçš„æœ€åä¸€æ¡è®°å½•åœ¨ResultSetä¸­çš„ç´¢å¼•ä¸ºend+1
      * @return Vector
      */
     public Vector list(String sql, int start, int end) {
@@ -323,7 +323,7 @@ public abstract class ObjectDb implements IObjectDb {
         Vector result = new Vector();
         Connection conn = new Connection(connname);
         try {
-            // È¡µÃ×Ü¼ÇÂ¼ÌõÊı
+            // å–å¾—æ€»è®°å½•æ¡æ•°
             String countsql = SQLFilter.getCountSql(sql);
             rs = conn.executeQuery(countsql);
             if (rs != null && rs.next()) {
@@ -337,7 +337,7 @@ public abstract class ObjectDb implements IObjectDb {
             conn.prepareStatement(sql);
             if (total != 0) {
                 // sets the limit of the maximum number of rows in a ResultSet object
-                conn.setMaxRows(end + 1); // ¾¡Á¿¼õÉÙÄÚ´æµÄÊ¹ÓÃ
+                conn.setMaxRows(end + 1); // å°½é‡å‡å°‘å†…å­˜çš„ä½¿ç”¨
             }
             rs = conn.executePreQuery();
             if (rs == null) {
@@ -345,7 +345,7 @@ public abstract class ObjectDb implements IObjectDb {
             } else {
                 // defines the number of rows that will be read from the database when the ResultSet needs more rows
                 int count = end - start + 1;
-                rs.setFetchSize(count); // rsÒ»´Î´ÓPOOLÖĞËù»ñÈ¡µÄ¼ÇÂ¼Êı
+                rs.setFetchSize(count); // rsä¸€æ¬¡ä»POOLä¸­æ‰€è·å–çš„è®°å½•æ•°
                 if (rs.absolute(start + 1) == false) {
                     return result;
                 }
@@ -426,7 +426,7 @@ public abstract class ObjectDb implements IObjectDb {
 
         Connection conn = new Connection(connname);
         try {
-            // È¡µÃ×Ü¼ÇÂ¼ÌõÊı
+            // å–å¾—æ€»è®°å½•æ¡æ•°
             String countsql = SQLFilter.getCountSql(listsql);
             rs = conn.executeQuery(countsql);
             if (rs != null && rs.next()) {
@@ -437,7 +437,7 @@ public abstract class ObjectDb implements IObjectDb {
                 rs = null;
             }
 
-            // ·ÀÖ¹ÊÜµ½¹¥»÷Ê±£¬curPage±»ÖÃÎªºÜ´ó£¬»òÕßºÜĞ¡
+            // é˜²æ­¢å—åˆ°æ”»å‡»æ—¶ï¼ŒcurPageè¢«ç½®ä¸ºå¾ˆå¤§ï¼Œæˆ–è€…å¾ˆå°
             int totalpages = (int) Math.ceil((double) total / pageSize);
             if (curPage > totalpages) {
                 curPage = totalpages;
@@ -447,7 +447,7 @@ public abstract class ObjectDb implements IObjectDb {
             }
 
             if (total != 0) {
-                conn.setMaxRows(curPage * pageSize); // ¾¡Á¿¼õÉÙÄÚ´æµÄÊ¹ÓÃ
+                conn.setMaxRows(curPage * pageSize); // å°½é‡å‡å°‘å†…å­˜çš„ä½¿ç”¨
             }
 
             rs = conn.executeQuery(listsql);
@@ -496,7 +496,7 @@ public abstract class ObjectDb implements IObjectDb {
             }
         } catch (SQLException e) {
             logger.error("listResult:" + e.getMessage());
-            throw new ErrMsgException("Êı¾İ¿â³ö´í£¡");
+            throw new ErrMsgException("æ•°æ®åº“å‡ºé”™ï¼");
         } finally {
             if (rs != null) {
                 try {

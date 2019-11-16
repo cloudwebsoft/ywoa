@@ -197,15 +197,6 @@ while (irMap.hasNext()) {
 	requestParamInputs += "<input type='hidden' name='" + key + "' value='" + val + "' />";	
 }
 querystr += requestParams;
-
-int is_workLog = msd.getInt("is_workLog");
-		
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
 %>
 <table class="percent98" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>

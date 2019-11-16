@@ -17,7 +17,10 @@ String name = privilege.getUser(request);
 String op = ParamUtil.get(request, "op");
 String action = ParamUtil.get(request, "action");
 String orderBy = ParamUtil.get(request, "orderBy");
-String order = ParamUtil.get(request, "order");
+String sort = ParamUtil.get(request, "sort");
+if ("".equals(sort)) {
+	sort = "desc";
+}
 String kind = ParamUtil.get(request, "kind");
 if (kind.equals(""))
 	kind = "title";
@@ -54,11 +57,11 @@ if(orderBy.equals("")) {
 	} else if(orderBy.equals("bySender")) {
 		sql += " order by sender";
 	} else if(orderBy.equals("byDate")) {
-		sql += " order by send_time";
+		sql += " order by rq";
 	} else {
 		sql += " order by " + orderBy;
 	}
-	if(order.equals("asc")) {
+	if(sort.equals("asc")) {
 		sql += " asc";
 	} else {
 		sql += " desc";
@@ -209,7 +212,7 @@ o("menu2").className="current";
 <div style="height:5px"></div>
 <%
 	String orderOp = "";
-	if(order.equals("") || order.equals("desc")) {
+	if(sort.equals("") || sort.equals("desc")) {
 		orderOp = "asc";
 	} else {
 		orderOp = "desc";
@@ -229,9 +232,9 @@ o("menu2").className="current";
     <tr>
       <th width="40" style="cursor:pointer"><input id="checkbox" name="checkbox" type="checkbox" onclick="if (this.checked) selAllCheckBox('ids'); else deSelAllCheckBox('ids')" /></th>
       <th width="500" style="cursor:pointer">标题</th>
-      <th width="120" style="cursor:pointer">发送者</th>
-      <th width="120" style="cursor:pointer">等级</th>
-      <th width="150" style="cursor:pointer">日期</th>
+      <th width="120" style="cursor:pointer" abbr="bySender">发送者</th>
+      <th width="120" style="cursor:pointer" abbr="msg_level">等级</th>
+      <th width="150" style="cursor:pointer" abbr="byDate">日期</th>
     </tr>
     </thead>
 <%
@@ -276,7 +279,8 @@ o("menu2").className="current";
     </tr>
     <%}%>
   </table><%
-	  String querystr = "action=" + action + "&op=" + op + "&kind=" + kind + "&what=" + StrUtil.UrlEncode(what) + "&orderBy=" + orderBy + "&order=" + order;
+	String querystr = "action=" + action + "&op=" + op + "&kind=" + kind + "&what=" + StrUtil.UrlEncode(what) + "&orderBy=" + orderBy + "&sort=" + sort;
+	String querystrWithoutSort = "action=" + action + "&op=" + op + "&kind=" + kind + "&what=" + StrUtil.UrlEncode(what);
  	  //out.print(paginator.getCurPageBlock("sys_message.jsp?"+querystr));
 	  %>
 </form>
@@ -304,9 +308,9 @@ flex = $("#grid").flexigrid
 			{display: 'ISO', name : 'iso'},
 			{display: 'Name', name : 'name', isdefault: true}
 			],
-		sortname: "iso",
-		sortorder: "asc",
 		*/
+		sortname: "<%=orderBy%>",
+		sortorder: "<%=sort%>",
 		url: false,
 		usepager: true,
 		checkbox: false,
@@ -413,7 +417,7 @@ function action(com, grid) {
 }
 
 function changeSort(sortname, sortorder) {
-	window.location.href = "sys_message.jsp?<%=querystr%>&pagesize=" + flex.getOptions().rp + "&orderBy=" + sortname + "&sort=" + sortorder;
+	window.location.href = "sys_message.jsp?<%=querystrWithoutSort%>&pagesize=" + flex.getOptions().rp + "&orderBy=" + sortname + "&sort=" + sortorder;
 }
 
 function changePage(newp) {

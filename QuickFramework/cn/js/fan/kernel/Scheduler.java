@@ -36,7 +36,7 @@ public class Scheduler extends Thread {
     }
 
     /**
-     * µ¥Ì¬Ä£Ê½
+     * å•æ€æ¨¡å¼
      * @param updateInterval long
      */
     public static synchronized void initInstance(long updateInterval) {
@@ -77,7 +77,7 @@ public class Scheduler extends Thread {
     public synchronized void UnitsOperate(ISchedulerUnit isu, boolean AddTrueDelFalse) {
         if (AddTrueDelFalse) {
             /*
-            ´Ë´¦Ëã·¨²»ÕıÈ·£¬»áÎŞ´Ë¾³µØaddElement£¬ÒòÎªcontainsÅĞ¶Ï²»ÕıÈ·,Òò´ËÔÚConfigµÄinitSchedulerÖĞÏÈ×÷Çå³ı
+            æ­¤å¤„ç®—æ³•ä¸æ­£ç¡®ï¼Œä¼šæ— æ­¤å¢ƒåœ°addElementï¼Œå› ä¸ºcontainsåˆ¤æ–­ä¸æ­£ç¡®,å› æ­¤åœ¨Configçš„initSchedulerä¸­å…ˆä½œæ¸…é™¤
             if (!units.contains(isu)) {
                 units.addElement(isu);
                 logger.info("UnitsOperate: addElement " + isu);

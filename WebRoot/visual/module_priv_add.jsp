@@ -45,9 +45,8 @@ function setUsers(user, userRealName) {
 function openWinUsers() {
 	selUserNames = $('#form1 #name').val();
 	selUserRealNames = $('#form1 #userRealName').val();
-	showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
+	openWin('../user_multi_sel.jsp', 800, 600);
 }
-
 </script>
 </head>
 <body>
@@ -109,7 +108,7 @@ while (irrole.hasNext()) {
       </tr>
       <tr align="center" class="row">
         <td style="PADDING-LEFT: 10px">
-        <input type="button" class="btn" onclick="showModalDialog('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="选择角色" />
+        <input type="button" class="btn" onclick="openWin('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600)" value="选择角色" />
           &nbsp;&nbsp;
           <input type="submit" class="btn" value="确定" />
           <input name="tabIdOpener" value="<%=tabIdOpener%>" type="hidden" />

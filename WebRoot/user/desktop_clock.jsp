@@ -31,12 +31,11 @@ if (clockCode.equals("")) {
 }
 Date date=new Date();
 DateFormat format=new SimpleDateFormat("EEEE yyyy-MM-dd HH:mm");
-String time=format.format(date); 
+String time=format.format(date);
 %>
-
-<div id="drag_<%=id%>" class="portlet drag_div bor" style="padding:0px;" >
+<div id="drag_<%=id%>" class="portlet drag_div bor ibox" style="padding:0px;" >
   <div id="drag_<%=id%>_h" style="height:3px;padding:0px;margin:0px; font-size:1px"></div>
-  <div class="portlet_content" style="padding:0px;margin:0px; padding-bottom:5px; overflow:visible;">
+  <div class="portlet_content ibox-content" style="padding:0px;margin:0px; padding-bottom:5px; overflow:visible;">
 		<div style="text-align:center"><%=clockCode%></div>
 		<div style="text-align:center;margin-top:10px;" id="drag_<%=id%>_time"><%=time %></div>
   </div>

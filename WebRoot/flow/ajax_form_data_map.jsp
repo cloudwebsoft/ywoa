@@ -87,8 +87,9 @@ for (int i=0; i<ary.length(); i++) {
 		ModuleSetupDb msd = new ModuleSetupDb();
 		msd = msd.getModuleSetupDbOrInit(nestFormCode);
 		
-		String listField = StrUtil.getNullStr(msd.getString("list_field"));
-		String[] fields = StrUtil.split(listField, ",");
+		// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		String[] fields = msd.getColAry(false, "list_field");
+		
 		int len = fields.length;
 		
 		String sql = "select id from " + FormDb.getTableName(nestFormCode) + " where cws_id=" + StrUtil.sqlstr("" + sourceFlowId) + " order by cws_order";

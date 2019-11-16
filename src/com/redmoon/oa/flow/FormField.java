@@ -67,11 +67,11 @@ public class FormField implements Cloneable,Serializable {
      */
     public static final int HIDE_NONE = 0;
     /**
-     * 流程中编辑和显示时均隐藏
+     * 流程中编辑和显示时及模块显示、添加、编辑时均隐藏
      */
     public static final int HIDE_ALWAYS = 1;
     /**
-     * 流程中仅编辑时隐藏
+     * 流程及模块中仅编辑时隐藏
      */
     public static final int HIDE_EDIT = 2;
 
@@ -423,8 +423,24 @@ public class FormField implements Cloneable,Serializable {
 
             if (mu!=null) {
                 IFormMacroCtl ictl = mu.getIFormMacroCtl();
-                if (ictl != null)
-                    ps.setString(index, (String) ictl.getValueForCreate(flowId, this));
+                if (ictl != null) {
+                    Object obj = ictl.getValueForCreate(flowId, this);
+                    if (obj instanceof Integer) {
+                        ps.setInt(index, (Integer) obj);
+                    }
+                    else if (obj instanceof Long) {
+                        ps.setLong(index, (Long)obj);
+                    }
+                    else if (obj instanceof Double) {
+                        ps.setDouble(index, (Double)obj);
+                    }
+                    else if (obj instanceof Float) {
+                        ps.setDouble(index, (Float)obj);
+                    }
+                    else {
+                        ps.setString(index, (String) obj);
+                    }
+                }
                 else {
                     ps.setString(index, "");
                     LogUtil.getLog(getClass()).error(getTitle() + " " + getName() +
@@ -573,7 +589,9 @@ public class FormField implements Cloneable,Serializable {
             MacroCtlMgr mm = new MacroCtlMgr();
             MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
             // LogUtil.getLog(getClass()).info("createDAOVisual: mu=" + mu + " fieldName=" + name + " value=" + (String)mu.getIFormMacroCtl().getValueForCreate(flowId, this));
-            ps.setString(index, (String)mu.getIFormMacroCtl().getValueForCreate(this, fu, fd));
+            // 赋予值，否则在FormDAOMgr中当调用fdao.create(request, fu);后，在添加事件中保存fdao，就可能会使得attachmentctl的值为空
+            value = (String)mu.getIFormMacroCtl().getValueForCreate(this, fu, fd);
+            ps.setString(index, value);
         }
         else if (getType().equals(TYPE_SQL)) {
             ps.setString(index, "");
@@ -774,8 +792,8 @@ public class FormField implements Cloneable,Serializable {
     	}
     	
         if (getType().equals(TYPE_MACRO)) { //  && ff.getMacroType().equals(ff.MACRO_WORKFLOW_SEQUENCE)) {
-            MacroCtlMgr mm = new MacroCtlMgr();
-            MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
+//            MacroCtlMgr mm = new MacroCtlMgr();
+//            MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
             ps.setString(index, val);
         }
         else if (getType().equals(TYPE_SQL)) {
@@ -1149,9 +1167,6 @@ public class FormField implements Cloneable,Serializable {
      * 保存智能表单模块表单中的数据，用于FormDAO.save()
      * @param ps PreparedStatement
      * @param index int
-     * @param formDAOId int
-     * @param fd FormDb
-     * @param fu FileUpload
      * @throws SQLException
      */
     public void saveDAOVisual(PreparedStatement ps, int index) throws SQLException {
@@ -1783,12 +1798,12 @@ public class FormField implements Cloneable,Serializable {
             else {
                 String[] ary = StrUtil.split(present, "\\|");
                 if (ary.length==2) {
-                    // checkbox的value为空或者1，当不选时，值为空
-                    if ("".equals(value)) {
-                        return ary[0];
+                    // checkbox的value为空或者1，当不选时，值为空（注意导入时会因默认值为0从而生成0，而添加时，不选中则数据库中值为空）
+                    if ("1".equals(value)) {
+                        return ary[1];
                     }
                     else {
-                        return ary[1];
+                        return ary[0];
                     }
                 }
                 else if (ary.length==1) {
@@ -1805,6 +1820,9 @@ public class FormField implements Cloneable,Serializable {
             }
         }
 	    else {
+            if (getFieldType()==FormField.FIELD_TYPE_PRICE) {
+                value = NumberUtil.round(StrUtil.toDouble(value, 0), 2);
+            }
 	        return StrUtil.getNullStr(value);
         }
     }

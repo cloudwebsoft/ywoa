@@ -111,7 +111,9 @@ public class JdbcTemplate {
             // 检查链接是否存在
             checkConnection();
 
-            rs = connection.executeQuery(sql);
+            connection.prepareStatement(sql);
+            rs = connection.executePreQuery();
+            // rs = connection.executeQuery(sql); // 可能会导致速度慢，故用executePreQuery
             if (rs == null) {
                 return new ResultIterator();
             } else {

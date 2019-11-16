@@ -6,6 +6,7 @@ import java.sql.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.*;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
 import org.apache.log4j.*;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
@@ -136,6 +137,21 @@ public class Attachment implements java.io.Serializable {
             }
         }
         return re;
+    }
+
+    public Attachment getAttachment(int docId, String fieldName) {
+        String sql = "select id from flow_document_attach where doc_id=? and field_name=?";
+        JdbcTemplate jt = new JdbcTemplate();
+        try {
+            ResultIterator ri = jt.executeQuery(sql, new Object[]{docId, fieldName});
+            if (ri.hasNext()) {
+                ResultRecord rr = (ResultRecord)ri.next();
+                return new Attachment(rr.getInt(1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public int getId() {

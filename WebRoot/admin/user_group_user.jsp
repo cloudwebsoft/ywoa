@@ -14,6 +14,11 @@
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <script src="../inc/common.js"></script>
+<script type="text/javascript" src="../js/jquery1.7.2.min.js"></script>
+<script src="../js/jquery-ui/jquery-ui.js"></script>
+<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
 <script>
 var selUserNames = "";
 var selUserRealNames = "";
@@ -74,7 +79,7 @@ if (op.equals("add")) {
 	else {
 		UserGroupDb ugd = new UserGroupDb();
 		ugd.addUsers(groupCode, users);
-		out.print(StrUtil.Alert_Redirect("操作成功！", "user_group_user.jsp?group_code=" + StrUtil.UrlEncode(groupCode)));
+		out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "user_group_user.jsp?group_code=" + StrUtil.UrlEncode(groupCode)));
 		return;
 	}
 }
@@ -83,16 +88,16 @@ else if (op.equals("del")) {
 	UserGroupDb ugd = new UserGroupDb();
 	boolean re = ugd.delUser(groupCode, userName);
 	if (re)
-		out.print(StrUtil.Alert_Redirect("操作成功！", "user_group_user.jsp?group_code=" + StrUtil.UrlEncode(groupCode)));
+		out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "user_group_user.jsp?group_code=" + StrUtil.UrlEncode(groupCode)));
 	else {
-		out.print(StrUtil.Alert_Back("操作失败！"));
+		out.print(StrUtil.jAlert_Back("操作失败！", "提示"));
 		return;
 	}
 }
 else if (op.equals("delBatch")) {
 	String[] ids = ParamUtil.getParameters(request, "ids");
 	if (ids==null) {
-		out.print(StrUtil.Alert_Back("请选择记录！"));
+		out.print(StrUtil.jAlert_Back("请选择记录！", "提示"));
 		return;
 	}
 	UserGroupDb ugd = new UserGroupDb();
@@ -102,7 +107,7 @@ else if (op.equals("delBatch")) {
 		String uName = ary[1];
 		ugd.delUser(gCode, uName);
 	}
-	out.print(StrUtil.Alert_Redirect("操作成功！", "user_group_user.jsp?group_code=" + StrUtil.UrlEncode(groupCode)));
+	out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "user_group_user.jsp?group_code=" + StrUtil.UrlEncode(groupCode)));
 	return;
 }
 %>
@@ -128,6 +133,16 @@ String genderdesc;
 %>
 <br>
 <form id="formGroupUser" name="formGroupUser" action="user_group_user.jsp" method="post">
+	<table width="253" align="center" class="percent80">
+		<tr>
+			<td colspan="7" align="left">
+				<input class="btn" title="选择人员" onclick="openWinUsers()" type="button" value="选择" />
+				&nbsp;&nbsp;
+				<input class="btn" type="button" value="删除" onclick="delBatch()" />
+				<input type="hidden" name="op" value="delBatch" />
+				<input type="hidden" name="group_code" value="<%=groupCode%>" /></td>
+		</tr>
+	</table>
 <table class="tabStyle_1 percent80" cellSpacing="0" cellPadding="3" width="95%" align="center">
   <tbody>
     <tr>
@@ -191,16 +206,6 @@ while (ri.hasNext()) {
 <%}%>
   </tbody>
 </table>
-<table width="253" align="center" class="percent80">
-  <tr>
-    <td colspan="7" align="left">
-      <input class="btn" title="选择人员" onclick="openWinUsers()" type="button" value="选择" />
-	  &nbsp;&nbsp;    
-      <input class="btn" type="button" value="删除" onclick="delBatch()" />
-      <input type="hidden" name="op" value="delBatch" />
-      <input type="hidden" name="group_code" value="<%=groupCode%>" /></td>
-  </tr>
-</table>
 </form>
 <form name="form1" style="display:none" action="user_group_user.jsp?op=add" method="post">
 <table class="tabStyle_1 percent80" width="80%" border="0" align="center" cellpadding="0" cellspacing="0">
@@ -215,7 +220,7 @@ while (ri.hasNext()) {
   <tr>
     <td align="center"><span class="TableData">
   &nbsp;&nbsp;
-  <input class="btn" title="清空收件人" onclick="form1.users.value='';form1.userRealNames.value=''" type="button" value="清空" name="button" />
+  <input class="btn" title="清空" onclick="form1.users.value='';form1.userRealNames.value=''" type="button" value="清空" name="button" />
       </span>
       &nbsp;&nbsp;
       <input class="btn" type="submit" value="确定"></td></tr>
@@ -242,15 +247,18 @@ function delBatch(){
 		}
 	}
 
-	if (checkedboxs==0){
-	    alert("请先选择记录！");
+	if (checkedboxs==0) {
+	    jAlert("请先选择记录！", "提示");
 		return;
 	}
-	if (confirm("您确定要删除么？")) {
-		formGroupUser.action = "user_group_user.jsp";
-		formGroupUser.op.value = "delBatch";
-		formGroupUser.submit();
-	}
+
+	jConfirm("您确定要删除么？", "提示", function(r) {
+		if (r) {
+			o("action").value = "user_group_user.jsp";
+			o("op").value = "delBatch";
+			o("formGroupUser").submit();
+		}
+	})
 }
 
 function selAllCheckBox(checkboxname){

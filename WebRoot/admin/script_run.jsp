@@ -46,14 +46,14 @@ if (!myscript.equals("")) {
 		StringBuffer sb = new StringBuffer();
 	
 		// 赋值给用户
-		sb.append("userName=\"" + privilege.getUser(request)
-				+ "\";");
+		sb.append("userName=\"" + privilege.getUser(request) + "\";");
 		bsh.set("request", request);
 		bsh.set("out", out);
 	
 		bsh.eval(sb.toString());
-	
+		
 		myscript = myscript.replaceAll("System.out.println\\(", "out.print\\(\"<BR>\" + ");
+		myscript = myscript.replaceAll("System.out.print\\(", "out.print\\(");
 		bsh.eval(myscript);
 		/*
 		Object obj = bsh.get("ret");
@@ -73,13 +73,18 @@ if (!myscript.equals("")) {
 		out.print("<BR />-----------------操作失败，以下为脚本----------------------<BR />");
 		out.print(StrUtil.toHtml(myscript));
 		return;
+	} catch (Exception e) {
+		out.print(StrUtil.toHtml(StrUtil.trace(e)));
+		out.print("<BR />-----------------操作失败，以下为脚本----------------------<BR />");
+		out.print(StrUtil.toHtml(myscript));
+		return;
 	}
 	
 	out.print("<BR />-----------------操作成功，以下为脚本----------------------<BR />");
 	out.print(StrUtil.toHtml(myscript));
 }
 %>
-<form id="formRun" name="formRun">
+<form id="formRun" name="formRun" method="post">
 <textarea id="myscript" name="myscript" style="display:none"></textarea>
 <input name="op" value="run" type="hidden" />
 </form>

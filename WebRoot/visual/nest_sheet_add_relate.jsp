@@ -6,6 +6,7 @@
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.util.*"%>
+<%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 /*
@@ -118,8 +119,9 @@ if (op.equals("saveformvalue")) {
 		return;
 	}
 	if (re) {
-		String listField = StrUtil.getNullStr(msd.getString("list_field"));
-		String[] fields = StrUtil.split(listField, ",");
+		// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		String[] fields = msd.getColAry(false, "list_field");
+		
 		int len = 0;
 		if (fields!=null)
 			len = fields.length;
@@ -169,6 +171,8 @@ if (op.equals("saveformvalue")) {
 	out.print(json);
 	return;
 }
+
+int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -193,7 +197,7 @@ if (op.equals("saveformvalue")) {
 
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
-<script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCodeRelated%>.jsp"></script>
+<script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCodeRelated%>.jsp?pageType=add_relate&moduleCode=<%=moduleCode%>&formCode=<%=formCode%>&parentId=<%=parentId%>&flowId=<%=flowId%>&actionId=<%=actionId%>"></script>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css" />
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/jquery.flexbox.js"></script>
 
@@ -256,10 +260,9 @@ if (isShowNav==1) {
 		</td>
     </tr>
     <tr>
-      <td height="30" align="center"><input class="btn" type="submit" name="Submit" value="确定" />
+      <td height="30" align="center"><input class="btn" type="submit" value="确定" />
       <input name="cws_id" value="<%=relateFieldValue%>" type="hidden" />
       <%
-      int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
       if (parentId!=-1 && flowId!=com.redmoon.oa.visual.FormDAO.NONEFLOWID) {%>
       <input name="cwsStatus" value="<%=com.redmoon.oa.flow.FormDAO.STATUS_NOT%>" type="hidden" />
       <%}%>
@@ -306,6 +309,12 @@ $(function() {
     // bind to the form's submit event
     var lastSubmitTime = new Date().getTime();
     $('#visualForm').submit(function() {
+		var lv_flowId = new LiveValidation('flowId');
+		if (!LiveValidation.massValidate(lv_flowId.formObj.fields)) {
+			jAlert(LiveValidation.liveErrMsg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+			return false;
+		}
+    	
         // 通过判断时间，禁多次重复提交
         var curSubmitTime = new Date().getTime();
         // 在0.5秒内的点击视为连续提交两次，实际当出现重复提交时，测试时间差为0
@@ -337,6 +346,8 @@ function showResponse(responseText, statusText, xhr, $form) {
             doFlow(data.fdaoId,data.tds,data.token);
         }
     }
+	if (data.msg != null)
+		data.msg = data.msg.replace(/\\r/ig, "<BR>");
     jAlert(data.msg, "提示");
 }
 

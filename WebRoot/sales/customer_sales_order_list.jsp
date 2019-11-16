@@ -260,12 +260,8 @@ if (totalpages==0)
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(formCodeRelated);
 		
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
 %>
 <table width="98%" border="0" cellpadding="0" cellspacing="0" id="grid">
   <thead>

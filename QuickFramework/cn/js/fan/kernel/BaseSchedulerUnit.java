@@ -15,9 +15,9 @@ import cn.js.fan.util.ErrMsgException;
  * @version 1.0
  */
 public class BaseSchedulerUnit implements ISchedulerUnit {
-    int count = -1; // count=-1±íÊ¾ÎŞÏŞ´Î
+    int count = -1; // count=-1è¡¨ç¤ºæ— é™æ¬¡
     public long lastTime = 0;
-    public long interval = 5000; // Ã¿¸ô5ÃëÔËĞĞÒ»´Î
+    public long interval = 5000; // æ¯éš”5ç§’è¿è¡Œä¸€æ¬¡
 
     int TYPE_INTERVAL = 0;
     int type = TYPE_INTERVAL;

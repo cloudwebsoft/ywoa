@@ -310,7 +310,6 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
      * 在验证前获取表单域的值，用于附件、图片宏控件不能为空的检查
      * @param request
      * @param fu
-     * @param flowId
      * @param ff
      */
     public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) throws CheckErrException {
@@ -398,4 +397,7 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
     public String getSqlForQuery(HttpServletRequest request, FormField ff, String value, boolean isBlur) {
 		return "";
 	}
+
+    public void onFormDAOSave(HttpServletRequest request, IFormDAO ifdao, FormField field,
+                              FileUpload fu) throws ErrMsgException {}
 }

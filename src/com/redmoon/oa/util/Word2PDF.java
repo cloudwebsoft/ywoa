@@ -2,6 +2,7 @@ package com.redmoon.oa.util;
 
 import java.io.File;
 
+import cn.js.fan.util.ErrMsgException;
 import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.ComThread;
 import com.jacob.com.Dispatch;
@@ -18,13 +19,15 @@ public class Word2PDF {
 	static final int wdFormatPDF = 17;// PDF 格式
 	static final int ppSaveAsPDF = 32;// PDF 格式 
 	
-    public static boolean convert2PDF(String inputFile, String pdfFile) {
+    public static boolean convert2PDF(String inputFile, String pdfFile) throws ErrMsgException {
 		System.out.println("启动Word...");
 		long start = System.currentTimeMillis();
+		boolean isJacobSeted = false;
 		ActiveXComponent app = null;
 		try {
 			// 此处为通过jacob实现转换
 			ComThread.InitSTA();
+			isJacobSeted = true;
 			app = new ActiveXComponent("Word.Application");
 			app.setProperty("Visible", false);
 
@@ -55,18 +58,21 @@ public class Word2PDF {
 		catch (NoClassDefFoundError e) {
 			// java.lang.NoClassDefFoundError: Could not initialize class com.jacob.com.ComThread
 			System.out.println("文档转换失败：jacob 尚未配置！");
-			e.printStackTrace();
-			return false;
+			// e.printStackTrace();
+			throw new ErrMsgException("文档转换失败：jacob 尚未配置！");
 		}
 		catch (Exception e) {
 			System.out.println("文档转换失败：" + e.getMessage());
-			e.printStackTrace();
+			// e.printStackTrace();
+			throw new ErrMsgException("文档转换失败：" + e.getMessage());
 		} finally {
-			if (app != null)
+			if (app != null) {
 				app.invoke("Quit", wdDoNotSaveChanges);
-			ComThread.Release();
+			}
+			if (isJacobSeted) {
+				ComThread.Release();
+			}
 		}
-		return false;
     }
     
 	public static void main(String[] args) {

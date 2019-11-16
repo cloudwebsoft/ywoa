@@ -72,33 +72,32 @@ if (op.equals("getLeaveCount")) {
 			out.print(json);
 			return;
     	}
-    	//根据登录账户获取工作时间
-    	UserInfoDb uad = new UserInfoDb();
-    	//uad = uad.getUserInfoDb(userName);
-    	JdbcTemplate jt = new JdbcTemplate();
-    	String sql = "select * from form_table_personbasic where user_name = ?";
-    	ResultIterator ri = jt.executeQuery(sql,new Object[]{userName});
-    	while(ri.hasNext()){
-    		ResultRecord rr = (ResultRecord)ri.next();
-    		String date = rr.getString("cjgzsj");
-    		// System.out.print(date+"---");
-    		java.util.Date workDate = DateUtil.parse(date + "-01", "yyyy-MM-dd");
-    		if (workDate==null) {
-    		// throw new ErrMsgException("用户" + user.getRealName() + "档案信息中的参加工作时间未填写！");
-			json.put("ret", "0");
-			json.put("msg", "用户" + user.getRealName() + "档案信息中的参加工作时间未填写！");
-			out.print(json);
-			return;
-    	}	
-    	}
 
-    	
-    	
-    	java.util.Date workDate = DateUtil.parse(uad.getJoinWorkDate() + "-01", "yyyy-MM-dd");
+    	//根据登录账户获取工作时间
+    	// UserInfoDb uad = new UserInfoDb();
+    	// uad = uad.getUserInfoDb(userName);
+		java.util.Date workDate = null;
+		JdbcTemplate jt = new JdbcTemplate();
+		String sql = "select * from form_table_personbasic where user_name = ?";
+		ResultIterator ri = jt.executeQuery(sql, new Object[]{userName});
+		if (ri.hasNext()) {
+			ResultRecord rr = (ResultRecord) ri.next();
+			String date = rr.getString("cjgzsj");
+			workDate = DateUtil.parse(date + "-01", "yyyy-MM-dd");
+			if (workDate == null) {
+				// throw new ErrMsgException("用户" + user.getRealName() + "档案信息中的参加工作时间未填写！");
+				json.put("ret", "0");
+				json.put("msg", "用户" + user.getRealName() + "人员信息中的参加工作时间未填写！");
+				out.print(json);
+				return;
+			}
+		}
+
+    	// java.util.Date workDate = DateUtil.parse(uad.getJoinWorkDate() + "-01", "yyyy-MM-dd");
     	if (workDate==null) {
     		// throw new ErrMsgException("用户" + user.getRealName() + "档案信息中的参加工作时间未填写！");
 			json.put("ret", "0");
-			json.put("msg", "用户" + user.getRealName() + "档案信息中的参加工作时间未填写！");
+			json.put("msg", "用户" + user.getRealName() + " 人员信息中的参加工作时间未填写！");
 			out.print(json);
 			return;
     	}				

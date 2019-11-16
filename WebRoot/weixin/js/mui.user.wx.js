@@ -132,12 +132,13 @@
 					if(e.index == 0) {
 						$.toast("选择成功!");
 						var isAt = self.options.isAt;
+						var isFree = self.options.isFree;
 						var code = self.options.code;
 						var internalName = self.options.internalName;
 						if(code !=''){
                             doneSelectUserWin(code,checkedValues,checkedRealNames)
 						}else{
-                            doneChooseUser(checkedValues,checkedRealNames,isAt, internalName);
+                            doneChooseUser(checkedValues,checkedRealNames,isAt, isFree, internalName);
                         }
 					}
 				});

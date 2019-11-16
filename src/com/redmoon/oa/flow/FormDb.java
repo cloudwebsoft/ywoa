@@ -4,10 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 import cn.js.fan.base.ObjectDb;
 import cn.js.fan.db.Conn;
@@ -16,21 +13,27 @@ import cn.js.fan.db.RMConn;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.visual.ModulePrivDb;
 import com.redmoon.oa.visual.ModuleRelateDb;
 import com.redmoon.oa.visual.ModuleSetupDb;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class FormDb extends ObjectDb {
 	
     String connname;
     
     private boolean log = false;
+
+    private FormParser formParser;
 
     public FormDb() {
         connname = Global.getDefaultDB();
@@ -55,10 +58,10 @@ public class FormDb extends ObjectDb {
         primaryKey = new PrimaryKey("code", PrimaryKey.TYPE_STRING);
         isInitFromConfigDB = false;
         QUERY_LOAD =
-                "SELECT code, name, content, isSystem, flowTypeCode,isFlow,has_attachment,unit_code,ie_version,is_log,is_new_dtctl,is_progress,is_only_camera,view_setup FROM " + tableName +
+                "SELECT code, name, content, isSystem, flowTypeCode,isFlow,has_attachment,unit_code,ie_version,is_log,is_new_dtctl,is_progress,is_only_camera,view_setup,check_setup FROM " + tableName +
                 " WHERE code=?";
         QUERY_SAVE =
-                "update " + tableName + " set name=?,content=?,flowTypeCode=?,has_attachment=?,ie_version=?,is_log=?,unit_code=?,is_new_dtctl=?,is_progress=?,is_only_camera=?,view_setup=?,isFlow=? where code=?";
+                "update " + tableName + " set name=?,content=?,flowTypeCode=?,has_attachment=?,ie_version=?,is_log=?,unit_code=?,is_new_dtctl=?,is_progress=?,is_only_camera=?,view_setup=?,isFlow=?,check_setup=? where code=?";
         QUERY_DEL = "delete from " + tableName + " where code=?";
         QUERY_CREATE = "insert into " + tableName +
                        " (code,name,content,orders,flowTypeCode,isFlow,has_attachment,unit_code,ie_version,is_log,is_new_dtctl,is_progress,is_only_camera) values (?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -72,11 +75,12 @@ public class FormDb extends ObjectDb {
         boolean re = false;
         try {
             // 解析content，在表form_field中建立相应的域
-            FormParser fp = new FormParser(content);
-            Vector v = fp.getFields();
+            // FormParser fp = new FormParser(content);
+            // Vector v = fp.getFields();
 
+            Vector v = formParser.getFields();
             // 检查其中的fields是否合法
-            fp.validateFields();
+            formParser.validateFields();
 
             conn = new Conn(connname);
             conn.beginTrans();
@@ -192,7 +196,7 @@ public class FormDb extends ObjectDb {
                          ". Now transaction rollback");
             conn.rollback();
             throw new ErrMsgException("插入时出错！");
-        } catch (ResKeyException e) {
+        } catch (Exception e) {
             throw new ErrMsgException(e.getMessage());
         } finally {
             if (conn != null) {
@@ -234,6 +238,7 @@ public class FormDb extends ObjectDb {
                 }
 
                 // 删除主副模块列表设置及权限设置
+                ModulePrivDb mpd = new ModulePrivDb();
                 ModuleSetupDb msd = new ModuleSetupDb();
                 sql = "select code from visual_module_setup where form_code=?";
                 Iterator ir = msd.list(sql, new Object[]{code}).iterator();
@@ -247,8 +252,7 @@ public class FormDb extends ObjectDb {
                     }
 
                     // 删除模块权限
-                    ModulePrivDb mpd = new ModulePrivDb();
-                    mpd.delPrivsOfModule(code);                	
+                    mpd.delPrivsOfModule(code);
                 }
 
                 // 删除关联记录
@@ -515,7 +519,11 @@ public class FormDb extends ObjectDb {
                     colName.equalsIgnoreCase("cws_flag") ||
                     colName.equalsIgnoreCase("cws_progress") ||
                     colName.equalsIgnoreCase("cws_parent_form") ||
-                    colName.equalsIgnoreCase("cws_order"))
+                    colName.equalsIgnoreCase("cws_order") ||
+                    colName.equalsIgnoreCase("cws_create_date") ||
+                    colName.equalsIgnoreCase("cws_modify_date") ||
+                    colName.equalsIgnoreCase("cws_finish_date"))
+
                     continue;
                 FormField ff = new FormField();
                 ff.setName(colName);
@@ -533,14 +541,14 @@ public class FormDb extends ObjectDb {
     }
 
     /*
-    * 仅保存content及viewSetup，用于setup3.jsp中对content中图片路径处理后的保存
+    * 仅保存content、viewSetup、checkSetup，用于setup3.jsp中对content中图片路径处理后的保存
     */
     public boolean saveContent() {
-        String sql = "update form set content=?,view_setup=? where code=?";
+        String sql = "update form set content=?,view_setup=?,check_setup=?,flowTypeCode=?,orders=? where code=?";
         boolean re = false;
         JdbcTemplate jt = new JdbcTemplate();
         try {
-            re = jt.executeUpdate(sql, new Object[] {content, viewSetup, code})==1;
+            re = jt.executeUpdate(sql, new Object[] {content, viewSetup, checkSetup, flowTypeCode, orders, code})==1;
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
@@ -553,10 +561,10 @@ public class FormDb extends ObjectDb {
         boolean re = false;
         try {
             // 解析content，在表form_field中建立相应的域
-            FormParser fp = new FormParser(content);
-            Vector newv = fp.getFields();
+            // FormParser fp = new FormParser(content);
+            formParser.validateFields();
+            Vector newv = formParser.getFields();
             // 检查其中的fields是否合法
-            fp.validateFields();
 
             Vector oldv = getTableColumnsFromDb();
             Vector[] vt = checkFieldChange(oldv, newv, fields);
@@ -620,7 +628,8 @@ public class FormDb extends ObjectDb {
             ps.setInt(10, onlyCamera?1:0);
             ps.setString(11, viewSetup);
             ps.setInt(12, flow?1:0);
-            ps.setString(13, code);
+            ps.setString(13, checkSetup);
+            ps.setString(14, code);
             re = conn.executePreUpdate() > 0 ? true : false;
             if (ps != null) {
                 ps.close();
@@ -741,7 +750,7 @@ public class FormDb extends ObjectDb {
             logger.error("save:" + StrUtil.trace(e));
 
             throw new ErrMsgException(e.getMessage());
-        } catch (ResKeyException e) {
+        } catch (Exception e) {
             throw new ErrMsgException(e.getMessage());
         } finally {
             if (conn != null) {
@@ -783,7 +792,7 @@ public class FormDb extends ObjectDb {
 
     /**
      * 根据表单域编码获取域
-     * @param fieldTitle String
+     * @param fieldName String
      * @return FormField
      */
     public FormField getFormField(String fieldName) {
@@ -825,6 +834,7 @@ public class FormDb extends ObjectDb {
                 progress = rs.getInt(12)==1;
                 onlyCamera = rs.getInt(13)==1;
                 viewSetup = StrUtil.getNullStr(rs.getString(14));
+                checkSetup = StrUtil.getNullStr(rs.getString(15));
                 loaded = true;
 
                 if (rs != null) {
@@ -1064,10 +1074,10 @@ public class FormDb extends ObjectDb {
                     String code = rs.getString(1);
                     FormDb ldb = getFormDb(code);
                     ldb.setOrders(ldb.getOrders() + 1);
-                    ldb.save();
+                    ldb.saveContent();
                 }
                 orders = orders - 1;
-                re = save();
+                re = saveContent();
             } else {
 
                 String sql = "select code from " + tableName +
@@ -1080,10 +1090,10 @@ public class FormDb extends ObjectDb {
                     String code = rs.getString(1);
                     FormDb ldb = getFormDb(code);
                     ldb.setOrders(ldb.getOrders() - 1);
-                    ldb.save();
+                    ldb.saveContent();
                 }
                 orders += 1;
-                re = save();
+                re = saveContent();
             }
             re = true;
 
@@ -1106,6 +1116,59 @@ public class FormDb extends ObjectDb {
     public Vector listOfFlow(String flowTypeCode) {
         String sql = "select code from form where flowTypeCode=" + StrUtil.sqlstr(flowTypeCode) + " and isFlow=1 order by orders asc";
         return list(sql);
+    }
+
+    public String getSqlList(HttpServletRequest request) {
+        Privilege privilege = new Privilege();
+        String name = ParamUtil.get(request, "name");
+        String isFlow = ParamUtil.get(request, "isFlow");
+        String op = ParamUtil.get(request, "op");
+        String flowTypeCode = ParamUtil.get(request, "flowTypeCode");
+        String curUnitCode = ParamUtil.get(request, "unitCode");
+        if (curUnitCode.equals("")) {
+            curUnitCode = privilege.getUserUnitCode(request);
+        }
+        String searchUnitCode = ParamUtil.get(request, "searchUnitCode");
+        if (!searchUnitCode.equals("")) {
+            curUnitCode = searchUnitCode;
+        }
+
+        String sql = "";
+        if (isFlow.equals("0")) {
+            sql = "select code from form where isFlow=0";
+        } else {
+            if (!flowTypeCode.equals(""))
+                sql = "select code from form where flowTypeCode=" + StrUtil.sqlstr(flowTypeCode) + " and isFlow=1";
+            else {
+                sql = "select code from form where isFlow=1";
+            }
+        }
+
+        if (op.equals("search")) {
+            if (!"".equals(searchUnitCode)) {
+                sql += " and unit_code=" + StrUtil.sqlstr(searchUnitCode);
+            }
+            if (!"".equals(name)) {
+                sql += " and (name like " + StrUtil.sqlstr("%" + name + "%")
+                        + "or code like " + StrUtil.sqlstr("%" + name + "%") + ")";
+            }
+        } else {
+            sql += " and unit_code=" + StrUtil.sqlstr(curUnitCode);
+        }
+
+        sql += " order by code asc";
+        return sql;
+    }
+
+    public boolean updateFieldProps(String title, String canNull, String canQuery, String canList, String orders, String width, String isMobileDisplay, String isHide, String moreThan, String morethanMode, int isUnique, String formCode, String name) {
+        String sql = "update form_field set title=?, canNull=?, canQuery=?, canList=?, orders=?, width=?, is_mobile_display=?, is_hide=?,more_than=?,more_than_mode=?,is_unique=? where formCode=? and name=?";
+        JdbcTemplate jt = new JdbcTemplate();
+        try {
+            return jt.executeUpdate(sql, new Object[]{title, canNull, canQuery, canList, orders, width, isMobileDisplay, isHide, moreThan, morethanMode, isUnique, formCode, name})==1;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public void setIeVersion(String ieVersion) {
@@ -1166,6 +1229,7 @@ public class FormDb extends ObjectDb {
     private boolean onlyCamera = false;
     
     private String viewSetup;
+    private String checkSetup;
 
 	public String getViewSetup() {
 		return viewSetup;
@@ -1174,4 +1238,20 @@ public class FormDb extends ObjectDb {
 	public void setViewSetup(String viewSetup) {
 		this.viewSetup = viewSetup;
 	}
+
+    public String getCheckSetup() {
+        return checkSetup;
+    }
+
+    public void setCheckSetup(String checkSetup) {
+        this.checkSetup = checkSetup;
+    }
+
+    public FormParser getFormParser() {
+        return formParser;
+    }
+
+    public void setFormParser(FormParser formParser) {
+        this.formParser = formParser;
+    }
 }

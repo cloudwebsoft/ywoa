@@ -147,7 +147,7 @@
             FormDb fd = new FormDb();
             fd = fd.getFormDb(moveleaf.getFormCode());
             fd.setFlowTypeCode(parent_code);
-            fd.save();
+            fd.saveContent();
         }
 
         json.put("ret", "1");

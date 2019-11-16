@@ -6,34 +6,105 @@
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.dept.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
+<%@ page import="org.json.JSONObject" %>
 <jsp:useBean id="docmanager" scope="page" class="com.redmoon.oa.fileark.DocumentMgr"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
-String priv="admin.flow";
-if (!privilege.isUserPrivValid(request,priv)) {
-	out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-	return;
-}
-
-String typeCode = ParamUtil.get(request, "typeCode");
-String typeName = "";
-if (!typeCode.equals("")) {
-	Leaf lf = new Leaf();
-	lf = lf.getLeaf(typeCode);
-	if (lf!=null)
-		typeName = "&nbsp;-&nbsp;"+lf.getName()+"&nbsp;";
-}
-
-LeafPriv lp = new LeafPriv(typeCode);
-if (lp.canUserQuery(privilege.getUser(request)) || lp.canUserExamine(privilege.getUser(request)))
-	;
-else {
-	%>
-	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-	<%
-	out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"), true));
-	return;
-}
+	String priv="admin.flow";
+	if (!privilege.isUserPrivValid(request,priv)) {
+		out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+		return;
+	}
+	
+	String typeCode = ParamUtil.get(request, "typeCode");
+	String typeName = "";
+	if (!typeCode.equals("")) {
+		Leaf lf = new Leaf();
+		lf = lf.getLeaf(typeCode);
+		if (lf!=null)
+			typeName = "&nbsp;-&nbsp;"+lf.getName()+"&nbsp;";
+	}
+	
+	LeafPriv lp = new LeafPriv(typeCode);
+	if (lp.canUserQuery(privilege.getUser(request)) || lp.canUserExamine(privilege.getUser(request)))
+		;
+	else {
+		%>
+		<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+		<%
+		out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"), true));
+		return;
+	}
+	
+	String strcurpage = StrUtil.getNullString(request.getParameter("CPages"));
+	if (strcurpage.equals(""))
+		strcurpage = "1";
+	if (!StrUtil.isNumeric(strcurpage)) {
+		out.print(StrUtil.makeErrMsg("标识非法！"));
+		return;
+	}
+	int pagesize = 20;
+	int curpage = Integer.parseInt(strcurpage);
+	
+	String op = ParamUtil.get(request, "op");
+	String by = ParamUtil.get(request, "by");
+	String what = ParamUtil.get(request, "what");
+	String status = ParamUtil.get(request, "status");
+	
+	String fromDate = ParamUtil.get(request, "fromDate");
+	String toDate = ParamUtil.get(request, "toDate");
+	
+	String action = ParamUtil.get(request, "action");
+	if (action.equals("del")) {
+		JSONObject json = new JSONObject();
+		try {
+			String ids = ParamUtil.get(request, "ids");
+			String[] ary = StrUtil.split(ids, ",");
+			if (ary!=null) {
+				for (int i=0; i<ary.length; i++) {
+					int flow_id = StrUtil.toInt(ary[i]);
+					WorkflowMgr wm = new WorkflowMgr();
+					WorkflowDb wf = wm.getWorkflowDb(flow_id);
+					// 判断用户是否拥有管理权
+					if (!lp.canUserExamine(privilege.getUser(request))) {
+						json.put("ret", "0");
+						json.put("msg", cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+						out.print(json);
+						return;
+					}
+					wf.del();
+				}
+			}
+		}
+		catch (ErrMsgException e) {
+			e.printStackTrace();
+			// out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
+			json.put("ret", "0");
+			json.put("msg", e.getMessage());
+			out.print(json);
+			return;
+		}
+		json.put("ret", "1");
+		json.put("msg", "操作成功！");
+		out.print(json);
+		return;
+	}
+	else if (action.equals("delToDustbin")) {
+		String ids = ParamUtil.get(request, "ids");
+		String[] ary = StrUtil.split(ids, ",");
+		if (ary!=null) {
+			for (int i=0; i<ary.length; i++) {
+				int flowId = StrUtil.toInt(ary[i]);
+				WorkflowMgr wm = new WorkflowMgr();
+				wm.del(request, flowId);
+			}
+		}
+		JSONObject json = new JSONObject();
+		json.put("ret", "1");
+		json.put("msg", "操作成功！");
+		out.print(json);
+		return;
+	}
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -79,80 +150,6 @@ else {
 o("menu5").className="current";
 </script>
 <%
-String strcurpage = StrUtil.getNullString(request.getParameter("CPages"));
-if (strcurpage.equals(""))
-	strcurpage = "1";
-if (!StrUtil.isNumeric(strcurpage)) {
-	out.print(StrUtil.makeErrMsg("标识非法！"));
-	return;
-}
-int pagesize = 20;
-int curpage = Integer.parseInt(strcurpage);
-
-String op = ParamUtil.get(request, "op");
-String by = ParamUtil.get(request, "by");
-String what = ParamUtil.get(request, "what");
-String status = ParamUtil.get(request, "status");
-
-String fromDate = ParamUtil.get(request, "fromDate");
-String toDate = ParamUtil.get(request, "toDate");
-
-String action = ParamUtil.get(request, "action");
-if (action.equals("del")) {
-	try {
-		String ids = ParamUtil.get(request, "ids");
-		String[] ary = StrUtil.split(ids, ",");
-		if (ary!=null) {
-			for (int i=0; i<ary.length; i++) {
-				int flow_id = StrUtil.toInt(ary[i]);
-				WorkflowMgr wm = new WorkflowMgr();
-				WorkflowDb wf = wm.getWorkflowDb(flow_id);
-				// 判断用户是否拥有管理权
-				if (!lp.canUserExamine(privilege.getUser(request))) {
-					out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-					return;
-				}
-				wf.del();
-				out.print(StrUtil.jAlert_Redirect("删除成功！","提示", "flow_list.jsp?op=" + op + "&CPages=" + strcurpage + "&by=" + by + "&typeCode=" + StrUtil.UrlEncode(typeCode) + "&status=" + status + "&what=" + StrUtil.UrlEncode(what)));
-			}
-		}
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
-	}
-	return;
-}
-else if (action.equals("delToDustbin")) {
-	String ids = ParamUtil.get(request, "ids");
-	String[] ary = StrUtil.split(ids, ",");
-	if (ary!=null) {
-		for (int i=0; i<ary.length; i++) {
-			int flow_id = StrUtil.toInt(ary[i]);
-			WorkflowMgr wm = new WorkflowMgr();
-			WorkflowDb wf = wm.getWorkflowDb(flow_id);
-			// 判断用户是否拥有管理权
-			if (!lp.canUserExamine(privilege.getUser(request))) {
-				out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-				return;
-			}
-			wf.setStatus(WorkflowDb.STATUS_DELETED);
-			wf.save();
-			
-			Leaf lf = new Leaf();
-			lf = lf.getLeaf(wf.getTypeCode());
-			com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
-			FormDb fd = new FormDb();
-			fd = fd.getFormDb(lf.getFormCode());
-			fdao = fdao.getFormDAO(wf.getId(), fd);
-			// 将表单置为被删除状态
-			fdao.setStatus(com.redmoon.oa.flow.FormDAO.STATUS_DELETED);
-			fdao.save();
-			out.print(StrUtil.jAlert_Redirect("删除至回收站成功！","提示", "flow_list.jsp?op=" + op + "&CPages=" + strcurpage + "&by=" + by + "&typeCode=" + StrUtil.UrlEncode(typeCode) + "&status=" + status + "&what=" + StrUtil.UrlEncode(what)));
-		}
-	}
-	return;	
-}
-
 WorkflowDb wf = new WorkflowDb();
 
 String sql = "select id from flow where status<>" + WorkflowDb.STATUS_NONE + " and status<>" + WorkflowDb.STATUS_DELETED;
@@ -187,7 +184,7 @@ if (op.equals("search")) {
 				sql = "select id from flow f where 1=1";
 			}
 			else {
-				sql = "select id from flow f where id=" + what;
+				sql = "select id from flow f where id=" + StrUtil.toInt(what, -1);
 			}
 		}
 		else {
@@ -262,7 +259,7 @@ if (v!=null)
 	<!--<option value="">不限</option>-->
 	<option value="title">标题</option>
 	<option value="user">发起人</option>
-	<option value="ID">流程ID</option>
+	<option value="ID">流程号</option>
 	</select>
 	&nbsp;
 	<input name="what" value="<%=what%>" size="10" />	
@@ -310,17 +307,23 @@ if (op.equals("search")) {
   </tr>
 </form>  
 </table>
-<table style="margin-bottom:5px" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
-  <tr>
-    <td width="36%" height="24" align="left"><%if (lp.canUserExamine(privilege.getUser(request))) {%>
-      <input class="btn" type="button" onclick="doDel()" value="删除" />
-      <%}%></td>
-    <td width="64%" align="right">找到符合条件的记录 <b><%=paginator.getTotal() %></b> 条　每页显示 <b><%=paginator.getPageSize() %></b> 条　页次<%=paginator.getCurrentPage() %>/<%=paginator.getTotalPages() %>&nbsp;&nbsp;&nbsp;&nbsp;
-      <%
-	String querystr = "op=" + op + "&by=" + by + "&typeCode=" + StrUtil.UrlEncode(typeCode) + "&what=" + StrUtil.UrlEncode(what) + "&status=" + status + "&fromDate=" + fromDate + "&toDate=" + toDate;
-    out.print(paginator.getCurPageBlock("?"+querystr, "up"));%></td>
-  </tr>
-</table>
+	<table style="margin-bottom:5px" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+		<tr>
+			<td width="36%" height="24" align="left"><%if (lp.canUserExamine(privilege.getUser(request))) {%>
+				<input class="btn" type="button" onClick="doDel()" value="删除"/>
+				&nbsp;&nbsp;
+				<input class="btn" type="button" title="使流程图的节点更新生效" onClick="refreshBatch()" value="刷新"/>
+				&nbsp;&nbsp;
+				<input class="btn" type="button" title="放弃流程" onClick="discardBatch()" value="放弃"/>
+				<%}%></td>
+			<td width="64%" align="right">找到符合条件的记录 <b><%=paginator.getTotal() %>
+			</b> 条　每页显示 <b><%=paginator.getPageSize() %>
+			</b> 条　页次<%=paginator.getCurrentPage() %>/<%=paginator.getTotalPages() %>&nbsp;&nbsp;&nbsp;&nbsp;
+				<%
+					String querystr = "op=" + op + "&by=" + by + "&typeCode=" + StrUtil.UrlEncode(typeCode) + "&what=" + StrUtil.UrlEncode(what) + "&status=" + status + "&fromDate=" + fromDate + "&toDate=" + toDate;
+					out.print(paginator.getCurPageBlock("?" + querystr, "up"));%></td>
+		</tr>
+	</table>
 <table id="mainTable" width="98%" class="tabStyle_1 percent98">
  <thead>
     <tr>
@@ -353,7 +356,7 @@ while (ir.hasNext()) {
 	if (user!=null)
 		userRealName = user.getRealName();	
 	%>
-    <tr class="highlight">
+    <tr id="tr_<%=wfd.getId()%>" class="highlight">
       <td align="center"><input type="checkbox" name="ids" value="<%=wfd.getId()%>" /></td>
       <td align="center"><%=WorkflowMgr.getLevelImg(request, wfd)%></td>
       <td align="center"><%=wfd.getId()%></td>
@@ -385,12 +388,12 @@ while (ir.hasNext()) {
       -->
       <%
 	  // if (lf.isDebug() && wfd.getStatus()!=WorkflowDb.STATUS_FINISHED && wfd.getStatus()!=WorkflowDb.STATUS_REFUSED && wfd.getStatus()!=WorkflowDb.STATUS_DISCARDED && privilege.isUserPrivValid(request, "admin")) {
-	  if (lf.isDebug() && privilege.isUserPrivValid(request, "admin.flow")) {		  
+	  if (privilege.isUserPrivValid(request, "admin.flow")) {
 	  %>
-      &nbsp;&nbsp;<a href="javascript:;" onclick="refreshFlow('<%=wfd.getId()%>')" title="调试模式下使流程图的节点更新生效">刷新</a>
+      &nbsp;&nbsp;<a href="javascript:;" onClick="refreshFlow('<%=wfd.getId()%>')" title="使流程图的节点更新生效">刷新</a>
       <%}%>
       <%if (wfd.getStatus()==WorkflowDb.STATUS_DELETED) {%>
-      &nbsp;&nbsp;<a href="javascript:;" onclick="recover('<%=wfd.getId()%>')">恢复</a>
+      &nbsp;&nbsp;<a href="javascript:;" onClick="recover('<%=wfd.getId()%>')">恢复</a>
       <%}%>
 	  </td>
     </tr>
@@ -407,27 +410,59 @@ while (ir.hasNext()) {
 </div>
 </body>
 <script language="javascript">
-function doDel() {
-	var ids = getCheckboxValue("ids");
-	if (ids=="") {
-		jAlert("请选择流程！","提示");
-		return;
-	}
-	var action = "del";
-	var msg = "您确定要删除吗？";
-	<%if (status.equals(String.valueOf(WorkflowDb.STATUS_DELETED))) {%>
-	msg = "您确定要彻底删除么？";
-	<%}else{%>
-	msg = "您确定要删除至回收站么？";
-	action = "delToDustbin";
-	<%}%>
-	jConfirm(msg,"提示",function(r){
-		if(!r){return;}
-		else{
-			window.location.href = "flow_list.jsp?action=" + action + "&ids=" + ids + "&CPages=<%=strcurpage%>&op=<%=op%>&by=<%=by%>&typeCode=<%=StrUtil.UrlEncode(typeCode)%>&what=<%=StrUtil.UrlEncode(what)%>&status=<%=status%>";
+	function doDel() {
+		var ids = getCheckboxValue("ids");
+		if (ids == "") {
+			jAlert("请选择流程！", "提示");
+			return;
 		}
-	})
-}
+		var action = "del";
+		var msg = "您确定要删除吗？";
+		<%if (status.equals(String.valueOf(WorkflowDb.STATUS_DELETED))) {%>
+		msg = "您确定要彻底删除么？";
+		<%}else{%>
+		msg = "您确定要删除至回收站么？";
+		action = "delToDustbin";
+		<%}%>
+		jConfirm(msg, "提示", function (r) {
+			if (!r) {
+				return;
+			} else {
+				$.ajax({
+					type: "post",
+					url: "flow_list.jsp",
+					data: {
+						action: action,
+						typeCode: "<%=typeCode%>",
+						ids: ids
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('#bodyBox').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						jAlert(data.msg, "提示");
+						if (data.ret == "1") {
+							var ary = ids.split(',');
+							for (var i = 0; i < ary.length; i++) {
+								$('#tr_' + ary[i]).remove();
+							}
+						}
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('#bodyBox').hideLoading();
+						// $('#tdStatus' + flowId).html('<%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_STARTED)%>');
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						jAlert(XMLHttpRequest.responseText, "提示");
+					}
+				});
+				// window.location.href = "flow_list.jsp?action=" + action + "&ids=" + ids + "&CPages=<%=strcurpage%>&op=<%=op%>&by=<%=by%>&typeCode=<%=StrUtil.UrlEncode(typeCode)%>&what=<%=StrUtil.UrlEncode(what)%>&status=<%=status%>";
+			}
+		})
+	}
 
 function selAllCheckBox(checkboxname) {
 	var checkboxboxs = document.getElementsByName(checkboxname);
@@ -497,11 +532,48 @@ function recover(flowId) {
 		if(!r){return;}
 		else{
 			$.ajax({
+				type: "post",
+				url: "../flow/flow_do.jsp",
+				data: {
+					op: "recover",
+					flowId: flowId
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('#bodyBox').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					jAlert(data.msg, "提示");
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('#bodyBox').hideLoading();
+					$('#tdStatus' + flowId).html('<%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_STARTED)%>');
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					jAlert(XMLHttpRequest.responseText, "提示");
+				}
+			});
+		}
+	})	
+}
+
+function refreshBatch() {
+	var ids = getCheckboxValue("ids");
+	if (ids=="") {
+		jAlert("请选择流程！","提示");
+		return;
+	}
+	jConfirm("您确定要刷新么？","提示",function(r){
+		if(!r){return;}
+		else{
+			$.ajax({
 			type: "post",
 			url: "../flow/flow_do.jsp",
 			data : {
-				op: "recover",
-				flowId: flowId
+				op: "refreshFlowBatch",
+				ids: ids
 			},
 			dataType: "html",
 			beforeSend: function(XMLHttpRequest){
@@ -512,8 +584,7 @@ function recover(flowId) {
 				jAlert(data.msg,"提示");
 			},
 			complete: function(XMLHttpRequest, status){
-				$('#bodyBox').hideLoading();
-				$('#tdStatus' + flowId).html('<%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_STARTED)%>');			
+				$('#bodyBox').hideLoading();				
 			},
 			error: function(XMLHttpRequest, textStatus){
 				// 请求出错处理
@@ -521,7 +592,49 @@ function recover(flowId) {
 			}
 		});	
 		}
-	})	
+	})
+}
+
+function discardBatch() {
+	var ids = getCheckboxValue("ids");
+	if (ids=="") {
+		jAlert("请选择流程！","提示");
+		return;
+	}
+	jConfirm("您确定要放弃么？","提示",function(r){
+		if(!r){return;}
+		else{
+			$.ajax({
+				type: "post",
+				url: "../flow/flow_do.jsp",
+				data : {
+					op: "discardFlowBatch",
+					ids: ids
+				},
+				dataType: "html",
+				beforeSend: function(XMLHttpRequest){
+					$('#bodyBox').showLoading();
+				},
+				success: function(data, status){
+					data = $.parseJSON(data);
+					jAlert(data.msg,"提示");
+					if (data.ret=="1") {
+						var ary = ids.split(",");
+						for (var i=0; i<ary.length; i++) {
+							$('#tdStatus' + ary[i]).html('<%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_DISCARDED)%>');
+						}
+					}
+				},
+				complete: function(XMLHttpRequest, status){
+					$('#bodyBox').hideLoading();
+				},
+				error: function(XMLHttpRequest, textStatus){
+					// 请求出错处理
+					jAlert(XMLHttpRequest.responseText,"提示");
+				}
+			});
+		}
+	})
 }
 
 function refreshFlow(flowId) {

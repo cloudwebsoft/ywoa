@@ -1,6 +1,7 @@
 package com.cloudwebsoft.framework.security;
 
 import java.io.FileInputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import org.jdom.Document;
 import java.io.FileOutputStream;
@@ -40,8 +41,13 @@ public class ProtectConfig {
 
     public static void init() {
         if (!isInited) {
-            xmlPath = confURL.getPath();
-            xmlPath = URLDecoder.decode(xmlPath);
+            // xmlPath = confURL.getPath(); // 如果有空格，会转换为%20
+            xmlPath = confURL.getFile();
+            try {
+                xmlPath = URLDecoder.decode(xmlPath, "utf-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
 
             SAXBuilder sb = new SAXBuilder();
             try {

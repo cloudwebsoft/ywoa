@@ -8,8 +8,8 @@ function nestSheetJump(title, url,nest_sheet){
 	window.parent.nestSheetJumpPage(title,url,nest_sheet);
 }
 
-function doneChooseUser(names,realNames,isAt,internalName){
-	window.parent.closeChooseUser(names,realNames,isAt,internalName);
+function doneChooseUser(names,realNames,isAt, isFree, internalName){
+	window.parent.closeChooseUser(names,realNames,isAt, isFree, internalName);
 	window.parent.closeIframe();
 }
 function doneSelectUserWin(code,names,realNames){
@@ -20,7 +20,10 @@ function doneSelectUserWin(code,names,realNames){
 function doneLocation(code,lat,lon,address){
 	window.parent.closeLocation(code,lat,lon,address);
 	window.parent.closeIframe();
-	
+}
+function doneWritePad(code, val) {
+    window.parent.closeWritePad(code, val);
+    window.parent.closeIframe();
 }
 
 function IsPC(){    

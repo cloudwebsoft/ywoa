@@ -15,6 +15,7 @@
 <%@ page import="com.redmoon.oa.oacalendar.*"%>
 <%@ page import="com.redmoon.oa.visual.FormUtil"%>
 <%@ page import="com.redmoon.oa.visual.ModuleSetupDb"%>
+<%@ page import="org.apache.commons.lang3.StringUtils" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -43,6 +44,10 @@
             width: 120px;
             display: block;
             float: left;
+        }
+
+        input[readonly]{
+            background-color: #ddd;
         }
     </style>
     <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -84,14 +89,12 @@
             return;
         }
 
-// 如果存在子流程，则处理子流程
+        // 如果存在子流程，则处理子流程
         if (mad.getSubMyActionId() != MyActionDb.SUB_MYACTION_ID_NONE) {
             response.sendRedirect("flow_dispose.jsp?myActionId=" + mad.getSubMyActionId());
             return;
         }
-
-// System.out.println(getClass() + " " + mad.getUserName() + " " + mad.getProxyUserName() + " " + myname);
-
+        
         if (!mad.getUserName().equalsIgnoreCase(myname) && !mad.getProxyUserName().equalsIgnoreCase(myname)) {
             // 权限检查
             out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid")));
@@ -136,18 +139,29 @@
 
         WorkflowPredefineDb wfp = new WorkflowPredefineDb();
         wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
-
-        if (wa.getStatus() == WorkflowActionDb.STATE_DOING || wa.getStatus() == WorkflowActionDb.STATE_RETURN)
-            ;
+        boolean isRecall = wfp.isRecall(); // 是否能撤回
+    
+        // 如果流程已结束，有可能待办流程窗口开着，但只需其中一人处理
+        if (wa.getStatus() == WorkflowActionDb.STATE_DOING || wa.getStatus() == WorkflowActionDb.STATE_RETURN) {
+            if (wf.getStatus() == WorkflowDb.STATUS_DISCARDED) {
+                String str = LocalUtil.LoadString(request, "res.flow.Flow", "flowDiscarded");
+                out.print(SkinUtil.makeErrMsg(request, str));
+                return;
+            }
+        }
         else {
             // 有可能会是重激活的情况，或者是异或聚合的情况
             if (!wfp.isReactive() && !wa.isXorAggregate()) {
+                // 如果是wa已处理的情况，有可能出现当前用户提交后再反复刷新页面致进入此处
+                /*
                 if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_CHECKED) {
-                    mad.setCheckStatus(MyActionDb.CHECK_STATUS_CHECKED);
-                    mad.setCheckDate(new java.util.Date());
-                    mad.setChecker(UserDb.SYSTEM);
-                    mad.save();
-                }
+                            mad.setCheckStatus(MyActionDb.CHECK_STATUS_CHECKED);
+                            mad.setCheckDate(new java.util.Date());
+                            mad.setChecker(UserDb.SYSTEM);
+                            mad.setResult(LocalUtil.LoadString(request, "res.flow.Flow", "systemAutoAccessedWhenDisposeNotDoing"));
+                            mad.save();
+                        }
+                */
                 String str = LocalUtil.LoadString(request, "res.flow.Flow", "processStatus");
                 String str1 = LocalUtil.LoadString(request, "res.flow.Flow", "mayHaveBeenProcess");
                 String str2 = LocalUtil.LoadString(request, "res.flow.Flow", "showFlow_a");
@@ -169,6 +183,7 @@
                         mad.setCheckStatus(MyActionDb.CHECK_STATUS_CHECKED);
                         mad.setCheckDate(new java.util.Date());
                         mad.setChecker(UserDb.SYSTEM);
+                        mad.setResult(LocalUtil.LoadString(request, "res.flow.Flow", "systemAutoAccessedWhenDisposeIsReactive"));
                         mad.save();
                     }
                     wf.setStatus(WorkflowDb.STATUS_NOT_STARTED);
@@ -188,12 +203,12 @@ if (wa.getStatus()!=wa.STATE_DOING && wa.getStatus()!=wa.STATE_RETURN) {
 }
 */
 
-// 锁定流程
+        // 锁定流程
         if (wa.getKind() != WorkflowActionDb.KIND_READ) {
             wfm.lock(wf, myname);
         }
 
-// 如果是未读状态
+        // 如果是未读状态
         if (!mad.isReaded()) {
             mad.setReaded(true);
             mad.setReadDate(new java.util.Date());
@@ -206,15 +221,15 @@ if (wa.getStatus()!=wa.STATE_DOING && wa.getStatus()!=wa.STATE_RETURN) {
         Leaf lf = new Leaf();
         lf = lf.getLeaf(wf.getTypeCode());
 
-// 置嵌套表需要用到的cwsId
+        // 置嵌套表需要用到的cwsId
         request.setAttribute("cwsId", "" + flowId);
-// 置嵌套表需要用到的pageType
+        // 置嵌套表需要用到的pageType
         request.setAttribute("pageType", "flow");
-// 置NestFromCtl及NestSheetCtl需要用到的workflowActionId
+        // 置NestFromCtl及NestSheetCtl需要用到的workflowActionId
         request.setAttribute("workflowActionId", "" + wa.getId());
-// 置macro_js_ntko.jsp中需要用到的myActionId
+        // 置macro_js_ntko.jsp中需要用到的myActionId
         request.setAttribute("myActionId", "" + myActionId);
-// 置NestSheetCtl需要用到的formCode
+        // 置NestSheetCtl需要用到的formCode
         request.setAttribute("formCode", lf.getFormCode());
 
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
@@ -656,9 +671,9 @@ if (wa.getStatus()!=wa.STATE_DOING && wa.getStatus()!=wa.STATE_RETURN) {
         // 审批文件，并作痕迹保留
         function ReviseByUserColor(user, colorindex, doc_id, file_id) {
             <%if (wa.isStart==0) {%>
-            openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=1", 800, 600);
+            openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=1", 1024, 768);
             <%}else{%>
-            openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=0", 800, 600);
+            openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=0", 1024, 768);
             <%}%>
         }
 
@@ -695,7 +710,7 @@ if (wa.getStatus()!=wa.STATE_DOING && wa.getStatus()!=wa.STATE_RETURN) {
             openWin("paper/paper_distribute.jsp?flowId=" + flowId + "&actionId=<%=actionId%>&myActionId=<%=myActionId%>", 800, 600);
             return;
 
-            var ret = showModalDialog('dept_multi_sel.jsp?isOnlyUnitCheckable=true&isIncludeChild=false', window.self, 'dialogWidth:480px;dialogHeight:320px;status:no;help:no;')
+            var ret = openWin('dept_multi_sel.jsp?isOnlyUnitCheckable=true&isIncludeChild=false', 800, 600);
             if (ret == null)
                 return;
 
@@ -834,6 +849,28 @@ if (wa.getStatus()!=wa.STATE_DOING && wa.getStatus()!=wa.STATE_RETURN) {
     </script>
 </head>
 <body onLoad="window_onload()">
+<style>
+    #loading {
+        position: fixed;
+        z-index: 400;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0%;
+        text-align: center;dx-
+        font-size: 0.9rem;
+        color: #595758;
+        background-color: #ffffff;
+/*
+        filter: alpha(Opacity=60);
+        -moz-opacity: 0.6;
+        opacity: 0.6;
+*/
+    }
+</style>
+<div id="loading">
+    <img src="images/loading.gif" alt="loading.." style="margin-top:50px" />
+</div>
 <div id="bodyBox">
 <div id="toolbar" style="height:36px;clear:both"></div>
 <%@ include file="inc/tip_phrase.jsp"%>
@@ -849,6 +886,13 @@ DocumentMgr dm = new DocumentMgr();
 Document doc = dm.getDocument(doc_id);
 Render rd = new Render(request, wf, doc);
 String content = rd.rend(wa);
+
+String spanNextUserDis = "";
+String strIsShowNextUsers = WorkflowActionDb.getActionProperty(wpd, wa.getInternalName(), "isShowNextUsers");
+boolean isNotShowNextUsers = strIsShowNextUsers!=null && strIsShowNextUsers.equals("0");
+if (isNotShowNextUsers) {
+    spanNextUserDis = "display:none";
+}
 %>
 <form id="flowForm" name="flowForm" action="flow_dispose_do.jsp" method="post" enctype="multipart/form-data">
 <table width="100%" border="0" align="center" cellpadding="2" cellspacing="0" style="background-color:#f4f4f4; border:1px solid #cccccc;">
@@ -858,7 +902,7 @@ String content = rd.rend(wa);
       <tr>
         <td align="left">
         <!--<img src="images/man.gif" width="16" height="16" align="absmiddle" />&nbsp;提交给&nbsp;→&nbsp;-->
-        <span id="spanNextUser">
+        <span id="spanNextUser" style="<%=spanNextUserDis%>">
         <jsp:include page="flow_dispose_ajax.jsp">
         <jsp:param name="myActionId" value="<%=myActionId%>" />
         <jsp:param name="actionId" value="<%=actionId%>" />
@@ -985,13 +1029,30 @@ String content = rd.rend(wa);
 	          <%if (wf.isStarted()) {%>
               &nbsp;<lt:Label res="res.flow.Flow" key="organDate"/>： <%=DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd HH:mm")%>
               <%}%>
-			  &nbsp;&nbsp;<lt:Label res="res.flow.Flow" key="rem"/>：
-<input id="cwsWorkflowResult" name="cwsWorkflowResult" size="30" style="border:1px solid #cccccc; color:#888888;width:200px;" value="<%=StrUtil.HtmlEncode(mad.getResult())%>" />
+                <%
+                    if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
+                        if (wpd.isReactive()) {
+                %>
+                <span style="color: red;" title="流程正在变更中">正在变更</span>
+                <%
+                        }
+                    }
+                %>
+			    &nbsp;&nbsp;<lt:Label res="res.flow.Flow" key="rem"/>：
+                <input id="cwsWorkflowResult" name="cwsWorkflowResult" size="30" style="border:1px solid #cccccc; color:#888888;width:250px;" value="<%=StrUtil.HtmlEncode(mad.getResult())%>" />
       </div>
       <table id="designerTable" width="100%" border="0" cellspacing="0" cellpadding="0">
           <tr>
             <td align="center">
-            <%if (canUserSeeDesignerWhenDispose.equals("true")) {
+            <%
+                boolean canUserSeeFlowImage = cfg.getBooleanProperty("canUserSeeFlowImage");
+                if (canUserSeeFlowImage) { //  && !"".equals(wf.getImgVisualPath())) {
+                %>
+                    <div id="Designer" class="flow-image-box" style="width:0px; height:0px; overflow-x:scroll; overflow-y: scroll;">
+                    </div>
+                <%
+                }
+                else if (canUserSeeDesignerWhenDispose.equals("true")) {
                   if (flowExpireUnit.equals("day")){
                   	  String str1 = LocalUtil.LoadString(request,"res.flow.Flow","day");
                       flowExpireUnit = str1;
@@ -1000,8 +1061,14 @@ String content = rd.rend(wa);
                   	  String str1 = LocalUtil.LoadString(request,"res.flow.Flow","hour");
                       flowExpireUnit = str1;
                   }
+                  
+                  boolean isOem = License.getInstance().isOem();
+                  String codeBase = "";
+                  if (!isOem) {
+                      codeBase = "codebase=\"activex/cloudym.CAB#version=1,3,0,0\"";
+                  }
             %>
-            <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" codebase="activex/cloudym.CAB#version=1,3,0,0" style="width:0px; height:0px;">
+            <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" <%=codeBase%> style="width:0px; height:0px;">
                 <param name="Workflow" value="<%=wf.getFlowString()%>" />
                 <param name="Mode" value="<%=mode%>" />
                 <!--debug user initiate complete-->
@@ -1014,10 +1081,6 @@ String content = rd.rend(wa);
                   <param name="Key" value="<%=license.getKey()%>" />
 		          <param name="LicenseType" value="<%=license.getType()%>" />
             </object>
-			<script>
-			// IE9不支持下面的操作
-            // o("Designer").Workflow = flowForm.textareaFlowString.value;
-            </script>
             <%}%>
             </td>
           </tr>
@@ -1032,10 +1095,16 @@ String content = rd.rend(wa);
                         <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="task"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="startTime"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="handleTime"/></td>
+                          <%
+                              if (cfg.getBooleanProperty("flowPerformanceDisplay")) {
+                          %>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="remainTime"/></td>
                         <td class="tabStyle_1_title" width="5%" align="center"><lt:Label res="res.flow.Flow" key="timeSpent"/>
                         (<%=flowExpireUnit%>)</td>
                         <td class="tabStyle_1_title" width="4%" align="center"><lt:Label res="res.flow.Flow" key="achievements"/></td>
+                          <%
+                              }
+                          %>
                         <td class="tabStyle_1_title" width="6%" align="center"><lt:Label res="res.flow.Flow" key="handle"/></td>
                         <td class="tabStyle_1_title" width="12%" align="center"><lt:Label res="res.flow.Flow" key="rem"/></td>
                       </tr>
@@ -1105,6 +1174,9 @@ while (ir.hasNext()) {
                         <td><%=wad.getTitle()%></td>
                         <td align="center"><%=DateUtil.format(madPro.getReceiveDate(), "yy-MM-dd HH:mm")%></td>
                         <td align="center"><%=DateUtil.format(madPro.getCheckDate(), "yy-MM-dd HH:mm")%></td>
+                          <%
+                              if (cfg.getBooleanProperty("flowPerformanceDisplay")) {
+                          %>
                         <td align="center">
 						<%
 						String remainDateStr = "";
@@ -1134,6 +1206,9 @@ while (ir.hasNext()) {
 					  %>
                         </td>
                         <td align="center"><%=NumberUtil.round(madPro.getPerformance(), 2)%> </td>
+                          <%
+                              }
+                          %>
                         <td align="center">
 						<%
 						if (madPro.getChecker().equals(UserDb.SYSTEM)) {
@@ -1641,7 +1716,7 @@ while (ir.hasNext()) {
   <td>
     <input name="plusUsers" id="plusUsers" type="hidden" value="" />
     <input name="plusUserRealNames" readonly wrap="yes" id="plusUserRealNames" />
-    <input class="btn" title="<lt:Label res='res.flow.Flow' key='selectUser'/>" onClick="showModalDialog('user_multi_sel.jsp',window.self,'dialogWidth:900px;dialogHeight:730px;status:no;help:no;')" type="button" value="<lt:Label res='res.flow.Flow' key='choose'/>" />
+    <input class="btn" title="<lt:Label res='res.flow.Flow' key='selectUser'/>" onclick="openWin('user_multi_sel.jsp', 900, 730)" type="button" value="<lt:Label res='res.flow.Flow' key='choose'/>" />
   </td>
 </tr>
 </table>
@@ -1728,7 +1803,10 @@ while (irFields.hasNext()) {
 
 			// System.out.println(getClass() + " nestFormCode=" + nestFormCode);
 
-			String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+			/// String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+            String[] fields = msd.getColAry(false, "list_field");
+            String listField = "," + StrUtil.getNullStr(StringUtils.join(fields, ",")) + ",";
+            
 			Iterator ir2 = nestfd.getFields().iterator();
 			while (ir2.hasNext()) {
 				FormField ff2 = (FormField)ir2.next();
@@ -1802,7 +1880,10 @@ while (irFields.hasNext()) {
 			ModuleSetupDb msd = new ModuleSetupDb();
 			msd = msd.getModuleSetupDbOrInit(nestFormCode);
 
-			String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+			// String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+            String[] fields = msd.getColAry(false, "list_field");
+            String listField = "," + StrUtil.getNullStr(StringUtils.join(fields, ",")) + ",";
+            
 			Iterator ir2 = nestfd.getFields().iterator();
 			while (ir2.hasNext()) {
 				FormField ff2 = (FormField)ir2.next();
@@ -2173,6 +2254,32 @@ function hideDesigner() {
 	}
 }
 
+function detectZoom() {
+    var ratio = 1,
+        screen = window.screen;
+    var os = getOS();
+    if (os == 1) { // ie
+        if (window.devicePixelRatio) {
+            ratio = window.devicePixelRatio;
+        }
+        else if (screen.deviceXDPI && screen.logicalXDPI) {
+            ratio = screen.deviceXDPI / screen.logicalXDPI;
+        }
+    } else if (os == 3) { // chrome
+        ratio = window.top.outerWidth / window.top.innerWidth;
+    }
+    else if (window.outerWidth !== undefined && window.innerWidth !== undefined) { // firefox、opera
+        if (window.devicePixelRatio) {
+            ratio = window.devicePixelRatio;
+        }
+        else {
+            ratio = window.outerWidth / window.innerWidth;
+        }
+    }
+    ratio = Math.round(ratio * 100) / 100;
+    return ratio;
+}
+
 function ShowDesigner() {
 	/*
 	// 如果这样处理，会使得officeedit控件崩溃
@@ -2183,11 +2290,45 @@ function ShowDesigner() {
 		o("designerTable").style.display = "";
 	}
 	*/
-	if (!o("Designer"))
+    if (!o("Designer"))
 		return;
 	if (o("Designer").style.width=="0px") {
-		o("Designer").style.width = "80%";
-		o("Designer").style.height = "515px";
+        <%
+        if (canUserSeeFlowImage) {
+            // 如果点击速度过快的话，此时流程图还未生成
+            String flowImagePath = cfg.get("flowImagePath");
+            Date myDate = wf.getMydate();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(myDate);
+            String year = String.valueOf(cal.get(cal.YEAR));
+            String month = String.valueOf(cal.get(cal.MONTH) + 1);
+            String vpath = flowImagePath + "/" + year + "/" + month;
+            // 加入rand，以使得每次点击按钮查看流程图时，从服务器再获取一次
+        %>
+        $('#Designer').html('<img id="flowImage" src="<%=vpath%>/<%=wf.getId()%>.jpg?rand=' + Math.random() + '" style="width:2593px; height:2161px;"/>');
+        // 使图片保持原来的尺寸，不受浏览器的缩放影响
+        var radio = detectZoom();
+        // 如果是chrome且radio小于1
+        if (getOS()==3 && radio<1) {
+            $('#flowImage').width($('#flowImage').width() * radio);
+            $('#flowImage').height($('#flowImage').height() * radio);
+        }
+        else if (radio > 1) {
+            $('#flowImage').width($('#flowImage').width() / radio);
+            $('#flowImage').height($('#flowImage').height() / radio);
+        }
+        
+        o("Designer").style.width = "1000px";
+        o("Designer").style.height = "490px";
+		<%
+		}
+        else {
+        %>
+        o("Designer").style.width = "80%";
+        o("Designer").style.height = "515px";
+        <%
+        }
+		%>
 		o("Designer").style.marginTop = "10px";
 	}
 	else {
@@ -2274,10 +2415,6 @@ function doLinkProject(prjId, prjName) {
 }
 
 function setPerson(deptCode, deptName, user, userRealName) {
-	/*
-	form1.userRealName.value = userRealName;
-	form1.userName.value = user;
-	*/
 	if (userRealName == null || userRealName == ""){
 	   jAlert('<lt:Label res="res.flow.Flow" key="setTransferPerson"/>');
 	   return false;
@@ -2309,7 +2446,8 @@ function setPerson(deptCode, deptName, user, userRealName) {
 						jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
 					}
 					else {
-						jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+                        done(data.msg);
+						// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
 					}
 				},
 				complete: function(XMLHttpRequest, status){
@@ -2325,7 +2463,7 @@ function setPerson(deptCode, deptName, user, userRealName) {
 }
 
 function transfer() {
-	showModalDialog('user_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
+	openWin('user_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600);
 }
 
 function suspend() {
@@ -2351,7 +2489,8 @@ function suspend() {
 						jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
 					}
 					else {
-						jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+                        done(data.msg, true);
+						// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
 					}
 				},
 				complete: function(XMLHttpRequest, status){
@@ -2441,21 +2580,30 @@ function showResponse(data)  {
 		jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
 		return;
 	}
-
-	if (window.top.mainFrame) {
-		// window.top.mainFrame.reloadTab("待办流程");
-		var pos = window.top.mainFrame.getActiveTab().id;
-		window.top.mainFrame.closeTab("待办流程");
-		window.top.mainFrame.reloadTab("桌面");
-		window.top.mainFrame.showTab(pos, false);
-	}
+ 
+    if (window.top.mainFrame) {
+        // var pos = window.top.mainFrame.getActiveTab().id;
+        // window.top.mainFrame.closeTab("待办流程");
+        window.top.mainFrame.reloadTab("桌面");
+        // window.top.mainFrame.showTab(pos, false);
+    }
+    else {
+        if (window.top.o("content-main")) {
+            reloadTab("0");
+        }
+    }
+    var tabIdOpener = '<%=ParamUtil.get(request, "tabIdOpener")%>';
+    if (tabIdOpener != "") {
+        reloadTab(tabIdOpener);
+    }
 
 	var op = data.op;
 	if (op=="read") {
 		<%if (lf.isDebug() && com.redmoon.oa.kernel.License.getInstance().isPlatformSrc()) {%>
 			jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list_debugger.jsp?myActionId=<%=myActionId%>");
 		<%}else{%>
-			jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+            done(data.msg, true);
+			// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
 		<%}%>
 		return;
 	}
@@ -2475,7 +2623,8 @@ function showResponse(data)  {
 		return;
 	}
 	else if (op=="manualFinish" || op=="manualFinishAgree") {
-		jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+        done(data.msg, true);
+		// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
 	}
 	else if (op=="finish") {
 		<%
@@ -2508,7 +2657,8 @@ function showResponse(data)  {
 				<%if (lf.isDebug() && com.redmoon.oa.kernel.License.getInstance().isPlatformSrc()) {%>
 					jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list_debugger.jsp?myActionId=<%=myActionId%>");
 				<%} else {%>
-					jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+					// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+                    done(data.msg);
 				<%}%>
 			}
 		<%}%>
@@ -2517,7 +2667,8 @@ function showResponse(data)  {
 		<%if (lf.isDebug() && com.redmoon.oa.kernel.License.getInstance().isPlatformSrc()) {%>
 			jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list_debugger.jsp?myActionId=<%=myActionId%>");
 		<%} else {%>
-			jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+            done(data.msg);
+			// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
 		<%}%>
 	}
 	else if (op=="saveformvalueBeforeXorCondSelect") {
@@ -2550,10 +2701,20 @@ function showResponse(data)  {
 						return;
 					}
 				});
-				// 如果没有匹配到人员且没有”选择用户“按钮
-				if (!hasUserCheckbox && data.indexOf("<%=LocalUtil.LoadString(request,"res.flow.Flow","selectUser")%>")==-1) {
+				var isMatchUserException = data.indexOf("isMatchUserException")!=-1;
+				// 如果没有匹配到人员且没有“选择用户”按钮
+				if (!hasUserCheckbox && data.indexOf("<%=LocalUtil.LoadString(request,"res.flow.Flow","selectUser")%>")==-1 && !isMatchUserException) {
 					data += "<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;无需选择用户，请点击确定按钮！";
 				}
+				<%
+				if (isNotShowNextUsers) {
+				%>
+                if (!isMatchUserException) {
+                    data = "请点击确定按钮<span style='display:none'>" + data + "</span>";
+                }
+                <%
+				}
+				%>
 				$("#dlg").html(data);
 				$("#dlg").dialog({
 					title:'<lt:Label res="res.flow.Flow" key="conditions"/>',
@@ -2699,14 +2860,13 @@ function toolbarSubmit() {
 	// hw 20160616 要摧毁校验，包括他不允许为空的*以及错误提示都需要摧毁，再实例化lv_cwsWorkflowResult，再调用FormUtil.doGetCheckJS
 	// FormUtil.doGetCheckJS也要注意，因为它是script标签的，所以一定得去除标签
 	LiveValidation.destroyValidate(lv_cwsWorkflowResult.formObj.fields);
-	//alert($(".LV_presence").size());
 	$(".LV_presence").remove();
 	lv_cwsWorkflowResult = new LiveValidation('cwsWorkflowResult');
 	//$(".LV_validation_message").remove();
 	<%out.print(checkJsSub);%>
-	//alert($(".LV_presence").size());
 	if (!LiveValidation.massValidate(lv_cwsWorkflowResult.formObj.fields)) {
-		jAlert('<lt:Label res="res.flow.Flow" key="checkForm"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>');
+		// jAlert('<lt:Label res="res.flow.Flow" key="checkForm"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>');
+        jAlert(LiveValidation.liveErrMsg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
 		return;
 	}
 
@@ -2967,6 +3127,19 @@ function initToolbar(toolbarId) {
       }
     }
 	<%}}%>
+    <%if(wfp.isReactive() && conf.getIsDisplay("FLOW_BUTTON_ALTER")){%>
+    <%if (wf.isStarted() && !lf.isDebug()) {%>
+    ,'-',{
+        type : 'button',
+        text : '<%=conf.getBtnName("FLOW_BUTTON_ALTER").startsWith("#")?LocalUtil.LoadString(request,"res.flow.Flow","alter"):conf.getBtnName("FLOW_BUTTON_ALTER")%>',
+        title: '<%=conf.getBtnTitle("FLOW_BUTTON_ALTER").startsWith("#")?LocalUtil.LoadString(request,"res.flow.Flow","alterTitle"):conf.getBtnTitle("FLOW_BUTTON_ALTER")%>',
+        bodyStyle : 'alter',
+        useable : 'T',
+        handler : function(){
+            addTab('<%=LocalUtil.LoadString(request,"res.flow.Flow","alterTitle")%>', '<%=request.getContextPath()%>/flow/flow_doc_list.jsp?flowId=<%=wf.getId()%>');
+        }
+    }
+    <%}}%>
 	<%
 	if (conf.getIsDisplay("FLOW_BUTTON_DOC")){
 	if (!isReadOnly) {
@@ -3128,8 +3301,9 @@ function initToolbar(toolbarId) {
 	<%}%>
 	<%} }%>
 	<%
-	if(conf.getIsDisplay("FLOW_BUTTON_DEL")){
-	if (!isReadOnly && flag.length()>=4 && flag.substring(3, 4).equals("1") && mad.getActionStatus()!=WorkflowActionDb.STATE_RETURN) {%>
+	if(conf.getIsDisplay("FLOW_BUTTON_DEL") && !isReadOnly) {
+	if (WorkflowMgr.canDelFlowOnAction(request, wf, wa, mad)) {
+	%>
 	<%if (mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND) {%>
 	,'-',{
       type : 'button',
@@ -3218,7 +3392,7 @@ function initToolbar(toolbarId) {
 	<%}%>
 	<%}%>
 	<%if(conf.getIsDisplay("FLOW_BUTTON_CHART")){%>
-	<%if (canUserSeeDesignerWhenDispose.equals("true")) {%>
+	<%if (canUserSeeFlowImage || canUserSeeDesignerWhenDispose.equals("true")) {%>
 	,'-',{
       type : 'button',
       text : '<%=conf.getBtnName("FLOW_BUTTON_CHART").startsWith("#")?LocalUtil.LoadString(request,"res.flow.Flow","flowChart"):conf.getBtnName("FLOW_BUTTON_CHART")%>',
@@ -3417,7 +3591,7 @@ function setAttention(isAttention) {
 	});
 }
 
-function delAtt(docId, attId) {
+function delAtt(docId, attId, fieldName) {
 	jConfirm('<lt:Label res="res.flow.Flow" key="isDelete"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
 		if(!r){return;}
 		else{
@@ -3433,6 +3607,9 @@ function delAtt(docId, attId) {
 				if (data.re=="true") {
 					jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
 					$('#trAtt' + attId).remove();
+                    if (fieldName!=null) {
+                        $('#helper_' + fieldName).remove();
+                    }
 				}
 				else {
 					jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
@@ -3501,7 +3678,8 @@ function addPlus() {
 						}
 						else {
 							if (data.type=="<%=WorkflowActionDb.PLUS_TYPE_BEFORE%>") {
-								jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
+                                done(data.msg, true);
+								// jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', "flow/flow_list.jsp?displayMode=1");
 							}
 							else {
 								jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
@@ -3611,7 +3789,7 @@ function selTemplate(doc_id, file_id) {
 												$("#dlg").html("");
 												return;}
 											else{
-												openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=0&isApply=true&templateId=" + o("template").value, 800, 600);
+												openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=0&isApply=true&templateId=" + o("template").value, 1024, 768);
 												$("#dlg").html("");
 											}
 										})
@@ -3929,5 +4107,57 @@ function reMatchUser(fieldName, fieldValue) {
 		}
 	});
 }
+
+// 页面载入时显示loading效果，以免当页面还没有完全加载，如产业类别这类级联的SQL控件还未完全载入时，即点击了同意，致数据丢失
+// 不能用jQuery的ready方法，因为ready方法注册的事件处理程序，只要在DOM完全就绪时，就可以调用了，比如一张图片只要<img>标签完成，不用等这个图片加载完成，就可以设置图片的宽高的属性或样式等
+// 用window.onload也不行，因为页面中有ajax
+$.when($.ajax(), $.ajax()).then(function(){
+    // 所有 AJAX 请求已完成
+    $("#loading").hide();
+})
+
+function done(msg, isClose) {
+    if (isClose) {
+        jAlert(msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', function() {
+            // 关闭tab
+            closeActiveTab();
+        })
+    }
+    else {
+        var isRecall = <%=isRecall%>;
+        if (isRecall) {
+            msg += " <lt:Label res="res.flow.Flow" key="recallTip"/>";
+        }
+        jAlert(msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', function() {
+            if (isRecall) {
+                window.location.href = "flow_modify.jsp?flowId=<%=flowId%>";
+            }
+            else {
+                // 关闭tab
+                closeActiveTab();
+            }
+        })
+    }
+}
+
+<%
+    String actionMode = ParamUtil.get(request, "actionMode");
+    if ("onlyReturn".equals(actionMode)) {
+        String btnReturnName = conf.getBtnName("FLOW_BUTTON_RETURN").startsWith("#")?LocalUtil.LoadString(request,"res.flow.Flow","back"):conf.getBtnName("FLOW_BUTTON_RETURN");
+%>
+    $(function() {
+        // 隐藏掉除了退回按钮之外的其它按钮
+        var $btnTables = $('#toolbar').find('.button_table');
+        $btnTables.each(function() {
+           if ($(this).text().indexOf("<%=btnReturnName%>")==-1) {
+               $(this).hide();
+           }
+        })
+        
+        $('.spacer').parent().hide();
+    })
+<%
+    }
+%>
 </script>
 </html>

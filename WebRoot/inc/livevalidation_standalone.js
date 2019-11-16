@@ -30,6 +30,8 @@ var LiveValidation = function(element, optionsObj){
   	this.initialize(element, optionsObj);
 }
 
+LiveValidation.liveErrMsg = "";
+
 LiveValidation.VERSION = '1.3 standalone';
 
 /** element types constants ****/
@@ -40,6 +42,7 @@ LiveValidation.PASSWORD 	= 3;
 LiveValidation.CHECKBOX 	= 4;
 LiveValidation.SELECT 		= 5;
 LiveValidation.FILE 		= 6;
+LiveValidation.RADIO 		= 7;
 
 /****** Static methods *******/
 
@@ -52,10 +55,18 @@ LiveValidation.FILE 		= 6;
  *  LiveValidation.massValidate(groupNameCtl.formObj.fields)			
  */
 LiveValidation.massValidate = function(validations){
+    LiveValidation.liveErrMsg = "";
 	var returnValue = true;
-	for(var i = 0, len = validations.length; i < len; ++i ){
-		
+	for(var i = 0, len = validations.length; i < len; ++i ) {
 		var valid = validations[i].validate();
+		if (!valid) {
+		    var el = validations[i].element;
+		    var t = el.getAttribute("title");
+		    if (t==null) {
+		        t = el.getAttribute("name");
+            }
+            LiveValidation.liveErrMsg += t + " " + validations[i].message + "<br/>";
+        }
 
 		if(returnValue) returnValue = valid;
 	}
@@ -123,6 +134,10 @@ LiveValidation.prototype = {
     	var options = optionsObj || {};
     	this.validMessage = options.validMessage || ""; // 'Thankyou!';
     	var node = options.insertAfterWhatNode || this.element;
+    	// 如果是radio，则用其父节点作为insertAfterWhatNode
+    	if (node.getAttribute("type")=="radio") {
+            node = node.parentNode;
+    	}
 		this.insertAfterWhatNode = node.nodeType ? node : document.getElementById(node);
       this.onValid = options.onValid || function(){ this.insertMessage(this.createMessageSpan()); this.addFieldClass(); };
       this.onInvalid = options.onInvalid || function(){ this.insertMessage(this.createMessageSpan()); this.addFieldClass(); };	
@@ -144,6 +159,15 @@ LiveValidation.prototype = {
       this.element.onfocus = function(e){ self.doOnFocus(e); return self.oldOnFocus.call(this, e); }
       if(!this.onlyOnSubmit){
         switch(this.elementType){
+          case LiveValidation.RADIO:
+              // 使radio组内的其它元素也能响应点击事件进行验证
+              var radioboxs = document.getElementsByName(this.element.name);
+              for (i=0; i<radioboxs.length; i++) {
+                  if (radioboxs[i].type=="radio") {
+                      radioboxs[i].onclick = function(e) {self.validate(); return self.oldOnChange.call(this, e); };
+                  }
+              }
+              break;
           case LiveValidation.CHECKBOX:
             this.element.onclick = function(e){ self.validate(); return self.oldOnClick.call(this, e); }
           // let it run into the next to add a change event too
@@ -204,7 +228,7 @@ LiveValidation.prototype = {
 			var textNode = document.createTextNode("*");
 			span.appendChild(textNode);
 			span.className = "LV_presence";
-			
+
 			if (this.element.type!="hidden") {
 				if(this.insertAfterWhatNode.nextSibling){
 					this.insertAfterWhatNode.parentNode.insertBefore(span, this.insertAfterWhatNode.nextSibling);
@@ -283,6 +307,8 @@ LiveValidation.prototype = {
         return LiveValidation.CHECKBOX;
       case (this.element.nodeName.toUpperCase() == 'INPUT' && this.element.type.toUpperCase() == 'FILE'):
         return LiveValidation.FILE;
+      case (this.element.nodeName.toUpperCase() == 'INPUT' && this.element.type.toUpperCase() == 'RADIO'):
+        return LiveValidation.RADIO;
       case (this.element.nodeName.toUpperCase() == 'SELECT'):
         return LiveValidation.SELECT;
         case (this.element.nodeName.toUpperCase() == 'INPUT'):
@@ -304,7 +330,7 @@ LiveValidation.prototype = {
       	for(var i = 0, len = this.validations.length; i < len; ++i){
     	 	var validation = this.validations[i];
     		switch(validation.type){
-    		   	case Validate.Presence:
+    		    case Validate.Presence:
                 case Validate.Confirmation:
                 case Validate.Acceptance:
     		   		this.displayMessageWhenEmpty = true;
@@ -334,6 +360,9 @@ LiveValidation.prototype = {
 			if (this.element.selectedIndex!=-1)
 				value = this.element.options[this.element.selectedIndex].value;
 		}
+		else if (this.elementType == LiveValidation.RADIO) {
+		    value = getRadioValue(this.element.name);
+        }
 		else
 			value = this.element.value;
         if(validationFunction == Validate.Acceptance){

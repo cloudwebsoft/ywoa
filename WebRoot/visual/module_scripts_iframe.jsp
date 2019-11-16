@@ -4,7 +4,7 @@
 <%@ page import="com.redmoon.oa.basic.*" %>
 <%@ page import="com.redmoon.oa.person.*" %>
 <%@ page import="com.redmoon.oa.dept.*" %>
-<%@ page import="com.redmoon.oa.visual.*" %>
+<%@ page import="com.redmoon.oa.flow.*" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.*"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -28,7 +28,7 @@ _height:100%; //兼容IE6
 <script src="../js/jquery.js"></script>
 </head>
 <body style="padding:0px; margin:0px">
-<%@ include file="module_setup_inc_menu_top.jsp"%>
+<%@ include file="../admin/form_edit_inc_menu_top.jsp"%>
 <script>
 o("menu7").className="current"; 
 </script>
@@ -38,4 +38,4 @@ String code = ParamUtil.get(request, "code");
 <div class="spacerH" style="margin:0px; padding:0px"></div>
 <iframe src="module_scripts.jsp?code=<%=code%>" style="padding:0px; margin:0px; width:100%; height:100%; border:0"></iframe>
 </body>
-</hml>
+</html>

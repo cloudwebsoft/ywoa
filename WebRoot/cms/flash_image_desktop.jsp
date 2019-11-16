@@ -21,9 +21,9 @@ UserDesktopSetupDb udsd = new UserDesktopSetupDb();
 udsd = udsd.getUserDesktopSetupDb(id);
 int count = udsd.getCount();
 %>
-<div id="drag_<%=id%>" class="portlet drag_div bor" style="border:0px;padding:0px;" >
+<div id="drag_<%=id%>" class="portlet drag_div bor ibox" style="border:0px;padding:0px;" >
     <div id="drag_<%=id%>_h" style="height:3px;padding:0px;margin:0px; font-size:1px"></div>
-    <div id="cont_<%=id%>" class="portlet_content" style="min-height:141px;_height:141px;padding:0px;margin:0px">
+    <div id="cont_<%=id%>" class="portlet_content ibox-content" style="min-height:141px;_height:141px;padding:0px;margin:0px">
     	<div>
         <div id="flexslider<%=id%>" class="flexslider">
         <ul class="slides">

@@ -81,7 +81,7 @@
 						var at_input_box = '';
 						at_input_box += '<div data-isnull="false" data-code="cwsWorkflowResult"><span style="display:none">内容</span><textarea type="text" name="cwsWorkflowResult" id="cwsWorkflowResult" class="at_textarea" placeholder="说点什么吧~"/></div>';
 						at_input_box += commonParams;
-						at_input_box += '<div class="at_user_div clearfix">';
+						at_input_box += '<div class="at_user_div clearfix" isLight="true">';
 						at_input_box += '<a><span class="iconfont icon-at"></span><span>提醒谁看</span>';
 						at_input_box += '<div class="userDiv"></div>';
 						at_input_box += '</a>';
@@ -95,7 +95,8 @@
 					}else{
 						var title = data.cwsWorkflowTitle;// 标题
 						var c_t = '<div class="mui-input-row">';
-						c_t += '<label style="color:#000;width:100%;font-weight:bold">'+title+'</label>';
+						// c_t += '<label style="color:#000;width:100%;font-weight:bold">'+title+'</label>';
+						c_t += '<input type="text" name="cwsWorkflowTitle" value="' + title + '"/>';
 						c_t += '</div>';
 						jQuery(".mui-input-group").append(c_t);
 						if(fields.length>0){
@@ -116,6 +117,12 @@
 								jQuery(".mui-input-group").append(_flowNextUsers);
 							}
 						}
+
+						if (data.isFree) {
+							var _flowNextUsers = self.flowNextUsersFree();
+							jQuery(".mui-input-group").append(_flowNextUsers);
+						}
+
 						if("multiDepts" in data.result){
 							var multiDepts = data.result.multiDepts;
 							if(multiDepts.length>0){
@@ -192,9 +199,12 @@
 								_ckChecked.each(function (i) {
 									var _curCk = jQuery(this);
 									var _internalname = _curCk.data("internalname");
-									// 如果已存在，则不生成
-									if (!jQuery('name[XorNextActionInternalNames=' + _internalname + ']')[0]) {
-										jQuery("#flow_form").append('<input type="hidden" class="cls-XorNextActionInternalNames" name="XorNextActionInternalNames" value="' + _internalname + '" />');
+									// 当存在分支，且分支为自选用户时，分支前的checkbox是没有internalname的
+									if (_internalname!=null) {
+										// 如果已存在，则不生成
+										if (!jQuery('name[XorNextActionInternalNames=' + _internalname + ']')[0]) {
+											jQuery("#flow_form").append('<input type="hidden" class="cls-XorNextActionInternalNames" name="XorNextActionInternalNames" value="' + _internalname + '" />');
+										}
 									}
 								})
 							}
@@ -229,8 +239,11 @@
 						}
 					});					
 				});						
+        
+        self.bindDateEvent();
+              
 			},"json");
-			self.bindDateEvent();
+
 		},
 		flowBackServer:function(){
 			var self = this;
@@ -305,9 +318,10 @@
 					return;
 				}
 			}
-			
-			var isLight = jQuery(".flow_submit").attr("isLight");			
-			if(isLight == 'true') {
+
+			var isLight = jQuery(".flow_submit").attr("isLight");
+			var isFree = jQuery(".flow_submit").attr("isFree");
+			if(jQuery('#op').val()!="saveformvalue" && (isFree=='true' || isLight == 'true')) {
 				if (!jQuery("input[name='nextUsers']")[0]) {
 					var btnArray = ['否', '是'];
 					mui.confirm('您还没有选择下一步的用户，确定办理完毕了么？', '提示', btnArray, function(e) {
@@ -327,12 +341,18 @@
 		flowSendServerPost:function() {
 			var self = this;
 			var isLight = jQuery(".flow_submit").attr("isLight");
+			var isFree = jQuery(".flow_submit").attr("isFree");
 			var formData;
 			var ajax_url = PRESET_FLOW_DISPOSE_AJAX_URL;
 			if(isLight == 'true'){
 				ajax_url = FREE_FLOW_DISPOSE_AJAX_URL;
 				formData = new FormData($('#free_flow_form')[0]);
-			}else{
+			}
+			else if (isFree == 'true') {
+				ajax_url = FREE_FLOW_DISPOSE_AJAX_URL;
+				formData = new FormData($('#flow_form')[0]);
+			}
+			else{
 				formData = new FormData($('#flow_form')[0]);
 			}
 			for (i=0;i<blob_arr.length ;i++ ) {
@@ -386,6 +406,7 @@
 						}
 					},
 					error:function(xhr,type,errorThrown){
+						$.toast(type);
 						console.log(type);
 					}
 				});			
@@ -404,7 +425,7 @@
 			params += '	<input type="hidden" id="skey" name="skey" value="'+skey+'"/>';
 			params += '	<input type="hidden" name="orders" value="1"/>';
 			params += '	<input type="hidden" name="op" id="op" value="finish"/>';
-			params +='<input type="hidden" name="cwsWorkflowTitle" value="'+ cwsWorkflowTitle+'" />'
+			// params +='<input type="hidden" name="cwsWorkflowTitle" value="'+ cwsWorkflowTitle+'" />'
 			return params; 
 		},
 		flowDisposeBtn:function(data){
@@ -415,10 +436,11 @@
 			var canDel = data.canDel;	
 			var canFinishAgree = data.canFinishAgree;
 			var btnContent = '<div class="mui-button-row">';
+			var isFree = data.isFree;
 			if (!isLight) {
 				btnContent += '<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined flow_draft">保存</button>';
 			}
-			btnContent += '	<button style="margin-left:5px;" type="button" class="mui-btn mui-btn-primary mui-btn-outlined flow_submit" isLight='+isLight+'>提交</button>';
+			btnContent += '	<button style="margin-left:5px;" type="button" class="mui-btn mui-btn-primary mui-btn-outlined flow_submit" isFree="' + isFree + '" isLight='+isLight+'>提交</button>';
 			if (canDel) {
 				btnContent += '	<button style="margin-left:5px;" type="button" class="mui-btn mui-btn-primary mui-btn-outlined del_btn">删除</button>';
 			}
@@ -530,7 +552,8 @@
 					var internalname = item.internalname;
 					if(actionUserName == "$userSelect" || value == "$userSelect") {
 						isUserSelect = true;
-		                userContent += "<input type='hidden' name='XorNextActionInternalNames' value='"+internalname+"' />";
+						// XorNextActionInternalNames已改为在提交时通过被选中人员的data-internalname获取
+		                // userContent += "<input type='hidden' name='XorNextActionInternalNames' value='"+internalname+"' />";
 
 		                checked = "checked";
 						userContent += '<div id="next_user' + internalname + '" class="mui-row next_user_div">';
@@ -574,6 +597,15 @@
 			}
 			return userContent;
 		},
+		flowNextUsersFree:function(){
+			var at_input_box = '';
+			at_input_box += '<div class="at_user_div clearfix" isFree="true">';
+			at_input_box += '<a><span class="iconfont"></span><span>选择用户</span>';
+			at_input_box += '<div class="userDiv"></div>';
+			at_input_box += '</a>';
+			at_input_box += '</div>';
+			return at_input_box;
+		},    
 		conditionBranch:function(users){
 			var self = this;
 			var strHtml= '<ul class="mui-table-view">';
@@ -665,28 +697,57 @@
 				openChooseUser(chooseUser, false, internalName);
 			});
 			Form.bindFileDel();
-			mui(".mui-input-group").on("tap", ".capture_btn", function() {
-				captureFieldName = jQuery(this).attr("captureFieldName");
-				// 置图像宏控件是否只允许拍照
-				if (jQuery(this).attr("isOnlyCamera")) {
-					setIsOnlyCamera(jQuery(this).attr("isOnlyCamera"));
+
+			// iphone只能用原生的方式来绑定事件
+			if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+				var btnCapture = $('.capture_btn')[0];
+				btnCapture.onclick = function () {
+					captureFieldName = jQuery(btnCapture).attr("captureFieldName");
+					// 置图像宏控件是否只允许拍照
+					if (jQuery(btnCapture).attr("isOnlyCamera")) {
+						setIsOnlyCamera(jQuery(btnCapture).attr("isOnlyCamera"));
+					}
+					else {
+						// 恢复默认设置
+						resetIsOnlyCamera();
+					}
+					// 如果只允许拍照
+					if (appProp.isOnlyCamera == "true") {
+						jQuery("#captureFile").attr('capture', 'camera');
+					}
+					var cap = jQuery("#captureFile").get(0);
+					cap.click();
+					// 会出错，因为页面中可能含有多个captureFile
+					// document.getElementById('captureFile').click();
 				}
-				else {
-					// 恢复默认设置
-					resetIsOnlyCamera();
-				}
-				var cap = jQuery("#captureFile").get(0);
-				cap.click();
-			});
-			// @流程选择用户
-			$("#free_flow_form").on("tap", ".at_user_div", function() {
+			}
+			else {
+				mui(".mui-button-row").on("tap", ".capture_btn", function() {
+					captureFieldName = jQuery(this).attr("captureFieldName");
+					// 置图像宏控件是否只允许拍照
+					if (jQuery(this).attr("isOnlyCamera")) {
+						setIsOnlyCamera(jQuery(this).attr("isOnlyCamera"));
+					}
+					else {
+						// 恢复默认设置
+						resetIsOnlyCamera();
+					}
+
+					var cap = jQuery("#captureFile").get(0);
+					cap.click();
+				});
+			}
+
+			// 自由流程、@流程选择用户
+			$("form").on("tap", ".at_user_div", function() {
 				var checkedValues = [];
 				jQuery(".free_next_user_ck").each(function(i) {
 					checkedValues.push(jQuery(this).val());
 				})
 				var chooseUser = checkedValues.join(",");
-				openChooseUser(chooseUser, true);
-
+				var isLight = jQuery(".at_user_div").attr("isLight")=="true";
+				var isFree = jQuery(".at_user_div").attr("isFree")=="true";
+				openChooseUser(chooseUser, isLight, isFree);
 			});
 		}
 	})

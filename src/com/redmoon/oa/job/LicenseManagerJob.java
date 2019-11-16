@@ -91,12 +91,12 @@ public class LicenseManagerJob implements Job {
 						if (expire == 30) {
 							mes.sendSysMsg("admin", "到期提醒",
 									"尊敬的客户您好,您所订购的服务套餐将于" + endTime
-											+ "到期，给您带来不便敬请谅解，如有疑问详询一米客服。");
+											+ "到期，给您带来不便敬请谅解，如有疑问详询客服。");
 						}
 						if (expire > 0 && expire <= 7) {
 							mes.sendSysMsg("admin", "到期提醒",
 									"尊敬的客户您好,您所订购的服务套餐将于" + endTime
-											+ "到期，给您带来不便敬请谅解，如有疑问详询一米客服。");
+											+ "到期，给您带来不便敬请谅解，如有疑问详询客服。");
 						}
 					}
 					if (!"".equals(code) && code != null) { // 开通对应的短信网关

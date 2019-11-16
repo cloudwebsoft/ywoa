@@ -514,7 +514,7 @@ else if ("getActionNode".equals(op)){
 	 	var writeBackCode = $("#relateCode").val();
 	 	var internalName = $("#actionNode").val();
 	 	if ("empty"!=writeBackCode&&writeBackCode!=null){
-	 		openWin("write_back_condition.jsp?mainCode=<%=flowTypeCode%>&writeBackCode="+writeBackCode+"&internalName="+internalName, 700, 460);
+	 		openWin("write_back_condition.jsp?mainCode=<%=flowTypeCode%>&writeBackCode="+writeBackCode+"&internalName="+internalName, 1024, 768);
 	 	}
 	 	else {
 	 		jAlert("请选择回写表单！", "提醒");

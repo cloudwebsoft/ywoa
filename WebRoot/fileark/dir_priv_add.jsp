@@ -63,8 +63,8 @@ leaf = leaf.getLeaf(dirCode);
   </tbody>
 </table>
 <br>
+<form name="formRole" method="post" action="dir_priv_m.jsp?op=setrole">
 <table class="tabStyle_1 percent60" cellspacing="0" cellpadding="3" width="50%" align="center">
-  <form name="formRole" method="post" action="dir_priv_m.jsp?op=setrole">
     <tbody>
       <tr>
         <td width="88%" align="left" nowrap class="tabStyle_1_title">角色</td>
@@ -105,8 +105,8 @@ while (irrole.hasNext()) {
           </td>
       </tr>
     </tbody>
-  </form>
 </table>
+</form>
 <%
 String code;
 String desc;
@@ -139,22 +139,22 @@ while (ir.hasNext()) {
   </tbody>
 </table>
 <br>
+<form name="form1" action="dir_priv_m.jsp?op=add" method=post>
 <table class="tabStyle_1 percent60" width="492"  border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>
     <td class="tabStyle_1_title">添加用户</td>
   </tr>
-  <form name="form1" action="dir_priv_m.jsp?op=add" method=post>
   <tr>
     <td height="25" align="center">
-	用户名：
 	  <textarea name="userRealName" style="width:100%;height:100px" readonly></textarea>
 	  <input name="name" value="" type="hidden"><input type=hidden name=type value=1>
 	  <input type=hidden name=dirCode value="<%=leaf.getCode()%>">
 	  &nbsp;&nbsp;<input class="btn" onClick="openWinUsers()" value="选择" type="button" />
 	  &nbsp;&nbsp;
 <input class="btn" type="submit" align="middle" value="确定" /></td>
-  </tr></form>
+  </tr>
 </table>
+</form>
 <br>
 </body>
 </html>

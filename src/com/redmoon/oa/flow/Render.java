@@ -14,6 +14,7 @@ import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.SkinUtil;
 
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.base.IFormMacroCtl;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
@@ -60,8 +61,13 @@ public class Render {
         lf = lf.getLeaf(wf.getTypeCode());
         fd = fd.getFormDb(lf.getFormCode());
     }
-    
-    public String getContentMacroReplaced(FormDAO fdao) {
+
+    public Render(HttpServletRequest request, FormDb fd) {
+        this.request = request;
+        this.fd = fd;
+    }
+
+        public String getContentMacroReplaced(FormDAO fdao) {
         String content = doc.getContent(1);
         if (lf.isDebug())
         	content = fd.getContent();
@@ -278,9 +284,6 @@ public class Render {
             }
         }
 
-        // 显示或隐藏表单中的区域
-        str += WorkflowUtil.doGetViewJS(request, wfa, fd, fdao, new Privilege().getUser(request), false);
-
         str += "\n<script>\n";
 
         ir = v.iterator();
@@ -391,14 +394,17 @@ public class Render {
 
         // livevalidation检查
         str += FormUtil.doGetCheckJS(request, v);
-        
+
+        // 显示或隐藏表单中的区域
+        str += WorkflowUtil.doGetViewJS(request, wfa, fd, fdao, new Privilege().getUser(request), false);
+
         // 取得函数的参数中所关联的表单域当值发生改变时，重新获取值的脚本
         str += FuncUtil.doGetFieldsRelatedOnChangeJS(fd);
 
         // 唯一性检查
         str += FormUtil.doGetCheckJSUnique(fdao.getId(), v);
         
-        // 一米OA签名
+        // 水印签名
         if (License.getInstance().isFree()) {
         	content += License.getFormWatermark();
         }
@@ -621,7 +627,7 @@ public class Render {
 
         str += FormUtil.doGetCheckJSUnique(fdao.getId(), v);
 
-        // 一米OA签名
+        // 水印签名
         if (License.getInstance().isFree()) {
         	content += License.getFormWatermark();
         }
@@ -632,11 +638,13 @@ public class Render {
     public String replaceDefaultStr(String content) {
         content = content.replaceFirst("#\\[表单\\]", fd.getName());
         // content = content.replaceFirst("#\\[文号\\]", wf.getTitle());
-        content = content.replaceFirst("#\\[标题\\]", wf.getTitle());
-        content = content.replaceFirst("#\\[时间\\]", DateUtil.format(wf.getMydate(), FormField.FORMAT_DATE));
-        // content = content.replaceFirst("#\\[title\\]", "");
+        if (wf!=null) {
+            content = content.replaceFirst("#\\[标题\\]", wf.getTitle());
+            content = content.replaceFirst("#\\[时间\\]", DateUtil.format(wf.getMydate(), FormField.FORMAT_DATE));
+            // content = content.replaceFirst("#\\[title\\]", "");
 
-        content = content.replaceFirst("#\\[id\\]", String.valueOf(wf.getId()));
+            content = content.replaceFirst("#\\[id\\]", String.valueOf(wf.getId()));
+        }
 
         String pat = "\\{\\$rootPath\\}";
         content = content.replaceAll(pat, request.getContextPath());
@@ -743,13 +751,7 @@ public class Render {
         return content + str;
     }
 
-    /**
-     * 为表单存档生成报表
-     * @return String
-     */
-    public String reportForArchive(WorkflowDb wf, FormDb fd) {
-        FormDAO fdao = new FormDAO(wf.getId(), fd);
-        fdao.load();
+    public String reportForArchive(IFormDAO fdao) {
         Vector vf = fdao.getFields();
         Iterator fir = vf.iterator();
         ArrayList<String> list = new ArrayList<String>();
@@ -757,9 +759,9 @@ public class Render {
             FormField ff = (FormField)fir.next();
             // 置为不能编辑，以使得CKEditorCtl初始化时，不转变为编辑器
             ff.setEditable(false);
-            
+
             if (ff.getFieldType() == FormField.FIELD_TYPE_DATETIME) {
-            	list.add(ff.getName());
+                list.add(ff.getName());
             }
         }
 
@@ -773,13 +775,13 @@ public class Render {
         // 清除其它辅助图片按钮等
         String pat = "<img([^>]*?)calendar.gif([^>]*?)>";
         Pattern pattern = Pattern.compile(pat,
-                                          Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+                Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(content);
         content = matcher.replaceAll("");
 
         pat = "<img([^>]*?)clock.gif([^>]*?)>";
         pattern = Pattern.compile(pat,
-                                          Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+                Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
         matcher = pattern.matcher(content);
         content = matcher.replaceAll("");
         //替换存档表单中的日期控件时间输入框 2015-01-29
@@ -788,19 +790,29 @@ public class Render {
                 Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
         matcher = pattern.matcher(content);
         content = matcher.replaceAll("");
-        
+
         for (String code : list) {
-        	pat = "<input([^>]*?)" + code + "_time([^>]*?)>";
+            pat = "<input([^>]*?)" + code + "_time([^>]*?)>";
             pattern = Pattern.compile(pat,
                     Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
             matcher = pattern.matcher(content);
             content = matcher.replaceAll("");
         }
-        
+
         // 按钮在replaceTextfieldWithValue中已被清除了
 
 
         return content;
+    }
+
+    /**
+     * 为表单存档生成报表
+     * @return String
+     */
+    public String reportForArchive(WorkflowDb wf, FormDb fd) {
+        FormDAO fdao = new FormDAO(wf.getId(), fd);
+        fdao.load();
+        return reportForArchive(fdao);
     }
     
     public String report() {
@@ -880,59 +892,61 @@ public class Render {
         }
         
         if (isHideField) {
+            String fieldHide = "";
 	        Privilege pvg = new Privilege();
 	        MyActionDb mad = new MyActionDb();
 	        mad = mad.getMyActionDbOfFlow(wf.getId(), pvg.getUser(request));
 	        // 管理员查看时，其本人可能并未参与流程，则mad将为null
 	        if (mad!=null) {
-	            WorkflowActionDb wad = new WorkflowActionDb();
-	            wad = wad.getWorkflowActionDb((int) mad.getActionId());
-	
-	            String fieldHide = StrUtil.getNullString(wad.getFieldHide()).trim();
-	            
-	            // 将不显示的字段加入fieldHide	            
-	            ir = v.iterator();
-	            while (ir.hasNext()) {
-	            	FormField ff = (FormField)ir.next();
-	            	if (ff.getHide()==FormField.HIDE_ALWAYS) {
-	            		if ("".equals(fieldHide)) {
-	            			fieldHide = ff.getName();
-	            		}
-	            		else {
-	            			fieldHide += "," + ff.getName();
-	            		}
-	            	}
-	            }
-	            
-	            String[] fdsHide = StrUtil.split(fieldHide, ",");
-	            if (fdsHide != null) {
-                	// 20170731 fgf 增加hideNestCol
-	            	str += "function hideNestCol() {\n";
-	            	
-	                for (int i=0; i<fdsHide.length; i++) {
-	                    if (!fdsHide[i].startsWith("nest.")) {
-	                        FormField ff = fd.getFormField(fdsHide[i]);
-	                        if (ff==null) {
-	                            LogUtil.getLog(getClass()).error(fd.getName() + " Field hidden " + fdsHide[i] + " is not exist.");
-	                        }
-	                        else {
-	                        	str += FormField.getHideCtlScript(ff, FORM_FLEMENT_ID);
-	                        }
-	                    }
-	                    else {
-	                        str += "try{ hideNestTableCol('" + fdsHide[i].substring("nest.".length()) +  "'); }catch(e) {}\n";
-	                        str += "try{ hideNestSheetCol('" + fdsHide[i].substring("nest.".length()) +  "'); }catch(e) {}\n";
-	                    }
-	                }
-	            	str += "}\n";
-	            	
-	            	str += "hideNestCol();\n";	            	
-	            	
-	                // 屏蔽鼠标右键
-	                // if (!pvg.isUserPrivValid(request, "admin"))
-	                //    str += "$(document).bind('contextmenu', function(e){return false;});";
-	            }
-	        }
+                WorkflowActionDb wad = new WorkflowActionDb();
+                wad = wad.getWorkflowActionDb((int) mad.getActionId());
+
+                fieldHide = StrUtil.getNullString(wad.getFieldHide()).trim();
+            }
+
+            // 将不显示的字段加入fieldHide
+            ir = v.iterator();
+            while (ir.hasNext()) {
+                FormField ff = (FormField)ir.next();
+                if (ff.getHide()==FormField.HIDE_ALWAYS) {
+                    if ("".equals(fieldHide)) {
+                        fieldHide = ff.getName();
+                    }
+                    else {
+                        fieldHide += "," + ff.getName();
+                    }
+                }
+            }
+
+            String[] fdsHide = StrUtil.split(fieldHide, ",");
+            if (fdsHide != null) {
+                // 20170731 fgf 增加hideNestCol
+                str += "function hideNestCol() {\n";
+
+                for (int i=0; i<fdsHide.length; i++) {
+                    if (!fdsHide[i].startsWith("nest.")) {
+                        FormField ff = fd.getFormField(fdsHide[i]);
+                        if (ff==null) {
+                            LogUtil.getLog(getClass()).error(fd.getName() + " Field hidden " + fdsHide[i] + " is not exist.");
+                        }
+                        else {
+                            str += FormField.getHideCtlScript(ff, FORM_FLEMENT_ID);
+                        }
+                    }
+                    else {
+                        str += "try{ hideNestTableCol('" + fdsHide[i].substring("nest.".length()) +  "'); }catch(e) {}\n";
+                        str += "try{ hideNestSheetCol('" + fdsHide[i].substring("nest.".length()) +  "'); }catch(e) {}\n";
+                    }
+                }
+                str += "}\n";
+
+                str += "hideNestCol();\n";
+
+                // 屏蔽鼠标右键
+                // if (!pvg.isUserPrivValid(request, "admin"))
+                //    str += "$(document).bind('contextmenu', function(e){return false;});";
+            }
+
         }
 
         // 清除其它辅助图片按钮等
@@ -941,7 +955,7 @@ public class Render {
         
         str += WorkflowUtil.doGetViewJS(request, null, fd, fdao, new Privilege().getUser(request), true);
 
-        // 一米OA签名
+        // 水印签名
         if (License.getInstance().isFree()) {
         	content += License.getFormWatermark();
         }

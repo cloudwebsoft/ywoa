@@ -28,7 +28,7 @@ public class GetVerificationCodeAction {
 	private static int NOT_HAVE_ENTERPRISE_NO = 2;   //没有企业号，提示注册
 	
 	private static int TYPE_LOCAL = 0 ;              //短信发送方，本地
-	private static int TYPE_YIMIHOME = 1 ;           //短信发送方，一米之家
+	private static int TYPE_YIMIHOME = 1 ;           //短信发送方，云端
 	
 	private String enterpriseNo = "";
 	private String name = "";

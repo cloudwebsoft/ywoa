@@ -990,11 +990,13 @@
 	           </unit>
 	        </primaryKey>
 	        <create>insert into visual_module_setup (code,list_field,query_field,name,kind,form_code,list_field_width,list_field_order,list_field_link,msg_prop,validate_prop,validate_msg,view_list,field_begin_date,field_end_date,field_name,field_desc,field_label,scale_default,scale_min,scale_max) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-		    <save>update visual_module_setup set list_field=?,query_field=?,list_field_width=?,list_field_order=?,is_use=?,name=?,nav_tag_name=?,nav_tag_url=?,nav_tag_order=?,sub_nav_tag_name=?,sub_nav_tag_url=?,sub_nav_tag_order=?,btn_name=?,btn_script=?,btn_order=?,url_list=?,list_field_link=?,scripts=?,view_show=?,view_edit=?,filter=?,btn_bclass=?,is_workLog=?,msg_prop=?,validate_prop=?,validate_msg=?,view_list=?,field_begin_date=?,field_end_date=?,field_name=?,field_desc=?,field_label=?,scale_default=?,scale_min=?,scale_max=?,url_edit=?,orderby=?,sort=?,op_link_name=?,op_link_url=?,op_link_order=?,prompt_icon=?,prompt_field=?,prompt_cond=?,prompt_value=?,url_show=?,btn_edit_show=?,op_link_field=?,op_link_cond=?,op_link_value=?,op_link_event=?,btn_display_show=?,btn_add_show=?,description=?,btn_edit_display=?,btn_print_display=?,btn_role=?,btn_flow_show=?,btn_log_show=?,btn_del_show=?,op_link_role=?,cws_status=?,is_unit_show=?,unit_code=?,field_tree_show=?,field_tree_list=?,is_edit_inplace=? where code=?</save>
-	        <load>select code,list_field,query_field,list_field_width,list_field_order,is_use,name,nav_tag_name,nav_tag_url,nav_tag_order,sub_nav_tag_name,sub_nav_tag_url,sub_nav_tag_order,btn_name,btn_script,btn_order,url_list,list_field_link,scripts,kind,form_code,view_show,view_edit,filter,btn_bclass,is_system,is_workLog,msg_prop,validate_prop,validate_msg,view_list,field_begin_date,field_end_date,field_name,field_desc,field_label,scale_default,scale_min,scale_max,url_edit,orderby,sort,op_link_name,op_link_url,op_link_order,prompt_icon,prompt_field,prompt_cond,prompt_value,url_show,btn_edit_show,op_link_field,op_link_cond,op_link_value,op_link_event,btn_display_show,btn_add_show,description,btn_edit_display,btn_print_display,btn_role,btn_flow_show,btn_log_show,btn_del_show,op_link_role,cws_status,is_unit_show,unit_code,field_tree_show,field_tree_list,is_edit_inplace from visual_module_setup where code=?</load>
+		    <save>update visual_module_setup set list_field=?,query_field=?,list_field_width=?,list_field_order=?,is_use=?,name=?,nav_tag_name=?,nav_tag_url=?,nav_tag_order=?,sub_nav_tag_name=?,sub_nav_tag_url=?,sub_nav_tag_order=?,btn_name=?,btn_script=?,btn_order=?,url_list=?,list_field_link=?,scripts=?,view_show=?,view_edit=?,filter=?,btn_bclass=?,is_workLog=?,msg_prop=?,validate_prop=?,validate_msg=?,view_list=?,field_begin_date=?,field_end_date=?,field_name=?,field_desc=?,field_label=?,scale_default=?,scale_min=?,scale_max=?,url_edit=?,orderby=?,sort=?,op_link_name=?,op_link_url=?,op_link_order=?,prompt_icon=?,prompt_field=?,prompt_cond=?,prompt_value=?,url_show=?,btn_edit_show=?,op_link_field=?,op_link_cond=?,op_link_value=?,op_link_event=?,btn_display_show=?,btn_add_show=?,description=?,btn_edit_display=?,btn_print_display=?,btn_role=?,btn_flow_show=?,btn_log_show=?,btn_del_show=?,op_link_role=?,cws_status=?,is_unit_show=?,unit_code=?,field_tree_show=?,field_tree_list=?,is_edit_inplace=?,module_code_log=?,add_to_url=?,list_field_show=? where code=?</save>
+	        <load>select code,list_field,query_field,list_field_width,list_field_order,is_use,name,nav_tag_name,nav_tag_url,nav_tag_order,sub_nav_tag_name,sub_nav_tag_url,sub_nav_tag_order,btn_name,btn_script,btn_order,url_list,list_field_link,scripts,kind,form_code,view_show,view_edit,filter,btn_bclass,is_system,is_workLog,msg_prop,validate_prop,validate_msg,view_list,field_begin_date,field_end_date,field_name,field_desc,field_label,scale_default,scale_min,scale_max,url_edit,orderby,sort,op_link_name,op_link_url,op_link_order,prompt_icon,prompt_field,prompt_cond,prompt_value,url_show,btn_edit_show,op_link_field,op_link_cond,op_link_value,op_link_event,btn_display_show,btn_add_show,description,btn_edit_display,btn_print_display,btn_role,btn_flow_show,btn_log_show,btn_del_show,op_link_role,cws_status,is_unit_show,unit_code,field_tree_show,field_tree_list,is_edit_inplace,module_code_log,add_to_url,list_field_show from visual_module_setup where code=?</load>
         	<list>select code from visual_module_setup</list>
 	        <del>delete from visual_module_setup where code=?</del>
-	        <sqls></sqls>
+	        <sqls>
+				<sql name="listForForm">select code from visual_module_setup where form_code=</sql>
+			</sqls>
 	        <connName></connName>
 	        <blockSize>100</blockSize>
 	        <formValidatorFile></formValidatorFile>
@@ -2322,5 +2324,22 @@
 	        <formValidatorFile></formValidatorFile>
 			<objCachable>true</objCachable>
 	    </table>
+		<table name="visual_attach_log" objName="com.redmoon.oa.visual.AttachmentLogDb">
+			<primaryKey type="long">
+				<unit>
+					<name>id</name>
+					<type>long</type>
+				</unit>
+			</primaryKey>
+			<create>insert into visual_attach_log (user_name,module_id,att_id,log_type,log_time) values(?,?,?,?,?)</create>
+			<save>update visual_attach_log set log_time=? where id=?</save>
+			<load>select id,user_name,module_id,att_id,log_type,log_time from visual_attach_log where id=?</load>
+			<list>select id from visual_attach_log order by id desc</list>
+			<del>delete from visual_attach_log where id=?</del>
+			<connName></connName>
+			<blockSize>100</blockSize>
+			<formValidatorFile></formValidatorFile>
+			<objCachable>true</objCachable>
+		</table>
 	</tables>
 </config>

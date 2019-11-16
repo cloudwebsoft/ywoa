@@ -74,7 +74,8 @@ $.fn.editInPlace.defaults = {
 	save_if_nothing_changed:	false,  // boolean: submit to function or server even if the user did not change anything
 	on_blur:			"save", // string: "save" or null; what to do on blur; will be overridden if show_buttons is true
 	cancel:				"", // string: if not empty, a jquery selector for elements that will not cause the editor to open even though they are clicked. E.g. if you have extra buttons inside editable fields
-	
+
+	checkbox_present: 	"", // 复选框的显示值
 	// All callbacks will have this set to the DOM node of the editor that triggered the callback
 	
 	callback:			null, // function: function to be called when editing is complete; cancels ajax submission to the url param. Prototype: function(idOfEditor, enteredText, orinalHTMLContent, settingsParams, callbacks). The function needs to return the value that should be shown in the dom. Returning undefined means cancel and will restore the dom and trigger an error. callbacks is a dictionary with two functions didStartSaving and didEndSaving() that you can use to tell the inline editor that it should start and stop any saving animations it has configured. /* DEPRECATED in 2.1.0 */ Parameter idOfEditor, use $(this).attr('id') instead
@@ -257,7 +258,7 @@ $.extend(InlineEditor.prototype, {
 	},
 	
 	createEditorElement: function() {
-		if (-1 === $.inArray(this.settings.field_type, ['text', 'textarea', 'select', 'date', 'date_time']))
+		if (-1 === $.inArray(this.settings.field_type, ['text', 'textarea', 'select', 'date', 'date_time', 'checkbox']))
 			throw "Unknown field_type <fnord>, supported are 'text', 'textarea' and 'select'";
 		
 		var editor = null;
@@ -288,18 +289,29 @@ $.extend(InlineEditor.prototype, {
 				format: 'Y-m-d H:i:00'
 			});
 		}
+		else if ("checkbox" === this.settings.field_type) {
+			editor = $('<input type="checkbox" ' + this.inputNameAndClass() + ' value="1" />');
+		}
 		return editor;
 	},
 	
 	setInitialValue: function() {
 		var initialValue = this.triggerDelegateCall('willOpenEditInPlace', this.originalValue);
 		var editor = this.dom.find(':input');
-		editor.val(initialValue);
-		
-		// Workaround for select fields which don't contain the original value.
-		// Somehow the browsers don't like to select the instructional choice (disabled) in that case
-		if (editor.val() !== initialValue)
-			editor.val(''); // selects instructional choice
+		if (editor.attr('type')=="checkbox") {
+			// 如果值为复选框的显示值，一般为“是”
+			if (initialValue==this.settings.checkbox_present) {
+				editor.attr("checked", "checked");
+			}
+		}
+		else {
+			editor.val(initialValue);
+			// Workaround for select fields which don't contain the original value.
+			// Somehow the browsers don't like to select the instructional choice (disabled) in that case
+			if (editor.val() !== initialValue)
+				editor.val(''); // selects instructional choice
+		}
+
 	},
 	
 	inputNameAndClass: function() {
@@ -407,8 +419,14 @@ $.extend(InlineEditor.prototype, {
 	handleSaveEditor: function(anEvent) {
 		if (false === this.triggerDelegateCall('shouldCloseEditInPlace', true, anEvent))
 			return;
-		
-		var enteredText = this.dom.find(':input').val();
+
+		var editor = this.dom.find(':input');
+		var enteredText = editor.val();
+		if (editor.attr("type")=="checkbox") {
+			if (!editor.attr("checked")) {
+				enteredText = "";
+			}
+		}
 		enteredText = this.triggerDelegateCall('willCloseEditInPlace', enteredText);
 		
 		if (this.isDisabledDefaultSelectChoice()
@@ -489,7 +507,7 @@ $.extend(InlineEditor.prototype, {
 			+ ((this.settings.params) ? '&' + this.settings.params : '')
 			+ '&' + this.settings.original_html + '=' + encodeURIComponent(this.originalValue) /* DEPRECATED in 2.2.0 */
 			+ '&' + this.settings.original_value + '=' + encodeURIComponent(this.originalValue);
-		
+		// console.log(data);
 		this.enableOrDisableAnimationCallbacks(true, false);
 		this.didStartSaving();
 		var that = this;

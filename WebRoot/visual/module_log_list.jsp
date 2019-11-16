@@ -28,9 +28,9 @@ String action = ParamUtil.get(request, "action");
 // 日志对应模块的编码
 String moduleCode = ParamUtil.get(request, "code");
 
-String code = "module_log"; // ParamUtil.get(request, "code");
+String code = ParamUtil.get(request, "moduleCodeLog");
 if ("".equals(code)) {
-	code = ParamUtil.get(request, "formCode");
+	code = "module_log";
 }
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDb(code);
@@ -198,28 +198,13 @@ if (!sqlUrlStr.equals("")) {
 	querystr += "&" + sqlUrlStr;
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-if (fields==null) {
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+if (fields==null || fields.length==0) {
 	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, "显示列未配置！"));
 	return;
 }
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
-
-String listFieldLink = StrUtil.getNullStr(msd.getString("list_field_link"));
-// list_field_link是后来新增的，所以要检查并初始化以兼容之前的版本
-if (!listField.equals("") && listFieldLink.equals("")) {
-	for (int i=0; i<fields.length; i++) {
-		if (listFieldLink.equals(""))
-			listFieldLink = "#";
-		else
-			listFieldLink += ",#";
-	}
-}
-String[] fieldsLink = StrUtil.split(listFieldLink, ",");
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
 
 MacroCtlMgr mm = new MacroCtlMgr();
 
@@ -545,22 +530,23 @@ if (btnNames!=null) {
                			%>
 						<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
                			<%
+						String idPrefix = fieldName.replaceAll(":", "_");
 						if (condType.equals("0")) {
-							String fDate = ParamUtil.get(request, ff.getName() + "FromDate");
-							String tDate  = ParamUtil.get(request, ff.getName() + "ToDate");
-							list.add(ff.getName() + "FromDate");
-							list.add(ff.getName() + "ToDate");
+							String fDate = ParamUtil.get(request, fieldName + "FromDate");
+							String tDate  = ParamUtil.get(request, fieldName + "ToDate");
+							list.add(idPrefix + "FromDate");
+							list.add(idPrefix + "ToDate");
 							%>
                               	大于
-                              <input id="<%=ff.getName()%>FromDate" name="<%=ff.getName()%>FromDate" size="15" style="width:80px" value = "<%=fDate%>" />
+                              <input id="<%=idPrefix%>FromDate" name="<%=fieldName%>FromDate" size="15" style="width:80px" value = "<%=fDate%>" />
                              	 小于
-                              <input id="<%=ff.getName()%>ToDate" name="<%=ff.getName()%>ToDate" size="15" style="width:80px" value = "<%=tDate%>" />
+                              <input id="<%=idPrefix%>ToDate" name="<%=fieldName%>ToDate" size="15" style="width:80px" value = "<%=tDate%>" />
 	  						<%
 						}
 						else {
-							list.add(ff.getName());
+							list.add(idPrefix);
 							%>
-                            <input id="<%=ff.getName()%>" name="<%=ff.getName()%>" size="15" value = "<%=queryValue%>" />
+                            <input id="<%=idPrefix%>" name="<%=fieldName%>" size="15" value = "<%=queryValue%>" />
 							<%
 						}
 					} else if(ff.getType().equals(FormField.TYPE_MACRO)) {
@@ -1039,18 +1025,18 @@ String privurl=request.getRequestURL()+"?"+StrUtil.UrlEncode(queryString, "utf-8
 function action(com, grid) {
 	if (com=="导出") {
 		var cols = "";
-		$("th[axis*='col']", this.hDiv).each(function() {
-			if (!this.hide) {
-				if(typeof($(this).attr("abbr"))!="undefined") {
-					if (cols=="") {
-						cols = $(this).attr("abbr");
-					}
-					else {
-						cols += "," + $(this).attr("abbr");
-					}
-				}
+		for (i=0; i<colModel.length; i++) {
+			if (colModel[i].name=="colOperate")
+				continue;
+			
+			if (cols=="") {
+				cols = colModel[i].name;
 			}
-		});
+			else {
+				cols += "," + colModel[i].name;
+			}
+		}
+
 		
 		<%
 		// 检查是否设置有模板

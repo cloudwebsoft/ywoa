@@ -47,7 +47,6 @@ public class Config {
         cfgpath = URLDecoder.decode(cfgpath);
         properties = new XMLProperties(cfgpath);
 
-
         SAXBuilder sb = new SAXBuilder();
         try {
             FileInputStream fin = new FileInputStream(cfgpath);
@@ -121,6 +120,7 @@ public class Config {
     }
 
     public void refresh() {
+        cfg = null;
         try {
             RMCache.getInstance().invalidateGroup(group);
         }

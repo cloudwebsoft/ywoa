@@ -168,7 +168,21 @@ public class FlowModifyAction {
 			JSONArray fields  = new JSONArray(); 
 	
 			boolean isHideField = true;
+			String fieldHide = "";
 			String[] fdsHide = null;
+			// 将不显示的字段加入fieldHide
+			Iterator ir = fd.getFields().iterator();
+			while (ir.hasNext()) {
+				FormField ff = (FormField)ir.next();
+				if (ff.getHide()==FormField.HIDE_ALWAYS) {
+					if ("".equals(fieldHide)) {
+						fieldHide = ff.getName();
+					}
+					else {
+						fieldHide += "," + ff.getName();
+					}
+				}
+			}
 			
 	        MyActionDb mad = new MyActionDb();
 	        mad = mad.getMyActionDbOfFlow(wf.getId(), privilege.getUserName(skey));
@@ -177,10 +191,17 @@ public class FlowModifyAction {
 	            WorkflowActionDb wad = new WorkflowActionDb();
 	            wad = wad.getWorkflowActionDb((int) mad.getActionId());
 	
-	            String fieldHide = StrUtil.getNullString(wad.getFieldHide()).trim();
-	            fdsHide = StrUtil.split(fieldHide, ",");
-	        }
-	        
+	            String fHide = StrUtil.getNullString(wad.getFieldHide()).trim();
+				if ("".equals(fieldHide)) {
+					fieldHide = fHide;
+				}
+				else {
+					fieldHide += "," + fHide;
+				}
+			}
+
+			fdsHide = StrUtil.split(fieldHide, ",");
+
 			while (ri.hasNext()) {
 				ResultRecord rr = (ResultRecord) ri.next();
 				
@@ -281,7 +302,7 @@ public class FlowModifyAction {
 			Document doc = dm.getDocument(doc_id);
 			if (doc!=null) {					
 				java.util.Vector attachments = doc.getAttachments(1);
-			    Iterator ir = attachments.iterator();
+			    ir = attachments.iterator();
 				while (ir.hasNext()) {
 				  	Attachment am = (Attachment) ir.next();
 					JSONObject file = new JSONObject();

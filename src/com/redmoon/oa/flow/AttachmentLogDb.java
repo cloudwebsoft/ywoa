@@ -65,7 +65,6 @@ public class AttachmentLogDb extends QObjectDb {
 	 * @param request
 	 * @param flowId
 	 * @param attId
-	 * @param LogType
 	 * @return
 	 */
 	public String getQuery(HttpServletRequest request, long flowId, long attId) {

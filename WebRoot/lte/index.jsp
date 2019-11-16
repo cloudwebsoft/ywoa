@@ -125,8 +125,16 @@ if (!privilege.isUserPrivValid(request, "admin") && privilege.isUserPrivValid(re
                     	<li>
                     		<%
                     		String link = lf.getLink(request);
-                    		if (!link.equals("")) { %>
-                        	<a class="J_menuItem" href="../<%=link %>"><i class="fa <%=faIcon %>"></i> <span class="nav-label"><%=lf.getName(request)%></span></a>
+                    		if (!link.equals("")) {
+                                if (!link.startsWith("http")) {
+                                    link = "../" + link;
+                                }
+                                String target = lf.getTarget();
+                                if ("_blank".equals(target) || "_top".equals(target)) {
+                                    target = " target=" + target;
+                                }
+                            %>
+                        	<a class="J_menuItem" href="<%=link %>" <%=target%>><i class="fa <%=faIcon %>"></i> <span class="nav-label"><%=lf.getName(request)%></span></a>
                         	<%} else {%>
                     	    <a href="#">
                             	<i class="fa <%=faIcon %>"></i>
@@ -152,9 +160,16 @@ if (!privilege.isUserPrivValid(request, "admin") && privilege.isUserPrivValid(re
 	                            String link2 = lf2.getLink(request);
 	                            LeafChildrenCacheMgr lccm3 = new LeafChildrenCacheMgr(lf2.getCode());
 	                            Vector v3 = lccm3.getChildren();	 
-	                            if (v3.size()==0) {                       
+	                            if (v3.size()==0) {
+	                                if (!link2.startsWith("http")) {
+	                                    link2 = "../" + link2;
+                                    }
+	                                String target = lf2.getTarget();
+                                    if ("_blank".equals(target) || "_top".equals(target)) {
+                                        target = " target=" + target;
+                                    }
 	                            %>
-	                                <a class="J_menuItem" href="../<%=link2 %>"><%=lf2.getName(request) %></a>
+	                                <a class="J_menuItem" href="<%=link2 %>" <%=target%>><%=lf2.getName(request) %></a>
 								<%} else {%>
 	                                <a href="#"><%=lf2.getName(request) %> <span class="fa arrow"></span></a>
 	                                <ul class="nav nav-third-level">
@@ -162,10 +177,19 @@ if (!privilege.isUserPrivValid(request, "admin") && privilege.isUserPrivValid(re
 	                                Iterator ir3 = v3.iterator();
 	                                while (ir3.hasNext()) {
 	                                    Leaf lf3 = (Leaf)ir3.next();
-	                                    if (!lf3.canUserSee(request) || !lf3.isUse())
-	                                        continue;	                                
+                                        if (!lf3.canUserSee(request) || !lf3.isUse())
+	                                        continue;
+                                        String link3 = lf3.getLink(request);
+                                        if (!link3.startsWith("http")) {
+                                            link3 = "../" + link3;
+                                        }
+                                        String target = lf3.getTarget();
+                                        if ("_blank".equals(target) || "_top".equals(target)) {
+                                            target = " target=" + target;
+                                        }
 	                                %>
-	                                    <li><a class="J_menuItem" href="../<%=lf3.getLink(request) %>"><%=lf3.getName(request) %></a>
+	                                    <li>
+                                            <a class="J_menuItem" href="<%=link3 %>" <%=target%>><%=lf3.getName(request) %></a>
 	                                    </li>
 	                                <%} %>
 	                                </ul>
@@ -260,7 +284,7 @@ if (!privilege.isUserPrivValid(request, "admin") && privilege.isUserPrivValid(re
                 </button>
                 <nav class="page-tabs J_menuTabs">
                     <div class="page-tabs-content">
-                        <a href="javascript:;" class="active J_menuTab" data-id="<%=mainPage%>"><%=mainTitle %></a>
+                        <a href="javascript:;" class="active J_menuTab" data-name="0" data-id="<%=mainPage%>"><%=mainTitle %></a>
                     </div>
                 </nav>
                 <button class="roll-nav roll-right J_tabRight"><i class="fa fa-forward"></i>
@@ -281,7 +305,7 @@ if (!privilege.isUserPrivValid(request, "admin") && privilege.isUserPrivValid(re
                 <a href="../exit_oa.jsp" class="roll-nav roll-right J_tabExit"><i class="fa fa fa-sign-out"></i> 退出</a>
             </div>
             <div class="row J_mainContent" id="content-main">
-                <iframe class="J_iframe" name="iframe0" width="100%" height="100%" src="<%=mainPage %>" frameborder="0" data-id="<%=mainPage %>" seamless></iframe>
+                <iframe class="J_iframe" name="iframe0" width="100%" height="100%" src="<%=mainPage %>" frameborder="0" data-id="<%=mainPage %>" data-name="0" seamless></iframe>
             </div>
             <div class="footer">
                 <div class="pull-right">&copy; 2014-2015 <a href="http://www.yimihome.com/" target="_blank">cloud web soft</a>

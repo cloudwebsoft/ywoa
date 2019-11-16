@@ -80,7 +80,7 @@ else if (op.equals("del")) {
 			json.put("ret", "2");
 			json.put("msg",e.getMessage() );
 			json.put("selectCode",delcode);
-			//out.clear();
+			// out.clear();
 			// out.print(e.getMessage());
 		}
 	}
@@ -94,7 +94,7 @@ else if (op.equals("modify")) {
 	int type = ParamUtil.getInt(request, "type", DeptDb.TYPE_DEPT);
 	boolean re = true;
 	try {
-		//判断名称是否有重复
+		// 判断名称是否有重复
 		DeptDb dept = new DeptDb();
 		dept = dept.getDeptDb(code);
 		String parent_code = dept.getParentCode();
@@ -102,16 +102,16 @@ else if (op.equals("modify")) {
 	    Iterator ri = children.iterator();
 	    while (ri.hasNext()) {
 	    	DeptDb childlf = (DeptDb) ri.next();
-	    	if(code.equals(childlf.getCode())){
-	    		continue;
-	    	}
-	    	String name = childlf.getName();
-	    	if(name.equals(newName)){
-	    		json.put("ret", 2);	
-	    		json.put("msg", "请检查名称是否有重复！");	
-				out.print(json.toString());	
-				return;	
-	    	}
+			if (code.equals(childlf.getCode())) {
+				continue;
+			}
+			String name = childlf.getName();
+			if (name.equals(newName)) {
+				json.put("ret", 2);
+				json.put("msg", "请检查名称是否有重复！");
+				out.print(json.toString());
+				return;
+			}
 	    }
 		//修改节点
 		re = dir.update(request);

@@ -20,7 +20,7 @@ if ("".equals(codeTop)) {
     <li id="menu9"><a href="<%=request.getContextPath()%>/visual/module_export_list.do?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>导出设置</span></a></li>
     <%if (codeTop.equals(formCodeTop)) {%>
 	<%
-	if (License.getInstance().isSrc()) {
+	if (false && License.getInstance().isSrc()) {
     %>
     <li id="menu7"><a href="<%=request.getContextPath()%>/visual/module_scripts_iframe.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>事件脚本</span></a></li>
     <%
@@ -31,7 +31,7 @@ if ("".equals(codeTop)) {
     <li id="menu8"><a href="<%=request.getContextPath()%>/admin/form_reports.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>报表关联</span></a></li>
     <%FormDb fedb = new FormDb(formCodeTop);
     if (fedb != null && fedb.isLoaded() && !fedb.isSystem()) {%>
-    <li id="menu5"><a href="javascript:;" onclick="addTab('<%=fedb.getName()%>', '<%=request.getContextPath()%>/admin/form_edit.jsp?code=<%=formCodeTop%>')"><span>表单编辑</span></a></li>
+    <li id="menu5"><a href="javascript:;" onclick="addTab('<%=fedb.getName()%>-表单编辑', '<%=request.getContextPath()%>/admin/form_edit.jsp?code=<%=formCodeTop%>')"><span>表单编辑</span></a></li>
     <%}%>
   </ul>
 </div>

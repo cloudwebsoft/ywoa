@@ -19,7 +19,7 @@ public class HttpPostFileUtil {
     private URL url;
     private HttpURLConnection conn;
     private String boundary = "--------httppost123";
-    private HashMap<String, String> textParams = new HashMap<String, String>();
+    private HashMap<String, Object> textParams = new HashMap<String, Object>();
     private HashMap<String, File> fileparams = new HashMap<String, File>();
     private DataOutputStream outputStream;
 
@@ -43,7 +43,7 @@ public class HttpPostFileUtil {
      * @param name
      * @param value
      */
-    public void addParameter(String name, String value) {
+    public void addParameter(String name, Object value) {
         textParams.put(name, value);
     }
 
@@ -79,7 +79,7 @@ public class HttpPostFileUtil {
         writeStringParams();
         paramsEnd();
         int code = conn.getResponseCode();
-        if (code == 200) {
+        if (code == 200 || code==500) {
             InputStream in = conn.getInputStream();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] buf = new byte[1024 * 8];
@@ -117,11 +117,22 @@ public class HttpPostFileUtil {
         Set<String> keySet = textParams.keySet();
         for (Iterator<String> it = keySet.iterator(); it.hasNext(); ) {
             String name = it.next();
-            String value = textParams.get(name);
-            outputStream.writeBytes("--" + boundary + "\r\n");
-            outputStream.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
-            outputStream.writeBytes("\r\n");
-            outputStream.writeBytes(encode(value) + "\r\n");
+            Object ov = textParams.get(name);
+
+            if (ov instanceof String[]) {
+                String[] ary = (String[])ov;
+                for (String val : ary) {
+                    outputStream.writeBytes("--" + boundary + "\r\n");
+                    outputStream.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
+                    outputStream.writeBytes("\r\n");
+                    outputStream.writeBytes(encode(val) + "\r\n");
+                }
+            } else {
+                outputStream.writeBytes("--" + boundary + "\r\n");
+                outputStream.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
+                outputStream.writeBytes("\r\n");
+                outputStream.writeBytes(encode((String)ov) + "\r\n");
+            }
         }
     }
 

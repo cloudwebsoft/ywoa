@@ -13,13 +13,16 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.redmoon.oa.sys.DebugUtil;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import test.Const;
-import test.ExpressionCondDeParser;
-import test.SqlNode;
+import com.redmoon.oa.sql.Const;
+import com.redmoon.oa.sql.ExpressionCondDeParser;
+import com.redmoon.oa.sql.SqlNode;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
@@ -37,10 +40,6 @@ import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.AllColumns;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.test.tablesfinder.TablesNamesFinder;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
@@ -516,7 +515,7 @@ public class QueryScriptUtil {
 			String sqlReplaced = SQLUtil.change(sql, pvg.getUser(request));				
 			sqlReplaced = getSqlExpressionReplacedWithFieldValue(sqlReplaced, mapCondValue, mapType);
 			
-			LogUtil.getLog(getClass()).info("sql:" + sql + " sqlReplaced:" + sqlReplaced);
+			DebugUtil.i(getClass(), "executeQueryOnChangCondValue", "sql:" + sql + " sqlReplaced:" + sqlReplaced);
 			
 			if (sqlReplaced==null)
 				throw new ErrMsgException("SQL语句非法，解析失败！");
@@ -1148,47 +1147,122 @@ public class QueryScriptUtil {
 			
 			TablesNamesFinder tablesNamesFinder = new TablesNamesFinder();
 			List tableList = tablesNamesFinder.getTableList(selectStatement);
-			
 			PlainSelect plainSelect = (PlainSelect)selectStatement.getSelectBody();
+
+			// 取得别名与表名的对应关系
+			FromItem fromItem = plainSelect.getFromItem();
+			List<Join> joins = plainSelect.getJoins();
+			Map<String, String> tableMap = new HashMap<String, String>();
+			if(joins != null) {
+				for (Join join : joins) {
+					Expression onExpression = join.getOnExpression();
+					FromItem rightItem = join.getRightItem();
+					if (rightItem instanceof Table) {
+						Table table = (Table) rightItem;
+						tableMap.put(table.getAlias().toUpperCase(), table.getName());
+					}
+				}
+			}
+			if (fromItem instanceof Table) {
+				Table table = (Table) fromItem;
+				tableMap.put(table.getAlias().toUpperCase(), table.getName());
+			}
+
 			Expression expression = plainSelect.getWhere();
-			        
 			// System.out.println("where=" + expression.toString());
 			SqlNode whereNode = new SqlNode();
 			parseWhere(expression, whereNode);	
 			
 			// 填充hashmap
-			Iterator ir = condFields.iterator();
+/*			Iterator ir = condFields.iterator();
 			while (ir.hasNext()) {
 				String fieldName = (String)ir.next();
 				map.put(fieldName, fieldName);
-			}
-			        
-			for (Iterator iter = tableList.iterator(); iter.hasNext();) {
-				String tableName = (String) iter.next();
-				tableName = tableName.replaceAll("#", "");
-				String formCode = FormDb.getCodeByTableName(tableName);
-				// out.print("tableName=" + tableName + "&nbsp;&nbsp;formCode=" + formCode + "<BR>");
-				// 将字段的中文名称存在mapFieldTitle的value
-				if (formCode!=null) {
-					FormDb fd = new FormDb();
-					fd = fd.getFormDb(formCode);
-					ir = condFields.iterator();
-					while (ir.hasNext()) {
-						String fieldName = (String) ir.next();
-						// fieldName中可能带有别名
-						fieldName = fieldName.replaceAll("#", "");
-						if (fieldName.equalsIgnoreCase("cws_id")) {
-							map.put(fieldName, "cws_id关联");
+			}*/
+
+			if (tableMap.size()==0) {
+				for (Iterator iter = tableList.iterator(); iter.hasNext(); ) {
+					String tableName = (String) iter.next();
+					tableName = tableName.replaceAll("#", "");
+					String formCode = FormDb.getCodeByTableName(tableName);
+					// out.print("tableName=" + tableName + "&nbsp;&nbsp;formCode=" + formCode + "<BR>");
+					// 将字段的中文名称存在mapFieldTitle的value
+					if (formCode != null) {
+						FormDb fd = new FormDb();
+						fd = fd.getFormDb(formCode);
+						Iterator ir = condFields.iterator();
+						while (ir.hasNext()) {
+							String fieldName = (String) ir.next();
+							// fieldName中可能带有别名
+							fieldName = fieldName.replaceAll("#", "");
+							if (fieldName.equalsIgnoreCase("cws_id")) {
+								map.put(fieldName, "cws_id关联");
+							} else {
+								FormField ff = fd.getFormField(fieldName);
+								if (ff != null) {
+									map.put(fieldName, ff.getTitle());
+								} else {
+									map.put(fieldName, fieldName);
+								}
+							}
 						}
-						else {
-							FormField ff = fd.getFormField(fieldName);
-							if (ff!=null) {
-								map.put(fieldName, ff.getTitle());
+					}
+				}
+			}
+			else {
+				Iterator ir = condFields.iterator();
+				while (ir.hasNext()) {
+					String fieldName = (String) ir.next();
+					// fieldName中可能带有别名
+					fieldName = fieldName.replaceAll("#", "");
+					if (fieldName.indexOf("cws_id")!=-1) {
+						map.put(fieldName, "cws_id关联");
+					} else {
+						int p = fieldName.indexOf(".");
+						// 如果有别名
+						if (p!=-1) {
+							String alias = fieldName.substring(0, p).toUpperCase();
+							String tableName = tableMap.get(alias);
+							String fName = fieldName.substring(p+1);
+							if (fName.equalsIgnoreCase("id")) {
+								map.put(fieldName, fName);
 							}
 							else {
-								map.put(fieldName, fieldName);
+								String formCode = FormDb.getCodeByTableName(tableName);
+								if (formCode != null) {
+									FormDb fd = new FormDb();
+									fd = fd.getFormDb(formCode);
+									FormField ff = fd.getFormField(fName);
+									if (ff != null) {
+										map.put(fieldName, ff.getTitle());
+									} else {
+										map.put(fieldName, fieldName);
+									}
+								}
 							}
-						}		
+						}
+						else {
+							// 如果没有别名，则遍历表，取出相应字段的名称
+							for (Iterator iter = tableList.iterator(); iter.hasNext(); ) {
+								String tableName = (String) iter.next();
+								tableName = tableName.replaceAll("#", "");
+								String formCode = FormDb.getCodeByTableName(tableName);
+								if (formCode != null) {
+									FormDb fd = new FormDb();
+									fd = fd.getFormDb(formCode);
+									if (fieldName.equalsIgnoreCase("cws_id")) {
+										map.put(fieldName, "cws_id关联");
+									} else {
+										FormField ff = fd.getFormField(fieldName);
+										if (ff != null) {
+											map.put(fieldName, ff.getTitle());
+										} else {
+											map.put(fieldName, fieldName);
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 			}

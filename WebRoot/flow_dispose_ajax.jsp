@@ -519,6 +519,7 @@ else {
 	  Vector vu = du.getDeptsOfUser(mad.getUserName());
 	  Iterator irdu = vu.iterator();
 	  %>
+      <span id="spanTokenException" style="display:none">isMatchUserException</span><!--用于在flow_dispose.jsp页面上判断是否需选择兼职部门-->
 	  请选择您所在的部门&nbsp;
 	  <%
 	  DeptMgr dm = new DeptMgr();

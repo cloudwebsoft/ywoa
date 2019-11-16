@@ -9,6 +9,7 @@
 <%@ page import="com.redmoon.oa.flow.strategy.*" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.visual.ModuleSetupDb" %>
+<%@ page import="org.apache.commons.lang3.StringUtils" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <HEAD>
@@ -133,7 +134,8 @@ while (ir.hasNext()) {
 			ModuleSetupDb msd = new ModuleSetupDb();
 			msd = msd.getModuleSetupDbOrInit(nestFormCode);
 			
-			String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+			String[] fields = msd.getColAry(false, "list_field");
+			String listField = "," + StrUtil.getNullStr(StringUtils.join(fields, ",")) + ",";
 			Iterator ir2 = nestfd.getFields().iterator();
 			while (ir2.hasNext()) {
 				FormField ff2 = (FormField)ir2.next();

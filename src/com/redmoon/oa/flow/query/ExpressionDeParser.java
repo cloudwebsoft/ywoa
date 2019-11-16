@@ -302,6 +302,7 @@ public class ExpressionDeParser implements ExpressionVisitor, ItemsListVisitor {
 			buffer.append(" NOT ");
 
 		String item = binaryExpression.getLeftExpression().toString();
+		item = item.replaceAll("#", "");
 		
 		// 替换条件中的字段值，用于查询列表中的搜索
 		if (mapCondChangeValue!=null) {
@@ -314,6 +315,10 @@ public class ExpressionDeParser implements ExpressionVisitor, ItemsListVisitor {
 						binaryExpression.setRightExpression(new LongValue(val));
 					} else {
 						// 取条件字段数据类型
+						int p = condFieldName.indexOf(".");
+						if (p!=-1) {
+							condFieldName = condFieldName.substring(p+1);
+						}
 				        Integer iType = (Integer)mapCondType.get(condFieldName.toUpperCase());
 				        int fieldType = FormField.FIELD_TYPE_VARCHAR;
 				        fieldType = QueryScriptUtil.getFieldTypeOfDBType(iType.intValue());
@@ -419,13 +424,14 @@ public class ExpressionDeParser implements ExpressionVisitor, ItemsListVisitor {
 			if (!val.equals("")) {
 				try {
 					Long.parseLong(val);
+					binaryExpression.setRightExpression(new LongValue(val));
 				}
 				catch(Exception e) {
-					throw new IllegalArgumentException("传入的条件参数为：" + val + "，该参数应该为整数！");
+					// 有时条件可能为id=T.cws_id，则值为T.cws_id
+					// binaryExpression.setRightExpression(new StringValue(val));
+					// throw new IllegalArgumentException("传入的条件参数为：" + val + "，该参数应该为整数！");
 				}
 				
-				binaryExpression.setRightExpression(new LongValue(
-						val));
 			}
 		} else if (fieldType == FormField.FIELD_TYPE_LONG) {
 			if (!val.equals("")) {		

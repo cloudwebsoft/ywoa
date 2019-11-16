@@ -15,16 +15,16 @@ public class DebugUtil {
     }
 
     public static void log(String clsName, String func, String msg) {
-        Config cfg = new Config();
+        Config cfg = Config.getInstance();
         int debugLevel = cfg.getInt("debugLevel");
         switch (debugLevel) {
             case 2:
-                LogUtil.getLog(clsName).info("func:" + msg);
+                LogUtil.getLog(clsName).info(func + ":" + msg);
                 break;
             case 1:
                 break;
             case 0:
-                LogUtil.getLog(clsName).info("func:" + msg);
+                LogUtil.getLog(clsName).info(func + ":" + msg);
                 System.out.println(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss") + " info: " + clsName + " " + func + ": " + msg);
                 break;
             case -1:

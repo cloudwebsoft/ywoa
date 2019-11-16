@@ -85,7 +85,7 @@ while (m.find()) {
 				if (o("<%=field.getName()%>")) { // 防止此控件也是SQL控件，并且此时还不存在
 					oldValue_<%=field.getName()%> = o("<%=field.getName()%>").value;
 				}
-                setInterval(function(){
+                setInterval(function() {
             					if (o("<%=field.getName()%>")) {
                                 	if (oldValue_<%=field.getName()%> != o("<%=field.getName()%>").value) {
                                     	oldValue_<%=field.getName()%> = o("<%=field.getName()%>").value;
@@ -93,7 +93,6 @@ while (m.find()) {
                                 	}
             					}
                             },500);
-
         }
         else {
         	// chrome下不支持，所以统一通过定时器检测
@@ -135,9 +134,12 @@ function getPFieldVal(fieldName) {
 }
 
 function onSQLCtlRelateFieldChange_<%=fieldName%>() {
+	$.ajaxSetup({
+		contentType:"application/x-www-form-urlencoded; charset=iso8859-1"
+	});
     $.ajax({
         type: "post",
-		contentType:"application/x-www-form-urlencoded; charset=iso8859-1",        
+		contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
         url: "<%=request.getContextPath()%>/flow/macro/macro_sql_ctl_js.jsp",
 		async: false,
         data: {
@@ -159,7 +161,8 @@ function onSQLCtlRelateFieldChange_<%=fieldName%>() {
             	if (o("<%=fieldName%>")) {
 						// 记录当前值
 						var curVal = $("#<%=fieldName%>").val();
-	                    $("#<%=fieldName%>").parent().replaceWith(data.html);
+	                    // $("#<%=fieldName%>").parent().replaceWith(data.html);
+						$("#<%=fieldName%>").prop("outerHTML", data.html);
 	                    
 	                    if (data.type=="select") {
 	                    	$("#<%=fieldName%>").val(curVal);
@@ -202,6 +205,7 @@ function onSQLCtlRelateFieldChange_<%=fieldName%>() {
 
 <%
 // nest_sheet_edit_relat.jsp中传过来时是edit
+// System.out.println(getClass() + " pageType=" + pageType);
 if (!"flowShow".equals(pageType) && !"show".equals(pageType)) { // && !"edit".equals(pageType)) {
 %>
 $(function() {

@@ -33,7 +33,7 @@ public class CityCtl extends AbstractMacroCtl{
 
         String rid = ff.getName(); // String)request.getAttribute("province_city_country_id");
 
-        str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' onchange=\"if (this.value!='') ajaxShowCityCountry" + rid + "('',this.value)\">";
+        str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' title='" + ff.getTitle() + "' onchange=\"if (this.value!='') ajaxShowCityCountry" + rid + "('',this.value)\">";
         str += "<option value=''>无</option>";
         if (ff.getValue()!=null && !ff.getValue().equals("")) {
             try {
@@ -194,5 +194,24 @@ public class CityCtl extends AbstractMacroCtl{
 
     public String getControlOptions(String userName, FormField ff) {
         return "";
+    }
+
+    /**
+     * 取得根据名称（而不是值）查询时需用到的SQL语句，如果没有特定的SQL语句，则返回空字符串
+     * @param request
+     * @param ff 当前被查询的字段
+     * @param value
+     * @param isBlur 是否模糊查询
+     * @return
+     */
+    public String getSqlForQuery(HttpServletRequest request, FormField ff, String value, boolean isBlur) {
+        if (isBlur) {
+            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=2 and r.region_name like " +
+                    StrUtil.sqlstr("%" + value + "%");
+        }
+        else {
+            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=2 and r.region_name=" +
+                    StrUtil.sqlstr(value);
+        }
     }
 }

@@ -73,6 +73,15 @@ String formCode = ParamUtil.get(request, "formCode");
       <td align="left"><input id="params" name="params" style="width: 100%"/></td>
     </tr>
     <tr>
+        <td align="center">列表中自动生成</td>
+        <td align="left">
+            <select id="isAutoWhenList" name="isAutoWhenList">
+                <option value="false" selected>否</option>
+                <option value="true">是</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
       <td align="center">参数字段</td>
       <td align="left">
 <style>
@@ -82,7 +91,10 @@ String formCode = ParamUtil.get(request, "formCode");
 					display: block;
 				}
 			</style>
-			<%
+          <a class="fieldLink" href="javascript:;" onclick="addParam('id')">-ID-</a>
+          <a class="fieldLink" href="javascript:;" onclick="addParam('cws_id')">-关联ID-</a>
+          <a class="fieldLink" href="javascript:;" onclick="addParam('cws_status')">-记录状态-</a>
+          <%
 				FormDb fd = new FormDb();
 				fd = fd.getFormDb(formCode);
 				ir = fd.getFields().iterator();
@@ -118,7 +130,7 @@ String formCode = ParamUtil.get(request, "formCode");
 
 	}
 	function doSel() {
-		var result = {"code":$('#sel').val(), "params":$('#params').val(), "name":sel.options[sel.selectedIndex].text};
+		var result = {"code":$('#sel').val(), "params":$('#params').val(), "name":sel.options[sel.selectedIndex].text, "isAutoWhenList":$('#isAutoWhenList').val()=="true"};
 		window.opener.setSequence(JSON.stringify(result), sel.options[sel.selectedIndex].text);
 		window.close();
 	}

@@ -17,6 +17,7 @@
                  com.redmoon.oa.ui.*,
                  java.lang.reflect.*"
 %>
+<%@ page import="com.redmoon.oa.fileark.plugin.PluginMgr" %>
 <jsp:useBean id="myconfig" scope="page" class="com.redmoon.oa.Config"/>
 <%
     // 清除缓存
@@ -68,8 +69,14 @@
     com.redmoon.oa.flow.strategy.StrategyMgr.reload();
 
     com.redmoon.oa.flow.WorkflowConfig.reload();
+    
+    com.redmoon.oa.ui.menu.Config.getInstance().refresh();
+    
+    PluginMgr.reload();
 
     Global.init();
+    
+    com.redmoon.oa.Config.reload();
 
     String op = ParamUtil.get(request, "op");
     if (op.equals("select")) {
@@ -349,7 +356,7 @@
                         <td colspan="2" valign=top>
                             <ul>
                                 <img src="images/<%= workplanInstalled?"check.gif":"x.gif" %>" width="13" height="13">
-                                工作流内核 (workplan.jar)
+                                工作流内核
                                 <br> <img src="images/<%= javaMailInstalled?"check.gif":"x.gif" %>" width="13" height="13">
                                 JavaMail支持 (mail.jar, activation.jar,)
                                 <br> <img src="images/<%= jdbcExtInstalled?"check.gif":"x.gif" %>" width="13" height="13">
@@ -470,6 +477,10 @@
                     <%
                         }
                     %>
+                    <tr>
+                        <td valign=top><img src="images/check.gif" width="13" height="13"></td>
+                        <td>您的应用服务器支持servlet 2.2或者更新。</td>
+                    </tr>
                 </table>
             </ul>
             <%
@@ -502,10 +513,10 @@
                 </script>
                 <hr size="0">
                 <div align="center">
+                    <input id="btnLogin" type="button" value="登录" onclick="window.location.href='<%=request.getContextPath()%>/index.jsp'" />
+                    &nbsp;&nbsp;
                     <input type="button" value="许可证" onclick="window.location.href='license.jsp'"/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    <input type="button" value="激活" onclick="window.location.href='sys_activate.jsp'"/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;
                     <input type="submit" value="下一步"/>
                 </div>
             </form>

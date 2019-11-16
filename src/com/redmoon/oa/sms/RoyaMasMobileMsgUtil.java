@@ -5,6 +5,7 @@ import cn.js.fan.util.*;
 
 import com.redmoon.oa.person.*;
 
+import com.redmoon.oa.sys.DebugUtil;
 import org.apache.log4j.*;
 
 import java.net.URL;
@@ -138,15 +139,15 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
 				realName = "系统";
 			}
 		}
-		String msg = ssrd.getMsgText() + " (" + realName + ")";
-		//String msg = ssrd.getMsgText();
-		UserDb user = new UserDb(userName);
-        
+		String msg = ssrd.getMsgText();
+		com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+		if (cfg.getBooleanProperty("isSmsWithSign")) {
+            msg += " (" + realName + ")";
+        }
 
+		UserDb user = new UserDb(userName);
         String exNumber = StrUtil.PadString(user.getId()+"",'0',4,true) ;
-        //System.out.println(exNumber);
-        //int id = Integer.parseInt(StrUtil.PadString(ssrd.getUserName(),'0',4,true));
-        return sendSMS(msg, mobile, "1", ""+id, "vip", exNumber);
+        return sendSMS(msg, mobile, "1", String.valueOf(id), "vip", exNumber);
     }
 
     public boolean sendSMS(String content, String mobilePhones, String priority,
@@ -167,27 +168,29 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
 
         String response = "";
         try {
-            strURL += "?MobilePhones=" + mobilePhones
-                    + "&Content=" + contentSms
-                    + "&Priority=" + priority
-                    + "&ExNumber=" + 9+exNumber
-                    + "&MessageFlag=" + messageFlag
-                    + "&ModuleName=" + moduleName;
-            URL objURL = new URL(strURL);
-            URLConnection objConn = objURL.openConnection();
-            objConn.setDoInput(true);
-            BufferedReader br = new BufferedReader(new InputStreamReader(
-                    objConn.getInputStream()));
-            String line = br.readLine();
-            while (line != null) {
-                response += line;
-                line = br.readLine();
-                logger.info(getClass() + ": SendSMS to " + mobilePhones + " " +
-                            line);
+            if (true) {
+                strURL += "?MobilePhones=" + mobilePhones
+                        + "&Content=" + contentSms
+                        + "&Priority=" + priority
+                        + "&ExNumber=" + 9 + exNumber
+                        + "&MessageFlag=" + messageFlag
+                        + "&ModuleName=" + moduleName;
+                URL objURL = new URL(strURL);
+                URLConnection objConn = objURL.openConnection();
+                objConn.setDoInput(true);
+                BufferedReader br = new BufferedReader(new InputStreamReader(
+                        objConn.getInputStream()));
+                String line = br.readLine();
+                while (line != null) {
+                    response += line;
+                    line = br.readLine();
+                }
+                br.close();
+                DebugUtil.i(getClass(), "sendSMS", "SendSMS to " + mobilePhones + " Content=" + content + " response=" + response);
             }
-            br.close();
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
         return true;
     }
@@ -246,7 +249,7 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
     }
 
     public String[] divContext(String context){
-        if(false){//如果不按70个自动切分短信
+        if(true){//如果不按70个自动切分短信
             return new String[]{context};
         }
 

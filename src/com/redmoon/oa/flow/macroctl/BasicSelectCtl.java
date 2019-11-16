@@ -5,6 +5,8 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import cn.js.fan.util.ParamUtil;
+import com.redmoon.oa.flow.FormParser;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,6 +39,8 @@ import com.redmoon.oa.visual.SQLBuilder;
  * @version 1.0
  */
 public class BasicSelectCtl extends AbstractMacroCtl  {
+    public static final String NONE = "    "; // 无
+
 	private final static String OFFICE_EQUIPMENT = "office_equipment";
     public BasicSelectCtl() {
     }
@@ -104,15 +108,15 @@ public class BasicSelectCtl extends AbstractMacroCtl  {
         // 当需要调用该方法时，应在flow/form_js_....jsp中重新定义，覆盖默认定义
         FormField ff = (FormField)request.getAttribute("filed_" + fieldName);
         if (ff!=null && ff.isReadonly()) {
-	        str.append("<select name='" + fieldName + "' id='" + fieldName +
-            "' style='background-color:#eeeeee' onfocus='this.defaultIndex=this.selectedIndex;' onchange='this.selectedIndex=this.defaultIndex;'>");        	
+	        str.append("<select name='" + fieldName + "' id='" + fieldName + "' title='" + ff.getTitle() + "'" +
+            " style='background-color:#eeeeee' onfocus='this.defaultIndex=this.selectedIndex;' onchange='this.selectedIndex=this.defaultIndex;'>");
         }
         else {
-	        str.append("<select name='" + fieldName + "' id='" + fieldName +
-	                   "' onchange='onBasciCtlChange(this)'>");
+	        str.append("<select name='" + fieldName + "' id='" + fieldName + "' title='" + ff.getTitle() + "'" +
+	                   " onchange='onBasciCtlChange(this)'>");
         }
         if (sd.getType() == SelectDb.TYPE_LIST) {
-        	str.append("<option value=''>无</option>");
+        	str.append("<option value=''>" + NONE + "</option>");
             Vector v = sd.getOptions(new JdbcTemplate());
             Iterator ir = v.iterator();
             while (ir.hasNext()) {
@@ -178,23 +182,30 @@ public class BasicSelectCtl extends AbstractMacroCtl  {
     	}
         String code = getDesc(ff);
         StringBuffer str = new StringBuffer();
-        str.append("<select id='" + ff.getName() + "' name='" + ff.getName() + "'>");
-        // str.append("<option value=''>无</option>");
         SelectMgr sm = new SelectMgr();
         SelectDb sd = sm.getSelect(code);
         if (sd.getType()==SelectDb.TYPE_LIST) {
-        	str.append("<option value=''>无</option>");        	
             Vector v = sd.getOptions(new JdbcTemplate());
-            Iterator ir = v.iterator();
-            while (ir.hasNext()) {
-                SelectOptionDb sod = (SelectOptionDb) ir.next();
-                str.append("<option value='" + sod.getValue() + "' " +
-                        ">" +
-                        sod.getName() +
-                        "</option>");
+            if (ff.getCondType().equals(SQLBuilder.COND_TYPE_MULTI)) {
+                Iterator ir = v.iterator();
+                while (ir.hasNext()) {
+                    SelectOptionDb sod = (SelectOptionDb) ir.next();
+                    str.append("<input name=\"" + ff.getName() + "\" type=\"checkbox\" value=\"" + sod.getValue() + "\" style=\"width:20px\"/>" + sod.getName());
+                }
+            }
+            else {
+                str.append("<select id='" + ff.getName() + "' name='" + ff.getName() + "'>");
+                str.append("<option value=''>" + NONE + "</option>");
+                Iterator ir = v.iterator();
+                while (ir.hasNext()) {
+                    SelectOptionDb sod = (SelectOptionDb) ir.next();
+                    str.append("<option value='" + sod.getValue() + "' " + ">" + sod.getName() + "</option>");
+                }
+                str.append("</select>");
             }
         }
         else {
+            str.append("<select id='" + ff.getName() + "' name='" + ff.getName() + "'>");
             TreeSelectDb tsd = new TreeSelectDb();
             tsd = tsd.getTreeSelectDb(sd.getCode());
             TreeSelectView tsv = new TreeSelectView(tsd);
@@ -205,8 +216,8 @@ public class BasicSelectCtl extends AbstractMacroCtl  {
             catch (ErrMsgException e) {
                 e.printStackTrace();
             }
+            str.append("</select>");
         }
-        str.append("</select>");
         return str.toString();
     }
     
@@ -370,7 +381,7 @@ public class BasicSelectCtl extends AbstractMacroCtl  {
         if (sd.getType() == SelectDb.TYPE_LIST) {
             JSONObject select = new JSONObject();
             try {
-                select.put("name", "无");
+                select.put("name", NONE);
                 select.put("value", "");
                 selects.put(select);
             } catch (JSONException ex) {

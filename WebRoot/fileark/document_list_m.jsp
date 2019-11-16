@@ -789,7 +789,7 @@
                     </ul>
 
                 </div>
-                <div id="displayId"><span style="margin-left:8px;">高级选项</span><a id="afBtn" href="javascript:;">
+                <div id="displayId"><a id="afBtn" href="javascript:;" style="text-decoration: none"><span style="margin-left:8px;">高级选项</span>
                     &nbsp;<img id="afBtnImg" src="<%=SkinMgr.getSkinPath(request)%>/images/af_arrow_down.png"/></a>
                     <div class="document_sch" id="document_sch_1" style="display:none;">
                         <div class="document_sch_title" id="document_sch_title_1">附件类型：</div>

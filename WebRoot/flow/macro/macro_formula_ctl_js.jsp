@@ -12,6 +12,7 @@
 <%
     Privilege pvg = new Privilege();
     int flowId = ParamUtil.getInt(request, "flowId", -1);
+    long id = ParamUtil.getLong(request, "id", -1);
     String fieldName = ParamUtil.get(request, "fieldName");
     String formCode = ParamUtil.get(request, "formCode");
     boolean isHidden = ParamUtil.getBoolean(request, "isHidden", false);
@@ -43,12 +44,31 @@
 
     StringBuffer sbParams = new StringBuffer();
     for (String fieldTitle : paramAry) {
+        fieldTitle = fieldTitle.trim();
         FormField field = fd.getFormField(fieldTitle);
         if (field == null) {
             field = fd.getFormFieldByTitle(fieldTitle);
         }
         if (field == null) {
-            StrUtil.concat(sbParams, ",", fieldTitle);
+            if ("id".equalsIgnoreCase(fieldTitle)) {
+                if ("flow".equals(pageType) || "flowShow".equals(pageType)) {
+                    com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+                    fdao = fdao.getFormDAO(flowId, fd);
+                    StrUtil.concat(sbParams, "+','+", String.valueOf(fdao.getId())); // @task 模块添加页面中没有元素id
+                }
+                else {
+                    StrUtil.concat(sbParams, "+','+", String.valueOf(id)); // @task 模块添加页面中没有元素id
+                }
+            }
+            else if ("cws_status".equalsIgnoreCase(fieldTitle)) {
+                StrUtil.concat(sbParams, "+','+", "$(o('" + fieldTitle + "')).val()"); // @task 模块编辑页面中没有元素cws_status
+            }
+            else if ("cws_id".equalsIgnoreCase(fieldTitle)) {
+                StrUtil.concat(sbParams, "+','+", "$(o('" + fieldTitle + "')).val()"); // @task 模块编辑页面中没有元素cws_status
+            }
+            else {
+                StrUtil.concat(sbParams, "+','+", "'" + fieldTitle + "'");
+            }
             continue;
         }
         else {
@@ -71,7 +91,7 @@
         });
 <%
     }
-    // System.out.println(getClass() + " fieldPairs=" + fieldPairs);
+    // System.out.println(getClass() + " sbParams=" + sbParams);
 %>
 // 取得本表单中相应的值
 function getFieldVal(fieldName) {
@@ -82,8 +102,25 @@ function getFieldVal(fieldName) {
 }
 
 function onFormulaCtlRelateFieldChange_<%=fieldName%>() {
-    var params = "<%=params%>";
-    var formulaStr = '#<%=code%>(' + <%=sbParams%> + ')';
+    var params = '<%=params%>'; // 必须得用单引号，因为可能有些参数会是字符串，带有双引号
+    var formulaStr = '';
+    try {
+        formulaStr = '#<%=code%>(' + <%=sbParams%> + ')';
+    }
+    catch (e) {}
+
+    if (formulaStr.indexOf("undefined")!=-1) {
+        if (isIE11) {
+            console.log("有可能是初始化时，onFormulaCtlRelateFieldChange中 <%=StrUtil.toHtml(sbParams.toString())%> 生成的公式 " + formulaStr + " 存在为null的对象");
+        }
+        // return;
+    }
+    if (formulaStr == "") {
+        if (isIE11) {
+            console.log("onFormulaCtlRelateFieldChange中 <%=StrUtil.toHtml(sbParams.toString())%> 存在JS错误");
+        }
+        return;
+    }
 
     $.ajax({
         type: "post",
@@ -101,7 +138,13 @@ function onFormulaCtlRelateFieldChange_<%=fieldName%>() {
             data = $.parseJSON(data);
             if (data.ret=="1") {
 		    	if (o("<%=fieldName%>")) {
-		            $("#<%=fieldName%>").val(data.value);
+                    $("#<%=fieldName%>").val(data.value);
+
+                    setTimeout(function () {
+                        if(o("<%=fieldName%>_show")) {
+                            o("<%=fieldName%>_show").innerHTML = data.value;
+                        }
+                    }, 500);
 
 		            var frm = o("visualForm");
 		            if (frm==null) {

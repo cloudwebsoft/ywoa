@@ -22,6 +22,7 @@ import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.WorkflowDb;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.util.HanLPUtil;
+import com.redmoon.oa.util.RequestUtil;
 import com.redmoon.oa.visual.FormDAO;
 import com.redmoon.oa.visual.ModuleSetupDb;
 import com.redmoon.oa.visual.ModuleUtil;
@@ -93,15 +94,21 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
                             MacroCtlMgr mm = new MacroCtlMgr();
                             MacroCtlUnit mu = mm.getMacroCtlUnit(formField.getMacroType());
                             if (mu != null) {
+                                // 取得request中原来的fdao
+                                IFormDAO ifdao = RequestUtil.getFormDAO(request);
+                                RequestUtil.setFormDAO(request, fdao);
                                 v = mu.getIFormMacroCtl().converToHtml(request, formField, v);
+                                if (ifdao != null) {
+                                    // 恢复request中原来的fdao，以免ModuleController中setFormDAO的值被修改为本方法中的fdao
+                                    RequestUtil.setFormDAO(request, ifdao);
+                                }
                             }
                         }
                     }
                 } else {
                     // LogUtil.getLog(getClass()).info("formCode=" + sourceFormCode + " showFieldName=" + showFieldName + " byFieldName=" + byFieldName + " fieldValue=" + fieldValue);
                     FormDAOMgr fdm = new FormDAOMgr(sourceFormCode);
-                    v = fdm.getFieldValueOfOther(fieldValue, byFieldName,
-                            showFieldName);
+                    v = fdm.getFieldValueOfOther(fieldValue, byFieldName, showFieldName);
                 }
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
@@ -358,7 +365,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
                     style += " multiple='multiple'";
                 }
 
-                str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' " + style + " >";
+                str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' title='" + ff.getTitle() + "' " + style + " >";
 				/*				
   				if (!"".equals(value)) {
 					str += "<option value='" + value + "' selected >" + v + "</option>";
@@ -412,13 +419,13 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
                 // request.setAttribute("isModuleFieldSelectCtlJS", "y");
                 // }
 
-                str += "<input id='" + ff.getName() + "_realshow' name='" + ff.getName() + "_realshow' value='" + StrUtil.getNullStr(v) + "' size=15 readonly>";
+                str += "<input id='" + ff.getName() + "_realshow' name='" + ff.getName() + "_realshow' title='" + ff.getTitle() + "' style='width:" + ff.getCssWidth() + "' value='" + StrUtil.getNullStr(v) + "' size=15 readonly>";
                 str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' value='" + value + "' type='hidden'>";
                 // 如果可写且非只读，才能出现查询按钮
                 if (ff.isEditable() && !ff.isReadonly()) {
                     str +=
                             "&nbsp;<input id='" + ff.getName() + "_btn' class='btnSearch' type=button onclick='openWinModuleFieldList(" +
-                                    "o(\"" + ff.getName() + "\"),\"" + moduleCode + "\", \"" + byFieldName + "\", \"" + showFieldName + "\",\"" + StrUtil.UrlEncode(filter) + "\", \"" + StrUtil.UrlEncode(openerFormCode) + "\")'>";
+                                    "o(\"" + ff.getName() + "\"),\"" + moduleCode + "\", \"" + byFieldName + "\", \"" + showFieldName + "\",\"" + StrUtil.UrlEncode(filter) + "\", \"" + StrUtil.UrlEncode(openerFormCode) + "\", " + flowId + ", \"" + pageType + "\")'>";
                 }
             }
         } catch (JSONException e) {
@@ -435,6 +442,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
         String val = v;
         long id = -1;
         String moduleCode = "";
+        String byFieldName = "";
         if (!v.equals("")) {
             if (v.equals(ff.getDefaultValueRaw()) || v.equals(ff.getDescription())) {
                 v = "";
@@ -450,11 +458,12 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
                     strDesc = formatJSONStr(strDesc);
                     json = new JSONObject(strDesc);
                     moduleCode = json.getString("sourceFormCode");
+                    byFieldName = json.getString("idField");
                     ModuleSetupDb msd = new ModuleSetupDb();
                     msd = msd.getModuleSetupDb(moduleCode);
                     String sourceFormCode = msd.getString("form_code");
 
-                    String byFieldName = json.getString("idField");
+                    byFieldName = json.getString("idField");
                     String showFieldName = json.getString("showField");
                     if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
                         if (byFieldName.equals("id")) {
@@ -499,8 +508,15 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
                 }
             }
         }
-        String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType()
-                + "','" + "" + "','" + val + "');\n";
+        String str = "";
+        if (byFieldName.equals("id")) {
+            str += "DisableCtl('" + ff.getName() + "', '" + ff.getType()
+                    + "','','" + val + "');\n";
+        }
+        else {
+            str += "DisableCtl('" + ff.getName() + "', '" + ff.getType()
+                    + "','" + v + "','" + val + "');\n";
+        }
         str += "if (o('" + ff.getName() + "_realshow')) {\n";
         str += "o('" + ff.getName() + "_realshow').value='" + v + "';\n";
         str += "o('" + ff.getName() + "_realshow').style.display='none';\n";
@@ -511,22 +527,23 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
     	str += "function addMyTab" + ff.getName() + "() { " + addTab + "} \n";
     	String linkStr = "<a href=\"javascript:;\" onclick=\"addMyTab" + ff.getName() + "()\">" + v + "</a>";        	
     	*/
+        if (byFieldName.equals("id")) {
+            String[] aryVal = StrUtil.split(ff.getValue(), ",");
+            String[] aryV = StrUtil.split(v, ",");
+            if (aryVal != null && aryV != null) {
+                StringBuffer sbLink = new StringBuffer();
+                StringBuffer sbFunc = new StringBuffer();
+                for (int i = 0; i < aryVal.length; i++) {
+                    String idVal = aryVal[i];
+                    String text = aryV[i];
+                    StrUtil.concat(sbLink, "，", "<a href=\"javascript:;\" onclick=\"addMyTab" + ff.getName() + idVal + "()\">" + text + "</a>");
 
-        String[] aryVal = StrUtil.split(ff.getValue(), ",");
-        String[] aryV = StrUtil.split(v, ",");
-        if (aryVal != null && aryV != null) {
-            StringBuffer sbLink = new StringBuffer();
-            StringBuffer sbFunc = new StringBuffer();
-            for (int i = 0; i < aryVal.length; i++) {
-                String idVal = aryVal[i];
-                String text = aryV[i];
-                StrUtil.concat(sbLink, "，", "<a href=\"javascript:;\" onclick=\"addMyTab" + ff.getName() + idVal + "()\">" + text + "</a>");
-
-                String addTab = "addTab('" + ff.getTitle() + "', '" + Global.getRootPath() + "/visual/module_show.jsp?id=" + idVal + "&parentId=" + idVal + "&code=" + moduleCode + "')";
-                sbFunc.append("function addMyTab" + ff.getName() + idVal + "() { " + addTab + "} \n");
+                    String addTab = "addTab('" + ff.getTitle() + "', '" + Global.getRootPath() + "/visual/module_show.jsp?id=" + idVal + "&parentId=" + idVal + "&code=" + moduleCode + "')";
+                    sbFunc.append("function addMyTab" + ff.getName() + idVal + "() { " + addTab + "} \n");
+                }
+                str += sbFunc.toString();
+                str += "$(o('" + ff.getName() + "')).after('" + sbLink.toString() + "');\n";
             }
-            str += sbFunc.toString();
-            str += "$(o('" + ff.getName() + "')).after('" + sbLink.toString() + "');\n";
         }
 
         str += "if (o('" + ff.getName() + "_btn'))\n";
@@ -659,6 +676,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
             }
         }
 
+        v = StrUtil.getNullStr(v);
         if (!"".equals(v.trim())) { // 有时发现为空格，可能是浏览器兼容性问题
             String[] aryVal = StrUtil.split(value, ",");
             String[] aryV = StrUtil.split(v, ",");
@@ -744,7 +762,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
                     str += "	o('" + ff.getName() + "').style.display='none';\n";
                     str += "setCtlValue('" + ff.getName() + "', '" + ff.getType() + "', '" + value + "');\n";
                 } else {
-                    if (!ff.isReadonly()) {
+                    if (!ff.isReadonly() && ff.isEditable()) {
                         // str += "$('#" + ff.getName() + "').val('" + ff.getValue() + "').trigger('change');\n";
                         str += "$('#" + ff.getName() + "').empty().append(\"<option id='" + value + "' value='" + value + "'>" + v + "</option>\").trigger('change');\n";
                     }
@@ -1220,10 +1238,14 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
         if (conds.equals("none"))
             conds = "";
 
+        ModuleSetupDb msd = new ModuleSetupDb();
+        msd = msd.getModuleSetupDbOrInit(sourceFormCode);
+        String formCode = msd.getString("form_code");
+
         // 取得查询参数
         String what = ParamUtil.getParam(request, "q");
 
-        String sql = "select distinct form.id from form_table_" + sourceFormCode + " form where " + showFieldName + " like " + StrUtil.sqlstr("%" + what + "%");
+        String sql = "select distinct form.id from form_table_" + formCode + " form where " + showFieldName + " like " + StrUtil.sqlstr("%" + what + "%");
         if (isSimilar) {
             // 排除关键词
             Config config = new Config();
@@ -1254,7 +1276,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
         }
 
         if (!conds.equals("")) {
-            String[] ary = ModuleUtil.parseFilter(request, sourceFormCode, conds);
+            String[] ary = ModuleUtil.parseFilter(request, formCode, conds);
             if (ary[0] != null) {
                 conds = ary[0];
             }
@@ -1279,9 +1301,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
         }
 
         com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
-        ModuleSetupDb msd = new ModuleSetupDb();
-        msd = msd.getModuleSetupDbOrInit(sourceFormCode);
-        Vector v = fdao.list(sourceFormCode, sql);
+        Vector v = fdao.list(formCode, sql);
 
         JSONArray arr = new JSONArray();
         Iterator ir = v.iterator();
@@ -1385,6 +1405,7 @@ public class ModuleFieldSelectCtl extends AbstractMacroCtl {
             if (tempFf != null && tempFf.getType().equals(FormField.TYPE_MACRO)) {
                 tempFf.setValue(setValue);
                 isMacro = true;
+                request.setAttribute("cwsMapSourceFormField", fdao.getFormField(sourceF));
                 setValue = mm.getMacroCtlUnit(tempFf.getMacroType()).getIFormMacroCtl().convertToHTMLCtl(request, tempFf);
             }
             JSONObject jo = new JSONObject();

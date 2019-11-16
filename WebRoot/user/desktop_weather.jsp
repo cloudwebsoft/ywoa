@@ -28,9 +28,9 @@ if (weatherCode.equals("")) {
 	weatherCode = cfg.get("weatherCode");
 }
 %>
-<div id="drag_<%=id%>" class="portlet drag_div bor" style="padding:0px;" >
+<div id="drag_<%=id%>" class="portlet drag_div bor ibox" style="padding:0px;" >
   <div id="drag_<%=id%>_h" style="height:3px;padding:0px;margin:0px; font-size:1px"></div>
-  <div class="portlet_content" style="min-height:141px;_height:141px;padding:0px;margin:0px">
+  <div class="portlet_content ibox-content" style="min-height:141px;_height:141px;padding:0px;margin:0px">
   		<div style="text-align:center"><%=weatherCode%></div>
   </div>
 </div>

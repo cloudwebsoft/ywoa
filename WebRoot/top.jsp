@@ -284,7 +284,7 @@ if ("admin".equals(username)||isMaxRole){
 	String licenseType = License.getInstance().getType();
 	if(!licenseType.equals(License.TYPE_OEM)){
 %>
-		<div id="gold_medal_service" style="margin-top: 10px; display:none" class="gold_medal_service2" onclick="linkToGoldMedalService()" title="一米金牌服务保障体系期待您的加入"></div>
+		<div id="gold_medal_service" style="margin-top: 10px; display:none" class="gold_medal_service2" onclick="linkToGoldMedalService()" title="金牌服务保障体系期待您的加入"></div>
 <% 
 	}
 }
@@ -296,7 +296,7 @@ if(pvg.isUserPrivValid(request, "admin")){
 }
 %>
 <%if(!license.isPlatformSrc()) {%>
-<div style="width: 100px;margin-top:10px;float: right;margin-right: 150px;height: 20px;font-size: 14px;"><a href="http://www.yimihome.com" title="一米OA" target="_blank" >一米OA标准版</a></div>
+<div style="width: 100px;margin-top:10px;float: right;margin-right: 150px;height: 20px;font-size: 14px;"><a href="http://www.yimihome.com" title="云网OA" target="_blank" >云网OA标准版</a></div>
 <%}%>
 </div>
 	<div class="userinf">

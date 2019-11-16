@@ -29,7 +29,7 @@ public abstract class AbstractRMCacheMgr implements ICacheMgr {
      * regist in RMCache
      */
     public void regist() {
-        // ±¾Àà²»ĞèÒªµÇ¼Ç
+        // æœ¬ç±»ä¸éœ€è¦ç™»è®°
         /*
         if (!isRegisted) {
             rmCache.regist(this);
@@ -39,7 +39,7 @@ public abstract class AbstractRMCacheMgr implements ICacheMgr {
     }
 
     /**
-     * ¶¨Ê±Ë¢ĞÂ»º´æ
+     * å®šæ—¶åˆ·æ–°ç¼“å­˜
      */
     public void timer() {
 

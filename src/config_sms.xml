@@ -48,7 +48,7 @@
 		<qxtMasSendSmsUrl>http://sms.exintong.net:9038/servlet/UserServiceAPI?</qxtMasSendSmsUrl>
 		<user_name></user_name>
 		<password></password>
-		<Signature>【一米温馨提示】</Signature>
+		<Signature>【温馨提示】</Signature>
 		<comName>COM3</comName>
         <headAddr>01199200</headAddr>
         <serialNo>0001</serialNo>

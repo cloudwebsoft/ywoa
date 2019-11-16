@@ -246,12 +246,8 @@ if (totalpages==0)
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(formCode);
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+String[] fields = msd.getColAry(false, "list_field");
+String[] fieldsWidth =  msd.getColAry(false, "list_field_width");
 
 MacroCtlMgr mm = new MacroCtlMgr();
 %>
@@ -311,7 +307,9 @@ MacroCtlMgr mm = new MacroCtlMgr();
         姓名
         <input type="text" id="empName" name="empName" size="8"/>
         <input class="tSearch" name="submit" type=submit value="搜索">
-    </form></td>
+    </form>
+	</div>
+	</td>
     <td height="23" align="left">
 <%
 String btnName = StrUtil.getNullStr(msd.getString("btn_name"));

@@ -14,6 +14,7 @@
 <%@ page import = "org.json.*"%>
 <%@ page import = "java.util.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%--
 - 功能描述：明细表
 - 访问规则：在宏控件中生成
@@ -67,10 +68,13 @@ if (!nestFieldName.equals("")) {
 			canImport = "true".equals(json.getString("canImport"));
 			canDel = "true".equals(json.getString("canDel"));
 			canSel = "true".equals(json.getString("canSel"));
-			isAutoSel = "1".equals(json.getString("isAutoSel"));
+			if (json.has("isAutoSel")) {
+				isAutoSel = "1".equals(json.getString("isAutoSel"));
+			}
 			if (json.has("canExport")) {
 				canExport = "true".equals(json.getString("canExport"));
 			}
+			// DebugUtil.i("macro_detaillist_ctl_js.jsp", "", json.toString());
 		}
 		catch (Exception e) {
 		}		
@@ -97,12 +101,11 @@ wf = wf.getWorkflowDb(flowId);
 Leaf lf = new Leaf();
 lf = lf.getLeaf(wf.getTypeCode());
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+// String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+
 int len = 0;
 if (fields!=null)
 	len = fields.length;

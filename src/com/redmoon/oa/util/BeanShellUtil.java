@@ -90,7 +90,6 @@ public class BeanShellUtil {
 	
 	/**
 	 * 给流程表单域赋值
-	 * @param fields
 	 * @param fdao
 	 * @param sb
 	 */
@@ -104,8 +103,7 @@ public class BeanShellUtil {
                 MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
                 if (mu == null) {
                     throw new IllegalArgumentException("Macro ctl " + ff.getTitle() + " type=" +
-                            ff.getMacroType() +
-                            " is not exist.");
+                            ff.getMacroType() + " is not exist.");
                 }
                 String typeStr = mu.getFieldType();
                 if (typeStr.equalsIgnoreCase("double") ||
@@ -113,46 +111,36 @@ public class BeanShellUtil {
                     typeStr.equalsIgnoreCase("number") ||
                     typeStr.equalsIgnoreCase("bigint") ||
                     typeStr.equalsIgnoreCase("int")) {
-                    sb.append("$" + ff.getName() + "=" +
-                              fdao.getFieldValue(ff.getName()) +
-                              ";");
+                    sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + ";");
                 } else {
                 	String val = fdao.getFieldValue(ff.getName());
                 	val = val.replaceAll("\"", "\\\\\"");
-                    sb.append("$" + ff.getName() + "=\"" +
-                              val +
-                              "\";");
+                    sb.append("$" + ff.getName() + "=\"" + val + "\";");
                 }
             } else {
                 int fType = ff.getFieldType();
                 if (fType == FormField.FIELD_TYPE_INT) {
-                    int v = StrUtil.toInt(fdao.getFieldValue(ff.getName()),
-                                          -65536);
+                    int v = StrUtil.toInt(fdao.getFieldValue(ff.getName()), -65536);
                     if (v == -65536) {
                         sb.append("$" + ff.getName() + "=-65536;");
                     } else
-                        sb.append("$" + ff.getName() + "=" +
-                                  fdao.getFieldValue(ff.getName()) +
-                                  ";");
+                        sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + ";");
                 } else if (fType == FormField.FIELD_TYPE_DOUBLE ||
                            fType == FormField.FIELD_TYPE_FLOAT ||
                            fType == FormField.FIELD_TYPE_LONG ||
                            fType == FormField.FIELD_TYPE_PRICE) {
-                    double v = StrUtil.toDouble(fdao.getFieldValue(ff.getName()),
-                                                -65536);
+                    double v = StrUtil.toDouble(fdao.getFieldValue(ff.getName()), -65536);
                     if (v == -65536) {
                         // LogUtil.getLog(getClass()).info(ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + " v=" + v);
                         sb.append("$" + ff.getName() + "=-65536;");
                     } else
-                        sb.append("$" + ff.getName() + "=" +
-                                  fdao.getFieldValue(ff.getName()) +
-                                  ";");
+                        sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + ";");
                 } else {
-                	String val = fdao.getFieldValue(ff.getName());
-                	val = val.replaceAll("\"", "\\\\\"");                	
-                    sb.append("$" + ff.getName() + "=\"" +
-                              val +
-                              "\";");
+                    String val = fdao.getFieldValue(ff.getName());
+                    val = val.replaceAll("\"", "\\\\\"");
+                    // 转换脚本中的\为\\， 否则，如：互联网解决方案（MES\ERP，其中\E会导致报错：Encountered: "E" (69), after :互联网解决方案（MES\
+                    val = val.replaceAll("\\\\", "\\\\\\\\");
+                    sb.append("$" + ff.getName() + "=\"" + val + "\";");
                 }
             }
         }		

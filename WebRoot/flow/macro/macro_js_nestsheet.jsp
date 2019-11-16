@@ -141,6 +141,9 @@ function callCalculateOnload() {
                         $("#tabs-<%=nestFormCode %>").html(data);                        
                         <%} %>
                         callCalculateOnload();
+						try {
+							onNestSheetRefresh_<%=nestFormCode%>();
+						} catch (e) {};
                     },
                     error: function(XMLHttpRequest, textStatus){
                         // 请求出错处理

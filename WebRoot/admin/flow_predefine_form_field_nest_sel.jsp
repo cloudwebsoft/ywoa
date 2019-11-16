@@ -8,6 +8,7 @@
 <%@ page import="com.redmoon.oa.visual.ModuleSetupDb" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.*"%>
+<%@ page import="org.apache.commons.lang3.StringUtils" %>
 <%
 /*
 - 功能描述：选择隐藏字段，含嵌套表中的字段，以nest.打头
@@ -118,7 +119,9 @@ while (ir.hasNext()) {
 			
 			// System.out.println(getClass() + " nestFormCode=" + nestFormCode);
 			
-			String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+			// String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+			String[] fieldsAry = msd.getColAry(false, "list_field");
+			String listField = "," + StrUtil.getNullStr(StringUtils.join(fieldsAry, ",")) + ",";
 			Iterator ir2 = nestfd.getFields().iterator();
 			while (ir2.hasNext()) {
 				FormField ff2 = (FormField)ir2.next();

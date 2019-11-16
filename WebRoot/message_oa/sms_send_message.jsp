@@ -234,7 +234,7 @@ if (!privilege.isUserLogin(request))
           	<td width="86" height="26"> 
             发送时间：</td>
             <td width="318" height="26"> 
-            <input id="timeSend_Date" name="timeSend_Date" size="18" readonly=""/>
+            <input id="timeSend_Date" name="timeSend_Date" size="18" />
         </td>
           </tr>
           <tr>

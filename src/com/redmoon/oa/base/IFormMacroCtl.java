@@ -227,7 +227,6 @@ public interface IFormMacroCtl {
      * 在验证前获取表单域的值，用于附件、图片宏控件不能为空的检查
      * @param request
      * @param fu
-     * @param flowId
      * @param ff
      */
     public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) throws CheckErrException;
@@ -298,5 +297,15 @@ public interface IFormMacroCtl {
      * @return
      */
     public String getSqlForQuery(HttpServletRequest request, FormField ff, String value, boolean isBlur);
-    
+
+    /**
+     * 当表单内容保存后调用，如用于手写板宏控件，为base64编码的图片生成文件
+     * @param request
+     * @param field
+     * @param fu
+     * @return
+     * @throws ErrMsgException
+     */
+    public void onFormDAOSave(HttpServletRequest request, IFormDAO ifdao, FormField field,
+                              FileUpload fu) throws ErrMsgException;
 }

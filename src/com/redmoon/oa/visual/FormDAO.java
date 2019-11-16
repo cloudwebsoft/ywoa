@@ -2,6 +2,7 @@ package com.redmoon.oa.visual;
 
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 import javax.servlet.http.*;
 
@@ -9,13 +10,18 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
 import com.cloudwebsoft.framework.db.*;
+import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.util.*;
 import com.redmoon.kit.util.*;
 import com.redmoon.oa.base.*;
+import com.redmoon.oa.db.SQLUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.flow.macroctl.*;
 import com.redmoon.oa.kernel.License;
+import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.tools.Pdf2htmlEXUtil;
 import com.redmoon.oa.util.RequestUtil;
 
 import org.apache.log4j.*;
@@ -165,7 +171,7 @@ public class FormDAO implements IFormDAO {
             }
         }
         Conn conn = new Conn(connname);
-        String sql = "select " + fds + ",cws_creator,cws_id,cws_order,unit_code,flowId,cws_status,cws_quote_id,cws_flag,cws_progress,cws_parent_form from " + tableName + " where id=?";
+        String sql = "select " + fds + ",cws_creator,cws_id,cws_order,unit_code,flowId,cws_status,cws_quote_id,cws_flag,cws_progress,cws_parent_form,cws_create_date,cws_modify_date from " + tableName + " where id=?";
         ResultSet rs = null;
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -211,6 +217,8 @@ public class FormDAO implements IFormDAO {
                     cwsFlag = rs.getInt(k+7);
                     cwsProgress = rs.getInt(k+8);
                     cwsParentForm = StrUtil.getNullStr(rs.getString(k+9));
+                    cwsCreateDate = rs.getTimestamp(k+10);
+                    cwsModifyDate = rs.getTimestamp(k+11);
 
                     loaded = true;
                     if (ps != null) {
@@ -311,7 +319,7 @@ public class FormDAO implements IFormDAO {
         while (ir.hasNext()) {
             FormField ff = (FormField)ir.next();
             if (ff.getName().equalsIgnoreCase(fieldName)) {
-                LogUtil.getLog(getClass()).info("setFieldValue: ff.getName()=" + ff.getName() + " fieldName=" + fieldName + " value=" + value);
+                // LogUtil.getLog(getClass()).info("setFieldValue: ff.getName()=" + ff.getName() + " fieldName=" + fieldName + " value=" + value);
                 ff.setValue(value);
                 break;
             }
@@ -403,7 +411,7 @@ public class FormDAO implements IFormDAO {
                 str += ",?";
             }
         }
-        String sql = "insert into " + tableName + "  (flowId, " + fds + ",flowTypeCode,cws_id,unit_code,cws_creator,cws_status,cws_quote_id,cws_flag,cws_progress,cws_parent_form) values (?," + str + ",?,?,?,?,?,?,?,?,?)";
+        String sql = "insert into " + tableName + "  (flowId, " + fds + ",flowTypeCode,cws_id,unit_code,cws_creator,cws_status,cws_quote_id,cws_flag,cws_progress,cws_parent_form,cws_create_date) values (?," + str + ",?,?,?,?,?,?,?,?,?,?)";
         boolean re = false;
 
         Conn conn = new Conn(connname);
@@ -429,6 +437,7 @@ public class FormDAO implements IFormDAO {
             ps.setInt(k+6, cwsFlag);
             ps.setInt(k+7, cwsProgress);
             ps.setString(k+8, cwsParentForm);
+            ps.setTimestamp(k+9, new Timestamp(new java.util.Date().getTime()));
 
             re = conn.executePreUpdate()==1?true:false;
             
@@ -438,7 +447,7 @@ public class FormDAO implements IFormDAO {
                 ResultSet rs = conn.executeQuery("select id from " +
                         tableName + " where flowTypeCode=" + StrUtil.sqlstr(curTime));
 				if (rs != null && rs.next()) {
-					id = rs.getInt(1);
+					id = rs.getLong(1);
 				}            	
             }
         }
@@ -453,6 +462,7 @@ public class FormDAO implements IFormDAO {
         }
         return re;
     }
+
 
     public boolean create(HttpServletRequest request, FileUpload fu) throws ErrMsgException {
         String fds = "";
@@ -470,6 +480,7 @@ public class FormDAO implements IFormDAO {
             }
         }
 
+        Privilege pvg = new Privilege();
         // 保存附件
         Vector v = fu.getFiles();
         String vpath = getVisualPath();
@@ -484,7 +495,7 @@ public class FormDAO implements IFormDAO {
         FormDb fd = new FormDb();
         fd = fd.getFormDb(formCode);
 
-        String sql = "insert into " + tableName + " (flowId, cws_creator, cws_id, cws_order, " + fds + ",flowTypeCode,unit_code,cws_status,cws_parent_form) values (?,?,?,?," + str + ",?,?,?,?)";
+        String sql = "insert into " + tableName + " (flowId, cws_creator, cws_id, cws_order, " + fds + ",flowTypeCode,unit_code,cws_status,cws_parent_form,cws_create_date) values (?,?,?,?," + str + ",?,?,?,?,?)";
         boolean re = false;
         Conn conn = new Conn(connname);
         try {
@@ -502,11 +513,13 @@ public class FormDAO implements IFormDAO {
                 // logger.info("create:" + ff.getName() + " getValue=" + ff.getValue());
                 k++;
             }
+
             String curTime = String.valueOf(System.currentTimeMillis());
             ps.setString(k, curTime); // 用flowTypeCode记录修改时间，同时作为create时用来作为标识，以便在插入后获取
             ps.setString(k+1, unitCode);
             ps.setInt(k+2, cwsStatus);
             ps.setString(k+3, cwsParentForm);
+            ps.setTimestamp(k+4, new Timestamp(new java.util.Date().getTime()));
             re = conn.executePreUpdate()==1?true:false;
             if (ps!=null) {
                 ps.close();
@@ -514,21 +527,11 @@ public class FormDAO implements IFormDAO {
             }
 
             // 取得自动增长的ID
-            int visualId = -1;
-            /*
-            ResultSet rs = conn.executeQuery("select last_insert_id() from " + tableName + " limit 1");
-            if (rs!=null && rs.next()) {
-                visualId = rs.getInt(1);
-            }
-            */
-           ResultSet rs = conn.executeQuery("select id from " +
-                                            tableName + " where flowTypeCode=" + StrUtil.sqlstr(curTime));
-           if (rs != null && rs.next()) {
-               visualId = rs.getInt(1);
-               id = visualId;
-               // 置新建的ID于request的Attribute
-               request.setAttribute(FormDAO_NEW_ID, "" + id);
-           }
+            long visualId = SQLFilter.getLastId(conn, tableName);
+
+            id = visualId;
+            // 置新建的ID于request的Attribute
+            request.setAttribute(FormDAO_NEW_ID, "" + id);
 
            // 保存嵌套表单中的信息
            ir = fields.iterator();
@@ -560,8 +563,20 @@ public class FormDAO implements IFormDAO {
                     att.setVisualPath(vpath);
                     att.setFormCode(formCode);
                     att.setFieldName(fi.getFieldName());
-                    
+
+                    att.setCreator(pvg.getUser(request));
+                    att.setFileSize(fi.getSize());
+
                     re = att.create();
+
+                    String previewfile=filepath + fi.getDiskName();
+                    String ext = StrUtil.getFileExt(att.getDiskName());
+                    if (ext.equals("doc") || ext.equals("docx") || ext.equals("xls") || ext.equals("xlsx")) {
+                        com.redmoon.oa.fileark.Document.createOfficeFilePreviewHTML(previewfile);
+                    }
+                    else if (ext.equals("pdf")) {
+                        Pdf2htmlEXUtil.createPreviewHTML(previewfile);
+                    }
                 }
             }
             
@@ -687,7 +702,7 @@ public class FormDAO implements IFormDAO {
             long logId = -1;
             sql = "select id from " + logTable + " where cws_creator=? and flowTypeCode=? and cws_log_type=?";
             ps = conn.prepareStatement(sql);
-            ps.setString(1, userName);
+            ps.setString(1, fdao.getCreator());
             ps.setString(2, curTime);
             ps.setInt(3, logType);
             ResultSet rs = conn.executePreQuery();
@@ -815,6 +830,7 @@ public class FormDAO implements IFormDAO {
         String vpath = getVisualPath();
         String filepath = Global.getRealPath() + vpath;
         fu.setSavePath(filepath);
+        Privilege pvg = new Privilege();
 
         // 处理附件
         LogUtil.getLog(getClass()).info("save: isSaveAttachment=" + isSaveAttachment);
@@ -835,12 +851,25 @@ public class FormDAO implements IFormDAO {
                     att.setVisualPath(vpath);
                     att.setFormCode(formCode);
                     att.setFieldName(fi.getFieldName());
+
+                    att.setCreator(pvg.getUser(request));
+                    att.setFileSize(fi.getSize());
+
                     att.create();
+
+                    String previewfile=filepath + fi.getDiskName();
+                    String ext = StrUtil.getFileExt(att.getDiskName());
+                    if (ext.equals("doc") || ext.equals("docx") || ext.equals("xls") || ext.equals("xlsx")) {
+                        com.redmoon.oa.fileark.Document.createOfficeFilePreviewHTML(previewfile);
+                    }
+                    else if (ext.equals("pdf")) {
+                        Pdf2htmlEXUtil.createPreviewHTML(previewfile);
+                    }
                 }
             }
         }
 
-        String sql = "update " + tableName + " set " + fds + ",flowTypeCode=?,cws_creator=?,cws_order=?,cws_parent_form=? where id=?";
+        String sql = "update " + tableName + " set " + fds + ",flowTypeCode=?,cws_creator=?,cws_order=?,cws_parent_form=?,cws_modify_date=? where id=?";
         // logger.info("save: sql=" + sql);
         boolean re = false;
 
@@ -862,7 +891,8 @@ public class FormDAO implements IFormDAO {
             ps.setString(k+1, creator);
             ps.setInt(k+2, cwsOrder);
             ps.setString(k+3, cwsParentForm);
-            ps.setLong(k+4, id);
+            ps.setTimestamp(k+4, new Timestamp(new java.util.Date().getTime()));
+            ps.setLong(k+5, id);
             re = conn.executePreUpdate()==1?true:false;
         }
         catch (SQLException e) {
@@ -914,7 +944,7 @@ public class FormDAO implements IFormDAO {
         }
 
         // 保存cws_id的目的是在于有的时候要手工关联表单，如在销售工作中添加chance，则需要手工关联
-        String sql = "update " + tableName + " set " + fds + ",flowTypeCode=?,cws_creator=?,cws_order=?,cws_id=?,unit_code=?,cws_status=?,cws_quote_id=?,cws_flag=?,cws_progress=?,cws_parent_form=? where id=?";
+        String sql = "update " + tableName + " set " + fds + ",flowTypeCode=?,cws_creator=?,cws_order=?,cws_id=?,unit_code=?,cws_status=?,cws_quote_id=?,cws_flag=?,cws_progress=?,cws_parent_form=?,cws_modify_date=? where id=?";
         // logger.info("save: sql=" + sql);
         boolean re = false;
 
@@ -944,7 +974,8 @@ public class FormDAO implements IFormDAO {
             ps.setInt(k+7, cwsFlag);
             ps.setInt(k+8, cwsProgress);
             ps.setString(k+9, cwsParentForm);
-            ps.setLong(k+10, id);
+            ps.setTimestamp(k+10, new Timestamp(new java.util.Date().getTime()));
+            ps.setLong(k+11, id);
             re = conn.executePreUpdate()==1?true:false;
         }
         catch (SQLException e) {
@@ -1132,6 +1163,7 @@ public class FormDAO implements IFormDAO {
                 } while (rs.next());
             }
         } catch (SQLException e) {
+            DebugUtil.e(getClass(), "listResult", listsql);
             logger.error("listResult:" + StrUtil.trace(e));
             throw new ErrMsgException("数据库出错！");
         } finally {
@@ -1279,6 +1311,18 @@ public class FormDAO implements IFormDAO {
      */
     private String parentFormCode;
 
+    private Date cwsCreateDate;
+
+    public Date getCwsCreateDate() {
+        return cwsCreateDate;
+    }
+
+    public void setCwsCreateDate(Date cwsCreateDate) {
+        this.cwsCreateDate = cwsCreateDate;
+    }
+
+    private Date cwsModifyDate;
+
 	public String getFlowTypeCode() {
 		return flowTypeCode;
 	}
@@ -1318,4 +1362,12 @@ public class FormDAO implements IFormDAO {
 	public void setId(long id) {
 		this.id = id;
 	}
+
+    public Date getCwsModifyDate() {
+        return cwsModifyDate;
+    }
+
+    public void setCwsModifyDate(Date cwsModifyDate) {
+        this.cwsModifyDate = cwsModifyDate;
+    }
 }

@@ -253,7 +253,7 @@
                             <%
                                 }
                             %>
-                            例如：www.sina.com.cn或183.232.231.1 <span class="tip">(请填写外网访问OA服务器的域名或IP地址，否则手机端只能内网使用)</span>
+                            例如：www.sina.com.cn或183.232.231.1 <span class="tip">(请填写外网访问OA服务器的域名或IP地址，否则会影响手机端使用)</span>
                             <%
                                     }
                                 }

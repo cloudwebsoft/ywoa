@@ -713,11 +713,11 @@ public abstract class QObjectDb implements java.io.Serializable {
 			if (curPage <= 0)
 				curPage = 1;
 
-			jt = new JdbcTemplate(new Connection(connName));
-
+			// jt = new JdbcTemplate(new Connection(connName));
+/*
 			if (total != 0) {
 				jt.getConnection().setMaxRows(curPage * pageSize); // 尽量减少内存的使用
-			}
+			}*/
 			ri = jt.executeQuery(sql, params, curPage, pageSize);
 			while (ri.hasNext()) {
 				ResultRecord rr = (ResultRecord) ri.next();
@@ -834,10 +834,13 @@ public abstract class QObjectDb implements java.io.Serializable {
 			if (curPage <= 0)
 				curPage = 1;
 
+			conn.prepareStatement(sql);
+
 			if (total != 0)
 				conn.setMaxRows(curPage * pageSize); // 尽量减少内存的使用
 
-			rs = conn.executeQuery(sql);
+			// rs = conn.executeQuery(sql);
+			rs = conn.executePreQuery();
 			if (rs == null) {
 				return lr;
 			} else {
@@ -1031,10 +1034,10 @@ public abstract class QObjectDb implements java.io.Serializable {
 	public Vector list(JdbcTemplate jt, String sql, Object[] params) {
 		int total = 0;
 		Vector result = new Vector();
-		String connName = jt.getConnection().connName; // Connection(Global.defaultDB);
+		// String connName = jt.getConnection().connName; // Connection(Global.defaultDB);
 
 		try {
-			// 取得总记录条数
+/*			// 取得总记录条数
 			String countsql = SQLFilter.getCountSql(sql);
 			ResultIterator ri = jt.executeQuery(countsql, params);
 			if (ri.hasNext()) {
@@ -1042,14 +1045,11 @@ public abstract class QObjectDb implements java.io.Serializable {
 				total = rr.getInt(1);
 			}
 
-			jt = new JdbcTemplate(new Connection(connName));
-
+			// jt = new JdbcTemplate(new Connection(connName));
 			if (total != 0) {
-				// sets the limit of the maximum nuber of rows in a ResultSet
-				// object
 				jt.getConnection().setMaxRows(total); // 尽量减少内存的使用
-			}
-			ri = jt.executeQuery(sql, params);
+			}*/
+			ResultIterator ri = jt.executeQuery(sql, params);
 			while (ri.hasNext()) {
 				ResultRecord rr = (ResultRecord) ri.next();
 				if (primaryKey.getType() == PrimaryKey.TYPE_INT)
@@ -1067,20 +1067,14 @@ public abstract class QObjectDb implements java.io.Serializable {
 						String keyName = (String) ir.next();
 						KeyUnit ku = (KeyUnit) keys.get(keyName);
 						if (ku.getType() == primaryKey.TYPE_INT) {
-							ku.setValue(new Integer(rr
-									.getInt(ku.getOrders() + 1)));
+							ku.setValue(new Integer(rr.getInt(ku.getOrders() + 1)));
 						} else if (ku.getType() == primaryKey.TYPE_LONG) {
-							ku
-									.setValue(new Long(rr.getLong(ku
-											.getOrders() + 1)));
+							ku.setValue(new Long(rr.getLong(ku.getOrders() + 1)));
 						} else if (ku.getType() == PrimaryKey.TYPE_DATE) {
 							ku.setValue(rr.getDate(ku.getOrders() + 1));
 						} else {
 							ku.setValue(rr.getString(ku.getOrders() + 1));
 						}
-						// System.out.println(getClass() + " ku type=" +
-						// ku.getType() + " orders=" + ku.getOrders() +
-						// " value=" + ku.getValue());
 					}
 					result.addElement(getQObjectDb(keys));
 				}

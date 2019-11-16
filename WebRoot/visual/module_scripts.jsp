@@ -43,6 +43,12 @@ else if (eventType.equals("form_js")) {
 	scriptStr = FileUtil.ReadFile(Global.getRealPath() + "flow/form_js/form_js_" + formCode + ".jsp", "utf-8");
 	scriptStr = StrUtil.HtmlEncode(scriptStr);
 }
+else if (eventType.equals("import_validate")) {
+	scriptStr = StrUtil.getNullStr(msd.getScript("import_validate"));
+}
+else if (eventType.equals("import_create")) {
+	scriptStr = StrUtil.getNullStr(msd.getScript("import_create"));
+}
 else
 	scriptStr = StrUtil.getNullStr(msd.getScript("del"));
 
@@ -98,13 +104,15 @@ if (op.equals("saveScript")) {
 </head>
 <body style="padding:0px; margin:0px">
 <div style="text-align:center; margin:0px; height:30px; padding:1px; font-size:10pt">
-<select id="eventType" name="eventType" onchange="onEventTypeChange()">
-<option value="validate">验证事件</option>
-<option value="create">添加事件</option>
-<option value="save">修改事件</option>
-<option value="del">删除事件</option>
-<option value="form_js">前台脚本</option>
-</select>
+	<select id="eventType" name="eventType" onchange="onEventTypeChange()">
+		<option value="validate">验证事件</option>
+		<option value="create">添加事件</option>
+		<option value="save">修改事件</option>
+		<option value="del">删除事件</option>
+		<option value="form_js">前台脚本</option>
+		<option value="import_validate">导入前验证事件</option>
+		<option value="import_create">导入后事件</option>
+	</select>
 <script>
 o("eventType").value = "<%=eventType%>";
 </script>

@@ -19,6 +19,7 @@
 <%@ page import = "com.redmoon.oa.dept.DeptUserDb"%>
 <%@ page import = "com.redmoon.oa.dept.DeptDb"%>
 <%@ page import = "com.redmoon.oa.person.UserCache"%>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	String op = ParamUtil.get(request, "op");
@@ -26,6 +27,8 @@
 	if ("".equals(code)) {
 		code = ParamUtil.get(request, "formCode");
 	}
+	
+	String mode = ParamUtil.get(request, "mode");
 	
 	boolean isRelate = ParamUtil.getBoolean(request, "isRelate", false);	
 	if (isRelate) {
@@ -37,7 +40,11 @@
 	if (msd==null) {
 		out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, "模块不存在！"));
 		return;
-	}	
+	}
+	
+	if ("subTagRelated".equals(mode)) {
+		code = ParamUtil.get(request, "code"); // 如果是关联选项卡，则code为主模块的编码
+	}
 	
 	String formCode = msd.getString("form_code");	
 	String userName = privilege.getUser(request);
@@ -56,30 +63,12 @@
 </head>
 <body>
 <%	
-	String username = privilege.getUser(request);
-	
-	// 将request中其它参数也传至url中
-	String param = "";
-	Enumeration paramNames = request.getParameterNames();
-	while (paramNames.hasMoreElements()) {
-		String paramName = (String) paramNames.nextElement();
-		String[] paramValues = request.getParameterValues(paramName);
-		if (paramValues.length == 1) {
-			String paramValue = ParamUtil.get(request, paramName);
-			// 过滤掉code
-			if (paramName.equals("code"))
-				;
-			else
-				param += "&" + paramName + "=" + StrUtil.UrlEncode(paramValue);
-		}
-		else {
-			for (int i=0; i<paramValues.length; i++) {
-				param += "&" + paramName + "=" + StrUtil.UrlEncode(paramValues[i]);
-			}
-		}
-	}
+	String url = "module_excel.jsp";
+    if (isRelate) {
+        url = "module_excel_relate.jsp";
+    }
 %>
-<form name="form1" method="post">
+<form id="form1" name="form1" method="post" action="<%=url%>" target="_blank">
 <table width="525" border="0" align="center" cellspacing="0" class="tabStyle_1 percent60">
 	<thead>
     <tr>
@@ -105,14 +94,39 @@
 		}
 		%>
         </select>
-        <%}%>
-		<input class="btn btn-ok" type="button" value="确定" /></td>
+        <%
+		}
+    
+        // 将request中其它参数也传至url中
+        String param = "";
+        Enumeration paramNames = request.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = (String) paramNames.nextElement();
+            String[] paramValues = ParamUtil.getParameters(request, paramName);
+            if (paramValues.length == 1) {
+                String paramValue = ParamUtil.getParam(request, paramName);
+          %>
+                <input name="<%=paramName%>" value="<%=paramValue%>" type="hidden"/>
+          <%
+            }
+            else {
+                for (int i=0; i<paramValues.length; i++) {
+                    param += "&" + paramName + "=" + StrUtil.UrlEncode(paramValues[i]);
+          %>
+                    <input name="<%=paramName%>" value="<%=paramValues[i]%>" type="hidden"/>
+          <%
+                }
+            }
+        }
+        %>
+		<input class="btn btn-ok" type="submit" value="确定" /></td>
     </tr>
 </table>
 </form>
 </body>
 <script>
-$('.btn-ok').click(function() {
+// IE11中用window.open方式时，当含有coo_address、coo_address_cond时，接收到coo_address的值为?_address_cond=0?_address=，而chrome中不会，故改用form的submit方式
+/*$('.btn-ok').click(function() {
 	<%
 	if (!isRelate) {
 	%>
@@ -121,6 +135,6 @@ $('.btn-ok').click(function() {
 		window.open('<%=request.getContextPath()%>/visual/module_excel_relate.jsp?code=<%=code%>&<%=param%>&templateId=' + o('templateId').value);
 	<%}%>
 	window.close();
-});
+});*/
 </script>
 </html>

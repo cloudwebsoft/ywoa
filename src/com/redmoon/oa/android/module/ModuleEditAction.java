@@ -122,9 +122,22 @@ public class ModuleEditAction {
 	    	        
 	    	        // 去掉隐藏字段
 	               	String fieldHide = mpd.getUserFieldsHasPriv(userName, "hide");
+					// 将不显示的字段加入fieldHide
+					Iterator ir = v.iterator();
+					while (ir.hasNext()) {
+						FormField ff = (FormField)ir.next();
+						if (ff.getHide()==FormField.HIDE_EDIT || ff.getHide()==FormField.HIDE_ALWAYS) {
+							if ("".equals(fieldHide)) {
+								fieldHide = ff.getName();
+							}
+							else {
+								fieldHide += "," + ff.getName();
+							}
+						}
+					}
 	                String[] fdsHide = StrUtil.split(fieldHide, ",");    	        
 	    	        if (fdsHide!=null) {
-	    	            Iterator ir = v.iterator();
+	    	            ir = v.iterator();
 	    	            while(ir.hasNext()) {
 	    	                FormField ff = (FormField) ir.next();
 	    	                for (int k=0; k<fdsHide.length; k++) {

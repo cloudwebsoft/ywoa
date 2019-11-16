@@ -72,14 +72,7 @@ if (!privilege.isUserPrivValid(request, "admin")) {
   <div class="introduction-stepnor" onClick="closeWindow()" onMouseOver="this.className='introduction-stepsel'" onMouseOut="this.className='introduction-stepnor'">
      <div class="introduction-step7">
       <p class="introduction-p1">
-      	<%
-      		String type = License.getInstance().getType();
-      		if(type.equals(License.TYPE_OEM)){
-      	%>
-      	<a href="#">开始您的OA之旅！</a>
-      	<%}else{ %>
-      	<a href="#">开始您的一米OA之旅！</a>
-      	<%} %>
+      	<a href="#">开始您的<%=com.redmoon.oa.Config.getInstance().get("enterprise")%>之旅！</a>
       </p>
     </div>
   </div>

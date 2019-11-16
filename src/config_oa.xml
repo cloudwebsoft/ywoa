@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="gb2312"?>
 <env>
     <oa>
-        <enterprise desc="系统名称">OA</enterprise>
+        <enterprise desc="系统名称">云网OA</enterprise>
         <styleMode desc="界面风格" isDisplay="true" options="1|自选,2|指定">1</styleMode>
-        <styleSpecified desc="界面指定的风格" isDisplay="true" options="1|经典型简洁菜单,2|时尚型,3|绚丽型,4|经典型传统菜单,5|轻简型"></styleSpecified>
+        <styleSpecified desc="界面指定的风格" isDisplay="true" options="1|经典型简洁菜单,2|时尚型,3|绚丽型,4|经典型传统菜单,5|轻简型">5</styleSpecified>
         <version desc="版本号" isDisplay="false">5.0</version>
         <versionOld desc="原版本号，即采用升级包升级前的版本号，如果是从低于3.0的版本升级上来，则应置为3.0" isDisplay="false">3.0</versionOld>
+        <canUserSeeFlowImage desc="用户处理流程时能否看到流程图片">false</canUserSeeFlowImage>
         <canUserSeeDesignerWhenDispose desc="用户处理流程时能否看到流程设计器">true</canUserSeeDesignerWhenDispose>
+        <isGenerateFlowImage desc="是否生成流程图片">true</isGenerateFlowImage>
+        <flowImagePath desc="流程图片存放路径" isDisplay="false">upfile/flow_image</flowImagePath>
+
         <canUserModifyFlow desc="用户能否修改流程(该功能暂不支持)" isDisplay="false">false</canUserModifyFlow>
         <file_folder desc="文件柜路径" isDisplay="false">upfile/file_folder</file_folder>
         <file_flow desc="流程文档路径" isDisplay="false">upfile/file_flow</file_flow>
@@ -28,10 +32,10 @@
         <afternoonend desc="下午下班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">18:00</afternoonend>
         <nightbegin desc="晚上上班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">19:00</nightbegin>
         <nightend desc="晚上下班时间(小时与分钟必须为两位，不足两位需在前面加0 , 用于初始化工作日历)">21:00</nightend>
-        <latevalue desc="迟到或早退时间(分钟)">10</latevalue>
+        <latevalue desc="迟到或早退时间(分钟)" isDisplay="false">10</latevalue>
         <mins_ahead_of_workbegin desc="上班前多少分钟前可以打卡" isDisplay="false">15</mins_ahead_of_workbegin>
-        <mins_after_workbegin desc="上班后多少分钟内可以打卡">15</mins_after_workbegin>
-        <mins_ahead_of_workend desc="下班前多少分钟内可以打卡">15</mins_ahead_of_workend>
+        <mins_after_workbegin desc="上班后多少分钟内可以打卡" isDisplay="false">15</mins_after_workbegin>
+        <mins_ahead_of_workend desc="下班前多少分钟内可以打卡" isDisplay="false">15</mins_ahead_of_workend>
         <mins_after_workend desc="下班后多少分钟内可以打卡" isDisplay="false">15</mins_after_workend>
         <netdisk_space_allowed isDisplay="false" desc="默认网络硬盘空间(10M)">10240000</netdisk_space_allowed>
         <msg_space_allowed isDisplay="false" desc="默认内部消息空间(10M)">10240000</msg_space_allowed>
@@ -64,15 +68,16 @@
         <atFlowActionExpireRemindContent desc="工作交办到期提醒内容">流程：%s，到期时间：%s，快要到期了，请及时办理</atFlowActionExpireRemindContent>
         <flowActionExpireAutoDeliverInterval desc="流程到期自动转交（分钟）">5</flowActionExpireAutoDeliverInterval>
         <flowFileExt desc="流程中上传文件的合法扩展名，为空表示不限">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</flowFileExt>
+        <flowPerformanceDisplay desc="流程绩效是否显示">false</flowPerformanceDisplay>
         <flowPerformanceFormula desc="流程绩效计算公式：a表示流程节点完成所用时间，b表示流程节点到期时间">1-a/b</flowPerformanceFormula>
         <flowNotifyByEmail desc="流程交办时是否发Email提醒">true</flowNotifyByEmail>
         <refreshOnlineExpire desc="删除在线用户时，用户的超时时间（秒）">180</refreshOnlineExpire>
         <refreshOnlineUserNotify desc="浏览器每隔多长时间，向服务器通报一次在线（秒）">10</refreshOnlineUserNotify>
         <refreshOnlineInterval desc="每隔多长时间刷新一次在线用户（秒）">10</refreshOnlineInterval>
         <isRTXUsed desc="是否启用腾讯通" isDisplay="false">false</isRTXUsed>
-        <isLarkUsed desc="是否启用一米精灵" isDisplay="false">false</isLarkUsed>
-        <larkType desc="一米精灵类型" isDisplay="false">Lark</larkType>
-        <isRecordLarkMsg desc="是否记录一米精灵的消息" isDisplay="false">false</isRecordLarkMsg>
+        <isLarkUsed desc="是否启用精灵" isDisplay="false">false</isLarkUsed>
+        <larkType desc="精灵类型" isDisplay="false">Lark</larkType>
+        <isRecordLarkMsg desc="是否记录精灵的消息" isDisplay="false">false</isRecordLarkMsg>
         <isBirthdayRemindUsed desc="是否启用生日提醒">true</isBirthdayRemindUsed>
         <isBirthdayRemindDate desc="生日提醒已发送日期">09.02</isBirthdayRemindDate>
         <birthdayRemindContent desc="生日提醒内容">今天是您的生日,祝您生日快乐!</birthdayRemindContent>
@@ -127,16 +132,16 @@
    		<upgradeRemindMsg_success_content desc="更新成功内容" isDisplay="false">更新成功,更新内容如下：$content</upgradeRemindMsg_success_content>
    		<upgradeRemindMsg_error_title desc="更新失败标题" isDisplay="false">更新失败</upgradeRemindMsg_error_title>
         <upgradeRemindMsg_error_content desc="更新失败内容" isDisplay="false"></upgradeRemindMsg_error_content>
-        <isAutoUpgrade desc="自动更新系统">true</isAutoUpgrade>
+        <isAutoUpgrade desc="自动更新系统" isDisplay="false">true</isAutoUpgrade>
         <export_dept_levels desc="导出导入用户的部门层级分为列，最大不能超过12，0表示导出时部门之间用\号分隔，因影响导入已不能再启用，只能为0" isDisplay="false">0</export_dept_levels>
         <isArchiveUserSynAccount desc="人力资源档案信息是否与帐户同步">true</isArchiveUserSynAccount>
 		<isKaoqinNight desc="控制晚上是否考勤" isDisplay="true">true</isKaoqinNight>
 		<autoRefresh desc="自动刷新时间">600000</autoRefresh>
 		<firtstUserAfterReg desc="注册后第一次使用时间" isDisplay="false"></firtstUserAfterReg>
 		<isProjectUsed desc="是否启用项目" isDisplay="false">false</isProjectUsed>
-		<file_size_limit desc="文件上传大小限制">2048000</file_size_limit>
+		<file_size_limit desc="文件柜及网盘文件上传大小限制">2048000</file_size_limit>
     	<file_upload_limit desc="文件上传数目">10</file_upload_limit>
-    	<yimihome_url desc="一米oa服务器" isDisplay="false">http://www.yimihome.com</yimihome_url>
+    	<yimihome_url desc="升级服务器" isDisplay="false">http://www.yimihome.com</yimihome_url>
     	<is_bind_mobile desc="手机端是否绑定手机">false</is_bind_mobile>
     	<access_id_android desc="腾讯信鸽帐号（android）" isDisplay="false">2100136837</access_id_android>
     	<secret_key_android desc="腾讯信鸽帐号key（android）" isDisplay="false">e10b672ab00b5bdd96be701fa64166a8</secret_key_android>
@@ -144,7 +149,7 @@
     	<secret_key_ios desc="腾讯信鸽帐号key（ios）" isDisplay="false">709dbb134a34c65e57746cc5b1e47600</secret_key_ios>
 		<oem_filesEncrypt_validate desc="oem文件加密校验是否通过" isDisplay="false">true</oem_filesEncrypt_validate>
 		<usbKey desc="是否显示usbKey配置项" >false</usbKey>
-		<email_file_size_limit desc="文件上传大小限制">30720</email_file_size_limit>
+		<email_file_size_limit desc="Email文件上传大小限制">30720</email_file_size_limit>
 		<project_with_forum desc="项目发布至论坛" isDisplay="false">false</project_with_forum>
 		<show_dept_user_sort desc="根据部门人员序号排序，否则根据角色大小排序">true</show_dept_user_sort>
 		<del_log_days desc="删除多久之前的log日志,为0不删除">30</del_log_days>
@@ -161,9 +166,10 @@
 		<canFlowDisposeBatch desc="流程能否批处理" isDisplay="false">false</canFlowDisposeBatch>
 		
 		<isCloud desc="是否接入云平台" isDisplay="false">true</isCloud>
-		<cloudUrl desc="云平台地址，默认http://cloud.yimihome.com" isDisplay="false">http://www.xiaocaicloud.com</cloudUrl>
+		<cloudUrl desc="云平台地址，默认http://www.xiaocaicloud.com，本地http://localhost:8899/oa_ide" isDisplay="false">http://localhost:8899/oa_ide</cloudUrl>
+        <isServerConnectWithCloud desc="服务器是否能连接小菜云">true</isServerConnectWithCloud>
 		
-		<canPdfFilePreview desc="流程中是否支持pdf附件生成预览">false</canPdfFilePreview>
+		<canPdfFilePreview desc="流程中是否支持pdf附件生成预览">true</canPdfFilePreview>
 		
 		<isFlowReturnWithRemark desc="流程返回时，是否必须填写备注">false</isFlowReturnWithRemark>
 		
@@ -198,5 +204,20 @@
         <redisPassword desc="redis密码，如果有则配置，没有则为空"></redisPassword>
 
         <exam_file_Path desc="考卷选项的图片路径">upfile/file_exam</exam_file_Path>
+        <punchInterval desc="打卡时间间隔（秒）">15</punchInterval>
+
+        <isDebugFlow desc="是否调试流程，打印流程中的相关参数、运行时间">false</isDebugFlow>
+        <pageSizeForced desc="强制打印纸张为指定大小，如果为0，则表示不指定" isDisplay="false">1000</pageSizeForced>
+
+        <modulePageSize desc="智能模块默认显示行数">20</modulePageSize>
+
+        <isForumOpen desc="论坛是否开启" isDisplay="false">false</isForumOpen>
+        <moduleExportQuick desc="快速导出（生成XML格式的xls文件），并不比jxl快" isDisplay="false">false</moduleExportQuick>
+        <isModuleLogRead desc="是否记录浏览日志">true</isModuleLogRead>
+        <isModuleHistory desc="模块历史记录是否显示">true</isModuleHistory>
+        <isModuleLogModify desc="模块修改日志是否显示">true</isModuleLogModify>
+        <browserValid desc="允许使用的浏览器，如：ie,chrome,firefox，如果不限制则为*">ie,chrome,edge</browserValid>
+
+        <isSmsWithSign desc="短信是否带有签名" isDisplay="false">true</isSmsWithSign>
     </oa>
 </env>

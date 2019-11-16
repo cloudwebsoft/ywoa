@@ -42,7 +42,7 @@ function setRoles(roles, descs) {
 function openWinUsers() {
 	selUserNames = form1.name.value;
 	selUserRealNames = form1.userRealName.value;
-	showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
+	openWin('../user_multi_sel.jsp', 800, 600);
 }
 
 </script>
@@ -104,9 +104,9 @@ String unitCode = privilege.getUserUnitCode(request);
             </td>
       </tr>
       <tr align="center" class="row" style="BACKGROUND-COLOR: #ffffff">
-        <td style="PADDING-LEFT: 10px"><input name="button2" type="button" class="btn" onclick="showModalDialog('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=unitCode%>',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="选择" />
+        <td style="PADDING-LEFT: 10px"><input type="button" class="btn" onclick="openWin('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=unitCode%>', 800, 600)" value="选择" />
           &nbsp;&nbsp;&nbsp;&nbsp;
-          <input name="Submit3" type="submit" class="btn" value="确定" /></td>
+          <input type="submit" class="btn" value="确定" /></td>
       </tr>
     </tbody>
 </table>

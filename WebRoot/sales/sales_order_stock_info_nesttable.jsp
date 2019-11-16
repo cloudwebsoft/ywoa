@@ -26,10 +26,12 @@ FormDb fdOrdProduct = new FormDb();
 fdOrdProduct = fdOrdProduct.getFormDb("sales_ord_product");
 Vector v = fdao.list("sales_ord_product", "select id from form_table_sales_ord_product where cws_id=" + orderId);
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+
+// String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+
 int len = 0;
 if (fields!=null)
 	len = fields.length;

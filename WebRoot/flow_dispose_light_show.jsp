@@ -1524,7 +1524,7 @@ function changeName(attId) {
 }
 
 function refreshAttachments() {
-	ajaxpage("<%=Global.getFullRootPath(request)%>/flow_dispose_ajax_att.jsp?flowId=<%=flowId%>", "attDiv");
+	ajaxpage("<%=Global.getFullRootPath(request)%>/flow_dispose_light_ajax_att.jsp?flowId=<%=flowId%>", "attDiv");
 	o("netdiskFilesDiv").innerHTML = "";
 }
 

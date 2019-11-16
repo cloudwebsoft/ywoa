@@ -19,10 +19,10 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 <body style="width:100%;text-align:center;">
 <div class="QRcodeContent">
   <div id="QRCodeimgRange" class="QRcodeimgRange">
-  	<img title="初次扫描此二维码可以下载一米OA手机端，再次扫描可以注册账号" src="<%=basePath %>images/yimioa_mobile_qrcode.png" />
+  	<img title="初次扫描此二维码可以下载手机客户端，再次扫描可以设置服务器地址" src="<%=basePath %>images/yimioa_mobile_qrcode.png" />
   </div>
   <p class="QRcodeTitle">初次扫描此二维码可以下载手机端</p>
-  <p class="QRcodeTitle">再次扫描可以注册账号</p>
+  <p class="QRcodeTitle">再次扫描可以设置服务器地址</p>
   <div class="QRcodeBtn">
   	<div class="QRcodeBtn_a"><a target="_blank" href="printerQRCode_do.jsp?op=download">下载</a></div>
   	<div class="QRcodeBtn_a"><a href="javascript:;" onclick="showImageReport();">打印</a></div>

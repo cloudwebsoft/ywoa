@@ -97,10 +97,23 @@ public class ModuleShowAction {
 			ModulePrivDb mpd = new ModulePrivDb(formCode);			
 			boolean isHideField = true;
            	String fieldHide = mpd.getUserFieldsHasPriv(userName, "hide");
+			// 将不显示的字段加入fieldHide
+			Iterator ir = fd.getFields().iterator();
+			while (ir.hasNext()) {
+				FormField ff = (FormField)ir.next();
+				if (ff.getHide()==FormField.HIDE_ALWAYS) {
+					if ("".equals(fieldHide)) {
+						fieldHide = ff.getName();
+					}
+					else {
+						fieldHide += "," + ff.getName();
+					}
+				}
+			}
             String[] fdsHide = StrUtil.split(fieldHide, ","); 
 	        
             Vector v = fdao.getFields();
-			Iterator ir = v.iterator();
+			ir = v.iterator();
 			while (ir.hasNext()) {	
 				FormField ff = (FormField) ir.next();
 				

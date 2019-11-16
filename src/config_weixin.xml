@@ -18,7 +18,7 @@
     <noticeAgentMenuId desc="通知公告应用消息推送对应的agentId" isDisplay="false">7</noticeAgentMenuId>-->
 	<agentMenu desc="应用配置，第1个agentId为默认">
 		<item>
-			<agentName>一米OA</agentName>
+			<agentName>云网OA</agentName>
 			<agentId>1000006</agentId>
 			<secret>vhvog72c_aozHbtXnZYsVIyOc4i_GGmYXMaIO5PzG6w</secret>
 			<logo>39opgGQk1B7HgDv3eT3l27S9wvR3e1pUkLJTqrpgSLHgkzp4bexXVPqn3x_m1uK2b</logo>

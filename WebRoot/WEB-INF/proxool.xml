@@ -4,7 +4,7 @@ Anything outside the "proxool" tag is ignored. -->
 <something-else-entirely>
     <proxool>
         <alias>oa</alias>
-        <driver-url>jdbc:mysql://localhost:3306/redmoonoa4?useUnicode=true&amp;characterEncoding=UTF-8&amp;zeroDateTimeBehavior=convertToNull</driver-url>
+        <driver-url>jdbc:mysql://localhost:3306/redmoonoa?useUnicode=true&amp;characterEncoding=UTF-8&amp;zeroDateTimeBehavior=convertToNull</driver-url>
         <driver-class>com.mysql.jdbc.Driver</driver-class>
         <driver-properties>
             <property name="user" value="root" />

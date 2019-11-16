@@ -275,10 +275,7 @@
                 o("hidFieldWrite").value = getActionFieldWrite();
                 o("internalName").value = internalName;
                 document.getElementById('myform').submit();
-
-                <%if (license.isPlatformSrc()) {%>
-                o('actionViewIframe').src = "flow_designer_action_view.jsp?flowTypeCode=<%=flowTypeCode%>" + "&internalName=" + internalName;
-                <%}%>
+                
                 <%if (license.isSrc()) {%>
                 o('actionScriptIframe').src = "flow_designer_script_view.jsp?flowTypeCode=<%=flowTypeCode%>" + "&internalName=" + internalName;
                 <%}%>
@@ -473,7 +470,14 @@
                 </ul>
             </div>
             <div style="clear:both">
-                <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" codebase="../activex/cloudym.CAB#version=1,3,0,0">
+                <%
+                    boolean isOem = License.getInstance().isOem();
+                    String codeBase = "";
+                    if (!isOem) {
+                        codeBase = "codebase=\"activex/cloudym.CAB#version=1,3,0,0\"";
+                    }
+                %>
+                <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" <%=codeBase%>>
                     <param name="Workflow" value="<%=flowString%>"/>
                     <param name="Mode" value="<%=mode%>"/>
                     <!--debug user initiate complete-->
@@ -498,7 +502,6 @@
                         if (license.isPlatformSrc()) {
                     %>
                     <li><a href="#tabs-5">回写</a></li>
-                    <li><a href="#tabs-3">显示</a></li>
                     <%
                         }
                     %>
@@ -596,11 +599,15 @@
                                     <td style="border-right:0px"><input title="每个人可下载每个附件的最大次数" id="downloadCount" name="downloadCount" value="<%=wpd != null ? wpd.getDownloadCount() : -1%>" style="width:50px"/>&nbsp;(-1表示不限)</td>
                                 </tr>
                                 <tr>
-                                    <td>返回方式</td>
+                                    <td>退回时可删除</td>
+                                    <td style="border-right:0px"><input type="checkbox" title="当节点上设置了“删除流程”标志位时，被退回时能否删除" id="canDelOnReturn" name="canDelOnReturn" value="1" <%=wpd != null && wpd.isCanDelOnReturn() ? "checked" : ""%> /></td>
+                                </tr>
+                                <tr>
+                                    <td>退回方式</td>
                                     <td style="border-right:0px">
                                         <select id="returnMode" name="returnMode">
-                                            <option value="<%=WorkflowPredefineDb.RETURN_MODE_NORMAL%>">返回后按流程图流转</option>
-                                            <option value="<%=WorkflowPredefineDb.RETURN_MODE_TO_RETURNER%>">返回后可直送给返回者</option>
+                                            <option value="<%=WorkflowPredefineDb.RETURN_MODE_NORMAL%>">退回后按流程图流转</option>
+                                            <option value="<%=WorkflowPredefineDb.RETURN_MODE_TO_RETURNER%>">退回后可直送给返回者</option>
                                         </select>
                                         <script>
                                             o("returnMode").value = "<%=returnMode%>";
@@ -608,11 +615,11 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>返回人员</td>
+                                    <td>退回人员</td>
                                     <td style="border-right:0px">
                                         <select id="returnStyle" name="returnStyle">
-                                            <option value="<%=WorkflowPredefineDb.RETURN_STYLE_NORMAL%>">按流程图返回至设定的人员</option>
-                                            <option value="<%=WorkflowPredefineDb.RETURN_STYLE_FREE%>">可返回至任一已处理过的人员</option>
+                                            <option value="<%=WorkflowPredefineDb.RETURN_STYLE_NORMAL%>">按流程图退回至设定的人员</option>
+                                            <option value="<%=WorkflowPredefineDb.RETURN_STYLE_FREE%>">可退回至任一已处理过的人员</option>
                                         </select>
                                         <script>
                                             o("returnStyle").value = "<%=returnStyle%>";
@@ -674,19 +681,19 @@
                 </div>
                 <%
                     if (license.isPlatformSrc()) {
-                %>
-                <div id="tabs-3" class="tabDiv">
-                    <iframe id="actionViewIframe" src="flow_designer_action_view.jsp" frameborder="0" style="width:100%;"></iframe>
-                </div>
-                <%if (license.isSrc()) {%>
+                        if (license.isSrc()) {%>
                 <div id="tabs-4" class="tabDiv">
                     <iframe id="actionScriptIframe" src="flow_designer_script_view.jsp?flowTypeCode=<%=flowTypeCode%>" frameborder="0" style="width:100%;"></iframe>
                 </div>
-                <%}%>
+                <%
+                        }
+                %>
                 <div id="tabs-5" class="tabDiv">
                     <iframe id="writeBackIframe" src="flow_designer_write_back.jsp?flowTypeCode=<%=flowTypeCode%>" frameborder="0" style="width:100%;"></iframe>
                 </div>
-                <%}%>
+                <%
+                    }
+                %>
             </div>
             <script>
                 $(function () {
@@ -859,7 +866,7 @@
     }
 
     function submitDesigner() {
-        if (form1.title.value == "") {
+        if (o("title").value == "") {
             alert("请填写名称！");
             return;
         }
@@ -888,7 +895,8 @@
                 isPlus: o("isPlus").checked ? o("isPlus").value : "0",
                 isTransfer: o("isTransfer").checked ? o("isTransfer").value : "0",
                 isReply: o("isReply").checked ? o("isReply").value : "0",
-                downloadCount: o("downloadCount").value
+                downloadCount: o("downloadCount").value,
+                canDelOnReturn: o("canDelOnReturn").checked?"1":"0"
             },
             dataType: "html",
             beforeSend: function (XMLHttpRequest) {
@@ -949,16 +957,12 @@
         document.getElementById("tabs-1").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         document.getElementById("tabs-2").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%if (license.isPlatformSrc()) {%>
-        document.getElementById("tabs-3").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%if (license.isSrc()) {%>
         document.getElementById("tabs-4").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%}%>
         document.getElementById("tabs-5").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%}%>
         document.getElementById("actionPropIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
-        <%if (license.isPlatformSrc()) {%>
-        document.getElementById("actionViewIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
-        <%}%>
         <%if (license.isSrc()) {%>
         document.getElementById("actionScriptIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%}%>
@@ -1044,13 +1048,11 @@
         document.getElementById("tabs-1").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         document.getElementById("tabs-2").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%if (license.isPlatformSrc()) {%>
-        document.getElementById("tabs-3").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         document.getElementById("tabs-4").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         document.getElementById("tabs-5").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%}%>
         document.getElementById("actionPropIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%if (license.isPlatformSrc()) {%>
-        document.getElementById("actionViewIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         document.getElementById("actionScriptIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         document.getElementById("writeBackIframe").style.height = ($(document).height() - $('#toolbar').height() - 35) + "px";
         <%}%>

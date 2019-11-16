@@ -72,12 +72,9 @@ String op = ParamUtil.get(request, "op");
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(moduleCode);
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+
 int len = 0;
 if (fields!=null)
 	len = fields.length;

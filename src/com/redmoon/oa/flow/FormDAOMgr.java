@@ -146,6 +146,18 @@ public class FormDAOMgr {
         Iterator ir = fieldsWritable.iterator();
         while (ir.hasNext()) {
             FormField ff = (FormField)ir.next();
+
+            // 判断如果是文件框，则不需要取，因为getFiledValue中用fu.getFieldValue本身也取不到
+            // 在其setValueForSave中会设其值，如果上传了文件或者被映射了值的话
+            if (ff.getMacroType().equals("macro_attachment")) {
+                String val = StrUtil.getNullStr(fu.getFieldValue(ff.getName()));
+                // 如果不为空，则说明是表单选择域宏控件映射的值，在此处赋值，可以便于验证时判断是否为空
+                if (!"".equals(val)) {
+                    ff.setValue(val);
+                }
+                continue;
+            }
+
             // 如果为null，则有可能是不可写字段，未post值过来，则仍保留原来的值，如果赋予空字符串的话，则原来的值会丢失
             if (getFieldValue(ff.getName())==null) {
             	continue;
@@ -295,9 +307,15 @@ public class FormDAOMgr {
             if (ifmctl!=null) {
                 // 用于创建校验时，ifdao为null，不为null则说明是编辑模块时
                 if (ifdao!=null) {
-	                if ( ifmctl instanceof AttachmentCtl
-	                		|| ifmctl instanceof AttachmentsCtl
-	                		|| ifmctl instanceof ImageCtl
+                    // 20190914 AttahcmentCtl中也可能是保存了草稿，但扩展名非法的情况，还是需通过setValueForValidate检测
+                    if (ifmctl instanceof AttachmentCtl ||
+                            ifmctl instanceof AttachmentsCtl ||
+                            ifmctl instanceof ImageCtl) {
+                        ff.setValue(ifdao.getFieldValue(ff.getName()));
+                    }
+/*	                else if ( // ifmctl instanceof AttachmentCtl ||
+	                		ifmctl instanceof AttachmentsCtl ||
+	                		ifmctl instanceof ImageCtl
 	                ) {
 	                	// 如果附件、图片宏控件的值不为空，则说明已上传了数据，在此需跳过不为空的后台验证
 	                	// 因为如果不跳过，当智能模块编辑数据提交时，会提示需上传，而实际之前已经上传过，无需再次上传
@@ -307,7 +325,7 @@ public class FormDAOMgr {
 	                			return;
 	                		}
 	                	}
-	                }
+	                }*/
                 }   
                 
                 ff.setFieldType(ifmctl.getFieldType());
@@ -776,9 +794,10 @@ public class FormDAOMgr {
        Vector fieldsWritable = new Vector();
 
        Privilege pvg = new Privilege();
+       String userName = pvg.getUser(request);
+
        if (lf.getType() == Leaf.TYPE_FREE) {
            // 自由流程根据用户所属的角色，得到可写表单域
-           String userName = pvg.getUser(request);
            WorkflowPredefineDb wfpd = new WorkflowPredefineDb();
            wfpd = wfpd.getPredefineFlowOfFree(wf.getTypeCode());
 
@@ -810,7 +829,7 @@ public class FormDAOMgr {
                // fgf 20160928 部门选择框控件也加入进去，否则当不可写时，虽然默认为本部门，看似有数据，其实没能保存下来
                if (ff.getMacroType().equals("macro_dept_select")) {
                    // fgf 20170905 发现当用admin发起流程的时候，因为其所在部门为空，结果当字段不允许为空时会报提示，所以在此排除掉admin发起的情况
-            	   if (!pvg.getUser(request).equals(UserDb.ADMIN)) {
+            	   if (!userName.equals(UserDb.ADMIN)) {
             		   	fieldsWritable.addElement(ff);
             	   		continue;
             	   }
@@ -934,29 +953,35 @@ public class FormDAOMgr {
 	   	            }    	   
 	   	        }	        	   
            // }	       
-	       
+           /* 20190922 去掉验证，因为已被“验证规则”取代
 	       // 根据模块中的验证配置进行验证
 	       ModuleSetupDb msd = new ModuleSetupDb();
 	       msd = msd.getModuleSetupDbOrInit(fd.getCode());
 	       String validateProp = StrUtil.getNullStr(msd.getString("validate_prop"));
 	       if (!"".equals(validateProp)) {
-	       		String cond = ModuleUtil.parseValidate(request, fu, fdao, fd.getCode(), validateProp);
+	       		String cond = ModuleUtil.parseValidate(request, fu, fdao, validateProp);
 	       		ScriptEngineManager manager = new ScriptEngineManager();
 	       		ScriptEngine engine = manager.getEngineByName("javascript");
 	       		try {
 	       			Boolean ret = (Boolean)engine.eval(cond);
 	       			if (!ret.booleanValue()) {
-	       				throw new ErrMsgException(StrUtil.getNullStr(msd.getString("validate_msg")));
+                        String msg = msd.getString("validate_msg");
+                        if ("".equals(msg)) {
+                            msg = LocalUtil.LoadString(request,"res.flow.Flow","validError");
+                        }
+	       				throw new ErrMsgException(StrUtil.getNullStr(msg));
 	       			}
 	       		}
 	       		catch (ScriptException ex) {
 	       			ex.printStackTrace();
 	       		}        	
-	       }	       
+	       }	       */
        }
        
        if (!isSaveDraft) {
-    	   runValidateScript(request, pvg, wf, fdao, action, false);
+           // 验证校验规则
+           ModuleUtil.doCheckSetup(request, userName, fdao, fu);
+    	   // runValidateScript(request, pvg, wf, fdao, action, false);
        }
        
        // 对函数型的表单域赋值
@@ -973,6 +998,12 @@ public class FormDAOMgr {
 	   // 用于在fdao.save中判断，如果此时流程为未发起状态，则应修改表单状态为STATUS_NOT
        request.setAttribute("isSaveDraft", isSaveDraft);
        boolean re = fdao.save(request, fu);
+
+       // 20190816 将runValidateScript放在fdao.save之后，使在条件判断前可以预处理数据，如：内资上报时，根据汇率将投资额换算成人民币，以便于判断
+       if (!isSaveDraft) {
+           runValidateScript(request, pvg, wf, fdao, action, false);
+       }
+
        // if (re) {
            // NetUtil.gather(request, "utf-8", Global.getFullRootPath(request) + "/flow/form_js_" + lf.getFormCode() + ".jsp?op=flowUpdate&flowId=" + wf.getId());
        // }
@@ -1084,8 +1115,9 @@ public class FormDAOMgr {
     	   	this.bshShell = bs;
 
 			StringBuffer sb = new StringBuffer();
-			
-		    // 此时fields中已经为将要保存的值				
+
+            // 因fdao在update方法中当getFieldsByForm(request, fields)时，已被赋予上传的数据
+            // 此时fdao的fields中已经为将要保存的值
 			BeanShellUtil.setFieldsValue(fdao, sb);
 	
 	        // 赋值用户
@@ -1094,11 +1126,12 @@ public class FormDAOMgr {
 	        
 	        // 20160124 fgf 加入ret=true，以免在验证脚本中忘写ret=true
 	        // sb.append("ret=true;");
-	        
+
 	        bs.eval(BeanShellUtil.escape(sb.toString()));
 	        
 	        bs.set("fdao", fdao);
 	        bs.set("request", request);
+	        bs.set("actionId", action.getId());
 	        
 	        if (isTest) {
 	        	fu = new FileUpload();

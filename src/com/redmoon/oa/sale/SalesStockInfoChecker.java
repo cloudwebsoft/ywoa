@@ -68,9 +68,9 @@ public class SalesStockInfoChecker implements IModuleChecker {
 			FormDb fd = new FormDb();
 			fd = fd.getFormDb(formCode);
 	
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
-	
-			String[] fieldsAry = StrUtil.split(listField, ",");
+			// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fieldsAry = msd.getColAry(false, "list_field");
+
 			if (fieldsAry == null) {
 				LogUtil.getLog(getClass()).error(
 						"createForNestCtl:The fields is null, please set "

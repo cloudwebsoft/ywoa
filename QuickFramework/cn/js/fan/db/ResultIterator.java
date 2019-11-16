@@ -3,7 +3,7 @@ package cn.js.fan.db;
 import java.util.*;
 
 /**
- * ÓÃ·¨ÈçÏÂ£º
+ * ç”¨æ³•å¦‚ä¸‹ï¼š
  * <tr>
  * <%@ taglib uri="/WEB-INF/tlds/ResultTag.tld" prefix="rm" %> <rm:RITag
  * query="select name, link from nav order by orders" db="redmoon">
@@ -32,15 +32,15 @@ import java.util.*;
  */
 public class ResultIterator implements Iterator, java.io.Serializable {
 	/**
-	 * ´æ·Å×Ö¶Î¡¢Öµ
+	 * å­˜æ”¾å­—æ®µã€å€¼
 	 */
 	HashMap mapIndex = new HashMap();
 	/**
-	 * ´æ·Å×Ö¶Î±ğÃû
+	 * å­˜æ”¾å­—æ®µåˆ«å
 	 */
 	HashMap mapLabel = new HashMap();
 	/**
-	 * ´æ·Å×Ö¶ÎÀàĞÍ
+	 * å­˜æ”¾å­—æ®µç±»å‹
 	 */
 	HashMap mapType = new HashMap();
 
@@ -56,7 +56,7 @@ public class ResultIterator implements Iterator, java.io.Serializable {
 	int curRowIndex = 0;
 	int rows = 0;
 	Vector curRow;
-	long total = 0; // ²éÑ¯ËùµÃ¼ÇÂ¼µÄÈ«²¿ÊıÁ¿,ÓÃÓÚ·ÖÒ³
+	long total = 0; // æŸ¥è¯¢æ‰€å¾—è®°å½•çš„å…¨éƒ¨æ•°é‡,ç”¨äºåˆ†é¡µ
 
 	public ResultIterator() {
 
@@ -84,7 +84,7 @@ public class ResultIterator implements Iterator, java.io.Serializable {
 	}
 
 	/**
-	 * ²éÑ¯ËùµÃµÄ¼ÇÂ¼Êı
+	 * æŸ¥è¯¢æ‰€å¾—çš„è®°å½•æ•°
 	 * 
 	 * @return int
 	 */
@@ -138,7 +138,7 @@ public class ResultIterator implements Iterator, java.io.Serializable {
 	 * @todo Implement this java.util.Iterator method
 	 */
 	public void remove() throws RuntimeException {
-		throw new RuntimeException("This operate is not suported£¡");
+		throw new RuntimeException("This operate is not suportedï¼");
 	}
 
 	public Vector getResult() {

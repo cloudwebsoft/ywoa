@@ -30,6 +30,27 @@
 <%@page import="com.redmoon.oa.dept.DeptDb"%>
 <%@page import="com.redmoon.oa.person.UserCache"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
+<%!
+	public static boolean isXlsxRowEmpty(XSSFRow row) {
+		for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
+			XSSFCell cell = row.getCell(c);
+			if (cell != null && cell.getCellType() != XSSFCell.CELL_TYPE_BLANK) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public static boolean isXlsRowEmpty(HSSFRow row) {
+		for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
+			HSSFCell cell = row.getCell(c);
+			if (cell != null && cell.getCellType() != HSSFCell.CELL_TYPE_BLANK) {
+				return false;
+			}
+		}
+		return true;
+	}
+%>
 <%
 	String op = ParamUtil.get(request, "op");
 	String code = ParamUtil.get(request, "code");
@@ -40,6 +61,7 @@
 	fd = fd.getFormDb(formCode);
 	
 	String userName = privilege.getUser(request);
+	String moduleCodeRelated = ParamUtil.get(request, "moduleCodeRelated");
 	
 	boolean isAll = ParamUtil.getBoolean(request, "isAll", false);
 %>
@@ -77,6 +99,7 @@
 				request.setAttribute("templateId", new Integer(templateId));
 				request.setAttribute("parentId", cws_id);
 				request.setAttribute("menuItem", menuItem);
+				request.setAttribute("moduleCodeRelated", moduleCodeRelated);
 				request.getRequestDispatcher("module_import_preview.jsp").forward(request, response);
 				// out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "module_list.jsp?code=" + code + "&formCode=" + formCode));
 			}
@@ -84,7 +107,7 @@
 				out.print(StrUtil.jAlert_Back("文件不能为空！","提示"));
 		}
 		catch (ErrMsgException e) {
-			out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
+			out.print(StrUtil.jAlert_Back(StrUtil.toHtml(e.getMessage()), "提示"));
 		}
 		return;
 	}
@@ -109,7 +132,34 @@ o("menu<%=menuItem%>").className="current";
 <%
 }
 %>
-<form name="form1" action="?op=import&menuItem=<%=menuItem%>&code=<%=code%>&formCode=<%=formCode%>&isAll=<%=isAll%>&parentId=<%=cws_id%>" method="post" enctype="multipart/form-data">
+<%
+	StringBuffer params = new StringBuffer();
+	Enumeration reqParamNames = request.getParameterNames();
+	while (reqParamNames.hasMoreElements()) {
+		String paramName = (String) reqParamNames.nextElement();
+		String[] paramValues = request.getParameterValues(paramName);
+		if (paramValues.length == 1) {
+			String paramValue = ParamUtil.getParam(request, paramName);
+			// 过滤掉formCode等
+			if (paramName.equals("code")
+					|| paramName.equals("formCode")
+					|| paramName.equals("moduleCode")
+					|| paramName.equals("mainCode")
+					|| paramName.equals("menuItem")
+					|| paramName.equals("parentId")
+					|| paramName.equals("moduleCodeRelated")
+					|| paramName.equals("parentId")
+					|| paramName.equals("op")
+			) {
+				;
+			}
+			else {
+				StrUtil.concat(params, "&", paramName + "=" + StrUtil.UrlEncode(paramValue));
+			}
+		}
+	}
+%>
+<form name="form1" action="?op=import&menuItem=<%=menuItem%>&code=<%=code%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isAll=<%=isAll%>&parentId=<%=cws_id%>&<%=params%>" method="post" enctype="multipart/form-data">
 <table width="525" border="0" align="center" cellspacing="0" class="tabStyle_1 percent60">
 	<thead>
     <tr>
@@ -126,18 +176,18 @@ o("menu<%=menuItem%>").className="current";
 		%>
       	模板
         <select id="templateId" name="templateId" title="默认按显示的列">
-        <option value="">默认</option>
-        <%
-		Iterator ir = v.iterator();
-		while (ir.hasNext()) {
-			mid = (ModuleImportTemplateDb)ir.next();
+			<%
+				Iterator ir = v.iterator();
+				while (ir.hasNext()) {
+					mid = (ModuleImportTemplateDb)ir.next();
 			%>
 			<option value="<%=mid.getLong("id")%>"><%=mid.getString("name")%></option>
 			<%
-		}
-		%>
-        </select>
-        <%}%>
+				}
+			%>
+			<option value="">按模块显示的列</option>
+		</select>
+		  <%}%>
         <input title="选择附件文件" type="file" size="20" name="excel" />
 		<input class="btn" name="submit" type="submit" value="确  定" /></td>
     </tr>
@@ -155,8 +205,8 @@ o("menu<%=menuItem%>").className="current";
 			ModuleSetupDb msd = new ModuleSetupDb();
 			msd = msd.getModuleSetupDbOrInit(formCode);
 	
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
-			String[] fields = StrUtil.split(listField, ",");
+			// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fields = msd.getColAry(false, "list_field");
 
 			JSONArray arr = null;
 			if (templateId!=-1) {
@@ -206,7 +256,9 @@ o("menu<%=menuItem%>").className="current";
 					// 读取xls格式的excel文档
 					HSSFWorkbook w = (HSSFWorkbook) WorkbookFactory.create(in);
 					// 获取sheet
-					for (int i = 0; i < w.getNumberOfSheets(); i++) {
+					int rows = w.getNumberOfSheets();
+					rows = 1; // 只取第1张sheet
+					for (int i = 0; i < rows; i++) {
 						HSSFSheet sheet = w.getSheetAt(i);
 						if (sheet != null) {
 							// 获取行数
@@ -239,6 +291,9 @@ o("menu<%=menuItem%>").className="current";
 							for (int k = 1; k <= rowcount; k++) {
 								HSSFRow row = sheet.getRow(k);
 								if (row != null) {
+									if (isXlsRowEmpty(row)) {
+										continue;
+									}
 									int colcount = row.getLastCellNum();
 									if (colcount > fields.length)
 										colcount = fields.length;
@@ -283,7 +338,9 @@ o("menu<%=menuItem%>").className="current";
 					}
 			} else if (pa.equals("xlsx")) {
 				XSSFWorkbook w = (XSSFWorkbook) WorkbookFactory.create(in);
-				for (int i = 0; i < w.getNumberOfSheets(); i++) {
+				int rows = w.getNumberOfSheets();
+				rows = 1; // 只取第1张sheet
+				for (int i = 0; i < rows; i++) {
 					XSSFSheet sheet = w.getSheetAt(i);
 					if (sheet != null) {
 						int rowcount = sheet.getLastRowNum();
@@ -313,6 +370,10 @@ o("menu<%=menuItem%>").className="current";
 						for (int k = 1; k <= rowcount; k++) {
 							XSSFRow row = sheet.getRow(k);
 							if (row != null) {
+								// 如果是空行则跳过
+								if (isXlsxRowEmpty(row)) {
+									continue;
+								}
 								int colcount = row.getLastCellNum();
 								if (colcount > fields.length)
 									colcount = fields.length;

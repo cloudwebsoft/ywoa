@@ -61,10 +61,21 @@ String listFieldOrder = StrUtil.getNullStr(vsd.getString("list_field_order"));
 String[] fieldOrder = StrUtil.split(listFieldOrder, ",");
 String listFieldLink = StrUtil.getNullStr(vsd.getString("list_field_link"));
 String[] fieldsLink = StrUtil.split(listFieldLink, ",");
+String listFieldShow = StrUtil.getNullStr(vsd.getString("list_field_show"));
+String[] fieldsShow = StrUtil.split(listFieldShow, ",");
 
 int len = 0;
-if (fields!=null)
+if (fields!=null) {
 	len = fields.length;
+}
+
+if (fieldsShow==null || fields.length != fieldsShow.length) {
+	fieldsShow = new String[len];
+	for (int i=0; i<len; i++) {
+		fieldsShow[i] = "1";
+	}
+}
+
 int i;
 Vector v3 = fd.getFields();
 Iterator ir3 = v3.iterator();
@@ -95,7 +106,7 @@ if (len == 0){
 			list.add(ff.getName());
         %>
         <span><input type="checkbox" id="<%=ff.getName()%>" name="<%=ff.getName()%>" title="<%=ff.getTitle()%>" checked="<%=checked%>" /><%=ff.getTitle()%></span>
-        <%  
+        <%
         }
 	}
 	
@@ -103,13 +114,20 @@ if (len == 0){
 	while (ir3.hasNext()) {
 		FormField ff = (FormField) ir3.next();
 	
+		boolean isShow = true;
 		String checked = "";
 		for (i=0; i<len; i++) {
 			String fieldName = fields[i];
 			if (fieldName.equals(ff.getName())) {
 				checked = "checked";
+				if (fieldsShow[i].equals("0")) {
+					isShow = false;
+				}
 				break;
 			}
+		}
+		if (!isShow) {
+			continue;
 		}
 		%>
 		<span><input type="checkbox" id="<%=ff.getName()%>" name="<%=ff.getName()%>" title="<%=ff.getTitle()%>" <%=checked%> />&nbsp;<%=ff.getTitle()%></span>
@@ -134,7 +152,7 @@ $("#trigger").powerFloat({
 	eventType: "click",
 	targetMode: null,
 	targetAttr: "src",
-	// position: "1-4", // 显示于下方，默认上方
+	position: "1-4", // 显示于下方，默认上方
 	container: $("#customContainer")
 });
 
@@ -243,6 +261,11 @@ function checkFields() {
 JSONArray jsonAry = new JSONArray();
 for (i=0; i<len; i++) {
 	String fieldName = fields[i];
+	
+	if (fieldsShow[i].equals("0")) {
+		continue;
+	}
+	
 	String fieldNameRaw = fieldName;
 	String title = "";
 	if (fieldName.equals("cws_creator")) {
@@ -265,6 +288,15 @@ for (i=0; i<len; i++) {
 	}
 	else if (fieldName.equals("colOperate")) {
 		title = "操作";
+	}
+	else if (fieldName.equals("cws_create_date")) {
+		title = "创建时间";
+	}
+	else if (fieldName.equals("flow_begin_date")) {
+		title = "流程开始时间";
+	}
+	else if (fieldName.equals("flow_end_date")) {
+		title = "流程结束时间";
 	}
 	else {
 		if (fieldName.startsWith("main:")) {
@@ -297,7 +329,7 @@ for (i=0; i<len; i++) {
 
 	// field: 'subject', title : 'Subject', width: 140
 	JSONObject json = new JSONObject();
-	// 因为:在jquery选择器中被使用，所以需换成#，当在setCols时，再替换回来
+	// 因为:号在jquery选择器中被使用，所以需换成#，当在setCols时，再替换回来
 	fieldName = fieldName.replaceAll(":", "#");
 	json.put("field", fieldName);
 	json.put("title", title);
@@ -307,6 +339,7 @@ for (i=0; i<len; i++) {
 	}else{
 		json.put("link", "#");
 	}
+	json.put("show", fieldsShow[i].equals("1"));
     jsonAry.put(json);
 }
 %>
@@ -356,7 +389,6 @@ function resizeEnd(col) {
 }
 
 function setCols() {
-	// alert(JSON.stringify(gd.config.cols));	
 	$.ajax({
 		type: "post",
 		url: "<%=request.getContextPath()%>/visual/module_field_list.jsp",
@@ -375,16 +407,9 @@ function setCols() {
 			if (re==null)
 				re = data;
 			if (re.ret=="1") {
-				// alert(re.msg);
-				// $.toaster({priority : 'info', message : re.msg });
                <%
                if(resource != null && resource.equals("nest")){
-            	   
                }else{
-               %>
-				// window.location.reload();
-				
-				<%
                }
 				%>
 				$.powerFloat.hide();

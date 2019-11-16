@@ -31,6 +31,7 @@ function loadDataToWebeditCtrl(obj, htmledit) {
 				break;
 			}
 		if (!isAccessed) {
+			// AddField是加入至CMap，故需取所有name相同的checkbox的值
    			htmledit.AddField(obj.elements[i].name , getcheckbox(obj.elements[i].name));
 			pchk ++;
 			arychk[pchk] = obj.elements[i].name;
@@ -52,11 +53,14 @@ function loadDataToWebeditCtrl(obj, htmledit) {
 		htmledit.SetHtmlCode(htmlcode);
 	}
 	catch (e) {}
-	
-	if (uEditor) {
-		var htmlcode = uEditor.getContent();
-		htmledit.SetHtmlCode(htmlcode);
-	}
+
+   try {
+       if (uEditor) {
+           var htmlcode = uEditor.getContent();
+           htmledit.SetHtmlCode(htmlcode);
+       }
+   }
+   catch (e) {}
 }
 
 function getradio(radionname) {

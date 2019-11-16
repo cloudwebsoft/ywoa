@@ -61,6 +61,8 @@
     com.redmoon.oa.visual.FormDAOMgr fdm = new com.redmoon.oa.visual.FormDAOMgr(fd);
 
     int isShowNav = ParamUtil.getInt(request, "isShowNav", 0);
+
+    String tabIdOpener = ParamUtil.get(request, "tabIdOpener");
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -145,6 +147,7 @@
         if (re) {
 %>
 <script>
+    reloadTab("<%=tabIdOpener%>");
     // 如果有父窗口，则自动刷新父窗口
     if (window.opener != null) {
         window.opener.location.reload();
@@ -175,7 +178,7 @@
     } else
         out.print("<BR>");
 %>
-<form action="module_edit_relate.jsp?op=saveformvalue&id=<%=id%>&menuItem=<%=menuItem%>&parentId=<%=parentId%>&code=<%=StrUtil.UrlEncode(moduleCode)%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&isShowNav=<%=isShowNav%>&moduleCodeRelated=<%=moduleCodeRelated%>" method="post"
+<form action="module_edit_relate.jsp?op=saveformvalue&id=<%=id%>&menuItem=<%=menuItem%>&parentId=<%=parentId%>&code=<%=StrUtil.UrlEncode(moduleCode)%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&isShowNav=<%=isShowNav%>&moduleCodeRelated=<%=moduleCodeRelated%>&tabIdOpener=<%=tabIdOpener%>" method="post"
       enctype="multipart/form-data" name="visualForm" id="visualForm">
     <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
         <tr>
@@ -219,7 +222,7 @@
                 <input type="submit" class="btn" name="Submit" value=" 修改 "/>
                 &nbsp;&nbsp;
                 <%if (isShowNav == 0) {%>
-                <input type="button" class="btn" value=" 返回 " onClick="window.history.back()"/>
+                <%--<input type="button" class="btn" value=" 返回 " onClick="window.history.back()"/>--%>
                 <%}%>
             </td>
         </tr>

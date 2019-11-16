@@ -118,11 +118,23 @@
 			
 			});
 			Form.bindFileDel();
-			
-			mui(".mui-input-group").on("tap",".capture_btn",function(){
-				  var cap = jQuery("#captureFile").get(0);
-				  cap.click();
-			});
+
+			// iphone只能用原生的方式来绑定事件
+			if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+				var btnCapture = $('.capture_btn')[0];
+				btnCapture.onclick = function () {
+					var cap = jQuery("#captureFile").get(0);
+					cap.click();
+					// 会出错，因为页面中可能含有多个captureFile
+					// document.getElementById('captureFile').click();
+				}
+			}
+			else {
+				mui(".mui-input-group").on("tap", ".capture_btn", function () {
+					var cap = jQuery("#captureFile").get(0);
+					cap.click();
+				});
+			}
 			
 			mui('body').on("tap", ".attFile", function(){
 				var url = jQuery(this).attr("link");

@@ -13,8 +13,7 @@
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	if (!privilege.isUserPrivValid(request, "admin")) {
-		out.println(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(
-				request, "pvg_invalid")));
+		out.println(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid")));
 		return;
 	}
 %>
@@ -54,6 +53,30 @@
 	int pageSize = ParamUtil.getInt(request, "pageSize", 20);
 	Paginator paginator = new Paginator(request);
 	int curpage = paginator.getCurPage();
+
+	LogDb ld = new LogDb();
+	String op = ParamUtil.get(request, "op");
+	if (op.equals("del")) {
+		int delid = ParamUtil.getInt(request, "id");
+		LogDb ldb = ld.getLogDb(delid);
+		if (ldb.del())
+			out.print(StrUtil.jAlert_Redirect("操作成功","提示",
+					"log_list.jsp?pageSize=" + pageSize + "&CPages=" + curpage));
+		else
+			out.print(StrUtil.jAlert_Back("操作失败","提示"));
+		return;
+	} else if (op.equals("delBatch")) {
+		String[] ids = ParamUtil.getParameters(request, "ids");
+		if (ids != null) {
+			int len = ids.length;
+			for (int i = 0; i < len; i++) {
+				LogDb ldb = ld.getLogDb(StrUtil.toInt(ids[i]));
+				ldb.del();
+			}
+			out.print(StrUtil.jAlert_Redirect("操作成功","提示", "log_list.jsp?pageSize=" + pageSize + "&CPages=" + curpage));
+			return;
+		}
+	}
 %>
 <table id="searchTable" width="100%" border="0" cellspacing="0" cellpadding="0">
 	<tr>
@@ -108,32 +131,6 @@
 	</tr>
 </table>
 <%
-	LogDb ld = new LogDb();
-	String op = ParamUtil.get(request, "op");
-	if (op.equals("del")) {
-		int delid = ParamUtil.getInt(request, "id");
-		LogDb ldb = ld.getLogDb(delid);
-		if (ldb.del())
-			out.print(StrUtil.jAlert_Redirect("操作成功","提示",
-					"log_list.jsp?pageSize=" + pageSize + "&CPages="
-							+ curpage));
-		else
-			out.print(StrUtil.jAlert_Back("操作失败","提示"));
-		return;
-	} else if (op.equals("delBatch")) {
-		String[] ids = ParamUtil.getParameters(request, "ids");
-		if (ids != null) {
-			int len = ids.length;
-			for (int i = 0; i < len; i++) {
-				LogDb ldb = ld.getLogDb(StrUtil.toInt(ids[i]));
-				ldb.del();
-			}
-			out.print(StrUtil.jAlert_Redirect("操作成功","提示",
-					"log_list.jsp?pageSize=" + pageSize + "&CPages="
-							+ curpage));
-			return;
-		}
-	}
 	String sql;
 	String myname = privilege.getUser(request);
 	sql = "select l.ID from log l where 1=1";
@@ -196,7 +193,7 @@
 		totalpages = 1;
 	}
 %>
-<form name="form1" action="log_list.jsp?op=delBatch" method="post">
+<form name="form1" action="log_list.jsp?op=delBatch&pageSize=<%=pageSize%>&CPages=<%=curpage%>" method="post">
 	<table width="93%" border="0" cellpadding="0" cellspacing="0" id="mainTable">
 		<thead>
 		<tr>
@@ -329,13 +326,9 @@ function del(){
 	jConfirm("您确定要删除吗？","提示",function(r){
 		if(!r){return;}
 		else{
-			form1.submit();
+			o("form1").submit();
 		}
 	})
-}
-
-function setPageSize() {
-	window.location.href="log_list.jsp?action=<%=action%>&userName=<%=StrUtil.UrlEncode(userName)%>&beginDate=<%=beginDate%>&endDate=<%=endDate%>&pageSize=" + form1.pageSize.value + "&CPages=<%=curpage%>" + "&userAction=<%=StrUtil.UrlEncode(userAction)%>&dept=<%=StrUtil.UrlEncode(dept)%>&device=<%=device%>&log_type=<%=StrUtil.UrlEncode(logType)%>";
 }
 
 $(document).ready( function() {

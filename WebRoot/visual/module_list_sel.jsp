@@ -90,6 +90,11 @@ try {
 	String desc = ModuleFieldSelectCtl.formatJSONStr(openerField.getDescription());
 	json = new JSONObject(desc);
 	filter = com.redmoon.oa.visual.ModuleUtil.decodeFilter(json.getString("filter"));
+	
+	if (filter.equals("none"))
+		filter = "";
+	request.setAttribute(ModuleUtil.NEST_SHEET_FILTER, filter);
+
 	/*
 	String sourceFormCode = json.getString("sourceFormCode");
 	String byFieldName = json.getString("idField");
@@ -119,7 +124,7 @@ if (conds.equals("none"))
 
 String action = ParamUtil.get(request, "action");
 
-querystr = "op=" + op + "&action=" + action + "&formCode=" + moduleCode + "&orderBy=" + orderBy + "&sort=" + sort + "&filter=" + StrUtil.UrlEncode(conds) + "&byFieldName=" + StrUtil.UrlEncode(byFieldName) + "&showFieldName=" + StrUtil.UrlEncode(showFieldName) + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + openerFieldName;
+querystr = "op=" + op + "&action=" + action + "&formCode=" + moduleCode + "&orderBy=" + orderBy + "&sort=" + sort + "&byFieldName=" + StrUtil.UrlEncode(byFieldName) + "&showFieldName=" + StrUtil.UrlEncode(showFieldName) + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + openerFieldName;
 
 String querystrForSort = "op=" + op + "&formCode=" + moduleCode + "&filter=" + StrUtil.UrlEncode(conds) + "&byFieldName=" + StrUtil.UrlEncode(byFieldName) + "&showFieldName=" + StrUtil.UrlEncode(showFieldName) + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + openerFieldName;
 
@@ -173,6 +178,7 @@ if (!"".equals(conds)) {
 							for (int n=0; n<len; n++) {
 								if (!ary[n].equals("")) {
 									urlStrBuf = StrUtil.concat(urlStrBuf, "&", ff.getName() + "=" + StrUtil.UrlEncode(ary[n]));
+									urlStrBuf = StrUtil.concat(urlStrBuf, "&", ff.getName() + "_cond=" + StrUtil.UrlEncode(name_cond));
 								}
 							}
 						}
@@ -189,7 +195,7 @@ if (!"".equals(conds)) {
 				String cws_flag_cond = ParamUtil.get(request, "cws_flag_cond");
 				StrUtil.concat(urlStrBuf, "&", "cws_flag_cond=" + cws_flag_cond);
 				StrUtil.concat(urlStrBuf, "&", "cws_flag=" + cws_flag);
-				int cws_status = ParamUtil.getInt(request, "cws_status", -20000);						
+				int cws_status = ParamUtil.getInt(request, "cws_status", -10000);
 				String cws_status_cond = ParamUtil.get(request, "cws_status_cond");			
 				StrUtil.concat(urlStrBuf, "&", "cws_status=" + cws_status);
 				StrUtil.concat(urlStrBuf, "&", "cws_status_cond=" + cws_status_cond);				
@@ -315,7 +321,7 @@ function doSort(orderBy) {
 }
 
 function sel(id,sth) {
-	if (<%=mode%>==1) {
+	if ("<%=mode%>" == "1") {
 		window.opener.setIntpuObjValue(id,sth);
 	}
 	else {
@@ -428,6 +434,18 @@ if (btnNames!=null) {
 					else if ("cws_flag".equals(fieldName)) {
 						title = "冲抵状态";
 					}
+					else if ("ID".equals(fieldName)) {
+						title = "ID";
+					}
+					else if ("flowId".equals(fieldName)) {
+						title = "流程号";
+					}
+					else if ("flow:begin_date".equals(fieldName)) {
+						title = "流程开始时间";
+					}
+					else if ("flow:end_date".equals(fieldName)) {
+						title = "流程结束时间";
+					}
 					else {
 						if (fieldName.startsWith("main:")) { // 关联的主表
 							 String[] aryField = StrUtil.split(fieldName, ":");			
@@ -501,7 +519,7 @@ if (btnNames!=null) {
 						if ("".equals(nameCond)) {
 							nameCond = condType;
 						}
-						int queryValueCwsStatus = ParamUtil.getInt(request, "cws_status", -20000);						
+						int queryValueCwsStatus = ParamUtil.getInt(request, "cws_status", -10000);
 						%>
 				          <select name="<%=fieldName%>_cond" style="display:none">
 				            <option value="=" selected="selected">等于</option>
@@ -517,7 +535,7 @@ if (btnNames!=null) {
 						<script>
 						$(function() {
 							o("<%=fieldName%>_cond").value = "<%=nameCond%>";
-							<%if (queryValueCwsStatus!=-20000) {%>
+							<%if (queryValueCwsStatus!=-10000) {%>
 							o("<%=fieldName%>").value = "<%=queryValueCwsStatus%>";
 							<%}	else {%>
 							o("<%=fieldName%>").value = "<%=msd.getInt("cws_status")%>";
@@ -548,8 +566,54 @@ if (btnNames!=null) {
 						});
 						</script>							
 						<%					
-					}        			
-               		else if (ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {
+					}
+					else if ("ID".equals(fieldName)) {
+						String nameCond = ParamUtil.get(request, fieldName + "_cond");
+						if ("".equals(nameCond)) {
+							nameCond = condType;
+						}
+						String queryValueID = ParamUtil.get(request, "ID");
+						%>
+				          <select name="ID_cond">
+				            <option value="=" selected="selected">=</option>
+				            <option value=">">></option>
+				            <option value="&lt;"><</option>
+				            <option value=">=">>=</option></option>
+							  <option value="&lt;="><=</option>
+				          </select>
+	                      <input name="ID" size="5" />
+						<script>
+						$(function() {
+							o("<%=fieldName%>_cond").value = "<%=nameCond%>";
+							o("<%=fieldName%>").value = "<%=queryValueID%>";
+						});
+						</script>
+						<%
+					}
+					else if ("flowId".equals(fieldName)) {
+						String nameCond = ParamUtil.get(request, fieldName + "_cond");
+						if ("".equals(nameCond)) {
+							nameCond = condType;
+						}
+						String queryValueID = ParamUtil.get(request, "flowId");
+						%>
+				          <select name="flowId_cond">
+				            <option value="=" selected="selected">=</option>
+				            <option value=">">></option>
+				            <option value="&lt;"><</option>
+				            <option value=">=">>=</option></option>
+							  <option value="&lt;="><=</option>
+				          </select>
+	                      <input name="flowId" size="5" />
+						<script>
+						$(function() {
+							o("<%=fieldName%>_cond").value = "<%=nameCond%>";
+							o("<%=fieldName%>").value = "<%=queryValueID%>";
+						});
+						</script>
+						<%
+					}
+               		else if ("flow:begin_date".equals(fieldName) || "flow:end_date".equals(fieldName) || ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {
                			%>
 						<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
                			<%
@@ -559,9 +623,9 @@ if (btnNames!=null) {
 							list.add(ff.getName() + "FromDate");
 							list.add(ff.getName() + "ToDate");
 							%>
-                             	 大于
+								从
                               <input id="<%=ff.getName()%>FromDate" name="<%=ff.getName()%>FromDate" size="15" style="width:80px" value = "<%=fDate%>" />
-                              	小于
+                              	至
                               <input id="<%=ff.getName()%>ToDate" name="<%=ff.getName()%>ToDate" size="15" style="width:80px" value = "<%=tDate%>" />
 	  <%
 						}
@@ -581,18 +645,113 @@ if (btnNames!=null) {
 						MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
 						if (mu!=null) {
 							String queryValueRealShow = ParamUtil.get(request, fieldName + "_realshow");
-							out.print(mu.getIFormMacroCtl().convertToHTMLCtlForQuery(request, ff));
+							// 用main及other映射字段的描述替换其name，以使得生成的查询控件的id及name中带有main及other
+							FormField ffQuery = (FormField)ff.clone();
+							ffQuery.setName(fieldName);
+							IFormMacroCtl ifmc = mu.getIFormMacroCtl();
+							int fieldType = ifmc.getFieldType();
+							if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_DOUBLE || fieldType==FormField.FIELD_TYPE_FLOAT || fieldType==FormField.FIELD_TYPE_LONG || fieldType==FormField.FIELD_TYPE_PRICE) {
+								String nameCond = ParamUtil.get(request, fieldName + "_cond");
+								if ("".equals(nameCond)) {
+									nameCond = condType;
+								}
+								if (condType.equals(SQLBuilder.COND_TYPE_SCOPE)) {
+									String fCond = ParamUtil.get(request, fieldName + "_cond_from");
+									String tCond = ParamUtil.get(request, fieldName + "_cond_to");
+									String fVal = ParamUtil.get(request, fieldName + "_from");
+									String tVal = ParamUtil.get(request, fieldName + "_to");
 							%>
-							<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
-							<script>
-							$(document).ready(function() {
-							o("<%=fieldName%>").value = "<%=queryValue%>";
-							try {
-                          	  o("<%=fieldName%>_realshow").value = "<%=queryValueRealShow%>";
-                            } catch (e) {}
-							});
-							</script>						
+								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+								  <select name="<%=fieldName%>_cond_from">
+									<option value=">">></option>
+									<option value=">=" selected="selected">>=</option></option>
+								  </select>
+								  <%
+									  FormField ffTemp = (FormField)ffQuery.clone();
+									  ffTemp.setName(ffQuery.getName() + "_from");
+									  ffTemp.setCondType(ffQuery.getCondType());
+									  out.print(ifmc.convertToHTMLCtlForQuery(request, ffTemp));
+								  %>
+								  <select name="<%=fieldName%>_cond_to">
+									<option value="&lt;"><</option>
+									<option value="&lt;=" selected="selected"><=</option></option>
+								  </select>
+								  <%
+									  ffTemp.setName(ffQuery.getName() + "_to");
+									  out.print(ifmc.convertToHTMLCtlForQuery(request, ffTemp));
+								  %>
+								<script>
+								$(document).ready(function() {
+									o("<%=fieldName%>_cond_from").value = "<%=fCond%>";
+									o("<%=fieldName%>_from").value = "<%=fVal%>";
+									o("<%=fieldName%>_cond_to").value = "<%=tCond%>";
+									o("<%=fieldName%>_to").value = "<%=tVal%>";
+								});
+								</script>
+								<%
+								}
+								else {
+								%>
+								  <select name="<%=fieldName%>_cond">
+									<option value="=" selected="selected">=</option>
+									<option value=">">></option>
+									<option value="&lt;"><</option>
+									<option value=">=">>=</option></option>
+									  <option value="&lt;="><=</option>
+								  </select>
+								  <%
+									  out.print(ifmc.convertToHTMLCtlForQuery(request, ffQuery));
+								  %>
+								<script>
+								$(document).ready(function() {
+									o("<%=fieldName%>_cond").value = "<%=nameCond%>";
+									o("<%=fieldName%>").value = "<%=queryValue%>";
+								});
+								</script>
+							<%
+								}
+							}
+							else {
+								out.print(mu.getIFormMacroCtl().convertToHTMLCtlForQuery(request, ffQuery));
+							%>
+								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+								<script>
+								$(document).ready(function() {
+								<%
+								// 如果是多选
+								if (condType.equals(SQLBuilder.COND_TYPE_MULTI)) {
+									String[] aryVal = ParamUtil.getParameters(request, fieldName);
+									if (aryVal!=null) {
+										for (String s : aryVal) {
+											if ("".equals(queryValue)) {
+												queryValue = s;
+											}
+											else {
+												queryValue += "," + s;
+											}
+										}
+									}
+									if (!"".equals(queryValue)) {
+                                 %>
+									$(document).ready(function() {
+										setMultiCheckboxChecked("<%=fieldName%>", "<%=queryValue%>");
+									});
+									<%
+									}
+								}
+								else {
+								%>
+									o("<%=fieldName%>").value = "<%=queryValue%>";
+									try {
+									  o("<%=fieldName%>_realshow").value = "<%=queryValueRealShow%>";
+									} catch (e) {}
+									});
+									<%
+								}
+								%>
+								</script>
 						<%
+							}
 						}
 					}
 					else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
@@ -600,6 +759,34 @@ if (btnNames!=null) {
 						if ("".equals(nameCond)) {
 							nameCond = condType;
 						}
+						if (condType.equals(SQLBuilder.COND_TYPE_SCOPE)) {
+							String fCond = ParamUtil.get(request, fieldName + "_cond_from");
+							String tCond = ParamUtil.get(request, fieldName + "_cond_to");
+							String fVal = ParamUtil.get(request, fieldName + "_from");
+							String tVal = ParamUtil.get(request, fieldName + "_to");
+						%>
+						<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+				          <select name="<%=fieldName%>_cond_from">
+				            <option value=">">></option>
+				            <option value=">=" selected="selected">>=</option></option>
+				          </select>
+	                      <input name="<%=fieldName%>_from" size="3" />
+				          <select name="<%=fieldName%>_cond_to">
+				            <option value="&lt;"><</option>
+				            <option value="&lt;=" selected="selected"><=</option></option>
+				          </select>
+	                      <input name="<%=fieldName%>_to" size="3" />
+						<script>
+						$(document).ready(function() {
+							o("<%=fieldName%>_cond_from").value = "<%=fCond%>";
+							o("<%=fieldName%>_from").value = "<%=fVal%>";
+							o("<%=fieldName%>_cond_to").value = "<%=tCond%>";
+							o("<%=fieldName%>_to").value = "<%=tVal%>";
+						});
+						</script>
+						<%
+						}
+						else {
 						%>
 				          <select name="<%=fieldName%>_cond">
 				            <option value="=" selected="selected">等于</option>
@@ -616,6 +803,7 @@ if (btnNames!=null) {
 						});
 						</script>						
 						<%
+						}
 					}
 					else {
 						boolean isSpecial = false;
@@ -673,6 +861,43 @@ if (btnNames!=null) {
 								}
 							}							
 						}
+						else if (condType.equals(SQLBuilder.COND_TYPE_MULTI)) {
+							if (ff.getType().equals(FormField.TYPE_SELECT)) {
+								isSpecial = true;
+						%>
+						<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+						<%
+							String[][] aryOpt = FormParser.getOptionsArrayOfSelect(fd, ff);
+							for (int k=0; k<aryOpt.length; k++) {
+								if ("".equals(aryOpt[k][1].trim())) {
+									aryOpt[k][0] = "无";
+								}
+						%>
+							<input name="<%=fieldName%>" type="checkbox" value="<%=aryOpt[k][1]%>" style="width:20px"/><%=aryOpt[k][0]%>
+							<%
+								}
+								String[] aryVal = ParamUtil.getParameters(request, fieldName);
+								if (aryVal!=null) {
+									for (String s : aryVal) {
+										if ("".equals(queryValue)) {
+											queryValue = s;
+										}
+										else {
+											queryValue += "," + s;
+										}
+									}
+								}
+								if (!"".equals(queryValue)) {
+							%>
+						<script>
+						$(document).ready(function() {
+							setMultiCheckboxChecked("<%=fieldName%>", "<%=queryValue%>");
+						});
+						</script>
+				<%
+							}
+						}
+					}
 						if (!isSpecial) {
 						%>
 							<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
@@ -701,7 +926,7 @@ if (btnNames!=null) {
         <input type="hidden" name="orderBy" value="<%=orderBy %>" />
         <input type="hidden" name="sort" value="<%=sort %>" />
         
-        <input type="hidden" name="filter" value="<%=conds %>" />
+        <input type="hidden" name="filter" value="<%=StrUtil.HtmlEncode(conds) %>" />
         <input type="hidden" name="byFieldName" value="<%=byFieldName %>" />
         <input type="hidden" name="showFieldName" value="<%=showFieldName %>" />
         <input type="hidden" name="openerFormCode" value="<%=openerFormCode %>" />
@@ -734,13 +959,10 @@ if (totalpages==0)
 	totalpages = 1;
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
-
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+// String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
 %>
 <table class="percent98 p9" width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>
@@ -787,7 +1009,16 @@ for (int i=0; i<len; i++) {
 	}	
 	else if (fieldName.equals("cws_flag")) {
 		title = "冲抵状态";
-	}	
+	}
+	else if (fieldName.equals("cws_create_date")) {
+		title = "创建时间";
+	}
+	else if (fieldName.equals("flow_begin_date")) {
+		title = "流程开始时间";
+	}
+	else if (fieldName.equals("flow_end_date")) {
+		title = "流程结束时间";
+	}
 	else {
 		title = fd.getFieldTitle(fieldName);
 	}	
@@ -797,7 +1028,7 @@ for (int i=0; i<len; i++) {
 		doSort = "";
 	}
 %>
-    <td class="tabStyle_1_title" width="<%=fieldsWidth[i]%>" style="cursor:hand" onClick="<%=doSort%>">
+    <td class="tabStyle_1_title" nowrap width="<%=fieldsWidth[i]%>" style="cursor:hand" onClick="<%=doSort%>">
 	<%=title%>
 	<%if (orderBy.equals(fieldName)) {
 		if (sort.equals("asc")) 
@@ -807,7 +1038,7 @@ for (int i=0; i<len; i++) {
 	}%>	
 	</td>
 <%}%>
-    <td class="tabStyle_1_title" title="按时间排序" style="cursor:hand" onClick="doSort('id')">操作
+    <td class="tabStyle_1_title" nowrap title="按时间排序" style="cursor:hand" onClick="doSort('id')">操作
       	<%
       	if (orderBy.equals("id")) {
 			if (sort.equals("asc")) 
@@ -818,7 +1049,8 @@ for (int i=0; i<len; i++) {
 		%>
     </td>
   </tr>
-  <%	
+  <%
+	  	WorkflowDb wf = new WorkflowDb();
 	  	int k = 0;
 		UserMgr um = new UserMgr();
 		while (ir!=null && ir.hasNext()) {
@@ -893,6 +1125,23 @@ for (int i=0; i<len; i++) {
 		else if (fieldName.equals("cws_flag")) {
 			out.print(fdao.getCwsFlag());
 		}
+		else if (fieldName.equals("cws_create_date")) {
+			out.print(DateUtil.format(fdao.getCwsCreateDate(), "yyyy-MM-dd"));
+		}
+		else if (fieldName.equals("flow_begin_date")) {
+			int flowId = fdao.getFlowId();
+			if (flowId!=-1) {
+				wf = wf.getWorkflowDb(flowId);
+				out.print(DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd"));
+			}
+		}
+		else if (fieldName.equals("flow_end_date")) {
+			int flowId = fdao.getFlowId();
+			if (flowId!=-1) {
+				wf = wf.getWorkflowDb(flowId);
+				out.print(DateUtil.format(wf.getEndDate(), "yyyy-MM-dd"));
+			}
+		}
 		else {
 			FormField ff = fdao.getFormField(fieldName);			
 			if (ff!=null) {
@@ -930,13 +1179,13 @@ for (int i=0; i<len; i++) {
 		byValue = fdao.getFieldValue(byFieldName);
 	}
 	// @task:id在设置宏控件时，还不能被配置为被显示
-	if (showFieldName.equals("id")) {//yonghu bdyhxz
+	if (showFieldName.equals("id")) {
 		showValue = "" + id;
 		isShowFieldFound = true;
 	}
 	
 	if (!isShowFieldFound) {
-		FormField ff = fd.getFormField(showFieldName);
+		FormField ff = fdao.getFormField(showFieldName);
 		if (ff.getType().equals(FormField.TYPE_MACRO)) {
 			MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
 			if (mu != null) {
@@ -964,14 +1213,26 @@ for (int i=0; i<len; i++) {
 		}
 		boolean isMacro = false;
 		// setValue为module_list_sel.jsp页面中所选择的值
-		String setValue = fdao.getFieldValue(sourceF);
-		String checkJs = com.redmoon.oa.visual.FormUtil.getCheckFieldJS(pck, tempFf);		
+		String setValue = "";
+		if ("id".equals(sourceF)) {
+			setValue = String.valueOf(fdao.getId());
+		}
+		else if ("cws_id".equals(sourceF)) {
+			setValue = fdao.getCwsId();
+		}
+		else {
+			setValue = fdao.getFieldValue(sourceF);
+		}
+		String checkJs = com.redmoon.oa.visual.FormUtil.getCheckFieldJS(pck, tempFf);
+        IFormMacroCtl ifmc = null;
 		// 如果这个值将被赋值至父页面中的一个宏控件中的时候，则需要将父页面中的宏控件用convertToHTMLCtl重新替换赋值，需要注意的是宏控件传入参数中FormField需要用setValue赋值
 		if (tempFf != null && tempFf.getType().equals(FormField.TYPE_MACRO)) {
 			tempFf.setValue(setValue);
 			isMacro = true;
+			request.setAttribute("cwsMapSourceFormField", fdao.getFormField(sourceF));
 			// setValue = mm.getMacroCtlUnit(tempFf.getMacroType()).getIFormMacroCtl().convertToHTMLCtl(request, tempFf).replaceAll("\\'", "\\\\'").replaceAll("\"", "&quot;");
-			setValue = mm.getMacroCtlUnit(tempFf.getMacroType()).getIFormMacroCtl().convertToHTMLCtl(request, tempFf);
+			ifmc = mm.getMacroCtlUnit(tempFf.getMacroType()).getIFormMacroCtl();
+            setValue = ifmc.convertToHTMLCtl(request, tempFf);
 		}
 		// 增加辅助表单域，以免算式中出现引号问题
 		%>
@@ -980,12 +1241,22 @@ for (int i=0; i<len; i++) {
 		<textarea id="helperJs<%=k%>_<%=i%>" style="display:none"><%=checkJs%></textarea>	
 		<%
 		// System.out.println(getClass() + " " + destF + "-" + setValue);
-		funs += "setOpenerFieldValue('" + destF + "', o('helper" + k + "_" + i + "').value," + isMacro + ", o('helperSource" + k + "_" + i + "').value, o('helperJs" + k + "_" + i + "').value);";
+		funs += "setOpenerFieldValue('" + destF + "', o('helper" + k + "_" + i + "').value," + isMacro + ", o('helperSource" + k + "_" + i + "').value, o('helperJs" + k + "_" + i + "').value);\n";
+		if (ifmc instanceof SQLCtl) {
+		    // 调用onSQLCtlRelateFieldChange_，以使得控件被映射时能够生成
+            // 因为当convertToHtmlCtl时，生成的是input，且已经有value，
+            // 而在macro_sql_ctl_js.jsp是用setInterval来检测变化的，而值在映射过来后并不变化，所以不这样处理，无法生成控件，而只能看到一个带有字段值的文本框
+		    funs += "window.opener.onSQLCtlRelateFieldChange_" + destF + "();\n";
+        }
 	}
-	// 替换掉单引号，防止JS错误
-	String temp = showValue.replaceAll("'","\\\\'");
 	%>
-	<a href="javascript:sel('<%=byValue%>', '<%=temp%>');<%=funs%>">选择</a></td>
+		<script>
+			function doFuns<%=k%>() {
+				<%=funs%>
+			}
+		</script>
+		<textarea id="helperJsShowValue<%=k%>" style="display:none"><%=showValue%></textarea>
+		<a href="javascript:sel('<%=byValue%>', o('helperJsShowValue<%=k%>').value);doFuns<%=k%>()">选择</a></td>
   </tr>
   <%
   }
@@ -1016,10 +1287,27 @@ $(function() {
 });
 
 function setOpenerFieldValue(openerField, val, isMacro, sourceValue, checkJs) {
-    if(isMacro){
+	var obj = window.opener.o('helper_' + openerField);
+	if (obj) {
+		obj.parentNode.removeChild(obj);
+	}
+	
+	if(isMacro){
     	window.opener.replaceValue(openerField, val, sourceValue, checkJs);  	
     }else{
-		window.opener.o(openerField).value = val;
+    	var obj = window.opener.o(openerField);
+    	if (obj) {
+            if (obj.getAttribute("type") == "radio") {
+                window.opener.setRadioValue(obj.name, val);
+            } else {
+                obj.value = val;
+            }
+        }
+    	else {
+    	    if (isIE()) {
+    	        console.log("字段：" + openerField + " 不存在！")
+            }
+        }
 	}
 }
 </script>

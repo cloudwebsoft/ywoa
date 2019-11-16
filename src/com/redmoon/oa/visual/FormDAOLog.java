@@ -16,12 +16,13 @@ import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.FormField;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
 
-public class FormDAOLog {
+public class FormDAOLog implements IFormDAO {
 	public static final int LOG_TYPE_CREATE = 0;
 	FormDb fd;
 	Vector fields;
@@ -36,15 +37,28 @@ public class FormDAOLog {
 	 */	
 	public static final int LOG_TYPE_DEL = 2;
 
+    /**
+     * 浏览类型：模块
+     */
+	public static final int READ_TYPE_MODULE = 0;
+    /**
+     * 浏览类型：报表
+     */
+	public static final int READ_TYPE_REPORT = 1;
+
     private String cwsId;
     private int cwsOrder = 0;
     private String unitCode;
     private String creator;
     
-    private long flowId;
+    private int flowId;
     
     private String flowTypeCode;
-    
+
+    public long getIdentifier() {
+        return id;
+    }
+
     public long getId() {
 		return id;
 	}
@@ -85,15 +99,46 @@ public class FormDAOLog {
 		this.creator = creator;
 	}
 
-	public long getFlowId() {
+	public int getFlowId() {
 		return flowId;
 	}
 
-	public void setFlowId(long flowId) {
+    @Override
+    public int getCwsFlag() {
+        return -1000;
+    }
+
+    @Override
+    public int getCwsStatus() {
+        return -1000;
+    }
+
+    @Override
+    public FormField getFormField(String fieldName) {
+        Iterator ir = fields.iterator();
+        while (ir.hasNext()) {
+            FormField ff = (FormField)ir.next();
+            // System.out.println(getClass() + " " + ff.getName() + " " + ff.getValue());
+            if (ff.getName().equals(fieldName))
+                return ff;
+        }
+        return null;
+    }
+
+    public void setFlowId(int flowId) {
 		this.flowId = flowId;
 	}
 
-	boolean loaded = false;
+    public Vector getFields() {
+        return fields;
+    }
+
+    @Override
+    public String getVisualPath() {
+        return "";
+    }
+
+    boolean loaded = false;
 	private String logUser;
 	private int logType;
 	private java.util.Date logDate;
@@ -117,7 +162,6 @@ public class FormDAOLog {
     
     /**
      * 根据SQL语句列出表单编码为formCode的分页记录
-     * @param formCode String 表单编码
      * @param listsql String SQL语句
      * @param curPage int 当前页码
      * @param pageSize int 每页记录数
@@ -233,7 +277,7 @@ public class FormDAOLog {
                     cwsId = StrUtil.getNullStr(rs.getString(k+1));
                     cwsOrder = rs.getInt(k+2);
                     unitCode = rs.getString(k+3);
-                    flowId = rs.getLong(k+4);
+                    flowId = rs.getInt(k+4);
                     
                     // cws_log_user,cws_log_type,cws_log_date,cws_log_id
                     setLogUser(rs.getString(k+5));
@@ -327,4 +371,20 @@ public class FormDAOLog {
 	public String getFlowTypeCode() {
 		return flowTypeCode;
 	}
+
+	public void setFieldValue(String fieldName, String value) {
+        Iterator ir = fields.iterator();
+        while (ir.hasNext()) {
+            FormField ff = (FormField)ir.next();
+            if (ff.getName().equalsIgnoreCase(fieldName)) {
+                // LogUtil.getLog(getClass()).info("setFieldValue: ff.getName()=" + ff.getName() + " fieldName=" + fieldName + " value=" + value);
+                ff.setValue(value);
+                break;
+            }
+        }
+    }
+
+    public boolean save() {
+        return true;
+    }
 }

@@ -24,6 +24,7 @@ import cn.js.fan.web.Global;
  * 
  * <p>
  * Description:
+ * isAll-显示全部用户，而不仅是本单位的用户, isBlank-默认显示空，而不是默认选择当前用户
  * </p>
  * 
  * <p>
@@ -47,10 +48,27 @@ public class UserSelectCtl extends AbstractMacroCtl {
 			style = "style='width:" + ff.getCssWidth() + "'";
 		}		
 		String str = "";
-		str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' " + style + " >";
-		str += "<option value='-'>无</option>";
+		str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' " + style + " title='" + ff.getTitle() + "'>";
+		str += "<option value=''>无</option>";
 
-		boolean isAll = "isAll".equalsIgnoreCase(ff.getDefaultValueRaw());
+		String desc = ff.getDescription();
+		if ("".equals(desc)) {
+			desc = ff.getDefaultValueRaw();
+		}
+
+		String[] descAry = StrUtil.split(desc, ",");
+		boolean isAll = false, isBlank = false;
+		if (descAry!=null) {
+			for (int i=0; i<descAry.length; i++) {
+				if ("isAll".equalsIgnoreCase(descAry[i].trim())) {
+					isAll = true;
+					continue;
+				}
+				if ("isBlank".equalsIgnoreCase(descAry[i].trim())) {
+					isBlank = true;
+				}
+			}
+		}
 
 		UserDb ud = new UserDb();
 		Privilege pvg = new Privilege();
@@ -62,14 +80,21 @@ public class UserSelectCtl extends AbstractMacroCtl {
 			String sql = "select name from users order by regDate desc";
 			ir = ud.list(sql).iterator();
 		}
+
 		String userName = pvg.getUser(request);
 		// 置为当前用户
 		while (ir.hasNext()) {
 			ud = (UserDb) ir.next();
-			if (userName.equals(ud.getName())) {
-				str += "<option selected value='" + ud.getName() + "'>"
-						+ ud.getRealName() + "</option>";
-			} else {
+			if (!isBlank) {
+				if (userName.equals(ud.getName())) {
+					str += "<option selected value='" + ud.getName() + "'>"
+							+ ud.getRealName() + "</option>";
+				} else {
+					str += "<option value='" + ud.getName() + "'>"
+							+ ud.getRealName() + "</option>";
+				}
+			}
+			else {
 				str += "<option value='" + ud.getName() + "'>"
 						+ ud.getRealName() + "</option>";
 			}
@@ -113,15 +138,31 @@ public class UserSelectCtl extends AbstractMacroCtl {
 		// 检查如果没有赋值就赋予其当前用户名称
 		// System.out.println(getClass() + " ff.getValue()=" + ff.getValue());
 		if (StrUtil.getNullStr(ff.getValue()).equals("")) {
-			if (!"".equals(ff.getDefaultValue())) {
-				ff.setValue(ff.getDefaultValue());
+			String desc = ff.getDescription();
+			if ("".equals(desc)) {
+				desc = ff.getDefaultValueRaw();
 			}
-			else {
-				Privilege privilege = new Privilege();
-				UserDb ud = new UserDb();
-				ud = ud.getUserDb(privilege.getUser(request));
-				// ff.setValue(ud.getRealName());
-				ff.setValue(privilege.getUser(request));
+			String[] descAry = StrUtil.split(desc, ",");
+			boolean isBlank = false;
+			if (descAry!=null) {
+				for (int i=0; i<descAry.length; i++) {
+					if ("isBlank".equalsIgnoreCase(descAry[i].trim())) {
+						isBlank = true;
+						break;
+					}
+				}
+			}
+
+			if (!isBlank) {
+				if (!"".equals(ff.getDefaultValue())) {
+					ff.setValue(ff.getDefaultValue());
+				} else {
+					Privilege privilege = new Privilege();
+					UserDb ud = new UserDb();
+					ud = ud.getUserDb(privilege.getUser(request));
+					// ff.setValue(ud.getRealName());
+					ff.setValue(privilege.getUser(request));
+				}
 			}
 		}
 

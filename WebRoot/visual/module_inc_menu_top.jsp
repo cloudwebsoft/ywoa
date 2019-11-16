@@ -4,6 +4,7 @@
 <%@ page import = "com.redmoon.oa.flow.*"%>
 <%@ page import = "org.json.*"%>
 <%@ page import = "java.util.*"%>
+<%@ page import="com.redmoon.oa.Config" %>
 <%
 String codeTop = ParamUtil.get(request, "code");
 if (codeTop.equals("")) {
@@ -33,7 +34,7 @@ while (paramNames.hasMoreElements()) {
     String paramName = (String) paramNames.nextElement();
     String[] paramValues = request.getParameterValues(paramName);
     if (paramValues.length == 1) {
-        String paramValue = paramValues[0];
+        String paramValue = ParamUtil.getParam(request, paramName);
         // 过滤掉formCode等
 		if (paramName.equals("code")
 				|| paramName.equals("formCode")
@@ -43,6 +44,8 @@ while (paramNames.hasMoreElements()) {
 				|| paramName.equals("parentId")
 				|| paramName.equals("moduleCodeRelated")
 				|| paramName.equals("formCodeRelated")
+				|| paramName.equals("mode") // 去掉mode及tagName，否则当存在mode=subTagRelated，关联模块中就会有问题
+				|| paramName.equals("tagName")
 				|| paramName.equals("id")
 		) {
 			;
@@ -53,6 +56,7 @@ while (paramNames.hasMoreElements()) {
     }
 }
 requestParamsTop = requestParamsBuf.toString();
+request.setAttribute("reqParams", requestParamsTop); // module_add.jsp中会调用到
 
 String servletPathTop = request.getServletPath();
 int pTop = servletPathTop.lastIndexOf("/");
@@ -129,8 +133,15 @@ if (parentIdTop==-1) {
 					opLog = "";
 				}
 				%>
-				<li id="menu4"><a href="<%=request.getContextPath() + servletPathTop%>/module_log_list.jsp?op=<%=opLog%>&code=<%=codeTop%>&fdaoId=<%=fdaoIdTop%>&formCode=<%=formCodeTop%>&<%=requestParamsTop %>"><span>修改日志</span></a></li>
+				<li id="menu4"><a href="<%=request.getContextPath() + servletPathTop%>/module_log_list.jsp?op=<%=opLog%>&code=<%=codeTop%>&fdaoId=<%=fdaoIdTop%>&moduleFormCode=<%=formCodeTop%>&moduleCodeLog=<%=msdTop.getString("module_code_log")%>&<%=requestParamsTop %>"><span>修改日志</span></a></li>
 				<%
+					Config cfgTop = new Config();
+					boolean isModuleLogRead = cfgTop.getBooleanProperty("isModuleLogRead");
+					if (isModuleLogRead) {
+				%>
+	  			<li id="menu5"><a href="javascript:;" onclick="addTab('浏览日志', '<%=request.getContextPath()%>/visual/module_list.jsp?op=search&code=module_log_read&read_type=<%=FormDAOLog.READ_TYPE_MODULE%>&module_code=<%=codeTop%>&form_code=<%=formCode%>')"><span>浏览日志</span></a></li>
+	  			<%
+					}
 			}
 		}
 	}
@@ -148,7 +159,7 @@ else {
 	}
 }
 
-int menuItemTop = 4;
+int menuItemTop = 6;
 if (parentIdTop==-1) {
 	String[] tagsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("nav_tag_name")), ",");
 	String[] tagUrlsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("nav_tag_url")), ",");

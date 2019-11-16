@@ -293,12 +293,12 @@ function openWin(url,width,height) {
 function compare() {
 	var ids = getCheckboxValue("ids");
 	if (ids=="") {
-		alert("请选择需要对比的记录！");
+		jAlert("请选择需要对比的记录！", "提示");
 		return;
 	}
 	var ary = ids.split(",");
 	if (ary.length!=2) {
-		alert("请选择两条记录进行对比！");
+		jAlert("请选择两条记录进行对比！", "提示");
 		return;
 	}
 	// addTab("版本对比", "<%=request.getContextPath()%>/flow/flow_doc_compare.jsp?flowId=<%=flowId%>&ids=" + ids);

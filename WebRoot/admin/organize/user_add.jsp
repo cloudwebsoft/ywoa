@@ -181,8 +181,8 @@ if (!privilege.isUserPrivValid(request, "admin.user")) {
                   <td align=left>
                   <input type=text name="name" maxlength=20 size=20 onchange="checkName(this.value)" />
 				  <script>
-                    var name = new LiveValidation('name');
-                    name.add(Validate.Presence);	
+                    var nameLive = new LiveValidation('name');
+                    nameLive.add(Validate.Presence);
                   </script>                  
                   <span id="checkNameResult"></span></td>
                   <td rowspan="3">头像</td>
@@ -257,8 +257,18 @@ if (!privilege.isUserPrivValid(request, "admin.user")) {
                 </tr>
                 <tr>
                   <td align=left>部门</td>
-                  <td align=left><input id="deptName" name="deptName"  type=text readonly size=20 />
-                    <input id="deptCode" name="deptCode" type="hidden" />
+                  <td align=left>
+                      <%
+                          String curDeptName = "";
+                          String curDeptCode = ParamUtil.get(request, "curDeptCode");
+                          if (!"".equals(curDeptCode)) {
+                              DeptDb dd = new DeptDb();
+                              dd = dd.getDeptDb(curDeptCode);
+                              curDeptName = dd.getName();
+                          }
+                      %>
+                      <input id="deptName" name="deptName" type=text readonly value="<%=curDeptName%>" size=20 />
+                    <input id="deptCode" name="deptCode" type="hidden" value="<%=curDeptCode%>" />
                     <script>
                     	var DeptName = new LiveValidation('deptName');
                     	DeptName.add(Validate.Presence);		

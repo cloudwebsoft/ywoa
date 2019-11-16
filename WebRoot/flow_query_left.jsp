@@ -121,7 +121,7 @@ $(document).ready(function(){
 		                   //alert($(e.target).parents('li').attr('id'));  
 		                   //alert($subject.text());
 		                   var code = $(e.target).parents('li').attr('id');
-		                   window.open("flow/flow_list.jsp?op=search&typeCode="+code+"&myname=<%=StrUtil.UrlEncode(userName)%>","queryFrame");
+		                   window.open("flow/flow_list.jsp?op=search&displayMode=<%=WorkflowMgr.DISPLAY_MODE_SEARCH%>&typeCode="+code+"&myname=<%=StrUtil.UrlEncode(userName)%>","queryFrame");
 			            }
    					});
    	bindClick();

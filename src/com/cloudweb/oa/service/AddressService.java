@@ -140,6 +140,21 @@ public class AddressService {
 		return listResult;
 	}
 
+	public ListResult listResult(String sql, int curPage, int pageSize){
+		String sqlPage = sql + " limit " + (curPage-1)*pageSize + ", " + pageSize;
+		List<Integer> addresseIds = getAddressDao().listSql(sqlPage);
+		Vector vector = new Vector();
+		for (Integer id : addresseIds){
+			Address address = getAddress(id);
+			vector.add(address);
+		}
+		ListResult listResult = new ListResult();
+		int count = getAddressDao().count("select count(*) from (" + sql + ") as myTable");
+		listResult.setTotal(count);
+		listResult.setResult(vector);
+		return listResult;
+	}
+
 	public void delBatch(String ids) throws ErrMsgException{
 		String[] idTemp = ids.split(",");
 		Privilege privilege = new Privilege();

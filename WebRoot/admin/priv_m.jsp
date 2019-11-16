@@ -138,9 +138,13 @@ else if (op.equals("edit")) {
 			desc = desc2;
 			layer = 2;
 		}
-		String sql = "update privilege set description=" + StrUtil.sqlstr(desc) + ", orders=" + (i+1) + ", layer=" + layer + " where priv=" + StrUtil.sqlstr(priv);
-		JdbcTemplate jt = new JdbcTemplate();
-		re = jt.executeUpdate(sql)==1;
+
+		PrivDb pd = new PrivDb();
+		pd = pd.getPrivDb(priv);
+		pd.setDesc(desc);
+		pd.setOrders(i + 1);
+		pd.setLayer(layer);
+		pd.save();
 	}
     	
 	if (re) {
@@ -153,14 +157,9 @@ else if (op.equals("edit")) {
 				PrivDb pd = new PrivDb();
 				pd = pd.getPrivDb(privDel);
 				if (pd.isLoaded()) {
-					
+					pd.del();
 				}
 			}
-			
-			String sql = "delete from privilege where priv in (" + privsToDel + ")";
-			// System.out.println(getClass() + " sql=" + sql);
-			JdbcTemplate jt = new JdbcTemplate();
-			jt.executeUpdate(sql);
 		}	
 		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "priv_m.jsp"));
 	}
@@ -175,20 +174,11 @@ o("menu1").className="current";
 </script>
 <div class="spacerH"></div>
 <%
-License license = License.getInstance();
-String sql = "select priv,description,isSystem,layer from privilege";
-if (license.isGov()) {
-	sql = "select priv,description,isSystem,layer from privilege where kind=" + PrivDb.KIND_DEFAULT + " or kind=" + PrivDb.KIND_GOV;
-}
-else if (license.isGov()) {
-	sql = "select priv,description,isSystem,layer from privilege where kind=" + PrivDb.KIND_DEFAULT + " or kind=" + PrivDb.KIND_COM;
-}
-
-// sql += " order by isSystem desc, priv asc";
-sql += " order by orders asc";
+PrivDb pd = new PrivDb();
+String sql = pd.getSqlList();
 // out.print(sql);
-JdbcTemplate rmconn = new JdbcTemplate();
-ResultIterator ri = rmconn.executeQuery(sql);
+JdbcTemplate jt = new JdbcTemplate();
+ResultIterator ri = jt.executeQuery(sql);
 String priv;
 int isSystem = 0;
 

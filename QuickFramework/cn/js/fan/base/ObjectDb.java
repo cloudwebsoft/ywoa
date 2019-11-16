@@ -384,11 +384,12 @@ public abstract class ObjectDb implements Serializable {
              if (curPage <= 0)
                  curPage = 1;
 
+             conn.prepareStatement(listsql);
+
              if (total != 0)
                  conn.setMaxRows(curPage * pageSize); // 尽量减少内存的使用
 
              // rs = conn.executeQuery(listsql); // MySQL中效率很低，70万行的数据，原本30毫秒的数据，需要2秒多才能查出
-             conn.prepareStatement(listsql);
              rs = conn.executePreQuery();
 
              if (rs == null) {

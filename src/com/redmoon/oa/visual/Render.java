@@ -14,6 +14,7 @@ import com.redmoon.oa.pvg.Privilege;
 
 import cn.js.fan.util.file.FileUtil;
 import com.redmoon.oa.base.IFormMacroCtl;
+import com.redmoon.oa.sys.DebugUtil;
 
 /**
  * <p>Title: </p>
@@ -158,11 +159,18 @@ public class Render {
         return getContentMacroReplaced(fdao, content, fields);
     }
 
-    public String replaceDefaultStr(String content) {
+    public String replaceDefaultStr(FormDAO fdao, String content) {
         content = content.replaceFirst("#\\[表单\\]", fd.getName());
 
         String pat = "\\{\\$rootPath\\}";
         content = content.replaceAll(pat, request.getContextPath());
+
+        pat = "\\{\\$id\\}";
+        String id = "";
+        if (fdao!=null) {
+        	id = String.valueOf(fdao.getId());
+		}
+		content = content.replaceAll(pat, id);
 
         return content;
     }
@@ -223,7 +231,7 @@ public class Render {
         // String content = doc.getContent(1); // 取得表单内容
 
         // String formId = "flowForm";
-        content = replaceDefaultStr(content);
+        content = replaceDefaultStr(null, content);
         // 置默认值
         String str = "";
 
@@ -287,6 +295,22 @@ public class Render {
                 str += FormField.getSetCtlValueScript(request, null, ff, FORM_FLEMENT_ID);
             }
         }
+
+		// 处理在“字段管理”中设定的隐藏字段
+		ir = fields.iterator();
+		while (ir.hasNext()) {
+			FormField ff = (FormField)ir.next();
+			if (ff.getHide()==FormField.HIDE_ALWAYS) {
+				// @task:此处可能有问题，fields字段名不可能含有nest.
+				if (!ff.getName().startsWith("nest.")) {
+					str += FormField.getHideCtlScript(ff, FORM_FLEMENT_ID);
+				}
+				else {
+					str += "try{ hideNestTableCol('" + ff.getName().substring("nest.".length()) +  "'); }catch(e) {}\n";
+					str += "try{ hideNestSheetCol('" + ff.getName().substring("nest.".length()) +  "'); }catch(e) {}\n";
+				}
+			}
+		}
 
         str += "</script>\n";
 
@@ -417,7 +441,13 @@ public class Render {
 	       			if (fieldAry!=null) {
 	       				fields = new Vector();
 	       				for (int k=0; k<fieldAry.length; k++) {
-	       					fields.addElement(fd.getFormField(fieldAry[k]));
+	       					FormField ffWrite = fd.getFormField(fieldAry[k]);
+	       					if (ffWrite!=null) {
+								fields.addElement(ffWrite);
+							}
+	       					else {
+	       						DebugUtil.e(Render.class, "", "不可写字段：" + fieldAry[k] + " 不存在");
+							}
 	       				}
 	       			}
 	       		}
@@ -449,7 +479,7 @@ public class Render {
 
 		str += FormUtil.doGetCheckJSUnique(-1, fields);
 
-		// 一米OA签名
+		// 水印签名
         if (License.getInstance().isFree()) {
         	content += License.getFormWatermark();
         }
@@ -526,7 +556,7 @@ public class Render {
     
     public String rend(FormDAO fdao, String formElementId, String content, Vector fields) {
     	// String formId = "flowForm";
-        content = replaceDefaultStr(content);
+        content = replaceDefaultStr(fdao, content);
         // 置用户已操作的值
         String str = "";
         MacroCtlMgr mm = new MacroCtlMgr();
@@ -758,7 +788,7 @@ public class Render {
 
 		str += FormUtil.doGetCheckJSUnique(fdao.getId(), fields);
 
-		// 一米OA签名
+		// 水印签名
         if (License.getInstance().isFree()) {
         	content += License.getFormWatermark();
         }
@@ -873,7 +903,7 @@ public class Render {
     public String report(FormDAO fdao, String content, boolean isNest) {
         Vector fields = fdao.getFields();
         
-        content = replaceDefaultStr(content);
+        content = replaceDefaultStr(fdao, content);
         if (!isNest)
             content = "<div id=formDiv name=formDiv>" + content + "</div>";
 
@@ -997,7 +1027,7 @@ public class Render {
         // 显示或隐藏表单中的区域
         str += ModuleUtil.doGetViewJS(request, fd, fdao, new Privilege().getUser(request), true);        
 
-        // 一米OA签名
+        // 水印签名
         if (License.getInstance().isFree()) {
         	content += License.getFormWatermark();
         }

@@ -115,7 +115,7 @@ public class Leaf implements Serializable, ITagSupport {
                 JSONObject json = new JSONObject();
                 json.put("display", "ID");
                 json.put("name", "f.id");
-                json.put("width", 46);
+                json.put("width", 60);
                 json.put("sortable", true);
                 json.put("align", "center");
                 json.put("hide", false);
@@ -159,7 +159,7 @@ public class Leaf implements Serializable, ITagSupport {
 
                 json = new JSONObject();
                 json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "startTime"));
-                json.put("name", "f.mydate");
+                json.put("name", "f.begin_date");
                 json.put("width", 99);
                 json.put("sortable", true);
                 json.put("align", "center");
@@ -175,7 +175,7 @@ public class Leaf implements Serializable, ITagSupport {
                 json.put("hide", false);
                 aryColProps.put(json);
 
-                if (displayMode != 1) {
+                if (displayMode != WorkflowMgr.DISPLAY_MODE_DOING) {
                     json = new JSONObject();
                     json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "currentHandle"));
                     json.put("name", "f.currentHandle");
@@ -203,6 +203,16 @@ public class Leaf implements Serializable, ITagSupport {
                 json.put("align", "center");
                 json.put("hide", false);
                 aryColProps.put(json);
+
+                json = new JSONObject();
+                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "endTime"));
+                json.put("name", "f.end_date");
+                json.put("width", 80);
+                json.put("sortable", true);
+                json.put("align", "center");
+                json.put("hide", true);
+                aryColProps.put(json);
+
 
                 if (!"".equals(typeCode)) {
                     Leaf lf = new Leaf();
@@ -819,7 +829,10 @@ public class Leaf implements Serializable, ITagSupport {
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 String mycode = rs.getString(1);
-                v.addElement(getLeaf(mycode));
+                Leaf lf = getLeaf(mycode);
+                if (lf!=null) {
+                    v.addElement(lf);
+                }
             }
         } catch (SQLException e) {
             logger.error("getLeavesUseForm: " + e.getMessage());

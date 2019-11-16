@@ -265,24 +265,11 @@ if (totalpages==0) {
 	totalpages = 1;
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
-
-String listFieldLink = StrUtil.getNullStr(msd.getString("list_field_link"));
-// list_field_link是后来新增的，所以要检查并初始化以兼容之前的版本
-if (!listField.equals("") && listFieldLink.equals("")) {
-	for (int i=0; i<fields.length; i++) {
-		if (listFieldLink.equals(""))
-			listFieldLink = "#";
-		else
-			listFieldLink += ",#";
-	}
-}
-String[] fieldsLink = StrUtil.split(listFieldLink, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+String[] fieldsWidth = msd.getColAry(false, "listFieldWidth");
+String[] fieldsOrder = msd.getColAry(false, "list_field_order");
+String[] fieldsLink = msd.getColAry(false, "list_field_link");
 
 MacroCtlMgr mm = new MacroCtlMgr();
 

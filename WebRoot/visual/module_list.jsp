@@ -14,6 +14,7 @@
 <%@ page import = "org.json.*"%>
 <%@ page import = "com.cloudwebsoft.framework.db.JdbcTemplate"%>
 <%@ page import = "com.redmoon.oa.worklog.WorkLogForModuleMgr"%>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 if (!privilege.isUserPrivValid(request, "read")) {
@@ -97,7 +98,9 @@ String querystr = "";
 
 request.setAttribute("pageType", "moduleList");
 
-int pagesize = ParamUtil.getInt(request, "pageSize", 20);
+com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+int defaultPageSize = cfg.getInt("modulePageSize");
+int pagesize = ParamUtil.getInt(request, "pageSize", defaultPageSize);
 Paginator paginator = new Paginator(request);
 int curpage = paginator.getCurPage();
 String unitCode = ParamUtil.get(request, "unitCode");
@@ -148,7 +151,7 @@ String unitCode = ParamUtil.get(request, "unitCode");
             }
         %>
 	</script>
-    <script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCode%>.jsp?code=<%=code%>&pageType=moduleList&<%=params.toString()%>"></script>
+    <script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCode%>.jsp?op=<%=op%>&code=<%=code%>&pageType=moduleList&<%=params.toString()%>"></script>
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
@@ -191,7 +194,7 @@ String unitCode = ParamUtil.get(request, "unitCode");
     while (irMap.hasNext()) {
         String key = (String) irMap.next();
         String val = (String) map.get(key);
-        requestParams += "&" + key + "=" + val;
+        requestParams += "&" + key + "=" + StrUtil.UrlEncode(val);
         requestParamInputs += "<input type='hidden' name='" + key + "' value='" + val + "' />";
     }
     querystr += requestParams;
@@ -211,30 +214,15 @@ String unitCode = ParamUtil.get(request, "unitCode");
         querystr += "&" + sqlUrlStr;
     }
 
-    String listField = StrUtil.getNullStr(msd.getString("list_field"));
-    String[] fields = StrUtil.split(listField, ",");
-    if (fields == null) {
+	String[] fields = msd.getColAry(false, "list_field");
+    if (fields == null || fields.length==0) {
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, "显示列未配置！"));
         return;
     }
-    String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-    String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-    String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-    String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
-
-    String listFieldLink = StrUtil.getNullStr(msd.getString("list_field_link"));
-    // list_field_link是后来新增的，所以要检查并初始化以兼容之前的版本
-    if (!listField.equals("") && listFieldLink.equals("")) {
-        for (int i = 0; i < fields.length; i++) {
-            if (listFieldLink.equals(""))
-                listFieldLink = "#";
-            else
-                listFieldLink += ",#";
-        }
-    }
-    String[] fieldsLink = StrUtil.split(listFieldLink, ",");
-
-    MacroCtlMgr mm = new MacroCtlMgr();
+	String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+	String[] fieldsShow = msd.getColAry(false, "list_field_show");
+	
+	MacroCtlMgr mm = new MacroCtlMgr();
 
     String btnName = StrUtil.getNullStr(msd.getString("btn_name"));
     String[] btnNames = StrUtil.split(btnName, ",");
@@ -279,7 +267,7 @@ String unitCode = ParamUtil.get(request, "unitCode");
     .condSpan {
         display: inline-block;
         float: left;
-        width: 330px;
+        width: 300px;
         min-height: 32px;
     }
 
@@ -295,7 +283,7 @@ String unitCode = ParamUtil.get(request, "unitCode");
 <table id="searchTable" style="<%=strSearchTableDis %>" width="98%" border="0" cellspacing="1" cellpadding="3" align="center">
   <tr>
     <td height="23" align="left" style="padding-top:5px">
-    <form id="searchForm" class="search-form" action="module_list.jsp" onsubmit="return searchFormOnSubmit()">&nbsp;
+    <form id="searchForm" class="search-form" action="module_list.jsp" onsubmit="return false">&nbsp;
     <%
 	boolean isShowUnitCode = false;
 	Vector vtUnit = new Vector();
@@ -387,6 +375,7 @@ if (btnNames!=null) {
 				for (int j=0; j<fieldAry.length; j++) {
 					boolean isSub = false;
 					FormDb subFormDb = null;
+					FormDb someFd = fd;
 					String fieldName = fieldAry[j];
 					FormField ff = null;
 					String title;
@@ -397,6 +386,18 @@ if (btnNames!=null) {
 					}
 					else if ("cws_flag".equals(fieldName)) {
 						title = "冲抵状态";
+					}
+					else if ("ID".equals(fieldName)) {
+						title = "ID";
+					}
+					else if ("flowId".equals(fieldName)) {
+						title = "流程号";
+					}
+					else if ("flow:begin_date".equals(fieldName)) {
+						title = "流程开始时间";
+					}
+					else if ("flow:end_date".equals(fieldName)) {
+						title = "流程结束时间";
 					}
 					else {
 						if (fieldName.startsWith("main:")) { // 关联的主表
@@ -416,28 +417,28 @@ if (btnNames!=null) {
 							 }
 						}
 						else if (fieldName.startsWith("other:")) { // 映射的字段，多重映射不支持
-							 String[] aryField = StrUtil.split(fieldName, ":");
-							 if (aryField.length<5) {
-							 	title = "<font color='red'>格式非法</font>";
-							 }
-							 else {
+							String[] aryField = StrUtil.split(fieldName, ":");
+							if (aryField.length < 5) {
+								title = "<font color='red'>格式非法</font>";
+							} else {
 								FormDb otherFormDb = fm.getFormDb(aryField[2]);
+								someFd = otherFormDb;
 								ff = otherFormDb.getFormField(aryField[4]);
-								if (ff==null) {
+								if (ff == null) {
 									out.print(fieldName + "不存在");
 									continue;
 								}
 								title = ff.getTitle();
-							 }
-						}
-						else if (fieldName.startsWith("sub:")) { // 关联的子表
-							 isSub = true;
-							 String[] aryField = StrUtil.split(fieldName, ":");
-							 String field = fieldName.substring(5);
-							 if (aryField.length==3) {
-							  	subFormDb = fm.getFormDb(aryField[1]);
-							  	ff = subFormDb.getFormField(aryField[2]);
-								if (ff==null) {
+							}
+						} else if (fieldName.startsWith("sub:")) { // 关联的子表
+							isSub = true;
+							String[] aryField = StrUtil.split(fieldName, ":");
+							String field = fieldName.substring(5);
+							if (aryField.length == 3) {
+								subFormDb = fm.getFormDb(aryField[1]);
+								someFd = subFormDb;
+								ff = subFormDb.getFormField(aryField[2]);
+								if (ff == null) {
 									out.print(fieldName + "不存在");
 									continue;
 								}
@@ -445,27 +446,23 @@ if (btnNames!=null) {
 									String desc = StrUtil.getNullStr(ff.getDescription());
 									if (!"".equals(desc)) {
 										title = desc;
-									}
-									else {
+									} else {
 										title = ff.getTitle();
 									}
 									String chkGroup = StrUtil.getNullStr(ff.getDescription());
 									if (!"".equals(chkGroup)) {
 										if (!checkboxGroupMap.containsKey(chkGroup)) {
 											checkboxGroupMap.put(chkGroup, "");
-										}
-										else {
+										} else {
 											continue;
 										}
 									}
-								}
-								else {
+								} else {
 									title = ff.getTitle();
 								}
-							 }
-							 else {
-							  	title = field + " 不存在";
-							 }
+							} else {
+								title = field + " 不存在";
+							}
 						}
 						else {
 							ff = fd.getFormField(fieldName);
@@ -529,11 +526,11 @@ if (btnNames!=null) {
 							o("<%=fieldName%>").value = "<%=msd.getInt("cws_status")%>";
 							<%}%>
 						});
-						</script>							
+						</script>
 						<%
 					}
 					else if ("cws_flag".equals(fieldName)) {
-                        String nameCond = ParamUtil.get(request, fieldName + "_cond");
+                       String nameCond = ParamUtil.get(request, fieldName + "_cond");
 						if ("".equals(nameCond)) {
 							nameCond = condType;
 						}
@@ -555,26 +552,73 @@ if (btnNames!=null) {
 						</script>							
 						<%
 					}
-					else if (ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {
+					else if ("ID".equals(fieldName)) {
+						String nameCond = ParamUtil.get(request, fieldName + "_cond");
+						if ("".equals(nameCond)) {
+							nameCond = condType;
+						}
+						String queryValueID = ParamUtil.get(request, "ID");
+						%>
+				          <select name="ID_cond">
+				            <option value="=" selected="selected">=</option>
+				            <option value=">">></option>
+				            <option value="&lt;"><</option>
+				            <option value=">=">>=</option></option>
+							  <option value="&lt;="><=</option>
+				          </select>
+	                      <input name="ID" size="5" />
+						<script>
+						$(function() {
+							o("<%=fieldName%>_cond").value = "<%=nameCond%>";
+							o("<%=fieldName%>").value = "<%=queryValueID%>";
+						});
+						</script>
+						<%
+					}
+					else if ("flowId".equals(fieldName)) {
+						String nameCond = ParamUtil.get(request, fieldName + "_cond");
+						if ("".equals(nameCond)) {
+							nameCond = condType;
+						}
+						String queryValueID = ParamUtil.get(request, "flowId");
+						%>
+				          <select name="flowId_cond">
+				            <option value="=" selected="selected">=</option>
+				            <option value=">">></option>
+				            <option value="&lt;"><</option>
+				            <option value=">=">>=</option></option>
+							  <option value="&lt;="><=</option>
+				          </select>
+	                      <input name="flowId" size="5" />
+						<script>
+						$(function() {
+							o("<%=fieldName%>_cond").value = "<%=nameCond%>";
+							o("<%=fieldName%>").value = "<%=queryValueID%>";
+						});
+						</script>
+						<%
+					}
+					else if ("flow:begin_date".equals(fieldName) || "flow:end_date".equals(fieldName) || ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {
                			%>
 						<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
                			<%
+						String idPrefix = fieldName.replaceAll(":", "_");
 						if (condType.equals("0")) {
-							String fDate = ParamUtil.get(request, ff.getName() + "FromDate");
-							String tDate  = ParamUtil.get(request, ff.getName() + "ToDate");
-							list.add(ff.getName() + "FromDate");
-							list.add(ff.getName() + "ToDate");
+							String fDate = ParamUtil.get(request, fieldName + "FromDate");
+							String tDate  = ParamUtil.get(request, fieldName + "ToDate");
+							list.add(idPrefix + "FromDate");
+							list.add(idPrefix + "ToDate");
 							%>
-                              	大于
-                              <input id="<%=ff.getName()%>FromDate" name="<%=ff.getName()%>FromDate" size="15" style="width:80px" value = "<%=fDate%>" />
-                             	 小于
-                              <input id="<%=ff.getName()%>ToDate" name="<%=ff.getName()%>ToDate" size="15" style="width:80px" value = "<%=tDate%>" />
+                              	从
+                              <input id="<%=idPrefix%>FromDate" name="<%=fieldName%>FromDate" size="15" style="width:80px" value = "<%=fDate%>" />
+								至
+                              <input id="<%=idPrefix%>ToDate" name="<%=fieldName%>ToDate" size="15" style="width:80px" value = "<%=tDate%>" />
 	  						<%
 						}
 						else {
-							list.add(ff.getName());
+							list.add(idPrefix);
 							%>
-                            <input id="<%=ff.getName()%>" name="<%=ff.getName()%>" size="15" value = "<%=queryValue%>" />
+                            <input id="<%=idPrefix%>" name="<%=fieldName%>" size="15" value = "<%=queryValue%>" />
 							<%
 						}
 					} else if(ff.getType().equals(FormField.TYPE_MACRO)) {
@@ -585,9 +629,72 @@ if (btnNames!=null) {
 							FormField ffQuery = (FormField)ff.clone();
 							ffQuery.setName(fieldName);
 							IFormMacroCtl ifmc = mu.getIFormMacroCtl();
-							out.print(ifmc.convertToHTMLCtlForQuery(request, ffQuery));
+							int fieldType = ifmc.getFieldType();
+							if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_DOUBLE || fieldType==FormField.FIELD_TYPE_FLOAT || fieldType==FormField.FIELD_TYPE_LONG || fieldType==FormField.FIELD_TYPE_PRICE) {
+								String nameCond = ParamUtil.get(request, fieldName + "_cond");
+								if ("".equals(nameCond)) {
+									nameCond = condType;
+								}
+								if (condType.equals(SQLBuilder.COND_TYPE_SCOPE)) {
+									String fCond = ParamUtil.get(request, fieldName + "_cond_from");
+									String tCond = ParamUtil.get(request, fieldName + "_cond_to");
+									String fVal = ParamUtil.get(request, fieldName + "_from");
+									String tVal = ParamUtil.get(request, fieldName + "_to");
 							%>
-							<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+								  <select name="<%=fieldName%>_cond_from">
+									<option value=">">></option>
+									<option value=">=" selected="selected">>=</option></option>
+								  </select>
+								  <%
+									  FormField ffTemp = (FormField)ffQuery.clone();
+									  ffTemp.setName(ffQuery.getName() + "_from");
+									  ffTemp.setCondType(ffQuery.getCondType());
+									  out.print(ifmc.convertToHTMLCtlForQuery(request, ffTemp));
+								  %>
+								  <select name="<%=fieldName%>_cond_to">
+									<option value="&lt;"><</option>
+									<option value="&lt;=" selected="selected"><=</option></option>
+								  </select>
+								  <%
+									  ffTemp.setName(ffQuery.getName() + "_to");
+									  out.print(ifmc.convertToHTMLCtlForQuery(request, ffTemp));
+								  %>
+								<script>
+								$(document).ready(function() {
+									o("<%=fieldName%>_cond_from").value = "<%=fCond%>";
+									o("<%=fieldName%>_from").value = "<%=fVal%>";
+									o("<%=fieldName%>_cond_to").value = "<%=tCond%>";
+									o("<%=fieldName%>_to").value = "<%=tVal%>";
+								});
+								</script>
+								<%
+								}
+								else {
+								%>
+								  <select name="<%=fieldName%>_cond">
+									<option value="=" selected="selected">=</option>
+									<option value=">">></option>
+									<option value="&lt;"><</option>
+									<option value=">=">>=</option></option>
+									  <option value="&lt;="><=</option>
+								  </select>
+								  <%
+									  out.print(ifmc.convertToHTMLCtlForQuery(request, ffQuery));
+								  %>
+								<script>
+								$(document).ready(function() {
+									o("<%=fieldName%>_cond").value = "<%=nameCond%>";
+									o("<%=fieldName%>").value = "<%=queryValue%>";
+								});
+								</script>
+							<%
+								}
+							}
+							else {
+								out.print(ifmc.convertToHTMLCtlForQuery(request, ffQuery));
+								%>
+								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
 							<%
 								if ("text".equals(ifmc.getControlType()) || "img".equals(ifmc.getControlType()) || "textarea".equals(ifmc.getControlType())) {
 							%>
@@ -597,12 +704,38 @@ if (btnNames!=null) {
 							%>
 							<script>
 							$(document).ready(function() {
-								o("<%=fieldName%>").value = "<%=queryValue%>";
-								try {
-	                          	  o("<%=fieldName%>_realshow").value = "<%=queryValueRealShow%>";
-	                            } catch (e) {}
-
+								<%
+								// 如果是多选
+								if (condType.equals(SQLBuilder.COND_TYPE_MULTI)) {
+									String[] aryVal = ParamUtil.getParameters(request, fieldName);
+									if (aryVal!=null) {
+										for (String s : aryVal) {
+											if ("".equals(queryValue)) {
+												queryValue = s;
+											}
+											else {
+												queryValue += "," + s;
+											}
+										}
+									}
+									if (!"".equals(queryValue)) {
+									%>
+										$(document).ready(function() {
+											setMultiCheckboxChecked("<%=fieldName%>", "<%=queryValue%>");
+										});
+									<%
+									}
+								}
+								else {
+								%>
+									if (o("<%=fieldName%>")) {
+										o("<%=fieldName%>").value = "<%=queryValue%>";
+									}
+									try {
+									  	o("<%=fieldName%>_realshow").value = "<%=queryValueRealShow%>";
+									} catch (e) {}
 	                            <%
+	                            }
 	                            if ("text".equals(ifmc.getControlType()) || "img".equals(ifmc.getControlType()) || "textarea".equals(ifmc.getControlType())) {
 	                            %>
 								// 使=空或者<>空，获得焦点时即为选中状态，以便于修改条件的值
@@ -628,8 +761,9 @@ if (btnNames!=null) {
 								});
 	                            <%}%>
 							});
-							</script>						
+							</script>
 						<%
+							}
 						}
 					}
 					else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
@@ -637,6 +771,34 @@ if (btnNames!=null) {
 						if ("".equals(nameCond)) {
 							nameCond = condType;
 						}
+						if (condType.equals(SQLBuilder.COND_TYPE_SCOPE)) {
+							String fCond = ParamUtil.get(request, fieldName + "_cond_from");
+							String tCond = ParamUtil.get(request, fieldName + "_cond_to");
+							String fVal = ParamUtil.get(request, fieldName + "_from");
+							String tVal = ParamUtil.get(request, fieldName + "_to");
+						%>
+						<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+				          <select name="<%=fieldName%>_cond_from">
+				            <option value=">">></option>
+				            <option value=">=" selected="selected">>=</option></option>
+				          </select>
+	                      <input name="<%=fieldName%>_from" size="3" />
+				          <select name="<%=fieldName%>_cond_to">
+				            <option value="&lt;"><</option>
+				            <option value="&lt;=" selected="selected"><=</option></option>
+				          </select>
+	                      <input name="<%=fieldName%>_to" size="3" />
+						<script>
+						$(document).ready(function() {
+							o("<%=fieldName%>_cond_from").value = "<%=fCond%>";
+							o("<%=fieldName%>_from").value = "<%=fVal%>";
+							o("<%=fieldName%>_cond_to").value = "<%=tCond%>";
+							o("<%=fieldName%>_to").value = "<%=tVal%>";
+						});
+						</script>
+						<%
+						}
+						else {
 						%>
 				          <select name="<%=fieldName%>_cond">
 				            <option value="=" selected="selected">=</option>
@@ -653,6 +815,7 @@ if (btnNames!=null) {
 						});
 						</script>						
 						<%
+						}
 					}
 					else {
 						boolean isSpecial = false;
@@ -662,7 +825,7 @@ if (btnNames!=null) {
 								%>
 								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
 								<select id="<%=fieldName %>" name="<%=fieldName %>">
-								<%=FormParser.getOptionsOfSelect(fd, ff) %>
+								<%=FormParser.getOptionsOfSelect(someFd, ff) %>
 								</select>
 								<script>
 								$(document).ready(function() {
@@ -676,7 +839,7 @@ if (btnNames!=null) {
 								%>
 								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
 								<%
-								String[][] aryRadio = FormParser.getOptionsArrayOfRadio(fd, ff);
+								String[][] aryRadio = FormParser.getOptionsArrayOfRadio(someFd, ff);
 								for (int k=0; k<aryRadio.length; k++) {
 									String val = aryRadio[k][0];
 									String text = aryRadio[k][1];
@@ -687,15 +850,8 @@ if (btnNames!=null) {
 							}
 							else if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
 								isSpecial = true;
-								%>
-								<%
 								String[][] aryChk = null;
-								if (isSub) {
-									aryChk = FormParser.getOptionsArrayOfCheckbox(subFormDb, ff);
-								}
-								else {
-									aryChk = FormParser.getOptionsArrayOfCheckbox(fd, ff);
-								}
+								aryChk = FormParser.getOptionsArrayOfCheckbox(someFd, ff);
 								for (int k=0; k<aryChk.length; k++) {
 									String val = aryChk[k][0];
 									String fName = aryChk[k][1];
@@ -716,6 +872,43 @@ if (btnNames!=null) {
 									<%=text %>
 									<%} %>
 								<%
+								}
+							}
+						}
+						else if (condType.equals(SQLBuilder.COND_TYPE_MULTI)) {
+							if (ff.getType().equals(FormField.TYPE_SELECT)) {
+								isSpecial = true;
+						%>
+								<input name="<%=fieldName%>_cond" value="<%=condType%>" type="hidden" />
+						<%
+								String[][] aryOpt = FormParser.getOptionsArrayOfSelect(someFd, ff);
+								for (int k=0; k<aryOpt.length; k++) {
+									if ("".equals(aryOpt[k][1].trim())) {
+										aryOpt[k][0] = "无";
+									}
+									%>
+									<input name="<%=fieldName%>" type="checkbox" value="<%=aryOpt[k][1]%>" style="width:20px"/><%=aryOpt[k][0]%>
+									<%
+								}
+								String[] aryVal = ParamUtil.getParameters(request, fieldName);
+								if (aryVal!=null) {
+									for (String s : aryVal) {
+										if ("".equals(queryValue)) {
+											queryValue = s;
+										}
+										else {
+											queryValue += "," + s;
+										}
+									}
+								}
+								if (!"".equals(queryValue)) {
+						%>
+								<script>
+								$(document).ready(function() {
+									setMultiCheckboxChecked("<%=fieldName%>", "<%=queryValue%>");
+								});
+								</script>
+						<%
 								}
 							}
 						}
@@ -763,13 +956,15 @@ if (btnNames!=null) {
 	}
 }
 %>
+		<span class="condSpan">
         <input type="hidden" name="op" value="search" />
         <input type="hidden" name="code" value="<%=code%>" />
         <%=requestParamInputs%>
         <input type="hidden" name="menuItem" value="<%=menuItem%>" />
         <input type="hidden" name="mainCode" value="<%=ParamUtil.get(request, "mainCode")%>" />
         <%if (isQuery || isShowUnitCode) { %>
-        <input style="<%=strSearchTableDis %>" class="tSearch condBtnSearch" name="submit" type="button" onclick="doQuery()" value=" 搜索 " />
+        <input style="<%=strSearchTableDis %>" class="tSearch" type="submit" onclick="doQuery()" value="搜索" />
+		</span>
 		<%} %>
         </form>
     </td>
@@ -818,6 +1013,7 @@ function onReload() {
 
 var mapEditable = new Map();
 var mapEditableOptions = new Map();
+var mapCheckboxPresent = new Map;
 <%
 boolean canUserManage = mpd.canUserManage(userName);
 
@@ -830,10 +1026,17 @@ if (isEditInplace) {
 			for (String fieldName : fds) {
 				FormField ff = fd.getFormField(fieldName);
 				if (ff.getType().equals(FormField.TYPE_TEXTAREA) || ff.getType().equals(FormField.TYPE_TEXTFIELD)
-					|| ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME))
+					|| ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME) || ff.getType().equals(FormField.TYPE_CHECKBOX))
 				%>
 				mapEditable.put("<%=fieldName%>", "<%=ff.getType()%>");
 				<%
+				if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
+					ff.setValue("1");
+					// 取得present
+				%>
+				mapCheckboxPresent.put("<%=fieldName%>", "<%=ff.convertToHtml()%>")
+                <%
+				}
 			}
 		}
 	}
@@ -856,7 +1059,14 @@ if (isEditInplace) {
 						JSONArray arr = new JSONArray(ifmc.getControlOptions(userName, ff));
 						for (int i=0; i<arr.length(); i++) {
 							JSONObject json = arr.getJSONObject(i);
-							StrUtil.concat(sb, ",", json.getString("name") + ":" + json.getString("value"));
+							try {
+								// 不能用getString，因为有些可能为int型
+								StrUtil.concat(sb, ",", json.get("name") + ":" + json.get("value"));
+							}
+							catch(JSONException e) {
+								// DebugUtil.e("module_list.jsp", "", json.toString() + " 中没有错误，name可能不是String，有可能为int");
+								e.printStackTrace();
+							}
 						}
 						%>
 						mapEditable.put("<%=ff.getName()%>", "<%=FormField.TYPE_SELECT%>");
@@ -877,10 +1087,17 @@ if (isEditInplace) {
 				<%
 			}
 			else if (ff.getType().equals(FormField.TYPE_TEXTAREA) || ff.getType().equals(FormField.TYPE_TEXTFIELD)
-				|| ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {
+				|| ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME) || ff.getType().equals(FormField.TYPE_CHECKBOX)) {
 			%>
-			mapEditable.put("<%=ff.getName()%>", "<%=ff.getType()%>");
-			<%
+				mapEditable.put("<%=ff.getName()%>", "<%=ff.getType()%>");
+				<%
+				if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
+					ff.setValue("1");
+					// 取得present
+				%>
+				mapCheckboxPresent.put("<%=ff.getName()%>", "<%=ff.convertToHtml()%>")
+				<%
+				}
 			}
 		}
 	}
@@ -898,6 +1115,8 @@ isPrompt = true;
 if (isPrompt) {
 	colProps.append("{display:'', name:'colPrompt', width:20}");
 }
+
+boolean isColOperateShow = true;
 
 len = fields.length;
 for (int i=0; i<len; i++) {
@@ -932,13 +1151,22 @@ for (int i=0; i<len; i++) {
 		title = "状态";
 	}
 	else if (fieldName.equals("flowId")) {
-		title = "流程ID";
+		title = "流程号";
 	}
 	else if (fieldName.equals("cws_flag")) {
 		title = "冲抵状态";
 	}
 	else if (fieldName.equals("colOperate")) {
 		title = "操作";
+	}
+	else if (fieldName.equals("cws_create_date")) {
+		title = "创建时间";
+	}
+	else if (fieldName.equals("flow_begin_date")) {
+		title = "流程开始时间";
+	}
+	else if (fieldName.equals("flow_end_date")) {
+		title = "流程结束时间";
 	}
 	else {
 		title = fd.getFieldTitle(fieldName);
@@ -949,6 +1177,13 @@ for (int i=0; i<len; i++) {
 		w = w.substring(0, w.length()-1);
 		wid = 800*StrUtil.toInt(w, 20)/100;
 	}
+	
+	if (fieldsShow[i].equals("0")) {
+		if (fieldName.equals("colOperate")) {
+			isColOperateShow = false;
+		}
+		continue;
+	}
 
 	String props;
 	if (fieldName.equals("colOperate")) {
@@ -957,17 +1192,24 @@ for (int i=0; i<len; i++) {
 	else {
 		props = "{display: '" + title + "', name : '" + fieldName + "', width : " + wid + ", sortable : " + sortable + ", align: 'center', hide: false, process:editCol}";
 	}
+	
 	StrUtil.concat(colProps, ",", props);
 }
 
-// 如果未定义colOperate，则将其加入，宽度默认为150
-if (colProps.lastIndexOf("colOperate")==-1) {
+// 如果允许显示操作列，且未定义colOperate，则将其加入，宽度默认为150
+if (isColOperateShow && colProps.lastIndexOf("colOperate")==-1) {
 	StrUtil.concat(colProps, ",", "{display:'操作', name:'colOperate', width:150}");
 }
 %>
 var colModel = [<%=colProps.toString()%>];
 $("#grid").flexigrid({
+	<%
+	if (!"search".equals(op)) {
+	%>
 	url: 'moduleList.do?<%=querystr%>',
+	<%
+	}
+	%>
 	params: requestParams,
 	dataType: 'json',
 	colModel : colModel,
@@ -1118,46 +1360,62 @@ String privurl=request.getRequestURL()+"?"+StrUtil.UrlEncode(queryString, "utf-8
 function action(com, grid) {
 	if (com=="导出") {
 		var cols = "";
-		$("th[axis*='col']", this.hDiv).each(function() {
-			if (!this.hide) {
-				if(typeof($(this).attr("abbr"))!="undefined") {
-					if (cols=="") {
-						cols = $(this).attr("abbr");
-					}
-					else {
-						cols += "," + $(this).attr("abbr");
-					}
-				}
+		for (i=0; i<colModel.length; i++) {
+			if (colModel[i].name=="colOperate")
+				continue;
+			
+			if (cols=="") {
+				cols = colModel[i].name;
 			}
-		});
+			else {
+				cols += "," + colModel[i].name;
+			}
+		}
 
 		<%
+		String expUrl = "";
 		// 检查是否设置有模板
 		Vector v = ModuleExportTemplateMgr.getTempaltes(request, formCode);
-		/*
-		ModuleExportTemplateDb mid = new ModuleExportTemplateDb();
-		String sql = mid.getTable().getSql("listForForm");
-		Vector v = mid.list(sql, new Object[]{formCode});
-		*/
 		if (v.size()>0) {
+			expUrl = request.getContextPath() + "/visual/module_excel_sel_templ.jsp";
 			%>
-			openWin('<%=request.getContextPath()%>/visual/module_excel_sel_templ.jsp?' + $("form").serialize() + '&cols=' + cols, 480, 160);
+			// openWin('<%=request.getContextPath()%>/visual/module_excel_sel_templ.jsp?' + $("#searchForm").serialize() + '&cols=' + encodeURI(cols), 480, 160);
 			<%
 		}
 		else {
+			expUrl = request.getContextPath() + "/visual/module_excel.jsp";
 		%>
-			window.open('<%=request.getContextPath()%>/visual/module_excel.jsp?' + $("form").serialize() + '&cols=' + cols);
+			// window.open('<%=request.getContextPath()%>/visual/module_excel.jsp?' + $("#searchForm").serialize() + '&cols=' + encodeURI(cols));
 		<%}%>
+		// 生成表单，以post方式，否则IE11下，某些参数可能会有问题
+		// 如果用window.open方式，则IE11中当含有coo_address、coo_address_cond时，接收到coo_address的值为?_address_cond=0?_address=，而chrome中不会
+		var expForm = o("exportForm");
+		if (expForm != null) {
+			expForm.parentNode.removeChild(expForm);
+		}
+		expForm = document.createElement("FORM");
+		document.body.appendChild(expForm);
+		
+		expForm.style.display = "none";
+		expForm.target = "_blank";
+		expForm.method = "post";
+		expForm.action = "<%=expUrl%>";
+		var fields  = $("#searchForm").serializeArray();
+		jQuery.each( fields, function(i, field){
+			expForm.innerHTML += "<input name='" + field.name + "' value='" + field.value + "'/>";
+		});
+		expForm.innerHTML += "<input name='cols' value='" + cols + "'/>";
+		expForm.submit();
 	}
 	else if (com=="全部导出") {
-		window.open('<%=request.getContextPath()%>/visual/module_excel.jsp?isAll=true&' + $("form").serialize());
+		window.open('<%=request.getContextPath()%>/visual/module_excel.jsp?isAll=true&' + $("#searchForm").serialize());
 	}
 	else if (com=="全部导入") {
 		var url = "<%=request.getContextPath()%>/visual/module_import_excel.jsp?isAll=true&formCode=<%=formCode%>";
 		openWin(url,360,50);
 	}
 	else if (com=="添加") {
-		window.location.href = "<%=request.getContextPath()%>/visual/module_add.jsp?code=<%=code%>&privurl=<%=privurl%><%=requestParams%>";
+		window.location.href = "<%=request.getContextPath()%>/visual/module_add.jsp?code=<%=code%>&<%=params%>&privurl=<%=privurl%>";
 	}
 	else if (com=="修改") {
 		selectedCount = $(".cth input[type='checkbox'][value!='on'][checked='checked']", grid.bDiv).length;
@@ -1194,7 +1452,7 @@ function action(com, grid) {
 		});
 		del(ids);
 	} else if(com=='导入'){
-		window.location.href = "<%=request.getContextPath()%>/visual/module_import_excel.jsp?formCode=<%=formCode%>&code=<%=code%>";
+		window.location.href = "<%=request.getContextPath()%>/visual/module_import_excel.jsp?formCode=<%=formCode%>&code=<%=code%>&<%=params%>";
 	}
 	else if (com=="管理") {
 		addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/module_field_list.jsp?formCode=<%=formCode%>&code=<%=code%>");
@@ -1334,29 +1592,6 @@ function getIdsSelected(onlyOne) {
 	return ids;
 }
 
-$(function() {
-	initCalendar();
-
-	<%
-	// 如果显示单位下拉框
-	if (isShowUnitCode) {
-		// 如果条件中没有unitCode
-		if ("".equals(unitCode)) {
-			if (msd.getString("unit_code").equals("-1")) {
-			}
-			else {
-				// 本单位
-				%>
-				$("#unitCode").val("<%=myUnitCode%>");
-				<%
-			}
-		%>
-		<%}else{%>
-		$("#unitCode").val("<%=unitCode%>");
-		<%}
-	}%>
-});
-
 function getPageName() {
 	var strUrl=window.location.href;
 	var arrUrl=strUrl.split("/");
@@ -1397,8 +1632,6 @@ function del(ids) {
 					}
 					*/
 					doQuery();
-					// 置全选checkbox为非选中状态
-					$(".hDiv input[type='checkbox']").removeAttr("checked");
 				}
 			},
 			complete: function(XMLHttpRequest, status){
@@ -1432,8 +1665,6 @@ function batchOp(ids, batchField, batchValue) {
 			jAlert(data.msg, "提示");
 			if (data.ret=="1") {
 				doQuery();
-                // 置全选checkbox为非选中状态
-                $(".hDiv input[type='checkbox']").removeAttr("checked");
             }
 		},
 		complete: function(XMLHttpRequest, status){
@@ -1449,13 +1680,12 @@ function batchOp(ids, batchField, batchValue) {
 function doQuery() {
 	var params = $("form").serialize();
 	var urlStr = "<%=request.getContextPath()%>/visual/moduleList.do?" + params;
+	// console.log(urlStr);
 	$("#grid").flexOptions({url : urlStr});
 	$("#grid").flexReload();
-}
 
-function searchFormOnSubmit() {
-	doQuery();
-	return false;
+	// 置全选checkbox为非选中状态
+	$(".hDiv input[type='checkbox']").removeAttr("checked");
 }
 
 function editCol(celDiv, id, colName) {
@@ -1482,11 +1712,12 @@ function editCol(celDiv, id, colName) {
 			saving_image: "../images/loading.gif",
 			select_text: "请选择",
 			select_options: selectOptions,
+			checkbox_present: mapCheckboxPresent.get(colName).value,
 			params: "colName=" + colName + "&id=" + id + "&code=<%=StrUtil.UrlEncode(code)%>",
 			error:function(obj){
 				alert(JSON.stringify(obj));
 			},
-			success:function(data){
+			success:function(data) {
 				data = $.parseJSON(data);
 				if (data.ret==-1) { // 值未更改
 					return;
@@ -1502,5 +1733,41 @@ function editCol(celDiv, id, colName) {
 		});
 	});
 }
+
+$(document).ready(function() {
+	initCalendar();
+	
+	<%
+	// 如果显示单位下拉框
+	if (isShowUnitCode) {
+		// 如果条件中没有unitCode
+		if ("".equals(unitCode)) {
+			if (msd.getString("unit_code").equals("-1")) {
+			}
+			else {
+				// 本单位
+		%>
+		$("#unitCode").val("<%=myUnitCode%>");
+		<%
+			}
+		}else{
+		%>
+			$("#unitCode").val("<%=unitCode%>");
+			<%
+		}
+	}
+	%>
+	
+	<%
+	if ("search".equals(op)) {
+	%>
+	// 必须得用setTimeout，否则因为jquery的document.ready赋值顺序问题，表单serial后所取得的参数为空
+	setTimeout(function() {
+		doQuery();
+	}, 0)
+	<%
+	}
+	%>
+});
 </script>
 </html>

@@ -73,8 +73,9 @@
         <%
             ModuleSetupDb msd = new ModuleSetupDb();
             msd = msd.getModuleSetupDbOrInit(formCode);
-            String listField = StrUtil.getNullStr(msd.getString("list_field"));
-            String[] fieldCodes = StrUtil.split(listField, ",");
+            // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fieldCodes = msd.getColAry(false, "list_field");
+            
             FormDb fd = new FormDb();
             fd = fd.getFormDb(formCode);
 			String str = "";

@@ -19,6 +19,10 @@
 <%@ page import="jxl.biff.DisplayFormat"%>
 <%@ page import="java.awt.Color"%>
 <%@ page import="com.redmoon.oa.util.RequestUtil" %>
+<%@ page import="com.redmoon.oa.flow.WorkflowDb" %>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%@ page import="com.redmoon.oa.Config" %>
+<%@ page import="com.redmoon.oa.base.IFormDAO" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 	// 未使用模板导出，即默认导出时，将合并嵌套表的单元格
 	String priv="read";
@@ -66,8 +70,13 @@
 	else
 		ary = SQLBuilder.getModuleListSqlAndUrlStr(request, fd, op, orderBy, sort);
 	String sql = ary[0];
-// System.out.println("sql = " + sql);
-	String sqlUrlStr = ary[1];
+	
+	if (formCode.equals("module_log")) {
+		sql = SQLBuilder.getListSqlForLogRelateModule(request, sql);
+	}
+	
+	DebugUtil.i("module_excel.jsp", "sql", sql);
+	// String sqlUrlStr = ary[1];
 
 	FormDAO fdao = new FormDAO();
 	Vector v = fdao.list(formCode, sql);
@@ -138,9 +147,15 @@
 
 	response.setContentType("application/vnd.ms-excel");
 	response.setHeader("Content-disposition","attachment; filename=" + StrUtil.GBToUnicode(fileName) + ".xls");
-// response.setHeader("Content-disposition","attachment; filename=" + fd.getName() + ".xls");
 	OutputStream os = response.getOutputStream();
-
+	Config cfg = new Config();
+	if (cfg.getBooleanProperty("moduleExportQuick")) {
+		ModuleUtil.exportXml(request, os, fields, fd, v, templateId);
+		out.clear();
+		out = pageContext.pushBody();
+		return;
+	}
+	
 	try {
 		File file = new File(Global.getAppPath() + "visual/template/blank.xls");
 		Workbook wb = Workbook.getWorkbook(file);
@@ -255,8 +270,7 @@
 			listField = colsSb.toString();
 			fields = StrUtil.split(listField, ",");
 			len = fields.length;
-
-
+			
 			if (isBar) {
 				WritableFont barFont;
 				String barBackColor = metd.getString("bar_back_color");
@@ -366,6 +380,15 @@
 			else if (fieldName.equals("cws_flag")) {
 				title = "冲抵状态";
 			}
+			else if (fieldName.equalsIgnoreCase("flowId")) {
+				title = "流程号";
+			}
+			else if (fieldName.equalsIgnoreCase("flow_begin_date")) {
+				title = "流程开始时间";
+			}
+			else if (fieldName.equalsIgnoreCase("flow_end_date")) {
+				title = "流程结束时间";
+			}
 			else {
 				title = fd.getFieldTitle(fieldName);
 			}
@@ -439,12 +462,18 @@
 		int j = rowHeader + 1;
 		int group = 0;
 		int serialNo = 0;
+		WorkflowDb wf = new WorkflowDb();
+		request.setAttribute("isForExport", "true");
+		long tDebugAll = System.currentTimeMillis();
 
 		while (ir.hasNext()) {
 			index = 0;
 			fdao = (FormDAO)ir.next();
-
-			// 置SQL宏控件中需要用到的fdao
+			int logType = StrUtil.toInt(fdao.getFieldValue("log_type"), FormDAOLog.LOG_TYPE_CREATE);
+			
+			long tDebug = System.currentTimeMillis();
+			
+			// 置SQL、表单域选择宏控件中需要用到的fdao
 			RequestUtil.setFormDAO(request, fdao);
 
 			long fid = fdao.getId();
@@ -519,7 +548,30 @@
 					}
 				}
 				else if (fieldName.startsWith("other:")) {
-					fieldValue = com.redmoon.oa.visual.FormDAOMgr.getFieldValueOfOther(request, fdao, fieldName);
+					// 将module_id:xmxxgl_qx:id:xmmc替换为module_id:xmxxgl_qx_log:cws_log_id:xmmc
+					String fName = fieldName;
+					if (logType==FormDAOLog.LOG_TYPE_DEL) {
+						if (formCode.equals("module_log")) {
+							if (fName.indexOf("module_id:") != -1) {
+								int p = fName.indexOf(":");
+								p = fName.indexOf(":", p+1);
+								String prefix = fName.substring(0, p);
+								fName = fName.substring(p + 1);
+								p = fName.indexOf(":");
+								String endStr = fName.substring(p);
+								if (endStr.startsWith(":id:")) {
+									// 将id替换为***_log表中的cws_log_id
+									endStr = ":cws_log_id" + endStr.substring(3);
+								}
+								fName = fName.substring(0, p);
+								fName += "_log";
+								fName = prefix + ":" + fName + endStr;
+							}
+						}
+					}
+					// DebugUtil.i("module_excel.jsp", "export", "getFieldValueOfOther1: " + fName + "-" +  (System.currentTimeMillis()-tDebug) + " ms");
+					fieldValue = com.redmoon.oa.visual.FormDAOMgr.getFieldValueOfOther(request, fdao, fName);
+					// DebugUtil.i("module_excel.jsp", "export", "getFieldValueOfOther2: " + fName + "-" + (System.currentTimeMillis()-tDebug) + " ms");
 				}
 				else if (fieldName.equalsIgnoreCase("ID") || fieldName.equalsIgnoreCase("CWS_MID")) {
 					fieldValue = String.valueOf(fdao.getId());
@@ -532,6 +584,23 @@
 				}
 				else if (fieldName.equals("cws_status")) {
 					fieldValue = com.redmoon.oa.flow.FormDAO.getStatusDesc(fdao.getCwsStatus());
+				}
+				else if (fieldName.equalsIgnoreCase("flowId")) {
+					fieldValue = String.valueOf(fdao.getFlowId());
+				}
+				else if (fieldName.equalsIgnoreCase("flow_begin_date")) {
+					int flowId = fdao.getFlowId();
+					if (flowId!=-1) {
+						wf = wf.getWorkflowDb(flowId);
+						fieldValue = String.valueOf(DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd HH:mm:ss"));
+					}
+				}
+				else if (fieldName.equalsIgnoreCase("flow_end_date")) {
+					int flowId = fdao.getFlowId();
+					if (flowId!=-1) {
+						wf = wf.getWorkflowDb(flowId);
+						fieldValue = String.valueOf(DateUtil.format(wf.getEndDate(), "yyyy-MM-dd HH:mm:ss"));
+					}
 				}
 				else {
 					FormField ff = fd.getFormField(fieldName);
@@ -625,7 +694,10 @@
 						}
 					}
 				}
-
+				
+				// DebugUtil.i("module_excel.jsp", "export", fieldName + "=" + fieldValue);
+				// DebugUtil.i("module_excel.jsp", "export", "before is Single: " + fieldName + "--" + (System.currentTimeMillis()-tDebug) + " ms");
+				
 				if (isSingle) {
 					int width = columnWidthMap.get(i + index);
 
@@ -636,8 +708,11 @@
 					FormField ff = fdao.getFormField(fieldName);
 					int fieldType = FormField.FIELD_TYPE_TEXT;
 					if (ff != null) {
-						fieldType = ff.getFieldType();
+						if (!ff.getType().equals(FormField.TYPE_CHECKBOX)) {
+							fieldType = ff.getFieldType();
+						}
 					}
+					
 					wcFormat = setCellFormat(fieldType, group, map);
 
 					// 设置列格式
@@ -660,6 +735,15 @@
 			}
 			group++;
 			j += maxCount;
+			
+			// DebugUtil.i("module_excel.jsp", "export", "one record: " + (System.currentTimeMillis()-tDebug) + " ms");
+			
+			// DebugUtil.i("module_excel.jsp", String.valueOf(j), fdao.getCreator());
+/*
+			// 调试，退出
+			if (j > 50) {
+				break;
+			}*/
 		}
 
 		// 如果未选择导出模板
@@ -673,6 +757,9 @@
 		wwb.write();
 		wwb.close();
 		wb.close();
+		
+		DebugUtil.i("module_excel.jsp", "export", "all record: " + (System.currentTimeMillis()-tDebugAll) + " ms");
+		
 	} catch (Exception e) {
 		e.printStackTrace();
 		out.println(e.toString());

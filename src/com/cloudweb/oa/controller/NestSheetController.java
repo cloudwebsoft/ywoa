@@ -67,28 +67,24 @@ public class NestSheetController {
 		} catch (JSONException e) {
 			throw new ErrMsgException("JSON解析失败！");
 		}
-		// 存在了刷新反复自动拉单导致覆盖的bug判断是否是首次计入,如果是判断嵌套表中是否有数据,如果没有进行拉单操作,如果有不进行拉单
+		// 判断是否是首次进入页面,如果是则判断嵌套表中是否有数据,如果有则不进行拉单
 		boolean isFirst = ParamUtil.getBoolean(request, "isFirst", false);
-		if(isFirst){ // 第一次,拉单
+		if(isFirst){ // 第一次进入界面时拉单
 			String selSel = "select id from form_table_"+nestFormCode+" where cws_id = " +StrUtil.sqlstr(String.valueOf(parentId))+";";
 			FormDAO fdao = new FormDAO();
 			java.util.Vector v = fdao.list(nestFormCode, selSel);
-			if(v.size() == 0){ // 没有数据进行拉单
+			if(v.size() == 0){ // 无数据则拉单
 				boolean boo = NestSheetCtl.autoSel(request, parentId, nestField);
-				// end of nestsheetctl
 				if(!boo){
 					ret = "0";
 					msg = "自动拉单失败";
 				}
 			}
-		}else{ // 不是首次进入的第一次,要进行拉单操作
+		}else{ // 拉单条件中含有的字段有变化,需进行拉单操作
 			String delSql = "delete from form_table_" + nestFormCode + " where cws_id = " +StrUtil.sqlstr(String.valueOf(parentId)) + ";";
 			JdbcTemplate jt = new JdbcTemplate();
 			jt.executeUpdate(delSql);
-			// 删除结束
-			// nestsheetctl request 设置了filter和 flowId
 			boolean boo = NestSheetCtl.autoSel(request, parentId, nestField);
-			// end of nestsheetctl
 			if(!boo){
 				ret = "0";
 				msg = "自动拉单失败";

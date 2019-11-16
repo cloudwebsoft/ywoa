@@ -92,6 +92,19 @@ public class ModuleAddAction {
 				ModulePrivDb mpd = new ModulePrivDb(formCode);
 	           	String fieldWrite = mpd.getUserFieldsHasPriv(userName, "write");
 	           	String fieldHide = mpd.getUserFieldsHasPriv(userName, "hide");
+				// 将不显示的字段加入fieldHide
+				Iterator ir = v.iterator();
+				while (ir.hasNext()) {
+					FormField ff = (FormField)ir.next();
+					if (ff.getHide()==FormField.HIDE_EDIT || ff.getHide()==FormField.HIDE_ALWAYS) {
+						if ("".equals(fieldHide)) {
+							fieldHide = ff.getName();
+						}
+						else {
+							fieldHide += "," + ff.getName();
+						}
+					}
+				}
 	            String[] fdsHide = StrUtil.split(fieldHide, ","); 
 	            
 	           	if (!"".equals(fieldWrite)) {
@@ -100,7 +113,7 @@ public class ModuleAddAction {
 	    	        	int len = fds.length;
 	    	        	
 	    	            // 将不可写的域筛选出
-	    	            Iterator ir = v.iterator();
+	    	            ir = v.iterator();
 	    	            while (ir.hasNext()) {
 	    	                FormField ff = (FormField)ir.next();
 
@@ -122,7 +135,7 @@ public class ModuleAddAction {
 	    	        
 	    	        // 从可写字段中去掉隐藏字段
 	    	        if (fdsHide!=null) {
-	    	            Iterator ir = vWritable.iterator();
+	    	            ir = vWritable.iterator();
 	    	            while(ir.hasNext()) {
 	    	                FormField ff = (FormField) ir.next();
 	    	                for (int k=0; k<fdsHide.length; k++) {
@@ -141,7 +154,7 @@ public class ModuleAddAction {
 	           	JSONArray fields = new JSONArray();
 				MacroCtlUnit mu;
 				MacroCtlMgr mm = new MacroCtlMgr();
-				Iterator ir = vWritable.iterator();
+				ir = vWritable.iterator();
 				json.put("res", "0");
 				// 遍历表单字段-------------------------------------------------
 				while (ir.hasNext()) {

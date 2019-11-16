@@ -772,9 +772,9 @@ public class ModulePrivDb extends ObjectDb {
         if (username==null)
             return null;
         Privilege pvg = new Privilege();
-	    // if (pvg.isUserPrivValid(username, Privilege.ADMIN)) {
-	    //    return "";
-	    // }
+	    if (pvg.isUserPrivValid(username, Privilege.ADMIN)) {
+	        return "";
+	    }
 
         UserDb user = new UserDb();
         user = user.getUserDb(username);

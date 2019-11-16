@@ -82,25 +82,7 @@ else {
 	}
 }
 
-String op = ParamUtil.get(request, "op");
-if (op.equals("del")) {
-	FormMgr ftm = new FormMgr();
-	boolean re = false;
-	try {
-		re = ftm.del(request);
-		if (re) {
-			out.print(StrUtil.Alert_Redirect("删除成功！", "form_m.jsp?isFlow=" + isFlow + "&flowTypeCode=" + StrUtil.UrlEncode(flowTypeCode)));
-		}
-		else {
-			out.print(StrUtil.Alert("删除失败！"));
-		}
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.Alert_Back(e.getMessage()));
-	}
-}		
-%>
-<%
+	String op = ParamUtil.get(request, "op");
 	Calendar cal = Calendar.getInstance();	
 	int cury = cal.get(Calendar.YEAR);
     int y = ParamUtil.getInt(request, "showyear", cury);

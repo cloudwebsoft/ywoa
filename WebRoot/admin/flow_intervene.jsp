@@ -12,6 +12,7 @@
 <%@ page import="com.redmoon.oa.oacalendar.*"%>
 <%@ page import="com.cloudwebsoft.framework.util.*"%>
 <%@ page import="com.redmoon.oa.sms.*"%>
+<%@ page import="org.json.JSONObject" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 String priv="read";
@@ -37,7 +38,115 @@ if (wf.getTypeCode()==null) {
 Leaf lf = new Leaf();
 lf = lf.getLeaf(wf.getTypeCode());
 FormDb fd = new FormDb();
+	
+	fd = fd.getFormDb(lf.getFormCode());
+	if (!fd.isLoaded()) {
+		String str = LocalUtil.LoadString(request,"res.flow.Flow","form");
+		String str1 = LocalUtil.LoadString(request,"res.flow.Flow","noLongerExist");
+		out.print(StrUtil.jAlert_Back(str + lf.getFormCode() + str1,"提示"));
+		return;
+	}
 
+// 置嵌套表需要用到的cwsId
+	request.setAttribute("cwsId", "" + flow_id);
+// 置嵌套表需要用到的curOperate
+	request.setAttribute("pageType", "flowShow");
+// 置NestSheetCtl需要用到的formCode
+	request.setAttribute("formCode", lf.getFormCode());
+	
+	String myUserName = privilege.getUser(request);
+	
+	Directory dir = new Directory();
+	Leaf ft = dir.getLeaf(wf.getTypeCode());
+	boolean isFree = false;
+	boolean isReactive = false;
+	boolean isRecall = false;
+	if (ft!=null) {
+		isFree = ft.getType()!=Leaf.TYPE_LIST;
+		WorkflowPredefineDb wfp = new WorkflowPredefineDb();
+		wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
+		isReactive = wfp.isReactive();
+		isRecall = wfp.isRecall();
+	}
+	
+	WorkflowRuler wr = new WorkflowRuler();
+	
+	boolean isFlowManager = false;
+	LeafPriv lp = new LeafPriv(wf.getTypeCode());
+	if (privilege.isUserPrivValid(request, "admin.flow")) {
+		if (lp.canUserExamine(privilege.getUser(request))) {
+			isFlowManager = true;
+		}
+	}
+
+// 判断是否拥有查看流程过程的权限
+	if (!isFlowManager) {
+		// 判断是否参与了流程
+		if (!privilege.isUserPrivValid(request, "admin")) {
+%>
+<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+<%
+		out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid"), true));
+		return;
+	}
+}
+
+com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+fdao = fdao.getFormDAO(flow_id, fd);
+
+boolean isStarted = wf.isStarted();
+String op = ParamUtil.get(request, "op");
+if (op.equals("delMyAction")) {
+	boolean re = false;
+	JSONObject json = new JSONObject();
+	try {
+		long delMyActionId = ParamUtil.getLong(request, "delMyActionId");
+		MyActionDb mad = new MyActionDb();
+		mad = mad.getMyActionDb(delMyActionId);
+		// 删除日程中的待办事宜
+		PlanDb pd = new PlanDb();
+		pd = pd.getPlanDb(mad.getUserName(), PlanDb.ACTION_TYPE_FLOW, String.valueOf(mad.getId()));
+		if (pd!=null) {
+			pd.del();
+		}
+		
+		re = mad.del();
+		if (re) {
+			// 检查是否节点上是否有其它的办理记录，如果没有，则更改节点状态为未处理
+			String sql = "select id from " + mad.getTableName() + " where action_id=" + mad.getActionId();
+			if (mad.list(sql).size()==0) {
+				WorkflowActionDb wa = new WorkflowActionDb();
+				wa = wa.getWorkflowActionDb((int)mad.getActionId());
+				wa.setStatus(WorkflowActionDb.STATE_NOTDO);
+				wa.save();
+			}
+		}
+	}
+	catch (Exception e) {
+		e.printStackTrace();
+		// out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
+		json.put("ret", 0);
+		json.put("msg", e.getMessage());
+		out.print(json);
+		return;
+	}
+	if (re) {
+		String str = LocalUtil.LoadString(request,"res.common","info_op_success");
+		// out.print(StrUtil.jAlert_Redirect(str,"提示", "flow_intervene.jsp?flowId=" + flow_id));
+		//out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_intervene.jsp?flowId=" + flow_id));
+		json.put("ret", 1);
+		json.put("msg", str);
+	}
+	else {
+		String str = LocalUtil.LoadString(request,"res.common","info_op_fail");
+		// out.print(StrUtil.jAlert_Back(str,"提示"));
+		//out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
+		json.put("ret", 0);
+		json.put("msg", str);
+	}
+	out.print(json);
+	return;
+}
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -74,102 +183,7 @@ FormDb fd = new FormDb();
 </head>
 <body>
 <%
-fd = fd.getFormDb(lf.getFormCode());
-if (!fd.isLoaded()) {
-	String str = LocalUtil.LoadString(request,"res.flow.Flow","form");
-	String str1 = LocalUtil.LoadString(request,"res.flow.Flow","noLongerExist");
-	out.print(StrUtil.jAlert_Back(str + lf.getFormCode() + str1,"提示"));
-	return;
-}
-
-// 置嵌套表需要用到的cwsId
-request.setAttribute("cwsId", "" + flow_id);
-// 置嵌套表需要用到的curOperate
-request.setAttribute("pageType", "flowShow");
-// 置NestSheetCtl需要用到的formCode
-request.setAttribute("formCode", lf.getFormCode());
-
-String myUserName = privilege.getUser(request);
-
-Directory dir = new Directory();
-Leaf ft = dir.getLeaf(wf.getTypeCode());
-boolean isFree = false;
-boolean isReactive = false;
-boolean isRecall = false;
-if (ft!=null) {
-	isFree = ft.getType()!=Leaf.TYPE_LIST;
-	WorkflowPredefineDb wfp = new WorkflowPredefineDb();
-	wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
-	isReactive = wfp.isReactive();
-	isRecall = wfp.isRecall();
-}
-
-WorkflowRuler wr = new WorkflowRuler();
-
-boolean isFlowManager = false;
-LeafPriv lp = new LeafPriv(wf.getTypeCode());
-if (privilege.isUserPrivValid(request, "admin.flow")) {
-	if (lp.canUserExamine(privilege.getUser(request))) {
-		isFlowManager = true;
-	}
-}
-
-// 判断是否拥有查看流程过程的权限
-if (!isFlowManager) {
-	// 判断是否参与了流程
-	if (!privilege.isUserPrivValid(request, "admin")) {
-		%>
-		<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-		<%
-		out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid"), true));
-		return;
-	}
-}
-
-boolean isStarted = wf.isStarted();
-String op = ParamUtil.get(request, "op");
-if (op.equals("delMyAction")) {
-	boolean re = false;
-	try {
-		long delMyActionId = ParamUtil.getLong(request, "delMyActionId");
-		MyActionDb mad = new MyActionDb();
-		mad = mad.getMyActionDb(delMyActionId);
-		// 删除日程中的待办事宜
-		PlanDb pd = new PlanDb();
-		pd = pd.getPlanDb(mad.getUserName(), PlanDb.ACTION_TYPE_FLOW, String.valueOf(mad.getId()));
-		if (pd!=null) {
-			pd.del();
-		}		
-		
-		re = mad.del();
-		if (re) {
-			// 检查是否节点上是否有其它的办理记录，如果没有，则更改节点状态为未处理
-        	String sql = "select id from " + mad.getTableName() + " where action_id=" + mad.getActionId();
-			if (mad.list(sql).size()==0) {
-				WorkflowActionDb wa = new WorkflowActionDb();
-				wa = wa.getWorkflowActionDb((int)mad.getActionId());
-				wa.setStatus(WorkflowActionDb.STATE_NOTDO);
-				wa.save();
-			}
-		}
-	}
-	catch (Exception e) {
-		e.printStackTrace();
-		out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
-	}
-	if (re) {
-		String str = LocalUtil.LoadString(request,"res.common","info_op_success");
-		out.print(StrUtil.jAlert_Redirect(str,"提示", "flow_intervene.jsp?flowId=" + flow_id));
-		//out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_intervene.jsp?flowId=" + flow_id));
-	}
-	else {
-		String str = LocalUtil.LoadString(request,"res.common","info_op_fail");
-		out.print(StrUtil.jAlert_Back(str,"提示"));
-		//out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
-	}
-	return;	
-}
-else if (op.equals("submitTo")) {
+if (op.equals("submitTo")) {
 	long myActionId = ParamUtil.getLong(request, "myActionId");
 	String internalName = ParamUtil.get(request, "internalName");
 	WorkflowActionDb nextwa = new WorkflowActionDb();
@@ -361,16 +375,20 @@ o("menu8").className="current";
 			DocumentMgr dm = new DocumentMgr();
 			Document doc = dm.getDocument(doc_id);
 			%>
-            <lt:Label res="res.flow.Flow" key="organ"/>：<%=um.getUserDb(wf.getUserName()).getRealName()%>&nbsp;&nbsp;<lt:Label res="res.flow.Flow" key="state"/>：<%=wf.getStatusDesc()%>
+            <lt:Label res="res.flow.Flow" key="organ"/>：<%=um.getUserDb(wf.getUserName()).getRealName()%>
+            &nbsp;&nbsp;
+            <lt:Label res="res.flow.Flow" key="state"/>：<%=wf.getStatusDesc()%>
+            &nbsp;&nbsp;
+            ID：<%=wf.getId()%>
             &nbsp;&nbsp;
             <span id="projectName">
             <%if (wf.getProjectId()!=-1) {
-                com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
+                com.redmoon.oa.visual.FormDAO fdaoPrj = new com.redmoon.oa.visual.FormDAO();
                 FormDb prjFd = new FormDb();
                 prjFd = prjFd.getFormDb("project");
-                fdao = fdao.getFormDAO((int)wf.getProjectId(), prjFd);
+				fdaoPrj = fdaoPrj.getFormDAO((int)wf.getProjectId(), prjFd);
                 %>
-                <lt:Label res="res.flow.Flow" key="project"/>：<a href="javascript:;" onClick="addTab('<%=fdao.getFieldValue("name")%>', 'project/project_show.jsp?projectId=<%=wf.getProjectId()%>&formCode=project')"><%=fdao.getFieldValue("name")%></a>&nbsp;&nbsp;<a title="<lt:Label res='res.flow.Flow' key='disassociate'/>" href="javascript:;" onClick="unlinkProject()" style='font-size:16px; font-color:red'>×</a>
+                <lt:Label res="res.flow.Flow" key="project"/>：<a href="javascript:;" onClick="addTab('<%=fdaoPrj.getFieldValue("name")%>', 'project/project_show.jsp?projectId=<%=wf.getProjectId()%>&formCode=project')"><%=fdaoPrj.getFieldValue("name")%></a>&nbsp;&nbsp;<a title="<lt:Label res='res.flow.Flow' key='disassociate'/>" href="javascript:;" onClick="unlinkProject()" style='font-size:16px; font-color:red'>×</a>
                 <%
             }
             %>
@@ -393,15 +411,25 @@ o("menu8").className="current";
                     <form id="flowForm" name="flowForm" action="flow_intervene.jsp">
                       <input name="op" value="changeStatus" type="hidden" />
                         <input name="flowId" value="<%=flow_id%>" type="hidden" />
-                        <select id="status" name="status">
-                        <option value="<%=WorkflowDb.STATUS_NOT_STARTED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_NOT_STARTED)%></option>
-                        <option value="<%=WorkflowDb.STATUS_STARTED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_STARTED)%></option>
-                        <option value="<%=WorkflowDb.STATUS_FINISHED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_FINISHED)%></option>
-                        <option value="<%=WorkflowDb.STATUS_DISCARDED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_DISCARDED)%></option>
-                        <option value="<%=WorkflowDb.STATUS_REFUSED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_REFUSED)%></option>
-                        <option value="<%=WorkflowDb.STATUS_NONE%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_NONE)%></option>
-                        </select>
+						<select id="status" name="status">
+							<option value="<%=WorkflowDb.STATUS_NOT_STARTED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_NOT_STARTED)%>
+							</option>
+							<option value="<%=WorkflowDb.STATUS_STARTED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_STARTED)%>
+							</option>
+							<option value="<%=WorkflowDb.STATUS_FINISHED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_FINISHED)%>
+							</option>
+							<option value="<%=WorkflowDb.STATUS_DISCARDED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_DISCARDED)%>
+							</option>
+							<option value="<%=WorkflowDb.STATUS_REFUSED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_REFUSED)%>
+							</option>
+							<option value="<%=WorkflowDb.STATUS_NONE%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_NONE)%>
+							</option>
+							<option value="<%=WorkflowDb.STATUS_DELETED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_DELETED)%>
+							</option>
+						</select>
                         <input type="submit" class = "btn" value='<lt:Label res="res.flow.Flow" key="sure"/>' />
+						&nbsp;&nbsp;
+						<input type="button" class="btn" value="编辑表单内容" onclick="addTab('编辑：<%=wf.getTitle()%>', '<%=request.getContextPath()%>/visual/module_edit.jsp?id=<%=fdao.getId()%>&code=<%=fd.getCode()%>')"/>
                     </form>
                         <script>
 						o("status").value = "<%=wf.getStatus()%>";
@@ -419,19 +447,20 @@ Vector v = mad.list(sql);
                       <td height="30" align="left"><strong>&nbsp;<lt:Label res="res.flow.Flow" key="cprocess"/>：</strong></td>
                     </tr>
                   </table>
-                  <table width="98%" align="center" class="tabStyle_1 percent98">
+                  <table width="98%" align="center" class="tabStyle_1 percent98 mainTable">
                     <tbody>
                       <tr>
                         <td class="tabStyle_1_title" width="10%" align="center"><lt:Label res="res.flow.Flow" key="handler"/></td>
                         <td class="tabStyle_1_title" width="9%" align="center"><lt:Label res="res.flow.Flow" key="bearer"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="agent"/></td>
-                        <td class="tabStyle_1_title" width="12%" align="center"><lt:Label res="res.flow.Flow" key="task"/></td>
-                        <td class="tabStyle_1_title" width="9%" align="center"><lt:Label res="res.flow.Flow" key="reachState"/></td>
-                        <td class="tabStyle_1_title" width="11%" align="center"><lt:Label res="res.flow.Flow" key="startTime"/></td>
+                        <td class="tabStyle_1_title" width="6%" align="center"><lt:Label res="res.flow.Flow" key="task"/></td>
+                        <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="reachState"/></td>
+                        <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="signTime"/></td>
                         <td class="tabStyle_1_title" width="10%" align="center"><lt:Label res="res.flow.Flow" key="handleTime"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="processor"/></td>
-                        <td class="tabStyle_1_title" width="9%" align="center"><lt:Label res="res.flow.Flow" key="processeStatus"/></td>
-                        <td class="tabStyle_1_title" width="16%" align="center"><lt:Label res="res.flow.Flow" key="operate"/></td>
+						  <td class="tabStyle_1_title" width="9%" align="center"><lt:Label res="res.flow.Flow" key="processeStatus"/></td>
+						  <td class="tabStyle_1_title" width="12%" align="center">IP/OS/Browser</td>
+                        <td class="tabStyle_1_title" width="14%" align="center"><lt:Label res="res.flow.Flow" key="operate"/></td>
                       </tr>
                       <%
 java.util.Iterator ir = v.iterator();
@@ -452,7 +481,7 @@ while (ir.hasNext()) {
 	wad = wad.getWorkflowActionDb((int)mad.getActionId());
 	m++;
 	%>
-                      <tr class="highlight" id=<%=m %>> 
+                      <tr class="highlight" id="<%=m %>" privMyActionId="<%=mad.getPrivMyActionId()%>">
                         <td  ><%
 						  String deptCodes = mad.getDeptCodes();
 						  String[] depts = StrUtil.split(deptCodes, ",");
@@ -487,7 +516,9 @@ while (ir.hasNext()) {
                         <td><%
 					  if (mad.getPrivMyActionId()!=-1) {
 					  	MyActionDb mad2 = mad.getMyActionDb(mad.getPrivMyActionId());
-						out.print(um.getUserDb(mad2.getUserName()).getRealName());
+					  	if (mad2.isLoaded()) {
+							out.print(um.getUserDb(mad2.getUserName()).getRealName());
+						}
 					  }
 					  else
 					  	out.print("&nbsp;");
@@ -545,6 +576,23 @@ while (ir.hasNext()) {
 						}
 						%>
                         </td>
+						  <td>
+							  <%
+								  String ip = mad.getIp();
+								  if ("".equals(ip)) {
+								  	ip = "-";
+								  }
+								  String os = mad.getOs();
+								  if ("".equals(os)) {
+									  os = "-";
+								  }
+								  String browser = mad.getBrowser();
+								  if ("".equals(browser)) {
+									  browser = "-";
+								  }
+							  %>
+							  <%=ip%>/<%=os%>/<%=browser%>
+						  </td>
                         <td align="center">
 						  <%
                             // 检查是否存在后续节点
@@ -571,14 +619,14 @@ while (ir.hasNext()) {
                           // 发起记录不能被删除
                           if (m!=1) {%>
                           &nbsp;&nbsp;
-                          <a href="javascript:;" onClick="delMyAction('<%=mad.getId()%>')"><lt:Label res="res.flow.Flow" key="delete"/></a>
+                          <a href="javascript:;" onClick="delMyAction('<%=mad.getId()%>', '<%=m%>')"><lt:Label res="res.flow.Flow" key="delete"/></a>
                           <%}%>
                           <%if (!isFree) {%>
                           &nbsp;&nbsp;
                           <a href="javascript:;" onClick="submitTo('<%=mad.getId()%>')"><lt:Label res="res.flow.Flow" key="forwarded"/></a>
                           <%}%>
                           &nbsp;&nbsp;                          
-                          <a href="javascript:;" onClick="changeCheckStatus('<%=mad.getId()%>')">状态</a>
+                          <a href="javascript:;" onClick="changeCheckStatus('<%=mad.getId()%>', <%=mad.getCheckStatus()%>, <%=mad.getActionId()%>)">状态</a>
                         </td>
                       </tr>
                       <%}%>
@@ -587,7 +635,7 @@ while (ir.hasNext()) {
                   </div>
                 <br>
                 <%if (!isFree) {%>
-                <table width="555" align="center" class="tabStyle_1 percent98">
+                <table width="555" align="center" class="tabStyle_1 percent98 mainTable">
                 <thead>
                     <tr>
                       <td width="216" class="tabStyle_1_title"><lt:Label res="res.flow.Flow" key="node"/></td>
@@ -601,7 +649,7 @@ while (ir.hasNext()) {
                         WorkflowActionDb wa = (WorkflowActionDb)irwa.next();
                         %>
                         <form id="formStauts<%=wa.getId()%>" action="flow_intervene.jsp">
-                        <tr>
+                        <tr id="trAction<%=wa.getId()%>">
                             <td align="center">
                             <input name="inName" type="hidden" value="<%=wa.getInternalName()%>">
                             <%=wa.getJobName() + "：" + wa.getTitle()%></td>
@@ -630,6 +678,8 @@ while (ir.hasNext()) {
                           </td>
                           <td align="center">
                             <input type="submit" class="btn" value='<lt:Label res="res.flow.Flow" key="sure"/>' />
+							  &nbsp;&nbsp;
+							  <input type="button" class="btn" value="清除用户" title="仅限于代码调试用" onclick="clearActionUser(<%=wa.getId()%>)"/>
                           </td>
                         </tr>
                         </form>
@@ -712,11 +762,26 @@ function setUsers(users, userRealNames) {
 	o("userRealNames").value = userRealNames;
 }
 
-function delMyAction(delMyActionId) {
+function delMyAction(delMyActionId, m) {
 	jConfirm('<lt:Label res="res.flow.Flow" key="isDelete"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
 		if(!r){return;}
 		else{
-			window.location.href = "flow_intervene.jsp?op=delMyAction&flowId=<%=flow_id%>&delMyActionId=" + delMyActionId;
+			// window.location.href = "flow_intervene.jsp?op=delMyAction&flowId=<%=flow_id%>&delMyActionId=" + delMyActionId;
+			$.ajax({
+				type:"get",
+				url:"flow_intervene.jsp",
+				data:{"op":"delMyAction","flowId":"<%=flow_id%>","delMyActionId":delMyActionId},
+				success:function(data,status){
+					data = $.parseJSON(data);
+					jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
+					if (data.ret=="1") {
+						$("tr[id=" + m + "]").remove();
+					}
+				},
+				error:function(XMLHttpRequest, textStatus){
+					alert(XMLHttpRequest.responseText);
+				}
+			})
 		}
 	})
 }
@@ -734,7 +799,7 @@ function recall(id,flow_id,action_id){
 					data = $.parseJSON(data);
 		 			jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
 		 			if (data.ret=="1") {
-		 				$("#"+id).remove();
+						$("tr[privMyActionId=" + action_id + "]").remove();
 					}
 		 		},
 		 		error:function(XMLHttpRequest, textStatus){
@@ -801,7 +866,7 @@ function submitTo(myActionId) {
 		});	
 }
 
-function changeCheckStatus(myActionId, curStatus) {
+function changeCheckStatus(myActionId, curStatus, actionId) {
 	$('#checkStatus').val(curStatus);
 	$("#dlgCheckStatus").dialog({
 		title:'<lt:Label res="res.flow.Flow" key="selChangeStatus"/>',
@@ -814,8 +879,9 @@ function changeCheckStatus(myActionId, curStatus) {
 					$(this).dialog("close");
 				},
 				'<lt:Label res="res.flow.Flow" key="sure"/>' : function() {
+					// consoleLog($('#checkStatus').val());
 					$.ajax({
-						type : "get",
+						type : "post",
 						url : "../public/flow/setMyActionStatus.do",
 						data : {
 							"myActionId" : myActionId,
@@ -823,9 +889,21 @@ function changeCheckStatus(myActionId, curStatus) {
 						},
 						success : function(data, status) {
 							data = $.parseJSON(data);
+							console.log(data);
 							jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
 							if (data.ret == "1") {
 								$("#tdMad" + myActionId).html($("#checkStatus").find("option:selected").text());
+								var actionStatus = data.actionStatus;
+								if (actionStatus!=-1) {
+									$('#waStatus'+ actionId).val(actionStatus);
+								}
+								
+								// 如果新状态为“未处理”，则如果流程状态为“已结束”，需改为“处理中”
+								if ($('#checkStatus').val()=='<%=MyActionDb.CHECK_STATUS_NOT%>') {
+									if ($('#status').val()=='<%=WorkflowDb.STATUS_FINISHED%>') {
+										$('#status').val('<%=WorkflowDb.STATUS_STARTED%>');
+									}
+								}
 							}
 						},
 						error : function(XMLHttpRequest, textStatus) {
@@ -840,5 +918,38 @@ function changeCheckStatus(myActionId, curStatus) {
 		resizable:true
 		});		
 }
+
+function clearActionUser(actionId) {
+	jConfirm('您确定要清除用户么','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
+		if(!r){
+			return;
+		}else{
+			$.ajax({
+				type:"post",
+				url:"../public/flow/clearActionUser.do",
+				data:{"actionId":actionId},
+				success:function(data,status){
+					data = $.parseJSON(data);
+					jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
+				},
+				error:function(XMLHttpRequest, textStatus){
+					//alert(XMLHttpRequest.responseText);
+				}
+			})
+		}
+	})
+}
+
+$(document).ready( function() {
+	$(".mainTable td").mouseout( function() {
+		if ($(this).parent().parent().get(0).tagName!="THEAD")
+			$(this).parent().find("td").each(function(i){ $(this).removeClass("tdOver"); });
+	});
+	
+	$(".mainTable td").mouseover( function() {
+		if ($(this).parent().parent().get(0).tagName!="THEAD")
+			$(this).parent().find("td").each(function(i){ $(this).addClass("tdOver"); });
+	});
+});
 </script>
 </html>

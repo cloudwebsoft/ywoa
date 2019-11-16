@@ -61,7 +61,7 @@ else if (op.equals("show_customer")) {
 	FormDb customerfd = new FormDb();
 	customerfd = customerfd.getFormDb("sales_linkman");
 	String customerId = "";
-	if (customerfd !=null && customerfd.isLoaded())	{
+	if (customerfd !=null && customerfd.isLoaded()) {
   		FormDAO fdaoCustomer = new FormDAO();
   		fdaoCustomer = fdaoCustomer.getFormDAO(StrUtil.toInt(id), customerfd);
   		if (fdaoCustomer != null && fdaoCustomer.isLoaded())
@@ -70,7 +70,7 @@ else if (op.equals("show_customer")) {
   	FormDb linkfd = new FormDb();
 	linkfd = linkfd.getFormDb("sales_customer");
 	String linkName = "";
-	if (linkfd !=null && linkfd.isLoaded())	{
+	if (linkfd !=null && linkfd.isLoaded()) {
   		FormDAO linkdaoCustomer = new FormDAO();
   		linkdaoCustomer = linkdaoCustomer.getFormDAO(StrUtil.toInt(customerId), linkfd);
   		if (linkdaoCustomer != null && linkdaoCustomer.isLoaded())
@@ -89,6 +89,8 @@ function openWinForFlowAccess(url,width,height) {
 // checkJs 为字段的校验脚本，module_list_sel.jsp中映射字段时使用了该参数
 function replaceValue(openerField, val, sourceValue, checkJs) {
 	// $(o(openerField)).parent().html(val); // 如果元素是放在td中，则td中其它的隐藏字段会被清掉
+	$('#' + openerField + "_realshow").remove(); // 删除realshow元素，如表单域宏控件中的显示值
+	$('#' + openerField + "_btn").remove(); // 删除btn元素，如表单域宏控件中的搜索按钮
 	$(o(openerField)).prop('outerHTML', val);
 	$(o(openerField)).val(sourceValue);
 	if (checkJs) {
@@ -221,10 +223,10 @@ function openWinProductServiceList(obj) {
 	openWinForFlowAccess("<%=rootpath%>/sales/product_service_list_sel.jsp", 520, 480);
 }
 
-function openWinModuleFieldList(obj, formCode, byFieldName, showFieldName, filter, openerFormCode) {
+function openWinModuleFieldList(obj, formCode, byFieldName, showFieldName, filter, openerFormCode, flowId, pageType) {
 	filter = "";
 	inputObj = obj
-	openWinForFlowAccess("<%=rootpath%>/visual/module_list_sel.jsp?formCode=" + formCode + "&byFieldName=" + byFieldName + "&showFieldName=" + showFieldName + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + obj.name + "&filter=" + filter, 800, 600);
+	openWinForFlowAccess("<%=rootpath%>/visual/module_list_sel.jsp?formCode=" + formCode + "&byFieldName=" + byFieldName + "&showFieldName=" + showFieldName + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + obj.name + "&flowId=" + flowId + "&pageType=" + pageType + "&filter=" + filter, 1024, 768);
 }
 
 function openWinProjectList(obj) {
@@ -463,7 +465,7 @@ function initCalculator() {
 }
 
 function bindEvent(obj, calObj, isSelect) {
-    if (isIE()) {
+    if (true || isIE()) {
         if (true || isIE11) {
             if (isSelect) {
                 obj.addEventListener("change", function(event){ doCalculate(calObj); }, false); 
@@ -676,7 +678,7 @@ function openWinLocationSelect(obj) {
 
 function openWinWorkflowMineSelect(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/flow/flow_list.jsp?displayMode=<%=WorkflowMgr.DISPLAY_MODE_ATTEND%>&action=sel", 800, 600);
+	openWinForFlowAccess("<%=rootpath%>/flow/flow_list.jsp?displayMode=<%=WorkflowMgr.DISPLAY_MODE_ATTEND%>&action=sel", 1024, 768);
 }
 
 function openWinQueryFieldList(objName, openerFormCode, fieldName, isScript, queryId) {

@@ -5,6 +5,10 @@
 <%@ page import="com.redmoon.oa.kernel.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.person.*" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="com.cloudwebsoft.framework.web.UserAgentParser" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="login" scope="page" class="cn.js.fan.security.Login"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -22,11 +26,14 @@
     SkinMgr skm = new SkinMgr();
     Skin skin = skm.getSkin(skincode);
     String skinPath = skin.getPath();
-    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+    com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
     com.redmoon.clouddisk.Config cfgNd = com.redmoon.clouddisk.Config.getInstance();
     boolean isUsed = cfgNd.getBooleanProperty("isUsed"); //判断云盘时候启动
     //是否需要重启tomcat
     String isRestart = cfg.get("isRestart");
+    String browserValid = cfg.get("browserValid");
+    boolean isBrowserForbid = !"".equals(browserValid);
+    
     boolean systemIsOpen = cfg.getBooleanProperty("systemIsOpen");
     if (!systemIsOpen) {
         String op = ParamUtil.get(request, "op");
@@ -82,17 +89,22 @@
     <script type="text/javascript" src="js/jquery.toaster.js"></script>
     <script src="js/jquery-ui/jquery-ui.js"></script>
     <script src="js/jquery.form.js"></script>
+    <script src="js/check_browser.js"></script>
     <script src="js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
     <script>
+        // 浏览器是否合法
+        var isBrowserValid = true;
+        var browserInfo = "";
+
         // 判断是否为手机端，如果是则转至手机端界面
         var isMobile = false;
         var ua = navigator.userAgent.toLowerCase();
         if (ua.match(/MicroMessenger/i) == 'micromessenger') { // 微信浏览器判断
             isMobile = true;
         } else if (ua.match(/QQ/i) == 'qq') { // QQ浏览器判断
-            isMobile = true;
+            // isMobile = true;
         } else if (ua.match(/WeiBo/i) == "weibo") {
             isMobile = true;
         } else if (/(iPhone|iPad|iPod|iOS)/i.test(ua)) {
@@ -470,6 +482,10 @@
 
     // 登录
     function doLogin() {
+        if (!isBrowserValid) {
+            jAlert("请勿使用" + browserInfo.toUpperCase() + "浏览器，请换用<%=browserValid%>", "提示");
+            return;
+        }
         // 某些浏览器下不兼容
         // $("#loginForm").submit();
         var userName = encodeURIComponent($('#loginName').val());
@@ -482,7 +498,6 @@
                 op: o("op").value,
                 mainTitle: o("mainTitle").value,
                 mainPage: o("mainPage").value,
-                os: o("os").value,
                 os: o("os").value,
                 form_token: o("<%=Form.TOKEN%>").value,
                 isSavePwd: o("isSavePwd").value
@@ -543,7 +558,6 @@
                 op: o("op").value,
                 mainTitle: o("mainTitle").value,
                 mainPage: o("mainPage").value,
-                os: o("os").value,
                 os: o("os").value,
                 form_token: o("<%=Form.TOKEN%>").value,
                 isSavePwd: o("isSavePwd").value
@@ -810,69 +824,102 @@
             }
         );
     });
-
-    $(document).ready(function () {
-        <%if (License.getInstance().isTrial()) {%>
-        showDiv($("#popup_box"));
-        $('#full_name').focus();
-        <%}%>
-        <%
-        String msg;
-        if (isLte) {
-            isLte = true;
-            msg = "建议使用IE9到IE11浏览器";
-        }
-        else {
-            msg = "建议使用IE8到IE11浏览器";
-        }
-        %>
-        var isMsg;
-        <%if (isLte) {%>
-        isMsg = !isIE9 && !isIE10 && !isIE11;
-        <%}	else {%>
-        isMsg = !isIE8 && !isIE9 && !isIE10 && !isIE11;
-        <%}%>
-        //lzm 添加IE8-IE11判断
-        if (isMsg) {
-            var options = {
-                'priority': 'info',
-                'message': '<%=msg%>',
-                'settings': {
-                    'toast': {
-                        'css': {
-                            'background': '#d4eefe',
-                            'color': '#008ced',
-                            'font-size': '15px',
-                            'font-family': '宋体',
-                            'filter': 'filter:alpha(opacity=80)',
-                            'vertical-align': 'middle',
-                            'border': '1px solid #a8deff',
-                            '-moz-border-radius': '5px',
-                            '-webkit-border-radius': '5px',
-                            'border-radius': '5px',
-                            'line-height': '20px',
-                            'padding': '12px'
-                        }
-                    },
-                    'toaster': {
-                        'css': {
-                            'min-width': '200px',
-                            'max-width': '220px',
-                            'height': '40px',
-                            'position': 'fixed',
-                            'top': '10px',
-                            'left': '40%'
-                        }
+    
+    function showTip(msg) {
+        var options = {
+            'priority': 'info',
+            'message': msg,
+            'settings': {
+                'toast': {
+                    'css': {
+                        'background': '#d4eefe',
+                        'color': '#008ced',
+                        'font-size': '15px',
+                        'font-family': '宋体',
+                        'filter': 'filter:alpha(opacity=80)',
+                        'vertical-align': 'middle',
+                        'border': '1px solid #a8deff',
+                        '-moz-border-radius': '5px',
+                        '-webkit-border-radius': '5px',
+                        'border-radius': '5px',
+                        'line-height': '20px',
+                        'padding': '12px'
+                    }
+                },
+                'toaster': {
+                    'css': {
+                        'min-width': '200px',
+                        'max-width': '220px',
+                        'height': '40px',
+                        'position': 'fixed',
+                        'top': '10px',
+                        'left': '40%'
                     }
                 }
-            };
-            $.toaster(options);
+            }
+        };
+        $.toaster(options);
+    }
+    
+    $(document).ready(function () {
+        <%
+        if (License.getInstance().isTrial()) {
+        %>
+        showDiv($("#popup_box"));
+        $('#full_name').focus();
+        <%
         }
+        
+        // 猎豹浏览器在request的agent中含有 LEBROWSER，但是通过js获取的agent中则没有
+        String browserType = UserAgentParser.getBrowser(request.getHeader("user-agent"));
+        
+        if (isBrowserForbid) {
+        %>
+            var browserValid = "<%=browserValid.toLowerCase()%>";
+            var aryValid = browserValid.split(",");
+            browserInfo = getBrowserInfo().toLowerCase();
+            // 如果是chrome型的，则赋予browserType，以得到真正的浏览器类型
+            if (browserInfo == "chrome") {
+                browserInfo = "<%=browserType%>";
+            }
+            isBrowserValid = false;
+            for (i in aryValid) {
+                if (browserInfo == aryValid[i].toLowerCase()) {
+                    isBrowserValid = true;
+                }
+            }
+            if (!isBrowserValid) {
+                jAlert("请勿使用" + browserInfo.toUpperCase() + "浏览器，请换用<%=browserValid%>", "提示");
+            }
+            // consoleLog(navigator.userAgent.toLocaleLowerCase());
+        <%
+        }
+        
+        if (isBrowserForbid) {
+            String msg = "";
+            if (isLte) {
+                msg = "建议使用" + browserValid + "浏览器，IE需为9以上版本";
+                if (browserType.equals("ie7") || browserType.equals("ie8")) {
+        %>
+                    jAlert("<%=msg%>", "提示");
+        <%
+                }
+            }
+            else {
+                msg = "建议使用" + browserValid + "浏览器";
+            }
+        %>
+            if (!isBrowserValid) {
+                showTip('<%=msg%>');
+            }
+        <%
+        }
+        %>
     });
 </script>
 <%
     String type = License.getInstance().getType();
-    if (!type.equals(License.TYPE_OEM)) {
+    if (false && !type.equals(License.TYPE_OEM)) {
 %>
 <script src="js/logo_show.js" type="text/javascript"></script>
 <%}%>

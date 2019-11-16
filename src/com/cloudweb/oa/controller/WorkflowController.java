@@ -1,6 +1,8 @@
 package com.cloudweb.oa.controller;
 
+import java.io.File;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Vector;
@@ -14,6 +16,7 @@ import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.LocalUtil;
+import com.redmoon.oa.util.RequestUtil;
 import com.redmoon.oa.visual.FuncUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -238,30 +241,137 @@ public class WorkflowController {
 	 * @return
 	 */
 	@ResponseBody
-	@RequestMapping(value = "/setMyActionStatus", method = RequestMethod.GET, produces={"text/html;charset=UTF-8;","application/json;"})	
+	@RequestMapping(value = "/setMyActionStatus", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;","application/json;"})
 	public String setMyActionStatus(long myActionId, int checkStatus) {
-		boolean re = false;
-		MyActionDb mad = new MyActionDb();
-		mad = mad.getMyActionDb(myActionId);
-		if (mad.isLoaded()) {
-			mad.setCheckStatus(checkStatus);
-			re = mad.save();
-		}
 		JSONObject json = new JSONObject();
 		try {
-			if (re) { 
+			boolean re = false;
+			MyActionDb mad = new MyActionDb();
+			mad = mad.getMyActionDb(myActionId);
+			int actionStatus = -1;
+			if (mad.isLoaded()) {
+				mad.setCheckStatus(checkStatus);
+				re = mad.save();
+				if (re) {
+					WorkflowActionDb wa = new WorkflowActionDb();
+					wa = wa.getWorkflowActionDb((int)mad.getActionId());
+					// 如果新状态为未处理
+					if (checkStatus == MyActionDb.CHECK_STATUS_NOT) {
+						DebugUtil.i(getClass(), "setMyActionStatus", String.valueOf(wa.getId()));
+						if (wa.getStatus() != WorkflowActionDb.STATE_DOING) {
+							actionStatus = WorkflowActionDb.STATE_DOING;
+							wa.setStatus(WorkflowActionDb.STATE_DOING);
+							try {
+								wa.save();
+							} catch (ErrMsgException e) {
+								e.printStackTrace();
+							}
+						}
+
+						// 如果流程状态为“已结束”，则置为“处理中”
+						WorkflowDb wf = new WorkflowDb();
+						wf = wf.getWorkflowDb((int)mad.getFlowId());
+						if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
+							mad = mad.getLastMyActionDbOfFlow(wf.getId());
+							long actionId = mad.getActionId();
+							WorkflowActionDb lastAction = new WorkflowActionDb();
+							lastAction = lastAction.getWorkflowActionDb((int)actionId);
+							re = wf.changeStatus(request, WorkflowDb.STATUS_STARTED, lastAction);
+						}
+					}
+					else if (checkStatus == MyActionDb.CHECK_STATUS_CHECKED) {
+						// 如果该节点上没有其它待办记录，则说明应置节点状态为已处理
+						Vector v = mad.getOthersOfActionDoing();
+						if (v.size()==0) {
+							actionStatus = WorkflowActionDb.STATE_FINISHED;
+							wa.setStatus(WorkflowActionDb.STATE_FINISHED);
+							re = wa.save();
+						}
+					}
+				}
+			}
+
+			json.put("actionStatus", actionStatus);
+			if (re) {
 				json.put("ret", "1");
 				json.put("msg", "操作成功！");
 			}
 			else {
 				json.put("ret", "0");
-				json.put("msg", "操作失败！");				
+				json.put("msg", "操作失败！");
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		} catch (ErrMsgException e) {
+			e.printStackTrace();
+			try {
+				json.put("ret", "0");
+				json.put("msg", e.getMessage());
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+		}
+		return json.toString();		
+	}
+
+	/**
+	 * 清除节点上的用户
+	 * @param actionId
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/clearActionUser", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;","application/json;"})
+	public String clearActionUser(int actionId) {
+		boolean re = false;
+		JSONObject json = new JSONObject();
+		try {
+			WorkflowActionDb wa = new WorkflowActionDb();
+			wa = wa.getWorkflowActionDb(actionId);
+			wa.setUserName("");
+			wa.setUserRealName("");
+			re = wa.save();
+			if (re) {
+				json.put("ret", "1");
+				json.put("msg", "操作成功！");
+			}
+			else {
+				json.put("ret", "0");
+				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (ErrMsgException e) {
+			e.printStackTrace();
 		}
-		return json.toString();		
+		return json.toString();
+	}
+
+	@ResponseBody
+	@RequestMapping(value = "/finishBatch", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;","application/json;"})
+	public String finishBatch() {
+		JSONObject json = new JSONObject();
+		try {
+			String noteStr = LocalUtil.LoadString(request, "res.flow.Flow", "prompt");
+			WorkflowMgr wm = new WorkflowMgr();
+			int count = 0;
+			try {
+				count = wm.FinishActionBatch(request);
+			} catch (ErrMsgException e) {
+				String alertStr = e.getMessage();
+				alertStr = alertStr.replace("\r\n", "");
+				json.put("ret", 0);
+				json.put("msg", alertStr);
+				return json.toString();
+			}
+
+			json.put("ret", 1);
+			json.put("msg", LocalUtil.LoadString(request, "res.common", "info_op_success"));
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return json.toString();
 	}
 	
 	/**
@@ -416,7 +526,8 @@ public class WorkflowController {
 	@ResponseBody
 	@RequestMapping(value = "/list", method = RequestMethod.POST, produces={"text/html;", "application/json;charset=UTF-8;"})
 	public String list() {
-	    int displayMode = ParamUtil.getInt(request, "displayMode", WorkflowMgr.DISPLAY_MODE_SEARCH);
+		// 默认值用DISPLAY_MODE_DOING，而原先是DISPLAY_MODE_SEARCH，防止360浏览器传上来的参数异常，致直接进入查询，而导致看到所有人的待办流程
+	    int displayMode = ParamUtil.getInt(request, "displayMode", WorkflowMgr.DISPLAY_MODE_DOING);
 		String op = ParamUtil.get(request, "op");
 		String typeCode;
 		if ("search".equals(op)) {
@@ -427,6 +538,7 @@ public class WorkflowController {
 		}
 
         String action = ParamUtil.get(request, "action"); // sel 选择我的流程
+		String tabIdOpener = ParamUtil.get(request, "tabIdOpener");
 
         MyActionDb mad = new MyActionDb();
         MacroCtlMgr mm = new MacroCtlMgr();
@@ -439,6 +551,21 @@ public class WorkflowController {
         JSONObject jobject = new JSONObject();
         int pageSize = ParamUtil.getInt(request, "rp", 20);
         int curPage = ParamUtil.getInt(request, "page", 1);
+
+        // 防止在“我的流程”界面，如果session过期，生成的sql可以查到全部的流程信息
+		com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+		if (!pvg.isUserLogin(request)) {
+			JSONArray rows = new JSONArray();
+			try {
+				jobject.put("rows", rows);
+				jobject.put("page", curPage);
+				jobject.put("total", 0);
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return jobject.toString();
+		}
+
         Leaf leaf = new Leaf();
         if (!"".equals(typeCode)) {
             leaf = leaf.getLeaf(typeCode);
@@ -477,18 +604,22 @@ public class WorkflowController {
                 e.printStackTrace();
             }
 
+			WorkflowDb wfd = new WorkflowDb();
             java.util.Iterator ir = lr.getResult().iterator();
             while (ir.hasNext()) {
                 mad = (MyActionDb) ir.next();
-                WorkflowDb wfd = new WorkflowDb();
                 wfd = wfd.getWorkflowDb((int) mad.getFlowId());
                 String userName = wfd.getUserName();
                 if (userName != null) {
                     user = um.getUserDb(wfd.getUserName());
                     userRealName = user.getRealName();
                 }
+				if (!typeCode.equals(wfd.getTypeCode())) { // 流程查询时，点击根节点，会显示所有的流程，此时typeCode可能与wfd.getTypeCode不一致
+					Leaf lf = leaf.getLeaf(wfd.getTypeCode());
+					fd = fd.getFormDb(lf.getFormCode());
+				}
                 fdao = fdao.getFormDAO(wfd.getId(), fd);
-                JSONObject jo = getRow(wfd, fdao, colProps, um, userRealName, mad, mm, leaf, displayMode, action);
+                JSONObject jo = getRow(wfd, fdao, colProps, um, userRealName, mad, mm, leaf, displayMode, action, tabIdOpener);
                 rows.put(jo);
             }
         }
@@ -504,10 +635,19 @@ public class WorkflowController {
                 sql = wf.getSqlFavorite(request);
             }
             else {
-                sql = wf.getSqlSearch(request);
+				// 判断是否有权限，以防止非法操作
+				LeafPriv lp = new LeafPriv(typeCode);
+				if (!lp.canUserQuery(pvg.getUser(request))) {
+					// 如果用户没有权限，则返回我的流程所用的sql
+					sql = wf.getSqlAttend(request);
+				}
+				else {
+					sql = wf.getSqlSearch(request);
+				}
             }
 
-            // DebugUtil.i(getClass(), "list sql=", sql);
+            DebugUtil.i(getClass(), "list sql=", sql);
+
             long t = new java.util.Date().getTime();
 
             ListResult lr = null;
@@ -544,7 +684,7 @@ public class WorkflowController {
                 if (user.isLoaded())
                     userRealName = user.getRealName();
 
-                JSONObject jo = getRow(wfd, fdao, colProps, um, userRealName, mad, mm, leaf, displayMode, action);
+                JSONObject jo = getRow(wfd, fdao, colProps, um, userRealName, mad, mm, leaf, displayMode, action, tabIdOpener);
                 rows.put(jo);
             }
         }
@@ -552,9 +692,11 @@ public class WorkflowController {
 		return jobject.toString();
 	}
 
-	public JSONObject getRow(WorkflowDb wfd, FormDAO fdao, JSONArray colProps, UserMgr um, String userRealName, MyActionDb mad, MacroCtlMgr mm, Leaf leaf, int displayMode, String action) {
+	public JSONObject getRow(WorkflowDb wfd, FormDAO fdao, JSONArray colProps, UserMgr um, String userRealName, MyActionDb mad, MacroCtlMgr mm, Leaf leaf, int displayMode, String action, String tabIdOpener) {
         JSONObject jo = new JSONObject();
         try {
+			jo.put("id", String.valueOf(mad.getId()));
+
             Leaf lf = leaf.getLeaf(wfd.getTypeCode());
             WorkflowPredefineDb wpd = new WorkflowPredefineDb();
             String rootPath = request.getContextPath();
@@ -562,6 +704,8 @@ public class WorkflowController {
             if (!mad.isReaded()) {
                 cls = "class=\"unreaded\"";
             }
+
+			RequestUtil.setFormDAO(request, fdao);
 
             for (int i = 0; i < colProps.length(); i++) {
                 JSONObject json = (JSONObject) colProps.get(i);
@@ -577,13 +721,34 @@ public class WorkflowController {
                     } else if ("flow_level".equalsIgnoreCase(fieldName)) {
                         val = WorkflowMgr.getLevelImg(request, wfd);
                     } else if ("title".equalsIgnoreCase(fieldName)) {
-                        val = "<a href=\"javascript:;\" onclick=\"addTab('" + wfd.getTitle() + "', '" + Global.getRootPath(request) + "/flow_modify.jsp?flowId=" + wfd.getId() + "')\" title=\"" + wfd.getTitle() + "\">" + StrUtil.getLeft(wfd.getTitle(), 40) + "</a>";
+                    	if (displayMode == WorkflowMgr.DISPLAY_MODE_DOING) {
+							if (lf.getType() == Leaf.TYPE_LIST) {
+								val = "<a href=\"javascript:;\" onclick=\"addTab('" + wfd.getTitle() + "', '" + request.getContextPath() + "/flow_dispose.jsp?myActionId=" + mad.getId() + "&tabIdOpener=" + tabIdOpener + "')\" title=\"" + wfd.getTitle() + "\" " + cls + ">" + wfd.getTitle() + "</a>";
+							} else {
+								wpd = wpd.getPredefineFlowOfFree(wfd.getTypeCode());
+								if (wpd.isLight()) {
+									val = "<a href=\"javascript:;\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "processingFlow") + "：" + wfd.getTitle() + "\" " + cls + " link=\"flow_dispose_light.jsp?myActionId=" + mad.getId() + "\"";
+									val += " onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("<br>", "").replace("&#039;","\\&#039;") + "', '" + rootPath + "/flow_dispose_light.jsp?myActionId=" + mad.getId() + "')\">" + wfd.getTitle() + "</a>";
+								} else {
+									val = "<a href=\"javascript:;\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "processingFlow") + "：" + wfd.getTitle() + "\" " + cls + " link=\"flow_dispose_free.jsp?myActionId=" + mad.getId() + "\"";
+									val += " onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("\r", "") + "', '" + rootPath + "/flow_dispose_free.jsp?myActionId=" + mad.getId() + "')\">" + wfd.getTitle() + "</a>";
+								}
+							}
+						}
+                    	else {
+							wpd = wpd.getPredefineFlowOfFree(wfd.getTypeCode());
+							if (wpd.isLight()) {
+								val = "<a href=\"javascript:;\" onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("<br>", "").replace("&#039;", "\\&#039;") + "', '" + request.getContextPath() + "/flow_dispose_light_show.jsp?flowId=" + wfd.getId() + "')\" title=\"" + wfd.getTitle() + "\">" + wfd.getTitle() + "</a>";
+							} else {
+								val = "<a href=\"javascript:;\" onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("\r", "") + "', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + wfd.getId() + "')\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "viewProcess") + "\">" + wfd.getTitle() + "</a>";
+							}
+						}
                     } else if ("type_code".equalsIgnoreCase(fieldName)) {
                         if (lf != null) {
                             val = "<a href=\"flow_list.jsp?op=search&displayMode=" + displayMode + "&typeCode=" + StrUtil.UrlEncode(lf.getCode()) + "\">" + lf.getName(request) + "</a>";
                         } else
                             val = "";
-                    } else if ("mydate".equals(fieldName)) {
+                    } else if ("begin_date".equals(fieldName) || "mydate".equals(fieldName)) { // 保留mydate条件，是为了向下兼容，以免需重置后，才能显示时间
                         val = DateUtil.format(wfd.getBeginDate(), "yy-MM-dd HH:mm");
                     } else if ("userName".equals(fieldName)) {
                         val = userRealName;
@@ -619,7 +784,9 @@ public class WorkflowController {
                             remainDateStr = ary[0] + " " + str_day + ary[1] + " " + str_hour + ary[2] + " " + str_minute;
                             val = remainDateStr;
                         }
-                    }
+                    } else if ("end_date".equals(fieldName)) {
+						val = DateUtil.format(wfd.getEndDate(), "yy-MM-dd HH:mm");
+					}
                 }
                 else if (fieldName.equals("operate")) {
                     if (displayMode==WorkflowMgr.DISPLAY_MODE_SEARCH) {
@@ -631,22 +798,21 @@ public class WorkflowController {
                             suspend = mad.getCheckStatusName();
                         }
                         if (lf.getType() == Leaf.TYPE_LIST) {
-                            val = "<a href=\"" + rootPath + "/flow_dispose.jsp?myActionId=" + mad.getId() + "\">" + SkinUtil.LoadString(request, "res.flow.Flow", "chandle") + suspend + "</a>";
+                            val = "<a href=\"javascript:;\" onclick=\"addTab('" + wfd.getTitle() + "', '" + rootPath + "/flow_dispose.jsp?myActionId=" + mad.getId() + "&tabIdOpener=" + tabIdOpener + "')\">" + SkinUtil.LoadString(request, "res.flow.Flow", "chandle") + suspend + "</a>";
                         } else {
                             wpd = wpd.getPredefineFlowOfFree(wfd.getTypeCode());
                             if (wpd.isLight()) {
                                 val = "<a href=\"javascript:;\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "processingFlow") + "：" + wfd.getTitle() + "\" " + cls + " link=\"flow_dispose_light.jsp?myActionId=" + mad.getId() + "\"";
                                 val += " onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("<br>", "").replace("&#039;","\\&#039;") + "', '" + rootPath + "/flow_dispose_light.jsp?myActionId=" + mad.getId() + "')\">" + SkinUtil.LoadString(request, "res.flow.Flow", "chandle") + "</a>";
                             } else {
-
-                                val = "<a href=\"javascript:;\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "processingFlow") + "：" + wfd.getTitle() + "\" <%=cls%> link=\"flow_dispose_free.jsp?myActionId=" + mad.getId() + "\"";
-                                val += " onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("\r", "") + "', '" + rootPath + "/flow_dispose_free.jsp?myActionId=" + mad.getId() + "')\">" + SkinUtil.LoadString(request, "res.flow.Flow", "chandle") + "/></a>";
-
+                                val = "<a href=\"javascript:;\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "processingFlow") + "：" + wfd.getTitle() + "\" " + cls + " link=\"flow_dispose_free.jsp?myActionId=" + mad.getId() + "\"";
+                                val += " onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("\r", "") + "', '" + rootPath + "/flow_dispose_free.jsp?myActionId=" + mad.getId() + "')\">" + SkinUtil.LoadString(request, "res.flow.Flow", "chandle") + "</a>";
                             }
                         }
                         val += "&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"javascript:;\" title=\"" + SkinUtil.LoadString(request, "res.flow.Flow", "focusProcess") + "/>\" onclick=\"favorite(" + wfd.getId() + ")\">" + SkinUtil.LoadString(request, "res.flow.Flow", "attention") + "</a>";
                     }
                     else if (displayMode==WorkflowMgr.DISPLAY_MODE_ATTEND || displayMode==WorkflowMgr.DISPLAY_MODE_MINE) {
+						wpd = wpd.getPredefineFlowOfFree(wfd.getTypeCode());
 						if (wpd.isLight()) {
 							val = "<a href=\"javascript:;\" onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("<br>", "").replace("&#039;", "\\&#039;") + "', '" + request.getContextPath() + "/flow_dispose_light_show.jsp?flowId=" + wfd.getId() + "')\" title=\"" + wfd.getTitle() + "\">" + SkinUtil.LoadString(request, "res.flow.Flow", "show") + "</a>";
 						} else {
@@ -660,6 +826,7 @@ public class WorkflowController {
 						}
                     }
                     else if (displayMode==WorkflowMgr.DISPLAY_MODE_FAVORIATE) {
+						wpd = wpd.getPredefineFlowOfFree(wfd.getTypeCode());
 						if (wpd.isLight()) {
 							val = "<a href=\"javascript:;\" onclick=\"addTab('" + StrUtil.toHtml(wfd.getTitle()).replaceAll("<br>", "").replace("&#039;", "\\&#039;") + "', '" + request.getContextPath() + "/flow_dispose_light_show.jsp?flowId=" + wfd.getId() + "')\" title=\"" + wfd.getTitle() + "\">" + SkinUtil.LoadString(request, "res.flow.Flow", "show") + "</a>";
 						} else {
@@ -688,4 +855,108 @@ public class WorkflowController {
         }
         return jo;
     }
+
+	/**
+	 * 取得被renew的流程
+	 * @param count int 数量
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/getFlowsRenewed", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;", "application/json;"})
+	public String getFlowsRenewed(int count) {
+		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();//从XML文件里取出文件存入路径
+		String flowImagePath = cfg.get("flowImagePath");
+		Calendar cal = Calendar.getInstance();
+		String year = String.valueOf(cal.get(cal.YEAR));
+		String month = String.valueOf(cal.get(cal.MONTH) + 1);
+		String vpath = flowImagePath + "/" + year + "/" + month;
+		File f = new File(Global.getRealPath() + vpath);
+		if (!f.isDirectory()) {
+			f.mkdirs();
+		}
+
+		JSONArray rows = new JSONArray();
+		JSONObject jobject = new JSONObject();
+		String sql = "select id from flow where is_renewed=1 order by id desc";
+		WorkflowDb wf = new WorkflowDb();
+		try {
+			ListResult lr = wf.listResult(sql, 1, count);
+			try {
+				jobject.put("visualPath", vpath);
+				jobject.put("rows", rows);
+				jobject.put("count", lr.getResult().size());
+			}catch (JSONException e){
+				e.printStackTrace();
+			}
+			Iterator ir = lr.getResult().iterator();
+			while (ir.hasNext()) {
+				wf = (WorkflowDb)ir.next();
+				JSONObject jo = new JSONObject();
+				try {
+					jo.put("id", String.valueOf(wf.getId()));
+					jo.put("title", wf.getTitle());
+					jo.put("flowString", wf.getFlowString());
+				}catch (JSONException e){
+					e.printStackTrace();
+				}
+				rows.put(jo);
+			}
+		} catch (ErrMsgException e) {
+			e.printStackTrace();
+		}
+		return jobject.toString();
+	}
+
+	/**
+	 * 删除附件日志
+	 * @param ids
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/setFlowsRenewed", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;","application/json;"})
+	public String setFlowsRenewed(String ids, String visualPath) {
+		JSONObject json = new JSONObject();
+		String[] ary = StrUtil.split(ids, ",");
+		if (ary==null) {
+			try {
+				json.put("ret", "0");
+				json.put("msg", "请选择记录！");
+			}catch (JSONException e){
+				e.printStackTrace();
+			}
+			return json.toString();
+		}
+
+		try {
+			boolean re = false;
+			for (String strId : ary) {
+				int id = StrUtil.toInt(strId, -1);
+				if (id!=-1) {
+					WorkflowDb wf = new WorkflowDb();
+					wf = wf.getWorkflowDb(id);
+					wf.setRenewed(false);
+					wf.setImgVisualPath(visualPath);
+					re = wf.save();
+				}
+				else {
+					json.put("ret", "0");
+					json.put("msg", "标识非法！");
+					return json.toString();
+				}
+			}
+
+			if (re) {
+				json.put("ret", "1");
+				json.put("msg", "操作成功！");
+			}
+			else {
+				json.put("ret", "0");
+				json.put("msg", "操作失败！");
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return json.toString();
+	}
 }

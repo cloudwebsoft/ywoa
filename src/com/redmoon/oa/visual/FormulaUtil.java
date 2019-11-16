@@ -104,7 +104,7 @@ public class FormulaUtil {
 		        		}
 		        	}
 		        	
-		        	DebugUtil.i(FormulaUtil.class, "render", formulaCode + " 形参：" + strParams + " 实参：" + strArgs);
+		        	// DebugUtil.i(FormulaUtil.class, "render", formulaCode + " 形参：" + strParams + " 实参：" + strArgs);
 		        	String val = render(jt, content, params, args, kind, fieldType);
 
 	            	m.appendReplacement(sb, val);
@@ -151,8 +151,8 @@ public class FormulaUtil {
 	/**
 	 * 
 	 * @param content
-	 * @param params 例：user,dept
-	 * @param args 例：张三,0001
+	 * @param params 形参，例：user,dept
+	 * @param args 实参，例：张三,0001
 	 * @param kind
 	 * @param fieldType
 	 * @return
@@ -168,7 +168,7 @@ public class FormulaUtil {
 			}
 		}
 
-		DebugUtil.log(FormulaUtil.class.getName(), "render", content);
+		// DebugUtil.log(FormulaUtil.class.getName(), "render", content);
 		
     	FormulaUtil futil = new FormulaUtil();
 

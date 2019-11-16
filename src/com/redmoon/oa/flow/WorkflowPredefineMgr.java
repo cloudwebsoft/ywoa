@@ -112,6 +112,8 @@ public class WorkflowPredefineMgr {
 		boolean isReply = ParamUtil.getInt(request, "isReply", 0) == 1;
 		int downloadCount = ParamUtil.getInt(request, "downloadCount", -1);
 
+		boolean canDelOnReturn = ParamUtil.getInt(request, "canDelOnReturn", 0)==1;
+
 		WorkflowPredefineDb wpd = getWorkflowPredefineDb(request, id);
 		/*
 		 * LeafPriv lp = new LeafPriv(wld.getTypeCode()); if
@@ -145,7 +147,6 @@ public class WorkflowPredefineMgr {
 						twoBracket = "";
 					}
 					if (name.equals(WorkflowPredefineDb.COMB_COND_TYPE_FIELD)) {
-						
 						if (Integer.valueOf(fieldType)==FormField.FIELD_TYPE_TEXT || Integer.valueOf(fieldType)==FormField.FIELD_TYPE_VARCHAR) {
 							if (op.equals("=")) {
 								sb.append(firstBracket);
@@ -167,7 +168,6 @@ public class WorkflowPredefineMgr {
 								op = "==";
 							}
 							if(op.equals("<>")){
-								
 								op = "!=";
 							}
 							
@@ -188,7 +188,6 @@ public class WorkflowPredefineMgr {
 					sb.append(op);											
 					sb.append("\"" + value + "\"");
 					sb.append(twoBracket);
-					
 				}else if (name.equals(WorkflowPredefineDb.COMB_COND_TYPE_PRIV_ROLE)) {
 						sb.append(firstBracket);
 						sb.append("角色 ");
@@ -212,10 +211,8 @@ public class WorkflowPredefineMgr {
 				
 					sb.append(" " + logical + " ");
 					lastLogical = logical;
-					
 	        	}
 	        	 i++;
-	        	
 	        }
 	        
 	        String tempCond = sb.toString();
@@ -224,7 +221,6 @@ public class WorkflowPredefineMgr {
 			if(!flag){
 				throw new ErrMsgException("组合条件里括号设置错误！");
 			}
-			
 		}
 		
 		String wld_linkProp = wpd.getLinkProp();
@@ -306,6 +302,7 @@ public class WorkflowPredefineMgr {
 		wpd.setTransfer(isTransfer);
 		wpd.setReply(isReply);
 		wpd.setDownloadCount(downloadCount);
+		wpd.setCanDelOnReturn(canDelOnReturn);
 		re = wpd.save();
 		return re;
 	}

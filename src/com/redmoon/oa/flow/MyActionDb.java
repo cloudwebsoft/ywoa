@@ -105,9 +105,9 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
         objectCache = new MyActionCache(this);
         isInitFromConfigDB = false;
         QUERY_CREATE = "insert into " + tableName + " (action_id, receive_date, user_name, is_checked, action_status,id, proxy, flow_id, expire_date,dept_codes, priv_myaction_id, sub_my_action_id, is_readed) values (?,?,?,0,?,?,?,?,?,?,?,?, 0)";
-        QUERY_SAVE = "update " + tableName + " set check_date=?,is_checked=?,proxy=?,expire_date=?,performance=?,checker=?,action_status=?,result=?,result_value=?,sub_my_action_id=?,performance_reason=?,performance_modifier=?, is_readed=?, read_date=?, part_dept=? where id=?";
+        QUERY_SAVE = "update " + tableName + " set check_date=?,is_checked=?,proxy=?,expire_date=?,performance=?,checker=?,action_status=?,result=?,result_value=?,sub_my_action_id=?,performance_reason=?,performance_modifier=?, is_readed=?, read_date=?, part_dept=?,ip=?,os=?,browser=? where id=?";
         QUERY_LOAD =
-                "select receive_date,check_date,user_name,is_checked,action_status,action_id,proxy,flow_id,expire_date,dept_codes,priv_myaction_id,performance,checker,result,result_value,sub_my_action_id,performance_reason,performance_modifier,is_readed,read_date,part_dept from " + tableName + " where id=?";
+                "select receive_date,check_date,user_name,is_checked,action_status,action_id,proxy,flow_id,expire_date,dept_codes,priv_myaction_id,performance,checker,result,result_value,sub_my_action_id,performance_reason,performance_modifier,is_readed,read_date,part_dept,ip,os,browser from " + tableName + " where id=?";
         QUERY_DEL = "delete from " + tableName + " where id=?";
         QUERY_LIST = "select id from " + tableName + " order by receive_date asc";
     }
@@ -554,10 +554,15 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
         JdbcTemplate jt = new JdbcTemplate();
         try {
             ResultIterator ri = jt.executeQuery(sql, new Object[] {new Long(id)});
-            while (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
-                if (rr.getInt(1)!=MyActionDb.CHECK_STATUS_NOT)
-                    return false;
+            if (ri.size()>0) {
+                while (ri.hasNext()) {
+                    ResultRecord rr = (ResultRecord) ri.next();
+                    if (rr.getInt(1) != MyActionDb.CHECK_STATUS_NOT)
+                        return false;
+                }
+            }
+            else {
+                return false;
             }
         } catch (SQLException ex) {
             LogUtil.getLog(getClass()).error(StrUtil.trace(ex));
@@ -944,10 +949,10 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
          
          WorkflowPredefineDb wpd = new WorkflowPredefineDb();
          String myname = privilege.getUser(request);
-         String sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" + WorkflowDb.STATUS_DELETED+" and (user_name=" + StrUtil.sqlstr(myname) + " or proxy=" + StrUtil.sqlstr(myname) + ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE + " order by receive_date desc";
+         String sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" + WorkflowDb.STATUS_DELETED + " and f.status<>" + WorkflowDb.STATUS_DISCARDED + " and (user_name=" + StrUtil.sqlstr(myname) + " or proxy=" + StrUtil.sqlstr(myname) + ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE + " order by receive_date desc";
          String flowTypeCode = uds.getMetaData();
          if (!"".equals(flowTypeCode)) {
-             sql = "select m.id from flow_my_action m, flow f where f.type_code=" + StrUtil.sqlstr(flowTypeCode) + " and m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" + WorkflowDb.STATUS_DELETED+ " and (user_name=" + StrUtil.sqlstr(myname) + " or proxy=" + StrUtil.sqlstr(myname) + ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE + " order by receive_date desc";
+             sql = "select m.id from flow_my_action m, flow f where f.type_code=" + StrUtil.sqlstr(flowTypeCode) + " and m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" + WorkflowDb.STATUS_DELETED + " and f.status<>" + WorkflowDb.STATUS_DISCARDED + " and (user_name=" + StrUtil.sqlstr(myname) + " or proxy=" + StrUtil.sqlstr(myname) + ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE + " order by receive_date desc";
          }
          String str = "";
          try {
@@ -1385,7 +1390,10 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             else
             	pstmt.setTimestamp(14, new Timestamp(readDate.getTime()));
             pstmt.setString(15, partDept);
-            pstmt.setLong(16, id);
+            pstmt.setString(16, ip);
+            pstmt.setString(17, os);
+            pstmt.setString(18, browser);
+            pstmt.setLong(19, id);
             re = conn.executePreUpdate()==1?true:false;
 
             // LogUtil.getLog(getClass()).trace(new Exception());
@@ -1438,6 +1446,9 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                     readed = rs.getInt(19)==1;
                     readDate = rs.getTimestamp(20);
                     partDept = StrUtil.getNullStr(rs.getString(21));
+                    ip = StrUtil.getNullStr(rs.getString(22));
+                    os = StrUtil.getNullStr(rs.getString(23));
+                    browser = StrUtil.getNullStr(rs.getString(24));
                     loaded = true;
                     primaryKey.setValue(new Long(actionId));
                 }
@@ -1528,6 +1539,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                     mad.setCheckDate(new java.util.Date());
                     mad.setChecked(true);
                     mad.setChecker(UserDb.SYSTEM);
+                    // 因拒绝而自动处理
+                    mad.setResult(LocalUtil.LoadString(null, "res.flow.Flow", "systemAutoAccessedWhenDisposeDecline"));
                     mad.save();
 
                     mad.onChecked();
@@ -2004,6 +2017,34 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
     private long subMyActionId = SUB_MYACTION_ID_NONE;
     
     private java.util.Date readDate;
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public String getOs() {
+        return os;
+    }
+
+    public void setOs(String os) {
+        this.os = os;
+    }
+
+    public String getBrowser() {
+        return browser;
+    }
+
+    public void setBrowser(String browser) {
+        this.browser = browser;
+    }
+
+    private String ip;
+    private String os;
+    private String browser;
 
 
 }

@@ -9,6 +9,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import bsh.EvalError;
 import bsh.Interpreter;
+import com.redmoon.oa.sys.DebugUtil;
 
 public class BSHShell {
     Interpreter bsh;
@@ -51,9 +52,11 @@ public class BSHShell {
 			bsh.eval(script);
 		} catch (EvalError e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			error = true;			
+			// e.printStackTrace();
+			// LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+			DebugUtil.e(getClass(), "eval script", script);
+			DebugUtil.e(getClass(), "eval", StrUtil.trace(e));
+			error = true;
 			console.log(StrUtil.trace(e));
 		}
 		finally {

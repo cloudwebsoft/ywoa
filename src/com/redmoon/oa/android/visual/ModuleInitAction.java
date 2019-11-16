@@ -81,7 +81,7 @@ public class ModuleInitAction {
 						com.redmoon.oa.visual.Attachment am = (com.redmoon.oa.visual.Attachment) itFiles
 								.next();
 						String name = am.getName();
-						int attId = am.getId();
+						long attId = am.getId();
 						String downUrl = "/public/visual/visual_getfile.jsp";
 						fileObj.put("name", name);
 						fileObj.put("downloadUrl", downUrl);

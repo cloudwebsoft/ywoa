@@ -19,7 +19,7 @@ import com.cloudwebsoft.framework.console.ConsoleConfig;
  */
 public class RandomSecquenceCreator {
     static Hashtable hash = new Hashtable();
-    // Ëæ»úÊı×ÖÉú³ÉÆ÷
+    // éšæœºæ•°å­—ç”Ÿæˆå™¨
     static Random rand = new Random(System.currentTimeMillis());
     static long lastRandTime = System.currentTimeMillis();
 
@@ -31,23 +31,23 @@ public class RandomSecquenceCreator {
     }
 
     /**
-     * Éú³É³¤¶È²»ÏŞµÄËæ»úÊı×ÖĞòÁĞºÅ
+     * ç”Ÿæˆé•¿åº¦ä¸é™çš„éšæœºæ•°å­—åºåˆ—å·
      * @return String
      */
     public static String getId() {
-        // ¸ù¾İÊ±¼äÖµ£¬ÖØÖÃhash£¬·ñÔòhash»áÎŞÏŞÔö´ó
+        // æ ¹æ®æ—¶é—´å€¼ï¼Œé‡ç½®hashï¼Œå¦åˆ™hashä¼šæ— é™å¢å¤§
         if (System.currentTimeMillis()-lastRandTime>20000) {
             hash.clear();
             lastRandTime = System.currentTimeMillis();
         }
         Integer id = new Integer(0);
         synchronized (hash) {
-            // Éú³ÉÒ»¸öÎ¨Ò»µÄËæ»úÊı×Ö
+            // ç”Ÿæˆä¸€ä¸ªå”¯ä¸€çš„éšæœºæ•°å­—
             id = new Integer(rand.nextInt());
             while (hash.containsKey(id)) {
                 id = new Integer(rand.nextInt());
             }
-            // Îªµ±Ç°ÓÃ»§±£Áô¸ÃID
+            // ä¸ºå½“å‰ç”¨æˆ·ä¿ç•™è¯¥ID
             String data = "";
             if (ConsoleConfig.isDebug())
                 data = ThreadUtil.getStackTraceString();
@@ -58,13 +58,13 @@ public class RandomSecquenceCreator {
     }
 
     /**
-     * Éú³É³¤¶ÈÔÚlengthÖ®ÄÚµÄËæ»úÊı×ÖĞòÁĞºÅ
+     * ç”Ÿæˆé•¿åº¦åœ¨lengthä¹‹å†…çš„éšæœºæ•°å­—åºåˆ—å·
      * @param length int
      * @return String
      */
     public static String getId(int length) {
-        // Èç¹ûÓĞµ÷¶ÈÃ¿¸ô5Ãëµ÷¶ÈÒ»´Î£¬ÈçË¢ĞÂÔÚÏßÓÃ»§ÁĞ±í£¬Ôò»áÊ¹µÃlastRandTime²»¶Ï¸üĞÂ£¬¶øÊ¹µÃÓÀÔ¶Ò²²»»áclear
-        // ¸ù¾İÊ±¼äÖµ£¬ÖØÖÃhash£¬·ñÔòhash»áÎŞÏŞÔö´ó System.currentTimeMillis()ÓĞ13Î»
+        // å¦‚æœæœ‰è°ƒåº¦æ¯éš”5ç§’è°ƒåº¦ä¸€æ¬¡ï¼Œå¦‚åˆ·æ–°åœ¨çº¿ç”¨æˆ·åˆ—è¡¨ï¼Œåˆ™ä¼šä½¿å¾—lastRandTimeä¸æ–­æ›´æ–°ï¼Œè€Œä½¿å¾—æ°¸è¿œä¹Ÿä¸ä¼šclear
+        // æ ¹æ®æ—¶é—´å€¼ï¼Œé‡ç½®hashï¼Œå¦åˆ™hashä¼šæ— é™å¢å¤§ System.currentTimeMillis()æœ‰13ä½
         if (System.currentTimeMillis()-lastRandTime>20000) {
             hash.clear();
             lastRandTime = System.currentTimeMillis();
@@ -72,7 +72,7 @@ public class RandomSecquenceCreator {
         Integer id = new Integer(0);
         String strId = "";
         synchronized (hash) {
-            // Éú³ÉÒ»¸öÎ¨Ò»µÄËæ»úÊı×Ö
+            // ç”Ÿæˆä¸€ä¸ªå”¯ä¸€çš„éšæœºæ•°å­—
             id = new Integer(rand.nextInt());
             if (length > 15)
                 strId = System.currentTimeMillis() + "" + Math.abs(id.intValue());
@@ -89,7 +89,7 @@ public class RandomSecquenceCreator {
                 if (strId.length() > length)
                     strId = strId.substring(0, length);
             }
-            // Îªµ±Ç°ÓÃ»§±£Áô¸ÃID
+            // ä¸ºå½“å‰ç”¨æˆ·ä¿ç•™è¯¥ID
             String data = "";
             if (ConsoleConfig.isDebug())
                 data = ThreadUtil.getStackTraceString();

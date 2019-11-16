@@ -12,7 +12,7 @@
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import = "com.redmoon.oa.BasicDataMgr"%>
 <%@ page import = "com.redmoon.oa.visual.*"%>
-<%@ page import = "test.SqlNode"%>
+<%@ page import = "com.redmoon.oa.sql.SqlNode"%>
 <%@ page import = "org.json.*"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
@@ -84,7 +84,7 @@ if (op.equals("")) {
 		while (ir.hasNext()) {
 			SqlNode sn = (SqlNode)ir.next();
 			String fieldName = sn.getLeft();
-			
+			fieldName = fieldName.replaceAll("#", "");
 			String fieldTitle = (String)map.get(fieldName);
 			
 			String cond = sn.getCondition();
@@ -105,6 +105,7 @@ if (op.equals("")) {
 					right = right.substring(0, right.length() - 1);
 				}
 			}
+			right = right.replaceAll("#", "");
 			%>
 			<div>
 			<%=fieldTitle%>&nbsp;<%=cond%>&nbsp;

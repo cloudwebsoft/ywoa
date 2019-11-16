@@ -398,7 +398,11 @@ public class DirectoryView {
     // 显示根结点为leaf的树
     public void ShowDirectoryAsOptions(HttpServletRequest request, JspWriter out, Leaf leaf, int rootlayer) throws Exception {
         if(!canUserSeeWhenInitFlow(request,leaf)){
-            return;
+            Privilege pvg = new Privilege();
+            LeafPriv lp = new LeafPriv(leaf.getCode());
+            if (!lp.canUserModify(pvg.getUser(request))) {
+                return;
+            }
         }
 
         if (leaf.isOpen()) {
@@ -1027,6 +1031,9 @@ public class DirectoryView {
     public boolean canUserSeeWhenInitFlow(HttpServletRequest request, Leaf leaf) {
         // 检查对于用户是否可见
     	Privilege pvg = new Privilege();
+    	if (pvg.isUserPrivValid(request, Privilege.ADMIN)) {
+    	    return true;
+        }
         
         // 如果不是公共流程，则判断是否为本单位流程，如果是公共流程，则继续往下判断权限
         if (!leaf.getUnitCode().equals(Leaf.UNIT_CODE_PUBLIC)) {

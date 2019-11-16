@@ -19,6 +19,12 @@
 <head>
     <title>添加</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <style>
+        .icon {
+            width: 105px;
+            height: 105px;
+        }
+    </style>
     <script src="../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
     <script src="../js/jquery-migrate-1.2.1.min.js"></script>
@@ -26,9 +32,11 @@
     <script src="<%=Global.getRootPath()%>/inc/flow_js.jsp"></script>
     <script src="<%=request.getContextPath()%>/inc/ajax_getpage.jsp"></script>
     <script src="../inc/livevalidation_standalone.js"></script>
-
     <link href="../js/select2/select2.css" rel="stylesheet"/>
     <script src="../js/select2/select2.js"></script>
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+    <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 </head>
 <body>
 <form name="form1" action="mobile_applist_config_do.jsp?op=add" method="post" onsubmit="return check();">
@@ -114,9 +122,9 @@
             <TD align="right">图标</TD>
             <TD align="left">&nbsp;
                 <span id="image"></span>
+                <br/>
                 <input id="imgUrl" name="imgUrl"/>
-                <input name="button" class="btn" type="button" onclick="openWin('mobile_app_icon_sel.jsp', 800, 600)"
-                       value="选择"/>
+                <input name="button" class="btn" type="button" onclick="openWin('mobile_app_icon_sel.jsp', 800, 600)" value="选择"/>
                 &nbsp;&nbsp;&nbsp;<font color="#FF0000">*</font>
             </TD>
         </TR>
@@ -240,6 +248,6 @@
 
     function selIcon(icon) {
         document.getElementById("imgUrl").value = "images/mobileAppIcons/" + icon;
-        document.getElementById("image").innerHTML = "<img src='<%=request.getContextPath()%>/images/mobileAppIcons/" + icon + "'>";
+        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/images/mobileAppIcons/" + icon + "'>";
     }
 </script>

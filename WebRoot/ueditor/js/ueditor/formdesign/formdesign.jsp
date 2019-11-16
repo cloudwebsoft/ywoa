@@ -18,6 +18,88 @@ String formCode = ParamUtil.get(request, "formCode");
 *          toolleipi:true,//是否显示，设计器的清单 tool
 */
 UE.leipiFormDesignUrl = 'formdesign';
+
+// 增加tr的ID设定
+UE.plugins['tr'] = function () {
+	var me = this,thePlugins = 'tr';
+	me.commands[thePlugins] = {
+		execCommand:function () {
+			var dialog = new UE.ui.Dialog({
+				iframeUrl:this.options.UEDITOR_HOME_URL + UE.leipiFormDesignUrl+'/tr.html',
+				name:thePlugins,
+				editor:this,
+				title: '表格行',
+				cssRules:"width:600px;height:310px;",
+				buttons:[
+				{
+					className:'edui-okbutton',
+					label:'确定',
+					onclick:function () {
+						dialog.close(true);
+					}
+				},
+				{
+					className:'edui-cancelbutton',
+					label:'取消',
+					onclick:function () {
+						dialog.close(false);
+					}
+				}]
+			});
+			dialog.render();
+			dialog.open();
+		}
+	};
+	var popup = new baidu.editor.ui.Popup( {
+		editor:this,
+		content: '',
+		className: 'edui-bubble',
+		_edittext: function () {
+			  baidu.editor.plugins[thePlugins].editdom = popup.anchorEl;
+			  me.execCommand(thePlugins);
+			  this.hide();
+		},
+		_delete:function(){
+			if( window.confirm('确认删除该行吗？') ) {
+				baidu.editor.dom.domUtils.remove(this.anchorEl.parentNode,false);
+			}
+			this.hide();
+		}
+	} );
+	popup.render();
+	me.addListener( 'mouseover', function( t, evt ) {
+		evt = evt || window.event;
+		var el = evt.target || evt.srcElement;
+        var cwsPlugins = el.getAttribute('cwsplugins');
+		if ( /td/ig.test( el.tagName ) ) { //  && cwsPlugins==thePlugins) {
+            // 判断是否为第一列，仅鼠标滑上第一列时才显示
+            var childs = el.parentNode.childNodes;
+            if (el.innerHTML == childs[0].innerHTML) {
+            }
+            else {
+                return false;
+            }
+
+            var trId = el.parentNode.getAttribute("id");
+            if (trId==null)
+                trId = "";
+            var trName = el.parentNode.getAttribute("name");
+            if (trName==null)
+                trName = "";
+			var html = popup.formatHtml(
+				'<nobr>表格行' + trId + trName + ': <span onclick=$$._edittext() class="edui-clickable">编辑行</span>&nbsp;&nbsp;<span onclick=$$._delete() class="edui-clickable">删除行</span></nobr>' );
+			if ( html ) {
+				popup.getDom( 'content' ).innerHTML = html;
+				popup.anchorEl = el;
+				popup.showAnchor( popup.anchorEl );
+			} else {
+				popup.hide();
+			}
+		}
+	});
+};
+
+
 /**
  * 文本框
  * @command textfield

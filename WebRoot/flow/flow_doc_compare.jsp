@@ -77,8 +77,8 @@ function DriveLeftScroll() {
       <div id="contrastt_right" style="width:50%;height:540px; overflow:auto; float:left" onscroll="DriveLeftScroll()" > <%=StrUtil.getNullStr(content2)%> </div>
     </div>
     <div style="clear:both"></div>
-    <div>
-      <ul id="contrast_left">
+    <div style="margin-left:10px; margin-top: 10px">
+      <ul id="contrast_left" style="list-style-type: none;">
         <li><strong>注:</strong></li>
         <li>1、浅绿色 表示一个范围</li>
         <li>2、浅紫色 存在差异</li>

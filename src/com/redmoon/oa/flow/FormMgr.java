@@ -7,6 +7,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Iterator;
 import com.redmoon.oa.kernel.License;
 import cn.js.fan.util.ParamUtil;
+import com.redmoon.oa.sys.DebugUtil;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 public class FormMgr {
     public FormMgr() {
@@ -38,18 +41,25 @@ public class FormMgr {
 
         FormDb ft = fc.getFormDb();
         ft.setIeVersion(ieVersion);
+
+        String fieldsAry = ParamUtil.get(request, "fieldsAry");
+        FormParser fp = new FormParser();
+        try {
+            JSONArray ary = new JSONArray(fieldsAry);
+            fp.getFields(ary);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            throw new ErrMsgException(e.getMessage());
+        }
+        ft.setFormParser(fp);
+
         return ft.create();
     }
 
-    public synchronized boolean del(HttpServletRequest request) throws
+    public synchronized boolean del(String code) throws
             ErrMsgException {
-        FormForm fc = new FormForm();
-        fc.checkDel(request);
-
-        FormDb ft = fc.getFormDb();
-
         Leaf lf = new Leaf();
-        Iterator ir = lf.getLeavesUseForm(ft.getCode()).iterator();
+        Iterator ir = lf.getLeavesUseForm(code).iterator();
         while (ir.hasNext()) {
             lf = (Leaf)ir.next();
             WorkflowDb wfd = new WorkflowDb();
@@ -58,8 +68,9 @@ public class FormMgr {
                 throw new ErrMsgException("流程 " + lf.getName() + " 中已有流程 " + count + " 个，表单不能被删除！");
         }
 
-        ft = ft.getFormDb(ft.getCode());
-        return ft.del();
+        FormDb fd = new FormDb();
+        fd = fd.getFormDb(code);
+        return fd.del();
     }
 
     public synchronized boolean modify(HttpServletRequest request) throws
@@ -87,13 +98,23 @@ public class FormMgr {
         
         ftd.setUnitCode(ft.getUnitCode());
         ftd.setOnlyCamera(ft.isOnlyCamera());
-        
         ftd.setFlow(ft.isFlow());
+
+        String fieldsAry = ParamUtil.get(request, "fieldsAry");
+        FormParser fp = new FormParser();
+        try {
+            JSONArray ary = new JSONArray(fieldsAry);
+            fp.getFields(ary);
+        } catch (JSONException e) {
+            DebugUtil.i(getClass(), "modify", fieldsAry);
+            e.printStackTrace();
+            throw new ErrMsgException(e.getMessage());
+        }
+        ftd.setFormParser(fp);
 
         boolean re = ftd.save();
         if (re) {
         	// 重新生成视图
-    		FormParser fp = new FormParser();
         	FormViewDb fvd = new FormViewDb();
         	Iterator ir = fvd.getViews(ft.getCode()).iterator();
         	while (ir.hasNext()) {
@@ -107,7 +128,6 @@ public class FormMgr {
 					e.printStackTrace();
 				}
         	}
-
         }
         
         return re;

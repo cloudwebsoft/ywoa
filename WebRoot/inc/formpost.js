@@ -1,5 +1,4 @@
 // JavaScript Document
-<!--
 function loadDataToWebeditCtrlWithHTMLCode(obj, htmledit, htmlcode) {
    htmledit.Clear();
    // 用以记录已处理过的radio和checkbox
@@ -143,5 +142,3 @@ function getcheckbox(checkboxname) {
 	}
 	return CheckboxValue;
 }
- 
-//-->

@@ -2,11 +2,12 @@ package com.redmoon.oa.util;
 
 import java.io.File;
 
+import cn.js.fan.util.ErrMsgException;
 import com.redmoon.oa.Config;
 
 
 public class PDFConverter {
-    public static boolean convert2PDF(String inputFile, String pdfFile) {
+    public static boolean convert2PDF(String inputFile, String pdfFile) throws ErrMsgException {
     	/*
     	// 2008服務器上安裝acrobat profession8不行
         ReleaseManager rm = new ReleaseManager();

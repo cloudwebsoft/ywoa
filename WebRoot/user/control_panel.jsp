@@ -143,7 +143,7 @@ else if (op.equals("savepwd")) {
 		return;
 	}
 	try {
-		isSuccess = um.modifyPwd(request, ParamUtil.get(request, "name"), ParamUtil.get(request, "Password"));
+		isSuccess = um.modifyPwd(request, ParamUtil.get(request, "name"), pwd);
 	}
 	catch (ErrMsgException e) {
 		out.println(fchar.Alert_Back(e.getMessage()));
@@ -196,7 +196,7 @@ else if (op.equals("savepwd")) {
 <script src="../js/jquery.js"></script>
 <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
-<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet"	type="text/css" media="screen" />
+<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
 <script src="../js/jquery-ui/jquery-ui.js"></script>
 <script src="../js/jquery.bgiframe.js"></script>
 <script src="../js/jquery.form.js"></script>
@@ -304,8 +304,15 @@ function checkPwd(pwdNew) {
 <div style='overflow:hidden;'>
 <!--控制面板-->
 <div class="control_layout_disk">
+	<%
+		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+		if (cfg.getBooleanProperty("isNetdiskUsed")) {
+	%>
     <span><img src="<%=SkinMgr.getSkinPath(request)%>/icons/control_disk.png" width="16" height="16" /> 磁盘空间<%=UtilTools.getFileSize(user.getDiskSpaceAllowed())%></span>
     <span>已用<span class="disk_font"><%=UtilTools.getFileSize(user.getDiskSpaceUsed())%></span></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	<%
+		}
+	%>
     <span><img src="<%=SkinMgr.getSkinPath(request)%>/icons/control_mailbox.png" width="16" height="16" /> 内部邮箱空间 <%=UtilTools.getFileSize(usd.getMsgSpaceAllowed())%></span>
     <span>已用<span class="disk_font"><%=UtilTools.getFileSize(usd.getMsgSpaceUsed())%></span></span>
 </div>
@@ -366,7 +373,6 @@ function checkPwd(pwdNew) {
 		opt += "<option value=" + sk.getCode() + " " + d + ">" + sk.getName() + "</option>";
 	 }
 	 
-		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 		boolean isSpecified = cfg.get("styleMode").equals("specified") || cfg.get("styleMode").equals("2");
 		boolean isIntegrateEmail = cfg.get("isIntegrateEmail").equals("true");
 		String dispalyStyleMode = "";
@@ -384,7 +390,7 @@ function checkPwd(pwdNew) {
 		  	skinCode = defaultSkinCode;
 		 }
 %>
-<!--4_我的门户--><div class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onClick="addTab('我的门户', 'user/portal.jsp')">
+<!--4_我的门户--><div style="display: none" class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onClick="addTab('我的门户', 'user/portal.jsp')">
                    <div class="icon_box"><img src="<%=SkinMgr.getSkinPath(request)%>/icons/control_8.png" width="49" height="47" /></div>
                    <div class="font_box">
                       <div class="title"><a>我的门户</a></div>
@@ -480,7 +486,13 @@ function checkPwd(pwdNew) {
 						        $('#form2 #isMessageSoundPlay').val("<%=usd.isMessageSoundPlay()?1:0%>");
 						    </script>
 						  </div>
-						  <div class="dialog_margin">
+						  <%
+							  String larkDis = "";
+							  if (!cfg.getBooleanProperty("isLarkUsed")) {
+							  	larkDis = "display:none";
+							  }
+						  %>
+						  <div class="dialog_margin" style="<%=larkDis%>">
 						     讨论信息到来时是否闪动图标&nbsp;
 						     <select name="isChatIconShow" id="isChatIconShow">
 						        <option value="1" selected="selected">是</option>
@@ -491,7 +503,7 @@ function checkPwd(pwdNew) {
 								$('#form2 #isChatIconShow').val("<%=usd.isChatIconShow()?1:0%>");
 							</script>
 						   </div>
-						   <div class="dialog_margin">
+						   <div class="dialog_margin" style="<%=larkDis%>">
 						      <td align="left">讨论信息到来时是否声音提示&nbsp;</td>
 						      <td><select name="isChatSoundPlay" id="isChatSoundPlay">
 						        <option value="1" selected="selected">是</option>
@@ -561,7 +573,9 @@ function checkPwd(pwdNew) {
                       </div>
                    </div>
                 </div> 
-                
+                <%
+					if (cfg.getBooleanProperty("isForumOpen")) {
+                %>
 <!--7_论坛中心--><div class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onClick="jump()" >
                    <div class="icon_box"><img src="<%=SkinMgr.getSkinPath(request)%>/icons/control_9.png" width="49" height="47" /></div>
                    <div class="font_box">
@@ -569,10 +583,13 @@ function checkPwd(pwdNew) {
                       <div class="subtitle">进入论坛用户中心</div>
                    </div>
                 </div>
+				<%
+					}
+				%>
 <!--9_快速入口--><%
 					String displayQuickEnter = "display:none";
 					String displaySlideMenu = "";
-					if (uiMode == UserSetupDb.UI_MODE_PROFESSION || uiMode == UserSetupDb.UI_MODE_NONE) {
+					if (uiMode == UserSetupDb.UI_MODE_LTE || uiMode == UserSetupDb.UI_MODE_PROFESSION || uiMode == UserSetupDb.UI_MODE_NONE) {
 					 // displayQuickEnter = "";
 					  displaySlideMenu = "display:none";
 					}
@@ -693,6 +710,7 @@ function mypasswd(){
 							url: "control_panel.jsp?op=savepwd",
 							type: "post",
 							dataType: "json",
+							contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
 							data: $('#form4').serialize(),
 							success: function(data, status){
 								$(".loading").css({"display":"none"});

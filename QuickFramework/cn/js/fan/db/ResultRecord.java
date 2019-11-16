@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 import java.math.BigDecimal;
 
 /**
- * ´æ´¢Ò»ĞĞÊı¾İ
+ * å­˜å‚¨ä¸€è¡Œæ•°æ®
  * <p>Title: </p>
  *
  * <p>Description: </p>
@@ -51,7 +51,7 @@ public class ResultRecord implements java.io.Serializable {
 
     /**
      * 2007.3.14
-     * ¸³Öµ£¬µ«²»½øĞĞÀàĞÍ¼ì²é£¬Ò²²»¼ì²écolnameÊÇ·ñ´æÔÚ£¬Àı£ºÔÚ³õÊ¼»¯initQObjectºó£¬ÓÃputÀ´ÉèÖÃ¶ÔÓ¦colnameÁĞµÄÖµ
+     * èµ‹å€¼ï¼Œä½†ä¸è¿›è¡Œç±»å‹æ£€æŸ¥ï¼Œä¹Ÿä¸æ£€æŸ¥colnameæ˜¯å¦å­˜åœ¨ï¼Œä¾‹ï¼šåœ¨åˆå§‹åŒ–initQObjectåï¼Œç”¨putæ¥è®¾ç½®å¯¹åº”colnameåˆ—çš„å€¼
      * @param colname String
      * @param value String
      */
@@ -66,15 +66,15 @@ public class ResultRecord implements java.io.Serializable {
     }
 
     /**
-     * ¸³Öµ£¬¸³ÖµÊ±»á¼ì²écolnameÊÇ·ñ´æÔÚ£¬²¢½øĞĞÀàĞÍ¼ì²é
+     * èµ‹å€¼ï¼Œèµ‹å€¼æ—¶ä¼šæ£€æŸ¥colnameæ˜¯å¦å­˜åœ¨ï¼Œå¹¶è¿›è¡Œç±»å‹æ£€æŸ¥
      * @param colname String
-     * @param value Object ¿ÉÒÔÎªnull, null²»ÊôÓÚÈÎºÎÀàĞÍ£¬Èç£º null instanceof String = false;
+     * @param value Object å¯ä»¥ä¸ºnull, nullä¸å±äºä»»ä½•ç±»å‹ï¼Œå¦‚ï¼š null instanceof String = false;
      */
     public void set(String colname, Object value) {
-        // ÀàĞÍ¼ì²é
+        // ç±»å‹æ£€æŸ¥
         Object col = get(colname);
         if (col!=null) {
-            Class cls = col.getClass(); // Êı¾İ¿âÖĞÁĞµÄÀàĞÍ
+            Class cls = col.getClass(); // æ•°æ®åº“ä¸­åˆ—çš„ç±»å‹
             if (value!=null) {
                 if (!cls.isInstance(value)) {
                     if (col instanceof Timestamp) {
@@ -227,7 +227,7 @@ public class ResultRecord implements java.io.Serializable {
 
     /**
      *
-     * @param i int i´Ó1¿ªÊ¼
+     * @param i int iä»1å¼€å§‹
      * @return Object
      */
     public Object get(int i) {

@@ -17,8 +17,8 @@ if (msd==null) {
 	return;
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
 
 String formCode = msd.getString("form_code");
 
@@ -29,8 +29,6 @@ if (!fd.isLoaded()) {
 	return;
 }
 
-MacroCtlMgr mm = new MacroCtlMgr();
-			
 response.setContentType("application/vnd.ms-excel");
 response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUnicode(fd.getName()) + ".xls");  
             

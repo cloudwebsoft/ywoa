@@ -102,6 +102,9 @@ if (op.equals("getQueryCondField")) {
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css" />
 <script type="text/javascript" src="../js/jquery.flexbox.js"></script>
 
+<script src="../js/select2/select2.js"></script>
+<link href="../js/select2/select2.css" rel="stylesheet"/>
+
 </head>
 <body>
 <%
@@ -493,7 +496,7 @@ for (int i=0; i<len; i++) {
 				
         		FormDb fdRelated = new FormDb();
         		fdRelated = fdRelated.getFormDb(msdRelated.getString("form_code"));
-        		out.print(msdRelated.getString("name"));
+        		out.print("<a href='javascript:;' onclick=\"addTab('" + msdRelated.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + fdRelated.getCode() + "&code=" + msdRelated.getString("code") + "')\">" + msdRelated.getString("name") + "</a>");
         		
         		String ffTitle = "";
         		if ("id".equalsIgnoreCase(fieldSource)) {

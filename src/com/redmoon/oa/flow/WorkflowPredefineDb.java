@@ -26,6 +26,11 @@ import com.redmoon.oa.pvg.*;
 public class WorkflowPredefineDb extends ObjectDb {
     private int id;
 
+    /**
+     * 当节点上设置了“删除流程”标志位时，被退回时能否删除
+     */
+    private boolean canDelOnReturn = false;
+
     public static final int TYPE_SYSTEM = 1;
     public static final int TYPE_USER = 0;
     
@@ -97,11 +102,10 @@ public class WorkflowPredefineDb extends ObjectDb {
 
         QUERY_CREATE =
                 "insert into " + tableName + " (flowString,typeCode,title,return_back,IS_DEFAULT_FLOW,id,dir_code,examine,is_reactive,is_recall,return_mode,return_style,role_rank_mode,props,views,scripts,is_light,link_prop,write_prop,is_distribute,write_db_prop,msg_prop,is_plus,is_transfer,is_reply,download_count) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        QUERY_SAVE = "update " + tableName + " set flowString=?,typeCode=?,title=?,return_back=?,IS_DEFAULT_FLOW=?,dir_code=?,examine=?,is_reactive=?,is_recall=?,return_mode=?,return_style=?,role_rank_mode=?,props=?,views=?,scripts=?,is_light=?,link_prop=?,write_prop=?,is_distribute=?,write_db_prop=?,msg_prop=?,is_plus=?,is_transfer=?,is_reply=?,download_count=? where id=?";
-        QUERY_LIST =
-                "select id from " + tableName;
+        QUERY_SAVE = "update " + tableName + " set flowString=?,typeCode=?,title=?,return_back=?,IS_DEFAULT_FLOW=?,dir_code=?,examine=?,is_reactive=?,is_recall=?,return_mode=?,return_style=?,role_rank_mode=?,props=?,views=?,scripts=?,is_light=?,link_prop=?,write_prop=?,is_distribute=?,write_db_prop=?,msg_prop=?,is_plus=?,is_transfer=?,is_reply=?,download_count=?,can_del_on_return=? where id=?";
+        QUERY_LIST = "select id from " + tableName;
         QUERY_DEL = "delete from " + tableName + " where id=?";
-        QUERY_LOAD = "select flowString,typeCode,title,return_back,IS_DEFAULT_FLOW,dir_code,examine,is_reactive,is_recall,return_mode,return_style,role_rank_mode,props,views,scripts,is_light,link_prop,write_prop,is_distribute,write_db_prop,msg_prop,is_plus,is_transfer,is_reply,download_count from " + tableName + " where id=?";
+        QUERY_LOAD = "select flowString,typeCode,title,return_back,IS_DEFAULT_FLOW,dir_code,examine,is_reactive,is_recall,return_mode,return_style,role_rank_mode,props,views,scripts,is_light,link_prop,write_prop,is_distribute,write_db_prop,msg_prop,is_plus,is_transfer,is_reply,download_count,can_del_on_return from " + tableName + " where id=?";
     }
 
     public WorkflowPredefineDb getWorkflowPredefineDb(int id) {
@@ -568,6 +572,7 @@ public class WorkflowPredefineDb extends ObjectDb {
                 transfer = rs.getInt(23)==1;
                 reply = rs.getInt(24)==1;
                 downloadCount = rs.getInt(25);
+                canDelOnReturn = rs.getInt(26)==1;
                 loaded = true;
                 primaryKey.setValue(new Integer(id));
             }
@@ -630,7 +635,8 @@ public class WorkflowPredefineDb extends ObjectDb {
             ps.setInt(23, transfer?1:0);
             ps.setInt(24, reply?1:0);
             ps.setInt(25, downloadCount);
-            ps.setInt(26, id);
+            ps.setInt(26, canDelOnReturn?1:0);
+            ps.setInt(27, id);
             re = conn.executePreUpdate() == 1 ? true : false;
             if (re) {
                 WorkflowPredefineCache rc = new WorkflowPredefineCache(this);
@@ -638,7 +644,9 @@ public class WorkflowPredefineDb extends ObjectDb {
                 rc.refreshSave(primaryKey);
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             logger.error("save: " + e.getMessage());
+            throw new ErrMsgException(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1090,4 +1098,11 @@ public class WorkflowPredefineDb extends ObjectDb {
 		return msgProp;
 	}
 
+    public boolean isCanDelOnReturn() {
+        return canDelOnReturn;
+    }
+
+    public void setCanDelOnReturn(boolean canDelOnReturn) {
+        this.canDelOnReturn = canDelOnReturn;
+    }
 }

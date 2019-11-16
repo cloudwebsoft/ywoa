@@ -100,7 +100,8 @@
 			if (mu == null) {
 				return;
 			}
-			
+
+			field.setCondType(SQLBuilder.COND_TYPE_NORMAL);
 			String str = mu.getIFormMacroCtl().convertToHTMLCtlForQuery(request,field);
 			
 			if(str.indexOf("select") != -1){//如果宏控件是下拉框形式的

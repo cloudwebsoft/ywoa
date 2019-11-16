@@ -10,6 +10,7 @@
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import = "com.redmoon.oa.flow.*"%>
 <%@ page import = "com.redmoon.oa.person.*"%>
+<%@ page import="com.redmoon.oa.kernel.License" %>
 <%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -82,7 +83,14 @@ String flowExpireUnit = cfg.get("flowExpireUnit");
       <table id="designerTable" width="100%" border="0" cellspacing="0" cellpadding="0">
           <tr>
             <td align="center">
-            <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" codebase="../activex/cloudym.CAB#version=1,3,0,0" style="width:0px; height:0px;">
+				<%
+					boolean isOem = License.getInstance().isOem();
+					String codeBase = "";
+					if (!isOem) {
+						codeBase = "codebase=\"activex/cloudym.CAB#version=1,3,0,0\"";
+					}
+				%>
+            <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" <%=codeBase%> style="width:0px; height:0px;">
                 <param name="Workflow" value="<%=wf.getFlowString()%>" />
                 <param name="Mode" value="view" />
                 <param name="CurrentUser" value="<%=privilege.getUser(request)%>" />

@@ -35,9 +35,9 @@ function scrollToTab(element) {
 }
 
 function renewFrameset(iframeObj) {
-	// 防止嵌套的frameset当tab切换回来时内容不能显示
-	var frm = $(iframeObj).contents().find("frameset")[0];    
-	if (frm) {
+	// 防止嵌套的frameset当tab切换回来时内容不能显示，如：组织机构
+	var frm = $(iframeObj).contents().find("frameset")[0];
+    if (frm) {
 		var rows = frm.rows;
 		if (rows.indexOf(",")!=-1) {
 			frm.rows = rows;
@@ -49,10 +49,17 @@ function renewFrameset(iframeObj) {
 	}
 	else {
 		frm = $(iframeObj).contents().find("iframe")[0];
-		if (frm) {
-			// 不用刷新
+        if (frm) {
+			// 刷新会使得看起来比较奇怪，如：组织管理页面点击部门后，原本看到的是部门中的人员，刷新后回到了页面的初始状态
 			// frm.contentWindow.location.reload();
-		}
+            // IE中iframe中再嵌套iframe，然后再嵌套frameset（），切换tab回来时会不显示，chrome下无此问题
+            if (frm.height!="") {
+                frm.height = parseInt(frm.height) - 1;
+            }
+            else {
+                console.log("frm.height为空")
+            }
+        }
 	}
 }
 
@@ -75,7 +82,7 @@ function refreshTabFrame() {
 }
 
 function reloadTabFrame(tabName) {
-	$('.J_menuTab').each(function () {		
+	$('.J_menuTab').each(function () {
 		if ($(this).data('name') == tabName) {
 			$('.J_mainContent .J_iframe').each(function () {
 				if ($(this).data('name') == tabName) {
@@ -91,6 +98,15 @@ function reloadTabFrame(tabName) {
 			});
 		}
 	});	
+}
+
+function closeLteTab(tabName) {
+    $('.J_menuTab').each(function () {
+        if ($(this).data('name') == tabName) {
+            $(this).find('i').trigger("click");
+            return false;
+        }
+    });
 }
 
 // 取得处于激活状态的选项卡的ID
@@ -242,7 +258,8 @@ $(function () {
         // 获取标识数据
         var dataUrl = $(this).attr('href'),
             dataIndex = $(this).data('index'),
-            menuName = $.trim($(this).text());
+            menuName = $.trim($(this).text()),
+            target = $(this).attr("target");
         if (dataUrl == undefined || $.trim(dataUrl).length == 0)
 			return false;
         
@@ -250,7 +267,16 @@ $(function () {
 			// 控制面板
 			menuName = $(this).data('name');
 		}        
-			
+
+		if (target=="_blank") {
+		    window.open(dataUrl);
+		    return false;
+        }
+		else if (target=="_top" || target=="_parent" || target=="_self") {
+            window.location.href = dataUrl;
+            return false;
+        }
+
 		showMenuItem(dataUrl, dataIndex, menuName);
         return false;
     }
@@ -268,8 +294,9 @@ $(function () {
 			// 如果是双击了选项卡
 			$tab = $(this);
 		}
-		var closeTabId = $tab.parents('.J_menuTab').data('id');
-		var currentWidth = $tab.parents('.J_menuTab').width();				
+
+        var closeTabId = $tab.data('id');
+		var currentWidth = $tab.width();
 
         // 当前元素处于活动状态
         if ($tab.hasClass('active')) {
@@ -375,6 +402,7 @@ $(function () {
     function activeTab() {
         if (!$(this).hasClass('active')) {
             var currentId = $(this).data('id');
+            // console.log("$(this).data('id')=" + $(this).data('id') + " dataUrl=" + $(this).data('id'));
             // 显示tab对应的内容区
             $('.J_mainContent .J_iframe').each(function () {
                 if ($(this).data('id') == currentId) {

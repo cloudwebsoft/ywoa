@@ -15,10 +15,24 @@
 <%@ page import="com.redmoon.oa.flow.macroctl.*"%>
 <%@ page import="org.json.JSONObject"%>
 <%@ page import="org.json.JSONArray"%>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%@ page import="com.redmoon.oa.Config" %>
+<%@ page import="org.apache.http.client.utils.URIBuilder" %>
 <%
-String op = ParamUtil.get(request, "op");
-String code = ParamUtil.get(request, "code"); // 模块编码
-String formCode = ParamUtil.get(request, "formCode");
+	String op = ParamUtil.get(request, "op");
+	String code = ParamUtil.get(request, "code"); // 模块编码
+	String formCode = ParamUtil.get(request, "formCode");
+
+	ModuleSetupDb msd = new ModuleSetupDb();
+	msd = msd.getModuleSetupDb(code);
+	String tName = StrUtil.getNullStr(msd.getString("btn_name"));
+	String tOrder = StrUtil.getNullStr(msd.getString("btn_order"));
+	String tScript = StrUtil.getNullStr(msd.getString("btn_script"));
+	String tBclass = StrUtil.getNullStr(msd.getString("btn_bclass"));
+	String tRole = StrUtil.getNullStr(msd.getString("btn_role"));
+
+	Config cfg = new Config();
+	boolean isServerConnectWithCloud = cfg.getBooleanProperty("isServerConnectWithCloud");
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -46,6 +60,12 @@ String formCode = ParamUtil.get(request, "formCode");
 
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css" />
 <script type="text/javascript" src="../js/jquery.flexbox.js"></script>
+
+<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+
+<script type="text/javascript" src="../js/formpost.js"></script>
+<script src="../js/json2.js"></script>
 <style>
 .form-box {
 	width:300px; 
@@ -70,61 +90,6 @@ FormMgr fm = new FormMgr();
 FormDb fd = fm.getFormDb(formCode);
 if (!fd.isLoaded()) {
 	out.print(StrUtil.jAlert_Back("该表单不存在！","提示"));
-	return;
-}
-
-if (op.equals("addCond")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.addCond(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}	
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_conds.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-} else if (op.equals("delBtn")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.delBtn(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_conds.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("modifyBtn")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.modifyBtn(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_conds.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
 	return;
 }
 
@@ -201,6 +166,11 @@ java.util.Iterator irTop = mrd.getModulesRelated(formCode).iterator();
 while (irTop.hasNext()) {
 	mrd = (ModuleRelateDb)irTop.next();
 	msdRelate = msdRelate.getModuleSetupDb(mrd.getString("relate_code"));
+	if (msdRelate==null) {
+		DebugUtil.e("module_field_conds.jsp", "", "表单 " + mainForm.getName() + " 的关联模块 " + mrd.getString("relate_code") + " 不存在");
+		msdRelate = new ModuleSetupDb();
+		continue;
+	}
 	boolean isFound = false;
 	Iterator ir = vt.iterator();
 	while (ir.hasNext()) {
@@ -215,6 +185,19 @@ while (irTop.hasNext()) {
 		vt.addElement(fd.getFormDb(msdRelate.getString("form_code")));
 	}
 }
+
+String url = cfg.get("cloudUrl");
+URIBuilder uriBuilder = new URIBuilder(url);
+String host = uriBuilder.getHost();
+int port = uriBuilder.getPort();
+if (port==-1) {
+	port = 80;
+}
+String path = uriBuilder.getPath();
+if (path.startsWith("/")) {
+	path = path.substring(1);
+}
+
 Iterator irForm = vt.iterator();
 %>
 <%@ include file="module_setup_inc_menu_top.jsp"%>
@@ -247,9 +230,11 @@ if (hasCond) {
       <td>
       <%
 	  irForm = vt.iterator();
+	  int m = 0;
 	  while (irForm.hasNext()) {
 	  	fd = (FormDb)irForm.next();
-	  	boolean isSub = !fd.getCode().equals(mainForm.getCode());      
+	  	boolean isSub = !fd.getCode().equals(mainForm.getCode());
+	  	m++;
       %>
       	<div class="form-box">
         <div style="text-align:center; margin-bottom:10px"><%=fd.getName()%></div>
@@ -275,12 +260,41 @@ if (hasCond) {
             <%
             }else if(ff.getType().equals(FormField.TYPE_MACRO)) {
                 MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+                int fieldType = mu.getIFormMacroCtl().getFieldType();
+				if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_DOUBLE || fieldType==FormField.FIELD_TYPE_FLOAT || fieldType==FormField.FIELD_TYPE_LONG || fieldType==FormField.FIELD_TYPE_PRICE) {
+			  %>
+			  <select name="<%=fieldDesc%>_cond">
+				  <option value="=" selected="selected">等于</option>
+				  <option value="&gt;">大于</option>
+				  <option value="&lt;">小于</option>
+				  <option value="&gt;=">大于等于</option>
+				  <option value="&lt;=">小于等于</option>
+				  <option value="<%=SQLBuilder.COND_TYPE_SCOPE%>">数值范围</option>
+			  </select>
+			  <input name="<%=fieldDesc%>" type="hidden" />
+			  <%
+				}
+				else {
                 %>
             <select name="<%=fieldDesc%>_cond">
               <option value="1">等于</option>
               <option value="0" selected="selected">包含</option>
+				<%
+					// 基础数据
+					if (ff.getMacroType().equals("macro_flow_select")) {
+						BasicSelectCtl bsc = new BasicSelectCtl();
+						SelectMgr sm = new SelectMgr();
+						SelectDb sd = sm.getSelect(bsc.getDesc(ff));
+						if (sd.getType() == SelectDb.TYPE_LIST) {
+					%>
+					<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
+					<%
+						}
+					}
+				%>
               </select>
             <%
+				}
             }
             else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
             %>
@@ -290,18 +304,29 @@ if (hasCond) {
               <option value="&lt;">小于</option>
               <option value="&gt;=">大于等于</option>
               <option value="&lt;=">小于等于</option>
+				<option value="<%=SQLBuilder.COND_TYPE_SCOPE%>">数值范围</option>
             </select>
             <input name="<%=fieldDesc%>" type="hidden" />			
             <%
             }            
-            else{%>
+            else{
+			%>
             <select name="<%=fieldDesc%>_cond">
               <option value="1">等于</option>
               <%if (ff.getType().equals(FormField.TYPE_TEXTFIELD) || ff.getType().equals(ff.TYPE_TEXTAREA)) {%>
               <option value="0" selected="selected">包含</option>
               <%}%>
+				<%
+					if (ff.getType().equals(FormField.TYPE_SELECT)) {
+				%>
+				<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
+				<%
+					}
+				%>
               </select>
-            <%}%>
+            <%
+            }
+			%>
           </div>
           <%
 	  	}
@@ -395,6 +420,54 @@ if (hasCond) {
 	          <%
 			}
 			%>
+			<%
+				if (m==1) {
+			%>
+			<div>
+			<input type="checkbox" name="queryFields" value="ID" />
+			ID&nbsp;&nbsp;
+			<select name="ID_cond">
+				<option value="=" selected="selected">等于</option>
+				<option value="&gt;">大于</option>
+				<option value="&lt;">小于</option>
+				<option value="&gt;=">大于等于</option>
+				<option value="&lt;=">小于等于</option>
+			</select>
+			</div>
+			<%
+				if (fd.isFlow()) {
+			%>
+			<div>
+				<input type="checkbox" name="queryFields" value="flowId" />
+				流程号&nbsp;&nbsp;
+				<select name="flowId_cond">
+					<option value="=" selected="selected">等于</option>
+					<option value="&gt;">大于</option>
+					<option value="&lt;">小于</option>
+					<option value="&gt;=">大于等于</option>
+					<option value="&lt;=">小于等于</option>
+				</select>
+			</div>
+			<div>
+				<input type="checkbox" name="queryFields" value="flow:begin_date"/>
+				流程开始时间
+				<select name="flow:begin_date_cond">
+					<option value="0">时间段</option>
+					<option value="1">时间点</option>
+				</select>
+			</div>
+			<div>
+				<input type="checkbox" name="queryFields" value="flow:end_date"/>
+				流程结束时间
+				<select name="flow:end_date_cond">
+					<option value="0">时间段</option>
+					<option value="1">时间点</option>
+				</select>
+			</div>
+			<%
+				}
+				}
+			%>
 	          <div>
 	            <input type="checkbox" name="queryFields" value="cws_status" />	    
 	            记录状态
@@ -416,11 +489,11 @@ if (hasCond) {
       	<%} %>
       </td>
     </tr>
-    <tr >
+    <tr>
       <td align="center">
-  		<input class="btn btn-default" type="submit" value="修改" />
+  		<input class="btn btn-default" type="button" value="修改" onclick="submitFormBtn()" />
         &nbsp;&nbsp;
-        <input class="btn btn-default" name="button" type="button" onclick="jConfirm('您确定要删除么？','提示',function(r){ if(!r){return;}else{window.location.href='module_field_conds.jsp?op=delBtn&code=<%=code%>&formCode=<%=formCode%>&btnName=<%=StrUtil.UrlEncode(btnName)%>'}}) " value="删除" /> 
+        <input class="btn btn-default" name="button" type="button" onclick="delCond()" value="删除" />
         <input name="formCode" value="<%=formCode%>" type="hidden" />
         <input name="code" value="<%=code%>" type="hidden" />          
         <input name="btnName" value="<%=btnName%>" type="hidden" /> 
@@ -431,17 +504,148 @@ if (hasCond) {
 </table>
 </form>
 <script>
+	function delCond() {
+		jConfirm('您确定要删除么？', '提示', function (r) {
+			if (!r) {
+				return;
+			} else {
+				// window.location.href = 'module_field_conds.jsp?op=delBtn&code=<%=code%>&formCode=<%=formCode%>&btnName=<%=StrUtil.UrlEncode(btnName)%>'
+				$.ajax({
+					type: "post",
+					url: "condDel.do",
+					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+					data: {
+						code: "<%=code%>",
+						formCode: "<%=formCode%>",
+						btnName: "<%=btnName%>"
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('body').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						if (data.ret=="1") {
+							jAlert(data.msg, "提示", function() {
+								window.location.reload();
+							});
+						}
+						else {
+							jAlert(data.msg, "提示");
+						}
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('body').hideLoading();
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						alert(XMLHttpRequest.responseText);
+					}
+				});
+			}
+		})
+	}
+	function submitFormBtn() {
+		<%
+        if (isServerConnectWithCloud) {
+        %>
+		$.ajax({
+			type: "post",
+			url: "condModify.do",
+			contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+			data: $('#formBtn<%=i%>').serialize(),
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+				$('body').showLoading();
+			},
+			success: function (data, status) {
+				data = $.parseJSON(data);
+				jAlert(data.msg, "提示");
+			},
+			complete: function (XMLHttpRequest, status) {
+				$('body').hideLoading();
+			},
+			error: function (XMLHttpRequest, textStatus) {
+				// 请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+		<%
+        } else {
+        %>
+
+		var we = o("webedit");
+		we.PostScript = "<%=path%>/public/module/modifyBtn.do";
+
+		loadDataToWebeditCtrl(o("formBtn<%=i%>"), we);
+		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+
+		we.AddField("tName", "<%=tName%>");
+		we.AddField("tOrder", "<%=tOrder%>");
+		we.AddField("tScript", "<%=tScript.replaceAll("\"", "\\\\\"")%>");
+		we.AddField("tBclass", "<%=tBclass%>");
+		we.AddField("tRole", "<%=tRole%>");
+
+		we.AddField("isWebedit", "true");
+
+		we.UploadToCloud();
+
+		consoleLog(we.ReturnMessage);
+
+		var data = $.parseJSON(we.ReturnMessage);
+		if (data.ret=="1") {
+			$.ajax({
+				type: "post",
+				url: "btnSave.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: {
+					code: "<%=code%>",
+					formCode: "<%=formCode%>",
+					result: JSON.stringify(data.result)
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					if (data.ret=="1") {
+						jAlert(data.msg, "提示");
+					}
+					else {
+						jAlert(data.msg, "提示");
+					}
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		}
+		else {
+			jAlert(data.msg, "提示");
+		}
+		<%
+        }
+        %>
+	}
+
 <%
 if (json.has("fields")) {
 	String queryFields = json.getString("fields");
 	String[] ary = StrUtil.split(queryFields, ",");
 	if (ary!=null) {
 		for (int k=0; k<ary.length; k++) {
-			String cond = json.getString(ary[k]);
-			%>
-			setCheckboxChecked("queryFields", "<%=ary[k]%>");
-			o("<%=ary[k]%>_cond").value = "<%=cond%>";
-			<%
+			if (json.has(ary[k])) {
+				String cond = json.getString(ary[k]);
+				%>
+				setCheckboxChecked("queryFields", "<%=ary[k]%>");
+				o("<%=ary[k]%>_cond").value = "<%=cond%>";
+				<%
+			}
 		}
 	}
 }
@@ -455,7 +659,7 @@ if (json.has("fields")) {
     </tr>
     <tr >
       <td>
-      <input type="checkbox" id="isToolbar" name="isToolbar" value="1" checked />&nbsp;置于工具条      
+      <input type="checkbox" id="isToolbarNoCond" name="isToolbar" value="1" checked />&nbsp;置于工具条
       </td>
     </tr>
     <tr >
@@ -632,7 +836,7 @@ if (json.has("fields")) {
     </tr>
     <tr >
       <td align="center">
-		<input class="btn btn-default" type="submit" value="添加查询" />
+		<input class="btn btn-default" type="button" value="添加查询" onclick="submitFormBtn()"/>
         <input name="formCode" value="<%=formCode%>" type="hidden" />
         <input name="code" value="<%=code%>" type="hidden" />
         <input name="btnName" value="查询" type="hidden" />     
@@ -641,6 +845,175 @@ if (json.has("fields")) {
     </tr>
 </table>
 </form>
+<script>
+	function submitFormBtn() {
+		<%
+        if (isServerConnectWithCloud) {
+        %>
+		$.ajax({
+			type: "post",
+			url: "condAdd.do",
+			contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+			data: $('#formBtn').serialize(),
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+				$('body').showLoading();
+			},
+			success: function (data, status) {
+				data = $.parseJSON(data);
+				if (data.ret=="1") {
+					jAlert(data.msg, "提示", function() {
+						window.location.reload();
+					});
+				}
+				else {
+					jAlert(data.msg, "提示");
+				}
+			},
+			complete: function (XMLHttpRequest, status) {
+				$('body').hideLoading();
+			},
+			error: function (XMLHttpRequest, textStatus) {
+				// 请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+		<%
+        } else {
+        %>
+
+		var we = o("webedit");
+		we.PostScript = "<%=path%>/public/module/addCond.do";
+
+		loadDataToWebeditCtrl(o("formBtn"), o("webedit"));
+		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+
+		we.AddField("tName", "<%=tName%>");
+		we.AddField("tOrder", "<%=tOrder%>");
+		we.AddField("tScript", "<%=tScript.replaceAll("\"", "\\\\\"")%>");
+		we.AddField("tBclass", "<%=tBclass%>");
+		we.AddField("tRole", "<%=tRole%>");
+
+		we.AddField("isWebedit", "true");
+
+		we.UploadToCloud();
+
+		consoleLog(we.ReturnMessage);
+		var data = $.parseJSON(we.ReturnMessage);
+		if (data.ret=="1") {
+			$.ajax({
+				type: "post",
+				url: "btnSave.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: {
+					code: "<%=code%>",
+					formCode: "<%=formCode%>",
+					result: JSON.stringify(data.result)
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					if (data.ret=="1") {
+						jAlert(data.msg, "提示", function() {
+							window.location.reload();
+						});
+					}
+					else {
+						jAlert(data.msg, "提示");
+					}
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		}
+		else {
+			jAlert(data.msg, "提示");
+		}
+		<%
+        }
+        %>
+	}
+</script>
 <%}%>
+<%
+	License license = License.getInstance();
+	if (!isServerConnectWithCloud) {
+%>
+<TABLE align="center" class="tabStyle_1 percent60" style="margin-top: 20px; width:450px">
+	<TR>
+		<TD align="left" class="tabStyle_1_title">上传助手</TD>
+	</TR>
+	<TR>
+		<td align="center">
+			<object classid="CLSID:DE757F80-F499-48D5-BF39-90BC8BA54D8C" codebase="../activex/cloudym.CAB#version=1,3,0,0" width=450 height=86 align="middle" id="webedit">
+				<param name="Encode" value="utf-8">
+				<param name="MaxSize" value="<%=Global.MaxSize%>">
+				<!--上传字节-->
+				<param name="ForeColor" value="(255,255,255)">
+				<param name="BgColor" value="(107,154,206)">
+				<param name="ForeColorBar" value="(255,255,255)">
+				<param name="BgColorBar" value="(0,0,255)">
+				<param name="ForeColorBarPre" value="(0,0,0)">
+				<param name="BgColorBarPre" value="(200,200,200)">
+				<param name="FilePath" value="">
+				<param name="Relative" value="2">
+				<!--上传后的文件需放在服务器上的路径-->
+				<param name="Server" value="<%=host%>">
+				<param name="Port" value="<%=port%>">
+				<param name="VirtualPath" value="">
+				<param name="PostScript" value="">
+				<param name="PostScriptDdxc" value="">
+				<param name="SegmentLen" value="204800">
+				<param name="BasePath" value="">
+				<param name="InternetFlag" value="">
+				<param name="Organization" value="<%=license.getCompany()%>" />
+				<param name="Key" value="<%=license.getKey()%>" />
+			</object>
+		</TD>
+	</TR>
+</table>
+<%
+	}
+%>
 </body>
+<script>
+	<%
+    if (!isServerConnectWithCloud) {
+	%>
+	function checkWebEditInstalled() {
+		var bCtlLoaded = false;
+		try	{
+			if (typeof(o("webedit").AddField)=="undefined")
+				bCtlLoaded = false;
+			if (typeof(o("webedit").AddField)=="unknown") {
+				bCtlLoaded = true;
+			}
+		}
+		catch (ex) {
+		}
+		if (!bCtlLoaded) {
+			$('<div></div>').html('您还没有安装客户端控件，请点击确定此处下载安装！').activebar({
+				'icon': 'images/alert.gif',
+				'highlight': '#FBFBB3',
+				'url': 'activex/oa_client.exe',
+				'button': 'images/bar_close.gif'
+			});
+		}
+	}
+
+	$(function() {
+		checkWebEditInstalled();
+	})
+	<%
+    }
+    %>
+</script>
 </html>

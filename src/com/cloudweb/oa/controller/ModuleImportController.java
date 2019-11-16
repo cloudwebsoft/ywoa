@@ -3,16 +3,18 @@ package com.cloudweb.oa.controller;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import bsh.EvalError;
+import bsh.Interpreter;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.util.BeanShellUtil;
+import com.redmoon.oa.visual.*;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -53,10 +55,6 @@ import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
 import com.redmoon.oa.person.UserCache;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
-import com.redmoon.oa.visual.FormDAO;
-import com.redmoon.oa.visual.ModuleImportTemplateDb;
-import com.redmoon.oa.visual.ModuleRelateDb;
-import com.redmoon.oa.visual.ModuleSetupDb;
 
 @Controller
 @RequestMapping("/visual")
@@ -448,7 +446,7 @@ public class ModuleImportController {
 		return "/visual/module_import_cols";
 	}
 	
-	@RequestMapping(value = "/doImport", method = RequestMethod.GET, produces={"text/html;charset=UTF-8;","application/json;"})	
+	@RequestMapping(value = "/doImport", method = RequestMethod.GET, produces={"text/html;charset=UTF-8;", "application/json;"})
 	public String doImport(@RequestParam String code, @RequestParam String formCode, @RequestParam String menuItem, HttpSession session) {
 		Privilege privilege = new Privilege();
 		String unitCode = privilege.getUserUnitCode(request);	
@@ -457,14 +455,20 @@ public class ModuleImportController {
 		
 		int templateId = ParamUtil.getInt(request, "templateId", -1);
 		long parentId = ParamUtil.getLong(request, "parentId", -1);
+		String moduleCodeRelated = ParamUtil.get(request, "moduleCodeRelated");
 
 		MacroCtlMgr mm = new MacroCtlMgr();
 
 		ModuleSetupDb msd = new ModuleSetupDb();
-		msd = msd.getModuleSetupDbOrInit(code);
+		if (parentId==-1) {
+			msd = msd.getModuleSetupDbOrInit(code);
+		}
+		else {
+			msd = msd.getModuleSetupDbOrInit(moduleCodeRelated);
+		}
 
-		String listField = StrUtil.getNullStr(msd.getString("list_field"));
-		String[] fields = StrUtil.split(listField, ",");
+		// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		String[] fields = msd.getColAry(false, "list_field");
 
 		JSONArray arr = null;
 		JSONArray aryCleans = null;		
@@ -472,6 +476,7 @@ public class ModuleImportController {
 			ModuleImportTemplateDb mid = new ModuleImportTemplateDb();
 			mid = mid.getModuleImportTemplateDb(templateId);
 			String rules = mid.getString("rules");
+			// DebugUtil.i(getClass(), "doImport", rules);
 			try {
 				arr = new JSONArray(rules);
 				if (arr.length() > 0) {
@@ -501,11 +506,11 @@ public class ModuleImportController {
 				ModuleSetupDb parentMsd = new ModuleSetupDb();
 				parentMsd = parentMsd.getModuleSetupDbOrInit(code);
 				String parentFormCode = parentMsd.getString("form_code");
-				return 
-						"/visual/module_list_relate.jsp?menuItem=" + menuItem
-								+ "&code=" + code + "&formCode="
-								+ parentFormCode + "&formCodeRelated="
-								+ formCode + "&parentId=" + parentId;
+				String url = "/visual/module_list_relate.jsp?menuItem=" + menuItem
+						+ "&code=" + code + "&formCode="
+						+ parentFormCode + "&moduleCodeRelated="
+						+ moduleCodeRelated + "&parentId=" + parentId + "&tmp=some";
+				return url;
 			} else {
 				return 
 						"/visual/module_list.jsp?code=" + code + "&formCode="
@@ -539,6 +544,8 @@ public class ModuleImportController {
 				e.printStackTrace();
 			}
 		}
+
+		Vector records = new Vector();
 
 		JdbcTemplate jt = new JdbcTemplate();
 		jt.setAutoClose(false);
@@ -631,6 +638,12 @@ public class ModuleImportController {
 						fdao.setCwsId(String.valueOf(parentId));
 					}
 					fdao.create();
+					// 如果需要记录历史
+					if (fd.isLog()) {
+						FormDAO.log(userName, FormDAOLog.LOG_TYPE_CREATE, fdao);
+					}
+
+					records.addElement(fdao);
 
 					if (formCode.equals("personbasic")) {
 						UserDb ud = new UserDb();
@@ -705,8 +718,7 @@ public class ModuleImportController {
 								continue;
 							}
 							if (ff.getType().equals(FormField.TYPE_MACRO)) {
-								MacroCtlUnit mu = mm.getMacroCtlUnit(ff
-										.getMacroType());
+								MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
 								if (mu != null
 										&& !mu.getCode().equals("macro_raty")) {
 									// 如果是基础数据宏控件
@@ -724,36 +736,82 @@ public class ModuleImportController {
 	
 						fdao.setUnitCode(unitCode);
 						fdao.create();
+						// 如果需要记录历史
+						if (fdRelate.isLog()) {
+							FormDAO.log(userName, FormDAOLog.LOG_TYPE_CREATE, fdao);
+						}
 					}
 				}				
 			}
-	
+
+			// 导入后事件
+			ModuleSetupDb vsd = new ModuleSetupDb();
+			vsd = vsd.getModuleSetupDbOrInit(formCode);
+			String script = vsd.getScript("import_create");
+			if (script != null && !script.equals("")) {
+				Interpreter bsh = new Interpreter();
+				try {
+					StringBuffer sb = new StringBuffer();
+
+					// 赋值用户
+					sb.append("userName=\"" + privilege.getUser(request) + "\";");
+					bsh.eval(BeanShellUtil.escape(sb.toString()));
+
+					bsh.set("records", records);
+					bsh.set("request", request);
+
+					bsh.eval(script);
+				} catch (EvalError e) {
+					e.printStackTrace();
+				}
+			}
 		}
 		catch (JSONException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} catch (ErrMsgException e) {
+			e.printStackTrace();
 		} finally {
 			jt.close();
 			session.removeAttribute("importRecords");		
 		}
-		
+
+		StringBuffer params = new StringBuffer();
+		Enumeration reqParamNames = request.getParameterNames();
+		while (reqParamNames.hasMoreElements()) {
+			String paramName = (String) reqParamNames.nextElement();
+			String[] paramValues = request.getParameterValues(paramName);
+			if (paramValues.length == 1) {
+				String paramValue = ParamUtil.getParam(request, paramName);
+				// 过滤掉formCode等
+				if (paramName.equals("code")
+						|| paramName.equals("formCode")
+						|| paramName.equals("menuItem")
+						|| paramName.equals("parentId")
+						|| paramName.equals("moduleCodeRelated")
+				) {
+					;
+				}
+				else {
+					StrUtil.concat(params, "&", paramName + "=" + StrUtil.UrlEncode(paramValue));
+				}
+			}
+		}
+		// tmp=some是因为controller在返回时会自动加.jsp
 		if (parentId != -1) {
 			ModuleSetupDb parentMsd = new ModuleSetupDb();
 			parentMsd = parentMsd.getModuleSetupDbOrInit(code);
 			String parentFormCode = parentMsd.getString("form_code");
-			return 
-					"/visual/module_list_relate.jsp?menuItem=" + menuItem
-							+ "&code=" + code + "&formCode="
-							+ parentFormCode + "&formCodeRelated="
-							+ formCode + "&parentId=" + parentId;
+			String url = "/visual/module_list_relate.jsp?parentId=" + parentId + "&menuItem=" + menuItem
+					+ "&code=" + code + "&formCode="
+					+ parentFormCode + "&moduleCodeRelated=" + moduleCodeRelated + "&" + params + "&tmp=some";
+			return url;
 		} else {
 			return 
 					"/visual/module_list.jsp?code=" + code + "&formCode="
-							+ formCode;
+							+ formCode + "&" + params + "&tmp=some";
 		}
-
-		
 	}
 
 }

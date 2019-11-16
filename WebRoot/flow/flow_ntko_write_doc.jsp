@@ -157,9 +157,9 @@ function ntko_NotifyCtrlReady() {
 					// System.out.println(getClass() + " sql=" + sql);
 					ModuleSetupDb msd = new ModuleSetupDb();
 					msd = msd.getModuleSetupDb(nestFormCode);
-					String listField = StrUtil.getNullStr(msd.getString("list_field"));
-					String[] fields = StrUtil.split(listField, ",");
-					
+					// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+					String[] fields = msd.getColAry(false, "list_field");
+
 					int row = 2;
 					FormDb fdNest = new FormDb();
 					fdNest = fdNest.getFormDb(nestFormCode);
@@ -318,13 +318,13 @@ function openWinForFlowAccess(url,width,height)
 
 function openWinStamp(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_win.jsp?stampId="+obj, 200, 10);
+	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_win.jsp?stampId="+obj, 300, 150);
 	
 }
 
 function openChooseStamp(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_choose.jsp", 200, 10);
+	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_choose.jsp", 300, 150);
 	
 }
 

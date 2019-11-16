@@ -5,13 +5,17 @@ import java.sql.*;
 
 import cn.js.fan.db.*;
 import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.NumberUtil;
+import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.*;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.redmoon.oa.person.UserDb;
 import org.apache.log4j.*;
 
 import com.redmoon.oa.flow.FormDb;
 
 public class Attachment {
-    int id;
+    long id;
     long visualId;
     String name;
     String fullPath;
@@ -19,10 +23,38 @@ public class Attachment {
     String visualPath;
 
     String connname;
+
+    public String getCreator() {
+        return creator;
+    }
+
+    public void setCreator(String creator) {
+        this.creator = creator;
+    }
+
+    String creator;
+
+    public String getCreatorRealName() {
+        if (creator!=null && !"".equals(creator)) {
+            UserDb user = new UserDb();
+            user = user.getUserDb(creator);
+            if (user!=null) {
+                return user.getRealName();
+            }
+            else {
+                return "";
+            }
+        }
+        return "";
+    }
     
     public long getFileSize() {
 		return fileSize;
 	}
+
+    public String getFileSizeMb() {
+        return NumberUtil.round((double)fileSize / 1024000, 2);
+    }
 
 	public void setFileSize(long fileSize) {
 		this.fileSize = fileSize;
@@ -39,8 +71,8 @@ public class Attachment {
 	long fileSize = 0;
     java.util.Date createDate;
 
-    String LOAD = "SELECT visualId, name, fullpath, diskname, visualpath, orders, formCode, field_name FROM visual_attach WHERE id=?";
-    String SAVE = "update visual_attach set visualId=?, name=?, fullpath=?, diskname=?, visualpath=?, orders=?, formCode=?, field_name=? WHERE id=?";
+    String LOAD = "SELECT visualId, name, fullpath, diskname, visualpath, orders, formCode, field_name, creator, create_date, file_size FROM visual_attach WHERE id=?";
+    String SAVE = "update visual_attach set visualId=?, name=?, fullpath=?, diskname=?, visualpath=?, orders=?, formCode=?, field_name=?, creator=?, create_date=?, file_size=? WHERE id=?";
     Logger logger = Logger.getLogger(Attachment.class.getName());
 
     public Attachment() {
@@ -49,7 +81,7 @@ public class Attachment {
             logger.info("Attachment:默认数据库名为空！");
     }
 
-    public Attachment(int id) {
+    public Attachment(long id) {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
             logger.info("Attachment:默认数据库名为空！");
@@ -67,9 +99,28 @@ public class Attachment {
         loadFromDbByOrders();
     }
 
+    public Attachment getAttachment(long id) {
+        return new Attachment(id);
+    }
+
+    public Attachment getAttachment(long id, String fieldName) {
+        String sql = "select id from visual_attach where visualId=? and field_name=?";
+        JdbcTemplate jt = new JdbcTemplate();
+        try {
+            ResultIterator ri = jt.executeQuery(sql, new Object[]{id, fieldName});
+            if (ri.hasNext()) {
+                ResultRecord rr = (ResultRecord)ri.next();
+                return new Attachment(rr.getInt(1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public boolean create() {
         String sql =
-            "insert into visual_attach (fullpath,visualId,name,diskname,visualpath,orders,formCode,field_name) values (?,?,?,?,?,?,?,?)";
+            "insert into visual_attach (fullpath,visualId,name,diskname,visualpath,orders,formCode,field_name,creator, create_date, file_size) values (?,?,?,?,?,?,?,?,?,?,?)";
         Conn conn = new Conn(connname);
         boolean re = false;
         try {
@@ -82,7 +133,12 @@ public class Attachment {
             pstmt.setInt(6, orders);
             pstmt.setString(7, formCode);
             pstmt.setString(8, fieldName);
+            pstmt.setString(9, creator);
+            pstmt.setTimestamp(10, new java.sql.Timestamp(new java.util.Date().getTime()));
+            pstmt.setLong(11, fileSize);
             re = conn.executePreUpdate()==1?true:false;
+
+            id = (int)SQLFilter.getLastId(conn, "visual_attach");
         }
         catch (SQLException e) {
             logger.error("create:" + e.getMessage());
@@ -101,7 +157,7 @@ public class Attachment {
         boolean re = false;
         try {
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, id);
+            pstmt.setLong(1, id);
             re = conn.executePreUpdate()==1?true:false;
             pstmt.close();
             // 更新其后的附件的orders
@@ -155,7 +211,15 @@ public class Attachment {
             pstmt.setInt(6, orders);
             pstmt.setString(7, formCode);
             pstmt.setString(8, fieldName);
-            pstmt.setInt(9, id);
+            pstmt.setString(9, creator);
+            if (createDate==null) {
+                pstmt.setTimestamp(10, null);
+            }
+            else {
+                pstmt.setTimestamp(10, new Timestamp(createDate.getTime()));
+            }
+            pstmt.setLong(11, fileSize);
+            pstmt.setLong(12, id);
             re = conn.executePreUpdate()==1?true:false;
         }
         catch (SQLException e) {
@@ -169,7 +233,7 @@ public class Attachment {
         return re;
     }
 
-    public int getId() {
+    public long getId() {
         return this.id;
     }
 
@@ -255,7 +319,7 @@ public class Attachment {
         ResultSet rs = null;
         try {
             pstmt = conn.prepareStatement(LOAD);
-            pstmt.setInt(1, id);
+            pstmt.setLong(1, id);
             // System.out.println("attach id=" + id);
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
@@ -269,17 +333,14 @@ public class Attachment {
                 orders = rs.getInt(6);
                 formCode = rs.getString(7);
                 fieldName = rs.getString(8);
+                creator = StrUtil.getNullStr(rs.getString(9));
+                createDate = rs.getTimestamp(10);
+                fileSize = rs.getLong(11);
                 loaded = true;
             }
         } catch (SQLException e) {
             logger.error("loadFromDb:" + e.getMessage());
         } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (Exception e) {}
-                rs = null;
-            }
             if (conn != null) {
                 conn.close();
                 conn = null;
@@ -292,7 +353,7 @@ public class Attachment {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
-            String LOADBYORDERS = "SELECT id, name, fullpath, diskname, visualpath, field_name FROM visual_attach WHERE orders=? and visualId=? and formCode=?";
+            String LOADBYORDERS = "SELECT id, name, fullpath, diskname, visualpath, field_name, creator, create_date, file_size FROM visual_attach WHERE orders=? and visualId=? and formCode=?";
             pstmt = conn.prepareStatement(LOADBYORDERS);
             pstmt.setInt(1, orders);
             pstmt.setLong(2, visualId);
@@ -305,6 +366,9 @@ public class Attachment {
                 diskName = rs.getString(4);
                 visualPath = rs.getString(5);
                 fieldName = rs.getString(6);
+                creator = StrUtil.getNullStr(rs.getString(7));
+                createDate = rs.getTimestamp(8);
+                fileSize = rs.getLong(9);
                 loaded = true;
             }
         } catch (SQLException e) {
@@ -345,4 +409,18 @@ public class Attachment {
     private String formCode;
     private boolean loaded = false;
     private String fieldName;
+
+    public String getPreviewUrl() {
+        String url = "";
+        com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+        if (cfg.getBooleanProperty("canPdfFilePreview") || cfg.getBooleanProperty("canOfficeFilePreview")) {
+            String s = Global.getRealPath() + getVisualPath() + "/" + getDiskName();
+            String htmlfile = s.substring(0, s.lastIndexOf(".")) + ".html";
+            java.io.File fileExist = new java.io.File(htmlfile);
+            if (fileExist.exists()) {
+                url = visualPath + getDiskName().substring(0, getDiskName().lastIndexOf(".")) + ".html";
+            }
+        }
+        return url;
+    }
 }

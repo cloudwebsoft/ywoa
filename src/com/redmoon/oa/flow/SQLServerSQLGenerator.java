@@ -130,6 +130,12 @@ public class SQLServerSQLGenerator implements ISQLGenerator {
         str += "cws_flag int default 0 NOT NULL,"; 
         // 创建进度字段
         str += "cws_progress int DEFAULT 0 NOT NULL,";
+        // 创建创建时间字段
+        str += "cws_create_date DATETIME,";
+        // 创建修改时间字段
+        str += "cws_modify_date DATETIME,";
+        // 创建流程结束时间字段
+        str += "cws_finish_date DATETIME,";
         
         while (ir.hasNext()) {
             FormField ff = (FormField) ir.next();

@@ -112,13 +112,17 @@ o("menu3").className="current";
         <td align="left"><%=DateUtil.format(license.getExpiresDate(), "yyyy-MM-dd")%></td>
       </tr>
       <tr>
-          <td align="left">许可证版本</td>
-          <td align="left"><%=license.getVersion()%></td>
+          <td align="left">域名</td>
+          <td align="left"><%=license.getDomain()%></td>
       </tr>
       <tr>
-        <td align="left">域名</td>
-        <td align="left"><%=license.getDomain()%></td>
+          <td align="left">流程最大节点数</td>
+          <td align="left"><%=license.getActionCount()%></td>
       </tr>
+      <%--<tr>--%>
+          <%--<td align="left">许可证版本</td>--%>
+          <%--<td align="left"><%=license.getVersion()%></td>--%>
+      <%--</tr>--%>
       <tr>
         <td align="left">系统版本</td>
         <td align="left"><%=version%></td>

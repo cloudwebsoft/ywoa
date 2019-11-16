@@ -436,7 +436,7 @@ function onClickDoc(e) {
 document.onclick=onClickDoc;
 
 function ShowMsg(msg) {
-	 //alert("一米精灵客户端未安装");
+	 //alert("精灵客户端未安装");
 }
 </script>
 </html>

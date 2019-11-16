@@ -142,9 +142,13 @@ if (!privilege.isUserPrivValid(request,priv))
         <td align="left"><%=license.getDomain()%></td>
       </tr>
       <tr>
-        <td align="left">许可证版本</td>
-        <td align="left"><%=license.getVersion()%></td>
-      </tr>      
+        <td align="left">流程最大节点数</td>
+        <td align="left"><%=license.getActionCount()%></td>
+      </tr>
+      <%--<tr>--%>
+        <%--<td align="left">许可证版本</td>--%>
+        <%--<td align="left"><%=license.getVersion()%></td>--%>
+      <%--</tr>      --%>
       <tr>
         <td align="left">系统版本</td>
         <td align="left"><%=version%></td>
@@ -155,7 +159,9 @@ if (!privilege.isUserPrivValid(request,priv))
       </tr>
       <tr>
         <td colspan="2" align="center">
-		<input type="button" onclick="window.history.back()" value="返回"/>
+          <input type="button" value="激活控件" onclick="window.location.href='sys_activate.jsp'"/>
+          &nbsp;&nbsp;
+		  <input type="button" onclick="window.location.href='setup.jsp'" value="返回"/>
 		</td>
       </tr>
     </tbody>
@@ -164,7 +170,7 @@ if (!privilege.isUserPrivValid(request,priv))
 <table width="53%" border="0" align="center" cellpadding="0" cellspacing="0" class="tabStyle_1 percent80">
     <tbody>
       <tr>
-        <td colspan="2" align="left" class="tabStyle_1_title">&nbsp;新许可证信息 </td>
+        <td colspan="2" align="left" class="tabStyle_1_title">&nbsp;上传的许可证信息 </td>
       </tr>
       <tr>
         <td width="17%" align="left">授权单位</td>
@@ -204,29 +210,17 @@ if (!privilege.isUserPrivValid(request,priv))
       <tr>
         <td colspan="2" align="center">
         <input id="btnChange" type="button" value="替换" />
-        &nbsp;&nbsp;
-        <input id="btnLogin" type="button" value="登录" />     
-<%
-if (!"".equals(op)) {
-%>        
-        &nbsp;&nbsp;
-        <input id="btnCurLic" type="button" value="当前许可证" />
-		<script>
-        $('#btnCurLic').click(function() {
-        	window.location.href = "license.jsp";
-        });  
-        </script>		
-<%}%>        
         <script>
         $('#btnChange').click(function() {
-        	window.location.href = "license.jsp?op=change&licFileName=<%=licFileName%>";
+          jConfirm('您确定要替换么？', '提示', function (r) {
+            if (r) {
+              window.location.href = "license.jsp?op=change&licFileName=<%=licFileName%>";
+            }
+          })
         });
-        $('#btnLogin').click(function() {
-        	window.location.href = "../index.jsp";
-        });    
         </script>
         &nbsp;&nbsp;
-		<input type="button" onclick="window.location.href='setup.jsp'" value="返回"/>           
+		<input type="button" onclick="window.location.href='license.jsp'" value="返回"/>
         </td>
       </tr>
     </tbody>

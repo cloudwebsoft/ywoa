@@ -25,26 +25,31 @@ if (ftTop!=null) {
 }
 
 com.redmoon.oa.Config cfgTop = new com.redmoon.oa.Config();
-String canUserSeeDesignerWhenDispose = cfgTop.get("canUserSeeDesignerWhenDispose");
+boolean canUserSeeFlowImageTop = cfgTop.getBooleanProperty("canUserSeeFlowImage");
+String canUserSeeDesignerWhenDisposeTop = cfgTop.get("canUserSeeDesignerWhenDispose");
+boolean isFlowManagerTop = false;
+if (pvgTop.isUserPrivValid(request, "admin")) {
+	isFlowManagerTop = true;
+}
+else {
+	LeafPriv lpTop = new LeafPriv(wfTop.getTypeCode());
+	if (pvgTop.isUserPrivValid(request, "admin.flow")) {
+		if (lpTop.canUserExamine(pvgTop.getUser(request))) {
+			isFlowManagerTop = true;
+		}
+	}
+}
 %>
 <DIV id="tabs1">
   <ul>
 	<li id="menu1"><a href="<%=request.getContextPath()%>/flow_modify.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="transferProcess"/></span></a></li>
-<%if (!isFreeTop && canUserSeeDesignerWhenDispose.equals("true")) {%>
+<%if (!isFreeTop && (canUserSeeFlowImageTop || canUserSeeDesignerWhenDisposeTop.equals("true") || isFlowManagerTop)) {%>
 	<li id="menu2"><a href="<%=request.getContextPath()%>/flow_modify_show_designer.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="flowChart"/></span></a></li>
 <%}%>
 	<!--
 	<li id="menu3"><a href="<%=request.getContextPath()%>/flow_modify_annex_add.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="addPostscript"/></span></a></li>
 	-->
 <%
-boolean isFlowManagerTop = false;
-LeafPriv lpTop = new LeafPriv(wfTop.getTypeCode());
-if (pvgTop.isUserPrivValid(request, "admin.flow")) {
-	if (lpTop.canUserExamine(pvgTop.getUser(request))) {
-		isFlowManagerTop = true;
-	}
-}
-
 if (pvgTop.isUserPrivValid(request, "admin") || isFlowManagerTop || wrTop.canUserModifyFlow(request, wfTop)) {%>
 	<li id="menu6"><a href="<%=request.getContextPath()%>/flow_modify1.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="modifyTitle"/></span></a></li>
 <%}

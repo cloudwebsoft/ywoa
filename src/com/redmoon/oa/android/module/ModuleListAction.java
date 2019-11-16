@@ -1,14 +1,13 @@
 package com.redmoon.oa.android.module;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Iterator;
-
-import java.util.Vector;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
 
+import cn.js.fan.util.DateUtil;
+import com.redmoon.oa.flow.WorkflowDb;
 import com.redmoon.oa.util.RequestUtil;
 import org.apache.log4j.Logger;
 import org.apache.struts2.ServletActionContext;
@@ -289,8 +288,9 @@ public class ModuleListAction extends BaseAction {
                         jResult.put("cols", cols);
 
                         int i = 0;
-                        String listField = StrUtil.getNullStr(msd.getString("list_field"));
-                        String[] formFieldArr = StrUtil.split(listField, ",");
+                        // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+                        String[] formFieldArr = msd.getColAry(false, "list_field");
+
                         if (formFieldArr != null && formFieldArr.length > 0) {
                             ListResult lr = fdao.listResult(formCode, sql, pageNum, pageSize);
                             int total = lr.getTotal();
@@ -306,6 +306,28 @@ public class ModuleListAction extends BaseAction {
                                 if (v != null) {
                                     ir = v.iterator();
                                 }
+
+                                // 将不显示的字段加入fieldHide
+                                String fieldHide = "";
+                                Iterator irField = fd.getFields().iterator();
+                                while (irField.hasNext()) {
+                                    FormField ff = (FormField)irField.next();
+                                    if (ff.getHide()==FormField.HIDE_ALWAYS) {
+                                        if ("".equals(fieldHide)) {
+                                            fieldHide = ff.getName();
+                                        }
+                                        else {
+                                            fieldHide += "," + ff.getName();
+                                        }
+                                    }
+                                }
+                                String[] fdsHide = StrUtil.split(fieldHide, ",");
+                                List<String> listHide = null;
+                                if (fdsHide!=null) {
+                                    listHide = Arrays.asList(ary);
+                                }
+
+                                WorkflowDb wf = new WorkflowDb();
                                 HashMap<String, FormField> map = getFormFieldsByFromCode(formCode);
                                 while (ir != null && ir.hasNext()) {
                                     fdao = (FormDAO) ir.next();
@@ -346,12 +368,21 @@ public class ModuleListAction extends BaseAction {
                                         } else if (fieldName.equals("cws_progress")) {
                                             title = "进度";
                                         } else if (fieldName.equals("flowId")) {
-                                            title = "流程ID";
+                                            title = "流程号";
                                         }
                                         else if (fieldName.equals("cws_status")) {
                                             title = "状态";
                                         } else if (fieldName.equals("cws_flag")) {
                                             title = "冲抵状态";
+                                        }
+                                        else if (fieldName.equals("cws_create_date")) {
+                                            title = "创建时间";
+                                        }
+                                        else if (fieldName.equals("flow_begin_date")) {
+                                            title = "流程开始时间";
+                                        }
+                                        else if (fieldName.equals("flow_end_date")) {
+                                            title = "流程结束时间";
                                         }
                                         else {
                                             title = fd.getFieldTitle(fieldName);
@@ -427,11 +458,32 @@ public class ModuleListAction extends BaseAction {
                                         else if (fieldName.equals("cws_flag")) {
                                             controlText = com.redmoon.oa.flow.FormDAO.getCwsFlagDesc(fdao.getCwsFlag());
                                         }
+                                        else if (fieldName.equals("cws_create_date")) {
+                                            controlText = DateUtil.format(fdao.getCwsCreateDate(), "yyyy-MM-dd HH:mm:ss");
+                                        }
+                                        else if (fieldName.equals("flow_begin_date")) {
+                                            int flowId = fdao.getFlowId();
+                                            if (flowId!=-1) {
+                                                wf = wf.getWorkflowDb(flowId);
+                                                controlText = DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd HH:mm:ss");
+                                            }
+                                        }
+                                        else if (fieldName.equals("flow_end_date")) {
+                                            int flowId = fdao.getFlowId();
+                                            if (flowId!=-1) {
+                                                wf = wf.getWorkflowDb(flowId);
+                                                controlText = DateUtil.format(wf.getEndDate(), "yyyy-MM-dd HH:mm:ss");
+                                            }
+                                        }
                                         else {
                                             FormField ff = fdao.getFormField(fieldName);
                                             if (ff == null) {
                                                 controlText = fieldName + " 已不存在！";
                                             } else {
+                                                // 隐藏
+                                                if (listHide.contains(ff.getName())) {
+                                                    continue;
+                                                }
                                                 if (ff.getType().equals(FormField.TYPE_MACRO)) {
                                                     mu = mm.getMacroCtlUnit(ff.getMacroType());
                                                     if (mu != null) {

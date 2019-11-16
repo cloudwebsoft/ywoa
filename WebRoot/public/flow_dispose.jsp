@@ -50,7 +50,9 @@ if (!user.isValid()) {
 	out.print(SkinUtil.makeErrMsg(request, "用户非法！"));
 	return;
 }
-	
+
+privilege.doLogin(request, user.getName(), user.getPwdMD5());
+
 // 根据皮肤重定向
 String url = "";
 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();	
@@ -134,8 +136,7 @@ if (op.equals("show")) {
 		mainPage = "flow_modify.jsp?flowId=" + strFlowId; // wf.getId();
 	}
 	
-	privilege.doLogin(request, user.getName(), user.getPwdMD5());
-	response.sendRedirect("../" + url + "?mainTitle=" + StrUtil.UrlEncode("查看流程") + "&mainPage=" + mainPage);	
+	response.sendRedirect("../" + url + "?mainTitle=" + StrUtil.UrlEncode("查看流程") + "&mainPage=" + mainPage);
 }
 else {
 	long myActionId = StrUtil.toLong(strMyActionId);
@@ -170,7 +171,6 @@ else {
 		mainPage = "flow_dispose_free.jsp?myActionId=" + myActionId;
 	}
 	
-	privilege.doLogin(request, user.getName(), user.getPwdMD5());
 	// request.getRequestDispatcher("../oa.jsp?mainTitle=" + StrUtil.UrlEncode("待办流程") + "&mainPage=flow_dispose.jsp?myActionId=" + myActionId).forward(request, response);
 
 	response.sendRedirect("../" + url + "?mainTitle=" + StrUtil.UrlEncode("待办流程") + "&mainPage=" + mainPage);

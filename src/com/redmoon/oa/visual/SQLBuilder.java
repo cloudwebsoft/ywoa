@@ -1,5 +1,6 @@
 package com.redmoon.oa.visual;
 
+import cn.js.fan.util.DateUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.IFormMacroCtl;
 import com.redmoon.oa.basic.SelectDb;
@@ -16,11 +17,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,7 +59,17 @@ public class SQLBuilder {
 	 * 准确查询，等于
 	 */
 	public static String COND_TYPE_NORMAL = "1";
-	
+
+	/**
+	 * 一段范围，用于数值型的表单域
+	 */
+	public static String COND_TYPE_SCOPE = "2";
+
+	/**
+	 * 下拉菜单，可以勾选多个
+	 */
+	public static String COND_TYPE_MULTI = "3";
+
 	/**
 	 * 两个模块之间没有关联关系
 	 */
@@ -80,7 +87,7 @@ public class SQLBuilder {
 	 * 不为空
 	 */
 	public static String IS_NOT_EMPTY = "<>空";
-	
+
     public SQLBuilder() {
     }
 
@@ -110,6 +117,7 @@ public class SQLBuilder {
     	ModuleSetupDb msd = (ModuleSetupDb)request.getAttribute(ModuleUtil.MODULE_SETUP);	        	
 
     	String cond = "";
+		Map<String, CondParam> fieldsRelatedMap = null;
 
         String query = ParamUtil.get(request, "query");
         if (!query.equals("")) {
@@ -126,7 +134,7 @@ public class SQLBuilder {
         		Object[] aryCondAndUrlStr = fitCondAndUrlStr(request, msd, fd);
         		cond = (String)aryCondAndUrlStr[0];
         		urlStr = (String)aryCondAndUrlStr[1];
-        		Map<String, CondParam> fieldsRelatedMap = (HashMap<String, CondParam>)aryCondAndUrlStr[2];
+        		fieldsRelatedMap = (HashMap<String, CondParam>)aryCondAndUrlStr[2];
 
         		// 如果fieldsRelatedMap不为空，则说明有其它的main:或other:或sub:相关表
         		if (fieldsRelatedMap.size()>0) {
@@ -139,7 +147,12 @@ public class SQLBuilder {
         				if (!tableMap.containsKey(cp.formCode)) { // 防止表名重复
         					// 如果条件字段所传的参数不为空
         					if (!cp.isCondFieldBlank) {
-		        				sql += ", form_table_" + cp.formCode + " t" + cp.order;
+        						if (cp.type.equals("flow")) {
+									sql += ", flow t" + cp.order;
+								}
+        						else {
+									sql += ", form_table_" + cp.formCode + " t" + cp.order;
+								}
 		        				tableMap.put(cp.formCode, String.valueOf(cp.order));
         					}
         				}
@@ -214,7 +227,7 @@ public class SQLBuilder {
 	        
 	        String[] filter = null;
 	        
-	        // 如果是拉单module_list_nest_sel，则使用拉单中配置的过滤条件，否则使用模块的过滤条件，即通过requests的attribute中的msd获得过滤条件
+	        // 如果是拉单module_list_nest_sel或module_list_sel.jsp，则使用拉单中或表单域选择控件配置的过滤条件，否则使用模块的过滤条件，即通过requests的attribute中的msd获得过滤条件
 	        String nestFilter = (String)request.getAttribute(ModuleUtil.NEST_SHEET_FILTER);
 	        if (nestFilter!=null && !"".equals(nestFilter)) {
 		        if (nestFilter.equals("none"))
@@ -231,17 +244,28 @@ public class SQLBuilder {
 		        	String filterStr = filter[0].toLowerCase();
 		        	// 如果filter中以select 打头，则说明是个完整的sql语句 
 		        	if (filterStr.startsWith("select ")) {
+		        		if (fieldsRelatedMap!=null && fieldsRelatedMap.size()>0) {
+		        			throw new ErrMsgException("查询条件中有关联表的字段，过滤条件中不能是以select开头的完整的SQL语句");
+						}
+
 		        		isFilterSelectSQL = true;
 		        		sql = filterStr;
 
 						// 为完整的sql语句加入search查询条件
 		        		// 判断语句中是否有 t1.，如果是，则说明sql是合乎规范的，可以加cond条件
 						if (sql.indexOf(" t1.") != -1) {
-							int p = sql.lastIndexOf(" order by ");
-							String orderByStr = "";
+							int p = sql.lastIndexOf(" group by ");
+							String groupByOrderByStr = ""; // group by
 							if (p!=-1) {
+								groupByOrderByStr = sql.substring(p);
 								sql = sql.substring(0, p);
-								orderByStr = sql.substring(p);
+							}
+							else {
+								p = sql.lastIndexOf(" order by ");
+								if (p != -1) {
+									groupByOrderByStr = sql.substring(p);
+									sql = sql.substring(0, p);
+								}
 							}
 
 							if (!cond.equals("")) {
@@ -251,13 +275,28 @@ public class SQLBuilder {
 									sql += " and " + cond;
 							}
 
-							if (!"".equals(orderByStr)) {
-								sql += orderByStr;
+							if (!"".equals(groupByOrderByStr)) {
+								sql += groupByOrderByStr;
 							}
 						}
 		        	}
-		        	else {		        	
-			        	// 如果过滤条件中含有where
+		        	else {
+		        		// 取出filter中的group by ... order by ...
+						int p = filterStr.lastIndexOf(" group by ");
+						String groupByOrderByStr = ""; // group by
+						if (p!=-1) {
+							groupByOrderByStr = filterStr.substring(p);
+							filterStr = filterStr.substring(0, p);
+						}
+						else {
+							p = filterStr.lastIndexOf(" order by ");
+							if (p != -1) {
+								groupByOrderByStr = filterStr.substring(p);
+								filterStr = filterStr.substring(0, p);
+							}
+						}
+
+			        	// 如果SQL中含有where
 			        	if (sql.indexOf(" where ")!=-1) {
 			        		// 如果过滤条件中只含有order by
 			        		if (filterStr.trim().startsWith("order by ")) {
@@ -272,9 +311,13 @@ public class SQLBuilder {
 			        			sql += " " + filterStr;
 			        		} 
 			        		else {
-			        			sql += " where " + filter[0];
+			        			sql += " where " + filterStr;
 			        		}
 			        	}
+
+						if (!"".equals(groupByOrderByStr)) {
+							sql += groupByOrderByStr;
+						}
 		        	}
 		        }
 	        }
@@ -285,8 +328,11 @@ public class SQLBuilder {
 	        	int p = sql.toLowerCase().lastIndexOf(" where ");
 	        	// 如果where已存在，则说明sql语句中必然带有条件
 		    	if (p!=-1) {
-		    		// 检查是不是有order by，如果有则应写入在order by之前
-		    		int q = sql.lastIndexOf(" order by ");
+		    		// 检查是不是有group by或order by，如果有则应写入在其之前
+					int q = sql.lastIndexOf(" group by ");
+					if (q==-1) {
+						q = sql.lastIndexOf(" order by ");
+					}
 		    		if (q!=-1) {
 			    		String sqlLeft = sql.substring(0, q);
 			    		String sqlRight = sql.substring(q);
@@ -341,7 +387,12 @@ public class SQLBuilder {
 	        	}
 	        }
 	        else {
-	        	sql += " order by t1." + orderBy + " " + sort;
+				if (orderBy.equals("CWS_MID")) {
+					sql += " order by t1.id " + sort;
+				}
+				else {
+					sql += " order by t1." + orderBy + " " + sort;
+				}
 	        }
         }
 
@@ -441,6 +492,18 @@ public class SQLBuilder {
 					}
 				}        				
 			}
+			else if (field.startsWith("flow:")) { // 关联的是流程表
+				String[] ary = StrUtil.split(field, ":");
+				if (ary.length==2) {
+					ff = new FormField();
+					fieldsRelatedMap.put(fields[n], new CondParam(ary[0], ary[1], "flow"));
+					// 置为sub:开头，以便于取得request中传来的条件字段的参数
+					ff.setName(fields[n]);
+					ff.setFormCode("flow");
+					ff.setType(FormField.TYPE_DATE);
+					vt.addElement(ff);
+				}
+			}
 			else if (field.startsWith("other:")) { // 映射的字段，多重映射不支持
 				String[] ary = StrUtil.split(field, ":");
 				if (ary.length<5 || ary.length>=8) {
@@ -503,7 +566,7 @@ public class SQLBuilder {
 			}
 		} 
 		
-		String cond = "";
+		String cond = "1=1";
         Iterator<FormField> ir = vt.iterator();
         while (ir.hasNext()) {
             FormField ff = ir.next();
@@ -518,6 +581,7 @@ public class SQLBuilder {
             // System.out.println(SQLBuilder.class.getName() + " field=" + ff.getName() + " value=" + value);			
             
             String name_cond = ParamUtil.get(request, ff.getName() + "_cond");
+			// DebugUtil.i(SQLBuilder.class, "fitCOndAndUrlStr", ff.getName() + " name_cond=" + name_cond);
     		// 当在module_list_nest_sel.jsp中，name_cond为空说明查询条件中不含有此字段，如果不排除掉可能会误将filter中需要从父窗口带入的字段作为查询条件，如filter中含有承包商contractor字段，则在表单中如果也含有此字段，会被视为条件
     		if ("".equals(name_cond)) {
     			continue;
@@ -534,6 +598,12 @@ public class SQLBuilder {
 				
 				// 将ff的name恢复，否则其name此时可能为main:***，other:***，sub:***
 				ff = mainFormDb.getFormField(cp.fieldName);
+			}
+            else if (field.startsWith("flow:")) {
+				cp = fieldsRelatedMap.get(field);
+				tableAlias = "t" + cp.order;
+            	// 将ff的name恢复，否则其name此时可能为flow:begin_date
+            	ff.setName(ff.getName().substring(5));
 			}
             
             if (ff.getType().equals(FormField.TYPE_DATE) ||
@@ -557,7 +627,7 @@ public class SQLBuilder {
                             else
                                 urlStr += "&" + field + "FromDate=" + fDate;
                         } else {
-                            cond += " and " + ff.getName() + ">=" + StrUtil.sqlstr(fDate);
+                            cond += " and " + tableAlias + "." + ff.getName() + ">=" + StrUtil.sqlstr(fDate);
                             urlStr += "&" + field + "FromDate=" + fDate;
                         }
                     }
@@ -566,13 +636,33 @@ public class SQLBuilder {
                     		cp.isCondFieldBlank = false;
                     	}
 						if (cond.equals("")) {
-							cond += tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
+							// 如果是日期型的，则需加1天，然后用<符号
+							// if (ff.getType().equals(FormField.TYPE_DATE)) {
+								Date d = DateUtil.parse(tDate, "yyyy-MM-dd");
+								d = DateUtil.addDate(d, 1);
+								String tDate1 = DateUtil.format(d, "yyyy-MM-dd");
+								cond += tableAlias + "." + ff.getName() + "<" + StrUtil.sqlstr(tDate1);
+							// }
+							// 查询条件传入的为yyyy-MM-dd格式，所以无需判断是否为TYPE_DATE_TIME型
+/*							else {
+								cond += tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
+							}*/
 							if (urlStr.equals(""))
 								urlStr += field + "ToDate=" + tDate;
 							else
 								urlStr += "&" + field + "ToDate=" + tDate;
 						} else {
-							cond += " and " + tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
+							// 如果是日期型的，则需加1天，然后用<符号
+							// if (ff.getType().equals(FormField.TYPE_DATE)) {
+								Date d = DateUtil.parse(tDate, "yyyy-MM-dd");
+								d = DateUtil.addDate(d, 1);
+								String tDate1 = DateUtil.format(d, "yyyy-MM-dd");
+								cond += " and " + tableAlias + "." + ff.getName() + "<" + StrUtil.sqlstr(tDate1);
+							// }
+							// 查询条件传入的为yyyy-MM-dd格式，所以无需判断是否为TYPE_DATE_TIME型
+/*							else {
+								cond += " and " + tableAlias + "." + ff.getName() + "<=" + StrUtil.sqlstr(tDate);
+							}*/
 							urlStr += "&" + field + "ToDate=" + tDate;
 						}
                     }
@@ -633,28 +723,48 @@ public class SQLBuilder {
                         	if (cp!=null) {
                         		cp.isCondFieldBlank = false;
                         	}
+                        	orStr = "(" + orStr + ")";
                             cond = SQLFilter.concat(cond, "and", orStr);
                         }
                     }
                 }
             }
     		else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
-                if (!value.equals("")) {
+				// 数值段
+				String fVal = ParamUtil.get(request, field + "_from");
+				String tVal = ParamUtil.get(request, field + "_to");
+				if (!value.equals("") || !fVal.equals("") || !tVal.equals("")) {
                 	if (cp!=null) {
                 		cp.isCondFieldBlank = false;
                 	}
-					if (cond.equals("")) {
-						cond += tableAlias + "." + ff.getName() + name_cond + value;
-						if (urlStr.equals("")) {
-							urlStr += field + "=" + StrUtil.UrlEncode(value);
+
+					if (!name_cond.equals(SQLBuilder.COND_TYPE_SCOPE)) {
+						if (cond.equals("")) {
+							cond += tableAlias + "." + ff.getName() + name_cond + value;
+							if (urlStr.equals("")) {
+								urlStr += field + "=" + StrUtil.UrlEncode(value);
+							} else {
+								urlStr += "&" + field + "=" + StrUtil.UrlEncode(value);
+							}
 						} else {
+							cond += " and " + tableAlias + "." + ff.getName() + name_cond + value;
 							urlStr += "&" + field + "=" + StrUtil.UrlEncode(value);
 						}
-					} else {
-						cond += " and " + tableAlias + "." + ff.getName() + name_cond + value;
-						urlStr += "&" + field + "=" + StrUtil.UrlEncode(value);
+						urlStr += "&" + field + "_cond=" + name_cond;
 					}
-                    urlStr += "&" + field + "_cond=" + name_cond;
+					else {
+						String fCond = ParamUtil.get(request, field + "_cond_from");
+						String tCond = ParamUtil.get(request, field + "_cond_to");
+						if (!fVal.equals("") && !fCond.equals("")) {
+							cond += " and " + tableAlias + "." + ff.getName() + fCond + fVal;
+							urlStr += "&" + field + "_from=" + StrUtil.UrlEncode(fVal);
+						}
+						if (!tVal.equals("") && !tCond.equals("")) {
+							cond += " and " + tableAlias + "." + ff.getName() + tCond + tVal;
+							urlStr += "&" + field + "_to=" + StrUtil.UrlEncode(tVal);
+						}
+						urlStr += "&" + field + "_cond_from=" + fCond + "&" + field + "_cond_to=" + tCond;
+					}
                 }            			
     		}
             else {
@@ -679,6 +789,42 @@ public class SQLBuilder {
 									if (cp != null) {
 										cp.isCondFieldBlank = false;
 									}
+								}
+							}
+						}
+						else {
+							int fieldType = ifmc.getFieldType();
+							if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_DOUBLE || fieldType==FormField.FIELD_TYPE_FLOAT || fieldType==FormField.FIELD_TYPE_LONG || fieldType==FormField.FIELD_TYPE_PRICE) {
+								isSpecial = true;
+								if (!name_cond.equals(SQLBuilder.COND_TYPE_SCOPE)) {
+									if (cond.equals("")) {
+										cond += tableAlias + "." + ff.getName() + name_cond + value;
+										if (urlStr.equals("")) {
+											urlStr += field + "=" + StrUtil.UrlEncode(value);
+										} else {
+											urlStr += "&" + field + "=" + StrUtil.UrlEncode(value);
+										}
+									} else {
+										cond += " and " + tableAlias + "." + ff.getName() + name_cond + value;
+										urlStr += "&" + field + "=" + StrUtil.UrlEncode(value);
+									}
+									urlStr += "&" + field + "_cond=" + name_cond;
+								}
+								else {
+									// 数值段
+									String fVal = ParamUtil.get(request, field + "_from");
+									String tVal = ParamUtil.get(request, field + "_to");
+									String fCond = ParamUtil.get(request, field + "_cond_from");
+									String tCond = ParamUtil.get(request, field + "_cond_to");
+									if (!fVal.equals("") && !fCond.equals("")) {
+										cond += " and " + tableAlias + "." + ff.getName() + fCond + fVal;
+										urlStr += "&" + field + "_from=" + StrUtil.UrlEncode(fVal);
+									}
+									if (!tVal.equals("") && !tCond.equals("")) {
+										cond += " and " + tableAlias + "." + ff.getName() + tCond + tVal;
+										urlStr += "&" + field + "_to=" + StrUtil.UrlEncode(tVal);
+									}
+									urlStr += "&" + field + "_cond_from=" + fCond + "&" + field + "_cond_to=" + tCond;
 								}
 							}
 						}
@@ -812,6 +958,14 @@ public class SQLBuilder {
 					cond += " and " + " t" + cp.order + ".cws_id=t1." + relateField;        					
 				}
 			}
+			else if (cp.type=="flow") {
+				if ("".equals(cond)) {
+					cond = "t" + cp.order + ".id=t1.flowId";
+				}
+				else {
+					cond += " and " + " t" + cp.order + ".id=t1.flowId";
+				}
+			}
 			else { // other型
 				if ("".equals(cond)) {
 					cond += "t1." + cp.thisField + "=" + "t" + cp.order + "." + cp.otherField;
@@ -822,7 +976,7 @@ public class SQLBuilder {
 			}
 		}
 		
-    	int cws_status = ParamUtil.getInt(request, "cws_status", -10000);           	
+    	int cws_status = ParamUtil.getInt(request, "cws_status", -10000);
     	if (cws_status!=-10000) {
             String value = StrUtil.getNullStr(request.getParameter("cws_status")).trim();            		
             String name_cond = ParamUtil.get(request, "cws_status_cond");            		
@@ -870,9 +1024,47 @@ public class SQLBuilder {
                 urlStr += "&cws_flag=" + StrUtil.UrlEncode(value);
             }
             urlStr += "&cws_flag_cond=" + name_cond;         		
-    	}    		
-		
-        aryCondAndUrlStr[0] = cond;
+    	}
+
+		int ID = ParamUtil.getInt(request, "ID", -1);
+		if (ID!=-1) {
+			String value = StrUtil.getNullStr(request.getParameter("ID")).trim();
+			String name_cond = ParamUtil.get(request, "ID_cond");
+			if (cond.equals("")) {
+				cond = "t1.id" + name_cond + value;
+				if (urlStr.equals("")) {
+					urlStr = "ID=" + StrUtil.UrlEncode(value);
+				}
+				else {
+					urlStr += "&ID=" + StrUtil.UrlEncode(value);
+				}
+			} else {
+				cond += " and t1.id" + name_cond + value;
+				urlStr += "&ID=" + StrUtil.UrlEncode(value);
+			}
+			urlStr += "&ID_cond=" + name_cond;
+		}
+		int flowId = ParamUtil.getInt(request, "flowId", -1);
+		if (flowId!=-1) {
+			String value = String.valueOf(flowId);
+			String name_cond = ParamUtil.get(request, "flowId_cond");
+			if (!"".equals(name_cond)) { // 页面传入了flowId的情况还是比较多的，不能都认为flowId是查询条件，除非也传入了flowId_cond
+				if (cond.equals("")) {
+					cond = "t1.flowId" + name_cond + value;
+					if (urlStr.equals("")) {
+						urlStr = "flowId=" + StrUtil.UrlEncode(value);
+					} else {
+						urlStr += "&flowId=" + StrUtil.UrlEncode(value);
+					}
+				} else {
+					cond += " and t1.flowId" + name_cond + value;
+					urlStr += "&flowId=" + StrUtil.UrlEncode(value);
+				}
+				urlStr += "&flowId_cond=" + name_cond;
+			}
+		}
+
+		aryCondAndUrlStr[0] = cond;
         aryCondAndUrlStr[1] = urlStr;
         aryCondAndUrlStr[2] = fieldsRelatedMap;
         return aryCondAndUrlStr; 	
@@ -918,6 +1110,7 @@ public class SQLBuilder {
         String mode = ParamUtil.get(request, "mode");
         if ("subTagRelated".equals(mode)) {
         	sql = "select t1.id from " + fd.getTableNameByForm() + " t1";
+			condStatusAndRelate = "1=1"; // 关联选项卡不需要cws_id条件
         }
         
         ModuleSetupDb msd = new ModuleSetupDb();
@@ -999,6 +1192,10 @@ public class SQLBuilder {
         			if (json.has("fieldOtherRelated")) {
         				String fieldOtherRelated = json.getString("fieldOtherRelated");
         				String fieldOtherRelatedVal = json.getString("fieldOtherRelatedVal");
+        				if (fieldOtherRelatedVal.startsWith("{$") && fieldOtherRelatedVal.endsWith("}")) {
+        					String parentField = fieldOtherRelatedVal.substring(2, fieldOtherRelatedVal.length()-1);
+        					fieldOtherRelatedVal = fdao.getFieldValue(parentField);
+						}
         				// 如果存在条件值
         				if (!"".equals(fieldOtherRelatedVal)) {
 	            			if (ff!=null && (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE)) {
@@ -1097,7 +1294,9 @@ public class SQLBuilder {
 			if (!cond.equals("")) {
 				sql += " and " + cond;
 			}
-    		sql += " and " + condStatusAndRelate;     				
+			if (!"".equals(condStatusAndRelate)) {
+				sql += " and " + condStatusAndRelate;
+			}
 		}
         
         // System.out.println(SQLBuilder.class.getName() + " " + sql);
@@ -1119,7 +1318,7 @@ public class SQLBuilder {
 	        }
         }        
         
-        sql += " order by " + orderBy + " " + sort;
+        sql += " order by t1." + orderBy + " " + sort;
 
         String[] ary = new String[2];
         ary[0] = sql;
@@ -1202,7 +1401,7 @@ public class SQLBuilder {
 	        SelectMgr sm = new SelectMgr();
 	        SelectDb sd = sm.getSelect(code);
 
-			if (name_cond.equals("0")) { // 模糊
+			if (name_cond.equals(COND_TYPE_FUZZY)) { // 模糊
                 if (!value.equals("")) {
                     if (cond.equals("")) {
 				        if (sd.getType()==SelectDb.TYPE_LIST) {    							
@@ -1215,11 +1414,9 @@ public class SQLBuilder {
 				        }
                         
                         if (urlStr.equals("")) {
-                            urlStr += ff.getName() + "=" +
-                                    StrUtil.UrlEncode(value);
+                            urlStr += ff.getName() + "=" + StrUtil.UrlEncode(value);
                         } else {
-                            urlStr += "&" + ff.getName() + "=" +
-                                    StrUtil.UrlEncode(value);
+                            urlStr += "&" + ff.getName() + "=" + StrUtil.UrlEncode(value);
                         }
                     } else {
 				        if (sd.getType()==SelectDb.TYPE_LIST) {    							
@@ -1230,13 +1427,11 @@ public class SQLBuilder {
                             cond += " and " + tableAlias + ff.getName() + " in (select code from oa_tree_select where name like " +
                             StrUtil.sqlstr("%" + value + "%") + ")";    	        					        	
 				        }    	                                	
-                        urlStr += "&" + ff.getName() + "=" +
-                                StrUtil.UrlEncode(value);
+                        urlStr += "&" + ff.getName() + "=" + StrUtil.UrlEncode(value);
                     }
-                    urlStr += "&" + ff.getName() + "_cond=" +
-                            name_cond;
+					urlStr += "&" + ff.getName() + "_cond=" + name_cond;
                 }
-            } else if (name_cond.equals("1")) {
+            } else if (name_cond.equals(COND_TYPE_NORMAL)) {
                 if (!value.equals("")) {
                     if (cond.equals("")) {
 				        if (sd.getType()==SelectDb.TYPE_LIST) {    							
@@ -1247,12 +1442,10 @@ public class SQLBuilder {
 				        }
 
                         if (urlStr.equals("")) {
-                            urlStr += ff.getName() + "=" +
-                                    StrUtil.UrlEncode(value);
+                            urlStr += ff.getName() + "=" + StrUtil.UrlEncode(value);
                         }
                         else {
-                            urlStr += "&" + ff.getName() + "=" +
-                                    StrUtil.UrlEncode(value);
+                            urlStr += "&" + ff.getName() + "=" + StrUtil.UrlEncode(value);
                         }
                     } else {
 				        if (sd.getType()==SelectDb.TYPE_LIST) {    							
@@ -1262,13 +1455,34 @@ public class SQLBuilder {
                             cond += " and " + tableAlias + ff.getName() + "=" + StrUtil.sqlstr(value);    	        					        	
 				        }    	                                	
 
-                        urlStr += "&" + ff.getName() + "=" +
-                                StrUtil.UrlEncode(value);
+                        urlStr += "&" + ff.getName() + "=" + StrUtil.UrlEncode(value);
                     }
-                    urlStr += "&" + ff.getName() + "_cond=" +
-                            name_cond;
+                    urlStr += "&" + ff.getName() + "_cond=" + name_cond;
                 }
-            }  
+            } else if (name_cond.equals(COND_TYPE_MULTI)) {
+				// 多选
+				String[] ary = ParamUtil.getParameters(request, ff.getName());
+				int len = 0;
+				if (ary!=null) {
+					len = ary.length;
+				}
+				String orStr = "";
+				for (int n = 0; n < len; n++) {
+					if (!ary[n].equals("")) {
+						orStr = SQLFilter.concat(orStr, "or", tableAlias + ff.getName() + "=" + StrUtil.sqlstr(ary[n]));
+						if (urlStr.equals("")) {
+							urlStr = ff.getName() + "=" + StrUtil.UrlEncode(ary[n]);
+						} else {
+							urlStr += "&" + ff.getName() + "=" + StrUtil.UrlEncode(ary[n]);
+						}
+					}
+				}
+				if (!orStr.equals("")) {
+					orStr = "(" + orStr + ")";
+					cond = SQLFilter.concat(cond, "and", orStr);
+				}
+				urlStr += "&" + ff.getName() + "_cond=" + name_cond;
+			}
 		}
 		/*
 		 * 已改为启用ModuleFieldSelectCtl中的getSqlForQuery
@@ -1388,8 +1602,10 @@ public class SQLBuilder {
 		String formCode;
 		String fieldName; // 关联表中的条件字段
 		int order = 1;
-		String type = "main"; // 或者other、sub
+		String type = "main"; // 或者other、sub、flow(流程表)
 		boolean isCondFieldBlank = true; // 条件字段是否为空
+
+		// 流程表中字段格式，flow:begin_date，flow:end_date
 		
 		// other型字段格式，  cws_id:personbasic:id:realname
 		String thisField; // 本表中的字段
@@ -1408,6 +1624,84 @@ public class SQLBuilder {
 			this.thisField = thisField;
 			this.otherField = otherField;
 		}		
-	}    
+	}
+
+	/**
+	 * 对模块日志列表中的sql语句进一步处理，使之与对应的模块相关联，如：副模块、过滤条件
+	 * @param request
+	 * @param sql
+	 * @return
+	 */
+	public static String getListSqlForLogRelateModule(HttpServletRequest request, String sql) {
+		String moduleCode = ParamUtil.get(request, "moduleCode");
+		ModuleSetupDb msd = new ModuleSetupDb();
+		msd = msd.getModuleSetupDb(moduleCode);
+		String moduleFormCode = msd.getString("form_code");
+		// 用于传过滤条件
+		request.setAttribute(ModuleUtil.MODULE_SETUP, msd);
+
+		// 取得跟日志对应的模块的sql语句
+		FormDb fd = new FormDb(moduleFormCode);
+		String orderBy = "", sort = "", op = "search";
+		String[] ary = new String[0];
+		try {
+			ary = SQLBuilder.getModuleListSqlAndUrlStr(request, fd, op, orderBy, sort);
+		} catch (ErrMsgException e) {
+			e.printStackTrace();
+		}
+		// 替换掉 t1为 t1000 t1.为t1000.
+		String moduleSql = ary[0].replace(" t1", " t1000").replace("t1.", "t1000.").toLowerCase();
+
+		// 解析出表部分，即from...where
+		int p = moduleSql.indexOf(" from ");
+		int q = moduleSql.indexOf(" where ");
+		String moduleTables = moduleSql.substring(p + " form ".length(), q);
+
+		// 解析出条件部分 where ... order by
+		int o = moduleSql.indexOf(" order by ");
+		String moduleConds;
+		if (o == -1) {
+			moduleConds = moduleSql.substring(q + " where ".length());
+		} else {
+			moduleConds = moduleSql.substring(q + " where ".length(), o);
+		}
+
+		// 拼接两个语句
+		p = sql.indexOf(" from ");
+		q = sql.indexOf(" where ");
+		String sqlSelect = sql.substring(0, p);
+		// 取出where部分
+		String sqlWhere = sql.substring(q);
+		sqlWhere = sqlWhere.replace("t2.", "t1000.").toLowerCase();
+
+		// 去除orderBy部分
+		String orderByStr = "";
+		o = sqlWhere.indexOf(" order by ");
+		if (o!=-1) {
+			orderByStr = sqlWhere.substring(o);
+			sqlWhere = sqlWhere.substring(0, o);
+		}
+		// sql = sqlSelect + " from form_table_module_log t1," + moduleTables + " where t1.module_id=t1000.id and " + moduleConds + sqlWhere;
+		sql = sqlSelect + " from form_table_module_log t1," + moduleTables + sqlWhere + " and t1.module_id=t1000.id and t1.form_code=" + StrUtil.sqlstr(moduleFormCode);
+
+		int logType = ParamUtil.getInt(request, "log_type", 0);
+		if (logType==FormDAOLog.LOG_TYPE_DEL) {
+			sql = sql.replace("form_table_" + moduleFormCode, "form_table_" + moduleFormCode + "_log");
+		}
+
+		if (!"".equals(moduleConds)) {
+			sql += " and " + moduleConds;
+		}
+
+		if (logType==FormDAOLog.LOG_TYPE_DEL) {
+			// 替换掉 and t1000.cws_status=1
+			sql = sql.replaceAll(" and t?\\d+.?cws_status=\\d", "");
+		}
+
+		// 恢复orderBy部分
+		sql += orderByStr;
+
+		return sql;
+	}
 }
 

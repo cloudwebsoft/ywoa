@@ -1,13 +1,16 @@
 package com.redmoon.oa.flow.macroctl;
 
 import javax.servlet.http.HttpServletRequest;
+
+import cn.js.fan.util.CheckErrException;
+import com.redmoon.oa.Config;
 import com.redmoon.oa.flow.FormField;
 import com.redmoon.oa.flow.WorkflowDb;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.kit.util.FileUpload;
 
-import java.util.Vector;
-import java.util.Iterator;
+import java.util.*;
+
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.oa.flow.FormDAO;
 
@@ -38,18 +41,32 @@ public class AttachmentCtl extends AbstractMacroCtl {
     }
 
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
+        // 如果是来自于表单域选择控件的映射，则置ff为不可编辑状态
+        FormField sourceField = (FormField)request.getAttribute("cwsMapSourceFormField");
+        if (sourceField!=null && !"".equals(StrUtil.getNullStr(sourceField.getValue()))) {
+            ff.setEditable(false);
+        }
+
         String str = "";
         // 如果附件中已存在赋值，则显示图片
         if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
-            // str += "<img src='" + Global.getRootPath() + "/" + ff.getValue() +
-            //        "'><BR>";
+            // str += "<img src='" + Global.getRootPath() + "/" + ff.getValue() + "'><BR>";
             String[] ary = ff.getValue().split(",");
             // 如果有两个元素，则说明是流程中所存
             if (ary.length==2) {
+                int flowId = StrUtil.toInt(ary[0], -1);
+                WorkflowDb wf = new WorkflowDb();
+                wf = wf.getWorkflowDb(flowId);
+                int docId = wf.getDocId();
+
                 Attachment att = new Attachment(Integer.valueOf(ary[1]).intValue());
                 if (att != null && att.isLoaded()) {
-	                str += "<a href='" + request.getContextPath() + "/flow_getfile.jsp?attachId=" + ary[1] +
-	                        "&flowId=" + ary[0] + "' target='_blank'>" + att.getName() + "</a><br />";
+	                str += "<span id='helper_" + ff.getName() + "'><a href='" + request.getContextPath() + "/flow_getfile.jsp?attachId=" + ary[1] +
+	                        "&flowId=" + ary[0] + "' target='_blank'>" + att.getName() + "</a>";
+                    if (ff.isEditable()) {
+                        str += "&nbsp;&nbsp;<a href='javascript:;' onclick=\"delAtt(" + docId + "," + att.getId() + ", '" + ff.getName() + "')\">[删除]</a>";
+                    }
+	                str += "<br /></span>";
                 }
             }
             // 如果只有一个元素，则说明是visual模块所存，字段中存的是diskName
@@ -57,38 +74,42 @@ public class AttachmentCtl extends AbstractMacroCtl {
             	com.redmoon.oa.visual.Attachment att = new com.redmoon.oa.visual.Attachment();
             	att = att.getAttachment(ary[0]);
             	if (att != null && att.isLoaded()) {
-            		str += "<a href='" + request.getContextPath() + "/visual_getfile.jsp?attachId=" + att.getId() + "' target='_blank'>" + att.getName() + "</a><br />";
+            		str += "<span id='helper_" + ff.getName() + "'><a href='" + request.getContextPath() + "/visual_getfile.jsp?attachId=" + att.getId() + "' target='_blank'>" + att.getName() + "</a>";
+            		if (ff.isEditable()) {
+                        str += "&nbsp;&nbsp;<a href='javascript:;' onclick=\"delAtt(" + att.getId() + ", '" + ff.getName() + "')\">[删除]</a>";
+                    }
+
+                    Config cfg = Config.getInstance();
+                    if (cfg.getBooleanProperty("canPdfFilePreview") || cfg.getBooleanProperty("canOfficeFilePreview")) {
+                        String s = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
+                        String htmlfile = s.substring(0, s.lastIndexOf(".")) + ".html";
+                        java.io.File fileExist = new java.io.File(htmlfile);
+                        if (fileExist.exists()) {
+                            str += "&nbsp;&nbsp;<a href='javascript:;' onclick=\"addTab('" + att.getName() + "', '" + request.getContextPath() + "/" + att.getVisualPath() + att.getDiskName().substring(0, att.getDiskName().lastIndexOf(".")) + ".html')\">[预览]</a>";
+                        }
+                    }
+            		str += "<br /></span>";
             	}
-            	/*
-                Conn conn = new Conn(Global.getDefaultDB());
-                PreparedStatement pstmt = null;
-                ResultSet rs = null;
-                try {
-                    String sql = "SELECT id FROM visual_attach WHERE diskname=?";
-                    pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, ary[0]);
-                    rs = conn.executePreQuery();
-                    if (rs != null && rs.next()) {
-                        int attId = rs.getInt(1);
-                    	com.redmoon.oa.visual.Attachment att = new com.redmoon.oa.visual.Attachment(attId);
-                    	str += "<a href=\"" + request.getContextPath() + "/visual_getfile.jsp?attachId=" + att.getId() + "\" target=\"_blank\">" + att.getName() + "</a><br />";
-                    }
-                } catch (SQLException e) {
-                    // logger.error("loadFromDbByOrders:" + e.getMessage());
-                	e.printStackTrace();
-                } finally {
-                    if (conn != null) {
-                        conn.close();
-                        conn = null;
-                    }
-                }
-                */
             }
         }
+
         if (ff.isEditable()) {
-        	str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' type='file' size=15>";
+            String desc = ff.getDescription();
+            StringBuffer accept = new StringBuffer();
+            String[] ary = StrUtil.split(desc, ",");
+            if (ary!=null) {
+                for (int i = 0; i < ary.length; i++) {
+                    StrUtil.concat(accept, ",", "." + ary[i].trim());
+                }
+            }
+            // 为防止被forms.less中的input[type=file] block覆盖，而使得必填的*号折行
+        	str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' title='" + ff.getTitle() + "' type='file' style='display:inline'";
+            if (accept.length()>0) {
+                str += " accept='" + accept.toString() + "'";
+            }
+            str += " size=15>";
         } else {
-        	str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' type='hidden' size=15>";
+        	str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' value='" + ff.getValue() + "' type='hidden' size=15>";
         }
         return str;
     }
@@ -107,7 +128,7 @@ public class AttachmentCtl extends AbstractMacroCtl {
 	                        "&flowId=" + ary[0] + "\" target=\"_blank\">" + att.getName() + "</a><br />";
                 }
             }
-            // 如果只有一个元素，则说明是visual模块所存，字段中存的是visual + diskName
+            // 如果只有一个元素，则说明是visual模块所存，字段中存的是diskName
             else if (ary.length==1) {
             	com.redmoon.oa.visual.Attachment att = new com.redmoon.oa.visual.Attachment();
             	att = att.getAttachment(ary[0]);
@@ -187,12 +208,20 @@ public class AttachmentCtl extends AbstractMacroCtl {
     }
 
     /**
-     * 在验证前获取表单域的值，用于附件、图片宏控件不能为空的检查
+     * 在验证前获取表单域的值，用于附件、图片宏控件不能为空的检查，该值同时会被保存下来
      * @param request
      * @param fu
      * @param ff
      */
-    public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) {
+    public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) throws CheckErrException {
+        String desc = ff.getDescription();
+        String[] ary = StrUtil.split(desc.toLowerCase(), ",");
+        List<String> list = null;
+        if (ary!=null) {
+            list = Arrays.asList(ary);
+        }
+        boolean isUploaded = false;
+        Vector vMsg = new Vector();
         Vector v = fu.getFiles();
         Iterator ir = v.iterator();
         while (ir.hasNext()) {
@@ -201,10 +230,42 @@ public class AttachmentCtl extends AbstractMacroCtl {
                                             ff.getName() + " fi.fieldName=" +
                                             fi.getFieldName());
             if (fi.getFieldName().equals(ff.getName())) {
+                isUploaded = true;
                 fu.setFieldValue(ff.getName(), fi.getName());
+                if (list!=null && !list.contains(StrUtil.getFileExt(fi.getName()).toLowerCase())) {
+                    vMsg.addElement(fi.getName() + " 文件非法，格式只能为：" + desc);
+                }
                 break;
             }
-        }    	
+        }
+        // 如果未上传文件，而字段中有值，说明原来可能保存过文件（如：流程中保存草稿），需检查文件格式是否合法
+        if (!isUploaded) {
+            String fieldValue = ff.getValue();
+            if (ff.getValue()!=null && !"".equals(ff.getValue())) {
+                String[] aryVal = fieldValue.split(",");
+                String ext = "";
+                // 如果有两个元素，则说明是流程中所存
+                if (aryVal.length==2) {
+                    Attachment att = new Attachment(Integer.valueOf(aryVal[1]).intValue());
+                    if (att != null && att.isLoaded()) {
+                        ext = StrUtil.getFileExt(att.getDiskName());
+                        fu.setFieldValue(ff.getName(), att.getDiskName());
+                    }
+                }
+                // 如果只有一个元素，则说明是visual模块所存，字段中存的是diskName
+                else if (aryVal.length==1) {
+                    fu.setFieldValue(ff.getName(), aryVal[0]);
+                    ext = StrUtil.getFileExt(aryVal[0]);
+                }
+                if (!"".equals(ext)) {
+                    if (list!=null && !list.contains(ext)) {
+                        vMsg.addElement(ff.getTitle() + " 文件非法，格式只能为：" + desc);
+                    }
+                }
+            }
+        }
+        if (vMsg.size()>0)
+            throw new CheckErrException(vMsg);
     }    
 
     public Object getValueForSave(FormField ff, int flowId, FormDb fd,
@@ -288,6 +349,17 @@ public class AttachmentCtl extends AbstractMacroCtl {
                 dcm.refreshUpdate(doc.getID(), 1);
             }
         }
+        else {
+            // 如果ff的值不为空，则说明原来已有值（如流程中退回时），而fu.getFieldValue(ff.getName())中为setValueForValidate中设的值，故不能再取fu中的值
+            String val = StrUtil.getNullStr(ff.getValue());
+            if ("".equals(val)) {
+                // 如果是来自于表单域选择宏控件的映射，则在converToHtmlCtl中，将原来为file类型的控件改为了hidden，故fileUpload中会传入映射的值
+                String r = StrUtil.getNullStr(fu.getFieldValue(ff.getName()));
+                if (!"".equals(r)) {
+                    re = r;
+                }
+            }
+        }
         return re;
     }
 
@@ -305,6 +377,11 @@ public class AttachmentCtl extends AbstractMacroCtl {
                 // return fdao.getVisualPath() + "/" + fi.getDiskName();
                 return fi.getDiskName();
             }
+        }
+        // 如果是来自于表单域选择宏控件的映射，则在converToHtmlCtl中，将原来为file类型的控件改为了hidden，故fileUpload中会传入映射的值
+        String r = StrUtil.getNullStr(fu.getFieldValue(ff.getName()));
+        if (!"".equals(r)) {
+            return r;
         }
         return ff.getDefaultValue();
     }
@@ -351,7 +428,7 @@ public class AttachmentCtl extends AbstractMacroCtl {
             ir = vt.iterator();
             // 取得ID为最小的attach，并将其删除
             int count = 0;
-            int minId = Integer.MAX_VALUE;
+            long minId = Long.MAX_VALUE;
             com.redmoon.oa.visual.Attachment lastAtt = null;
             while (ir.hasNext()) {
                 com.redmoon.oa.visual.Attachment att = (com.redmoon.oa.visual.Attachment) ir.next();
@@ -388,4 +465,24 @@ public class AttachmentCtl extends AbstractMacroCtl {
     public String getControlOptions(String userName, FormField ff) {
         return "";
     }
+
+    /**
+     * 取得根据名称（而不是值）查询时需用到的SQL语句，如果没有特定的SQL语句，则返回空字符串
+     * @param request
+     * @param ff 当前被查询的字段
+     * @param value
+     * @param isBlur 是否模糊查询
+     * @return
+     */
+    public String getSqlForQuery(HttpServletRequest request, FormField ff, String value, boolean isBlur) {
+        if (isBlur) {
+            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, visual_attach a where f.id=a.visualId and a.name like " +
+                    StrUtil.sqlstr("%" + value + "%");
+        }
+        else {
+            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, visual_attach a where f.id=a.visualId and a.name=" +
+                    StrUtil.sqlstr(value);
+        }
+    }
+
 }

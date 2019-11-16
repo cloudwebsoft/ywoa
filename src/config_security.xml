@@ -11,6 +11,6 @@
 	<isRememberUserName desc="是否记住用户名">true</isRememberUserName>
 	<isRememberPwdDisplay desc="是否记住密码选项是否可见">true</isRememberPwdDisplay>
 	<isLoginAuto desc="是否可以自动登录">true</isLoginAuto>
-	<isAccessUpfileNeedLogin desc="访问upfile目录是否需登录">true</isAccessUpfileNeedLogin>
+	<isAccessUpfileNeedLogin desc="访问upfile目录是否需登录">false</isAccessUpfileNeedLogin>
 	<isPwdCanReset desc="是否可通过邮箱重置密码，如开启，则强制用户在登录后完善邮箱信息">0</isPwdCanReset>
 </config>

@@ -132,6 +132,8 @@ function DisableCtl(name, ctlType, ctlValue, ctlValueRaw) {
                         }
                         else {
 	                    	radioboxs[i].disabled = true;
+				// chrome下，会使得radioboxs数组的长度发生变化，带来问题
+							// radioboxs[i].setAttribute("name", name + "_disabled");
                         }
                     }
                     // 只插入一次
@@ -153,7 +155,7 @@ function DisableCtl(name, ctlType, ctlValue, ctlValueRaw) {
                     	ctlValueShow = showObj.innerHTML;
                 	showObj.parentNode.removeChild(showObj);
                 }
-            
+
                 var child = document.createElement("SPAN");
                 child.innerHTML = "<span id='" + name + "_show'>" + ctlValueShow + "</span><textarea style='display:none' name='" + name + "'>" + ctlValueRaw + "</textarea>"; 
                 // 替换掉后，在android中得不到提交，经测试与jquery.form无关
@@ -174,9 +176,11 @@ function DisableCtl(name, ctlType, ctlValue, ctlValueRaw) {
 
 function HideCtl(name, ctlType, macroType) {
    var len = flowForm.elements.length;
+   var isFound = false;
    for(var i=0;i < len;i++) {
 		var obj = flowForm.elements[i];
 		if (obj.name==name) {
+			isFound = true;
 			if (ctlType=="DATE" || ctlType=="DATE_TIME") {
 				try {
 					var btnImgObj = o(name + "_btnImg");
@@ -206,15 +210,23 @@ function HideCtl(name, ctlType, macroType) {
                  }
             }
 			else {
-                  if (o(name + "_show"))       
-                      o(name + "_show").style.display = "none";
-                  if (o(name))
-                      o(name).style.display = "none";
+				if (o(name + "_show"))
+				  o(name + "_show").style.display = "none";
+				if (o(name))
+				  o(name).style.display = "none";
 			}
 			return;
 		}
    }
-   
+
+	// 在字段管理中设置的隐藏字段，在flow_modify.jsp页面中，因为form中的元素已不存在，变为了span，所以需另外处理
+	if (!isFound) {
+		if (o(name + "_show"))
+			o(name + "_show").style.display = "none";
+		if (o(name))
+			o(name).style.display = "none";
+	}
+
     if (macroType=="nest_table") {
         o("cwsNestTable").style.display = "none";
     }
@@ -288,7 +300,7 @@ function ClearAccessory() {
                 if (btnObj.reserve=="true")
                     ;
                 else
-                    btnObj.outerHTML = "";
+                    $(btnObj).remove();
             }
             catch (e) {
             }
@@ -297,21 +309,27 @@ function ClearAccessory() {
 
 	while (true) {
 		var isFinded = false;
-		var len = document.all.tags('IMG').length;
+		var imgs;
+		if (isIE8) {
+			imgs = document.all.tags('IMG');
+		}
+		else {
+			imgs = document.getElementsByTagName('IMG');
+		}
+		var len = imgs.length;
 		for(var i=0; i < len; i++) { 
 			try {
-				var imgObj = document.all.tags('IMG')[i];
-				// alert(imgObj.src);
+				var imgObj = imgs[i];
 				if (imgObj.src.indexOf("gif")!=-1 && imgObj.src.indexOf("file_flow")) {
 					// imgObj.outerHTML = ""; // 会清除所有图片，当流程中表单存档时就会出现问题，目录树的图片也会被清除，另外在表单中特意上传的图片也会被清除
 					// isFinded = true;
 				}
 				if (imgObj.src.indexOf("calendar.gif")!=-1) {
-					imgObj.outerHTML = "";
+					$(imgObj).remove();
 					isFinded = true;
 				}
 				if (imgObj.src.indexOf("clock.gif")!=-1) {
-					imgObj.outerHTML = "";
+					$(imgObj).remove();
 					isFinded = true;
 				}				
 			}

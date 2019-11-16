@@ -1,28 +1,27 @@
 package com.redmoon.oa.flow;
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-
-import javax.servlet.http.HttpServletRequest;
-
 import bsh.EvalError;
 import bsh.Interpreter;
 import cn.js.fan.db.Conn;
 import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
-import com.cloudwebsoft.framework.aop.ProxyFactory;
 import com.cloudwebsoft.framework.aop.Pointcut.MethodNamePointcut;
+import com.cloudwebsoft.framework.aop.ProxyFactory;
 import com.cloudwebsoft.framework.aop.base.Advisor;
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.macroctl.*;
-import com.redmoon.oa.flow.strategy.*;
-import com.redmoon.oa.message.*;
+import com.redmoon.oa.flow.strategy.IStrategy;
+import com.redmoon.oa.flow.strategy.StrategyMgr;
+import com.redmoon.oa.flow.strategy.StrategyUnit;
+import com.redmoon.oa.message.IMessage;
+import com.redmoon.oa.message.MessageDb;
+import com.redmoon.oa.message.MobileAfterAdvice;
 import com.redmoon.oa.oacalendar.OACalendarDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
@@ -31,15 +30,26 @@ import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.pvg.RoleMgr;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.util.BeanShellUtil;
-
 import org.apache.log4j.Logger;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
-import org.json.*;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xml.sax.InputSource;
-import com.redmoon.kit.util.FileUpload;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.StringReader;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
 
 /**
  * workflow_action:410.000000,98.000000,490.000000,138.000000,,179,0,新用户16,2,174,,0,;
@@ -498,8 +508,19 @@ public class WorkflowActionDb implements Serializable {
                     plusType = plusJson.getInt("type");
                     plusMode = plusJson.getInt("mode");
                     plusUsers = StrUtil.split(plusJson.getString("users"), ",");
-                    from = plusJson.getString("from");
-                    internal = plusJson.getString("internal");
+                    // 向下兼容，兼容1.3版
+                    if (plusJson.has("from")) {
+                        from = plusJson.getString("from");
+                    }
+                    else {
+                        from = "";
+                    }
+                    if (plusJson.has("internal")) {
+                        internal = plusJson.getString("internal");
+                    }
+                    else {
+                        internal = "";
+                    }
                 } catch (JSONException ex1) {
                 	if (ex1.getMessage().indexOf("internal") == -1) {
                 		throw new ErrMsgException(ex1.getMessage());
@@ -650,7 +671,6 @@ public class WorkflowActionDb implements Serializable {
                                                                   privAction, this,
                                                                   WorkflowActionDb.STATE_PLUS, getFlowId());
                                 wf.sendNotifyMsgAndEmail(request, newmad, sendmail);
-
                                 return true;
                             }
                         }
@@ -774,6 +794,7 @@ public class WorkflowActionDb implements Serializable {
             Logger.getLogger(getClass()).info("changeStatus: userName=" + userName);
             int len = (users == null ? 0 : users.length);
             boolean canFinish = false;
+            // len==1的情况不能考虑，因为可能有加签，此时userName只有1个用户，而实际上还有加签的待办记录存在
             if (len==1) {
                 canFinish = true;
             }
@@ -1034,7 +1055,7 @@ public class WorkflowActionDb implements Serializable {
             LogUtil.getLog(getClass()).info("matchNextBranch:cond=" + cond);
             // 判别条件
             boolean isValid = false;
-            // 如果条件为空，则该分支线为默认条件
+            // 如果条件类型为“无条件”或条件内容为空，则该分支线为默认条件
             if ((cond.equals("") || wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_NONE)) && 
             		!wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_COMB_COND)
             		 && !wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_MUST)) {
@@ -1182,8 +1203,7 @@ public class WorkflowActionDb implements Serializable {
                 	   FormField ff =  (FormField)ir1.next();
                 	   filedList.add(ff.getName());
                    }
-                    
-                    
+
             		/*
             		 * LeafPriv lp = new LeafPriv(wld.getTypeCode()); if
             		 * (!lp.canUserSee(privilege.getUser(request))) { throw new
@@ -1197,8 +1217,7 @@ public class WorkflowActionDb implements Serializable {
 						SAXBuilder parser = new SAXBuilder();
 						org.jdom.Document doc;
 						try {
-							doc = parser.build(new InputSource(
-									new StringReader(wld_linkProp)));
+							doc = parser.build(new InputSource(new StringReader(wld_linkProp)));
 							
 							StringBuffer sb = new StringBuffer();
 							
@@ -1267,33 +1286,103 @@ public class WorkflowActionDb implements Serializable {
 											}
 										}
 										else if (name.equals(WorkflowPredefineDb.COMB_COND_TYPE_PRIV_DEPT)) {
-											sb.append(firstBracket);
-											sb.append("部门 ");
+                                            sb.append(firstBracket);
 
-											if(op.equals("=")){
-												op = "==";
-											}else{
-												op = "!=";
-											}
+                                            DeptUserDb dud = new DeptUserDb();
+                                            Vector vDept = dud.getDeptsOfUser(userName);
+                                            // 如果有多个部门
+                                            if (vDept.size() > 1) {
+                                                sb.append("(");
+                                            }
+                                            for (int k = 0; k < vDept.size(); k++) {
+                                                DeptDb dd = (DeptDb) vDept.elementAt(k);
 
-											sb.append(op);											
-											sb.append("\"" + value + "\"");
-											sb.append(twoBracket);
-											
+                                                sb.append("\"" + dd.getCode() + "\"");
+                                                if (op.equals("=")) {
+                                                    op = "==";
+                                                } else {
+                                                    op = "!=";
+                                                }
+                                                sb.append(op);
+                                                sb.append("\"" + value + "\"");
+
+                                                if (vDept.size()>1 && k != vDept.size()-1) {
+                                                    if (op.equals("==")) {
+                                                        sb.append(" || ");
+                                                    }
+                                                    else {
+                                                        sb.append(" and ");
+                                                    }
+                                                }
+                                            }
+                                            if (vDept.size() > 1) {
+                                                sb.append(")");
+                                            }
+
+                                            sb.append(twoBracket);
 										}
 										else if (name.equals(WorkflowPredefineDb.COMB_COND_TYPE_PRIV_ROLE)) {
-											sb.append(firstBracket);
-											sb.append("角色 ");
+											 sb.append(firstBracket);
 
-											if(op.equals("=")){
-												op = "==";
-											}else{
-												op = "!=";
-											}
+                                            UserDb user = new UserDb();
+                                            user = user.getUserDb(userName);
+                                            RoleDb[] ary = user.getRoles();
 
-											sb.append(op);											
-											sb.append("\"" + value + "\"");	
-											sb.append(twoBracket);
+                                            // 如果有多个角色
+                                            if (ary.length > 1) {
+                                                // 去掉member
+                                                RoleDb[] tmp = new RoleDb[ary.length-1];
+                                                int m = 0;
+                                                for (int k=0; k<ary.length; k++) {
+                                                    if (!ary[k].getCode().equals(RoleDb.CODE_MEMBER)) {
+                                                        tmp[m] = ary[k];
+                                                        m++;
+                                                    }
+                                                }
+                                                ary = tmp;
+                                                sb.append("(");
+                                            }
+                                            for (int k = 0; k < ary.length; k++) {
+                                                RoleDb rd = ary[k];
+
+                                                if (op.equals("=")) {
+                                                    sb.append("\"" + rd.getCode() + "\"");
+                                                    op = "==";
+                                                    sb.append(op);
+                                                    sb.append("\"" + value + "\"");
+                                                } else if (op.equals("<>")) {
+                                                    sb.append("\"" + rd.getCode() + "\"");
+                                                    op = "!=";
+                                                    sb.append(op);
+                                                    sb.append("\"" + value + "\"");
+                                                } else {
+                                                    // 比较角色的大小
+                                                    int a = rd.getOrders();
+                                                    RoleDb rdRight = new RoleDb();
+                                                    rdRight = rdRight.getRoleDb(value);
+                                                    if (rdRight.isLoaded()) {
+                                                        int b = rdRight.getOrders();
+                                                        sb.append(a + " " + op + " " + b);
+                                                    }
+                                                    else {
+                                                        throw new ErrMsgException("角色" + value + " 不存在，无法比较大小");
+                                                    }
+                                                }
+
+                                                if (ary.length > 1 && k != ary.length-1) {
+                                                    if (op.equals("==")) {
+                                                        sb.append(" || ");
+                                                    }
+                                                    else {
+                                                        sb.append(" && ");
+                                                    }
+                                                }
+                                            }
+                                            if (ary.length > 1) {
+                                                sb.append(")");
+                                            }
+
+                                            sb.append(twoBracket);
 										}
 										
 										// 去除最后一个逻辑判断
@@ -1314,9 +1403,7 @@ public class WorkflowActionDb implements Serializable {
 								String tempCond = sb.toString();
 								//校验括弧对称性
 								//boolean flag = checkComCond(tempCond);
-								
-								
-								
+
 								// 如果配置了条件
 								if (!tempCond.equals("")) {
 									String script = sb.toString();
@@ -1622,8 +1709,10 @@ public class WorkflowActionDb implements Serializable {
         if (!"".equals(deptOfUserWithMultiDept) && !isTest) {
 	        MyActionDb curMyActionDb = new MyActionDb();
 	        curMyActionDb = curMyActionDb.getMyActionDbOfActionDoingByUser(curAction, curUserName);
-	        curMyActionDb.setPartDept(deptOfUserWithMultiDept);
-	        curMyActionDb.save();
+	        if (curMyActionDb!=null) {
+                curMyActionDb.setPartDept(deptOfUserWithMultiDept);
+                curMyActionDb.save();
+            }
         }
 
         // 如果是自选节点
@@ -3485,7 +3574,9 @@ public class WorkflowActionDb implements Serializable {
         }
         
         // 打回或连续打回操作
-        if ((status==STATE_DOING && newstatus == STATE_NOTDO) || (status==STATE_RETURN && newstatus==STATE_NOTDO)) {
+        if ((status==STATE_FINISHED && newstatus==STATE_NOTDO) // 已完成状态变为未处理状态（变更时返回）
+                || (status==STATE_DOING && newstatus == STATE_NOTDO)
+                || (status==STATE_RETURN && newstatus==STATE_NOTDO)) {
             // 如果本结点是聚合结点则不能被打回
             Vector vfrom = getLinkFromActions();
             if (vfrom.size()==0)
@@ -4630,9 +4721,27 @@ public class WorkflowActionDb implements Serializable {
 
             // 检查所有结束节点是否都已完成
             boolean isDoFinished = false;
-            if (wf.checkEndActionsStatusFinished()) {
-                doWorkflowFinished(request, wf);
+            if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
                 isDoFinished = true;
+            }
+            else {
+                // 如果所有结束节点都已完成
+                if (wf.checkEndActionsStatusFinished()) {
+                    // 如果是允许变更，而且流程以前曾经结束过，则只有当本节点为结束节点时，才可以结束流程
+                    WorkflowPredefineDb wfp = new WorkflowPredefineDb();
+                    wfp = wfp.getDefaultPredefineFlow(wf.getTypeCode());
+                    if (wfp.isReactive()) {
+                        if (wf.getEndDate() != null) {
+                            if (isEnd()) {
+                                doWorkflowFinished(request, wf);
+                                isDoFinished = true;
+                            }
+                        }
+                    } else {
+                        doWorkflowFinished(request, wf);
+                        isDoFinished = true;
+                    }
+                }
             }
 
             // 如果本结点为发散结点
@@ -4700,13 +4809,16 @@ public class WorkflowActionDb implements Serializable {
                 }
             } else if (v.size() == 0) {
                 // 无下一结点，如果检查更改流程中的各个节点的状态都为已完成，则置流程状态为已完成
-                // 检查流程中的节点是否都已完成
             	if (!isDoFinished) {
-	                if (wf.checkStatusFinished()) {
-	                    LogUtil.getLog(getClass()).info("afterChangeStatus: checkStatusFinished=");
-	                	
-	                    doWorkflowFinished(request, wf);
-	                }
+            	    // 如果流程未结束
+                    if (wf.getStatus()!=WorkflowDb.STATUS_FINISHED) {
+                        // 检查流程中的节点是否都已完成
+                        if (wf.checkStatusFinished()) {
+                            LogUtil.getLog(getClass()).info("afterChangeStatus: checkStatusFinished=");
+
+                            doWorkflowFinished(request, wf);
+                        }
+                    }
             	}
             }
 
@@ -5940,6 +6052,10 @@ public class WorkflowActionDb implements Serializable {
      * 是否为结束节点
      */
     private String item1;
+
+    public boolean isEnd() {
+        return "1".equals(item1);
+    }
 
     /**
      * 比较用户与下一节点角色的大小，序号越大角色越大

@@ -504,17 +504,21 @@ public class DirectoryView {
 		Iterator ri = children.iterator();
 		while (ri.hasNext()) {
 			i++;
-			Leaf childlf = (Leaf) ri.next();		
+			Leaf childlf = (Leaf) ri.next();
+			String desc = childlf.getDescription();
+			if (!"".equals(desc)) {
+			    desc = "(" + desc + ")";
+            }
 			
 			if ("-1".equals(parentCode)) {
 				if (str.indexOf("{id:\"" + childlf.getCode()) == -1) {
 					str += "{id:\"" + childlf.getCode() + "\",parent:\"#\",text:\""
-					+ childlf.getName() + "\",state:{opened:true}} ,";
+					+ childlf.getName() + desc + "\",state:{opened:true}} ,";
 				}
 			} else {
 				str += "{id:\"" + childlf.getCode() + "\",parent:\""
 						+ childlf.getParentCode() + "\",text:\""
-						+ childlf.getName() + "\", isUse:\"" + childlf.isUse() + "\" },";
+						+ childlf.getName() + desc + "\", isUse:\"" + childlf.isUse() + "\" },";
 			}
 			Vector childs = dir.getChildren(childlf.getCode());
 			// 如果有子节点
@@ -525,7 +529,10 @@ public class DirectoryView {
 				while (childri.hasNext()) {
 					j++;
 					Leaf child = (Leaf) childri.next();
-					
+                    desc = child.getDescription();
+                    if (!"".equals(desc)) {
+                        desc = "(" + desc + ")";
+                    }
 					// System.out.println("getJson: code=" + child.getCode() + " name=" + child.getName() + "  lic.isPlatformSrc()=" + lic.isPlatformSrc());
 					
 					if (child.getCode().equals(MenuController.SALES)) {
@@ -539,7 +546,7 @@ public class DirectoryView {
 					
 					str += "{id:\"" + child.getCode() + "\",parent:\""
 							+ child.getParentCode() + "\",text:\""
-							+ child.getName() + "\" },";
+							+ child.getName() + desc + "\" },";
 					// 还有子节点(递归调用)
 					Vector ch = dir.getChildren(child.getCode());
 					if (!ch.isEmpty()) {

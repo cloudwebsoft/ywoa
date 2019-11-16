@@ -1,5 +1,6 @@
 package com.redmoon.weixin.mgr;
 
+import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import com.redmoon.oa.account.AccountDb;
@@ -168,7 +169,7 @@ public class WXBaseMgr {
 								res = json.getString("access_token");
 								// ti.tokenExpireTime = json.getLong("expires_in");
 								osv.set("weixin_accesstoken", res);
-								osv.set("weixin_accesstoken_time", System.currentTimeMillis());
+								osv.set("weixin_accesstoken_time", DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
 								osv.save();
 							}
 						}

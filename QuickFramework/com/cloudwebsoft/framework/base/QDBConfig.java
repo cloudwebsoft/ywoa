@@ -20,7 +20,7 @@ import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  *
- * <p>Title: ´ÓconfigDB.xmlÖĞ¶ÁÈ¡±í¡¢Ö÷¼ü¡¢SQLÓï¾äµÈµÄĞÅÏ¢</p>
+ * <p>Title: ä»configDB.xmlä¸­è¯»å–è¡¨ã€ä¸»é”®ã€SQLè¯­å¥ç­‰çš„ä¿¡æ¯</p>
  *
  * <p>Description: </p>
  *
@@ -87,7 +87,7 @@ public class QDBConfig {
     }
 
     /**
-     * È¡µÃ±íµÄÅäÖÃĞÅÏ¢
+     * å–å¾—è¡¨çš„é…ç½®ä¿¡æ¯
      * @param objectName String
      * @return DBTable
      */
@@ -117,7 +117,7 @@ public class QDBConfig {
                         String save = child.getChildText("save");
                         String del = child.getChildText("del");
                         
-                		// È¥µô»»ĞĞ»Ø³µÖÆ±í
+                		// å»æ‰æ¢è¡Œå›è½¦åˆ¶è¡¨
                         create = create.replaceAll("[\\t\\n\\r]", " ");	                        
                         load = load.replaceAll("[\\t\\n\\r]", " ");	                        
                         queryList = queryList.replaceAll("[\\t\\n\\r]", " ");	                        
@@ -214,12 +214,12 @@ public class QDBConfig {
                                 else if (keyType.equals("Date"))
                                     key.put(keyName, new KeyUnit(PrimaryKey.TYPE_DATE, orders));
                                 else
-                                    LogUtil.getLog(getClass()).info("getDBTable: ½âÎö±í" + name + "µÄÖ÷¼üÊ±£¬type=" + keyType + " Î´Öª!");
+                                    LogUtil.getLog(getClass()).info("getDBTable: è§£æè¡¨" + name + "çš„ä¸»é”®æ—¶ï¼Œtype=" + keyType + " æœªçŸ¥!");
                                 orders++;
                             }
                             dt.primaryKey = new PrimaryKey(key);
                         } else
-                            LogUtil.getLog(getClass()).error("getDBTable: ½âÎö±í" + name + "µÄÖ÷¼üÊ±£¬type=" + pkType + " Î´Öª!");
+                            LogUtil.getLog(getClass()).error("getDBTable: è§£æè¡¨" + name + "çš„ä¸»é”®æ—¶ï¼Œtype=" + pkType + " æœªçŸ¥!");
                         try {
                             QCache.getInstance().putInGroup(objName, cacheGroup,
                                                dt);

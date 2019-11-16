@@ -19,16 +19,31 @@ if (op.equals("delAttach")) {
 	Document doc = new Document();
 	doc = doc.getDocument(doc_id);
 	DocContent dc = doc.getDocContent(page_num);
+	Attachment att = new Attachment(attach_id);
+	String fieldName = att.getFieldName();
 	boolean re = dc.delAttachment(attach_id);
 	String str = LocalUtil.LoadString(request,"res.common","info_op_success");
 	if (re) {
+		// 清空对应的field中的值
+		if (fieldName!=null && !"".equals(fieldName)) {
+			int flowId = ParamUtil.getInt(request, "flowId", -1);
+			if (flowId != -1) {
+				WorkflowDb wf = new WorkflowDb();
+				wf = wf.getWorkflowDb(flowId);
+				Leaf lf = new Leaf();
+				lf = lf.getLeaf(wf.getTypeCode());
+				FormDAO fdao = new FormDAO();
+				fdao = fdao.getFormDAO(flowId, new FormDb(lf.getFormCode()));
+				fdao.setFieldValue(fieldName, "");
+				fdao.save();
+			}
+		}
 		out.print("{\"re\":\"true\", \"msg\":\""+str+"\"}");
 	}
 	else
 		out.print("{\"re\":\"false\", \"msg\":\""+str+"\"}");
 	return;
 }
-
 
 String myname = privilege.getUser( request );
 UserMgr um = new UserMgr();
@@ -111,7 +126,7 @@ if (doc!=null) {
 			
 			if (am.getFieldName()!=null && !"".equals(am.getFieldName())) {
 				if (!am.getFieldName().startsWith("att") && !am.getFieldName().startsWith("upload")) {
-					continue;
+					// continue;
 				}
 			}			
 			
@@ -168,7 +183,7 @@ if (doc!=null) {
 				if (lf.getType()==Leaf.TYPE_FREE) {
 					if (wpd.canUserDo(myUser, wf.getTypeCode(), "delAttach")) {
 						%>
-					  	&nbsp;&nbsp;<a href="javascript:;" onClick="delAtt('<%=doc_id%>', '<%=am.getId()%>')"><lt:Label res="res.flow.Flow" key="delete"/></a>						
+					  	&nbsp;&nbsp;<a href="javascript:;" onClick="delAtt('<%=doc_id%>', '<%=am.getId()%>', '<%=am.getFieldName()%>')"><lt:Label res="res.flow.Flow" key="delete"/></a>
 						<%
 					}
 				}

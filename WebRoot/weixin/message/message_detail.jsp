@@ -127,7 +127,7 @@
                     jQuery(".link_li").show();
                     var url;
                     if ("myActionId" in f) {
-                        url = "flow/flow_dispose.jsp?myActionId=" + f.myActionId + "&skey=<%=skey%>";
+                        url = "flow/flow_dispose.jsp?skey=<%=skey%>&flowId=" + f.flowId + "&myActionId=" + f.myActionId;
                     } else {
                         url = "flow/flow_attend_detail.jsp?flowId=" + f.flowId + "&skey=<%=skey%>";
                     }

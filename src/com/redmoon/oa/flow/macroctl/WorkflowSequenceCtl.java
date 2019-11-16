@@ -72,8 +72,8 @@ public class WorkflowSequenceCtl extends AbstractMacroCtl {
 	 *            String
 	 * @param padLength
 	 *            int
-	 * @param json
-	 *            JSONObject 数据库中存储的序列JSON
+	 * @param jsonAry
+	 *            JSONArray 数据库中存储的序列JSON
 	 * @return String
 	 * @throws ErrMsgException
 	 */
@@ -298,7 +298,8 @@ public class WorkflowSequenceCtl extends AbstractMacroCtl {
 				value = makeSequence(wsd.getTemplate(), deptShortName, wsd
 						.getLength(), jsonAry, isCurrent, wsd);
 				// System.out.println(getClass() + " value=" + value);
-
+				wsd.setCurValue(jsonAry.toString());
+				wsd.save();
 			}
 		} catch (Exception e) {
 			LogUtil.getLog(getClass()).error(
@@ -326,7 +327,7 @@ public class WorkflowSequenceCtl extends AbstractMacroCtl {
 		String value = getSequenceVal(userName, ff);
 		// if (ff.isEditable()) {
 		String str = "<input id='" + ff.getName() + "' name='" + ff.getName()
-				+ "' value='" + value + "' size=15>";
+				+ "' value='" + value + "' size='15' readonly='readonly' />";
 		return str;
 		// }
 		/*

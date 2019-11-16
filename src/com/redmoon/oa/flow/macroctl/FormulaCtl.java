@@ -33,14 +33,22 @@ public class FormulaCtl extends AbstractMacroCtl {
         // String str = "<input id='" + ff.getName() + "' name='" + ff.getName() + "' value='" + getFormulaValue(ifdao, ff) + "' readonly />";
 		String str = "<input id='" + ff.getName() + "' name='" + ff.getName() + "' value='' readonly />";
 
-		int flowId = StrUtil.toInt((String) request.getAttribute("cwsId"), -1);
+		int flowId = -1;
 		String pageType = (String)request.getAttribute("pageType");
+		if ("flow".equals(pageType) || "flowShow".equals(pageType)) {
+			flowId = StrUtil.toInt((String) request.getAttribute("cwsId"), -1);
+		}
 
+		long id = -1;
+		// 模块添加的时候，ifdao为null
+		if (ifdao!=null) {
+			id = ifdao.getId();
+		}
 		if (request.getAttribute("isFormulaCtlJS_" + ff.getName()) == null) {
 			str += "<script src='" + request.getContextPath()
 					+ "/flow/macro/macro_formula_ctl_js.jsp?pageType=" + pageType
 					+ "&formCode=" + StrUtil.UrlEncode(ff.getFormCode())
-					+ "&fieldName=" + ff.getName() + "&flowId=" + flowId + "&isHidden=" + ff.isHidden() + "&editable=" + ff.isEditable()
+					+ "&fieldName=" + ff.getName() + "&flowId=" + flowId + "&id=" + id + "&isHidden=" + ff.isHidden() + "&editable=" + ff.isEditable()
 					+ "'></script>\n";
 			request.setAttribute("isFormulaCtlJS_" + ff.getName(), "y");
 		}
@@ -62,6 +70,7 @@ public class FormulaCtl extends AbstractMacroCtl {
 			code = json.getString("code");
 			params = json.getString("params");
 		} catch (JSONException e) {
+			DebugUtil.e(getClass(), "getFormulaValue " + ff.getName() + " " + ff.getTitle(), desc);
 			e.printStackTrace();
 		}
 
@@ -71,24 +80,38 @@ public class FormulaCtl extends AbstractMacroCtl {
     	if (ifdao!=null) {
 	    	for (int i=0; i<paramAry.length; i++) {
 	    		// 如果不是数字，也不是字符串
+				paramAry[i] = paramAry[i].trim();
 	    		if (!StrUtil.isDouble(paramAry[i]) && !paramAry[i].startsWith("\"")) {
 	    			// 判断是否为字段
 	    			boolean isField = false;
-	    			Iterator ir = ifdao.getFields().iterator();
-	    			while (ir.hasNext()) {
-	    				FormField formField = (FormField)ir.next();
-	    				if (formField.getName().equals(paramAry[i])) {
-	    					isField = true;
-	    					break;
-	    				}
-	    			}
-	    			// 如果是字段，则从ifdao中取值，否则仍保留为原字符串
-	    			if (isField) {
-	    				paramAry[i] = StrUtil.getNullStr(ifdao.getFieldValue(paramAry[i]));
-	    			}
+	    			String param = paramAry[i];
+	    			if (param.equalsIgnoreCase("id")) {
+						isField = true;
+						paramAry[i] = String.valueOf(ifdao.getId());
+					}
+	    			else if (param.equalsIgnoreCase("cws_id")) {
+						isField = true;
+						paramAry[i] = ifdao.getCwsId();
+					}
+					else if (param.equalsIgnoreCase("cws_status")) {
+						isField = true;
+						paramAry[i] = String.valueOf(ifdao.getCwsStatus());
+					}
 	    			else {
-						DebugUtil.e(getClass(), "getFormulaValue", "公式：" + code + " 参数：" + params + " 在表单中未找到");
-	    				return "公式：" + code + " 参数：" + params + " 在表单中未找到";
+						Iterator ir = ifdao.getFields().iterator();
+						while (ir.hasNext()) {
+							FormField formField = (FormField) ir.next();
+							if (formField.getName().equals(param)) {
+								isField = true;
+								paramAry[i] = StrUtil.getNullStr(ifdao.getFieldValue(paramAry[i]));
+								break;
+							}
+						}
+					}
+	    			// 如果是字段，则从ifdao中取值，否则仍保留为原字符串
+	    			if (!isField) {
+						// DebugUtil.e(getClass(), "getFormulaValue", "公式：" + code + " 参数：" + params + "中的" + paramAry[i] + " 在表单中未找到");
+	    				return "公式：" + code + " 参数：" + params + "中的" + paramAry[i] + " 在表单中未找到";
 					}
 	    		}
 	    	}
@@ -98,12 +121,13 @@ public class FormulaCtl extends AbstractMacroCtl {
     		fd = fd.getFormDb(ff.getFormCode());
     		// 如果fdao为null，则说明是添加模块，如果参数中带有表单域，则不需运算公式，直接返回空值
 			for (int i=0; i<paramAry.length; i++) {
+				String param = paramAry[i].trim();
 				// 如果不是数字
-				if (!StrUtil.isDouble(paramAry[i]) && !paramAry[i].startsWith("\"")) {
+				if (!StrUtil.isDouble(param) && !param.startsWith("\"")) {
 					Iterator ir = fd.getFields().iterator();
 					while (ir.hasNext()) {
 						FormField formField = (FormField)ir.next();
-						if (formField.getName().equals(paramAry[i])) {
+						if (formField.getName().equals(param)) {
 							return "";
 						}
 					}
@@ -115,7 +139,7 @@ public class FormulaCtl extends AbstractMacroCtl {
     	String args = StringUtils.join(paramAry, ",");
     	
     	String formula = "#" + code + "(" + args + ")";
-    	DebugUtil.log(FormulaCtl.class, "getFormulaValue", "formula=" + formula);
+    	// DebugUtil.log(FormulaCtl.class, "getFormulaValue", "formula=" + formula);
     	String val = "";
     	try {
 			FormulaResult fr = FormulaUtil.render(formula);
@@ -139,6 +163,20 @@ public class FormulaCtl extends AbstractMacroCtl {
 			return fieldValue;
 		}
 
+		String desc = ff.getDescription();
+		boolean isAutoWhenList = false;
+		try {
+			JSONObject json = new JSONObject(desc);
+			if (json.has("isAutoWhenList")) {
+				isAutoWhenList = json.getBoolean("isAutoWhenList");
+				if (!isAutoWhenList) {
+					return fieldValue;
+				}
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+
 		IFormDAO ifdao = RequestUtil.getFormDAO(request);
 		return getFormulaValue(ifdao, ff);
     }
@@ -148,14 +186,15 @@ public class FormulaCtl extends AbstractMacroCtl {
     }
 
     public String getControlOptions(String userName, FormField ff) {
-    	IFormDAO ifdao;
+/*    	IFormDAO ifdao;
     	if (formDaoFlow!=null) {
     		ifdao = formDaoFlow;
     	}
     	else {
     		ifdao = formDaoVisual;
     	}
-    	return getFormulaValue(ifdao, ff);
+    	return getFormulaValue(ifdao, ff);*/
+		return "";
     }
 
 	@Override

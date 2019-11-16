@@ -130,7 +130,6 @@
 	
   </head>
   <script type="text/javascript">
-  	
   	function add(){
   		var roleValue = $("#roleHidden").val();
   		var deptValue = $("#deptHidden").val();
@@ -158,7 +157,6 @@
   		
   		changeFieldName(i);
   		
-  		
   		var getObj = document.getElementsByName("logical");
 		for(var j=0;j<getObj.length;j++){
 			if(j == (getObj.length-1)){
@@ -170,7 +168,6 @@
 		
 		$("#currentMaxIndex").val(i+2);
 		$("#maxIndex").val(i+2);
-		
   	}
   	
   	function del(obj){
@@ -203,8 +200,8 @@
 			document.getElementById("userDept"+str).style.display="none";
 			
 			$("#compare"+str).empty();
-			$("#compare"+str).append("<option value='='>=</option><option value='<>'><></option>");
-			
+			// $("#compare"+str).append("<option value='='>=</option><option value='<>'><></option>");
+			$("#compare"+str).append("<option value='>='>>=</option><option value='<='><=</option><option value='>'>></option><option value='<'><</option><option value='='>=</option><option value='<>'><></option>");
 		}
 		if(columnValue == "<%=WorkflowPredefineDb.COMB_COND_TYPE_FIELD%>"){
 			document.getElementById("fieldName"+str).style.display="inline-block";
@@ -212,7 +209,7 @@
 			document.getElementById("userRole"+str).style.display="none";
 			document.getElementById("userDept"+str).style.display="none";
 			o("compare"+str).value = ">=";
-			
+
 			document.getElementById("columnName"+str).value = "";
 			
 			$("#compare"+str).empty();
@@ -309,11 +306,11 @@
 		window.close();
 	}
 	
-	function changeFieldName(str){
+	function changeFieldName(str) {
 		var obj = document.getElementById("fieldName"+str);
 		var mainColumn = $("#mainColumn"+str).val();
 		var index = obj.selectedIndex;
-		var fieldType =obj.options[index].getAttribute("id");  
+		var fieldType = obj.options[index].getAttribute("id");
 		if (fieldType == "<%=FormField.FIELD_TYPE_TEXT%>" || fieldType == "<%=FormField.FIELD_TYPE_VARCHAR%>"){
 			$("#compare"+str).empty();
 			$("#compare"+str).append("<option value='='>=</option><option value='<>'><></option>");
@@ -323,15 +320,16 @@
 		}
 		if(mainColumn == "<%=WorkflowPredefineDb.COMB_COND_TYPE_FIELD%>"){
 			document.getElementById("columnInput"+str).style.display="inline";
-		}else{
+		}else if (mainColumn == "<%=WorkflowPredefineDb.COMB_COND_TYPE_PRIV_ROLE%>") {
+			$("#compare"+str).empty();
+			$("#compare"+str).append("<option value='='>=</option><option value='>='>>=</option><option value='<='><=</option><option value='>'>></option><option value='<'><</option><option value='<>'><></option>");
+		}
+		else {
 			$("#compare"+str).empty();
 			$("#compare"+str).append("<option value='='>=</option><option value='<>'><></option>");
 			document.getElementById("columnInput"+str).style.display="none";
 		}
-		
-		
-		
-		
+
 		var fieldNameType =obj.options[index].getAttribute("name"); 
 		var val =obj.options[index].getAttribute("value"); 
 		var lrc =obj.options[index].getAttribute("lrc"); 
@@ -393,7 +391,6 @@
     			</select>
 	    	</tr>
 	    	<%if(linkProp.equals("")){ %>
-	    	
 	    	<tr align="center">
 	    		<td width="20%">
 	    			<select name="mainColumn" id="mainColumn0" onchange="changeColumn(0)">
@@ -401,10 +398,8 @@
 	    				<option value="<%=WorkflowPredefineDb.COMB_COND_TYPE_PRIV_ROLE%>">上一节点用户角色</option>
 	    				<option value="<%=WorkflowPredefineDb.COMB_COND_TYPE_PRIV_DEPT%>">上一节点用户部门</option>
 	    			</select>
-	    			
 	    		</td>
 	    		<td width="40%" align="left">
-	    		
 	    			<select name="firstBracket" id="firstBracket0">
 	    				<option value=""></option>
 	    				<option value="(">(</option>
@@ -555,14 +550,14 @@
 	    						$("#compare<%=i%>").append("<option value='>='>>=</option><option value='<='><=</option><option value='>'>></option><option value='<'><</option><option value='='>=</option><option value='<>'><></option>");
 	    						o("compare<%=i%>").value="<%=e.getChildText("operator")%>";
 	    					}
-    						
     					}
 	    				if('<%=e.getChildText("name")%>' == "<%=WorkflowPredefineDb.COMB_COND_TYPE_PRIV_ROLE%>"){
     						document.getElementById("userRole<%=i%>").style.display="inline-block";
     						document.getElementById("columnInput<%=i%>").style.display="none";
     						//document.getElementById("compare<%=i%>").disabled=true;
     						$("#compare<%=i%>").empty();
-    						$("#compare<%=i%>").append("<option value='='>=</option><option value='<>'><></option>");
+    						// $("#compare<%=i%>").append("<option value='='>=</option><option value='<>'><></option>");
+							$("#compare<%=i%>").append("<option value='>='>>=</option><option value='<='><=</option><option value='>'>></option><option value='<'><</option><option value='='>=</option><option value='<>'><></option>");
     						o("compare<%=i%>").value="<%=e.getChildText("operator")%>";
     					}
 	    				if('<%=e.getChildText("name")%>' == "<%=WorkflowPredefineDb.COMB_COND_TYPE_PRIV_DEPT%>"){
@@ -573,14 +568,12 @@
     						$("#compare<%=i%>").append("<option value='='>=</option><option value='<>'><></option>");
     						o("compare<%=i%>").value="<%=e.getChildText("operator")%>";
     					}
-    					
-    					
+
     					var obj = document.getElementById("fieldName<%=i%>");
 						var index = obj.selectedIndex;
 						var fieldNameType =obj.options[index].getAttribute("name"); 
 						var val =obj.options[index].getAttribute("value"); 
-						var lrc =obj.options[index].getAttribute("lrc"); 
-						
+						var lrc =obj.options[index].getAttribute("lrc");
 						
     					$.ajax({
 							type: "post",
@@ -642,7 +635,6 @@
 	    			<input type="button" name="" id="" value="添加" onclick="add()"/>&nbsp;&nbsp;&nbsp;<input type='button' value='删除 ' onclick='del(this)'/>
 	    		</td>
 	    	</tr>
-	    	
 	    	<%	    
 				i++;
 	    	}

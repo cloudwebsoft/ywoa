@@ -123,6 +123,7 @@
 		<%
 			String chooseUsers = ParamUtil.getParam(request,"chooseUsers");
 			boolean isAt = ParamUtil.getBoolean(request,"isAt",false);
+			boolean isFree = ParamUtil.getBoolean(request, "isFree", false);
 			String code = ParamUtil.get(request,"code");
 			boolean isMulti = ParamUtil.getBoolean(request, "isMulti", false);
 			String internalName = ParamUtil.get(request, "internalName");
@@ -131,7 +132,7 @@
 		var list = document.getElementById('list');
 		var header = document.querySelector('header.mui-bar');
 		list.style.height = (document.body.offsetHeight - header.offsetHeight) + 'px';
-		var op = {"chooseUsers":"<%=chooseUsers%>", "internalName":"<%=internalName%>", "isAt":<%=isAt%>, "code":'<%=code%>', "isMulti":"<%=isMulti%>"};
+		var op = {"chooseUsers":"<%=chooseUsers%>", "internalName":"<%=internalName%>", "isAt":<%=isAt%>, "code":'<%=code%>', "isMulti":"<%=isMulti%>", "isFree":<%=isFree%>};
 	 	window.user = new mui.User(list,op);
 		window.user.chooseUserInit();
 	</script>

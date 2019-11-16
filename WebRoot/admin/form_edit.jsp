@@ -6,6 +6,8 @@
 <%@ page import = "com.redmoon.oa.flow.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import = "com.redmoon.oa.dept.*"%>
+<%@ page import="com.redmoon.oa.kernel.License" %>
+<%@ page import="org.apache.http.client.utils.URIBuilder" %>
 <%
 String rootpath = request.getContextPath();
 String code = ParamUtil.get(request, "code");
@@ -18,10 +20,17 @@ String code = ParamUtil.get(request, "code");
 <title>编辑表单</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <script src="../inc/common.js"></script>
-<script src="../js/jquery.js"></script>
+<script src="<%=request.getContextPath()%>/js/jquery-1.9.1.min.js"></script>
+<script src="<%=request.getContextPath()%>/js/jquery-migrate-1.2.1.min.js"></script>
 <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
-<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet"	type="text/css" media="screen" />
+<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+<script src="../js/json2.js"></script>
+<script type="text/javascript" src="../js/formpost.js"></script>
+
+<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+<script type="text/javascript" src="../inc/livevalidation_standalone.js"></script>
 
 <script>
 function getFormContent() {
@@ -54,6 +63,8 @@ function myFormEdit_onsubmit() {
 	$('#ieVersion').val(ver);
 	
 	$('#content').val(getFormContent());
+
+    return getFieldsOnSubmit();
 }
 
 //当有重复字段返回时，恢复显示编辑的表单
@@ -399,6 +410,7 @@ if (op.equals("modify")) {
           </td>
     </tr>
   </table>
+    <input id="fieldsAry" name="fieldsAry" type="hidden"/>
 </form>
 <br>
 <table width="90%" align="center" class="percent98">
@@ -415,18 +427,164 @@ if (op.equals("modify")) {
 			// $('#infoSpan').html("设计器只能在IE内核浏览器使用!");
 		}
 	});	
-	</script>    
-    <div id="divContent" name="divContent"><%
-	out.print(cnt);
-	%></div></td>
+	</script>
+        <div id="divContent" name="divContent">
+        <%
+            out.print(cnt);
+        %>
+        </div>
+    </td>
   </tr>
 </table>
+<%
+    License license = License.getInstance();
+    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+    String url = cfg.get("cloudUrl");
+    URIBuilder uriBuilder = new URIBuilder(url);
+    String host = uriBuilder.getHost();
+    int port = uriBuilder.getPort();
+    if (port==-1) {
+        port = 80;
+    }
+    String path = uriBuilder.getPath();
+    if (path.startsWith("/")) {
+        path = path.substring(1);
+    }
+
+    boolean isServerConnectWithCloud = cfg.getBooleanProperty("isServerConnectWithCloud");
+    if (!isServerConnectWithCloud) {
+%>
+<TABLE align="center" class="tabStyle_1 percent60" style="margin-top: 20px; width:450px">
+    <TR>
+        <TD align="left" class="tabStyle_1_title">上传助手</TD>
+    </TR>
+    <TR>
+        <td align="center">
+            <object classid="CLSID:DE757F80-F499-48D5-BF39-90BC8BA54D8C" codebase="../activex/cloudym.CAB#version=1,3,0,0" width=450 height=86 align="middle" id="webedit">
+                <param name="Encode" value="utf-8">
+                <param name="MaxSize" value="<%=Global.MaxSize%>">
+                <!--上传字节-->
+                <param name="ForeColor" value="(255,255,255)">
+                <param name="BgColor" value="(107,154,206)">
+                <param name="ForeColorBar" value="(255,255,255)">
+                <param name="BgColorBar" value="(0,0,255)">
+                <param name="ForeColorBarPre" value="(0,0,0)">
+                <param name="BgColorBarPre" value="(200,200,200)">
+                <param name="FilePath" value="">
+                <param name="Relative" value="2">
+                <!--上传后的文件需放在服务器上的路径-->
+                <param name="Server" value="<%=host%>">
+                <param name="Port" value="<%=port%>">
+                <param name="VirtualPath" value="">
+                <param name="PostScript" value="">
+                <param name="PostScriptDdxc" value="">
+                <param name="SegmentLen" value="204800">
+                <param name="BasePath" value="">
+                <param name="InternetFlag" value="">
+                <param name="Organization" value="<%=license.getCompany()%>" />
+                <param name="Key" value="<%=license.getKey()%>" />
+            </object>
+        </TD>
+    </TR>
+</table>
+<%
+    }
+%>
 <br />
 </body>
 <script>
+function getFieldsOnSubmit() {
+    var re = true;
+    <%
+    if (isServerConnectWithCloud) {
+    %>
+    $.ajax({
+        async: false,
+        type: "post",
+        url: "../form/parseForm.do",
+        contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+        data:  {
+            content: getFormContent()
+        },
+        dataType: "html",
+        beforeSend: function (XMLHttpRequest) {
+            $('body').showLoading();
+        },
+        success: function (data, status) {
+            data = $.parseJSON(data);
+            if (data.ret=="1") {
+                $('#fieldsAry').val(JSON.stringify(data.fields));
+            }
+            else {
+                jAlert(data.msg, "提示");
+                re = false;
+            }
+        },
+        complete: function (XMLHttpRequest, status) {
+            $('body').hideLoading();
+        },
+        error: function (XMLHttpRequest, textStatus) {
+            // 请求出错处理
+            alert(XMLHttpRequest.responseText);
+        }
+    });
+    <%
+    }else {
+    %>
+        var we = o("webedit");
+        we.PostScript = "<%=path%>/public/module/parseForm.do";
+        loadDataToWebeditCtrl(o("myFormEdit"), o("webedit"));
+        we.AddField("content", getFormContent());
+        we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+        we.UploadToCloud();
+
+        var data = $.parseJSON(we.ReturnMessage);
+        if (data.ret=="1") {
+            $('#fieldsAry').val(JSON.stringify(data.fields));
+        }
+        else {
+            re = false;
+        }
+    <%
+    }
+    %>
+    return re;
+}
+
 function openFormDesigner() {
 	// var preWin=window.open('<%=request.getContextPath()%>/ueditor/form_designer.jsp?op=edit&formCode=<%=fd.getCode()%>','','left=0,top=0,width=' + (screen.width-6) + ',height=' + (screen.height-78) + ',resizable=1,scrollbars=1, status=1, toolbar=0, menubar=0');
 	openWinMax('<%=request.getContextPath()%>/ueditor/form_designer.jsp?op=edit&formCode=<%=fd.getCode()%>');
 }
+
+function checkWebEditInstalled() {
+    var bCtlLoaded = false;
+    try	{
+        if (typeof(o("webedit").AddField)=="undefined")
+            bCtlLoaded = false;
+        if (typeof(o("webedit").AddField)=="unknown") {
+            bCtlLoaded = true;
+        }
+    }
+    catch (ex) {
+    }
+    if (!bCtlLoaded) {
+        $('<div></div>').html('您还没有安装客户端控件，请点击确定此处下载安装！').activebar({
+            'icon': 'images/alert.gif',
+            'highlight': '#FBFBB3',
+            'url': 'activex/oa_client.exe',
+            'button': 'images/bar_close.gif'
+        });
+    }
+}
+
+<%
+    if (!isServerConnectWithCloud) {
+%>
+$(function () {
+    checkWebEditInstalled();
+})
+<%
+    }
+%>
 </script>
 </html>

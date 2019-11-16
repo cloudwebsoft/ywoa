@@ -144,12 +144,10 @@ height:20px;
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(formCode);
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+
 int len = 0;
 if (fields!=null)
 	len = fields.length;
@@ -178,7 +176,7 @@ Iterator ir = fdaoV.iterator();
 	<thead>
 	<tr ondblclick="<%=ondblclickScript%>" title="<%=ondblclickTitle%>" align="center" class="cwsThead">
 	<%if (true) {%>
-	  <td style="width:30px;display:">
+	  <td style="width:30px;">
 	  ID
 	  </td>
 	<%}%>
@@ -239,7 +237,7 @@ Iterator ir = fdaoV.iterator();
 	%>
 	<tr title="<%=ondblclickTitle%>" align="center">
 	<%if (true) {%>	  
-	  <td editable=0 style="display:"><%=fdao.getId()%></td>
+	  <td editable=0 style=""><%=fdao.getId()%></td>
 	<%}%>
 	  <%
 	  for (int i=0; i<len; i++) {

@@ -988,23 +988,45 @@ public class FormSQLBuilder {
       * @return double
       */
      public static double getSUMOfSQL(String sql, String field) {
- 		sql = sql.toLowerCase();
-		int p = sql.indexOf(" from ");
-		sql = sql.substring(0, "select ".length()) + "sum(" + field + ")"
-				+ sql.substring(p);
-		JdbcTemplate jt = new JdbcTemplate();
-		ResultIterator ri = null;
-		try {
-			ri = jt.executeQuery(sql);
-			if (ri.hasNext()) {
-				ResultRecord rr = (ResultRecord) ri.next();
-				return rr.getDouble(1);
-			}
-		} catch (SQLException ex) {
-			ex.printStackTrace();
-		}
+         sql = sql.toLowerCase();
+         field = field.toLowerCase();
+         // 从sql语句中找到field，判断其是否含有别名
+         int m = sql.indexOf("." + field);
+         if (m!=-1) {
+             boolean isNotBlankOrComma = true;
+             StringBuffer sb = new StringBuffer();
+             while (isNotBlankOrComma) {
+                String str = sql.substring(m-1, m);
+                if (str.equals("") || str.equals(",")) {
+                    isNotBlankOrComma = false;
+                }
+                else {
+                    sb.append(str);
+                }
+                m--;
+                if (m<=1) {
+                    break;
+                }
+             }
+             field = sb.toString() + "." + field;
+         }
 
-		return 0;
+         int p = sql.indexOf(" from ");
+         sql = sql.substring(0, "select ".length()) + "sum(" + field + ")"
+                 + sql.substring(p);
+         JdbcTemplate jt = new JdbcTemplate();
+         ResultIterator ri = null;
+         try {
+             ri = jt.executeQuery(sql);
+             if (ri.hasNext()) {
+                 ResultRecord rr = (ResultRecord) ri.next();
+                 return rr.getDouble(1);
+             }
+         } catch (SQLException ex) {
+             ex.printStackTrace();
+         }
+
+         return 0;
      }
      
  	/**

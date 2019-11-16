@@ -255,12 +255,9 @@ ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(formCodeRelated);
 int is_workLog = msd.getInt("is_workLog");
 		
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+String[] fieldsWidth = msd.getColAry(false, "listFieldWidth");
 %>
 <table class="percent98" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>

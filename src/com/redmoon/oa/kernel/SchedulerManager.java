@@ -313,10 +313,10 @@ public class SchedulerManager {
                     "com.redmoon.oa.job.CreateJsJob", createTime, "");
         System.out.println("Init CreateJsJob createTime=" + createTime);   
         //超级狗校验，每2分钟执行一次
-        String checkTime = "0 0/2 * * * ?"; 
+/*        String checkTime = "0 0/2 * * * ?";
         scheduleJob("SuperCheck",
                     "com.redmoon.oa.job.SuperCheckJob", checkTime, "");
-        System.out.println("Init SuperCheck checkTime=" + checkTime);  
+        System.out.println("Init SuperCheck checkTime=" + checkTime);  */
         /**
         //oem工作调度    0 0/5 * * * ?
         String oemCron = "0 0 3 * * ?";  //每天凌晨3点执行

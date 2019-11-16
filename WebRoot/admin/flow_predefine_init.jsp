@@ -5,6 +5,7 @@
 <%@ page import="com.redmoon.oa.dept.*" %>
 <%@ page import="com.redmoon.oa.person.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="com.redmoon.oa.kernel.License" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
@@ -147,6 +148,7 @@ if (!(lp.canUserSee(privilege.getUser(request)))) {
             wpd.setProps(twpd.getProps());
             wpd.setViews(twpd.getViews());
             wpd.setScripts(twpd.getScripts());
+            wpd.setLinkProp(twpd.getLinkProp());
 
             re = wpd.create();
         } else {
@@ -166,6 +168,7 @@ if (!(lp.canUserSee(privilege.getUser(request)))) {
             wpd.setProps(twpd.getProps());
             wpd.setViews(twpd.getViews());
             wpd.setScripts(twpd.getScripts());
+            wpd.setLinkProp(twpd.getLinkProp());
 
             re = wpd.save();
         }
@@ -225,7 +228,14 @@ if (!(lp.canUserSee(privilege.getUser(request)))) {
     <tr>
         <td align="center" style="background-color: #fff">
             <div id="designerDiv">
-                <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" codebase="../activex/cloudym.CAB#version=1,3,0,0" width="100%" height="100%">
+                <%
+                    boolean isOem = License.getInstance().isOem();
+                    String codeBase = "";
+                    if (!isOem) {
+                        codeBase = "codebase=\"activex/cloudym.CAB#version=1,3,0,0\"";
+                    }
+                %>
+                <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" <%=codeBase%> width="100%" height="100%">
                     <param name="Workflow" value="<%=flowString%>"/>
                     <param name="Mode" value="<%=mode%>"/>
                     <!--debug user initiate complete-->

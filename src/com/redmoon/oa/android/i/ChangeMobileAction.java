@@ -30,7 +30,7 @@ public class ChangeMobileAction {
 	private static int RETURNCODE_ERROR_VERIFI = 4;		     //验证码错误
 	
 	private static int TYPE_LOCAL = 0 ;                      //短信发送方，本地
-	private static int TYPE_YIMIHOME = 1 ;                   //短信发送方，一米之家
+	private static int TYPE_YIMIHOME = 1 ;                   //短信发送方
 	
 	private String skey = "";
 	private String mobile = "";
@@ -101,7 +101,7 @@ public class ChangeMobileAction {
 		}
 		UserDb ud = new UserDb(privilege.getUserName(skey));
 		
-		//先验证验证码是否过期 ，根据type区分是本地发送的验证码 ，还是一米之家
+		//先验证验证码是否过期 ，根据type区分是本地发送的验证码 ，还是云端
 		try {
 			int result = 0; //验证码有效
 

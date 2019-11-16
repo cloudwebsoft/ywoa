@@ -55,6 +55,10 @@ public class VisualDesktopUnit implements IDesktopUnit {
             String moduleCode = uds.getModuleItem();
             ModuleSetupDb msd = new ModuleSetupDb();
             msd = msd.getModuleSetupDb(moduleCode);
+            if (msd==null) {
+            	str = "<div class='no_content'>模块" + moduleCode + "不存在</div>";
+            	return str;
+			}
             String formCode = msd.getString("form_code");
             String op = "";
             

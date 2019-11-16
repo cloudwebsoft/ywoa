@@ -185,8 +185,9 @@ if (mode==0) {
 		%>
 		<%if (!defaultOptText.equals("")) {
 		%>
+			// 此处不再映射，因为如果映射会导致当编辑时，若被映射的值改了，下次打开编辑页面时会被改回去
 			// 根据request传入的值进行映射
-			onSelect<%=fieldName %>("<%=defaultOptVal %>", "<%=defaultOptText %>");
+			// onSelect<%=fieldName %>("<%=defaultOptVal %>", "<%=defaultOptText %>");
 		<%
 		}%>
 		 
@@ -263,6 +264,8 @@ function onSelect<%=fieldName %>(id, text) {
 			 	// 不替换本表单域选择宏控件
 			 	if (json.fieldName!="<%=fieldName %>") {
 				    if(json.isMacro){
+						// 清除文件宏控件中的文件链接
+						$('#helper_' + json.fieldName).remove();
 				    	replaceValue(json.fieldName, json.setValue, json.value);
 				    }else{
 				    	if (o(json.fieldName).type == "checkbox") {

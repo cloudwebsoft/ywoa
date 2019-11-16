@@ -32,7 +32,8 @@
         MACRO_IMAGE: "macro_image",                 // 图像宏控件，手机端可拍照片
         MACRO_EMAIL: "macro_email_ctl",
         MACRO_MOBILE: "macro_mobile_ctl",
-        MACRO_IDCARD: "macro_idcard_ctl"
+        MACRO_IDCARD: "macro_idcard_ctl",
+        MACRO_WRITEPAD: "macro_writepad_ctl"
     }
     var MACRO_TYPE = {
         MACRO_USER_SELECT_TYPE: "userSelect",
@@ -40,7 +41,8 @@
         MACRO_LOCATION: "location",
         MACRO_USER_MULTI_SEL: "userMultiSelect",
         MACRO_SELECTWIN: "selectWin",   // 部门选择，取自：宏控件.getControlType()
-        MACRO_TYPE_IMAGE: "img"         // 图像宏控件 ImageCtl
+        MACRO_TYPE_IMAGE: "img",         // 图像宏控件 ImageCtl
+        MACRO_TYPE_WRITEPAD: "writePad"
     }
     var skey;
     $.Form = $.Class.extend({
@@ -361,6 +363,18 @@
                         divContent += '<span class="mui-btn mui-btn-primary capture_btn" captureFieldName="' + code + '" isOnlyCamera="' + isOnlyCamera + '" style="margin: 5px;" >照片</span>';
                     }
                 }
+                else if (macroType==MACRO_TYPE.MACRO_TYPE_WRITEPAD) {
+                    divContent += '<input id="' + code + '" name="' + code + '" type="hidden" value="' + value + '"/>';
+                    divContent += '<div id="pad_' + code + '">';
+                    if (value!="") {
+                        var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
+                        divContent += "<img id='" + code + "_img' class='attFile' link='../../public/img_show.jsp?path=" + value + "' ext='" + ext + "' src='../../public/img_show.jsp?path=" + value + "' />";
+                    }
+                    divContent += "</div>";
+                    if (editable && !isReadonly) {
+                        divContent += '<span class="mui-btn mui-btn-primary sign_btn" data-code="' + code + '" style="margin: 5px;" >签名</span>';
+                    }
+                }
 
                 formSelector.append(divContent);
             });
@@ -603,6 +617,18 @@
                     li += ' </div>';
                     li += '</li>';
                 } else if (macroCode == MACRO_CODE.MACRO_IMAGE) {
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + title + '</span>';
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
+                    li += '     <img class="attFile" link="../../public/img_show.jsp?path=' + value + '" ext="' + ext + '" style="width:96%" src="../../public/img_show.jsp?path=' + value + '"/>';
+                    li += ' </div>'
+                    li += ' </div>';
+                    li += '</li>';
+                } else if (macroCode == MACRO_CODE.MACRO_WRITEPAD) {
                     li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
                     li += ' <div class="mui-table">';
                     li += ' <div class="mui-table-cell mui-col-xs-5">';
@@ -868,6 +894,11 @@
             $(formSelector).on("tap", ".icon-location", function () {
                 openBaiduMap(this);
             });
+
+            $(formSelector).on("tap", ".sign_btn", function() {
+                openWritePadWin(this);
+            });
+
             lowerToUpper();// 大小写金额转换
             initCalculator();// 计算控件初始化
             onIdCardChange(); // 绑定身份证变化事件

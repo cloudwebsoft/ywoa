@@ -147,7 +147,7 @@ public class NestSheetCtl extends AbstractMacroCtl {
                 com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
                 fdao = fdao.getFormDAO(flowId, flowFd);
                 long fdaoId = fdao.getId();
-                op = "view&cwsId=" + fdaoId;
+                op = "view&cwsId=" + fdaoId + "&flowId=" + flowId;
             }			
 			else if (pageType.equals("add")) {
 				op = "add";
@@ -252,7 +252,7 @@ public class NestSheetCtl extends AbstractMacroCtl {
 		
 		// 因为每个表单的重新载入调用的方法是不一样的，所以在这里需要分别为每个嵌套表生成方法
 		// 当自动拉单后，需调用forRefresh
-		if (!"show".equals(pageType)) {
+		if (!"show".equals(pageType) && !"flowShow".equals(pageType)) {
 			// System.out.println(getClass() + " pageType=" + pageType);
 			str = "\n<script src='" + request.getContextPath()
 				+ "/flow/macro/macro_js_nestsheet.jsp?op=forRefresh&pageType=" + pageType + "&isTab=" + isTab + "&mainId=" + mainId + "&fieldName=" + ff.getName() + "&parentFormCode=" + parentFormCode + "&nestFormCode=" + nestFormCode + "&path="+StrUtil.UrlEncode(ajaxPath)+"&flowId=" + cwsId
@@ -273,7 +273,6 @@ public class NestSheetCtl extends AbstractMacroCtl {
      * 如果在流程中，嵌套表格2被置为必填，在验证前置表单域的值，以便于有效性检查能通过
      * @param request
      * @param fu
-     * @param flowId
      * @param ff
      */
     public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) {
@@ -396,9 +395,9 @@ public class NestSheetCtl extends AbstractMacroCtl {
 		FormDb fd = new FormDb();
 		fd = fd.getFormDb(formCode);
 
-		String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		String[] fields = msd.getColAry(false, "list_field");
 
-		String[] fields = StrUtil.split(listField, ",");
 		if (fields == null) {
 			throw new ErrMsgException("模块：" + fd.getName()
 					+ " 尚未配置，没有设置列表中的显示字段");
@@ -495,125 +494,6 @@ public class NestSheetCtl extends AbstractMacroCtl {
 		}
 		return ret;
 	}
-
-	/**
-	 * 保存嵌套表单中的记录，智能模块与流程中共用本方法
-	 * 
-	 * @param macroField
-	 *            FormField
-	 * @param cwsId
-	 *            String 父记录的ID，用于与父记录关联
-	 * @param creator
-	 *            String 当运用于流程时，creator为空，因为无法记录是具体哪个人修改了嵌套表格
-	 * @param fu
-	 *            FileUpload
-	 * @return int
-	 * @throws ErrMsgException
-	 */
-	/*
-	 * public int saveForNestCtl(HttpServletRequest request, FormField
-	 * macroField, String cwsId, String creator, FileUpload fu) throws
-	 * ErrMsgException { String cws_cell_rows =
-	 * fu.getFieldValue("cws_cell_rows"); int rows =
-	 * StrUtil.toInt(cws_cell_rows, 0);
-	 * 
-	 * String formCode = macroField.getDefaultValueRaw();
-	 * 
-	 * ModuleSetupDb msd = new ModuleSetupDb(); msd =
-	 * msd.getModuleSetupDbOrInit(formCode);
-	 * 
-	 * FormDb fd = new FormDb(); fd = fd.getFormDb(formCode);
-	 * 
-	 * String listField = StrUtil.getNullStr(msd.getString("list_field"));
-	 * 
-	 * String[] fields = StrUtil.split(listField, ","); int cols =
-	 * fields.length;
-	 * 
-	 * // 有效性验证 ParamChecker pck = new ParamChecker(request, fu); for (int i =
-	 * 0; i < rows; i++) { for (int j = 1; j <= cols; j++) { FormField ff =
-	 * fd.getFormField(fields[j-1]); try { //
-	 * LogUtil.getLog(getClass()).info("ruleStr=" + ruleStr);
-	 * FormDAOMgr.checkField(pck, ff, "cws_cell_" + i + "_" + j); } catch
-	 * (CheckErrException e) { // 如果onError=exit，则会抛出异常 throw new
-	 * ErrMsgException(e.getMessage()); } } } if (pck.getMsgs().size()!=0) throw
-	 * new ErrMsgException(pck.getMessage(false));
-	 * 
-	 * String fds = ""; String str = ""; for (int i = 0; i < cols; i++) { if
-	 * (fds.equals("")) { fds = fields[i]; str = "?"; } else { fds += "," +
-	 * fields[i]; str += ",?"; } }
-	 * 
-	 * String sql = "select id from " + fd.getTableNameByForm() +
-	 * " where cws_id=" + StrUtil.sqlstr(cwsId) + " order by cws_order"; FormDAO
-	 * fdao = new FormDAO(); Vector v = fdao.list(formCode, sql); int[] ids =
-	 * new int[v.size()]; // 数据库中已有记录的ID Iterator ir = v.iterator(); int i = 0;
-	 * while (ir.hasNext()) { fdao = (FormDAO) ir.next(); ids[i] = fdao.getId();
-	 * i++; }
-	 * 
-	 * int[] newIds = new int[rows]; for (i = 0; i < rows; i++) { newIds[i] =
-	 * StrUtil.toInt(fu.getFieldValue("cws_cell_" + i + "_0"), -1);
-	 * LogUtil.getLog(getClass()).info("fu.getFieldValue(" + i + ",0)=" +
-	 * fu.getFieldValue("cws_cell_" + i + "_0")); }
-	 * 
-	 * LogUtil.getLog(getClass()).info("sql=" + sql + " cols=" + cols +
-	 * " cws_cell_rows=" + cws_cell_rows);
-	 * 
-	 * int ret = 0; Conn conn = new Conn(Global.getDefaultDB()); try {
-	 * conn.beginTrans();
-	 * 
-	 * sql = "insert into " + fd.getTableNameByForm() +
-	 * " (flowId, cws_creator, cws_id, cws_order, " + fds +
-	 * ",flowTypeCode) values (?,?,?,?," + str + ",?)";
-	 * 
-	 * // 检查是否有新增项 for (i = 0; i < rows; i++) { if (newIds[i] == -1) {
-	 * PreparedStatement ps = conn.prepareStatement(sql); ps.setInt(1,
-	 * FormDAO.NONEFLOWID); ps.setString(2, creator); ps.setString(3, cwsId);
-	 * ps.setInt(4, i);
-	 * 
-	 * // LogUtil.getLog(getClass()).info("cwsId=" + cwsId + // " creator=" +
-	 * creator);
-	 * 
-	 * int k = 5; // 第一列为编号，所以从1而不是从0开始 for (int j = 1; j <= cols; j++) {
-	 * FormField field = fd.getFormField(fields[j-1]);
-	 * LogUtil.getLog(getClass()).info("cws_cell_" + i + "_" + j + "=" +
-	 * fu.getFieldValue("cws_cell_" + i + "_" + j));
-	 * 
-	 * field.setValue(StrUtil.getNullStr(fu.getFieldValue("cws_cell_" + i + "_"
-	 * + j))); field.createDAOVisual(ps, k, fu, fd); k++; } String curTime = ""
-	 * + System.currentTimeMillis(); ps.setString(k, "" + curTime); //
-	 * 用flowTypeCode记录修改时间，同时作为create时用来作为标识，以便在插入后获取 if
-	 * (conn.executePreUpdate() == 1) ret++; if (ps != null) { ps.close(); ps =
-	 * null; } } }
-	 * 
-	 * sql = "delete from " + fd.getTableNameByForm() + " where id=?"; //
-	 * 检查是否有被删除项 for (i = 0; i < ids.length; i++) { boolean isFound = false; for
-	 * (int j = 0; j < rows; j++) { if (newIds[j] == ids[i]) { isFound = true;
-	 * break; } } if (!isFound) { PreparedStatement ps =
-	 * conn.prepareStatement(sql); ps.setInt(1, ids[i]);
-	 * conn.executePreUpdate(); } }
-	 * 
-	 * fds = ""; for (i = 0; i < cols; i++) { if (fds.equals("")) { fds =
-	 * fields[i] + "=?"; } else { fds += "," + fields[i] + "=?"; } } sql =
-	 * "update " + fd.getTableNameByForm() + " set " + fds +
-	 * ",cws_creator=?,cws_order=?,flowTypeCode=? where id=?";
-	 * 
-	 * // @task暂未检查记录是否被修改 for (i = 0; i < rows; i++) { ir = v.iterator(); while
-	 * (ir.hasNext()) { fdao = (FormDAO) ir.next(); if (fdao.getId() ==
-	 * newIds[i]) { PreparedStatement ps = conn.prepareStatement(sql); int k =
-	 * 1; for (int j = 0; j< cols; j++) { FormField ff =
-	 * fd.getFormField(fields[j]); ff.setValue(fu.getFieldValue("cws_cell_" + i
-	 * + "_" + (j+1))); LogUtil.getLog(getClass()).info(ff.getName() + "=" +
-	 * ff.getValue()); ff.saveDAOVisual(fdao, ps, k, fdao.getId(), fd, fu); k++;
-	 * } ps.setString(k, creator); ps.setInt(k + 1, i); String curTime = "" +
-	 * System.currentTimeMillis(); ps.setString(k + 2, "" + curTime); //
-	 * 用flowTypeCode记录修改时间，同时作为create时用来作为标识，以便在插入后获取
-	 * 
-	 * ps.setInt(k + 3, newIds[i]); conn.executePreUpdate(); } } }
-	 * 
-	 * conn.commit(); } catch (SQLException e) { conn.rollback();
-	 * LogUtil.getLog(getClass()).error(StrUtil.trace(e)); throw new
-	 * ErrMsgException("数据库错误！"); } finally { if (conn != null) { conn.close();
-	 * conn = null; } } return ret; }
-	 */
 
 	public String getDisableCtlScript(FormField ff, String formElementId) {
 		String str = super.getDisableCtlScript(ff, formElementId);
@@ -751,8 +631,9 @@ public class NestSheetCtl extends AbstractMacroCtl {
 			Privilege pvg = new Privilege();
 			String unitCode = pvg.getUserUnitCode(request);
 
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
-			String[] fieldCodes = StrUtil.split(listField, ",");
+			// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fieldCodes = msd.getColAry(false, "list_field");
+
 			String fields = "";
 			String fsize = "";
 			for (int i = 0; i < fieldCodes.length; i++) {
@@ -828,7 +709,6 @@ public class NestSheetCtl extends AbstractMacroCtl {
 	/**
 	 * import excel
 	 * @param xlspath
-	 * @param formCode
 	 * @param parentId
 	 * @param flowId
 	 * @param request
@@ -846,8 +726,9 @@ public class NestSheetCtl extends AbstractMacroCtl {
 			ModuleSetupDb msd = new ModuleSetupDb();
 			msd = msd.getModuleSetupDbOrInit(moduleCode);
 
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
-			String[] fields = StrUtil.split(listField, ",");
+			// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fields = msd.getColAry(false, "list_field");
+
 			/*
 			 * for(int i = 0 ; i < fields.length; i ++){
 			 * System.out.println(getClass()+"::"+i+","+fields[i]); }
@@ -996,7 +877,11 @@ public class NestSheetCtl extends AbstractMacroCtl {
 		Privilege privilege = new Privilege();
 		FormDb nestFd = new FormDb();
 		nestFd = nestFd.getFormDb(nestFormCode);
-		
+
+		ModuleSetupDb msdSource = new ModuleSetupDb();
+		msdSource = msdSource.getModuleSetupDb(formCode);
+		formCode = msdSource.getString("form_code");
+
 		FormDb fd = new FormDb();
 		fd = fd.getFormDb(formCode);
 		
@@ -1020,15 +905,16 @@ public class NestSheetCtl extends AbstractMacroCtl {
 		}
 
 		// 新增记录的ID
+		ModuleSetupDb msd = new ModuleSetupDb();
 		StringBuffer newIds = new StringBuffer();
 		com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
 		Iterator ir = fdao.list(formCode, sql).iterator();
 		while (ir.hasNext()) {
 			fdao = (FormDAO)ir.next();
-			ModuleSetupDb msd = new ModuleSetupDb();
 			msd = msd.getModuleSetupDbOrInit(nestFormCode);
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
-			String[] fields = StrUtil.split(listField, ",");
+			// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fields = msd.getColAry(false, "list_field");
+
 			int len = 0;
 			if (fields!=null)
 				len = fields.length;

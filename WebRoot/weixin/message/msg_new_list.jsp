@@ -74,10 +74,10 @@
     PullToRefrshListApi.loadListDate();
 
     function callJS() {
-        return {"btnBackShow": 0, "btnBackUrl": ""};
+        return {"btnAddShow":0, "btnBackShow": 0, "btnBackUrl": ""};
     }
 
-    var iosCallJS = '{ "btnBackShow":0, "btnBackUrl":"" }';
+    var iosCallJS = '{ "btnAddShow":0, "btnBackShow":0, "btnBackUrl":"" }';
 </script>
 
 <jsp:include page="../inc/navbar.jsp">

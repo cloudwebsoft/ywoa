@@ -54,6 +54,9 @@ String code = ParamUtil.get(request, "code"); // 模块编码
 String formCode = ParamUtil.get(request, "formCode");
 String resource = ParamUtil.get(request, "resource");//来源
 
+ModuleSetupDb msd = new ModuleSetupDb();
+msd = msd.getModuleSetupDbOrInit(code);
+
 long id = ParamUtil.getLong(request, "id", -1);
 ModuleExportTemplateDb metd = new ModuleExportTemplateDb();
 metd = metd.getModuleExportTemplateDb(id);
@@ -338,13 +341,137 @@ o("menu9").className="current";
 			}
 		}
 		%>
-		<span><input type="checkbox" id="<%=ff.getName()%>" name="<%=ff.getName()%>" title="<%=ff.getTitle()%>" <%=checked%> />&nbsp;<%=ff.getTitle()%></span>
+		<span><input type="checkbox" onclick="checkField(this)" id="<%=ff.getName()%>" name="<%=ff.getName()%>" title="<%=ff.getTitle()%>" <%=checked%> />&nbsp;<%=ff.getTitle()%></span>
 		<%
     }
+			
+	String[] fields = msd.getColAry(true, "list_field");
+	// 增加映射型字段
+	for (i=0; i<fields.length; i++) {
+		String fieldName = fields[i];
+		
+		String title = "";
+		boolean isMap = false;
+		if (fieldName.startsWith("main:")) {
+			String[] aryField = StrUtil.split(fieldName, ":");
+			if (aryField.length > 1) {
+				FormDb mainFormDb = fm.getFormDb(aryField[1]);
+				title = mainFormDb.getName() + "：" + mainFormDb.getFieldTitle(aryField[2]);
+				isMap = true;
+			}
+		}
+		else if (fieldName.startsWith("other:")) {
+			String[] aryField = StrUtil.split(fieldName, ":");
+			if (aryField.length<5) {
+				title = "<font color='red'>格式非法</font>";
+			}
+			else {
+				FormDb otherFormDb = fm.getFormDb(aryField[2]);
+				if (aryField.length>=5) {
+					title = otherFormDb.getName() + "：" + otherFormDb.getFieldTitle(aryField[4]);
+					isMap = true;
+				}
+				
+				if (aryField.length>=8) {
+					FormDb oFormDb = fm.getFormDb(aryField[5]);
+					title += "：" + oFormDb.getFieldTitle(aryField[7]);
+					isMap = true;
+				}
+			}
+		}
+		if (isMap) {
+            String checked = "";
+            for (i=0; i<ary.length(); i++) {
+                String fieldNameAry = (String)ary.getJSONObject(i).get("field");
+                if (fieldNameAry.equals(fieldName)) {
+                    checked = "checked";
+                    break;
+                }
+            }
+		%>
+			<span><input type="checkbox" id="<%=fieldName%>" name="<%=fieldName%>" onclick="checkField(this)" title="<%=title%>" <%=checked%> />&nbsp;<%=title%></span>
+		<%
+		}
+	}
 %>
-	<span><input type="button" class="btn" value="确定" onclick="checkFields()" />&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" class="btn" value="取消" onclick="cancel()" /></span>
+	<span><input type="button" class="btn" value="关闭" onclick="cancel()" /></span>
     </div>
 </div>
+<%
+	List list = new ArrayList();
+	boolean isDel = false;
+	// 找出已不存在的列，并自动清除
+	for (i = 0; i < ary.length(); i++) {
+		String fieldName = (String) ary.getJSONObject(i).get("field");
+		if (fieldName.toLowerCase().equals("id")) {
+			continue;
+		}
+		else if (fieldName.equals("flowId")) {
+			continue;
+		}
+		if (fieldName.equals("cws_creator")) {
+			continue;
+		}
+		else if (fieldName.equals("ID")) {
+			continue;
+		}
+		else if (fieldName.equals("cws_progress")) {
+			continue;
+		}
+		else if (fieldName.equals("cws_status")) {
+			continue;
+		}
+		else if (fieldName.equals("cws_flag")) {
+			continue;
+		}
+		else if (fieldName.equals("colOperate")) {
+			continue;
+		}
+		else if (fieldName.equals("cws_create_date")) {
+			continue;
+		}
+		else if (fieldName.equals("flow_begin_date")) {
+			continue;
+		}
+		else if (fieldName.equals("flow_end_date")) {
+			continue;
+		}
+		else if (fieldName.startsWith("main:") || fieldName.startsWith("other:")) {
+			continue;
+		}
+		
+		boolean isFound = false;
+		ir3 = v3.iterator();
+		while (ir3.hasNext()) {
+			FormField ff = (FormField) ir3.next();
+			if (fieldName.equals(ff.getName())) {
+				isFound = true;
+				break;
+			}
+		}
+		if (!isFound) {
+			isDel = true;
+%>
+<div style="padding-left: 30px"><%=ary.getJSONObject(i).get("title")%>(<%=fieldName%>) 不存在，已删除</div>
+<%
+		}
+		else {
+			list.add(ary.getJSONObject(i));
+		}
+	}
+	if (isDel) {
+		ary = new JSONArray(list);
+		metd.set("cols", ary.toString());
+		metd.save();
+	}
+	
+	// 因为:号在jquery选择器中被使用，所以需换成#
+	for (i = 0; i < ary.length(); i++) {
+		String name = (String) ary.getJSONObject(i).get("name");
+		name = name.replaceAll(":", "#");
+		ary.getJSONObject(i).put("name", name);
+	}
+%>
 <script type="text/javascript">
 var Msg = {}; //declare this or modify line 1 of core.js
 var gd;
@@ -354,7 +481,7 @@ $("#trigger").powerFloat({
 	eventType: "click",
 	targetMode: null,
 	targetAttr: "src",
-	// position: "1-4", // 显示于下方，默认上方
+	position: "1-4", // 显示于下方，默认上方
 	container: $("#customContainer")
 });
 
@@ -373,19 +500,19 @@ function checkField(obj) {
 			$('#viewBox').html('');
 			$('#viewBox').append('<div class="view grid expGrid"></div>');
 
-			var a = JSON.parse("{\"field\":\"" + obj.name + "\", \"title\":\"" + obj.getAttribute("title") + "\", \"width\":150, \"name\":\"" + obj.getAttribute("name") + "\", \"link\":\"#\"}");
+			var objName = obj.getAttribute("name");
+			objName = objName.replaceAll(":", "#");
+			var a = JSON.parse("{\"field\":\"" + obj.name + "\", \"title\":\"" + obj.getAttribute("title") + "\", \"width\":150, \"name\":\"" + objName + "\", \"link\":\"#\"}");
 			moduleCols.push(a);
 			
 			macGrid('grid', moduleCols);
-
-			setCols();
 		}
 	}
 	else {
 		// 检查是否已有含有此列，如果有则删除
 		var k = -1;
 		$.each(gd.config.cols, function(n, c){
-			if(c.name == obj.name) {		
+			if(c.field == obj.name) {
 				k = n;
 				return;
 			}
@@ -401,63 +528,8 @@ function checkField(obj) {
 		moduleCols.splice(k, 1); //删除指定子对象，参数：开始位置,删除个数
 
 		macGrid('grid', moduleCols);
-		
-		setCols();		
 	}
 }
-
-function checkFields() {
-	$("#targetBox").find("input").each(function(){
-		var obj = $(this);
-		if (obj.attr("checked")=="checked") {
-			var isFound = false;
-			// 检查是否已有含有此列，如果没有则添加
-			$.each(gd.config.cols, function(n, c){
-				if(c.name == obj.attr("name")) {
-					isFound = true;
-					return;
-				}
-			});
-			if (!isFound) {
-				gd.remove();
-				$('#viewBox').html('');
-				$('#viewBox').append('<div class="view grid expGrid"></div>');
-	
-				var a = JSON.parse("{\"field\":\"" + obj.attr("name") + "\", \"title\":\"" + obj.attr("title") + "\", \"width\":150, \"name\":\"" + obj.attr("name") + "\", \"link\":\"#\"}");
-				moduleCols.push(a);
-				
-				macGrid('grid', moduleCols);
-	
-				//setCols();
-			}
-		}
-		else {
-			// 检查是否已有含有此列，如果有则删除
-			var k = -1;
-			$.each(gd.config.cols, function(n, c){
-				if(c.name == obj.attr("name")) {		
-					k = n;
-					return;
-				}
-			});
-			
-			if (k==-1)
-				return;
-			
-			gd.remove();
-			$('#viewBox').html('');
-			$('#viewBox').append('<div class="view grid expGrid"></div>');
-			
-			moduleCols.splice(k, 1); //删除指定子对象，参数：开始位置,删除个数
-	
-			macGrid('grid', moduleCols);
-			
-			//setCols();		
-		}
-	});
-	setCols();
-}
- 
 </script>
 <link href="../js/mac/css/default.css" type="text/css" rel="stylesheet" />
 <script src="../js/mac/core.js"></script>

@@ -15,6 +15,8 @@
 <%@ page import="com.redmoon.oa.flow.macroctl.*"%>
 <%@ page import="org.json.JSONObject"%>
 <%@ page import="org.json.JSONArray"%>
+<%@ page import="com.redmoon.oa.Config" %>
+<%@ page import="org.apache.http.client.utils.URIBuilder" %>
 <%
 String op = ParamUtil.get(request, "op");
 String code = ParamUtil.get(request, "code"); // 模块编码
@@ -61,14 +63,16 @@ else if ("setValidate".equals(op)) {
 else if (op.equals("setCols")) {
 	ModuleViewMgr mvm = new ModuleViewMgr();
 	boolean re = false;
+	JSONObject json = new JSONObject();
 	try {
 		re = mvm.setCols(request, code);
 	}
 	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
+		json.put("ret", "0");
+		json.put("msg", e.getMessage());
+		out.print(json);
+		return;
 	}
-	JSONObject json = new JSONObject();
 	if (re) {
 		json.put("ret", "1");
 		json.put("msg", "操作成功！");
@@ -80,6 +84,20 @@ else if (op.equals("setCols")) {
 	out.print(json);
 	return;
 }
+
+	Config cfg = new Config();
+	boolean isServerConnectWithCloud = cfg.getBooleanProperty("isServerConnectWithCloud");
+	String url = cfg.get("cloudUrl");
+	URIBuilder uriBuilder = new URIBuilder(url);
+	String host = uriBuilder.getHost();
+	int port = uriBuilder.getPort();
+	if (port==-1) {
+		port = 80;
+	}
+	String path = uriBuilder.getPath();
+	if (path.startsWith("/")) {
+		path = path.substring(1);
+	}
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -109,6 +127,14 @@ else if (op.equals("setCols")) {
 
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css"/>
 	<script type="text/javascript" src="../js/jquery.flexbox.js"></script>
+
+	<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+	<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+	<script type="text/javascript" src="../inc/livevalidation_standalone.js"></script>
+
+	<script type="text/javascript" src="../js/formpost.js"></script>
+	<script src="../js/json2.js"></script>
+	<script type="text/javascript" src="../js/activebar2.js"></script>
 
 	<script>
 		function window_onload() {
@@ -146,69 +172,16 @@ if (!privilege.isUserPrivValid(request, "admin.flow")) {
 	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
 	return;
 }
+
+String tabIdOpener = ParamUtil.get(request, "tabIdOpener");
+
 FormMgr fm = new FormMgr();
 FormDb fd = fm.getFormDb(formCode);
 if (!fd.isLoaded()) {
 	out.print(StrUtil.jAlert_Back("该表单不存在！","提示"));
 	return;
 }
-
-if (op.equals("add")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.add(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}		
-	return;
-}
-else if (op.equals("del")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.del(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}	
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("modify")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.modify(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}	
-
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("addTag")) {
+if (op.equals("addTag")) {
 	ModuleViewMgr mvm = new ModuleViewMgr();
 	boolean re = false;
 	try {
@@ -263,96 +236,6 @@ else if (op.equals("modifyTag")) {
 	}
 	return;
 }
-else if (op.equals("addBtn")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.addBtn(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("addBtnBatch")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.addBtnBatch(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;	
-}
-else if (op.equals("addCond")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.addCond(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}	
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-} else if (op.equals("delBtn")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.delBtn(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("modifyBtn")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.modifyBtn(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
 else if (op.equals("setUse")) {
 	ModuleViewMgr mvm = new ModuleViewMgr();
 	boolean re = false;
@@ -364,7 +247,12 @@ else if (op.equals("setUse")) {
 		return;		
 	}
 	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
+%>
+<script>
+	reloadTab("<%=tabIdOpener%>");
+</script>
+<%
+		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode + "&tabIdOpener=" + tabIdOpener));
 	}
 	else {
 		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
@@ -376,60 +264,6 @@ else if (op.equals("setFilter")) {
 	boolean re = false;
 	try {
 		re = mvm.setFilter(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("addLink")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.addLink(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("delLink")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.delLink(request, code);
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-		return;		
-	}	
-	if (re) {
-		out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "module_field_list.jsp?code=" + code + "&formCode=" + formCode));
-	}
-	else {
-		out.print(StrUtil.jAlert_Back("操作失败！","提示"));
-	}
-	return;
-}
-else if (op.equals("modifyLink")) {
-	ModuleViewMgr mvm = new ModuleViewMgr();
-	boolean re = false;
-	try {
-		re = mvm.modifyLink(request, code);
 	}
 	catch (ErrMsgException e) {
 		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
@@ -468,10 +302,10 @@ int work_log = vsd.getInt("is_workLog");
 %>
 <%@ include file="module_setup_inc_menu_top.jsp"%>
 <script>
-o("menu1").className="current"; 
+o("menu1").className="current";
 </script>
 <div class="spacerH"></div>
-<form method="post" action="module_field_list.jsp?op=setUse">
+<form method="post" action="module_field_list.jsp?op=setUse&tabIdOpener=<%=tabIdOpener%>">
 <table cellspacing="0" class="tabStyle_1 percent98" cellpadding="3" width="95%" align="center">
     <tr>
       <td colspan="6" align="center" class="tabStyle_1_title">模块信息</td>
@@ -511,7 +345,7 @@ o("menu1").className="current";
       <td align="center" >&nbsp;</td>
       <td align="left" >&nbsp;</td>
     </tr>
-    <tr>
+	<tr style="display:<%=code.equals(formCode)?"":"none"%>">
       <td align="center" >事件提醒</td>
       <td align="left" >
 	  <img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
@@ -519,19 +353,10 @@ o("menu1").className="current";
       <span style="margin:10px"><img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.getNullStr(vsd.getString("msg_prop")).equals("")?"none":"" %>"/></span>
 	  <textarea id="msgProp" style="display:none"><%=StrUtil.getNullStr(vsd.getString("msg_prop"))%></textarea>      
       </td>
-      <td align="center" >验证提醒</td>
-      <td align="left" >
-	  <img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
-      <a href="javascript:;" onclick="openCondition(o('validatePropHidden'), o('imgValidate'))">配置条件</a>
-      <span style="margin:10px">
-      <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.getNullStr(vsd.getString("validate_prop")).equals("")?"none":"" %>" id="imgValidate"/>
-      </span>
-      <textarea id="validatePropHidden" name="validatePropHidden" style="display:none"><%=StrUtil.getNullStr(vsd.getString("validate_prop"))%></textarea>      
-      </td>
-      <td align="center" >提醒信息</td>
-      <td align="left" >
-		<input id="validate_msg" name="validate_msg" title="验证提示" style="width:200px" value="<%=StrUtil.HtmlEncode(vsd.getString("validate_msg"))%>"  />      
-      </td>
+      <td align="center" >添加后跳转</td>
+      <td align="left" ><input id="add_to_url" name="add_to_url" value="<%=StrUtil.getNullStr(vsd.getString("add_to_url"))%>"/></td>
+      <td align="center" >&nbsp;</td>
+      <td align="left" >&nbsp;</td>
     </tr>
     <tr>
       <td align="center" >查看按钮</td>
@@ -654,7 +479,27 @@ o("menu1").className="current";
 		</script>        
         </span>        
       </td>
-      <td colspan="2" align="left" >
+      <td align="center" >日志模块
+      </td>
+      <td align="left" >
+		  <select id="module_code_log" name="module_code_log" style="width: 150px;">
+      <%
+	      String sql = vsd.getTable().getSql("listForForm") + StrUtil.sqlstr("module_log") + " order by kind asc, name asc";
+		  Iterator irLog = vsd.list(sql).iterator();
+		  while (irLog.hasNext()) {
+			  ModuleSetupDb msd = (ModuleSetupDb) irLog.next();
+		  %>
+			  <option value="<%=msd.getString("code")%>"><%=msd.getString("name")%></option>
+		  <%
+		  }
+	  %>
+		  </select>
+		  <script>
+			  $(function() {
+			  	$('#module_code_log').val('<%=vsd.getString("module_code_log")%>');
+			  	$('#module_code_log').select2();
+			  })
+		  </script>
       </td>
     </tr>
     <tr>
@@ -809,7 +654,6 @@ o("menu1").className="current";
       </select>     
       </td>
     </tr>
-    
     <tr id="fieldRow">
       <td align="center" >显示字段</td>
       <td colspan="5" align="left" >
@@ -917,10 +761,21 @@ String listFieldOrder = StrUtil.getNullStr(vsd.getString("list_field_order"));
 String[] fieldOrder = StrUtil.split(listFieldOrder, ",");
 String listFieldLink = StrUtil.getNullStr(vsd.getString("list_field_link"));
 String[] fieldsLink = StrUtil.split(listFieldLink, ",");
+String listFieldShow = StrUtil.getNullStr(vsd.getString("list_field_show"));
+String[] fieldsShow = StrUtil.split(listFieldShow, ",");
 
 int len = 0;
-if (fields!=null)
+if (fields!=null) {
 	len = fields.length;
+}
+
+if (fieldsShow==null || fields.length != fieldsShow.length) {
+	fieldsShow = new String[len];
+	for (int i=0; i<len; i++) {
+		fieldsShow[i] = "1";
+	}
+}
+
 int i;
 %>
 <table cellSpacing="0" class="tabStyle_1 percent98" cellPadding="3" width="95%" align="center">
@@ -937,13 +792,14 @@ int i;
 
 <table cellSpacing="0" class="tabStyle_1 percent98" cellPadding="3" width="95%" align="center">
     <tr>
-      <td class="tabStyle_1_title"  width="5%">序号</td>
-      <td class="tabStyle_1_title"  width="15%">列表中显示的字段</td>
-      <td class="tabStyle_1_title"  width="16%">描述</td>
-      <td class="tabStyle_1_title"  width="8%">顺序号</td>
-      <td class="tabStyle_1_title"  width="8%">宽度</td>
-      <td class="tabStyle_1_title"  width="29%">链接</td>
-      <td width="17%"  class="tabStyle_1_title">操作</td>
+      <td class="tabStyle_1_title"  width="4%">序号</td>
+      <td class="tabStyle_1_title"  width="13%">列表中显示的字段</td>
+      <td class="tabStyle_1_title"  width="22%">描述</td>
+      <td class="tabStyle_1_title"  width="6%">显示</td>
+      <td class="tabStyle_1_title"  width="7%">顺序号</td>
+      <td class="tabStyle_1_title"  width="7%">宽度</td>
+      <td class="tabStyle_1_title"  width="25%">链接</td>
+      <td width="16%"  class="tabStyle_1_title">操作</td>
     </tr>
 <%
 JSONArray jsonAry = new JSONArray();
@@ -961,7 +817,7 @@ for (i=0; i<len; i++) {
 		title = "进度";
 	}
 	else if (fieldName.equals("flowId")) {
-	    title = "流程ID";
+	    title = "流程号";
     }
 	else if (fieldName.equals("cws_status")) {
 		title = "状态";
@@ -971,6 +827,15 @@ for (i=0; i<len; i++) {
 	}
 	else if (fieldName.equals("colOperate")) {
 		title = "操作";
+	}
+	else if (fieldName.equals("cws_create_date")) {
+		title = "创建时间";
+	}
+	else if (fieldName.equals("flow_begin_date")) {
+		title = "流程开始时间";
+	}
+	else if (fieldName.equals("flow_end_date")) {
+		title = "流程结束时间";
 	}
 	else {
 		if (fieldName.startsWith("main")) {
@@ -1005,7 +870,7 @@ for (i=0; i<len; i++) {
 		}
 	}
 %>
-<form name="formAdd" method="post" action="module_field_list.jsp?op=modify">
+<form id="formModify<%=i%>" name="formModify<%=i%>" method="post" action="module_field_list.jsp?op=modify">
     <tr fieldName="<%=fieldNameRaw%>">
       <td align="center"><%=i+1%></td>
       <td><%=fieldName%>
@@ -1013,34 +878,161 @@ for (i=0; i<len; i++) {
         <input name="formCode" value="<%=formCode%>" type="hidden" />
       	<input name="fieldName" value="<%=fieldNameRaw%>" type="hidden" />
       </td>
-      <td><%=title%></td>
+	<td>
+		<%=title%>
+	</td>
+	<td>
+		<select name="fieldShow">
+			<option value="1" <%=fieldsShow[i].equals("1")?"selected":""%>>显示</option>
+			<option value="0" <%=fieldsShow[i].equals("0")?"selected":""%>>隐藏</option>
+		</select>
+	</td>
       <td><input name="fieldOrder" size="5" value="<%=fieldOrder[i]%>" /></td>
       <td><input name="fieldWidth" size="5" value="<%=fieldsWidth[i].equals("#")?"":fieldsWidth[i]%>" />      </td>
       <td><input name="fieldLink" style="width:98%" value="<%=(fieldsLink==null || fieldsLink[i].equals("#"))?"":fieldsLink[i]%>" /></td>
       <td align="center">
-	  <input class="btn btn-default" type="submit" value="修改" />
+	  <input class="btn btn-default" type="button" value="修改" onclick="submitModifyCol('formModify<%=i%>')" />
 	  &nbsp;&nbsp;
-	  <input class="btn btn-default" type="button" value="删除" onClick="jConfirm('您确定要删除么？','提示',function(r){ if(!r){return;}else{window.location.href='module_field_list.jsp?op=del&code=<%=code%>&formCode=<%=formCode%>&fieldName=<%=fieldNameRaw%>'}}) " style="cursor:pointer"/>	  </td>
+	  <input class="btn btn-default" type="button" value="删除" onclick="delCol('<%=fieldNameRaw%>')" style="cursor:pointer"/>
+	  </td>
     </tr>
 </form>
+	<script>
+		function submitModifyCol(formId) {
+			<%
+            if (isServerConnectWithCloud) {
+            %>
+			$.ajax({
+				type: "post",
+				url: "colModify.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: $('#' + formId).serialize(),
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					jAlert(data.msg, "提示");
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+			<%
+            }else {
+            %>
+			var we = o("webedit");
+			we.PostScript = "<%=path%>/public/module/modify.do";
+
+			loadDataToWebeditCtrl(o(formId), o("webedit"));
+			we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+			we.AddField("listField", "<%=listField%>");
+			we.AddField("listFieldWidth", "<%=listFieldWidth%>");
+			we.AddField("listFieldOrder", "<%=listFieldOrder%>");
+			we.AddField("listFieldLink", "<%=listFieldLink%>");
+			we.UploadToCloud();
+
+			var data = $.parseJSON(o("webedit").ReturnMessage);
+			if (data.ret == "1") {
+				$.ajax({
+					type: "post",
+					url: "colSave.do",
+					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+					data: {
+						code: "<%=code%>",
+						formCode: "<%=formCode%>",
+						result: JSON.stringify(data.result)
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('body').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						jAlert(data.msg, "提示");
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('body').hideLoading();
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						alert(XMLHttpRequest.responseText);
+					}
+				});
+			} else {
+				jAlert(data.msg, "提示");
+			}
+			<%
+            }
+            %>
+		}
+
+		function delCol(fieldNameRaw) {
+			jConfirm('您确定要删除么？', '提示', function (r) {
+				if (!r) {
+					return;
+				} else {
+					$.ajax({
+						type: "post",
+						url: "colDel.do",
+						contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+						data: {
+							code: "<%=code%>",
+							formCode: "<%=formCode%>",
+							fieldName: fieldNameRaw
+						},
+						dataType: "html",
+						beforeSend: function (XMLHttpRequest) {
+							$('body').showLoading();
+						},
+						success: function (data, status) {
+							data = $.parseJSON(data);
+							if (data.ret == "1") {
+								jAlert(data.msg, "提示", function () {
+									window.location.reload()
+								});
+							} else {
+								jAlert(data.msg, "提示");
+							}
+						},
+						complete: function (XMLHttpRequest, status) {
+							$('body').hideLoading();
+						},
+						error: function (XMLHttpRequest, textStatus) {
+							// 请求出错处理
+							alert(XMLHttpRequest.responseText);
+						}
+					});
+				}
+			})
+		}
+	</script>
 <%}%>
 
-<form name="formAddCol" method="post" action="module_field_list.jsp?op=add">
+<form id="formAddCol" name="formAddCol" method="post" action="module_field_list.jsp?op=add">
     <tr >
-      <td colspan="7" align="left" style="PADDING-LEFT: 10px" class="tabStyle_1_title">添加列表中的字段</td>
+      <td colspan="8" align="left" style="PADDING-LEFT: 10px" class="tabStyle_1_title">添加列表中的字段</td>
     </tr>
     <tr >
-      <td colspan="7" align="left" style="PADDING-LEFT: 10px">字段
-		  <select name="fieldName">
+      <td colspan="8" align="left" style="PADDING-LEFT: 10px">字段
+		  <select id="fieldNameForList" name="fieldName">
 			  <option value="ID">-ID-</option>
 			  <option value="cws_creator">-创建者-</option>
 			  <option value="cws_progress">-进度-</option>
 			  <%if (fd.isFlow()) {%>
-			  <option value="flowId">-流程ID-</option>
+			  <option value="flowId">-流程号-</option>
 			  <option value="cws_status">-记录状态-</option>
+			  <option value="flow_begin_date">-流程开始时间-</option>
+			  <option value="flow_end_date">-流程结束时间-</option>
 			  <%}%>
 			  <option value="cws_flag">-冲抵状态-</option>
 			  <option value="colOperate">-操作列-</option>
+			  <option value="cws_create_date">-创建时间-</option>
 <%
 Vector v = fd.getFields();
 ir = v.iterator();
@@ -1065,88 +1057,193 @@ while (ir2.hasNext()) {
 }
 %>
       </select>
+      <select name="fieldShow">
+        <option value="1">显示</option>
+        <option value="0">隐藏</option>
+      </select>
         顺序号
         <input name="fieldOrder" size="5" value="<%=len>0?String.valueOf(StrUtil.toDouble(fieldOrder[len-1]) + 1):"1"%>" />
         宽度
-	    <input name="fieldWidth" size="5">
+	    <input name="fieldWidth" size="5" value="150">
 	  <input name="formCode" value="<%=formCode%>" type="hidden" />
 	  <input name="code" value="<%=code%>" type="hidden" />
-      <input class="btn btn-default" type="submit" value="添加" /></td>
+      <input class="btn btn-default" type="button" value="添加" onclick="submitAddCol('formAddCol')" />
+      <script>
+	  $('#fieldNameForList').select2();
+	  </script>
+      </td>
     </tr>
-
 </form>	
 </table>
-<form id="formAdd2" name="formAdd2" method="post" action="module_field_list.jsp?op=add">
-<table class="tabStyle_1 percent98" align="center" width="95%">
-    <tr >
-      <td  align="left" style="PADDING-LEFT: 10px" class="tabStyle_1_title">添加映射字段</td>
-    </tr>    
-    <tr >
-      <td align="left" style="PADDING-LEFT: 10px">
-本表字段
-  <select name="fieldName">
-<%
-ir = v.iterator();
-while (ir.hasNext()) {
-	FormField ff = (FormField) ir.next();
-%>
-        <option value="<%=ff.getName()%>"><%=ff.getTitle()%></option>
-  <%
-}%>
-		<option value="id">ID</option>
-		<option value="cws_id">cws_id</option>
-</select>
-  =
-  表单
-  <select id="otherFormCode" name="otherFormCode" onchange="getFieldOfForm(this.value)">
-<%
-	String sql = "select code from " + fd.getTableName() + " order by orders asc";	
-	ir = fd.list(sql).iterator();
-	while (ir.hasNext()) {
-		FormDb fdb = (FormDb) ir.next();
-%>		
-	<option value="<%=fdb.getCode()%>"><%=fdb.getName()%></option>	
-<%}%>
-</select>
 <script>
-$('#otherFormCode').select2();
-</script>
-中的字段
-  <span id="spanField"></span>
-  <br />
-  顺序号
-<input name="fieldOrder" size="5" value="<%=len>0?String.valueOf(StrUtil.toDouble(fieldOrder[len-1]) + 1):""%>" />
-宽度
-<input name="fieldWidth" size="5" />
-<input name="formCode" value="<%=formCode%>" type="hidden" />
-<input name="code" value="<%=code%>" type="hidden" />
-<input name="fieldType" value="1" type="hidden" />
-<input class="btn btn-default" type="submit" value="添加" /></td>
-    </tr>
+	function submitAddCol(formId) {
+		<%
+        if (isServerConnectWithCloud) {
+        %>
+		$.ajax({
+			type: "post",
+			url: "colAdd.do",
+			contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+			data: $('#' + formId).serialize(),
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+				$('body').showLoading();
+			},
+			success: function (data, status) {
+				data = $.parseJSON(data);
+				if (data.ret == "1") {
+					jAlert(data.msg, "提示", function () {
+						window.location.reload()
+					});
+				} else {
+					jAlert(data.msg, "提示");
+				}
+			},
+			complete: function (XMLHttpRequest, status) {
+				$('body').hideLoading();
+			},
+			error: function (XMLHttpRequest, textStatus) {
+				// 请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+		<%
+        }else {
+        %>
+		var we = o("webedit");
+		we.PostScript = "<%=path%>/public/module/add.do";
 
-</table>    
+		loadDataToWebeditCtrl(o(formId), o("webedit"));
+		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+		we.AddField("listField", "<%=listField%>");
+		we.AddField("listFieldWidth", "<%=listFieldWidth%>");
+		we.AddField("listFieldOrder", "<%=listFieldOrder%>");
+		we.AddField("listFieldLink", "<%=listFieldLink%>");
+		we.UploadToCloud();
+
+		var data = $.parseJSON(o("webedit").ReturnMessage);
+		if (data.ret == "1") {
+			$.ajax({
+				type: "post",
+				url: "colSave.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: {
+					code: "<%=code%>",
+					formCode: "<%=formCode%>",
+					result: JSON.stringify(data.result)
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					if (data.ret=="1") {
+						jAlert(data.msg, "提示", function() {
+							window.location.reload();
+						});
+					}
+					else {
+						jAlert(data.msg, "提示");
+					}
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		} else {
+			jAlert(data.msg, "提示");
+		}
+		<%
+        }
+        %>
+	}
+</script>
+<form id="formAddColMap" name="formAddColMap" method="post" action="module_field_list.jsp?op=add">
+	<table class="tabStyle_1 percent98" align="center" width="95%">
+		<tr>
+			<td align="left" style="PADDING-LEFT: 10px" class="tabStyle_1_title">添加映射字段</td>
+		</tr>
+		<tr>
+			<td align="left" style="PADDING-LEFT: 10px">
+				本表字段
+				<select id="fieldNameMapForList" name="fieldName">
+					<%
+						ir = v.iterator();
+						while (ir.hasNext()) {
+							FormField ff = (FormField) ir.next();
+					%>
+					<option value="<%=ff.getName()%>"><%=ff.getTitle()%>
+					</option>
+					<%
+						}%>
+					<option value="id">ID</option>
+					<option value="cws_id">cws_id</option>
+				</select>
+				=
+				表单
+				<select id="otherFormCode" name="otherFormCode" onchange="getFieldOfForm(this.value)">
+					<%
+						sql = "select code from " + fd.getTableName() + " order by orders asc";
+						ir = fd.list(sql).iterator();
+						while (ir.hasNext()) {
+							FormDb fdb = (FormDb) ir.next();
+					%>
+					<option value="<%=fdb.getCode()%>"><%=fdb.getName()%>
+					</option>
+					<%}%>
+				</select>
+				<script>
+					$('#otherFormCode').select2();
+				</script>
+				中的字段
+				<span id="spanField"></span>
+				<br/>
+				<select name="fieldShow">
+					<option value="1">显示</option>
+					<option value="0">隐藏</option>
+				</select>
+				顺序号
+				<input name="fieldOrder" size="5" value="<%=len>0?String.valueOf(StrUtil.toDouble(fieldOrder[len-1]) + 1):""%>"/>
+				宽度
+				<input name="fieldWidth" size="5" value="150"/>
+				<input name="formCode" value="<%=formCode%>" type="hidden"/>
+				<input name="code" value="<%=code%>" type="hidden"/>
+				<input name="fieldType" value="1" type="hidden"/>
+				<input class="btn btn-default" type="button" value="添加" onclick="submitAddCol('formAddColMap')"/>
+				<script>
+					$('#fieldNameMapForList').select2();
+				</script>
+			</td>
+		</tr>
+	</table>
 </form>
 
 <form id="formAddMulti" name="formAddMulti" method="post" action="module_field_list.jsp?op=add" onsubmit="return formAddMulti_onsubmit()">
-<table class="tabStyle_1 percent98" width="95%" align="center">
-    <tr >
-      <td align="left" style="PADDING-LEFT: 10px" class="tabStyle_1_title">添加多重映射字段</td>
-    </tr>
-    <tr >
-      <td align="left" style="PADDING-LEFT: 10px">字段
-<input name="fieldName" style="width:200px" />
-<input name="fieldType" value="2" type="hidden" />
-顺序号
-<input name="fieldOrder" size="5" value="<%=len>0?String.valueOf(StrUtil.toDouble(fieldOrder[len-1]) + 1):"1"%>" />
-宽度
-<input name="fieldWidth" size="5" />
-<input name="formCode" value="<%=formCode%>" type="hidden" />
-<input name="code" value="<%=code%>" type="hidden" />
-<input class="btn btn-default" type="submit" value="添加" />
-<br />
-规则：本表字段：对应表单编码：对应字段：获取字段：......</td>
-    </tr>
-</table>
+	<table class="tabStyle_1 percent98" width="95%" align="center">
+		<tr>
+			<td align="left" style="PADDING-LEFT: 10px" class="tabStyle_1_title">添加多重映射字段</td>
+		</tr>
+		<tr>
+			<td align="left" style="PADDING-LEFT: 10px">字段
+				<input name="fieldName" style="width:200px"/>
+				<input name="fieldType" value="2" type="hidden"/>
+				顺序号
+				<input name="fieldOrder" size="5" value="<%=len>0?String.valueOf(StrUtil.toDouble(fieldOrder[len-1]) + 1):"1"%>"/>
+				宽度
+				<input name="fieldWidth" size="5"/>
+				<input name="formCode" value="<%=formCode%>" type="hidden"/>
+				<input name="code" value="<%=code%>" type="hidden"/>
+				<input class="btn btn-default" type="button" value="添加" onclick="submitAddCol('formAddMulti')"/>
+				<br/>
+				规则：本表字段:对应表单编码:对应字段:获取字段:......
+			</td>
+		</tr>
+	</table>
 </form>
 <br />
 <form action="module_field_list.jsp?op=setFilter" method="post" name="frmFilter" id="frmFilter" onsubmit="return frmFilter_onsbumit()">
@@ -1750,14 +1847,153 @@ for (i=0; i<len; i++) {
       <td align="center"><input name="linkOrder" size="5" value="<%=linkOrders[i]%>" /></td>
       <td align="center">
 		  <%if (isCombCond) {%>
-		  <input class="btn btn-default" type="submit" value="修改" />
+		  <input class="btn btn-default" type="button" value="修改" onclick="submitModifyFormLink('<%=i%>')" />
 		  <%}%>
         &nbsp;&nbsp;
-        <input class="btn btn-default" name="button" type="button" onclick="jConfirm('您确定要删除么？','提示',function(r){ if(!r){return;}else{ window.location.href='module_field_list.jsp?op=delLink&code=<%=code%>&formCode=<%=formCode%>&linkName=<%=StrUtil.UrlEncode(linkName)%>'}}) " value="删除" />      </td>
+        <input class="btn btn-default" name="button" type="button" onclick="delLink('<%=linkName%>', <%=i%>)" value="删除" />      </td>
     </tr>
   </form>
-  <%}%>
+	<script>
+		function delLink(linkName, i) {
+			jConfirm('您确定要删除么？', '提示', function (r) {
+				if (!r) {
+					return;
+				} else {
+					jConfirm('您确定要删除么？', '提示', function (r) {
+						if (!r) {
+							return;
+						} else {
+							$.ajax({
+								type: "post",
+								url: "linkDel.do",
+								contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+								data: {
+									linkName: linkName,
+									code: "<%=code%>",
+									formCode: "<%=formCode%>"
+								},
+								dataType: "html",
+								beforeSend: function (XMLHttpRequest) {
+									$('body').showLoading();
+								},
+								success: function (data, status) {
+									data = $.parseJSON(data);
+									if (data.ret == "1") {
+										jAlert(data.msg, "提示", function () {
+											$('#trLink' + i).remove();
+										});
+									} else {
+										jAlert(data.msg, "提示");
+									}
+								},
+								complete: function (XMLHttpRequest, status) {
+									$('body').hideLoading();
+								},
+								error: function (XMLHttpRequest, textStatus) {
+									// 请求出错处理
+									alert(XMLHttpRequest.responseText);
+								}
+							});
+						}
+					})
+				}
+			})
+		}
+	</script>
+  <%
+	}
+
+	  msd = msd.getModuleSetupDb(code);
+	  String tName = StrUtil.getNullStr(msd.getString("op_link_name"));
+	  String tUrl = StrUtil.getNullStr(msd.getString("op_link_url"));
+	  String tOrder = StrUtil.getNullStr(msd.getString("op_link_order"));
+	  String tField = StrUtil.getNullStr(msd.getString("op_link_field"));
+	  String tCond = StrUtil.getNullStr(msd.getString("op_link_cond"));
+	  String tValue = StrUtil.getNullStr(msd.getString("op_link_value"));
+	  String tEvent = StrUtil.getNullStr(msd.getString("op_link_event"));
+	  String tRole = StrUtil.getNullStr(msd.getString("op_link_role"));
+  %>
     <script>
+		function submitModifyFormLink(i) {
+			<%
+			if (isServerConnectWithCloud) {
+			%>
+			$.ajax({
+				type: "post",
+				url: "linkModify.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: $('#formLink' + i).serialize(),
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					jAlert(data.msg, "提示");
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+			<%
+			}else {
+			%>
+			var we = o("webedit");
+			we.PostScript = "<%=path%>/public/module/modifyLink.do";
+
+			loadDataToWebeditCtrl(o("formLink" + i), o("webedit"));
+			we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+
+			we.AddField("tName", "<%=tName%>");
+			we.AddField("tUrl", "<%=tUrl%>");
+			we.AddField("tOrder", "<%=tOrder%>");
+			we.AddField("tField", "<%=tField.replaceAll("\"", "\\\\\"")%>");
+			we.AddField("tCond", "<%=tCond%>");
+			we.AddField("tValue", "<%=tValue%>");
+			we.AddField("tEvent", "<%=tEvent%>");
+			we.AddField("tRole", "<%=tRole%>");
+			we.UploadToCloud();
+
+			var data = $.parseJSON(o("webedit").ReturnMessage);
+			if (data.ret=="1") {
+				$.ajax({
+					type: "post",
+					url: "linkSave.do",
+					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+					data: {
+						code: "<%=code%>",
+						formCode: "<%=formCode%>",
+						result: JSON.stringify(data.result)
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('body').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						jAlert(data.msg, "提示");
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('body').hideLoading();
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						alert(XMLHttpRequest.responseText);
+					}
+				});
+			}
+			else {
+				jAlert(data.msg, "提示");
+			}
+			<%
+			}
+			%>
+		}
+
         var curM;
         var curParamId;
         function getMaps() {
@@ -1786,7 +2022,7 @@ for (i=0; i<len; i++) {
   <option value="click">点击</option>
   <option value="flow">发起流程</option>
 </select>
-<input id="linkHref" name="linkHref" />
+<input id="linkHref" name="linkHref" /><BR/>(注：点击事件方法中如有双引号将会被自动替换为单引号)
         <div id="divFlow" style="display:none">
           <select id="flowTypeCodeAdd" name="flowTypeCode">
         <%
@@ -1830,10 +2066,107 @@ for (i=0; i<len; i++) {
       <td align="center" style="PADDING-LEFT: 10px"><input name="linkOrder" size="5" value="<%=linkNames!=null?StrUtil.toDouble(linkOrders[i-1])+1:1%>" />
         <input name="formCode" value="<%=formCode%>" type="hidden" />
       <input name="code" value="<%=code%>" type="hidden" /></td>
-      <td align="center" style="PADDING-LEFT: 10px"><input class="btn btn-default" type="submit" value="添加" /></td>
+      <td align="center" style="PADDING-LEFT: 10px"><input class="btn btn-default" type="button" value="添加" onclick="submitAddFormLink()" /></td>
     </tr>
   </form>
 </table>
+<script>
+	function submitAddFormLink() {
+		<%
+        if (isServerConnectWithCloud) {
+        %>
+		$.ajax({
+			type: "post",
+			url: "linkAdd.do",
+			contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+			data: $('#formLink').serialize(),
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+				$('body').showLoading();
+			},
+			success: function (data, status) {
+				data = $.parseJSON(data);
+				if (data.ret=="1") {
+					jAlert(data.msg, "提示", function() {
+						window.location.reload();
+					});
+				}
+				else {
+					jAlert(data.msg, "提示");
+				}
+			},
+			complete: function (XMLHttpRequest, status) {
+				$('body').hideLoading();
+			},
+			error: function (XMLHttpRequest, textStatus) {
+				// 请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+		<%
+        } else {
+        %>
+
+		var we = o("webedit");
+		we.PostScript = "<%=path%>/public/module/addLink.do";
+
+		loadDataToWebeditCtrl(o("formLink"), o("webedit"));
+		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+
+		we.AddField("tName", "<%=tName%>");
+		we.AddField("tUrl", "<%=tUrl%>");
+		we.AddField("tOrder", "<%=tOrder%>");
+		we.AddField("tField", "<%=tField.replaceAll("\"", "\\\\\"")%>");
+		we.AddField("tCond", "<%=tCond%>");
+		we.AddField("tValue", "<%=tValue%>");
+		we.AddField("tEvent", "<%=tEvent%>");
+		we.AddField("tRole", "<%=tRole%>");
+		we.UploadToCloud();
+
+		// console.log(we.ReturnMessage);
+		var data = $.parseJSON(we.ReturnMessage);
+		if (data.ret=="1") {
+			$.ajax({
+				type: "post",
+				url: "linkSave.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: {
+					code: "<%=code%>",
+					formCode: "<%=formCode%>",
+					result: JSON.stringify(data.result)
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					if (data.ret=="1") {
+						jAlert(data.msg, "提示", function() {
+							window.location.reload();
+						});
+					}
+					else {
+						jAlert(data.msg, "提示");
+					}
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		}
+		else {
+			jAlert(data.msg, "提示");
+		}
+		<%
+        }
+        %>
+	}
+</script>
 <br />
 <table cellspacing="0" class="tabStyle_1 percent98" cellpadding="3" width="95%" align="center">
   <tr>
@@ -1899,7 +2232,7 @@ for (i=0; i<len; i++) {
 	}
 	%>
   <form action="module_field_list.jsp?op=modifyBtn" method="post" name="formBtn<%=i%>" id="formBtn<%=i%>">
-    <tr >
+    <tr id="tr_btn_<%=btnName%>">
       <td align="center"><%=btnName%>
           <input name="formCode" value="<%=formCode%>" type="hidden" />
           <input name="code" value="<%=code%>" type="hidden" />
@@ -2003,11 +2336,132 @@ for (i=0; i<len; i++) {
           查询
       <%}%>
       </td>
-      <td align="center"><input class="btn btn-default" name="submit2" type="submit" value="修改" />
+      <td align="center"><input class="btn btn-default" type="button" value="修改" onclick="submitModifyBtn('formBtn<%=i%>')" />
         &nbsp;&nbsp;
-        <input class="btn btn-default" name="button" type="button" onclick="jConfirm('您确定要删除么？','提示',function(r){ if(!r){return;}else{window.location.href='module_field_list.jsp?op=delBtn&code=<%=code%>&formCode=<%=formCode%>&btnName=<%=StrUtil.UrlEncode(btnName)%>'}}) " value="删除" />      </td>
+        <input class="btn btn-default" name="button" type="button" onclick="delBtn('<%=btnName%>')" value="删除" />      </td>
     </tr>
   </form>
+	<script>
+		function submitModifyBtn(formId) {
+			<%
+            if (isServerConnectWithCloud) {
+            %>
+			$.ajax({
+				type: "post",
+				url: "btnModify.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: $('#' + formId).serialize(),
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					jAlert(data.msg, "提示");
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+			<%
+            }else {
+            	String tNameBtn = StrUtil.getNullStr(msd.getString("btn_name"));
+				String tOrderBtn = StrUtil.getNullStr(msd.getString("btn_order"));
+				String tScriptBtn = StrUtil.getNullStr(msd.getString("btn_script"));
+				String tBclassBtn = StrUtil.getNullStr(msd.getString("btn_bclass"));
+				String tRoleBtn = StrUtil.getNullStr(msd.getString("btn_role"));
+            %>
+			var we = o("webedit");
+			we.PostScript = "<%=path%>/public/module/modifyBtn.do";
+
+			loadDataToWebeditCtrl(o(formId), o("webedit"));
+			we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+			we.AddField("tName", "<%=tNameBtn%>");
+			we.AddField("tOrder", "<%=tOrderBtn%>");
+			we.AddField("tScript", "<%=tScriptBtn.replaceAll("\"", "\\\\\"")%>");
+			we.AddField("tBclass", "<%=tBclassBtn%>");
+			we.AddField("tRole", "<%=tRoleBtn%>");
+			we.UploadToCloud();
+
+			var data = $.parseJSON(o("webedit").ReturnMessage);
+			if (data.ret == "1") {
+				$.ajax({
+					type: "post",
+					url: "btnSave.do",
+					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+					data: {
+						code: "<%=code%>",
+						formCode: "<%=formCode%>",
+						result: JSON.stringify(data.result)
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('body').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						jAlert(data.msg, "提示");
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('body').hideLoading();
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						alert(XMLHttpRequest.responseText);
+					}
+				});
+			} else {
+				jAlert(data.msg, "提示");
+			}
+			<%
+            }
+            %>
+		}
+
+		function delBtn(btnName) {
+			jConfirm('您确定要删除么？', '提示', function (r) {
+				if (!r) {
+					return;
+				} else {
+					$.ajax({
+						type: "post",
+						url: "btnDel.do",
+						contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+						data: {
+							btnName: btnName,
+							code: "<%=code%>",
+							formCode: "<%=formCode%>"
+						},
+						dataType: "html",
+						beforeSend: function (XMLHttpRequest) {
+							$('body').showLoading();
+						},
+						success: function (data, status) {
+							data = $.parseJSON(data);
+							if (data.ret == "1") {
+								jAlert(data.msg, "提示", function () {
+									$('#tr_btn_' + btnName).remove();
+								});
+							} else {
+								jAlert(data.msg, "提示");
+							}
+						},
+						complete: function (XMLHttpRequest, status) {
+							$('body').hideLoading();
+						},
+						error: function (XMLHttpRequest, textStatus) {
+							// 请求出错处理
+							alert(XMLHttpRequest.responseText);
+						}
+					});
+				}
+			})
+		}
+	</script>
   <%}%>
   <form action="module_field_list.jsp" method="post" name="formBtn" id="formBtn" onsubmit="if (getRadioValue('btnBatchOrScript')=='0') {$('#opAddBtn').val('addBtnBatch');} else {$('#opAddBtn').val('addBtn')}">
     <tr >
@@ -2119,22 +2573,172 @@ while (ir.hasNext()) {
       	</script>
       </td>
       <td align="center">
-      <input class="btn btn-default" type="submit" value="添加按钮" />
+      <input class="btn btn-default" type="button" value="添加按钮" onclick="submitAddBtn()" />
       <input name="formCode" value="<%=formCode%>" type="hidden" />
       <input name="code" value="<%=code%>" type="hidden" />      
       </td>
     </tr>
   </form>
 </table>
+<script>
+	function submitAddBtn() {
+		if ($('#btnName').val().indexOf("\"")!=-1 || $('#btnName').val().indexOf("'")!=-1) {
+			jAlert("按钮名称中不能含有单引号或双引号", "提示");
+			return;
+		}
+
+		if (getRadioValue('btnBatchOrScript') == '0') {
+			$('#opAddBtn').val('addBtnBatch');
+		} else {
+			$('#opAddBtn').val('addBtn')
+		}
+
+		<%
+        if (isServerConnectWithCloud) {
+        %>
+		$.ajax({
+			type: "post",
+			url: "btnAdd.do",
+			contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+			data: $('#formBtn').serialize(),
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+				$('body').showLoading();
+			},
+			success: function (data, status) {
+				data = $.parseJSON(data);
+				if (data.ret == "1") {
+					jAlert(data.msg, "提示", function () {
+						window.location.reload()
+					});
+				} else {
+					jAlert(data.msg, "提示");
+				}
+			},
+			complete: function (XMLHttpRequest, status) {
+				$('body').hideLoading();
+			},
+			error: function (XMLHttpRequest, textStatus) {
+				// 请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+		<%
+        }else {
+			String tNameBtn = StrUtil.getNullStr(msd.getString("btn_name"));
+			String tOrderBtn = StrUtil.getNullStr(msd.getString("btn_order"));
+			String tScriptBtn = StrUtil.getNullStr(msd.getString("btn_script"));
+			String tBclassBtn = StrUtil.getNullStr(msd.getString("btn_bclass"));
+			String tRoleBtn = StrUtil.getNullStr(msd.getString("btn_role"));
+        %>
+		var we = o("webedit");
+		if (getRadioValue('btnBatchOrScript') == '0') {
+			we.PostScript = "<%=path%>/public/module/addBtnBatch.do";
+		} else {
+			we.PostScript = "<%=path%>/public/module/addBtn.do";
+		}
+
+		loadDataToWebeditCtrl(o("formBtn"), o("webedit"));
+		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+
+		we.AddField("tName", "<%=tNameBtn%>");
+		we.AddField("tOrder", "<%=tOrderBtn%>");
+		we.AddField("tScript", "<%=tScriptBtn.replaceAll("\"", "\\\\\"")%>");
+		we.AddField("tBclass", "<%=tBclassBtn%>");
+		we.AddField("tRole", "<%=tRoleBtn%>");
+		we.UploadToCloud();
+
+		var data = $.parseJSON(o("webedit").ReturnMessage);
+		if (data.ret == "1") {
+			$.ajax({
+				type: "post",
+				url: "btnSave.do",
+				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+				data: {
+					code: "<%=code%>",
+					formCode: "<%=formCode%>",
+					result: JSON.stringify(data.result)
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					if (data.ret=="1") {
+						jAlert(data.msg, "提示", function() {
+							window.location.reload();
+						});
+					}
+					else {
+						jAlert(data.msg, "提示");
+					}
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		} else {
+			jAlert(data.msg, "提示");
+		}
+		<%
+        }
+        %>
+	}
+</script>
 <br />
+<%
+	if (!isServerConnectWithCloud) {
+%>
+<TABLE align="center" class="tabStyle_1 percent60" style="margin-top: 20px; width:450px">
+	<TR>
+		<TD align="left" class="tabStyle_1_title">上传助手</TD>
+	</TR>
+	<TR>
+		<td align="center">
+			<object classid="CLSID:DE757F80-F499-48D5-BF39-90BC8BA54D8C" codebase="../activex/cloudym.CAB#version=1,3,0,0" width=450 height=86 align="middle" id="webedit">
+				<param name="Encode" value="utf-8">
+				<param name="MaxSize" value="<%=Global.MaxSize%>">
+				<!--上传字节-->
+				<param name="ForeColor" value="(255,255,255)">
+				<param name="BgColor" value="(107,154,206)">
+				<param name="ForeColorBar" value="(255,255,255)">
+				<param name="BgColorBar" value="(0,0,255)">
+				<param name="ForeColorBarPre" value="(0,0,0)">
+				<param name="BgColorBarPre" value="(200,200,200)">
+				<param name="FilePath" value="">
+				<param name="Relative" value="2">
+				<!--上传后的文件需放在服务器上的路径-->
+				<param name="Server" value="<%=host%>">
+				<param name="Port" value="<%=port%>">
+				<param name="VirtualPath" value="">
+				<param name="PostScript" value="<%=path%>/public/module/modifyLink.do">
+				<param name="PostScriptDdxc" value="">
+				<param name="SegmentLen" value="204800">
+				<param name="BasePath" value="">
+				<param name="InternetFlag" value="">
+				<param name="Organization" value="<%=license.getCompany()%>" />
+				<param name="Key" value="<%=license.getKey()%>" />
+			</object>
+		</TD>
+	</TR>
+	</table>
+<%
+	}
+%>
 </body>
 <script>
-  var work_log = "<%=work_log%>";
-	if(work_log==1){
-		$("#is_workLog").attr({"checked":"checked"});
-	}else{
-		$("#is_workLog").removeAttr("checked");
-	}
+var work_log = "<%=work_log%>";
+if(work_log==1) {
+	$("#is_workLog").attr({"checked":"checked"});
+}else{
+	$("#is_workLog").removeAttr("checked");
+}
+
 function changeWorkLog(){
 	//alert($("#is_workLog:checked").parent().html());
 	if($("#is_workLog:checked").parent().html() != null){
@@ -2319,5 +2923,36 @@ $(function() {
          }
      }
 });
+
+  <%
+      if (!isServerConnectWithCloud) {
+  %>
+  function checkWebEditInstalled() {
+	  var bCtlLoaded = false;
+	  try {
+		  if (typeof(o("webedit").AddField)=="undefined")
+			  bCtlLoaded = false;
+		  if (typeof(o("webedit").AddField)=="unknown") {
+			  bCtlLoaded = true;
+		  }
+	  }
+	  catch (ex) {
+	  }
+	  if (!bCtlLoaded) {
+		  $('<div></div>').html('您还没有安装客户端控件，请点击确定此处下载安装！').activebar({
+			  'icon': 'images/alert.gif',
+			  'highlight': '#FBFBB3',
+			  'url': 'activex/oa_client.exe',
+			  'button': 'images/bar_close.gif'
+		  });
+	  }
+  }
+
+  $(function() {
+	  checkWebEditInstalled();
+  })
+  <%
+  }
+  %>
 </script>
 </html>

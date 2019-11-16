@@ -2,9 +2,14 @@ package com.redmoon.oa.flow;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+
+import cn.js.fan.util.*;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.query.QueryScriptUtil;
 
+import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.visual.ModuleUtil;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
@@ -27,11 +32,14 @@ import org.xml.sax.InputSource;
 import org.json.JSONObject;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.StrUtil;
 
 /**
  * <p>Title: </p>
@@ -133,11 +141,10 @@ public class WorkflowUtil {
     /**
      * 取得用来控制是否显示的脚本
      * @param request HttpServletRequest
-     * @param wa WorkflowActionDb
      * @param fd FormDb
      * @param fdao FormDAO
      * @param userName String
-     * @param isFormReport 是否用于查看流程时
+     * @param isForReport 是否用于查看流程时
      * @return String
      */
     public static String doGetViewJSMobile(HttpServletRequest request, FormDb fd, FormDAO fdao, String userName, boolean isForReport) {
@@ -187,14 +194,15 @@ public class WorkflowUtil {
                                 Iterator<String> ir3 = json.keys();
                                 // 处理默认值的情况
                                 // 判断是否为radio
-                                
-                                str += "var tagName='input';\n";
-                                str += "if (o('" + fieldName + "')) { tagName=o('" + fieldName + "').tagName; }\n";
-                                str += "if ($(tagName + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
+                                String rand = RandomSecquenceCreator.getId(10);
+
+                                str += "var tagName" + rand + "='input';\n";
+                                str += "if (o('" + fieldName + "')) { tagName" + rand + "=o('" + fieldName + "').tagName; }\n";
+                                str += "if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
 
                                 // str += " alert($(\"input[name='" + fieldName + "']:checked\").val() + '" + token + "'+" + ary[1] + ");\n";
 
-                                str += "  if ($(tagName + \"[name='" + fieldName + "']:checked\").val()" + token + ary[1] + ") {\n";
+                                str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']:checked\").val()" + token + ary[1] + ") {\n";
                                 while (ir3.hasNext()) {
                                     String id = ir3.next();
                                     str += getViewJSOfInnerHtml(fd.getContent(), id, json.getString(id));
@@ -205,7 +213,7 @@ public class WorkflowUtil {
                                 }
                                 str += "  }\n";
                                 str += "}else{\n";
-                                str += "  if ($(tagName + \"[name='" + fieldName + "']\").val()" + token + ary[1] + ") {\n";
+                                str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").val()" + token + ary[1] + ") {\n";
                                 ir3 = json.keys();
                                 while (ir3.hasNext()) {
                                     String id = (String) ir3.next();
@@ -220,13 +228,13 @@ public class WorkflowUtil {
 
                                 // 处理事件
                                 // str += "var evt = 'propertychange';\n"; // 如果有多个条件，会出现多次重复定义
-                                str += "$(tagName + \"[name='" + fieldName + "']\").change(function(e) {\n";
+                                str += "$(tagName" + rand + " + \"[name='" + fieldName + "']\").change(function(e) {\n";
                                 // str += "alert('here');\n";
                                 // str += "alert($(\"input[name='" + fieldName + "']\").attr('type'));\n";
 
                                 // 判断是否为radio
-                                str += "if ($(tagName + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
-                                str += "  if ($(tagName + \"[name='" + fieldName + "']:checked\").val()" + token + ary[1] + ") {\n";
+                                str += "if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
+                                str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']:checked\").val()" + token + ary[1] + ") {\n";
                                 ir3 = json.keys();
                                 while (ir3.hasNext()) {
                                     String id = (String) ir3.next();
@@ -238,7 +246,7 @@ public class WorkflowUtil {
                                 }
                                 str += "  }\n";
                                 str += "}else{\n";
-                                str += "  if ($(tagName + \"[name='" + fieldName + "']\").val()" + token + ary[1] + ") {\n";
+                                str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").val()" + token + ary[1] + ") {\n";
                                 ir3 = json.keys();
                                 while (ir3.hasNext()) {
                                     String id = (String) ir3.next();
@@ -290,7 +298,70 @@ public class WorkflowUtil {
         }
         str += "</script>\n";
         return str;
-    }    
+    }
+
+    public static String makeViewJS(String fieldName, String token, String val, JSONObject json) throws JSONException {
+        String str = "";
+        String rand = RandomSecquenceCreator.getId(10);
+        Iterator ir3 = json.keys();
+
+        str += "var tagName" + rand + "='input';\n";
+        str += "if (o('" + fieldName + "')) { tagName" + rand + "=o('" + fieldName + "').tagName; }\n";
+        str += "if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
+
+        // str += " alert($(\"input[name='" + fieldName + "']:checked\").val() + '" + token + "'+" + ary[1] + ");\n";
+
+        str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']:checked\").val()" + token + val + ") {\n";
+        while (ir3.hasNext()) {
+            String key = (String) ir3.next();
+            str += "  var obj=$('#" + key + "')[0];\n";
+            str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
+            str += "  obj." + json.get(key) + "();\n";
+        }
+        str += "  }\n";
+        str += "}else{\n";
+        str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").val()" + token + val + ") {\n";
+        ir3 = json.keys();
+        while (ir3.hasNext()) {
+            String key = (String) ir3.next();
+            str += "  var obj=$('#" + key + "')[0];\n";
+            str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
+            str += "  obj." + json.get(key) + "();\n";
+        }
+        str += "  }\n";
+        str += "}\n";
+
+        // 处理事件
+        // str += "var evt = 'propertychange';\n"; // 如果有多个条件，会出现多次重复定义
+        str += "$(tagName" + rand + " + \"[name='" + fieldName + "']\").change(function(e) {\n";
+        // str += "alert('here');\n";
+        // str += "alert($(\"input[name='" + fieldName + "']\").attr('type'));\n";
+
+        // 判断是否为radio
+        str += "if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
+        str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']:checked\").val()" + token + val + ") {\n";
+        ir3 = json.keys();
+        while (ir3.hasNext()) {
+            String key = (String) ir3.next();
+            str += "  var obj=$('#" + key + "')[0];\n";
+            str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
+            str += "  obj." + json.get(key) + "();\n";
+        }
+        str += "  }\n";
+        str += "}else{\n";
+        str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").val()" + token + val + ") {\n";
+        ir3 = json.keys();
+        while (ir3.hasNext()) {
+            String key = (String) ir3.next();
+            str += "  var obj=$('#" + key + "')[0];\n";
+            str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
+            str += "  obj." + json.get(key) + "();\n";
+        }
+        str += "  }\n";
+        str += "}\n";
+        str += "});\n";
+        return str;
+    }
 
     /**
      * 取得用来控制是否显示的脚本
@@ -299,7 +370,7 @@ public class WorkflowUtil {
      * @param fd FormDb
      * @param fdao FormDAO
      * @param userName String
-     * @param isFormReport 是否用于查看流程时
+     * @param isForReport 是否用于查看流程时
      * @return String
      */
     public static String doGetViewJS(HttpServletRequest request, WorkflowActionDb wa, FormDb fd, FormDAO fdao, String userName, boolean isForReport) {
@@ -315,6 +386,7 @@ public class WorkflowUtil {
             SAXBuilder parser = new SAXBuilder();
 
             org.jdom.Document doc = parser.build(new InputSource(new StringReader(wpd.getViews())));
+            DebugUtil.i(WorkflowUtil.class, "doGetViewJS", wpd.getViews());
 
             Element root = doc.getRootElement();
             Iterator<Element> ir = root.getChildren().iterator();
@@ -327,103 +399,141 @@ public class WorkflowUtil {
                     while (ir2.hasNext()) {
                         Element el = ir2.next();
                         String condition = el.getChildText("condition").trim();
-                        // 如果以#开头且不在流程查看时，对前台事件进行处理
-                        if (condition.startsWith("#")) {
-                        	// 非流程查看时
-                        	if (!isForReport) {
-	                            String token = "==";
-	                            if (condition.indexOf(">=")!=-1)
-	                                token = ">=";
-	                            else if (condition.indexOf("<=")!=-1)
-	                                token = "<=";
-	                            else if (condition.indexOf("!=")!=-1)
-	                                token = "!=";
-	                            else if (condition.indexOf(">")!=-1)
-	                                token = ">";
-	                            else if (condition.indexOf("<")!=-1)
-	                                token = "<";
-	                            String[] ary = ary = StrUtil.split(condition, token);
-	                            if (ary.length==2) {
-	                                String fieldName = ary[0].substring(1); // 去掉#号
-	                                ary[1] = ary[1].replaceAll("\"", "'");
-	
-	                                String display = el.getChildText("display");
-	                                JSONObject json = new JSONObject(display);
-	                                Iterator ir3 = json.keys();
-	                                // 处理默认值的情况
-	                                // 判断是否为radio
-	                                
-	                                str += "var tagName='input';\n";
-	                                str += "if (o('" + fieldName + "')) { tagName=o('" + fieldName + "').tagName; }\n";
-	                                str += "if ($(tagName + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
-	
-	                                // str += " alert($(\"input[name='" + fieldName + "']:checked\").val() + '" + token + "'+" + ary[1] + ");\n";
-	
-	                                str += "  if ($(tagName + \"[name='" + fieldName + "']:checked\").val()" + token + ary[1] + ") {\n";
-	                                while (ir3.hasNext()) {
-	                                    String key = (String) ir3.next();
-	                                    str += "  var obj=$('#" + key + "')[0];\n";
-	                                    str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-	                                    str += "  obj." + json.get(key) + "();\n";
-	                                }
-	                                str += "  }\n";
-	                                str += "}else{\n";
-	                                str += "  if ($(tagName + \"[name='" + fieldName + "']\").val()" + token + ary[1] + ") {\n";
-	                                ir3 = json.keys();
-	                                while (ir3.hasNext()) {
-	                                    String key = (String) ir3.next();
-	                                    str += "  var obj=$('#" + key + "')[0];\n";
-	                                    str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-	                                    str += "  obj." + json.get(key) + "();\n";
-	                                }
-	                                str += "  }\n";
-	                                str += "}\n";
-	
-	                                // 处理事件
-	                                // str += "var evt = 'propertychange';\n"; // 如果有多个条件，会出现多次重复定义
-	                                str += "$(tagName + \"[name='" + fieldName + "']\").change(function(e) {\n";
-	                                // str += "alert('here');\n";
-	                                // str += "alert($(\"input[name='" + fieldName + "']\").attr('type'));\n";
-	
-	                                // 判断是否为radio
-	                                str += "if ($(tagName + \"[name='" + fieldName + "']\").attr('type')=='radio') {\n";
-	                                str += "  if ($(tagName + \"[name='" + fieldName + "']:checked\").val()" + token + ary[1] + ") {\n";
-	                                ir3 = json.keys();
-	                                while (ir3.hasNext()) {
-	                                    String key = (String) ir3.next();
-	                                    str += "  var obj=$('#" + key + "')[0];\n";
-	                                    str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-	                                    str += "  obj." + json.get(key) + "();\n";
-	                                }
-	                                str += "  }\n";
-	                                str += "}else{\n";
-	                                str += "  if ($(tagName + \"[name='" + fieldName + "']\").val()" + token + ary[1] + ") {\n";
-	                                ir3 = json.keys();
-	                                while (ir3.hasNext()) {
-	                                    String key = (String) ir3.next();
-	                                    str += "  var obj=$('#" + key + "')[0];\n";
-	                                    str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-	                                    str += "  obj." + json.get(key) + "();\n";
-	                                }
-	                                str += "  }\n";
-	                                str += "}\n";
-	                                str += "});\n";
-	                            }
-	                            else
-	                                LogUtil.getLog(WorkflowUtil.class).error("condition=" + condition + ", 格式错误！");
-                        	}
+                        if (!"".equals(condition)) {
+                            // 如果以#开头且不在流程查看时，对前台事件进行处理
+                            if (condition.startsWith("#")) {
+                                // 非流程查看时
+                                if (!isForReport) {
+                                    String token = "==";
+                                    if (condition.indexOf(">=")!=-1)
+                                        token = ">=";
+                                    else if (condition.indexOf("<=")!=-1)
+                                        token = "<=";
+                                    else if (condition.indexOf("!=")!=-1)
+                                        token = "!=";
+                                    else if (condition.indexOf(">")!=-1)
+                                        token = ">";
+                                    else if (condition.indexOf("<")!=-1)
+                                        token = "<";
+                                    String[] ary = StrUtil.split(condition, token);
+                                    if (ary.length==2) {
+                                        String fieldName = ary[0].substring(1); // 去掉#号
+                                        ary[1] = ary[1].replaceAll("\"", "'");
+                                        String val = ary[1];
+
+                                        String display = el.getChildText("display");
+                                        JSONObject json = new JSONObject(display);
+                                        str += makeViewJS(fieldName, token, val, json);
+                                    }
+                                    else
+                                        LogUtil.getLog(WorkflowUtil.class).error("condition=" + condition + ", 格式错误！");
+                                }
+                            }
+                            else {
+                                // 如果不以#开头，则通过BranchMatcher.match在服务器端判断条件是否成立，条件表达式同分支线上的脚本表达式
+                                // 如果条件为空或者条件为真
+                                if (condition.equals("") ||
+                                        BranchMatcher.match(condition, fd, fdao, userName)) {
+                                    String display = el.getChildText("display");
+                                    JSONObject json = new JSONObject(display);
+                                    Iterator ir3 = json.keys();
+                                    while (ir3.hasNext()) {
+                                        String key = (String) ir3.next();
+                                        // str += "$('#" + key + "')." + json.get(key) + "();\n";
+                                        str += "  var obj=$('#" + key + "')[0];\n";
+                                        str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
+                                        str += "  obj." + json.get(key) + "();\n";
+                                    }
+                                }
+                            }
                         }
                         else {
-                            // 如果不以#开头，则通过BranchMatcher.match在服务器端判断条件是否成立，条件表达式同分支线上的脚本表达式
-                            // 如果条件为空或者条件为真
-                            if (condition.equals("") ||
-                                BranchMatcher.match(condition, fd, fdao, userName)) {
-                                String display = el.getChildText("display");
-                                JSONObject json = new JSONObject(display);
+                            Privilege pvg = new Privilege();
+                            List filedList = new ArrayList();
+                            Iterator ir1 = fd.getFields().iterator();
+                            while (ir1.hasNext()) {
+                                FormField ff = (FormField) ir1.next();
+                                filedList.add(ff.getName());
+                            }
+
+                            // 5.0版后
+                            boolean formFlag = true;
+
+                            String fieldName = el.getChildText("fieldName");
+                            String token = el.getChildText("operator");
+
+                            token = token.replaceAll("&lt;", "<");
+                            token = token.replaceAll("&gt;", ">");
+                            if (token.equals("=")) {
+                                token = "==";
+                            }
+                            else if (token.equals("<>")) {
+                                token = "!=";
+                            }
+
+                            String val = el.getChildText("value");
+
+                            formFlag = filedList.contains(fieldName);
+                            if (!formFlag && !"cws_id".equals(fieldName) && !"cws_status".equals(fieldName) && "!cws_flag".equals(fieldName)) {
+                                break;
+                            }
+
+                            if (val.equals(ModuleUtil.FILTER_CUR_USER)) {
+                                val = pvg.getUser(request);
+                            } else if (val.equals(ModuleUtil.FILTER_CUR_DATE)) {
+                                val = DateUtil.format(new java.util.Date(), "yyyy-MM-dd");
+                            } else if (val.startsWith("{$")) {
+                                Pattern p = Pattern.compile(
+                                        "\\{\\$([@A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
+                                        Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+                                Matcher m = p.matcher(val);
+                                while (m.find()) {
+                                    String fName = m.group(1);
+                                    if (fName.startsWith("request.")) {
+                                        String key = fName.substring("request.".length());
+                                        val = ParamUtil.get(request, key);
+                                    }
+                                }
+                            }
+
+                            String display = el.getChildText("display");
+                            JSONObject json = new JSONObject(display);
+                            FormField ff = fd.getFormField(fieldName);
+                            // 如果是字符串型，则需加上双引号
+                            if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR || ff.getFieldType() == FormField.FIELD_TYPE_TEXT) {
+                                // 如当radio默认未选择时，其值为null，故 JS 判别时无需加双引号
+                                if (!"null".equals(val)) {
+                                    val = "\"" + val + "\"";
+                                }
+                            }
+
+                            // 为前端生成 JS
+                            String pageType = (String)request.getAttribute("pageType");
+                            // 如果不是在flow_modify.jsp页面，则生成 JS
+                            if (!"flowShow".equals(pageType)) {
+                                str += makeViewJS(fieldName, token, val, json);
+                            }
+
+                            // 为后端生成JS
+                            if (val.equals("null")) {
+                                // 如果值为null，则只处理前台脚本，如当radio默认未选择时，其值为null
+                                continue;
+                            }
+                            String condStr = "{$" + fieldName + "}" + token + val;
+                            // 判断是否为字符串型，如果是则需要变成equals
+                            if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR || ff.getFieldType() == FormField.FIELD_TYPE_TEXT) {
+                                if ("==".equals(token)) {
+                                    condStr = val + ".equals({$" + fieldName + "})";
+                                }
+                                else if ("<>".equals(token)) {
+                                    condStr = "!" + val + ".equals({$" + fieldName + "})";
+                                }
+                            }
+                            DebugUtil.i(WorkflowUtil.class, "doGetViewJS", "condStr=" + condStr);
+                            if (fdao!=null && BranchMatcher.match(condStr, fd, fdao, userName)) {
                                 Iterator ir3 = json.keys();
                                 while (ir3.hasNext()) {
                                     String key = (String) ir3.next();
-                                    // str += "$('#" + key + "')." + json.get(key) + "();\n";
                                     str += "  var obj=$('#" + key + "')[0];\n";
                                     str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
                                     str += "  obj." + json.get(key) + "();\n";
@@ -438,10 +548,8 @@ public class WorkflowUtil {
         } catch (JDOMException ex) {
             ex.printStackTrace();
         } catch (JSONException ex) {
-            /** @todo Handle this exception */
             ex.printStackTrace();
         } catch (ErrMsgException ex) {
-            /** @todo Handle this exception */
             LogUtil.getLog(WorkflowUtil.class).trace(ex);
         }
         str += "</script>\n";

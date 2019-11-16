@@ -36,7 +36,7 @@ public class ForgetPasswordAction {
 	private static int NOT_HAVE_ENTERPRISE_NO = 9;           //没有企业号，提示注册
 	
 	private static int TYPE_LOCAL = 0 ;                      //短信发送方，本地
-	private static int TYPE_YIMIHOME = 1 ;                   //短信发送方，一米之家
+	private static int TYPE_YIMIHOME = 1 ;                   //短信发送方，云端
 	
 	private static String INIT_PASSWORD = "123";		     //初始密码
 	
@@ -129,7 +129,7 @@ public class ForgetPasswordAction {
 				return "SUCCESS";
 	    	}
 	    	
-			// 先验证验证码是否过期 ，根据type区分是本地发送的验证码 ，还是一米之家
+			// 先验证验证码是否过期 ，根据type区分是本地发送的验证码 ，还是云端
 			Config cg = new Config();
 			String yimihomeURL = cg.get("yimihome_url");
 
@@ -182,11 +182,11 @@ public class ForgetPasswordAction {
 				jReturn = hd.getInitializtionPassword(yimihomeURL + "/httpClientServer/httpclient_server_send_password.jsp", jSend);
 				result = jReturn.getInt("result");
 			} else {
-				re  = SMSFactory.getMsgUtil().send(ud.getMobile(),"【一米OA】初始密码：" + INIT_PASSWORD + "，请您登录后及时修改初始密码。","");
+				re  = SMSFactory.getMsgUtil().send(ud.getMobile(),"【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】初始密码：" + INIT_PASSWORD + "，请您登录后及时修改初始密码。","");
 				
 				if(re){
 					result = 0;
-					System.out.println("-----手机"+ud.getMobile() +",【一米OA】初始密码已经发送-----");
+					System.out.println("-----手机"+ud.getMobile() +",【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】初始密码已经发送-----");
 				}else{
 					result = 1;
 				}

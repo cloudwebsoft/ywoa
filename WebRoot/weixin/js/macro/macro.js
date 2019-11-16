@@ -18,6 +18,7 @@ function initCaptureFile() {
                 mui.toast("最多同时只可上传9张图片");
                 return;
             }
+
             files.forEach(function (file, i) {
                 if (!/\/(?:jpeg|png|gif)/i.test(file.type)) return;
                 var _name = file.name;
@@ -98,6 +99,68 @@ var maxSize = {
     level: 0.8
 };
 
+function getPhotoOrientation(img){
+    var orient;
+    EXIF.getData(img, function () {
+        orient = EXIF.getTag(this, 'Orientation');
+    });
+    return orient;
+}
+
+//对图片旋转处理 added by lzk
+function rotateImg(img, direction,canvas) {
+    //alert(img);
+    //最小与最大旋转方向，图片旋转4次后回到原方向
+    var min_step = 0;
+    var max_step = 3;
+    //var img = document.getElementById(pid);
+    if (img == null)return;
+    //img的高度和宽度不能在img元素隐藏后获取，否则会出错
+    var height = img.height;
+    var width = img.width;
+    //var step = img.getAttribute('step');
+    var step = 2;
+    if (step == null) {
+        step = min_step;
+    }
+    if (direction == 'right') {
+        step++;
+        //旋转到原位置，即超过最大值
+        step > max_step && (step = min_step);
+    } else {
+        step--;
+        step < min_step && (step = max_step);
+    }
+    //旋转角度以弧度值为参数
+    var degree = step * 90 * Math.PI / 180;
+    var ctx = canvas.getContext('2d');
+    switch (step) {
+        case 0:
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0);
+            break;
+        case 1:
+            canvas.width = height;
+            canvas.height = width;
+            ctx.rotate(degree);
+            ctx.drawImage(img, 0, -height);
+            break;
+        case 2:
+            canvas.width = width;
+            canvas.height = height;
+            ctx.rotate(degree);
+            ctx.drawImage(img, -width, -height);
+            break;
+        case 3:
+            canvas.width = height;
+            canvas.height = width;
+            ctx.rotate(degree);
+            ctx.drawImage(img, -width, 0);
+            break;
+    }
+}
+
 function imgResize(file, captureFieldName) {
     if (maxSize.width == 0)
         return;
@@ -114,11 +177,26 @@ function imgResize(file, captureFieldName) {
                 resizeH = h / multiple;
                 var canvas = document.createElement('canvas'),
                     ctx = canvas.getContext('2d');
-                if (window.navigator.userAgent.indexOf('iPhone') > 0) {
+                if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
                     canvas.width = resizeH;
                     canvas.height = resizeW;
-                    ctx.rorate(90 * Math.PI / 180);
-                    ctx.drawImage(IMG, 0, -resizeH, resizeW, resizeH);
+
+                    var orient = getPhotoOrientation(IMG);
+                    switch(orient){
+                        case 6://需要顺时针（向左）90度旋转
+                            rotateImg(IMG,'left',canvas);
+                            break;
+                        case 8://需要逆时针（向右）90度旋转
+                            rotateImg(IMG,'right',canvas);
+                            break;
+                        case 3://需要180度旋转
+                            rotateImg(IMG,'right',canvas);//转两次
+                            rotateImg(IMG,'right',canvas);
+                            break;
+                        default:
+                            ctx.drawImage(IMG, 0, 0, resizeW, resizeH);
+                    }
+
                 } else {
                     canvas.width = resizeW;
                     canvas.height = resizeH;
@@ -754,8 +832,8 @@ function openNestSheet(obj, skey) {
 }
 
 // 选择用户
-function openChooseUser(chooseUsers, isAt, internalName) {
-    var url = "../flow/flow_choose_user.jsp?chooseUsers=" + encodeURI(chooseUsers) + "&isAt=" + isAt + "&isMulti=true&internalName=" + internalName;
+function openChooseUser(chooseUsers, isAt, isFree, internalName) {
+    var url = "../flow/flow_choose_user.jsp?chooseUsers=" + encodeURI(chooseUsers) + "&isAt=" + isAt + "&isFree=" + isFree + "&isMulti=true&internalName=" + internalName;
     pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
@@ -779,7 +857,31 @@ function doneSelectUserWin(code, names, realNames) {
     var _names = names.join(",");
     $("#" + code).val(_names);
     $("#" + code + "_realshow").val(_realNames);
+}
 
+function openWritePadWin(obj) {
+    var code = $(obj).data("code");
+    var url = "../flow/writepad/writepad.jsp?code=" + code;
+    pop = new Popup({
+        contentType: 1,
+        isReloadOnClose: false,
+        isBackgroundCanClick:false,
+        scrollType:'no',
+        isSupportDraging:false,
+        width: 300,
+        height: 500
+    });
+    pop.setContent("contentUrl", url);
+    pop.setContent("title", "手写签名");
+    pop.build();
+    pop.show();
+}
+
+function closeWritePad(code, val) {
+    $("#" + code).val(val);
+    var image = new Image();
+    $(image).attr("src", val);
+    $('#pad_' + code).html($(image).prop('outerHTML'));
 }
 
 function closeLocation(code, lat, lon, address) {
@@ -790,7 +892,7 @@ function closeLocation(code, lat, lon, address) {
     }
 }
 
-function closeChooseUser(names, realNames, isAt, internalName) {
+function closeChooseUser(names, realNames, isAt, isFree, internalName) {
     if (isAt) {
         var _freeDiv = jQuery("#free_flow_form");
         $(".free_next_user_ck").remove();
@@ -801,7 +903,20 @@ function closeChooseUser(names, realNames, isAt, internalName) {
         }
         var _rNames = realNames.join(",");
         $(".userDiv").append("<span  class='at_user_realnames'>" + realNames.join(",") + "</span>");
-    } else {
+    }
+  	else if(isFree){
+  		console.log("closeChooseUser isFree");
+  		var _freeDiv = jQuery("#flow_form");
+  		$(".free_next_user_ck").remove();
+  		$(".at_user_realnames").remove();
+  		for (i=0;i<names.length;i++) {
+  			var value = names[i];
+  			_freeDiv.append('<input type="hidden" class="free_next_user_ck" name="nextUsers" value="'+value+'" />')
+  		}
+  		var _rNames = realNames.join(",");
+  		$(".userDiv").append("<span  class='at_user_realnames'>"+ realNames.join(",")+"</span>");
+  	}    
+    else {
         var $btnChoose = jQuery("button[internalName='" + internalName + "']");
         var _name = $btnChoose.attr("name");
         for (i = 0; i < names.length; i++) {

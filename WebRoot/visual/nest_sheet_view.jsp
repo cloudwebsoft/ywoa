@@ -16,6 +16,7 @@
 <%@ page import="com.redmoon.oa.person.*"%>
 <%@ page import="java.util.regex.*"%>
 <%@ page import="org.json.*"%>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%--
 - 功能描述：嵌套表格2
@@ -127,12 +128,11 @@ function refreshSerialNo_<%=formCode%>() {
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(moduleCode);
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+// String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+
 int len = 0;
 if (fields!=null)
 	len = fields.length;
@@ -296,9 +296,9 @@ if (op.equals("edit") || op.equals("view")) {
 		}
 	}
 		
-	sql += " order by cws_order";
+	sql += " order by id";
 		
-	// System.out.println(getClass() + " formCode=" + formCode + " sql=" + sql);
+	// DebugUtil.i(getClass(), "nest_sheet_view.jsp", " formCode=" + formCode + " sql=" + sql);
 	
 	Vector fdaoV = fdao.list(formCode, sql);
 	Iterator ir = fdaoV.iterator();
@@ -600,7 +600,8 @@ if (op.equals("edit") || op.equals("view")) {
 			}
 			$(this).html(ary[k-1]);
 		});
-	}	
+		callCalculateOnload();
+	}
 
 	function add_row_<%=formCode%>() {
 		var url = "<%=request.getContextPath()%>/visual/nest_sheet_add_relate.jsp?isShowNav=0&parentId=<%=cwsId%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&formCode=<%=parentFormCode%>";

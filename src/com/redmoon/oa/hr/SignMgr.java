@@ -1008,14 +1008,14 @@ public class SignMgr {
 			DeptUserDb dud = new DeptUserDb();
 			String unitCode = dud.getUnitOfUser(userName).getCode();
 
-			int signType = AttendanceMgr.getPunchType(userName, supplementTime);
+			int[] signType = AttendanceMgr.getPunchType(userName, supplementTime);
 
 			FormDAO fdao = new FormDAO(fd);
 			fdao.setFieldValue("number", personNo);
 			fdao.setFieldValue("name", userName);
 			fdao.setFieldValue("minutes", "0");
 			fdao.setFieldValue("sign_time", bqsj);
-			fdao.setFieldValue("sign_type", String.valueOf(signType));
+			fdao.setFieldValue("sign_type", String.valueOf(signType[0]));
 			fdao.setFieldValue("sign_result", String.valueOf(AttendanceMgr.NORMAL));
 			fdao.setFieldValue("is_supplement", "1");
 			fdao.setCreator(UserDb.SYSTEM);

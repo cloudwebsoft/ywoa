@@ -27,7 +27,7 @@ function openWin(url,width,height)
 }
 
 function OpenFormFieldSelWin() {
-	openWin("flow_predefine_form_field_nest_sel.jsp?formView=0&flowTypeCode=<%=flowTypeCode%>&fields=" + getFieldWriteValue(), 500, 440);
+	openWin("flow_predefine_form_field_nest_sel.jsp?formView=0&flowTypeCode=<%=flowTypeCode%>&fields=" + getFieldWriteValue(), 500, 465);
 }
 
 function getFieldWriteValue() {

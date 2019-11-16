@@ -9,7 +9,7 @@
 <%
 License lic = License.getInstance();
 %>
-<title><%=lic.isOem() ? "" : "一米" %>OA安装 - 配置Log4j</title>
+<title><%=com.redmoon.oa.Config.getInstance().get("enterprise")%>安装 - 配置Log4j</title>
 <link href="../common.css" rel="stylesheet" type="text/css">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <style type="text/css">
@@ -45,7 +45,7 @@ if (op.equals("modify")) {
   <!-- Table Head Start-->
   <TBODY>
     <TR>
-      <TD class=thead style="PADDING-LEFT: 10px" noWrap width="70%"><div align="left"><b>欢迎您使用<%=lic.isOem() ? "" : "一米" %>OA 版本<%=cfg.get("oa.version")%></b>
+      <TD class=thead style="PADDING-LEFT: 10px" noWrap width="70%"><div align="left"><b>欢迎您使用 <%=%>com.redmoon.oa.Config.getInstance().get("enterprise")%> 版本<%=cfg.get("oa.version")%></b>
         <hr size="0">
       </div></TD>
     </TR>

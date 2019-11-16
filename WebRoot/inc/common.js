@@ -91,12 +91,21 @@ if (document.documentMode == 10)
 function getOS(){
    if(isIE())return 1;//IE
    if(isFirefox=navigator.userAgent.indexOf("Firefox")>0)return 2;//Firefox
-   if(isSafari=navigator.userAgent.indexOf("Chrome")>0)return 3;//Chrome
+   if(isChrome=navigator.userAgent.indexOf("Chrome")>0)return 3;//Chrome
    if(isSafari=navigator.userAgent.indexOf("Safari")>0)return 4;//Safari
    if(isCamino=navigator.userAgent.indexOf("Camino")>0)return 5;//Camino
    if(isMozilla=navigator.userAgent.indexOf("Gecko/")>0)return 6;//Gecko
    //other...
    return 0;
+}
+
+function consoleLog(msg) {
+	if (isIE9 || isIE10 || isIE11) {
+		console.log(msg);
+	}
+	else if (getOS()==2 || getOS()==3) {
+		console.log(msg);
+	}
 }
 
 function getRadioValue(radionname) {
@@ -269,7 +278,10 @@ function openWin(url,width,height, scrollbars) {
 		height = window.screen.height;
  	var l = (window.screen.width - width) / 2; 
 	var t = (window.screen.height - height) / 2;
-	return window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=" + t + ",left=" + l + ",width="+width+",height="+height);
+	// 使兼容360极速模式，否则取窗口的window.opener为null
+	var pop = window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=" + t + ",left=" + l + ",width="+width+",height="+height);
+	pop.opener = window;
+	return pop;
 }
 
 function openWinMax(url) {
@@ -476,7 +488,9 @@ function getActiveTabId() {
 	}
 	else {
 		// lte风格
-		tabId = window.top.getActiveTabName();
+		if (typeof(window.top.getActiveTabName)!="undefined") {
+			tabId = window.top.getActiveTabName();
+		}
 	}
 	return tabId;
 }
@@ -490,6 +504,19 @@ function reloadTab(tabIdOpener) {
 		// lte风格
 		if (window.top.o("content-main")) {
 			window.top.reloadTabFrame(tabIdOpener);
+		}
+	}
+}
+
+function closeActiveTab() {
+	var tabId = getActiveTabId();
+	if (window.top.mainFrame) {
+		window.top.mainFrame.closeTabById(tabId);
+	}
+	else {
+		// lte风格
+		if (window.top.o("content-main")) {
+			window.top.closeLteTab(tabId);
 		}
 	}
 }

@@ -50,10 +50,39 @@ FormDb fd = new FormDb();
 <script type="text/javascript" src="util/jscalendar/calendar-setup.js"></script>
 <script src="inc/map.js"></script>
 
-<style type="text/css"> 
+<style type="text/css">
 @import url("util/jscalendar/calendar-win2k-2.css");
 .part-dept {
 	color:blue;
+}
+
+#divTitle {
+	margin-top:10px;
+	margin-bottom: 10px;
+}
+#btnEdit {
+	width: 100px;
+	height: 25px;
+	line-height: 30px;
+	letter-spacing: 2px;
+	display: block;
+	float:right;
+	margin-right:20px;
+	margin-bottom: 10px;
+	display: none;
+}
+
+#btnEdit a {
+	background: #4e96f0;
+	border-radius: 15px;
+	color: #fff;
+	display: block;
+	width: 80px;
+}
+
+#btnEdit a:hover {
+	background: #6eB6f6;
+	color: #fff
 }
 </style>
 <script src="inc/common.js"></script>
@@ -66,21 +95,21 @@ FormDb fd = new FormDb();
 <script type="text/javascript" src="js/goToTop/goToTop.js"></script>
 <link type="text/css" rel="stylesheet" href="js/goToTop/goToTop.css" />
 
-<link href="js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" /> 
+<link href="js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
 <script type="text/javascript" src="js/jquery-showLoading/jquery.showLoading.js"></script>
 
 <script src="js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/jquery-ui/jquery-ui-1.10.4.min.css" />
 
 <script src="js/fixheadertable/jquery.fixheadertable.js"></script>
-<link rel="stylesheet" media="screen" href="js/fixheadertable/base.css" /> 
+<link rel="stylesheet" media="screen" href="js/fixheadertable/base.css" />
 
 <link href="flowstyle.css" rel="stylesheet" type="text/css" />
 
 <script src="inc/flow_js.jsp"></script>
 <script src="inc/ajax_getpage.jsp"></script>
 
-<script src="flow/form_js/<%=lf.getFormCode()%>.jsp?pageType=flowShow&flowId=<%=flow_id %>&userName=<%=StrUtil.UrlEncode(privilege.getUser(request))%>"></script>
+<script src="flow/form_js/form_js_<%=lf.getFormCode()%>.jsp?pageType=flowShow&flowId=<%=flow_id %>&userName=<%=StrUtil.UrlEncode(privilege.getUser(request))%>"></script>
 
 <script>
 function Operate(){
@@ -100,7 +129,7 @@ function getSelUserRealNames() {
 }
 
 function openWinUsers() {
-	showModalDialog('user_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:650px;status:no;help:no;')
+	openWin('user_multi_sel.jsp', 800, 600);
 }
 
 function openWinUserGroup() {
@@ -118,13 +147,13 @@ function setUsers(users, userRealNames) {
 		o("userRealNames").value = "";
 		return;
 	}
-	
+
 	var uNameAry = users.split(",");
 	var uRealNameAry = userRealNames.split(",");
 
 	users = "";
 	userRealNames = "";
-	
+
 	// 删除上次被选择，而本次未被选择的用户
 	var userary = getSelUserNames().split(",");
 	var len = userary.length;
@@ -146,7 +175,7 @@ function setUsers(users, userRealNames) {
 	for (var i=0; i<uNameAry.length; i++) {
 		// 过滤掉已被选择的用户
 		var len = userary.length;
-		var isFound = false; 
+		var isFound = false;
 		for (var k=0; k<len; k++) {
 			if (userary[k]==uNameAry[i]) {
 				isFound = true;
@@ -155,7 +184,7 @@ function setUsers(users, userRealNames) {
 		}
 		if (!isFound) {
 			nextActionUserDiv.innerHTML += "<div id='nextUsersDiv" + uNameAry[i] + "' name='nextUsersDiv'>&nbsp;&nbsp;<input name='nextUsers' type='checkbox' checked value='" + uNameAry[i] + "'><span style='width:100px'>" + uRealNameAry[i] + "</span>&nbsp;&nbsp;到期时间：<input name='" + escape(uNameAry[i]).toUpperCase() + "_expireHour" + "' size=2 value=0>小时&nbsp;<a style='display:none' href='javascript:;' title='删除' style='font-size:16px;color:red' onclick=\"$('#nextUsersDiv" + uNameAry[i] + "').remove();\">×</a></div>";
-		}	
+		}
 		if (users=="") {
 			users = uNameAry[i];
 			userRealNames = uRealNameAry[i];
@@ -165,13 +194,13 @@ function setUsers(users, userRealNames) {
 			userRealNames += "," + uRealNameAry[i];
 		}
 	}
-	
+
 	o("nextActionUsers").value = users;
 	o("userRealNames").value = userRealNames;
 }
 
 function deliver() {
-	jConfirm('<lt:Label res="res.flow.Flow" key="submitForm"/>','提示',function(){
+	jConfirm('<lt:Label res="res.flow.Flow" key="submitForm"/>','提示',function(r){
 		if(!r){return;}
 		else{
 			o('deliverForm').submit();
@@ -233,7 +262,7 @@ request.setAttribute("pageType", "flowShow");
 request.setAttribute("formCode", lf.getFormCode());
 
 
-	
+
 Directory dir = new Directory();
 Leaf ft = dir.getLeaf(wf.getTypeCode());
 boolean isFree = false;
@@ -374,9 +403,9 @@ if (canUserModifyFlow.equals("true"))
 	mode = "user";
 else
 	mode = "view";
-	
+
 String flowExpireUnit = cfg.get("flowExpireUnit");
-boolean isHour = !flowExpireUnit.equals("day");	
+boolean isHour = !flowExpireUnit.equals("day");
 if (flowExpireUnit.equals("day")){
 	String str = LocalUtil.LoadString(request,"res.flow.Flow","day");
 	flowExpireUnit = str;
@@ -384,12 +413,12 @@ if (flowExpireUnit.equals("day")){
 else{
 	String str = LocalUtil.LoadString(request,"res.flow.Flow","hour");
 	flowExpireUnit = str;
-}	
+}
 %>
 <%@ include file="flow_modify_inc_menu_top.jsp"%>
 <script>
 if (o("menu1"))
-	o("menu1").className="current"; 
+	o("menu1").className="current";
 </script>
 <div class="spacerH"></div>
 <%
@@ -397,7 +426,7 @@ if (o("menu1"))
 if (ft.getType()==Leaf.TYPE_FREE && myUserName.equals(wf.getUserName())) {
 	WorkflowPredefineDb wfp = new WorkflowPredefineDb();
 	wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
-	
+
 	boolean isRoleMemberOfFlow = false;
 	String[][] rolePrivs = wfp.getRolePrivsOfFree();
 	int privLen = rolePrivs.length;
@@ -444,10 +473,10 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
 <table cellSpacing="0" cellPadding="0" width="100%">
   <tbody>
     <tr>
-      <td align="center" title="<%=lfParent.getName()%>：<%=lf.getName()%>">
+      <td align="center" id="tableTitle" title="<%=lfParent.getName()%>：<%=lf.getName()%>">
         <%
 		WorkflowPredefineDb wpd = new WorkflowPredefineDb();
-		wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());		
+		wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());
 		%>
 		<%=WorkflowMgr.getLevelImg(request, wf)%>
         <strong style="font-size:18px">
@@ -489,7 +518,7 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
 			if (canSeeQuery && aqd.isLoaded()) {
 		%>
                 <table style="width:100%" align="center"><tr><td align="center">
-				<div id="formQueryBox"></div>                
+				<div id="formQueryBox"></div>
                 </td></tr></table>
                 <%
                 String colratio = "";
@@ -502,7 +531,7 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                 for (int i=0; i<jsonArray.length(); i++) {
                     JSONObject json = jsonArray.getJSONObject(i);
 					if (((Boolean)json.get("hide")).booleanValue())
-						continue;					
+						continue;
                     String name = (String)json.get("name");
                     if (name.equalsIgnoreCase("cws_op"))
                         continue;
@@ -510,11 +539,11 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                     if (colratio.equals(""))
                         colratio = "" + ((Integer)json.get("width")).intValue();
                     else
-                        colratio += "," + ((Integer)json.get("width")).intValue();			
+                        colratio += "," + ((Integer)json.get("width")).intValue();
                 }
 
 				// System.out.println(getClass() + " colratio=" + colratio);
-                
+
                 String queryAjaxUrl;
                 if (aqd.isScript()) {
                     queryAjaxUrl = "flow/form_query_list_script_embed_ajax.jsp";
@@ -522,12 +551,12 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                 else {
                     queryAjaxUrl = "flow/form_query_list_embed_ajax.jsp";
                 }
-				
+
 				com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
 				fdao = fdao.getFormDAO(flow_id, fd);
-				
+
 				JSONObject json = new JSONObject(lf.getQueryCondMap());
-				Iterator irJson = json.keys();							
+				Iterator irJson = json.keys();
                 %>
                 <script>
 				function onQueryRelateFieldChange() {
@@ -557,41 +586,41 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                             	o("formQueryBox").innerHTML = data;
 							}
                             // var w = $(document).width() * 0.98;
-                            
+
                             $('#formQueryTable').fixheadertable({
                                 caption : '<%=aqd.getQueryName()%>',
-                                colratio    : [<%=colratio%>], 
-                                // height      : 150, 
+                                colratio    : [<%=colratio%>],
+                                // height      : 150,
                                 width       : <%=tableWidth+2%>,
-                                zebra       : true, 
+                                zebra       : true,
                                 // sortable    : true,
-                                sortedColId : 1, 
+                                sortedColId : 1,
                                 resizeCol   : true,
                                 pager       : true,
                                 rowsPerPage : 10,
                                 // sortType    : ['integer', 'string', 'string', 'string', 'string', 'date'],
                                 dateFormat  : 'm/d/Y'
-                            });					
+                            });
                         },
                         complete: function(XMLHttpRequest, status){
-                            $('#bodyBox').hideLoading();			
+                            $('#bodyBox').hideLoading();
                         },
                         error: function(XMLHttpRequest, textStatus){
 							$('#bodyBox').hideLoading();
                             // 请求出错处理
                             jAlert(XMLHttpRequest.responseText,'<lt:Label res="res.flow.Flow" key="prompt"/>');
                         }
-                    });		
+                    });
 				}
-				
+
                 $(function() {
 					onQueryRelateFieldChange();
                 });
-				
+
                 </script>
             <%}%>
         <%}%>
-        
+
 <table id="mainTable" width="100%" border="0" cellpadding="0" cellspacing="0">
   <tr>
     <td colspan="2" style="padding-left:5px;">
@@ -607,7 +636,14 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
             <lt:Label res="res.flow.Flow" key="organ"/>：<%=um.getUserDb(wf.getUserName()).getRealName()%>&nbsp;&nbsp;
 			<lt:Label res="res.flow.Flow" key="state"/>：<%=wf.getStatusDesc()%>&nbsp;&nbsp;
 				ID：<%=wf.getId()%>
-            &nbsp;&nbsp;
+				<%
+					if (isFlowManager &&  wf.getStatus()==WorkflowDb.STATUS_DELETED) {
+						if (!"".equals(StrUtil.getNullStr(wf.getDelUser()))) {
+							out.print("&nbsp;&nbsp;删除者：" + um.getUserDb(wf.getDelUser()).getRealName());
+							out.print("&nbsp;&nbsp;删除时间：" + DateUtil.format(wf.getDelDate(), "yyyy-MM-dd HH:mm:ss"));
+						}
+					}
+				%>
             <span id="projectName">
             <%if (wf.getProjectId()!=-1) {
                 com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
@@ -615,11 +651,12 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                 prjFd = prjFd.getFormDb("project");
                 fdao = fdao.getFormDAO((int)wf.getProjectId(), prjFd);
                 %>
-                <lt:Label res="res.flow.Flow" key="project"/>：<a href="javascript:;" onClick="addTab('<%=fdao.getFieldValue("name")%>', 'project/project_show.jsp?projectId=<%=wf.getProjectId()%>&formCode=project')"><%=fdao.getFieldValue("name")%></a>&nbsp;&nbsp;<a title="<lt:Label res='res.flow.Flow' key='disassociate'/>" href="javascript:;" onClick="unlinkProject()" style='font-size:16px; font-color:red'>×</a>
+                &nbsp;&nbsp;<lt:Label res="res.flow.Flow" key="project"/>：<a href="javascript:;" onClick="addTab('<%=fdao.getFieldValue("name")%>', 'project/project_show.jsp?projectId=<%=wf.getProjectId()%>&formCode=project')"><%=fdao.getFieldValue("name")%></a>&nbsp;&nbsp;<a title="<lt:Label res='res.flow.Flow' key='disassociate'/>" href="javascript:;" onClick="unlinkProject()" style='font-size:16px; font-color:red'>×</a>
                 <%
             }
             %>
             </span>
+				<span id="btnEdit"></span>
             </div>
             </td>
         </tr>
@@ -639,7 +676,7 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                     	</td>
                       </tr>
                   </table>
-                  </form>                  
+                  </form>
           <%
 		  java.util.Vector attachments = null;
 		  if (doc!=null) {
@@ -653,7 +690,7 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
             <tr>
               <td height="30" align="left"><strong>&nbsp;<lt:Label res="res.flow.Flow" key="accessory"/>：</strong></td>
             </tr>
-          </table>                  
+          </table>
           <div id="attDiv">
           <table id="attTable" class="tabStyle_1 percent98" width="98%"  border="0" align="center" cellpadding="0" cellspacing="0">
           <tr>
@@ -663,27 +700,27 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
             <td align="center" class="tabStyle_1_title"><lt:Label res="res.flow.Flow" key="time"/></td>
             <td align="center" class="tabStyle_1_title"><lt:Label res="res.flow.Flow" key="size"/></td>
             <td align="center" class="tabStyle_1_title"><lt:Label res="res.flow.Flow" key="operate"/></td>
-            </tr>		  
+            </tr>
         	<%
 			  java.util.Iterator ir = attachments.iterator();
 			  String creatorRealName = "";
 			  while (ir.hasNext()) {
 				Attachment am = (Attachment) ir.next();
-				
+
 				if (am.getFieldName()!=null && !"".equals(am.getFieldName())) {
 					// IOS上传fieldName为upload
 					if (!am.getFieldName().startsWith("att") && !am.getFieldName().startsWith("upload")) {
 						// 不再跳过，因为ntko office在线编辑宏控件对应的为表单域的编码
 						// continue;
 					}
-				}			
-				
+				}
+
 				UserDb creator = um.getUserDb(am.getCreator());
 				if (creator.isLoaded()) {
 					creatorRealName = creator.getRealName();
 				}
 			%>
-          <tr>
+          <tr id="trAtt<%=am.getId()%>">
             <td width="2%" height="31" align="center"><img src="images/attach.gif" /></td>
             <td width="51%" align="left">
 			&nbsp;<span id="spanAttLink<%=am.getId()%>"><a href="flow_getfile.jsp?attachId=<%=am.getId()%>&flowId=<%=flow_id%>" target="_blank"><span id="spanAttName<%=am.getId()%>"><%=am.getName()%></span></a></span>
@@ -692,8 +729,16 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
             <td width="15%" align="center"><%=DateUtil.format(am.getCreateDate(), "yyyy-MM-dd HH:mm")%></td>
             <td width="11%" align="center"><%=NumberUtil.round((double)am.getSize()/1024000, 2)%>M</td>
             <td width="11%" align="center">
+				<%
+					if (privilege.isUserPrivValid(request, "admin") || isFlowManager) {
+				%>
+				<a href="javascript:;" onClick="delAtt('<%=doc_id%>', '<%=am.getId()%>')"><lt:Label res="res.flow.Flow" key="delete"/></a>
+				&nbsp;&nbsp;
+				<%
+					}
+				%>
             <a href="flow_getfile.jsp?attachId=<%=am.getId()%>&flowId=<%=flow_id%>" target="_blank"><lt:Label res="res.flow.Flow" key="download"/>
-            </span></a>  
+            </span></a>
             &nbsp;&nbsp;<a href="javascript:;" onClick="addTab('<%=am.getName()%> 日志', 'flow/att_log_list.jsp?flowId=<%=flow_id%>&attId=<%=am.getId()%>')">日志</a>
             <%
 			if ("true".equals(cfg.get("canConvertToPDF")) && (StrUtil.getFileExt(am.getName()).equals("doc") || StrUtil.getFileExt(am.getName()).equals("docx"))) {
@@ -711,8 +756,8 @@ lfParent = lfParent.getLeaf(lf.getParentCode());
                     &nbsp;&nbsp;<a href="javascript:;" onClick="addTab('<%=am.getName()%>', '<%=request.getContextPath()%>/<%=am.getVisualPath()%>/<%=am.getDiskName().substring(0, am.getDiskName().lastIndexOf(".")) + ".html"%>')">预览</a>
                     <%
                 }
-            }					  
-          %>            
+            }
+          %>
             </td>
           </tr>
         <%}%>
@@ -749,12 +794,12 @@ String sql = "select id from flow_my_action where flow_id=" + flow_id + " order 
 MyActionDb mad = new MyActionDb();
 Vector v = mad.list(sql);
 %>
-                  <table width="100%" border="0" cellspacing="0" cellpadding="0" class="percent98">
+                  <table align="center" width="98%" border="0" cellspacing="0" cellpadding="0" class="percent98">
                     <tr>
                       <td height="30" align="left"><strong>&nbsp;<lt:Label res="res.flow.Flow" key="cprocess"/>：</strong></td>
                     </tr>
                   </table>
-                  <table align="center" class="tabStyle_1 percent98">
+                  <table align="center" class="tabStyle_1 percent98 mainTable">
                     <tbody>
                       <tr>
                         <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="handler"/></td>
@@ -764,33 +809,41 @@ Vector v = mad.list(sql);
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="reachState"/></td>
                         <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="signTime"/></td>
                         <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="handleTime"/></td>
+						  <%
+							  if (cfg.getBooleanProperty("flowPerformanceDisplay")) {
+						  %>
                         <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="expirationDate"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="remainTime"/></td>
                         <td class="tabStyle_1_title" width="4%" align="center"><lt:Label res="res.flow.Flow" key="timeSpent"/><br />
                         (<%=flowExpireUnit%>)</td>
                         <td class="tabStyle_1_title" width="3%" align="center"><lt:Label res="res.flow.Flow" key="achievements"/></td>
+						  <%
+							  }
+						  %>
                         <td class="tabStyle_1_title" width="6%" align="center"><lt:Label res="res.flow.Flow" key="processor"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="processeStatus"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="rem"/></td>
                         <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="operate"/></td>
                       </tr>
 					<%
-                    java.util.Iterator ir = v.iterator();
+						WorkflowDb wfd = new WorkflowDb();
+						wfd = wfd.getWorkflowDb((int)mad.getFlowId());
+						WorkflowActionDb wa = new WorkflowActionDb();
+
+						java.util.Iterator ir = v.iterator();
                     DeptMgr deptMgr = new DeptMgr();
                     OACalendarDb oad = new OACalendarDb();
                     int m=0;
                     while (ir.hasNext()) {
                         mad = (MyActionDb)ir.next();
-                        WorkflowDb wfd = new WorkflowDb();
-                        wfd = wfd.getWorkflowDb((int)mad.getFlowId());
-                        String userName = wfd.getUserName();
+
+                        String userName = mad.getUserName();
                         String userRealName = "";
                         if (userName!=null) {
                             UserDb user = um.getUserDb(mad.getUserName());
                             userRealName = user.getRealName();
                         }
-                        WorkflowActionDb wad = new WorkflowActionDb();	
-                        wad = wad.getWorkflowActionDb((int)mad.getActionId());
+                        wa = wa.getWorkflowActionDb((int)mad.getActionId());
                         m++;
                         %>
                       <tr class="highlight">
@@ -799,7 +852,7 @@ Vector v = mad.list(sql);
 						String partDept = ""; // 所选择的兼职部门
 						if (!"".equals(mad.getPartDept())) {
 							partDept = mad.getPartDept();
-						}						
+						}
 						  String deptCodes = mad.getDeptCodes();
 						  String[] depts = StrUtil.split(deptCodes, ",");
 						  if (depts!=null) {
@@ -821,7 +874,7 @@ Vector v = mad.list(sql);
 							if (!dts.equals(""))
 								out.print(dts + "：");
 						  }
-						  
+
 						  boolean isExpired = false;
 						  java.util.Date chkDate = mad.getCheckDate();
 						  if (chkDate==null)
@@ -840,7 +893,7 @@ Vector v = mad.list(sql);
                         <img src="images/icon_new.gif" />
                         <%
                         }
-                        %>                          
+                        %>
                         </td>
                         <td><%
 					  if (mad.getPrivMyActionId()!=-1) {
@@ -858,16 +911,16 @@ Vector v = mad.list(sql);
 						}
 						%>
                         </td>
-                        <td><%=StrUtil.getNullStr(wad.getTitle())%></td>
+                        <td><%=StrUtil.getNullStr(wa.getTitle())%></td>
                         <td align="center">
-						<%if (wad.getDateDelayed()!=null) {%>
+						<%if (wa.getDateDelayed()!=null) {%>
                         	<lt:Label res="res.flow.Flow" key="delay"/>
                         <%}else{%>
                             <%=DateUtil.format(mad.getReceiveDate(), "MM-dd HH:mm")%>
                             <br/>
 							<%=WorkflowActionDb.getStatusName(mad.getActionStatus())%>
                             <%
-							String reas = wad.getReason();
+							String reas = wa.getReason();
 							if (reas!=null && !"".equals(reas.trim())) {%>
                             <BR />
                             (<%=reas%>)
@@ -876,7 +929,10 @@ Vector v = mad.list(sql);
                         </td>
                         <td align="center"><%=DateUtil.format(mad.getReadDate(), "MM-dd HH:mm")%> </td>
                         <td align="center"><%=DateUtil.format(mad.getCheckDate(), "MM-dd HH:mm")%></td>
-                        <td align="center">                       
+                          <%
+                              if (cfg.getBooleanProperty("flowPerformanceDisplay")) {
+                          %>
+                        <td align="center">
 						<%
 						// @task:如果存在嵌套表，jscalendar会引起IE崩溃
 						if (isFlowManager && !mad.isChecked()) {%>
@@ -895,7 +951,7 @@ Vector v = mad.list(sql);
 							String str_minute = LocalUtil.LoadString(request,"res.flow.Flow","minute");
 							remainDateStr = ary[0] + " "+str_day + ary[1] + " "+str_hour + ary[2] + " "+str_minute;
 							out.print(remainDateStr);
-						}%>                        
+						}%>
                         </td>
                         <td align="center"><%
 					  if (isHour) {
@@ -909,6 +965,9 @@ Vector v = mad.list(sql);
 					  %>
                       	</td>
                         <td align="center"><%=NumberUtil.round(mad.getPerformance(), 2)%> </td>
+                          <%
+                              }
+                          %>
                         <td align="center">
 						<%if (mad.isChecked()) {%>
 							<%if (mad.getChecker().equals(UserDb.SYSTEM)) {%>
@@ -924,9 +983,9 @@ Vector v = mad.list(sql);
                         <td align="center" class="<%=MyActionDb.getCheckStatusClass(mad.getCheckStatus())%>">
 						<%
 						if (mad.getChecker().equals(UserDb.SYSTEM)) {
-							String str = LocalUtil.LoadString(request,"res.flow.Flow","skipOverTime");
+							String str = LocalUtil.LoadString(request,"res.flow.Flow","systemAccessed");
 							out.print(str);
-						}else{						
+						}else{
 						%>
 						<%=mad.getCheckStatusName()%>
 						<%}
@@ -976,33 +1035,62 @@ Vector v = mad.list(sql);
                           showSep = true;
                           }
 					  }else{
-					  	if (mad.getChecker().equals(UserDb.SYSTEM)) {
-							;
-						}
-						else {
-							if ((myUserName.equals(mad.getUserName()) || myUserName.equals(mad.getProxyUserName())) && !mad.isChecked() && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_WAITING_TO_DO) {%>
-							  <a href="flow_dispose.jsp?myActionId=<%=mad.getId()%>"><lt:Label res="res.flow.Flow" key="handle"/></a>
-							<%
-							showSep = true;
+							  boolean canHandle = true;
+							  // 如果是激活状态，但是流程已被放弃，则不显示“处理”按钮
+							  if (wa.getStatus() == WorkflowActionDb.STATE_DOING || wa.getStatus() == WorkflowActionDb.STATE_RETURN) {
+								  if (wf.getStatus() == WorkflowDb.STATUS_DISCARDED) {
+									  canHandle = false;
+								  }
+							  }
+							  
+							  if (canHandle) {
+								if (mad.getChecker().equals(UserDb.SYSTEM)) {
+									;
+								}
+								else {
+									if ((myUserName.equals(mad.getUserName()) || myUserName.equals(mad.getProxyUserName())) && !mad.isChecked() && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_WAITING_TO_DO) {
+								  %>
+									<a href="flow_dispose.jsp?myActionId=<%=mad.getId()%>"><lt:Label res="res.flow.Flow" key="handle"/></a>
+							<script>
+								$(function () {
+									$("#btnEdit").show();
+									$("#btnEdit").append('<a href="flow_dispose.jsp?myActionId=<%=mad.getId()%>">处理</a>');
+								});
+							</script>
+									<%
+											showSep = true;
+										}
+										if (isReactive && (mad.getUserName().equals(myUserName) || mad.getProxyUserName().equals(myUserName)) && mad.isChecked() && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND_OVER && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_PASS_BY_RETURN) {
+									%>
+										<%=showSep ? "&nbsp;&nbsp;" : "" %><a title='<lt:Label res="res.flow.Flow" key="reActivated"/>' href='flow_dispose.jsp?myActionId=<%=mad.getId()%>'>
+										<lt:Label res="res.flow.Flow" key="reactivation"/></a>
+									<%
+											showSep = true;
+										}
+									%>
+									<%
+										if (!isPaperReceived && isRecall && mad.canRecall(myUserName)) {
+									%>
+									  <%=showSep ? "&nbsp;&nbsp;" : "" %><a href='javascript:;' onClick="recall(<%=flow_id%>,<%=mad.getId()%>)"><lt:Label res="res.flow.Flow" key="withdraw"/></a>
+									<script>
+										$(function () {
+											$("#btnEdit").show();
+											$("#btnEdit").append('<a href="javascript:;" onclick="recall(<%=flow_id%>,<%=mad.getId()%>)"><lt:Label res="res.flow.Flow" key="withdraw"/></a>');
+										});
+									</script>
+									<%
+										showSep = true;
+									}
+								}
+							  }
 							}
-							if (isReactive && (mad.getUserName().equals(myUserName) || mad.getProxyUserName().equals(myUserName)) && mad.isChecked() && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND_OVER && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_PASS_BY_RETURN) {%>
-							  <%=showSep ? "&nbsp;&nbsp;" : "" %><a title='<lt:Label res="res.flow.Flow" key="reActivated"/>' href='flow_dispose.jsp?myActionId=<%=mad.getId()%>'><lt:Label res="res.flow.Flow" key="reactivation"/></a>
-							<%
-							showSep = true;
-							}%>
-					    <%if (!isPaperReceived && isRecall && mad.canRecall(myUserName)) {
-								%>
-							  <%=showSep ? "&nbsp;&nbsp;" : "" %><a href='javascript:;' onClick="recall(<%=wfd.getId()%>,<%=mad.getId()%>)"><lt:Label res="res.flow.Flow" key="withdraw"/></a>
-								<%
-								showSep = true;
-							}
-						}
-					  }%>
-                      <%if (!isPaperReceived && !mad.isChecked() && !privilege.getUser(request).equals(mad.getUserName()) && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_PASS && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_WAITING_TO_DO) {
-						String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad.getId();						  
+						%>
+                      <%
+						  if (!isPaperReceived && !mad.isChecked() && !privilege.getUser(request).equals(mad.getUserName()) && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_PASS && mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_WAITING_TO_DO) {
+						String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad.getId();
 					  %>
                   		<%=showSep ? "&nbsp;&nbsp;" : "" %><a href="javascript:;" onClick="addTab('<lt:Label res="res.flow.Flow" key="reminders"/>', 'message_oa/message_frame.jsp?op=send&receiver=<%=StrUtil.UrlEncode(mad.getUserName())%>&title=<%=StrUtil.UrlEncode(LocalUtil.LoadString(request,"res.flow.Flow","possible")+"：" + wf.getTitle())%>&action=<%=StrUtil.UrlEncode(action)%>', 320, 262)"><lt:Label res="res.flow.Flow" key="reminders"/></a>
-                      <%}%>                      
+                      <%}%>
                       </td>
                       </tr>
                       <%}%>
@@ -1056,7 +1144,7 @@ Vector v = mad.list(sql);
                         <input type="button" class="btn" onClick="showFormReportAll()" value='<lt:Label res="res.flow.Flow" key="printAllForms"/>'/>
                         <!-- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input name="button2" type="button" class="btn" onClick="exportToWord()" value="导出至Word"/> -->
                         <%
-						boolean isProjectUsed = cfg.get("isProjectUsed").equals("true");						
+						boolean isProjectUsed = cfg.get("isProjectUsed").equals("true");
 						if (isProjectUsed && isFlowManager && com.redmoon.oa.kernel.License.getInstance().isPlatformSrc()) {%>
                         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         <input type="button" class="btn" onClick="linkProject()" value='<lt:Label res="res.flow.Flow" key="connProject"/>'/>
@@ -1069,7 +1157,7 @@ Vector v = mad.list(sql);
 					String replyDis = wf.isStarted() ? "" : "display:none";
 					if (!wpd.isReply()) {
 						replyDis = "display:none";
-					}				  
+					}
 				  %>
                   <div style="width:98%;background-color:#efefef;padding-top:10px;padding-bottom:10px;;<%=replyDis%>">
                   <div style="width:98%;background-color:white;padding-top:10px;">
@@ -1081,7 +1169,7 @@ Vector v = mad.list(sql);
 						  fdao = fdao.getFormDAO(flow_id, fd);
 						  %>
 				                      （总进度<span id="totalProgress"><%=fdao.getCwsProgress()%></span>%）
-                      <%}%>                      
+                      <%}%>
                       </td>
                       <td style="text-align:right">
                       	<input id="showDiv" style="display:none" class="mybtn2" type="button" value="展开" onClick="show()"/>
@@ -1099,7 +1187,7 @@ Vector v = mad.list(sql);
                                     &nbsp;&nbsp;进度&nbsp;<input id="cwsProgress" name="cwsProgress" style="width:30px; height:22px;" value="0" readonly />
                                     <div id="slider" style="margin-left:10px;width:200px; display:inline-block; *display:inline;*zoom:1;"></div>
                                     <%}%>
-                                    
+
                                     <script>
 									$(function() {
 										$( "#slider" ).slider({
@@ -1112,7 +1200,7 @@ Vector v = mad.list(sql);
 										  }
 										});
 									});
-									</script>                                    
+									</script>
                             		<input type="hidden" id="myActionId<%=0%>" name="myActionId<%=0%>" value=""/>
 									<input type="hidden" id="discussId<%=0%>" name="discussId<%=0%>" value="<%=0 %>"/>
 									<input type="hidden" id="flow_id<%=0%>" name="flow_id<%=0%>" value="<%=flow_id %>"/>
@@ -1130,12 +1218,12 @@ Vector v = mad.list(sql);
                      	<td colspan="2">
                      	    <hr class="hrLine"/>
                         </td>
-                    </tr> 
+                    </tr>
                  </table>
                  <div id="divShow" style="width:98%;">
                  <table id="tablehead" class="" width="95%" border="0" cellspacing="3" cellpadding="0">
                  </table>
-                  <%		
+                  <%
 		WorkflowAnnexDb wad = new WorkflowAnnexDb();
 		Vector<WorkflowAnnexDb> vec1 = wad.listRoot(flow_id, myUserName);
 
@@ -1145,7 +1233,7 @@ Vector v = mad.list(sql);
 			wad = ir1.next();
 			int id = (int)wad.getLong("id");
 			int n=1;
-		%>                
+		%>
 		<table id="replaytable<%=id%>" class="" width="95%" border="0" >
                     <tr id="trReply<%=id%>">
                       <td width="50" style="text-align:left;" class="nameColor">
@@ -1158,7 +1246,7 @@ Vector v = mad.list(sql);
 							<div>进度：<%=wad.getInt("progress")%>%</div>
 							<%
 						  }
-						  %>                      
+						  %>
                       	  <%=wad.getString("content")%>
                       	  <%if (isFlowManager) {%>
                       		  <a href="javascript:;" onClick="delAnnex('<%=wad.getLong("id")%>')">[<lt:Label res="res.flow.Flow" key="delete"/>]</a>
@@ -1192,11 +1280,11 @@ Vector v = mad.list(sql);
 			       	    WorkflowAnnexDb wad2 = new WorkflowAnnexDb();
 					    Vector<WorkflowAnnexDb> vec2 = wad2.listChildren(wad.getInt("id"), myUserName);
 					    Iterator<WorkflowAnnexDb> ir2 = vec2.iterator();
-					    
+
 					    while (ir2.hasNext()) {
 						    wad2 = ir2.next();
 							int id2 = (int)wad2.getLong("id");
-					%> 
+					%>
 					<tr id="trReply<%=id2%>" pId="<%=id%>">
                         <td width="180" style="text-align:left;" class="nameColor">
 					  	    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%=um.getUserDb(wad2.getString("user_name")).getRealName()%>&nbsp;回复&nbsp;<%=um.getUserDb(wad2.getString("reply_name")).getRealName()%>&nbsp;:
@@ -1238,7 +1326,7 @@ Vector v = mad.list(sql);
                      	<td colspan="3">
                      	     <hr class="hrLine"/>
                         </td>
-                    </tr> 
+                    </tr>
 	     </table>
                   <%
                   n++;
@@ -1268,23 +1356,23 @@ function getPrintContent() {
 		}
 	}
 	else {
-		var str = "<div style='text-align:center;margin-top:10px'>" + $('#divTitle').html() + "</div>" + formAllDiv.innerHTML;
+		var str = "<div style='text-align:center;margin-top:10px'>" + $('#tableTitle').html() + "</div><div style='text-align:center;margin-top:10px'>" + $('#divTitle').html() + "</div>" + formAllDiv.innerHTML;
 		return str;
 	}
 }
 
 function showFormReportAll() {
 	isAll = true;
-	var preWin=window.open('print_preview.jsp?print=true','','left=0,top=0,width=550,height=400,resizable=1,scrollbars=1, status=1, toolbar=1, menubar=1');	
+	var preWin=window.open('print_preview.jsp?print=true','','left=0,top=0,width=550,height=400,resizable=1,scrollbars=1, status=1, toolbar=1, menubar=1');
 }
 
 function showFormReport() {
 	isAll = false;
 	// 下列方式有时会导致IE崩溃
-	var preWin=window.open('print_preview.jsp?print=true','','left=0,top=0,width=550,height=400,resizable=1,scrollbars=1, status=1, toolbar=1, menubar=1');	
+	var preWin=window.open('print_preview.jsp?print=true','','left=0,top=0,width=550,height=400,resizable=1,scrollbars=1, status=1, toolbar=1, menubar=1');
 	/*
 	preWin.document.open();
-	
+
 	// 必须要按下面的方式来写，才能引入script
 	preWin.document.write('<script src="spwhitepad/createShapes.js" type="text/javascript"><\/sc'+'ript>');
 	preWin.document.write('<script src="inc/common.js" type="text/javascript"><\/sc'+'ript>');
@@ -1318,7 +1406,7 @@ function linkProject() {
 }
 
 function unlinkProject() {
-	jConfirm('<lt:Label res="res.flow.Flow" key="cancelAssociation"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>', function(r) {	
+	jConfirm('<lt:Label res="res.flow.Flow" key="cancelAssociation"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>', function(r) {
 		if (!r)
 			return false;
 		$.ajax({
@@ -1343,7 +1431,7 @@ function unlinkProject() {
 				}
 			},
 			complete: function(XMLHttpRequest, status){
-				$('#mainTable').hideLoading();				
+				$('#mainTable').hideLoading();
 			},
 			error: function(XMLHttpRequest, textStatus){
 				// 请求出错处理
@@ -1370,7 +1458,7 @@ function doLinkProject(prjId, prjName) {
 			data = $.parseJSON(data);
 			if (data.ret=="1") {
 				jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
-				o("projectName").innerHTML = "<lt:Label res='res.flow.Flow' key='project'/>：<a href=\"javascript:;\" onclick=\"addTab('" + prjName + "', 'project/project_show.jsp?projectId=" + prjId + "&formCode=project')\">" + prjName + "</a>&nbsp;&nbsp;<a title=\"取消关联\" href=\"javascript:;\" onclick=\"unlinkProject()\" style='font-size:16px; font-color:red'>×</a>";				
+				o("projectName").innerHTML = "<lt:Label res='res.flow.Flow' key='project'/>：<a href=\"javascript:;\" onclick=\"addTab('" + prjName + "', 'project/project_show.jsp?projectId=" + prjId + "&formCode=project')\">" + prjName + "</a>&nbsp;&nbsp;<a title=\"取消关联\" href=\"javascript:;\" onclick=\"unlinkProject()\" style='font-size:16px; font-color:red'>×</a>";
 			}
 			else {
 				jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
@@ -1414,45 +1502,45 @@ var autoTextarea = function (elem, extra, maxHeight) {
                 },
                 getStyle = elem.currentStyle ? function (name) {
                         var val = elem.currentStyle[name];
- 
+
                         if (name === 'height' && val.search(/px/i) !== 1) {
                                 var rect = elem.getBoundingClientRect();
                                 return rect.bottom - rect.top -
                                         parseFloat(getStyle('paddingTop')) -
-                                        parseFloat(getStyle('paddingBottom')) + 'px';        
+                                        parseFloat(getStyle('paddingBottom')) + 'px';
                         };
- 
+
                         return val;
                 } : function (name) {
                                 return getComputedStyle(elem, null)[name];
                 },
                 minHeight = parseFloat(getStyle('height'));
- 
+
         elem.style.resize = 'none';
- 
+
         var change = function () {
                 var scrollTop, height,
                         padding = 0,
                         style = elem.style;
- 
+
                 if (elem._length === elem.value.length) return;
                 elem._length = elem.value.length;
- 
+
                 if (!isFirefox && !isOpera) {
                         padding = parseInt(getStyle('paddingTop')) + parseInt(getStyle('paddingBottom'));
                 };
                 //scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
- 
+
                 elem.style.height = minHeight + 'px';
                 if (elem.scrollHeight > minHeight) {
                         if (maxHeight && elem.scrollHeight > maxHeight) {
                                 height = maxHeight - padding;
                                 style.overflowY = 'auto';
-                                
+
                         } else {
                                 height = elem.scrollHeight - padding;
                                 style.overflowY = 'hidden';
-                                
+
                         };
                         style.height = height + extra + 'px';
                         //scrollTop += parseInt(style.height) - elem.currHeight;
@@ -1461,12 +1549,12 @@ var autoTextarea = function (elem, extra, maxHeight) {
                         elem.currHeight = parseInt(style.height);
                 };
         };
- 
+
         addEvent('propertychange', change);
         addEvent('input', change);
         addEvent('focus', change);
         change();
-        
+
 };
 
 function submitPostscript(textareaId, rootId){
@@ -1476,9 +1564,9 @@ function submitPostscript(textareaId, rootId){
 	var myActionId = $("#myActionId"+textareaId).val();
 	var discussId = $("#discussId"+textareaId).val();
 	var userRealName = $("#userRealName"+textareaId).val();
-	var user_name = $("#user_name"+textareaId).val();	
-	var reply_name = $("#reply_name"+textareaId).val();	
-	var flow_name = $("#flow_name"+textareaId).val();	
+	var user_name = $("#user_name"+textareaId).val();
+	var reply_name = $("#reply_name"+textareaId).val();
+	var flow_name = $("#flow_name"+textareaId).val();
 	var parent_id = $("#parent_id"+textareaId).val();
 	var is_secret = $("#isSecret"+textareaId).val();
 
@@ -1500,7 +1588,7 @@ function submitPostscript(textareaId, rootId){
 				reply_name: reply_name,
 				flow_name: flow_name,
 				parent_id: parent_id,
-				cwsProgress: $('#cwsProgress').val(),				
+				cwsProgress: $('#cwsProgress').val(),
 				isSecret: is_secret
 			},
 			dataType: "html",
@@ -1512,15 +1600,15 @@ function submitPostscript(textareaId, rootId){
 			complete: function(XMLHttpRequest, status){
 				$('#bodyBox').hideLoading();
 				//$("#get"+textareaId).height("48px");
-				//$('#bodyBox').hideLoading();	
+				//$('#bodyBox').hideLoading();
 			},
 			success: function(data, status){
 				var re = $.parseJSON(data);
 				if (re.ret=="1") {
 					if(rootId==0){
 						$("#tablehead").append(re.result);
-                        <%if (fd.isProgress()) {%>												
-						$("#tablehead").find("td:eq(1)").prepend("<div>进度：" + $('#cwsProgress').val() + "%</div>");						
+                        <%if (fd.isProgress()) {%>
+						$("#tablehead").find("td:eq(1)").prepend("<div>进度：" + $('#cwsProgress').val() + "%</div>");
 						<%}%>
 						$("#get"+textareaId).val("");
 						$("#myReplyTextarea"+textareaId).hide();
@@ -1531,13 +1619,13 @@ function submitPostscript(textareaId, rootId){
 						$("#myReplyTextarea"+textareaId).hide();
 						$("#divShow").show();
 					}
-				}	
+				}
 			},
 			error: function(){
 				jAlert('<lt:Label res="res.flow.Flow" key="replyWrong"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>');
 			}
 		});
-		
+
 	}
 }
 
@@ -1553,22 +1641,28 @@ function notshow() {
 	$("#divShow").hide();
 }
 
-function recall(flow_id,action_id){
+function recall(flow_id, action_id){
 	jConfirm('<lt:Label res="res.flow.Flow" key="toForcedWithdraw"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
 		if(!r){
 			return;
 		}else{
 			$.ajax({
-				type:"get",
+				type:"post",
 				url:"flow_dispose_do.jsp",
-				data:{"action":"recall","flow_id":flow_id,"action_id":action_id},
+				data: {"action": "recall", "flow_id": flow_id, "action_id": action_id},
 		 		success:function(data,status){
 		 			data = $.parseJSON(data);
-		 			
-		 			location.href = 'flow_modify.jsp?flowId=' + flow_id + "&op=recall&msg=" + encodeURI(data.msg);
+		 			if (data.ret=="1") {
+						jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', function() {
+							window.location.href = 'flow_dispose.jsp?myActionId=' + action_id;
+						});
+					}
+		 			else {
+		 				jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+					}
 		 		},
 		 		error:function(XMLHttpRequest, textStatus){
-		 			//alert(XMLHttpRequest.responseText);
+		 			alert(XMLHttpRequest.responseText);
 		 		}
 			})
 		}
@@ -1586,7 +1680,7 @@ function recallFree(flow_id,action_id){
 				data:{"action":"recall","flow_id":flow_id,"action_id":action_id},
 		 		success:function(data,status){
 		 			data = $.parseJSON(data);
-		 			
+
 		 			location.href = 'flow_modify.jsp?flowId=' + flow_id + "&op=recall&msg=" + data.msg;
 		 		},
 		 		error:function(XMLHttpRequest, textStatus){
@@ -1623,7 +1717,7 @@ function delAnnex(annexId) {
 				},
 				dataType: "html",
 				beforeSend: function(XMLHttpRequest){
-					$('#bodyBox').showLoading();				
+					$('#bodyBox').showLoading();
 				},
 				success: function(data, status){
 					data = $.parseJSON(data);
@@ -1639,9 +1733,47 @@ function delAnnex(annexId) {
 					// 请求出错处理
 					jAlert(XMLHttpRequest.responseText,"提示");
 				}
-			});				
+			});
 		}
-	}); 
+	});
 }
+
+
+function delAtt(docId, attId) {
+	jConfirm('<lt:Label res="res.flow.Flow" key="isDelete"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
+		if(!r){return;}
+		else{
+			$.getJSON('flow_dispose_ajax_att.jsp',
+					{
+						"op":"delAttach",
+						"flowId":<%=flow_id%>,
+						"doc_id":docId,
+						"attach_id":attId
+					},
+					function(data) {
+						if (data.re=="true") {
+							jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+							$('#trAtt' + attId).remove();
+						}
+						else {
+							jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+						}
+						
+					});
+		}
+	})
+}
+
+$(document).ready( function() {
+	$(".mainTable td").mouseout( function() {
+		if ($(this).parent().parent().get(0).tagName!="THEAD")
+			$(this).parent().find("td").each(function(i){ $(this).removeClass("tdOver"); });
+	});
+	
+	$(".mainTable td").mouseover( function() {
+		if ($(this).parent().parent().get(0).tagName!="THEAD")
+			$(this).parent().find("td").each(function(i){ $(this).addClass("tdOver"); });
+	});
+});
 </script>
 </html>

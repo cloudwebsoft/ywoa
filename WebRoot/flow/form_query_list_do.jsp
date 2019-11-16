@@ -197,7 +197,7 @@ while (ir.hasNext()) {
 
 // System.out.println(getClass() + " colProps1=" + colProps);
 
-String preProps = "{display: '流程ID', name : 'flowId', width : 50, sortable : true, align: 'center', hide: false}";
+String preProps = "{display: '流程号', name : 'flowId', width : 50, sortable : true, align: 'center', hide: false}";
 preProps += ",{display: '标题', name : 'flowTitle', width : 150, sortable : false, align: 'center', hide: false}";
 preProps += ",{display: '发起人', name : 'flowStarter', width : 60, sortable : false, align: 'center', hide: false}";
 preProps += ",{display: '开始日期', name : 'flowBeginDate', width : 100, sortable : false, align: 'center', hide: false}";

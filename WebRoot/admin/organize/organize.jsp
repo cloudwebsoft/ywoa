@@ -27,12 +27,17 @@ String type = ParamUtil.get(request,"type");
 	<link href="<%=request.getContextPath() %>/js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
 	<script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery-showLoading/jquery.showLoading.js"></script>
 	<script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.toaster.organize.js"></script>
+	  <script>
+		  function setDeptCode(curDeptCode) {
+		  	$('#linkAdd').attr("href", "<%=request.getContextPath()%>/admin/organize/organize.jsp?type=add&curDeptCode=" + curDeptCode);
+		  }
+	  </script>
   </head>
   <body id="bg" style="overflow-x:hidden;overflow-y:hidden;">
 	<div id="tabs1">
 	     <ul>    
 	       <li id="menu1" ><a href="<%=request.getContextPath()%>/admin/organize/organize.jsp?type=list" >人员资料</a></li>
-	       <li id="menu2" ><a href="<%=request.getContextPath()%>/admin/organize/organize.jsp?type=add" >添加人员</a></li>
+	       <li id="menu2" ><a id="linkAdd" href="<%=request.getContextPath()%>/admin/organize/organize.jsp?type=add" >添加人员</a></li>
 	       <li id="menu3" ><a href="<%=request.getContextPath()%>/admin/organize/organize.jsp?type=import" >导入人员</a></li>
 	     </ul>
  	</div>
@@ -73,16 +78,22 @@ String type = ParamUtil.get(request,"type");
 		 				</select>
 	 				</td>
  			</tr>
- 			<tr>
+ 			<tr style="display: none">
  				<td>描述：</td>
 		 		<td><input type="text" name="deptDesc" id="deptDesc" /></td>
  			</tr>
+			<tr>
+				<td>简称：</td>
+				<td><input type="text" name="shortName" id="shortName" />(用于自动编号)</td>
+			</tr>
  		</table>
  	</div>
  	<%if ("list".equals(type)){ %>
  	<iframe src="organize_frame_list.jsp" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
- 	<%} else if ("add".equals(type)) { %>
- 	<iframe src="organize_frame_add.jsp" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
+ 	<%} else if ("add".equals(type)) {
+		String curDeptCode = ParamUtil.get(request, "curDeptCode");
+	%>
+ 	<iframe src="organize_frame_add.jsp?curDeptCode=<%=curDeptCode%>" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
  	<%} else {%>
  	<iframe src="user_import.jsp" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
  	<%} %>
@@ -117,6 +128,7 @@ String type = ParamUtil.get(request,"type");
 							isGroup:$('#isGroup').val(),
 							isHide:$('#isHide').val(),
 							description:$('#deptDesc').val(), // 部门描述, 用来做部门简写
+							shortName:$('#shortName').val(),
 					 		op:"AddChild"
 						},
 						dataType: "json",
@@ -148,13 +160,15 @@ String type = ParamUtil.get(request,"type");
 			width:300					
 			});
   		}
-  		function modifyDept(code,name,parent_name,parent_code,deptType,isGroup,isHide,description){                         //code:当前节点code   parent_name:归属部门名称   name:当前节点名称
-  			$("#parentDeptName").val(parent_name);    
+  		
+  		function modifyDept(code,name,parent_name,parent_code,deptType,isGroup,isHide,description,shortName){                         //code:当前节点code   parent_name:归属部门名称   name:当前节点名称
+  			$("#parentDeptName").val(parent_name);
   			$("#deptName").val(name);
   			$("#dept_type").val(deptType);
 			$("#isGroup").val(isGroup?1:0);
 			$("#isHide").val(isHide?1:0);
 			$("#deptDesc").val(description);
+			$("#shortName").val(shortName);
   			jQuery("#dlg").dialog({
 			title: "修改部门",
 			modal: true,
@@ -178,7 +192,8 @@ String type = ParamUtil.get(request,"type");
 					 		type:dept_type,                      //1：部门   0:单位
 							isGroup:$('#isGroup').val(),							
 							isHide:$('#isHide').val(),		
-							description:$('#deptDesc').val(), // 部门描述, 用来做部门简写					
+							description:$('#deptDesc').val(), // 部门描述, 用来做部门简写
+							shortName:$('#shortName').val(),
 					 		op:"modify"
 						},
 						dataType: "json",

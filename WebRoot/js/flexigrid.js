@@ -144,23 +144,27 @@
 			},
 			fixIEBug : function() {
 				if (p.autoHeight) {
-					var siblingsFlexiH = 0;
+					var siblingsFlexiH = 0; // flexigrid 的兄弟元素的高度合计
 					$(".flexigrid").siblings().each(function (i) {
-						// alert($(this).is(":visible") + " " + $(this).height() + " " + $(this).html());
 						if ($(this).is(":visible")) {
+							// consoleLog("flexigrid siblings: id=" + $(this).attr("id") + " " + $(this)[0].tagName + " height=" + $(this).height() + " " + $(this).attr("class"));
 							siblingsFlexiH += $(this).height();
 						}
 					});
 
-					var siblingsH = 0;
+					var siblingsH = 0; // bDiv 的兄弟元素的高度合计
 					// bDiv为body container
 					$(g.bDiv).siblings().each(function (i) {
 						if ($(this).is(":visible")) {
-							siblingsH += $(this).height();
+							// 当module_list.jsp中的记录数为0时，如果来回切换选项卡，会因为gBlock出现，而使得页码区上移贴紧至表头位置
+							if ($(this).attr("class")!="gBlock") {
+								// consoleLog("bDiv siblings: id=" + $(this).attr("id") + " " + $(this)[0].tagName + " height=" + $(this).height() + " " + $(this).attr("class"));
+								siblingsH += $(this).height();
+							}
 						}
 					});
 
-					if ($.browser.msie&&($.browser.version == "6.0")&&!$.support.style) {
+					if ($.browser.msie && ($.browser.version == "6.0") && !$.support.style) {
 						// 修复IE6的bug
 						$(g.bDiv).height(document.documentElement.clientHeight - siblingsH - siblingsFlexiH - 5); // 4应为4条边框线所占高度
 						
@@ -205,15 +209,19 @@
 						// 恢复高度
 						$(g.bDiv).height(document.documentElement.clientHeight - siblingsH - siblingsFlexiH - 5); // 4应为4条边框线所占高度
 
-						// 因为当grid有兄弟节点时，如在其上部有选项卡，在IE8中高度表现为先调整到位（通过在方法中加入alert('...')，可以看到已到位），然后又因横向滚动条出现，使自动上移16px(相当于滚动条的高度，因此需再往下移16px)
+						// 因为当grid有兄弟节点时，如在其上部有选项卡，在IE8中高度表现为先调整到位（通过在方法中加入alert('...')，可以看到已到位）
+						// 然后又因横向滚动条出现，使自动上移16px(相当于滚动条的高度，因此需再往下移16px)
+						// consoleLog(p.width + "--" + document.documentElement.clientWidth);
 						if (siblingsFlexiH>0) {
-							if (p.width==document.documentElement.clientWidth) {
-								// ie8下面只能加至11，加至12会出现滚动条，而ie11上则不会
-								$(g.bDiv).height($(g.bDiv).height() - 2);
+							// 20191102 fgf 如果宽度大于客户区宽度，说明出现了横向滚动条，需微调高度，使横向滚动条不再出现
+							if (p.width > document.documentElement.clientWidth) {
+								if (isIE()) {
+									$(g.bDiv).height($(g.bDiv).height() - 4);
+								} else {
+									$(g.bDiv).height($(g.bDiv).height() - 5);
+								}
 							}
-							else
-								$(g.bDiv).height($(g.bDiv).height() - 1);
-							
+
 							// 置border为1px，在IE8下，当内容较多，出现上下滚动条时，可以使自动出现的滚动条消失，因为该滚动条在IE8下面，会自动出现，而当鼠标从右侧滚动条滑过时，该滚动条又会自动消息
 							// 如果用{border:"1px"}，则横向滚动条会消失，但是边框没了颜色，注意这里的问题会使得不同皮肤下的边界线可能会产生问题
 							// 用$(g.bDiv).css("border", $(g.bDiv.css("border"))也不行
@@ -1881,7 +1889,14 @@ $(incDiv).append(tmp);
 		// load data
 		if (p.url && p.autoload) {
 			g.populate();
+		}
+		try {
 			g.initHeaderContextMenu();
+		}
+		catch (e) {
+			if (isIE()) {
+				consoleLog("flexigrid.js: Bootstrap Menu is not included.");
+			}
 		}
 
 		t.windowResize = function (widthTemp,heightTemp) {

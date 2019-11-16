@@ -5,6 +5,7 @@
 <%@ page import="com.redmoon.oa.android.Privilege"%>
 <%@ page import="cn.js.fan.util.*"%>
 <%@ page import="org.json.*"%>
+<%@ page import="com.redmoon.oa.android.CloudConfig" %>
 <!DOCTYPE html>
 <html>
 	<head>
@@ -155,17 +156,17 @@
             <%}%>
             <div>
                 <div id="item1" class="mui-control-content mui-active">     
-                    <form id="free_flow_form" action="../../public/flow_dispose_free_do.jsp"  method="post" enctype="multipart/form-data">
+                    <form id="free_flow_form" action="../../public/flow_dispose_free_do.jsp" method="post" enctype="multipart/form-data">
                     </form>
                     <form class="mui-input-group" id="flow_form" >
                     </form>
-                    <input type="file" id="captureFile" name="upload" accept="image/*"  />
+                    <input type="file" id="captureFile" <%--capture="camera"--%> name="upload" accept="image/*" style="cursor: pointer" />
                     <%
                     String dis = "";
                     if (!fd.isProgress()) {
                         dis = "display:none";
                     }
-                    if (wpd.isReply() && !code.equals("at")) { %>
+                    if (wpd.isReply() && !code.equals("at") && !wpd.isLight() && lf.getType() != Leaf.TYPE_FREE) { %>
                     <div class="annex-group">
                         <div class="reply-form" style="display:none; margin-bottom:10px">
                         <div class="mui-input-row mui-input-range"s>
@@ -288,6 +289,8 @@
                 
 		<script type="text/javascript" src="../js/base/mui.form.js"></script>
 		<script type="text/javascript" src="../js/mui.flow.wx.js"></script>
+		<!--解决iphone拍照变横向的问题-->
+		<script type="text/javascript" src="../js/exif.js"></script>
 		<script type="text/javascript" charset="utf-8">
 		var content = document.querySelector('.mui-content');
 		var skey = '<%=skey%>';
@@ -328,8 +331,42 @@
 
 		window.flow = new mui.Flow(content, options);
 		window.flow.flowDisposeInit();
+
+		function setAgreeBtnName() {
+			// 置同意按钮的名称
+			<%
+				String btnAgreeName = "";
+				if (actionId!=-1) {
+					WorkflowActionDb wa = new WorkflowActionDb();
+					wa = wa.getWorkflowActionDb((int)actionId);
+					btnAgreeName = WorkflowActionDb.getActionProperty(wpd, wa.getInternalName(), "btnAgreeName");
+				}
+				String btnName = "";
+			  	if (btnAgreeName!=null && !"".equals(btnAgreeName)) {
+		  			btnName = btnAgreeName;
+		  		}
+		  		else {
+        			com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
+		  			btnName = conf.getBtnName("FLOW_BUTTON_AGREE").startsWith("#")?LocalUtil.LoadString(request,"res.flow.Flow","agree"):conf.getBtnName("FLOW_BUTTON_AGREE");
+		  		}
+			%>
+			$('.flow_submit').html('<%=btnName%>');
+		}
 		        
 		$(function() {
+			<%
+			CloudConfig cloudConfig = CloudConfig.getInstance();
+			int photoMaxSize = cloudConfig.getIntProperty("photoMaxSize");
+			int intPhotoQuality = cloudConfig.getIntProperty("photoQuality");
+			%>
+			maxSize = {
+				width: <%=photoMaxSize%>,
+				height: <%=photoMaxSize%>,
+				level: <%=intPhotoQuality%>
+			};
+					
+			setTimeout(setAgreeBtnName, 1000);
+
 			$('.btn-ok').click(function() {
 				var _tips = "";
 				jQuery("div[data-isnull='false']").each(function(i){

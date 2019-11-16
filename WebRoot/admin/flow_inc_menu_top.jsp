@@ -2,6 +2,7 @@
 <%@ page import="cn.js.fan.util.*"%>
 <%@ page import="com.redmoon.oa.flow.Leaf"%>
 <%@page import="com.redmoon.oa.flow.FormDb"%>
+<%@ page import="com.redmoon.oa.kernel.License" %>
 <%
 String dirCodeTop = ParamUtil.get(request, "dirCode");
 if (dirCodeTop.equals(""))
@@ -46,6 +47,13 @@ if (lfTop.getType()==com.redmoon.oa.flow.Leaf.TYPE_LIST) {
 <%if (lpTop.canUserExamine(pvgTop.getUser(request))) {%>
     <li id="menu6"><a href="<%=request.getContextPath()%>/admin/flow_dir_priv_m.jsp?dirCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>权限</span></a></li>    
 <%}%>
+<%
+    if (License.getInstance().isPlatformSrc()) {
+%>
+      <li id="menu10"><a href="<%=request.getContextPath()%>/admin/flow_designer_action_view.jsp?dirCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>显示规则</span></a></li>
+<%
+    }
+%>
 <%if (lfTop.getLayer()<=2) {%>
     <li id="menu7"><a href="<%=request.getContextPath()%>/admin/flow_predefine_dir.jsp?parent_code=<%=StrUtil.UrlEncode(dirCodeTop)%>&op=AddChild"><span>添加</span></a></li>
 <%}%>

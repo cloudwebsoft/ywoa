@@ -251,9 +251,12 @@ if (op.equals("saveformvalue")) {
 	  </td>
     </tr>
     <tr>
-      <td height="30" align="center"><input id="btnAdd" class="btn" type="submit" name="btnAdd" value=" 添 加 " />
-      <input name="cws_id" value="<%=relateFieldValue%>" type="hidden" />
-      <input id="helper" value="1" type="hidden" />      
+      <td height="30" align="center">
+		  <input id="btnAdd" class="btn" type="submit" name="btnAdd" value=" 添 加 " />
+		  &nbsp;&nbsp;&nbsp;&nbsp;
+		  <input id="btnBack" class="btn" type="button" name="btnBack" onclick="window.history.back()" value=" 返 回 " />
+		  <input name="cws_id" value="<%=relateFieldValue%>" type="hidden" />
+		  <input id="helper" value="1" type="hidden" />
 	  </td>
     </tr>
 </table>

@@ -149,6 +149,9 @@ groups += "</ul>";
 <link type="text/css" rel="stylesheet" href="<%=path %>/js/jstree/themes/default/style.css" />
 <link type="text/css" rel="stylesheet" href="<%=path %>/js/msdropdown/dd.css" />
 <style>
+html {
+	zoom: 90%
+}
 .ui-widget-header {
 	color: #1c94c4;
 	border: 1px solid #d7d7d7;
@@ -799,7 +802,10 @@ function resetSelected(){
 		}
 	}
 	// console.log($("#websites").html());
-	oHandler1.destroy();
+	try {
+		oHandler1.destroy(); // 部分IE11、360、chrome不支持destroy()方法
+	}
+	catch (e) {}
 	oHandler1 = $("#websites").msDropDown().data("dd");
 	$("#websites_child").css("height","444px");
 }

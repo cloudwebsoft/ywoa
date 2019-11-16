@@ -17,6 +17,9 @@ import java.util.regex.Pattern;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.IPUtil;
+import com.cloudwebsoft.framework.web.UserAgentParser;
+import com.redmoon.oa.sys.DebugUtil;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
@@ -504,6 +507,13 @@ public class WorkflowMgr {
             if (re) {
                 MyActionDb mad = new MyActionDb();
                 mad = mad.getMyActionDb(myActionId);
+
+                mad.setIp(IPUtil.getRemoteAddr(request));
+                mad.setIp(IPUtil.getRemoteAddr(request));
+                String ua = request.getHeader("User-Agent");
+                mad.setOs(UserAgentParser.getOS(ua));
+                mad.setBrowser(UserAgentParser.getBrowser(ua));
+
                 mad.returnMyAction();
                 
 				// 流程被返回时，节点上的事件脚本处理
@@ -550,7 +560,26 @@ public class WorkflowMgr {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				}                
+				}
+
+                if (wpd.isReactive()) {
+                    // 如果流程状态为已结束，而因为重激活的原因又启动了，则需重置流程状态
+                    if (wf.getStatus() == WorkflowDb.STATUS_FINISHED) {
+                        // 需重新获得wf，因为flowstring在上面的myAction.changeStatus中的save()中被改变了，而wf不更新，继续往下作为afterChangeStatus参数传递，就会出现问题
+                        wf = wf.getWorkflowDb(wf.getId());
+
+                        wf.setStatus(WorkflowDb.STATUS_STARTED);
+                        wf.setResultValue(WorkflowActionDb.RESULT_VALUE_NOT_ACCESSED);
+                        wf.save();
+
+                        com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+                        FormDb fd = new FormDb();
+                        fd = fd.getFormDb(lf.getFormCode());
+                        fdao = fdao.getFormDAO(wf.getId(), fd);
+                        fdao.setStatus(FormDAO.STATUS_NOT);
+                        fdao.save();
+                    }
+                }
                 
 				// 调试模式不发送消息及邮件
 				if (!lf.isDebug()) {
@@ -691,8 +720,7 @@ public class WorkflowMgr {
         if (!wf.isStarted()) {
             saveWorkflowProps(request, wf, myAction, fu);
         }
-        
-        
+
         String[] attachmentFiles = fu.getFieldValues("attachmentFiles");
         if (attachmentFiles!=null) {//外部邮箱转发@流程带附件
         	Privilege privilege = new Privilege();
@@ -704,7 +732,10 @@ public class WorkflowMgr {
 			
 			String vpath = file_flow + "/" + year + "/" + month;
 			String filepath = Global.getRealPath() + vpath;//拼凑路径
-        	
+            File f = new File(filepath);
+            if (!f.isDirectory())
+                f.mkdirs();
+
         	int len = attachmentFiles.length;
         	com.redmoon.oa.emailpop3.Attachment  attMail;
         	for (int i=0; i<len; i++) {
@@ -717,10 +748,7 @@ public class WorkflowMgr {
         		String newDiskName = RandomSecquenceCreator.getId() + "." +
 				StrUtil.getFileExt(attMail.getDiskName());
 				String newFullPath = filepath + "/" + newDiskName;
-				
-				File f = new File(filepath);
-				if (!f.isDirectory())
-					f.mkdirs();
+
 				// 拷贝文件
 				FileUtil.CopyFile(fullPath, newFullPath);//将附件从邮箱复制到流程下
 				
@@ -790,35 +818,58 @@ public class WorkflowMgr {
         }
         else {
 	        // String[] nextActionUsers = StrUtil.split(fu.getFieldValue("nextActionUsers"), ",");
-	        // 获取被选中的用户
-	        nextActionUsers = fu.getFieldValues("nextUsers");
-	        if (nextActionUsers!=null) {
-	            int aryLen = 0;
-	        	aryLen = nextActionUsers.length;
-	        	for (int i=0; i<aryLen; i++) {
-	        		nextActionUsers[i] = nextActionUsers[i].trim();
-	        	}
-	        }
-	        
-	        expireHours = fu.getFieldValues("expireHours");
-	        if (expireHours!=null) {
-	            int aryLen = 0;
-	        	aryLen = expireHours.length;
-	        	for (int i=0; i<aryLen; i++) {
-	        		expireHours[i] = expireHours[i].trim();
-	        	}
-	        }
-	        // 用户名前面的checkbox不显示，因为后面有删除键，保留的意义似乎不大
-	        // toMes如果不选，在服务器端不太好匹配，且前台操作复杂，易引起混淆，所以在此也去掉
-	        // String[] toMes = fu.getFieldValues("toMes");
+            // 获取被选中的用户
+            nextActionUsers = fu.getFieldValues("nextUsers");
+            if (nextActionUsers!=null) {
+                int aryLen = 0;
+                aryLen = nextActionUsers.length;
+                for (int i=0; i<aryLen; i++) {
+                    nextActionUsers[i] = nextActionUsers[i].trim();
+                }
+            }
+            else {
+                nextActionUsers = new String[0];
+            }
 
-	        String[] ordersStr = fu.getFieldValues("orders");
-	        if (nextActionUsers!=null && ordersStr!=null) // 手机端当@流程未选择下一步的用户时，orders仍为字符串1
-	            ordersLen = ordersStr.length;
-	        orders = new int[ordersLen];
-	        for (int i=0; i<orders.length; i++) {
-	            orders[i] = StrUtil.toInt(ordersStr[i].trim(), 1);
-	        }
+            expireHours = fu.getFieldValues("expireHours");
+            if (expireHours!=null) {
+                int aryLen = 0;
+                aryLen = expireHours.length;
+                for (int i=0; i<aryLen; i++) {
+                    expireHours[i] = expireHours[i].trim();
+                }
+            }
+
+            // 手机端自由流程中expireHours只会有1个元素，当选择多个用户的时候，需将expireHours的长度扩展为与nextActionUsers一致
+            if (expireHours==null || expireHours.length!=nextActionUsers.length) {
+                expireHours = new String[nextActionUsers.length];
+                int aryLen = 0;
+                aryLen = expireHours.length;
+                for (int i=0; i<aryLen; i++) {
+                    expireHours[i] = "0";
+                }
+            }
+
+            // 用户名前面的checkbox不显示，因为后面有删除键，保留的意义似乎不大
+            // toMes如果不选，在服务器端不太好匹配，且前台操作复杂，易引起混淆，所以在此也去掉
+            // String[] toMes = fu.getFieldValues("toMes");
+
+            String[] ordersStr = fu.getFieldValues("orders");
+            if (nextActionUsers!=null && ordersStr!=null) // 手机端当@流程未选择下一步的用户时，orders仍为字符串1
+                ordersLen = ordersStr.length;
+            orders = new int[ordersLen];
+            for (int i=0; i<orders.length; i++) {
+                orders[i] = StrUtil.toInt(ordersStr[i].trim(), 1);
+            }
+
+            if (orders.length!=nextActionUsers.length) {
+                orders = new int[nextActionUsers.length];
+                int aryLen = orders.length;
+                for (int i=0; i<aryLen; i++) {
+                    orders[i] = 1; // 全部为1，表示一次提交给多个用户，否则按顺序流转
+                }
+                ordersLen = nextActionUsers.length;
+            }
 
 	        // 注意需要按照顺序创建action，从大到小，否则会因为排在前面的action未创建而出错
 	        selectSort(orders, nextActionUsers, expireHours);	        
@@ -831,6 +882,8 @@ public class WorkflowMgr {
         //    throw new ErrMsgException("请选择用户！");
 
         // LogUtil.getLog(getClass()).info("FinishActionFree:" + nextActionUsers);
+        Leaf lf = new Leaf();
+        lf = lf.getLeaf(wf.getTypeCode());
 
         Vector vto = myAction.getLinkToActions();
 
@@ -842,6 +895,13 @@ public class WorkflowMgr {
                 wf.setStatus(WorkflowDb.STATUS_STARTED);
                 wf.setResultValue(WorkflowActionDb.RESULT_VALUE_NOT_ACCESSED);
                 wf.save();
+
+                com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+                FormDb fd = new FormDb();
+                fd = fd.getFormDb(lf.getFormCode());
+                fdao = fdao.getFormDAO(wf.getId(), fd);
+                fdao.setStatus(FormDAO.STATUS_NOT);
+                fdao.save();
             }
             else{
             	String str = LocalUtil.LoadString(request,"res.flow.Flow","processHaveBeenComplete");
@@ -1008,8 +1068,6 @@ public class WorkflowMgr {
             */
         }
 
-        Leaf lf = new Leaf();
-        lf = lf.getLeaf(wf.getTypeCode());
         FormDAOMgr fdm = new FormDAOMgr(wf.getId(), lf.getFormCode(), fu, myAction);
         boolean re = fdm.update(request);
         if (re) {
@@ -1185,321 +1243,6 @@ public class WorkflowMgr {
 	                    }
 	                }
 	            }
-            }
-        }
-        return re;
-    }
-
-    /**
-     * 转交自由流程节点，只能顺序选人，不能按序号排列
-     * @param request HttpServletRequest
-     * @param wf WorkflowDb 流程
-     * @param myAction WorkflowActionDb 当前动作节点
-     * @param myActionId long 当前动作节点上正在办理的记录id
-     * @return boolean
-     * @throws ErrMsgException
-     */
-    public boolean FinishActionFreeXXX20121209(HttpServletRequest request, WorkflowDb wf, WorkflowActionDb myAction, long myActionId) throws ErrMsgException {
-        // 检查锁
-        checkLock(request, wf);
-
-        // 保存流程的标题等
-        if (!wf.isStarted())
-            saveWorkflowProps(request, wf, myAction, fu);
-
-        // String[] nextActionUsers = StrUtil.split(fu.getFieldValue("nextActionUsers"), ",");
-        // 获取被选中的用户
-        String[] nextActionUsers = fu.getFieldValues("nextUsers");
-
-        // 当上一节点同时转交给多个人，其中有用户办理完毕，而其它人未办理完毕时，该用户却因为没有选择下一节点的用户，而无法继续
-        // 此时如果点击“结束流程”按钮，则会使得流程状态为已结束，且其它人的待办记录也会变为已办理
-        // if (nextActionUsers==null)
-        //    throw new ErrMsgException("请选择用户！");
-
-        // LogUtil.getLog(getClass()).info("FinishActionFree:" + nextActionUsers);
-
-        Vector vto = myAction.getLinkToActions();
-
-        // 如果流程状态为已结束，而因为重激活的原因又启动了，则需重置流程状态
-        if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
-            WorkflowPredefineDb wfp = new WorkflowPredefineDb();
-            wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
-            if (wfp.isReactive()) {
-                wf.setStatus(WorkflowDb.STATUS_STARTED);
-                wf.setResultValue(WorkflowActionDb.RESULT_VALUE_NOT_ACCESSED);
-                wf.save();
-            }
-            else
-                throw new ErrMsgException("流程已结束，不能再处理！");
-        }
-
-        UserMgr um = new UserMgr();
-        Privilege privilege = new Privilege();
-
-        // 创建后续节点和连接线
-        int len = 0;
-        if (nextActionUsers!=null)
-            len = nextActionUsers.length;
-
-        WorkflowActionDb privAction = myAction;
-        boolean isOrder = StrUtil.toInt(fu.getFieldValue("isOrder"), -1)==1;
-
-        for (int i=0; i<len; i++) {
-            String strExpire = "";
-            // LogUtil.getLog(getClass()).info("FinishActionFree: StrUtil.escape(nextActionUsers[i]).toUpperCase() + \"_expireHour\"=" +StrUtil.escape(nextActionUsers[i]).toUpperCase() + "_expireHour");
-
-            try {
-                // 当有重复用户时，getFieldValue会返回Vector型，会出现异常
-                strExpire = fu.getFieldValue(StrUtil.escape(nextActionUsers[
-                        i]).toUpperCase() + "_expireHour");
-            } catch (ClassCastException e) {
-                throw new ErrMsgException("请检查是否有重名用户！");
-            }
-
-            // 如果原来的状态是被返回，则检查被选的下一环节的用户是否已在于后续节点中
-            // 还要考虑到当前节点状态为已处理时，此时再次激活了本节点的情况
-            // 还要考虑到当前节点状态因为表单验证合法性未通过，从flow_dispose_free.jsp返回时，此时节点状态仍旧为未处理
-            // 而nextActionUsers后续节点和连接已被创建，此时也需检查
-            if (myAction.getStatus()==WorkflowActionDb.STATE_RETURN ||
-                    myAction.getStatus()==WorkflowActionDb.STATE_FINISHED || myAction.getStatus()==WorkflowActionDb.STATE_DOING) {
-
-                LogUtil.getLog(getClass()).info("FinishActionFree: myAction.getStatus()=" + myAction.getStatus() + "nextActionUsers[" + i + "]=" + nextActionUsers[i]);
-
-                Iterator irto = vto.iterator();
-                boolean isUserExist = false;
-                WorkflowActionDb toAction = null;
-                while (irto.hasNext()) {
-                    toAction = (WorkflowActionDb)irto.next();
-                    if (toAction.getUserName().equals(nextActionUsers[i])) {
-                        isUserExist = true;
-                        break;
-                    }
-                }
-
-                // LogUtil.getLog(getClass()).info("FinishActionFree: isUserExist=" + isUserExist);
-
-                if (isUserExist) {
-                    // 检查连接线上的到期时间有没有更改，如有更改，则重置到期时间
-                    WorkflowLinkDb wld = new WorkflowLinkDb();
-                    wld = wld.getWorkflowLinkDbForward(myAction, toAction);
-                    // LogUtil.getLog(getClass()).info("FinishActionFree: strExpire=" + strExpire);
-                    double dbExpire = StrUtil.toDouble(strExpire, 0);
-                    if (wld.getExpireHour()!= dbExpire) {
-                        wld.setExpireHour(dbExpire);
-                        wld.save();
-                    }
-                    // 如果原来下一节点上已有myaction(待办记录)，则删除原有待办记录，否则会导致重复出现待办记录
-                    MyActionDb mad = new MyActionDb();
-                    mad = mad.getMyActionDbOfActionDoingByUser(toAction, nextActionUsers[i]);
-                    if (mad != null) {
-                        mad.del();
-                    }
-                    continue;
-                }
-            }
-
-            // LogUtil.getLog(getClass()).info("nextActionUsers[i]=" + nextActionUsers[i]);
-
-            // 创建节点
-            WorkflowActionDb wa = new WorkflowActionDb();
-            wa.setFlowId(wf.getId());
-            wa.setStatus(WorkflowActionDb.STATE_DOING);
-            wa.setUserName(nextActionUsers[i]);
-            UserDb user = um.getUserDb(nextActionUsers[i]);
-            wa.setUserRealName(user.getRealName());
-            wa.setInternalName(RandomSecquenceCreator.getId(20));
-            boolean r = wa.create();
-
-            if (r) {
-                // 创建连接线
-                WorkflowLinkDb wl = new WorkflowLinkDb();
-                wl.setFlowId(wf.getId());
-                wl.setFrom(privAction.getInternalName());
-                wl.setTo(wa.getInternalName());
-                // 获取到期时间
-                // LogUtil.getLog(getClass()).info("expireHour=" + fu.getFieldValue(nextActionUsers[i] + "_expireHour"));
-                wl.setExpireHour(StrUtil.toInt(strExpire, 0));
-                wl.create();
-            }
-
-            if (isOrder)
-                privAction = wa;
-
-            int toMe = StrUtil.toInt(fu.getFieldValue(StrUtil.escape(nextActionUsers[
-                        i]).toUpperCase() + "_toMe"), -1);
-            if (toMe==1) {
-                // 创建回到自己的节点及连线
-                WorkflowActionDb waMe = new WorkflowActionDb();
-                waMe.setFlowId(wf.getId());
-                waMe.setStatus(WorkflowActionDb.STATE_DOING);
-                waMe.setUserName(privilege.getUser(request));
-                user = um.getUserDb(privilege.getUser(request));
-                waMe.setUserRealName(user.getRealName());
-                waMe.setInternalName(RandomSecquenceCreator.getId(20));
-                r = waMe.create();
-                if (r) {
-                    // 创建连接线
-                    WorkflowLinkDb wlMe = new WorkflowLinkDb();
-                    wlMe.setFlowId(wf.getId());
-                    wlMe.setFrom(wa.getInternalName());
-                    wlMe.setTo(waMe.getInternalName());
-                    // 获取到期时间
-                    // LogUtil.getLog(getClass()).info("expireHour=" + fu.getFieldValue(nextActionUsers[i] + "_expireHour"));
-                    wlMe.setExpireHour(0);
-                    wlMe.create();
-                }
-            }
-        }
-
-        Leaf lf = new Leaf();
-        lf = lf.getLeaf(wf.getTypeCode());
-        FormDAOMgr fdm = new FormDAOMgr(wf.getId(), lf.getFormCode(), fu, myAction);
-        boolean re = fdm.update(request);
-        if (re) {
-            String result = "";
-            int resultValue = 0;
-            // 检查流程是否已开始，如果未开始且用户有开始流程的权限，则开始流程
-            if (!wf.isStarted()) {
-                re = start(request, wf.getId(), myAction, myActionId);
-            }
-            else {
-                re = myAction.changeStatusFree(request, wf,
-                        privilege.getUser(request),
-                        myAction.STATE_FINISHED,
-                        "", result, resultValue, myActionId);
-            }
-        } else
-            throw new ErrMsgException("保存表单内容时失败！");
-        if (re) {
-            // 解锁流程
-            unlock(wf.getId());
-
-            // 自动存档
-            String flag = myAction.getFlag();
-            if (flag.length() >= 5 && flag.substring(4, 5).equals("2")) {
-                String formReportContent = StrUtil.getNullStr(fu.getFieldValue(
-                        "formReportContent"));
-                saveDocumentArchive(wf, privilege.getUser(request),
-                                    formReportContent);
-            }
-
-            boolean isUseMsg = getFieldValue("isUseMsg").equals("true");
-            boolean isToMobile = getFieldValue("isToMobile").equals("true");
-
-            MyActionDb mad = new MyActionDb();
-            mad = mad.getMyActionDb(myActionId);
-            String userRealName = um.getUserDb(mad.getUserName()).getRealName();
-
-            Config cfg = new Config();
-            boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
-            String charset = Global.getSmtpCharset();
-            cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
-            String senderName = StrUtil.GBToUnicode(Global.AppName);
-            senderName += "<" + Global.getEmail() + ">";
-            if (flowNotifyByEmail) {
-                String mailserver = Global.getSmtpServer();
-                int smtp_port = Global.getSmtpPort();
-                String name = Global.getSmtpUser();
-                String pwd_raw = Global.getSmtpPwd();
-                boolean isSsl = Global.isSmtpSSL();
-                try {
-                    sendmail.initSession(mailserver, smtp_port, name,
-                                         pwd_raw, "", isSsl);
-                } catch (Exception ex) {
-                    LogUtil.getLog(getClass()).error(StrUtil.trace(ex));
-                }
-            }
-
-            com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
-            String t = SkinUtil.LoadString(request,
-                                           "res.module.flow",
-                                           "msg_user_actived_title");
-            String c = SkinUtil.LoadString(request,
-                                           "res.module.flow",
-                                                   "msg_user_actived_content");
-            String tail = WorkflowMgr.getFormAbstractTable(wf);
-
-            MessageDb md = new MessageDb();
-            Iterator ir = myAction.getTmpUserNameActived().iterator();
-            while (ir.hasNext()) {
-                MyActionDb mad2 = (MyActionDb) ir.next();
-                t = t.replaceFirst("\\$flowTitle", wf.getTitle());
-                String fc = c.replaceFirst("\\$flowTitle", wf.getTitle());
-                fc = fc.replaceFirst("\\$fromUser", userRealName);
-
-                if (isToMobile) {
-                    IMsgUtil imu = SMSFactory.getMsgUtil();
-                    if (imu != null) {
-                        UserDb ud = um.getUserDb(mad2.getUserName());
-                        imu.send(ud, fc, MessageDb.SENDER_SYSTEM);
-                    }
-                }
-
-                fc += tail;
-                if (isUseMsg) {
-                    // 发送信息
-                    String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad2.getId();
-                    md.sendSysMsg(mad2.getUserName(), t, fc, action);
-                }
-                if (flowNotifyByEmail) {
-                    UserDb user = um.getUserDb(mad2.getUserName());
-                    if (!user.getEmail().equals("")) {
-                        String action = "userName=" + user.getName() + "|" + "myActionId=" + mad2.getId();
-                        action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-                        fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath(request) +
-                                "/public/flow_dispose.jsp?action=" + action +
-                                "' target='_blank'>请点击此处办理</a>";
-                        sendmail.initMsg(user.getEmail(),
-                                         senderName,
-                                         t, fc, true);
-                        sendmail.send();
-                        sendmail.clear();
-                    }
-                }
-            }
-            // 如果流程完成了，则通知发起者
-            wf = wf.getWorkflowDb(myAction.getFlowId());
-            if (wf.getStatus()==wf.STATUS_FINISHED) {
-                String ft = SkinUtil.LoadString(request,
-                                               "res.module.flow",
-                                               "msg_flow_finished_title");
-                String fc = SkinUtil.LoadString(request, 
-                                               "res.module.flow",
-                                               "msg_flow_finished_content");
-                ft = StrUtil.format(ft, new String[] {wf.getTitle()});
-                fc = StrUtil.format(fc, new String[] {wf.getTitle(), myAction.getUserRealName(), DateUtil.format(myAction.getCheckDate(), "yyyy-MM-dd")});
-
-                if (isToMobile) {
-                    IMsgUtil imu = SMSFactory.getMsgUtil();
-                    if (imu != null) {
-                        UserDb ud = um.getUserDb(wf.getUserName());
-                        imu.send(ud, fc, MessageDb.SENDER_SYSTEM);
-                    }
-                }
-
-                if (isUseMsg) {
-                    // 发送信息
-                    String action = "action=" + MessageDb.ACTION_FLOW_SHOW + "|flowId=" + wf.getId();
-                    md.sendSysMsg(wf.getUserName(), ft, fc, action);
-                }
-                // 发邮件
-                if (flowNotifyByEmail) {
-                    UserDb user = um.getUserDb(wf.getUserName());
-                    if (!user.getEmail().equals("")) {
-                        String action = "op=show|userName=" + user.getName() + "|" +
-                                        "flowId=" + wf.getId();
-                        action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-                        fc += "<BR />>>&nbsp;<a href='" +
-                                Global.getFullRootPath(request) +
-                                "/public/flow_dispose.jsp?action=" + action +
-                                "' target='_blank'>请点击此处查看</a>";
-                        sendmail.initMsg(user.getEmail(),
-                                         senderName,
-                                         ft, fc, true);
-                        sendmail.send();
-                        sendmail.clear();
-                    }
-                }
             }
         }
         return re;
@@ -2365,9 +2108,19 @@ public class WorkflowMgr {
 	                    	WorkflowActionDb selectedAction = wad.getWorkflowActionDbByInternalName(selectedName, wad.getFlowId());
 	                    	// 取得被忽略的分支线节点与被选中节点之间存在的相交节点
 	                    	WorkflowActionDb endAction = getRelationOfTwoActions(wad, selectedAction);
-                            // 如果相交节点不是被选中节点本身，则执行忽略操作
-                            if (!endAction.getInternalName().equals(selectedName)) {
-                                ignoreBranch(wad, endAction);
+	                    	if (endAction!=null) {
+                                // 如果相交节点不是被选中节点本身，则执行忽略操作
+                                LogUtil.getLog(getClass()).info("selectedAction title=" + selectedAction.getTitle() + " endAction title=" + endAction.getTitle());
+                                if (!endAction.getInternalName().equals(selectedName)) {
+                                    ignoreBranch(wad, endAction);
+                                }
+                                else {
+                                    ignoreBranch(wad, wad);
+                                }
+                            }
+	                    	else {
+                                LogUtil.getLog(getClass()).info("endAction=null " + wad.getTitle() + "->" + selectedAction.getTitle());
+                                ignoreBranch(wad, wad);
                             }
                     	}
                     }
@@ -2378,7 +2131,7 @@ public class WorkflowMgr {
     
     /**
      * 取得两个节点之间的连接点，会包含firstAction或secondAction本身
-     * @Description: first/second在一条线上,则谁在后返回谁,不在一条线上,如果有交点则返回焦点,没有则返回null
+     * @Description: first/second在一条线上,则谁在后返回谁,不在一条线上,如果有交点则返回交点,没有则返回null
      * @param firstAction WorkflowActionDb
      * @param secondAction WorkflowActionDb
      * @return
@@ -2521,7 +2274,10 @@ public class WorkflowMgr {
      * @throws ErrMsgException
      */
     public boolean FinishAction(HttpServletRequest request, WorkflowDb wf, WorkflowActionDb myAction, long myActionId) throws ErrMsgException {
-    	// 如果流程是被删除状态，则不允许处理
+    	Config cfg = new Config();
+    	long tDebug = System.currentTimeMillis();
+
+        // 如果流程是被删除状态，则不允许处理
     	if (wf.getStatus()==WorkflowDb.STATUS_DELETED) {
     		String str = LocalUtil.LoadString(request,"res.flow.Flow","flowDeleted");
     		throw new ErrMsgException(str);
@@ -2538,6 +2294,9 @@ public class WorkflowMgr {
 
     	WorkflowPredefineDb wfp = new WorkflowPredefineDb();
     	wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
+
+        Leaf lf = new Leaf();
+        lf = lf.getLeaf(wf.getTypeCode());
     	
         // 防止因为浏览器卡住而多次提交，下一个节点产生多个待办记录
         if (myAction.getStatus()==WorkflowActionDb.STATE_DOING || myAction.getStatus()==WorkflowActionDb.STATE_RETURN)
@@ -2545,16 +2304,35 @@ public class WorkflowMgr {
         else {
         	// 有可能会是重激活的情况，或者是异或聚合的情况
         	if (!wfp.isReactive() && !myAction.isXorAggregate()) {
-                if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_CHECKED) {
+        	    // 如果服务器卡住，且连续点击提交按钮，有可能进入到此处，故注释掉由系统自动处理状态的代码 fgf 20190521
+/*                if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_CHECKED) {
                     mad.setCheckStatus(MyActionDb.CHECK_STATUS_CHECKED);
                     mad.setCheckDate(new java.util.Date());
                     mad.setChecker(UserDb.SYSTEM);
+                    mad.setResult("FinishAction:" + LocalUtil.LoadString(request, "res.flow.Flow", "systemAutoAccessedWhenDisposeNotDoing"));
                     mad.save();
-                }
+                }*/
         		String str = LocalUtil.LoadString(request, "res.flow.Flow","processStatus");
         		String str1 = LocalUtil.LoadString(request, "res.flow.Flow","mayHaveBeenProcess");
         		throw new ErrMsgException(str + myAction.getStatus() + "，"+str1);
         	}
+        	else {
+        	    if (wfp.isReactive()) {
+                    // 如果流程状态为已结束，而因为重激活的原因又启动了，则需重置流程状态
+                    if (wf.getStatus() == WorkflowDb.STATUS_FINISHED) {
+                        wf.setStatus(WorkflowDb.STATUS_STARTED);
+                        wf.setResultValue(WorkflowActionDb.RESULT_VALUE_NOT_ACCESSED);
+                        wf.save();
+
+                        com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+                        FormDb fd = new FormDb();
+                        fd = fd.getFormDb(lf.getFormCode());
+                        fdao = fdao.getFormDAO(wf.getId(), fd);
+                        fdao.setStatus(FormDAO.STATUS_NOT);
+                        fdao.save();
+                    }
+                }
+            }
         }        
         
         // 如果是套红节点，则检查是否已套红
@@ -2608,18 +2386,22 @@ public class WorkflowMgr {
         UserDb user = null;
         WorkflowActionDb wfa = null;
 
-        Leaf lf = new Leaf();
-        lf = lf.getLeaf(wf.getTypeCode());
-
         // 加签节点不需要检查后续处理用户
         if (mad.getActionStatus() != WorkflowActionDb.STATE_PLUS) {
             // 如果是异或节点，则检查是否有被选中的后继节点
             String XorNextActionInternalNames = "";
             // 判断是否来自手机端
 			boolean isMobile = false;
-			UserAgent ua = UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
-	        OperatingSystem os = ua.getOperatingSystem();
-	        if(DeviceType.MOBILE.equals(os.getDeviceType())) {
+            OperatingSystem os = null;
+            try {
+                // 当从第三方接口对接时，因没有User-Agent，会导致出现异常
+                UserAgent ua = UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
+                os = ua.getOperatingSystem();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+	        if(os==null || DeviceType.MOBILE.equals(os.getDeviceType())) {
 	            isMobile = true;
 	        }
 	        if (isMobile) {
@@ -2763,13 +2545,16 @@ public class WorkflowMgr {
 	            			}
 	            		}
 	            		if (!isReturn) {
-	            			continue;
+	            		    // 判断是否为唯一的后续节点，如果是，则允许继续往下流转，如多起点，起点分支聚合至某一节点时
+                           if (vto.size()==1)
+                               ;
+                           else
+	            			    continue;
 	            		}
 	            	} else {
 	            		continue;
 	            	}
 	            }
-	        	
 	                      
 	            LogUtil.getLog(getClass()).info("FinishAction: prefix + wfa.getId()=" + prefix + wfa.getId());
 	            int len = 0;
@@ -2846,6 +2631,11 @@ public class WorkflowMgr {
         Privilege privilege = new Privilege();
         FormDAOMgr fdm = new FormDAOMgr(wf.getId(), lf.getFormCode(), fu, myAction);
 
+        if (cfg.getBooleanProperty("isDebugFlow")) {
+            DebugUtil.i(getClass(), "finishAction", "flowId:" + wf.getId() + " " + wf.getTitle() + " before update: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+            tDebug = System.currentTimeMillis();
+        }
+
         boolean isAfterSaveformvalueBeforeXorCondSelect = StrUtil.getNullStr(fu.getFieldValue("isAfterSaveformvalueBeforeXorCondSelect")).equals("true");
         LogUtil.getLog(getClass()).info("FinishAction: isAfterSaveformvalueBeforeXorCondSelect=" + isAfterSaveformvalueBeforeXorCondSelect);
         boolean re = true;
@@ -2853,11 +2643,24 @@ public class WorkflowMgr {
         if (!isAfterSaveformvalueBeforeXorCondSelect)
             re = fdm.update(request);
         if (re) {
+            if (cfg.getBooleanProperty("isDebugFlow")) {
+                DebugUtil.i(getClass(), "finishAction", "flowId:" + wf.getId() + " " + wf.getTitle() + " after update: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                tDebug = System.currentTimeMillis();
+            }
+
             mad.setResultValue(WorkflowActionDb.RESULT_VALUE_AGGREE);
+            mad.setIp(IPUtil.getRemoteAddr(request));
+            String ua = request.getHeader("User-Agent");
+            mad.setOs(UserAgentParser.getOS(ua));
+            mad.setBrowser(UserAgentParser.getBrowser(ua));
             mad.save();
 
             String result = "";
             int resultValue = 0;
+            if (cfg.getBooleanProperty("isDebugFlow")) {
+                DebugUtil.i(getClass(), "finishAction", "flowId:" + wf.getId() + " " + wf.getTitle() + " before changeStatus: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                tDebug = System.currentTimeMillis();
+            }
             // 检查流程是否已开始，如果未开始且用户有开始流程的权限，则开始流程
             if (!wf.isStarted()) {
                 re = start(request, wf.getId(), myAction, myActionId);
@@ -2869,6 +2672,10 @@ public class WorkflowMgr {
                         "", result, resultValue, myActionId);
             }
             if (re) {
+                if (cfg.getBooleanProperty("isDebugFlow")) {
+                    DebugUtil.i(getClass(), "finishAction", "flowId:" + wf.getId() + " " + wf.getTitle() + " after changeStatus: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                    tDebug = System.currentTimeMillis();
+                }
 				// 流程转交下一步时事件处理插件
 				FormValidatorConfig fvc = new FormValidatorConfig();
 				IFormValidator ifv = fvc.getIFormValidatorOfForm(lf
@@ -2877,19 +2684,33 @@ public class WorkflowMgr {
 					ifv.onActionFinished(request, wf.getId(), fu);
 				}
 
-				// 流程转交下一步时，节点上的事件脚本处理
+                if (cfg.getBooleanProperty("isDebugFlow")) {
+                    DebugUtil.i(getClass(), "finishAction", "flowId:" + wf.getId() + " " + wf.getTitle() + " after onActionFinished: " + (System.currentTimeMillis() - tDebug) + " ms " + new Privilege().getUser(request));
+                    tDebug = System.currentTimeMillis();
+                }
+
+                // 流程转交下一步时，节点上的事件脚本处理
 				WorkflowPredefineDb wpd = new WorkflowPredefineDb();
 				wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
 				WorkflowPredefineMgr wpm = new WorkflowPredefineMgr();
-				String script = wpm.getActionFinishScript(wpd.getScripts(),
-						myAction.getInternalName());
+				String script = wpm.getActionFinishScript(wpd.getScripts(), myAction.getInternalName());
 				if (script != null) {
 					FormDAO fdao = new FormDAO();
 					FormDb fd = new FormDb();
 					fd = fd.getFormDb(lf.getFormCode());
 					fdao = fdao.getFormDAO(wf.getId(), fd);
-					
-				   	runDeliverScript(request, privilege.getUser(request), wf, fdao, mad, script, false);
+
+                    if (cfg.getBooleanProperty("isDebugFlow")) {
+                        DebugUtil.i(getClass(), "finishAction", "flowId:" + wf.getId() + " " + wf.getTitle() + " before runDeliverScript: " + (System.currentTimeMillis() - tDebug) + " ms " + new Privilege().getUser(request));
+                        tDebug = System.currentTimeMillis();
+                    }
+
+                    runDeliverScript(request, privilege.getUser(request), wf, fdao, mad, script, false);
+
+                    if (cfg.getBooleanProperty("isDebugFlow")) {
+                        DebugUtil.i(getClass(), "finishAction","flowId:" + wf.getId() + " " + wf.getTitle() + " after runDeliverScript: " + (System.currentTimeMillis() - tDebug) + " ms " + new Privilege().getUser(request));
+                        tDebug = System.currentTimeMillis();
+                    }
 				}	
 				
 				// 回写表单处理开始
@@ -3060,6 +2881,11 @@ public class WorkflowMgr {
 						e.printStackTrace();
 					}
 				}
+
+                if (cfg.getBooleanProperty("isDebugFlow")) {
+                    DebugUtil.i(getClass(), "finishAction", "after 脚本、回写及发送节点上配置的消息: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                    tDebug = System.currentTimeMillis();
+                }
             }
         } else{
         	String str = LocalUtil.LoadString(request, "res.flow.Flow","faileSaveForm");
@@ -3069,7 +2895,10 @@ public class WorkflowMgr {
             // 解锁流程，这里直接保存时，会存在脏数据，因为之前WorkflowActionDb在save时，已经更新了flowString
             // 所以不能以WorkflowDb为参数，而改用flowId
             unlock(wf.getId());
-
+            if (cfg.getBooleanProperty("isDebugFlow")) {
+                DebugUtil.i(getClass(), "finishAction", "after unlock: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                tDebug = System.currentTimeMillis();
+            }
             /*
             // 自动存档
             String flag = myAction.getFlag();
@@ -3084,7 +2913,10 @@ public class WorkflowMgr {
             // 置消息中心中当前处理人当前流程的消息为已读
             MessageDb md = new MessageDb();
             md.setUserFlowReaded(mad.getUserName(), myActionId);
-
+            if (cfg.getBooleanProperty("isDebugFlow")) {
+                DebugUtil.i(getClass(), "finishAction", "after setUserFlowReaded: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                tDebug = System.currentTimeMillis();
+            }
             // 调试模式不发送消息及邮件
             if (!lf.isDebug() && myAction.isMsg()) {
 	            boolean isUseMsg = getFieldValue("isUseMsg").equals("true");
@@ -3093,7 +2925,6 @@ public class WorkflowMgr {
 	            // boolean isToMobile = getFieldValue("isToMobile").equals("true");
 	            boolean isToMobile = true;
 	
-	            Config cfg = new Config();
 	            boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
 	            String charset = Global.getSmtpCharset();
 	            cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -3217,6 +3048,10 @@ public class WorkflowMgr {
 	                    }
 	                }
 	            }
+            }
+            if (cfg.getBooleanProperty("isDebugFlow")) {
+                DebugUtil.i(getClass(), "finishAction", "after 发送流程提醒消息: " + (System.currentTimeMillis()-tDebug) + " ms " + new Privilege().getUser(request));
+                // tDebug = System.currentTimeMillis();
             }
         }
         return re;
@@ -4806,12 +4641,15 @@ public class WorkflowMgr {
         if (!wf.isStarted()) {
         	//errMsg += wf.getTitle() + " 尚未开始，不能批量提交！\r\n";
         	String str = LocalUtil.LoadString(request, "res.flow.Flow", "canNotSubmitBatchForNotStarted"); //%s 尚未开始，%s不能批量提交！\r\n
-        	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) );
+        	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) + "\\r");
         	return false;            	
         }
         
         Leaf lf = new Leaf();
         lf = lf.getLeaf(wf.getTypeCode());
+        if (lf==null) {
+            return false;
+        }
 
         WorkflowActionDb wa = new WorkflowActionDb();
         wa = wa.getWorkflowActionDb((int)mad.getActionId());
@@ -4844,7 +4682,7 @@ public class WorkflowMgr {
                 mad.save();
         	} else {
             	String str = LocalUtil.LoadString(request, "res.flow.Flow", "notSubmitForFreeFlow"); //%s 尚未开始，%s不能批量提交！\r\n
-            	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) );
+            	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) + "\r\n");
             	//errMsg += wf.getTitle() + " 是自由流程，不能批量提交！\r\n";
             	return false;            	
         	}
@@ -4852,7 +4690,7 @@ public class WorkflowMgr {
         	Vector v = wa.getLinkToActions();
         	if (v.size() >= 2) {
         		String str = LocalUtil.LoadString(request, "res.flow.Flow", "distributionFlow"); //%s 分支流程，%s不能批量提交！\r\n
-            	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) );
+            	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) + "\r\n");
             	return false;
         	}
             try {
@@ -4974,6 +4812,43 @@ public class WorkflowMgr {
         
         return flowId;
     }
+
+    /**
+     * 判断在流程处理时，节点上是否可以删除流程
+     * @param request
+     * @param wf
+     * @param wa
+     * @param mad
+     * @return
+     */
+    public static boolean canDelFlowOnAction(HttpServletRequest request, WorkflowDb wf, WorkflowActionDb wa, MyActionDb mad) {
+        boolean canDel = false;
+        if (wa.isStart==1 && wf.getStatus()==WorkflowDb.STATUS_NOT_STARTED) {
+            canDel = true;
+        }
+        else {
+            String flag = wa.getFlag();
+            // 如果设了允许删除标志位
+            if (flag.length()>=4 && flag.substring(3, 4).equals("1")) {
+                WorkflowPredefineDb wfp = new WorkflowPredefineDb();
+                wfp = wfp.getDefaultPredefineFlow(wf.getTypeCode());
+
+                // 如果是被退回
+                if (mad.getActionStatus()==WorkflowActionDb.STATE_RETURN) {
+                    if (wfp.isCanDelOnReturn()) {
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                else {
+                    canDel = true;
+                }
+            }
+        }
+        return canDel;
+    }
    
     /**
      * 删除流程
@@ -4981,11 +4856,49 @@ public class WorkflowMgr {
      * @param id
      * @return
      */
-    public boolean del(HttpServletRequest request, int id) {
+    public boolean del(HttpServletRequest request, int id) throws ErrMsgException {
     	WorkflowMgr wm = new WorkflowMgr();
     	WorkflowDb wf = wm.getWorkflowDb(id);
+        Privilege pvg = new Privilege();
+        String userName = pvg.getUser(request);
+
+        boolean canDel = false;
+        // 判断用户所处理的节点是否有删除权限
+        MyActionDb mad = new MyActionDb();
+        mad = mad.getMyActionDbOfFlowDoingByUser(id, userName);
+        if (mad!=null) {
+            WorkflowActionDb wa = new WorkflowActionDb();
+            wa = wa.getWorkflowActionDb((int)mad.getActionId());
+            canDel = canDelFlowOnAction(request, wf, wa, mad);
+        }
+
+        if (!canDel) {
+            LeafPriv lp = new LeafPriv(wf.getTypeCode());
+            canDel = lp.canUserExamine(pvg.getUser(request));
+        }
+        // 判断用户是否拥有管理权
+        if (!canDel) {
+            throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
+        }
     	// 20170508 fgf 逻辑删除
     	wf.setStatus(WorkflowDb.STATUS_DELETED);
-    	return wf.save();    	
+        wf.setDelUser(userName);
+        wf.setDelDate(new java.util.Date());
+    	boolean re = wf.save();
+
+        Leaf lf = new Leaf();
+        lf = lf.getLeaf(wf.getTypeCode());
+        com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
+        FormDb fd = new FormDb();
+        fd = fd.getFormDb(lf.getFormCode());
+        fdao = fdao.getFormDAO(wf.getId(), fd);
+        // 将表单置为被删除状态
+        fdao.setStatus(com.redmoon.oa.flow.FormDAO.STATUS_DELETED);
+        try {
+            fdao.save();
+        } catch (ErrMsgException e) {
+            e.printStackTrace();
+        }
+        return re;
     }
 }

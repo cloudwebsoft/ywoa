@@ -32,7 +32,7 @@ public class QObjectMgr {
         try {
             pck.doCheck(pc.getFormRule(formCode)); // "regist"));
         } catch (CheckErrException e) {
-            // Èç¹ûonError=exit£¬Ôò»áÅ×³öÒì³£
+            // å¦‚æžœonError=exitï¼Œåˆ™ä¼šæŠ›å‡ºå¼‚å¸¸
             throw new ErrMsgException(e.getMessage());
         }
 
@@ -51,7 +51,7 @@ public class QObjectMgr {
         try {
             pck.doCheck(pc.getFormRule(formCode)); // "regist"));
         } catch (CheckErrException e) {
-            // Èç¹ûonError=exit£¬Ôò»áÅ×³öÒì³£
+            // å¦‚æžœonError=exitï¼Œåˆ™ä¼šæŠ›å‡ºå¼‚å¸¸
             throw new ErrMsgException(e.getMessage());
         }
         boolean re = false;
@@ -88,7 +88,7 @@ public class QObjectMgr {
         try {
             pck.doCheck(pc.getFormRule(formCode)); // "regist"));
         } catch (CheckErrException e) {
-            // Èç¹ûonError=exit£¬Ôò»áÅ×³öÒì³£
+            // å¦‚æžœonError=exitï¼Œåˆ™ä¼šæŠ›å‡ºå¼‚å¸¸
             throw new ErrMsgException(e.getMessage());
         }
 
@@ -122,7 +122,7 @@ public class QObjectMgr {
         try {
             pck.doCheck(pc.getFormRule(formCode)); // "regist"));
         } catch (CheckErrException e) {
-            // Èç¹ûonError=exit£¬Ôò»áÅ×³öÒì³£
+            // å¦‚æžœonError=exitï¼Œåˆ™ä¼šæŠ›å‡ºå¼‚å¸¸
             throw new ErrMsgException(e.getMessage());
         }
         boolean re = false;

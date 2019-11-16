@@ -28,7 +28,7 @@
         if (op.equals("load"))
             nodeMode = "" + WorkflowActionDb.NODE_MODE_ROLE;
 
-// 节点在控件中的内部名称
+        // 节点在控件中的内部名称
         String internalName = ParamUtil.get(request, "internalName");
         if (internalName.equals("")) {
             out.print(SkinUtil.makeInfo(request, "请选择节点！"));
@@ -606,6 +606,15 @@
                     if (btnAgreeName) {
                         o("btnAgreeName").value = btnAgreeName;
                     }
+                    
+                    var isShowNextUsers = $(this).find("isShowNextUsers").text();
+                    // 判断是否为空，是为了向下兼容
+                    if (isShowNextUsers=="" || isShowNextUsers=="1") {
+                        o("isShowNextUsers").checked = true;
+                    }
+                    else {
+                        o("isShowNextUsers").checked = false;
+                    }
 
                     return false;
                 }
@@ -748,7 +757,15 @@
 <BODY onLoad="window_onload()">
 <table align="center" cellpadding="2" cellspacing="0" class="tabStyle_1" id="mainTable" style="padding:0px; margin:0px; margin-top:3px; width:100%">
     <tr>
-        <td height="22" colspan="2" align="center"><input name="okbtn" type="button" class="btn" onclick="ModifyAction(true)" value=" 保存 "/></td>
+        <td height="22" colspan="2" align="center"><input name="okbtn" type="button" class="btn" title="节点<%=internalName%>" onclick="ModifyAction(true)" value=" 保存 "/></td>
+    </tr>
+    <tr style="display: none">
+        <td>
+            节点标识
+        </td>
+        <td>
+            <%=internalName%>
+        </td>
     </tr>
     <tr>
         <td width="62" height="22">处理人员</td>
@@ -1004,7 +1021,7 @@
         </td>
     </tr>
     <tr>
-        <td height="22" colspan="2" align="left" bgcolor="#cff4fa">高级选项：</td>
+        <td height="22" colspan="2" align="left" bgcolor="#cff4fa">高级选项</td>
     </tr>
     <tr>
         <td height="22" align="left">分配策略</td>
@@ -1032,7 +1049,7 @@
     <tr id="trIgnoreType" title="当下一节点仅有一个用户时，用户之前处理过才可以跳过">
         <td height="22" align="left">跳过方式</td>
         <td height="22">
-            <select id="ignoreType" name="ignoreType">
+            <select id="ignoreType" name="ignoreType" title="如设为无用户时跳过，则未选择用户时，也将被跳过">
                 <option value="<%=WorkflowActionDb.IGNORE_TYPE_DEFAULT%>">无用户时跳过</option>
                 <option value="<%=WorkflowActionDb.IGNORE_TYPE_NOT%>">无用户时不允许跳过</option>
                 <option value="<%=WorkflowActionDb.IGNORE_TYPE_USER_ACCESSED_BEFORE%>">无用户或用户之前处理过则跳过</option>
@@ -1080,7 +1097,7 @@
     </tr>
     <tr>
         <td height="22" align="left">限定部门</td>
-        <td height="22"><textarea name="deptName" rows="3" readonly id="deptName" style="width: 180px;background-color:#eeeeee"></textarea>
+        <td height="22"><textarea name="deptName" rows="3" readonly id="deptName" title="只有限定部门内的人员才能处理" style="width: 180px;background-color:#eeeeee"></textarea>
             <a href="javascript:openWinDepts();">选择</a>
             <input name="dept" type="hidden" id="dept" value="<%=dept%>"/></td>
     </tr>
@@ -1146,10 +1163,22 @@
             <input id="btnAgreeName" name="btnAgreeName" title="提交按钮的名称，空则默认为同意"/>
         </td>
     </tr>
+    <tr>
+        <td height="22" align="left">审核人</td>
+        <td height="22">
+            <input id="isShowNextUsers" name="isShowNextUsers" title="是否显示下一节点上的审核人" value="1" type="checkbox" checked/>显示下一节点上的审核人
+        </td>
+    </tr>
     <tr style="<%=dis%>">
         <td height="22" align="left">流转页面</td>
         <td height="22">
             <input id="redirectUrl" name="redirectUrl" title="交办至下一节点后重定向的页面"/></td>
+    </tr>
+    <tr>
+        <td height="22" align="left">内部名称</td>
+        <td height="22">
+            <input id="internalName" value="<%=internalName%>" style="width:98%" readonly onfocus="this.select()" title="节点的内部名称，用于二次开发"/>
+        </td>
     </tr>
     <tr id="trProp">
         <td height="22" align="left">子流程类型</td>
@@ -1323,7 +1352,7 @@
         });
 
         // 新增节点
-        var $elem = $($.parseXML("<action internalName='<%=internalName%>'><property>" + str + "</property><btnAgreeName>" + o("btnAgreeName").value + "</btnAgreeName><redirectUrl>" + o("redirectUrl").value + "</redirectUrl><nodeScript>" + o("nodeScript").value + "</nodeScript><isModuleFilter>" + (o("isModuleFilter").checked ? o("isModuleFilter").value : "") + "</isModuleFilter><branchMode>" + o("branchMode").value + "</branchMode></action>"));
+        var $elem = $($.parseXML("<action internalName='<%=internalName%>'><property>" + str + "</property><btnAgreeName>" + o("btnAgreeName").value + "</btnAgreeName><isShowNextUsers>" + (o("isShowNextUsers").checked?o("isShowNextUsers").value:0) + "</isShowNextUsers><redirectUrl>" + o("redirectUrl").value + "</redirectUrl><nodeScript>" + o("nodeScript").value + "</nodeScript><isModuleFilter>" + (o("isModuleFilter").checked ? o("isModuleFilter").value : "") + "</isModuleFilter><branchMode>" + o("branchMode").value + "</branchMode></action>"));
         var newNode = null;
         if (typeof document.importNode == 'function') {
             newNode = document.importNode($elem.find('action').get(0), true);

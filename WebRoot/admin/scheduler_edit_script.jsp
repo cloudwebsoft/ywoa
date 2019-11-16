@@ -10,111 +10,91 @@
 				 com.redmoon.oa.ui.*,
 				 com.cloudwebsoft.framework.base.*"
 %>
+<%@ page import="org.json.JSONObject" %>
+<jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
+<%
+    String priv="admin";
+    if (!privilege.isUserPrivValid(request,priv)) {
+        out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+        return;
+    }
+    
+    String op = ParamUtil.get(request, "op");
+    
+    int id = ParamUtil.getInt(request, "id");
+    
+    JobUnitDb ju = new JobUnitDb();
+    ju = (JobUnitDb)ju.getQObjectDb(new Integer(id));
+    if (op.equals("edit")) {
+        JSONObject json = new JSONObject();
+        QObjectMgr qom = new QObjectMgr();
+        try {
+            if (qom.save(request, ju, "scheduler_edit")) {
+                SchedulerManager sm = SchedulerManager.getInstance();
+                sm.shutdown(); // 结束调度
+                sm.startWhenIsShutdown(); // 重启调度
+                
+                json.put("ret", 1);
+                json.put("msg", "操作成功");
+            }
+            else {
+                json.put("ret", 0);
+                json.put("msg", "操作失败");
+            }
+        }
+        catch (ErrMsgException e) {
+            json.put("ret", 0);
+            json.put("msg", e.getMessage());
+        }
+        out.print(json.toString());
+        return;
+    }
+    
+    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <style type="text/css" media="screen">
-/*
-    #editor { 
-        position: absolute;
-        top: 64px;
-        right: 0;
-        bottom: 0;
-        left: 0;
-    }
-*/
 	#editor { 
 		padding:10px;
 		text-align:left;
         height:500px;
     }
 </style>
-
 <script src="../inc/common.js"></script>
 <script type="text/javascript" src="../js/jquery1.7.2.min.js"></script>
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
+<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet"	type="text/css" media="screen" />
 <script src="../js/ace-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
-
+<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
+<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
 <script>
-function findObj(theObj, theDoc)
-{
-  var p, i, foundObj;
-  
-  if(!theDoc) theDoc = document;
-  if( (p = theObj.indexOf("?")) > 0 && parent.frames.length)
-  {
-    theDoc = parent.frames[theObj.substring(p+1)].document;
-    theObj = theObj.substring(0,p);
-  }
-  if(!(foundObj = theDoc[theObj]) && theDoc.all) foundObj = theDoc.all[theObj];
-  for (i=0; !foundObj && i < theDoc.forms.length; i++) 
-    foundObj = theDoc.forms[i][theObj];
-  for(i=0; !foundObj && theDoc.layers && i < theDoc.layers.length; i++) 
-    foundObj = findObj(theObj,theDoc.layers[i].document);
-  if(!foundObj && document.getElementById) foundObj = document.getElementById(theObj);
-  
-  return foundObj;
-}
+    function SelectDateTime(objName) {
+        var dt = openWin("../util/calendar/time.htm", "266px", "185px");
+    }
 
-function SelectDateTime(objName) {
-    var dt = openWin("../util/calendar/time.htm","266px","185px");//showModalDialog("../util/calendar/time.htm", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
-    
-}
-function sel(dt) {
-    if (dt!=null)
-        findObj("time").value = dt;
-}
-function openWin(url,width,height)
-{
-  var newwin=window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width="+width+",height="+height);
-  return newwin;
-}
+    function sel(dt) {
+        if (dt != null)
+            o("time").value = dt;
+    }
 
-function trimOptionText(strValue) 
-{
-	// 注意option中有全角的空格，所以不直接用trim
-	var r = strValue.replace(/^　*|\s*|\s*$/g,"");
-	return r;
-}
+    function openWin(url, width, height) {
+        var newwin = window.open(url, "_blank", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=" + width + ",height=" + height);
+        return newwin;
+    }
+
+    function trimOptionText(strValue) {
+        // 注意option中有全角的空格，所以不直接用trim
+        var r = strValue.replace(/^　*|\s*|\s*$/g, "");
+        return r;
+    }
 </script>
-<jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
-<%
-String priv="admin";
-if (!privilege.isUserPrivValid(request,priv)) {
-    out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-	return;
-}
-
-String op = ParamUtil.get(request, "op");
-
-int id = ParamUtil.getInt(request, "id");
-
-JobUnitDb ju = new JobUnitDb();
-ju = (JobUnitDb)ju.getQObjectDb(new Integer(id));
-if (op.equals("edit")) {
-	QObjectMgr qom = new QObjectMgr();
-	try {
-	if (qom.save(request, ju, "scheduler_edit")) {
-		SchedulerManager sm = SchedulerManager.getInstance();
-		sm.shutdown(); // 结束调度
-		sm.startWhenIsShutdown(); // 重启调度			
-
-		out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "scheduler_edit_script.jsp?id=" + id));
-	}
-	else
-		out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.Alert_Back(e.getMessage()));
-	}
-	return;
-}
-
-com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-%>
 </head>
 <body>
 <%@ include file="scheduler_inc_menu_top.jsp"%>
@@ -131,12 +111,11 @@ com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
     &nbsp;
     <span id="spanKind">
     类型：
-	<input id="kind" name="kind" value="0" type="radio" checked />按日期
-	<input id="kind" name="kind" value="1" type="radio" />按星期
-	<input id="kind" name="kind" value="2" type="radio" />按间隔
-	<input id="kind" name="kind" value="3" type="radio" />按cron表达式
-    </span>         
-        
+	<input id="kind0" name="kind" value="0" type="radio" checked />按日期
+	<input id="kind1" name="kind" value="1" type="radio" />按星期
+	<input id="kind2" name="kind" value="2" type="radio" />按间隔
+	<input id="kind3" name="kind" value="3" type="radio" />按cron表达式
+    </span>
       </td>
     </tr>
     <tr>
@@ -203,7 +182,6 @@ if (intervalType.equals("")) {
         星期五
         <input name="weekDay" type="checkbox" value="7" />
         星期六
-
 		<%
         String[] w = ary[5].split(",");
         for (int i=0; i<w.length; i++) {
@@ -297,7 +275,7 @@ editor.renderer.$cursorLayer.element.style.opacity=0;
 
 function form1_onsubmit() {
 	if (o("job_name").value=="") {
-		alert("名称不能为空！");
+        jAlert("名称不能为空！", "提示");
 		o("job_name").focus();
 		return false;
 	}
@@ -332,17 +310,17 @@ function form1_onsubmit() {
 		if (dayOfMonth=="")
 			dayOfMonth = "?";
 		var cron = ary[2] + " " + ary[1] + " " + ary[0] + " " + dayOfMonth + " * ?";
-		form1.cron.value = cron;
+		o("cron").value = cron;
 	}
 	else if (kind=="1") {
 		if (weekDay=="") {
-			alert("请选择星期几！");
+            jAlert("请选择星期几！", "提示");
 			return false;
 		}
 		if (dayOfMonth=="")
 			dayOfMonth = "?";
 		var cron = ary[2] + " " + ary[1] + " " + ary[0] + " ? * " + weekDay;
-		form1.cron.value = cron;
+		o("cron").value = cron;
 	}
 	else if (kind=="2") {
 		var type = getRadioValue("intervalType");
@@ -369,17 +347,39 @@ function form1_onsubmit() {
 		else if (type=="d") {
 			cron = "* * * 0/" + val + " * ?";
 		}
-		form1.cron.value = cron;
+		o("cron").value = cron;
 	}
 	else if (kind=="3") {
 		if (o("mycron").value=="") {
-			alert("请输入cron表达式！");
+            jAlert("请输入cron表达式！", "提示");
 			o("mycron").focus();
 			return false;
 		}
 		o("cron").value = o("mycron").value;
 	}
-	form1.data_map.value = editor.getValue();
+	o("data_map").value = editor.getValue();
+
+    $.ajax({
+        url: "scheduler_edit_script.jsp?op=edit",
+        type: "post",
+        dataType: "json",
+        contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+        data: $('#form1').serialize(),
+        beforeSend: function (XMLHttpRequest) {
+            $('body').showLoading();
+        },
+        success: function(data, status){
+            jAlert(data.msg, "提示");
+        },
+        complete: function (XMLHttpRequest, status) {
+            $('body').hideLoading();
+        },
+        error: function(XMLHttpRequest, textStatus){
+            alert(XMLHttpRequest.responseText);
+        }
+    });
+	
+	return false;
 }
 
 $(function() {

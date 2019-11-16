@@ -31,7 +31,7 @@
 <TABLE align="center" class="tabStyle_1 percent60" style="margin-top: 20px">
     <TBODY>
       <TR>
-        <TD align="left" class="tabStyle_1_title">激活</TD>
+        <TD align="left" class="tabStyle_1_title">激活控件</TD>
       </TR>
       <TR>
         <td align="center">
@@ -47,15 +47,21 @@
                 <param name="BgColorBarPre" value="(200,200,200)">
                 <param name="FilePath" value="">
                 <param name="Relative" value="2">
-                <!--上传后的文件需放在服务器上的路径-->
+                <!--<param name="VirtualPath" value="<%=Global.virtualPath%>">-->
+
                 <param name="Server" value="www.xiaocaicloud.com">
                 <param name="Port" value="443">
-                <param name="VirtualPath" value="<%=Global.virtualPath%>">
                 <param name="PostScript" value="public/license/onlineActivate.do">
+
+<%--                <param name="Server" value="localhost">
+                <param name="Port" value="8899">
+                <param name="PostScript" value="oa_ide/public/license/onlineActivate.do">
+                --%>
+
+                <param name="InternetFlag" value=""> <!--webedit控件中自动根据Server判断是否为SSL链接-->
                 <param name="PostScriptDdxc" value="">
                 <param name="SegmentLen" value="204800">
                 <param name="BasePath" value="">
-                <param name="InternetFlag" value="">
                 <param name="Organization" value="<%=license.getCompany()%>" />
                 <param name="Key" value="<%=license.getKey()%>" />
             </object>
@@ -63,10 +69,16 @@
       </TR>
       <TR>
         <TD height="30" colspan="2" align="center">
-            <input type="button" class="btn" value="激活" onclick="webedit.Activate();">
+            <input type="button" class="btn" value="激活" onclick="activate()">
             &nbsp;&nbsp;&nbsp;&nbsp;
             <input type="button" class="btn" value="返回" onclick="window.history.back();">
         </TD>
+      </TR>
+      <TR>
+          <TD height="30" colspan="2" style="line-height: 1.5">
+              1、点击激活按钮前建议先清除浏览器缓存<br/>
+              2、流程设计器控件和web在线编辑控件如未激活，会显示为试用版，并有弹窗提示
+          </TD>
       </TR>
       <TR id="trOffline" style="display:none">
           <TD height="30" colspan="2" align="center">
@@ -88,6 +100,14 @@
     </TBODY>
 </TABLE>
 <script>
+    function activate() {
+        try {
+            webedit.Activate();
+        }
+        catch (e) {
+            alert("请安装新版客户端！");
+        }
+    }
     function ShowMsg(msg) {
         // console.log(msg);
         if (msg=="+") {

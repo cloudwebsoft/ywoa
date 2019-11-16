@@ -160,8 +160,7 @@ public class AppInit implements Servlet {
 			String sql = "update sms_send_record set msg_flag='0' where is_sended=0 and msg_id=-1 and sendtime>? and send_count<? and is_timing=0";
 			JdbcTemplate jt = new JdbcTemplate();
 			try {
-				int r = jt.executeUpdate(sql, new Object[] { d,
-						new Integer(sendMaxCountOnFail) });
+				int r = jt.executeUpdate(sql, new Object[] { d, new Integer(sendMaxCountOnFail) });
 				System.out.println("AppInit: restore sms " + r);
 			} catch (SQLException ex) {
 				ex.printStackTrace();
@@ -240,8 +239,7 @@ public class AppInit implements Servlet {
 					isRegisted = "0";
 				} else {
 					isRegisted = "1";
-					oacfg.put("firtstUserAfterReg", DateUtil.format(new Date(),
-							"yyyy-mm-dd"));
+					oacfg.put("firtstUserAfterReg", DateUtil.format(new Date(), "yyyy-mm-dd"));
 				}
 				SpringHelper.getBean(IUpgradeService.class).sendFirstUseInfo(
 						isRegisted, customer_id, oacfg.get("version"));
@@ -252,16 +250,12 @@ public class AppInit implements Servlet {
 						&& !customer_id.equals("ywrj")
 						&& !customer_id.equals("yimihome")) {
 					isRegisted = "1";
-					oacfg.put("firtstUserAfterReg", DateUtil.format(new Date(),
-							"yyyy-mm-dd"));
-					SpringHelper.getBean(IUpgradeService.class)
-							.sendFirstUseInfo(isRegisted, customer_id,
-									oacfg.get("version"));
+					oacfg.put("firtstUserAfterReg", DateUtil.format(new Date(), "yyyy-mm-dd"));
+					SpringHelper.getBean(IUpgradeService.class).sendFirstUseInfo(isRegisted, customer_id, oacfg.get("version"));
 				}
 			}
 		} catch (Exception e) {
-			com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(
-					StrUtil.trace(e));
+			com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(StrUtil.trace(e));
 		}
 		
 		// OEM工作调度
@@ -275,31 +269,30 @@ public class AppInit implements Servlet {
 		}*/
 		
 		//超级狗校验
-		try {
+/*		try {
 			CheckSuperKey csk = CheckSuperKey.getInstance();
 			int status = csk.checkKey();
-			
+
 			//验证失败
-			if (status != DogStatus.DOG_STATUS_OK){
-				oacfg.put("systemIsOpen", "false");
-				oacfg.put("systemStatus", "请使用正版授权系统");
-				
+			if (status != DogStatus.DOG_STATUS_OK) {
+				// oacfg.put("systemIsOpen", "false");
+				// oacfg.put("systemStatus", "请使用正版授权系统");
 			}else if(oacfg.getBooleanProperty("oem_filesEncrypt_validate")){
 				if (!oacfg.getBooleanProperty("systemIsOpen")){
 					oacfg.put("systemIsOpen", "true");
 					oacfg.put("systemStatus", "系统正在维护中.....");
 				}
 			}
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			com.cloudwebsoft.framework.util.LogUtil.getLog(getClass())
 			.error(StrUtil.trace(e));
 			oacfg.put("systemIsOpen", "false");
 			oacfg.put("systemStatus", "请使用正版授权系统");
-		}
+		}*/
 		
-		// 除非一米专用的demo许可证
+		// 除非专用的demo许可证
 		if (customer_id != null && !customer_id.equals("yimi_demo")) {
 			// 删除demo_login.jsp
 			File file = new File (Global.getAppPath() + "/public/demo_login.jsp");

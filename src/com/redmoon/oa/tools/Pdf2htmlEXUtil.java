@@ -124,7 +124,7 @@ public class Pdf2htmlEXUtil {
     }
     
     public synchronized static boolean createPreviewHTML(String previewfile) {
-    	// 专业版不提供生成预鉴功能
+    	// 专业版不提供生成预览功能
     	// if (License.getInstance().getVersionType().equals(License.VERSION_PROFESSIONAL))
     	// if (true)
     	// 	return false;

@@ -110,7 +110,15 @@ if (params != null && !params.equals("")) {
 		        temp = (JSONObject)nestMaps.get(i);
 		        NestFieldMaping nfm = new NestFieldMaping();
 		        nfm.setSourceFieldCode(temp.getString("sourceField"));
-		        nfm.setSourceFieldName(sourceFd.getFieldTitle(temp.getString("sourceField")));
+		        if ("id".equals(temp.getString("sourceField"))) {
+		            nfm.setSourceFieldName("ID");
+                }
+		        else if ("cws_id".equals(temp.getString("sourceField"))) {
+		            nfm.setSourceFieldName("cws_id");
+                }
+		        else {
+                    nfm.setSourceFieldName(sourceFd.getFieldTitle(temp.getString("sourceField")));
+                }
 		        nfm.setDestFieldCode(temp.getString("destField"));
 		        nfm.setDestFieldName(openerFd.getFieldTitle(temp.getString("destField")));
 		        nestList.add(nfm);
@@ -178,13 +186,17 @@ function doGetFieldOptions(response) {
 	// alert(rsp);
 	$("#fieldRelated").empty();
 	
-	rsp += "<option value='cws_id'>cws_id(关联主模块ID)</option>";
+	rsp = "<option value=''></option>" + rsp;
+
+    rsp += "<option value='cws_id'>cws_id(关联主模块ID)</option>";
+    rsp += "<option value='id'>ID(记录ID)</option>";
 	
 	$("#fieldRelated").append(rsp);
-	
+	$('#fieldRelated').select2();
+
 	$("#sourceField").empty();
 	$("#sourceField").append(rsp);
-	
+	$('#sourceField').select2();
 }
 
 var sources = [];
@@ -273,19 +285,9 @@ else {
 					jsonStr += ",{\"id\":\"" + msd.getString("code") + "\", \"name\":\"" + msd.getString("name") + "\"}";
         %>		
             	<option value="<%=msd.getString("code")%>"><%=msd.getString("name")%></option>	
-        <%	}
-			
-			/*
-            FormDb fd = new FormDb();
-            String sql = "select code from " + fd.getTableName() + " order by orders asc";	
-            Iterator ir = fd.list(sql).iterator();
-            while (ir.hasNext()) {
-                FormDb fdb = (FormDb) ir.next();
-        %>		
-            <option value="<%=fdb.getCode()%>"><%=fdb.getName()%></option>	
-        <%	}
-			*/
-			%>
+        <%
+			}
+        %>
         </select>
         <!--中的字段-->
           <span id="spanField"></span>
@@ -317,6 +319,7 @@ else {
                     <img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>&nbsp;<a href="javascript:;" onclick="openCondition()">配置条件</a>&nbsp;
                     <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=(isComb && !filter.equals(""))?"":"none" %>;" id="imgId"/>
                     <textarea id="condition" name="condition" style="display:none" cols="80" rows="5"><%=filter %></textarea>
+                    &nbsp;&nbsp;（如果配置了条件，则根据配置条件过滤，如果未配置条件，则根据模块的条件过滤）
                 </div>
            </div>
            <div class="tab-pane fade <%=cssScript %>" id="script">
@@ -349,6 +352,7 @@ else {
               </select>              
               </div>
               <div style="float:left">
+              &nbsp;
               <select id="token" name="token">
               <option value="=" selected="selected">等于</option>      
               <option value="&gt;=">大于等于</option>
@@ -373,7 +377,7 @@ else {
               %>
       			  <!--<option value="parentId">主模块ID(用于从模块表单)</option>-->
               </select>
-                     
+              
               <input type="button" class="btn btn-default" value="添加" onclick="addCond()" />
               </div>      
            </div>
@@ -382,6 +386,7 @@ else {
             var kind = "<%=kind%>";
         
             $(function(){
+			  $('#fieldOpener').select2();
               $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
               kind = $(e.target).attr("kind");
               if (kind=="script") {
@@ -397,9 +402,9 @@ else {
     <tr>
       <td height="22" colspan="4" align="left">
       	模式：
-      <input id="mode" name="mode" value="1" type="radio" <%=mode==1?"checked":""%> />
+      <input id="modeWin" name="mode" value="1" type="radio" <%=mode==1?"checked":""%> />
      	 窗口选择&nbsp;&nbsp;
-      <input id="mode" name="mode" value="0" type="radio" <%=mode==0?"checked":""%> />
+      <input id="modeSelect" name="mode" value="0" type="radio" <%=mode==0?"checked":""%> />
       	下拉选择&nbsp;&nbsp;
       <span id="spanModeDropdown" style="display:none">
       	<input title="可以选择多个记录" id="isMulti" name="isMulti" type="checkbox" value="1"/>
@@ -417,7 +422,7 @@ else {
         弹窗选择
       </span>
       &nbsp;&nbsp;&nbsp;&nbsp;
-      请求参数：<input id="requestParam" name="requestParam" title="增加记录时从request请求中接收参数" value="<%=requestParam%>" />
+      request请求参数名称：<input id="requestParam" name="requestParam" title="增加记录时从request请求中接收的参数名称" value="<%=requestParam%>" />
       <script>
 	  $(function() {
 	  	  var mode = $('input:radio[name=mode]:checked').val();
@@ -472,6 +477,7 @@ else {
       </select></td>
       <td width="18%" align="left">
 	  <select id="destField" name="destField">
+          <option value=""></option>
       <%
 	  ir = fdOpener.getFields().iterator();
 	  String json = "";
@@ -481,12 +487,15 @@ else {
           <option value="<%=ff.getName()%>"><%=ff.getTitle()%></option>
         <%
 		if (json.equals(""))
-			json = "{'id':'" + ff.getName() + "', 'name':'" + ff.getTitle() + "', 'type':'" + ff.getType() + "', 'macroType':'" + ff.getMacroType() + "', 'defaultValue':'" + StrUtil.escape(ff.getDefaultValue()) + "'}";
+			json = "{'id':'" + ff.getName() + "', 'name':'" + StrUtil.HtmlEncode(ff.getTitle()) + "', 'type':'" + ff.getType() + "', 'macroType':'" + ff.getMacroType() + "', 'defaultValue':'" + StrUtil.escape(ff.getDefaultValue()) + "'}";
 		else
-			json += ",{'id':'" + ff.getName() + "', 'name':'" + ff.getTitle() + "', 'type':'" + ff.getType() + "', 'macroType':'" + ff.getMacroType() + "', 'defaultValue':'" + StrUtil.escape(ff.getDefaultValue()) + "'}";		  
+			json += ",{'id':'" + ff.getName() + "', 'name':'" + StrUtil.HtmlEncode(ff.getTitle()) + "', 'type':'" + ff.getType() + "', 'macroType':'" + ff.getMacroType() + "', 'defaultValue':'" + StrUtil.escape(ff.getDefaultValue()) + "'}";
 	  }
 	  %>
       </select>    
+      <script>
+	  $('#destField').select2();
+	  </script>
       </td>
       <td width="57%" height="22" align="left"><input type="button" class="btn btn-default" value="添加" onclick="addMap()" /></td>
       <%
@@ -508,14 +517,14 @@ else {
 var dests = [<%=json%>];
 
 function addMap() {
-	if (sourceField.value=="" || destField.value=="") {
+	if ($('#sourceField').val()=="" || $('#destField').val()=="") {
 		alert("请选择表单域！");
 		return;
 	}
 
 	// 如果类型匹配
-	if (isTypeMatched(sourceField.value, destField.value, sources, dests)) {
-		var trId = "tr_" + sourceField.value + "_" + destField.value;
+	if (isTypeMatched($('#sourceField').val(), $('#destField').val(), sources, dests)) {
+		var trId = "tr_" + $('#sourceField').val() + "_" + $('#destField').val();
 		// 检测trId是否已存在
 		var isFound = false;
 		$("#mapTable tr").each(function(k){
@@ -532,7 +541,7 @@ function addMap() {
 		
 		var isNestTable = false;
 		for (var one in sources) {
-			if (sources[one].id==sourceField.value) {
+			if (sources[one].id==$('#sourceField').val()) {
 				if (sources[one].macroType=="nest_table") {
 					isNestTable = true;
 					break;
@@ -540,20 +549,22 @@ function addMap() {
 			}
 		}
 		
-		var tr = "<tr id='" + trId + "' sourceField='" + sourceField.value + "' destField='" + destField.value + "'>";
+		var tr = "<tr id='" + trId + "' sourceField='" + $('#sourceField').val() + "' destField='" + $('#destField').val() + "'>";
 		tr += "<td>字段</td>";
-		tr += "<td>" + sourceField.options[sourceField.selectedIndex].text + "</td>";
-		tr += "<td>" + destField.options[destField.selectedIndex].text + "</td>";
+		tr += "<td>" + $('#sourceField option:selected').text() + "</td>";
+		tr += "<td>" + $('#destField option:selected').text() + "</td>";
 		tr += "<td>";
 		tr += "<a href='javascript:;' onclick=\"$('#" + trId + "').remove()\">删除</a></td>";
 		tr += "</tr>";
 		$("#mapTable tr:last").after(tr);
+
+		// 设置select2初始值，单选、多选均可用
+        $("#sourceField").val(['']).trigger('change');
+        $("#destField").val(['']).trigger('change');
 	}
 	else
 		; // alert("类型不匹配，无法映射！");
-	
-	sourceField.value = '';
-	destField.value = '';
+
 }
 
 // 检查类型是否匹配
@@ -765,7 +776,7 @@ var onMessage = function(e) {
 		    "type":"openerScript",
 		    "version":"<%=version%>",
 		    "spVersion":"<%=spVersion%>",
-		    "scene":"module.field.sel",
+		    "scene":"module.moduleFieldSelect",
 		    "data":getScript()
 	    }
 		ideWin.leftFrame.postMessage(data, '*');

@@ -10,10 +10,14 @@
 <%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<title>公文模板管理</title>
-<script src="../inc/common.js"></script>
-<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>公文模板管理</title>
+<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+<script src="../inc/common.js"></script>
+<script type="text/javascript" src="../js/jquery1.7.2.min.js"></script>
+<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
 </head>
 <body>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -30,33 +34,33 @@ String op = ParamUtil.get(request, "op");
 if (op.equals("add")) {
 	try {
 		if (lm.add(application, request)) {
-			out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_doc_template_list.jsp"));
+			out.print(StrUtil.jAlert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "提示", "flow_doc_template_list.jsp"));
 			return;
 		}
 	}
 	catch (ErrMsgException e) {
 	e.printStackTrace();
-		out.print(StrUtil.Alert_Back(e.getMessage()));
+		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
 	}
 	return;
 }
 else if (op.equals("edit")) {
 	try {
 		if (lm.modify(application, request)) {
-			out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_doc_template_list.jsp"));
+			out.print(StrUtil.jAlert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "提示", "flow_doc_template_list.jsp"));
 		}
 	}
 	catch (ErrMsgException e) {
-		out.print(StrUtil.Alert_Back(e.getMessage()));
+		out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
 	}
 	return;
 }
 else if (op.equals("del")) {
 	if (lm.del(application, request)) {
-		out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_doc_template_list.jsp"));
+		out.print(StrUtil.jAlert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "提示", "flow_doc_template_list.jsp"));
 	}
 	else {
-		out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_del")));
+		out.print(StrUtil.jAlert_Back(SkinUtil.LoadString(request, "info_op_del"), "提示"));
 	}
 	return;
 }
@@ -130,12 +134,13 @@ String querystr = "action=" + action + "&title=" + StrUtil.UrlEncode(title);
 <table cellSpacing="0" cellPadding="3" width="95%" align="center" class="tabStyle_1">
   <thead>
     <tr>
+        <td width="3%" class="tabStyle_1_title">ID</td>
       <td width="3%" class="tabStyle_1_title">编号</td>
-      <td width="17%" class="tabStyle_1_title">名称</td>
+      <td width="13%" class="tabStyle_1_title">名称</td>
       <td width="14%" class="tabStyle_1_title">文件</td>
-	  <td width="32%" class="tabStyle_1_title">部门</td>
-	  <td width="18%" class="tabStyle_1_title">单位</td>
-	  <td class="tabStyle_1_title"><lt:Label key="op"/></td>
+	  <td width="27%" class="tabStyle_1_title">部门</td>
+	  <td width="10%" class="tabStyle_1_title">单位</td>
+	  <td class="tabStyle_1_title" width="16%"><lt:Label key="op"/></td>
     </tr>
   </thead>
   <tbody>
@@ -162,6 +167,9 @@ while (ir.hasNext()) {
 	%>
   <form name="form<%=ld.getId()%>" action="?op=edit" method="post" enctype="MULTIPART/FORM-DATA">
     <tr>
+        <td align="center">
+            <%=ld.getId()%>
+        </td>
       <td align="center">
         <input name="sort" value="<%=ld.getSort()%>" size="3" />
       </td>
@@ -170,8 +178,8 @@ while (ir.hasNext()) {
         <input name="filename" type="file" style="width:150px" size="10">		</td>
       <td class="highlight">
         <input type="hidden" name="depts" value="<%=depts%>">
-        <textarea name="deptNames" cols="45" rows="5" readOnly wrap="yes" id="deptNames"><%=deptNames%></textarea>
-        <input class="btn" title="添加部门" onClick="openWinDepts(<%=ld.getId()%>)" type="button" value="选择部门">
+        <textarea name="deptNames" style="width:300px; height:40px" readOnly wrap="yes" id="deptNames"><%=deptNames%></textarea>
+        <input class="btn" title="添加部门" onClick="openWinDepts(<%=ld.getId()%>)" type="button" value="选择">
       </td>
       <td class="highlight">
       <%if (ld.getUnitCode().equals(Leaf.UNIT_CODE_PUBLIC)) {%>
@@ -186,13 +194,18 @@ while (ir.hasNext()) {
 	  &nbsp;&nbsp;
       <a onClick="if (!confirm('<lt:Label key="confirm_del"/>')) return false" href="flow_doc_template_list.jsp?op=del&id=<%=ld.getId()%>&<%=querystr%>&CPages=<%=curpage%>"><lt:Label key="op_del"/></a>
 	  &nbsp;&nbsp;
-      <a href="javascript:void(0);" onclick="editTemplate(<%=ld.getId()%>)">编辑文件</a>
+      <a href="javascript:void(0);" onclick="editTemplate(<%=ld.getId()%>)">编辑模板</a>
+      &nbsp;&nbsp;
+      <a href="javascript:void(0);" onclick="openWin('flow_doc_template_getfile.jsp?id=<%=ld.getId()%>')">下载</a>
 	  <input name="id" value="<%=ld.getId()%>" type="hidden"></td>
     </tr>
   </form>
 <%}%>
   <form id="form0" name="form0" action="flow_doc_template_list.jsp?op=add" method="post" enctype="multipart/form-data">
     <tr class="row">
+        <td align="center">
+
+        </td>
       <td align="center">
         <input name="sort" value="0" size="3" />
       </td>
@@ -202,8 +215,8 @@ while (ir.hasNext()) {
       </td>
       <td><span class="highlight">
         <input type="hidden" name="depts" />
-        <textarea name="deptNames" cols="45" rows="5" readonly wrap="yes" id="deptNames"></textarea>
-        <input class="btn" title="添加部门" onclick="openWinDepts(0)" type="button" value="选择部门" />
+        <textarea name="deptNames" style="width:300px; height:40px" readonly wrap="yes" id="deptNames"></textarea>
+        <input class="btn" title="添加部门" onclick="openWinDepts(0)" type="button" value="选择" />
       </span></td>
       <td>
       <style>
@@ -298,7 +311,7 @@ while (ir.hasNext()) {
 	</form>
     </tr>
     <tr align="center" class="row" style="BACKGROUND-COLOR: #ffffff">
-      <td colspan="6" align="left" style="PADDING-LEFT: 10px">
+      <td colspan="7" align="left" style="PADDING-LEFT: 10px">
 	  注：<br />
 	  1、如果编辑时上传了文件，则会替换原来的文件<br />
 	  2、如果部门为空，则表示对所有人都可见</td>

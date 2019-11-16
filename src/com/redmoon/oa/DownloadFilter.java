@@ -8,6 +8,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.web.Global;
 
 import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.sys.DebugUtil;
 
 public class DownloadFilter
         implements Filter {
@@ -82,7 +83,7 @@ public class DownloadFilter
                             path.indexOf("desktop") != -1 ||
                             path.indexOf("admin/ide_left.jsp") != -1 ||
                             path.indexOf("reportServlet") != -1 ||
-                            path.indexOf("/yimi_userconsole") != -1 ||//过滤一米精灵后台配置
+                            path.indexOf("/yimi_userconsole") != -1 ||//过滤精灵后台配置
                             path.indexOf(".txt") != -1 || // 企业微信域名归属验证，如：WW_verify_***.txt
                             path.indexOf("wiki_export_doc") != -1 ||
                             path.indexOf("exam") != -1 ||
@@ -119,6 +120,7 @@ public class DownloadFilter
                                     path.indexOf("flow_do") != -1 ||
                                     path.indexOf("flow_action_modify") != -1 || // 用于选择用户
                                     path.indexOf("module_show") != -1 || // 查看嵌套表内容
+                                    path.indexOf("doFormula") !=-1 || // 公式
                                     path.indexOf("nest_") != -1) { // 嵌套表
                             } else if (path.indexOf("flow_") != -1 ||
                                     path.indexOf("oa.jsp") != -1 ||
@@ -131,7 +133,7 @@ public class DownloadFilter
                                     path.indexOf("visual") != -1
                             ) {
                                 try {
-                                    com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("tester invalid path=" + path);
+                                    DebugUtil.e(getClass(), "doFilter", "tester invalid path=" + path);
                                     privilege.logout(req1, (HttpServletResponse) res);
                                 } catch (ErrMsgException e) {
                                     // TODO Auto-generated catch block

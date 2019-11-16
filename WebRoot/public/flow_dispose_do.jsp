@@ -268,8 +268,18 @@ else if (op.equals("saveformvalue")) {
 	return;	
 }
 else if(op.equals("del")){
-	boolean re = wfm.del(request, flowId);
+	boolean re = false;
 	JSONObject json = new JSONObject();
+	try {
+		re = wfm.del(request, flowId);
+	} catch (ErrMsgException e) {
+		// e.printStackTrace();
+		json.put("res", "-1");
+		json.put("msg", e.getMessage());
+		json.put("op", "del");
+		out.print(json);
+		return;
+	}
 	if (re) {
 		json.put("res", "0");
 		json.put("op", "del");

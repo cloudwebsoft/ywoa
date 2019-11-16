@@ -39,7 +39,7 @@ public abstract class AbstractForm {
     }
 
     /**
-     * ±¨¸æ´íÎó
+     * æŠ¥å‘Šé”™è¯¯
      * @throws ErrMsgException
      */
     public void report() throws ErrMsgException {
@@ -48,12 +48,12 @@ public abstract class AbstractForm {
     }
 
     /**
-     * ¼ì²é×Ö·û´®µÄ³¤¶È
+     * æ£€æŸ¥å­—ç¬¦ä¸²çš„é•¿åº¦
      * @param str String
      * @param low int
      * @param high int
      * @param isequal boolean
-     * @return boolean ÅĞ¶ÏÊÇ·ñµÈÓÚ
+     * @return boolean åˆ¤æ–­æ˜¯å¦ç­‰äº
      */
     public boolean chkStrLen(String str, int low, int high, boolean isequal) {
         if (str==null)

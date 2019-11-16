@@ -294,26 +294,6 @@ if (document.<%=formName%>) {
 		*/
 	  	return true;
 	});
-
-	/*
-	document.<%=formName%>.onsubmit=function(){
-		var obj = document.getElementById("cwsNestTable");
-		var rows = obj.rows.length;
-		var str = "";
-		
-		for (var i=1; i<rows; i++) {
-			var cel = obj.rows.item(i).cells;
-			for (var j=0; j<cel.length; j++) {
-				str += i + "," + j + "<input type='' name='cws_cell_" + (i-1) + "_" + j + "' value='" + getCellValue(i, j) + "' /><BR>";
-			}
-		}
-		str += "<input name='cws_cell_rows' type='hidden' value='" + (rows-1) + "' />";
-		if (o("cwsNestTableHelper"))
-			o("cwsNestTableHelper").innerHTML = str;
-		
-		return true;
-	}
-	*/
 }
 <%}%>
 
@@ -1261,12 +1241,11 @@ obj.mouseDownX=0;
 ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(formCode);
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+// String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+
 int len = 0;
 if (fields!=null)
 	len = fields.length;

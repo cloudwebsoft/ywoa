@@ -80,33 +80,10 @@ public class PaperPriv extends ObjectDbA {
         }
         return result;
     }
-    
+
     public PaperPriv getPaperPriv(int id) {
-        ResultSet rs = null;
-        Conn conn = new Conn(connname);
-        PreparedStatement ps = null;
-        try {
-            String sql = "select id from oa_exam_paper_priv where id=?";
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
-            if (rs == null) {
-                return null;
-            } else {
-                if (rs.next()) {
-                    return new PaperPriv(rs.getInt(1));
-                }
-            }
-        } catch (Exception e) {
-            logger.error("getRolesOfLeafPriv: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-        return null;
-    }    
+        return new PaperPriv(id);
+    }
     
     public PaperPriv getPaperPriv(int paperId, String name, int type) {
         ResultSet rs = null;

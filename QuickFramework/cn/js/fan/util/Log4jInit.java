@@ -19,7 +19,7 @@ public class Log4jInit extends HttpServlet {
             realPath += File.separator;
         // System.out.println(getClass() + " Log4jInit:realPath=" + realPath);
 
-        String file = getInitParameter("log4j"); //ÅäÖÃÎÄ¼şÎ»ÖÃ
+        String file = getInitParameter("log4j"); //é…ç½®æ–‡ä»¶ä½ç½®
         if (file != null) {
             PropertyConfigurator.configure(realPath + file);
         }

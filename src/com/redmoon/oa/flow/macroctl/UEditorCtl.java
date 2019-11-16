@@ -21,7 +21,8 @@ public class UEditorCtl extends AbstractMacroCtl {
 
         str += "<div style='clear:both;margin:0px;padding:0px'><textarea id=\"" + ff.getName() + "\" name=\"" + ff.getName() + "\">" + StrUtil.getNullString(ff.getValue()) + "</textarea></div>";
 
-        if (ff.isEditable()) {
+        String pageType = StrUtil.getNullStr((String)request.getAttribute("pageType"));
+        if (!"show".equals(pageType) && ff.isEditable()) {
             if (request.getAttribute("isUEditorJS") == null) {
                 str += "<script type=\"text/javascript\" charset=\"utf-8\" src=\"" + request.getContextPath() + "/ueditor/js/ueditor/ueditor.config.js?2023\"></script>";
                 str += "<script type=\"text/javascript\" charset=\"utf-8\" src=\"" + request.getContextPath() + "/ueditor/js/ueditor/ueditor.all.js?2023\"> </script>";

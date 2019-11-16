@@ -214,7 +214,7 @@ public class DWFViewerCtl extends AbstractMacroCtl {
             ir = vt.iterator();
             // 取得ID为最小的attach，并将其删除
             int count = 0;
-            int minId = Integer.MAX_VALUE;
+            long minId = Long.MAX_VALUE;
             com.redmoon.oa.visual.Attachment lastAtt = null;
             while (ir.hasNext()) {
                 com.redmoon.oa.visual.Attachment att = (com.redmoon.oa.

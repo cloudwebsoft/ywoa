@@ -170,6 +170,13 @@ public class Directory {
             ErrMsgException {
         String code = ParamUtil.get(request, "code", false);
         String name = ParamUtil.get(request, "name", false);
+
+		// 使流程设计器右侧属性部分的标题与流程名称同步
+        WorkflowPredefineDb wfd = new WorkflowPredefineDb();
+        wfd = wfd.getDefaultPredefineFlow(code);
+        wfd.setTitle(name);
+        wfd.save();
+
         String description = ParamUtil.get(request, "description");
         boolean isHome = ParamUtil.get(request, "isHome").equals("true") ? true : false;
         int type = ParamUtil.getInt(request, "type");

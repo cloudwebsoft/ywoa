@@ -436,7 +436,6 @@ public class Connection implements IConnection {
      * Sets the max number of rows that should be returned from executing a
      * statement. The operation is automatically bypassed if CWBBS knows that the
      * the JDBC driver or database doesn't support it.
-     * @param stmt the Statement to set the max number of rows for.
      * @param maxRows the max number of rows to return.
      */
     public void setMaxRows(int maxRows) throws

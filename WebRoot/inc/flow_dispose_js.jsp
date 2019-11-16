@@ -246,32 +246,46 @@ function ReplaceCtlWithValue(name, ctlType, ctlValue) {
 function ClearAccessory() {
 	while (true) {
 		var isFinded = false;
-		var len = document.all.tags('IMG').length;
+		var imgs;
+		if (isIE8) {
+			imgs = document.all.tags('IMG');
+		}
+		else {
+			imgs = document.getElementsByTagName('IMG');
+		}
+		var len = imgs.length;
 		for(var i=0; i < len; i++) { 
 			try {
-				var imgObj = document.all.tags('IMG')[i];
+				var imgObj = imgs[i];
 				// alert(imgObj.src);
 				if (imgObj.src.indexOf("gif")!=-1 && imgObj.src.indexOf("file_flow")) {
 					// imgObj.outerHTML = ""; // 会清除所有图片，当流程中表单存档时就会出现问题，目录树的图片也会被清除，另外在表单中特意上传的图片也会被清除
 					// isFinded = true;
 				}
 				if (imgObj.src.indexOf("calendar.gif")!=-1) {
-					imgObj.outerHTML = "";
+					$(imgObj).remove();
 					isFinded = true;
 				}
 				if (imgObj.src.indexOf("clock.gif")!=-1) {
-					imgObj.outerHTML = "";
+					$(imgObj).remove();
 					isFinded = true;
 				}				
 			}
 			catch (e) {}
 		}
 		// 清除button
-		len = document.all.tags('input').length;
+		var inputs;
+		if (isIE8) {
+			inputs = document.all.tags('input');
+		}
+		else {
+			inputs = document.getElementsByTagName('input');
+		}
+		len = inputs.length;
         
 		for(i=0; i < len; i++) { 
 			try {
-				var btnObj = document.all.tags('input')[i];
+				var btnObj = inputs[i];
 				if (btnObj.type=="hidden" || (btnObj.type=="text" && btnObj.name=="title") || btnObj.type=="checkbox" || btnObj.type=="radio")
 					continue;
 				try {
@@ -280,7 +294,7 @@ function ClearAccessory() {
 				}
 				catch (e) {
 				}
-				btnObj.outerHTML = "";
+				$(btnObj).remove();
 				isFinded = true;
 			}
 			catch (e) {}

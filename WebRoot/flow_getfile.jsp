@@ -3,6 +3,7 @@
 <%@page import="com.redmoon.oa.flow.*"%>
 <%@page import="java.io.*"%>
 <%@page import="java.net.*"%>
+<%@ page import="cn.js.fan.web.SkinUtil" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="fsecurity" scope="page" class="cn.js.fan.security.SecurityUtil"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -77,7 +78,13 @@ if (op.equals("toPDF")) {
 	// 每次都重新生成，以免中间生成后，word文件又被修改，导致不是最终的版本
 	// File f = new File(pdfPath);
 	// if (!f.exists()) {
+	try {
 		com.redmoon.oa.util.PDFConverter.convert2PDF(fileDiskPath, pdfPath);
+	}
+	catch (Exception e) {
+		out.print(SkinUtil.makeErrMsg(request, e.getMessage()));
+		return;
+	}
 	// }
 	fileDiskPath = pdfPath; 
 }

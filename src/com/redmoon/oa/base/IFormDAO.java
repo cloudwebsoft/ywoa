@@ -2,7 +2,9 @@ package com.redmoon.oa.base;
 
 import java.util.Vector;
 
+import cn.js.fan.util.ErrMsgException;
 import com.redmoon.oa.flow.FormDb;
+import com.redmoon.oa.flow.FormField;
 
 /**
  * <p>Title: </p>
@@ -40,4 +42,10 @@ public interface IFormDAO {
     public int getCwsFlag();
 
     public int getCwsStatus();
+
+    public FormField getFormField(String fieldName);
+
+    public void setFieldValue(String fieldName, String value);
+
+    public boolean save() throws ErrMsgException;
 }

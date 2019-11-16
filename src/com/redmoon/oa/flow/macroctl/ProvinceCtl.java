@@ -32,6 +32,9 @@ public class ProvinceCtl extends AbstractMacroCtl {
 
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
         String relateStr = ff.getDefaultValueRaw();
+        if ("".equals(relateStr)) {
+            relateStr = ff.getDescription();
+        }
         String[] ary = StrUtil.split(relateStr, ",");
         boolean isCity = false, isCountry = false;
 
@@ -107,7 +110,7 @@ public class ProvinceCtl extends AbstractMacroCtl {
 
         str += "</script>\n";
 
-        str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' onchange=\"ajaxShowCityCountry" + rid + "(this.value, '')\">";
+        str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' title='" + ff.getTitle() + "' onchange=\"ajaxShowCityCountry" + rid + "(this.value, '')\">";
         str += "<option value=''>无</option>";
         String sql = "select region_id,region_name from oa_china_region where region_type=1 order by region_id";
         try {
@@ -115,8 +118,7 @@ public class ProvinceCtl extends AbstractMacroCtl {
             ResultIterator ri = jt.executeQuery(sql);
             while (ri.hasNext()) {
                 ResultRecord rr = (ResultRecord) ri.next();
-                str += "<option value='" + rr.getInt(1) + "'>" + rr.getString(2) +
-                        "</option>";
+                str += "<option value='" + rr.getInt(1) + "'>" + rr.getString(2) + "</option>";
             }
         }
         catch (SQLException e) {
@@ -286,6 +288,25 @@ public class ProvinceCtl extends AbstractMacroCtl {
 
     public String getControlOptions(String userName, FormField ff) {
         return "";
+    }
+
+    /**
+     * 取得根据名称（而不是值）查询时需用到的SQL语句，如果没有特定的SQL语句，则返回空字符串
+     * @param request
+     * @param ff 当前被查询的字段
+     * @param value
+     * @param isBlur 是否模糊查询
+     * @return
+     */
+    public String getSqlForQuery(HttpServletRequest request, FormField ff, String value, boolean isBlur) {
+        if (isBlur) {
+            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=1 and r.region_name like " +
+                    StrUtil.sqlstr("%" + value + "%");
+        }
+        else {
+            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=1 and r.region_name=" +
+                    StrUtil.sqlstr(value);
+        }
     }
 
 }

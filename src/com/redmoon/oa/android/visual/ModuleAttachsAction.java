@@ -83,7 +83,7 @@ public class ModuleAttachsAction {
 								.next();
 						String name = am.getName();
 						String downUrl = "/public/visual/visual_getfile.jsp";
-						int attId = am.getId();
+						long attId = am.getId();
 						fileObj.put("name", name);
 						fileObj.put("downloadUrl", downUrl);
 						fileObj.put("id", attId);

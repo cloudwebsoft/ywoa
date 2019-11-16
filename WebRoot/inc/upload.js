@@ -7,6 +7,7 @@ function addUploadFiles(){
     file.name = "att"+ upfileCount.toString(); 
     file.hideFocus = true;
     file.size = 1;
+    file.style.display = "inline";
     // file.style.cssText = "cursor:pointer;width:1px;border:none;height:22px;padding:0px;margin:0px;margin-left:-120px;opacity:0;filter:alpha(opacity=0);font-size:30px;";
     file.className = "uploadFile";
 	file.onchange = function(){

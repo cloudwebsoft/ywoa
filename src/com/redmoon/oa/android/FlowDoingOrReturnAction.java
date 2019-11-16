@@ -130,7 +130,7 @@ public class FlowDoingOrReturnAction {
 				+ StrUtil.sqlstr(myname) + " or m.proxy="
 				+ StrUtil.sqlstr(myname) + ") and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<> " +WorkflowDb.STATUS_DELETED +" and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
 		if (getOp().equals("search")) {
-			sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<> " +WorkflowDb.STATUS_DELETED + " and (m.user_name=" + StrUtil.sqlstr(myname) + " or m.proxy=" + StrUtil.sqlstr(myname) + ") and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
+			sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" +WorkflowDb.STATUS_DELETED + " and f.status<>" +WorkflowDb.STATUS_DISCARDED + " and (m.user_name=" + StrUtil.sqlstr(myname) + " or m.proxy=" + StrUtil.sqlstr(myname) + ") and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
 			if (!getTitle().equals("")) {
 				sql += " and f.title like " + StrUtil.sqlstr("%" + getTitle() + "%");
 			}

@@ -106,7 +106,7 @@ public class AttachmentsCtl extends AbstractMacroCtl {
         }
         
         if (ff.isEditable()) {
-	        str += "<input name='" + ff.getName() + "' type='file' size=15><div id='"+ff.getName()+"Div'></div>";
+	        str += "<input name='" + ff.getName() + "' type='file' style='display:inline' size=15><div id='"+ff.getName()+"Div'></div>";
 	        str += "<input type='hidden' name='"+ff.getName()+"Hid' id='"+ff.getName()+"Hid' value='1'/>";
 	        str += "<input type='hidden' name='"+ff.getName()+"DelHid' id='"+ff.getName()+"DelHid' value=''/>";
 	        str += "<input type='button' name='"+ff.getName()+"btn1' value='增加' onclick='add"+ff.getName()+"Files()' />";
@@ -588,11 +588,11 @@ public class AttachmentsCtl extends AbstractMacroCtl {
      * 在验证前获取表单域的值，用于附件、图片宏控件不能为空的检查
      * @param request
      * @param fu
-     * @param flowId
      * @param ff
      */
     public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) {
-        Vector v = fu.getFiles();
+		boolean isUploaded = false;
+		Vector v = fu.getFiles();
         Iterator ir = v.iterator();
         while (ir.hasNext()) {
             FileInfo fi = (FileInfo) ir.next();
@@ -600,10 +600,14 @@ public class AttachmentsCtl extends AbstractMacroCtl {
                                             ff.getName() + " fi.fieldName=" +
                                             fi.getFieldName());
             if (fi.getFieldName().equals(ff.getName())) {
+            	isUploaded = true;
                 fu.setFieldValue(ff.getName(), fi.getName());
                 break;
             }
-        }    	
+        }
+        if (!isUploaded) {
+        	fu.setFieldValue(ff.getName(), ff.getValue());
+		}
     }    
     
     

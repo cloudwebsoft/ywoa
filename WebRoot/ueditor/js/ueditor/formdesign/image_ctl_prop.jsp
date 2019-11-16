@@ -27,6 +27,7 @@
                 var json = $.parseJSON(desc);
                 $('#width').val(json.w);
                 $('#height').val(json.h);
+                $('#maxSize').val(json.maxSize);
                 $('#isOnlyCamera').prop("checked", json.isOnlyCamera);
             }
             else {
@@ -49,20 +50,26 @@
     <tr>
         <td width="15%" height="42" align="center">宽度</td>
         <td width="85%" align="left">
-            <input id="width" name="width"/>
+            <input id="width" name="width"/>&nbsp;px
         </td>
     </tr>
     <tr>
       <td height="42" align="center">高度</td>
       <td align="left">
-          <input id="height" name="height"/>
+          <input id="height" name="height"/>&nbsp;px
       </td>
+    </tr>
+    <tr>
+        <td height="42" align="center">大小</td>
+        <td align="left">
+            <input id="maxSize" name="maxSize"/>&nbsp;KB（为空表示不限制大小）
+        </td>
     </tr>
     <tr>
       <td height="42" align="center">拍照</td>
       <td align="left">
           <input id="isOnlyCamera" name="isOnlyCamera" type="checkbox" value="1"/>
-      手机端只允许拍照，不能选择照片上传（仅支持安卓） </td>
+      手机端只允许拍照，不能选择照片上传</td>
     </tr>
     <tr>
       <td height="42" colspan="2" align="center">
@@ -79,6 +86,7 @@
         var json = {};
         json.w = $('#width').val();
         json.h = $('#height').val();
+        json.maxSize = $('#maxSize').val();
         json.isOnlyCamera = $('#isOnlyCamera').prop("checked");
         window.opener.setSequence(JSON.stringify(json), "");
         window.close();

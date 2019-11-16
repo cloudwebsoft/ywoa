@@ -131,8 +131,10 @@ public class OpinionCtl extends AbstractMacroCtl {
 		sb.append("</div>");
 		sb.append("</div>");
 
+		// 加入_show，是为了可使在隐藏时调用HideCtl
+		sb.append("<div id='" + ff.getName() + "_show'>");
 		sb.append(rend(request, val, myActionId));
-
+		sb.append("</div>");
 		return sb.toString();
 	}
 
@@ -233,7 +235,7 @@ public class OpinionCtl extends AbstractMacroCtl {
 		// 流程中，意见输入框宏控件，当提交时，如果为空，则自动赋予值
 		String val = fu.getFieldValue(ff.getName());
 		String op = fu.getFieldValue("op");
-		if (isEditable && "finish".equals(op)) {
+		if (isEditable && ("finish".equals(op) || "saveformvalueBeforeXorCondSelect".equals(op))) {
 			if ("".equals(fu.getFieldValue(ff.getName()))) {
 				com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 				String opinionCtlDefaultValOnFinish = cfg.get("opinionCtlDefaultValOnFinish");

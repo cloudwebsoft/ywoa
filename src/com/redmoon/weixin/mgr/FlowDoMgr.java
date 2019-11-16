@@ -12,6 +12,7 @@ import com.redmoon.oa.flow.DirectoryView;
 import com.redmoon.oa.flow.Leaf;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.post.PostFlowMgr;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.weixin.bean.SortModel;
 import com.redmoon.weixin.util.CharacterParser;
 import com.redmoon.weixin.util.PinyinComparator;
@@ -191,6 +192,10 @@ public class FlowDoMgr {
             // UserDb ud = new UserDb(userName);
             // String realName = ud.getRealName();
             String pinyin = CharacterParser.getInstance().getSelling(realName);
+            if ("".equals(pinyin)) {
+                DebugUtil.i(getClass(), "usersInitList realName=", realName);
+                continue;
+            }
             String sortString = pinyin.substring(0, 1).toUpperCase();
             SortModel sortUserModel = new SortModel();
             // 正则表达式，判断首字母是否是英文字母

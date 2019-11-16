@@ -199,8 +199,15 @@ if (op.equals("saveformvalue") || op.equals("AutoSaveArchiveNodeCommit")) {
 	}
 	// afterXorCondNodeCommit通知flow_dispose.jsp页面，已保存完毕，匹配条件后，自动重定向
 	if (re) {
-		if (op.equals("saveformvalue"))
-			out.print(StrUtil.Alert_Redirect("保存成功！", "flow_dispose_free.jsp?myActionId=" + myActionId));
+		if (op.equals("saveformvalue")) {
+			// out.print(StrUtil.Alert_Redirect("保存成功！", "flow_dispose_free.jsp?myActionId=" + myActionId));
+			JSONObject json = new JSONObject();
+			json.put("res", "5");
+			json.put("op", op);
+			json.put("msg", "保存草稿成功！");
+			out.print(json);
+			return;
+		}
 		else if (op.equals("AutoSaveArchiveNodeCommit")) {
 			response.sendRedirect("flow_dispose_free.jsp?action=afterAutoSaveArchiveNodeCommit&myActionId=" + myActionId);
 			return;

@@ -27,7 +27,7 @@ public class SetUserUnitCodeJob implements Job {
 	public SetUserUnitCodeJob() {
 	}
 
-	Logger logger = Logger.getLogger(SuperCheckJob.class.getName());
+	Logger logger = Logger.getLogger(SetUserUnitCodeJob.class.getName());
 
 	/**
 	 * @Description:

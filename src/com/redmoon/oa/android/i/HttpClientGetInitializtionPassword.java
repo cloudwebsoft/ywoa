@@ -16,7 +16,7 @@ import com.cloudwebsoft.framework.util.LogUtil;
 
 
 /**
- * @Description: ForgetPasswordAction接口向一米home服务器请求初始密码
+ * @Description: ForgetPasswordAction接口向云端服务器请求初始密码
  * @author: lichao
  * @Date: 2015-7-15上午11:06:14
  */

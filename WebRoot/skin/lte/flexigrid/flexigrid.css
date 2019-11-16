@@ -5,13 +5,13 @@
 	color: #696969;
 }
 .flexigrid .gBlock {
-	background: #E3E3E3 url('images/load-bg.png');
+	/*background: #E3E3E3 url('images/load-bg.png');*/
 }
 .flexigrid .gBlock .loading {
 	width: 100%;
 	height: 100%;
 	display: block;
-	background: url('images/indicator_waitanim.gif') no-repeat center center;
+	/*background: url('images/indicator_waitanim.gif') no-repeat center center;*/
 }
 .flexigrid.hideBody {
 	height: 25px !important;
@@ -165,7 +165,7 @@
 	padding: 1px;
 }
 
-.flexigrid .tDiv input[name!="submit"],.flexigrid .pDiv input{
+.flexigrid .tDiv .flexigrid .pDiv input{
 	line-height: 21px;
 	height: 21px;
 	border: 1px solid #d4d4d4;
@@ -625,7 +625,7 @@ div.pGroup select {
 	background: url(images/grid.png) no-repeat center left;
 }
 
-.flexigrid .tSearch {
+.tSearch {
 	background: url(images/search.png) no-repeat left;
 	border:0px;
 	padding-left:12px;
@@ -680,4 +680,7 @@ div.pGroup select {
 }
 .flexigrid div.fbutton .unreaded {
 	background: url(images/unreaded.png) no-repeat center left;	
+}
+.flexigrid div.fbutton .sms {
+	background: url(images/sms.png) no-repeat center left;
 }

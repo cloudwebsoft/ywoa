@@ -21,7 +21,7 @@
 		<fieldType>varchar(250)</fieldType>
 	</macroCtl>		
 	
-	<macroCtl code="macro_user_select" isDisplay="false">
+	<macroCtl code="macro_user_select" isDisplay="true">
 		<name>用户列表</name>
 		<author>Blue Wind</author>
 		<className>com.redmoon.oa.flow.macroctl.UserSelectCtl</className>
@@ -29,6 +29,7 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(250)</fieldType>
+		<version>2</version>
 	</macroCtl>
 	<macroCtl code="macro_dept_select">
 		<name>部门选择框</name>
@@ -38,6 +39,7 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(250)</fieldType>
+		<version>2</version>
 	</macroCtl>
 	
 	<macroCtl code="macro_idea" isDisplay="false">
@@ -207,6 +209,7 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(250)</fieldType>
+		<version>2</version>
 	</macroCtl>	
 	<macroCtl code="macro_sql">
 		<name>SQL控件</name>
@@ -290,6 +293,7 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(50)</fieldType>
+		<version>2</version>
 	</macroCtl>
 	
 	<macroCtl code="macro_city_select">
@@ -300,6 +304,7 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(50)</fieldType>
+		<version>2</version>
 	</macroCtl>
 	
 	<macroCtl code="macro_country_select">
@@ -310,6 +315,7 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(50)</fieldType>
+		<version>2</version>
 	</macroCtl>
 		
 	<macroCtl code="role_user_select">
@@ -530,7 +536,8 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(50)</fieldType>
-	</macroCtl>
+        <version>2</version>
+    </macroCtl>
 
 	<macroCtl code="macro_location_ctl" isDisplay="true">
 		<name>定位宏控件</name>
@@ -689,7 +696,7 @@
 		<inputValue>宏控件：年份宏控件</inputValue>
 		<resource></resource>
 		<desc></desc>
-		<fieldType>varchar(150)</fieldType>
+		<fieldType>int(11)</fieldType>
 	</macroCtl>
 
 	<macroCtl code="macro_detaillist_ctl">
@@ -758,7 +765,7 @@
 		<inputValue>宏控件：月份宏控件</inputValue>
 		<resource></resource>
 		<desc></desc>
-		<fieldType>varchar(150)</fieldType>
+		<fieldType>int(11)</fieldType>
 	</macroCtl>
 
 	<macroCtl code="macro_location_mark_ctl" isDisplay="true">
@@ -846,6 +853,16 @@
 		<resource></resource>
 		<desc></desc>
 		<fieldType>varchar(30)</fieldType>
+		<version>2</version>
+	</macroCtl>
+	<macroCtl code="macro_writepad_ctl">
+		<name>手写板宏控件</name>
+		<author>fgf</author>
+		<className>com.redmoon.oa.flow.macroctl.WritePadCtl</className>
+		<inputValue>宏控件：手写板宏控件</inputValue>
+		<resource></resource>
+		<desc></desc>
+		<fieldType>text</fieldType>
 		<version>2</version>
 	</macroCtl>
 </config>

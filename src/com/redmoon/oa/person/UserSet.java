@@ -49,8 +49,10 @@ public class UserSet {
 	        return skinByCookie;
     	}
     	UserSetupDb usd = new UserSetupDb();
-    	usd = usd.getUserSetupDb(pvg.getUser(request));
-    	if (usd.getSkinCode().equals("")) {
+    	if (pvg.isUserLogin(request)) {
+			usd = usd.getUserSetupDb(pvg.getUser(request));
+		}
+    	if (!usd.isLoaded() || usd.getSkinCode().equals("")) {
     		SkinMgr sm = new SkinMgr();
     		return sm.getDefaultSkinCode();
     	}else{

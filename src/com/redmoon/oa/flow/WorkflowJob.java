@@ -1,16 +1,23 @@
 package com.redmoon.oa.flow;
 
+import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Vector;
 
+import cn.js.fan.db.ResultIterator;
+import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.*;
 import com.cloudwebsoft.framework.aop.ProxyFactory;
 import com.cloudwebsoft.framework.aop.Pointcut.MethodNamePointcut;
 import com.cloudwebsoft.framework.aop.base.Advisor;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.message.*;
 import com.redmoon.oa.sms.SMSFactory;
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.visual.Attachment;
+import com.redmoon.oa.visual.FormDAO;
 import org.quartz.*;
 import cn.js.fan.db.SQLFilter;
 
@@ -109,6 +116,41 @@ public class WorkflowJob implements Job {
             } catch (ErrMsgException ex) {
                 ex.printStackTrace();
             }
+        }
+
+        // 删除一天前的未生效嵌套表中的临时记录
+        FormDAO fdao = new FormDAO();
+        FormDb fd = new FormDb();
+        ir = fd.list().iterator();
+        while (ir.hasNext()) {
+            fd = (FormDb)ir.next();
+            sql = "select id from " + fd.getTableNameByForm() + " where cws_id='" + FormDAO.NAME_TEMP_CWS_IDS + "'" + " and cws_create_date<=" + SQLFilter.getDateStr(DateUtil.format(d, "yyyy-MM-dd"), "yyyy-MM-dd");
+            try {
+                Iterator irFdao = fdao.list(fd.getCode(), sql).iterator();
+                while (irFdao.hasNext()) {
+                    fdao = (FormDAO)irFdao.next();
+                    fdao.del();
+                    DebugUtil.i(getClass(), "execute", fd.getTableNameByForm() + " id：" + fdao.getId());
+                }
+            } catch (ErrMsgException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // 删除因为ntko控件，在增加页面时产生的临时文件
+        sql = "select id from visual_attach where id=-1 and create_date<=" + SQLFilter.getDateStr(DateUtil.format(d, "yyyy-MM-dd"), "yyyy-MM-dd");
+        try {
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = jt.executeQuery(sql);
+            while (ri.hasNext()) {
+                ResultRecord rr = (ResultRecord)ri.next();
+                Attachment att = new Attachment(rr.getInt(1));
+                if (att.isLoaded()) {
+                    att.del();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }

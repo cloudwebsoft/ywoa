@@ -198,9 +198,10 @@ if (op.equals("selBatch")) {
 						  // System.out.println(getClass() + " nestFormCode=" + nestFormCode);
 						  ModuleSetupDb msd = new ModuleSetupDb();
 						  msd = msd.getModuleSetupDbOrInit(nestFormCode);
-						  String listField = StrUtil.getNullStr(msd.getString("list_field"));
+						  // String listField = StrUtil.getNullStr(msd.getString("list_field"));
 						  // System.out.println(getClass() + " listField=" + listField);
-						  String[] fields = StrUtil.split(listField, ",");
+						  String[] fields = msd.getColAry(false, "list_field");
+						  
 						  int len = 0;
 						  if (fields!=null)
 							  len = fields.length;

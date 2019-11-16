@@ -246,9 +246,8 @@ public class NestTableCtl extends AbstractMacroCtl {
         FormDb fd = new FormDb();
         fd = fd.getFormDb(formCode);
 
-        String listField = StrUtil.getNullStr(msd.getString("list_field"));
-
-        String[] fields = StrUtil.split(listField, ",");
+        // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+        String[] fields = msd.getColAry(false, "list_field");
         if (fields==null) {
             LogUtil.getLog(getClass()).error("createForNestCtl:The fields is null, please set " + formCode + " module's list");
             return -1;
@@ -394,9 +393,8 @@ public class NestTableCtl extends AbstractMacroCtl {
         FormDb fd = new FormDb();
         fd = fd.getFormDb(formCode);
 
-        String listField = StrUtil.getNullStr(msd.getString("list_field"));
-
-        String[] fields = StrUtil.split(listField, ",");
+        // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+        String[] fields = msd.getColAry(false, "list_field");
         int cols = fields.length;
 
         // 找出空行
@@ -830,8 +828,8 @@ public class NestTableCtl extends AbstractMacroCtl {
             ModuleSetupDb msd = new ModuleSetupDb();
             msd = msd.getModuleSetupDbOrInit(formCode);
 
-            String listField = StrUtil.getNullStr(msd.getString("list_field"));
-            String[] fieldCodes = StrUtil.split(listField, ",");
+            // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+            String[] fieldCodes = msd.getColAry(false, "list_field");
 
             // System.out.println(getClass() + " " + formCode + " listField=" + listField);
 

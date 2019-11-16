@@ -49,6 +49,12 @@ if (user==null || !user.isLoaded()) {
 	out.print(StrUtil.jAlert_Back("该用户已不存在！","提示"));
 	return;
 }
+
+String op = ParamUtil.get(request, "op");
+if ("restoreIcon".equals(op)) {
+	user.setPhoto("");
+	user.save();
+}
 %>
 <script>
 function New(para_URL) {
@@ -256,7 +262,7 @@ function getSelUserRealNames() {
                   %>
                   <input id="leaderName" name="leaderName"  type=text readonly size=25 value="<%=leadersName %>" />
                   <input id="leaderCode" name="leaderCode" type="hidden" value="<%=leaders %>" />
-                  <a href="javascript:;" onclick="javascript:showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')">&nbsp;&nbsp;&nbsp;选择</a>
+                  <a href="javascript:;" onclick="openWin('../user_multi_sel.jsp', 800, 600)">&nbsp;&nbsp;&nbsp;选择</a>
       </td>
     </tr>
     <tr>
@@ -342,7 +348,6 @@ function getSelUserRealNames() {
                   		
                   %>
                  	 <img class="photoImg" src="<%=request.getContextPath()%>/img_show.jsp?path=<%=user.getPhoto() %>" style="width:130px" />
-                  
                   <%
                   	}else{
                   %>
@@ -354,6 +359,18 @@ function getSelUserRealNames() {
 				  <%} %>
 				  <br/><br/>
 				  <input name="photo" type="file" id="photo">
+		  <a href="javascript:;" onclick="restoreIcon()">恢复默认</a>
+		  <script>
+			  function restoreIcon() {
+				  jConfirm("您确定要恢复默认头像么", "提示", function (r) {
+					  if (!r) {
+						  return;
+					  } else {
+						  window.location.href = "user_edit.jsp?op=restoreIcon";
+					  }
+				  })
+			  }
+		  </script>
       </td>
       </tr>
     <tr>

@@ -128,7 +128,13 @@ public class MySQLSQLGenerator implements ISQLGenerator {
         str += "`cws_flag` TINYINT(1) NOT NULL default '0',";    
         // 创建进度字段
         str += "`cws_progress` INTEGER UNSIGNED NOT NULL DEFAULT 0,";
-        
+        // 创建创建时间字段
+        str += "`cws_create_date` datetime,";
+        // 创建修改时间字段
+        str += "`cws_modify_date` datetime,";
+        // 创建流程结束时间字段
+        str += "`cws_finish_date` datetime,";
+
         while (ir.hasNext()) {
             FormField ff = (FormField) ir.next();
             str += toStrForCreate(ff) + ",";
@@ -142,6 +148,7 @@ public class MySQLSQLGenerator implements ISQLGenerator {
         str += "KEY `cwsQuoteId` (`cws_quote_id`),";
         str += "KEY `cwsFlag` (`cws_flag`),";
         str += "KEY `cwsStatus` (`cws_status`),";
+        str += "KEY `cws_id` (`cws_id`),";
         str += "PRIMARY KEY `id` (`id`)";
         str += ") ENGINE=InnoDB DEFAULT CHARSET=utf8;";
         // System.out.println("generateCreateStr:" + str);

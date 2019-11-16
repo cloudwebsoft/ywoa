@@ -105,13 +105,15 @@ if (templateId!=-1) {
 	fileName = metd.getString("name");	
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields;
 String cols = ParamUtil.get(request, "cols");
 if (!"".equals(cols)) {
-	listField = cols;
+	fields = StrUtil.split(cols, ",");
 }
-String[] fields = StrUtil.split(listField, ",");
-			
+else {
+	fields = msd.getColAry(false, "list_field");
+}
+
 response.setContentType("application/vnd.ms-excel");
 response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUnicode(fileName) + ".xls");  
             
@@ -191,7 +193,7 @@ try {
 	    	mapWidth.put(json.getString("field"), json.getInt("width"));
 	    }
 	    
-		listField = colsSb.toString();
+		String listField = colsSb.toString();
 		fields = StrUtil.split(listField, ",");
 		len = fields.length;	    
 		

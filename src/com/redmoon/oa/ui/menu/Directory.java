@@ -98,6 +98,7 @@ public class Directory {
         int widgetWidth = ParamUtil.getInt(request, "widgetWidth", 200);
         int widgetHeight = ParamUtil.getInt(request, "widgetHeight", 100);
         String fontIcon = ParamUtil.get(request, "fontIcon");
+        String description = ParamUtil.get(request, "description");
 
         lf = new Leaf();
         lf.setName(name);
@@ -134,6 +135,7 @@ public class Directory {
         lf.setWidgetWidth(widgetWidth);
         lf.setWidgetHeight(widgetHeight);
         lf.setFontIcon(fontIcon);
+        lf.setDescription(description);
 
         Leaf leaf = getLeaf(parent_code);
         if (leaf.getLayer()>=4) {
@@ -185,6 +187,7 @@ public class Directory {
         int widgetWidth = ParamUtil.getInt(request, "widgetWidth", 200);
         int widgetHeight = ParamUtil.getInt(request, "widgetHeight", 100);
         String fontIcon = ParamUtil.get(request, "fontIcon");
+        String description = ParamUtil.get(request, "description");
 
         Leaf leaf = getLeaf(code); //new Leaf();
         leaf.setName(name);
@@ -222,6 +225,7 @@ public class Directory {
         leaf.setWidgetWidth(widgetWidth);
         leaf.setWidgetHeight(widgetHeight);
         leaf.setFontIcon(fontIcon);
+        leaf.setDescription(description);
         // LogUtil.getLog(getClass()).info("use=" + use);
 
         boolean re = false;

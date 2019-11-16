@@ -107,13 +107,13 @@ o("menu6").className="current";
 </script>
 <div class="spacerH"></div>
 <table class="percent60" width="80%" align="center">
-  <tr>
-    <td align="left"><input class="btn" name="button" type="button" onclick="javascript:location.href='module_import_add.jsp?code=${code}&formCode=${formCode}';" value="添加" width=80 height=20 />
-	</td>
-  </tr>
+	<tr>
+		<td align="left">
+			<input class="btn" name="button" type="button" onclick="javascript:location.href='module_import_add.jsp?code=${code}&formCode=${formCode}';"
+								value="添加" width=80 height=20/>
+		</td>
+	</tr>
 </table>
-
-    
 <table class="tabStyle_1 percent60" cellSpacing="0" cellPadding="3" width="95%" align="center">
     <tr>
       <td width="62%" class="tabStyle_1_title">名称</td>

@@ -107,8 +107,9 @@ else {
 	json += ",{\"id\":\"" + com.redmoon.oa.visual.FormDAO.FormDAO_NEW_ID + "\", \"name\":\"ID\", \"type\":\"" + FormField.TYPE_TEXTFIELD + "\", \"macroType\":\"" + FormField.MACRO_NOT + "\", \"defaultValue\":\"\"}"; // 记录的ID
 	// 加入映射字段
 	if ("module".equals(mode)) {
-		String listField = StrUtil.getNullStr(msd.getString("list_field"));
-		String[] fields = StrUtil.split(listField, ",");	
+		// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		String[] fields = msd.getColAry(false, "list_field");
+		
 		int len = 0;
 		if (fields!=null)
 			len = fields.length;		

@@ -74,7 +74,12 @@ try {
 	return;
 }
 
-String formCode = json.getString("sourceForm");
+String moduleCode = json.getString("sourceForm");
+ModuleSetupDb msd = new ModuleSetupDb();
+msd = msd.getModuleSetupDbOrInit(moduleCode);
+
+String formCode = msd.getString("form_code");
+
 FormDb fd = new FormDb();
 fd = fd.getFormDb(formCode);
 if (!fd.isLoaded()) {
@@ -82,7 +87,7 @@ if (!fd.isLoaded()) {
 	return;
 }
 
-ModulePrivDb mpd = new ModulePrivDb(formCode);
+ModulePrivDb mpd = new ModulePrivDb(moduleCode);
 if (!mpd.canUserSee(privilege.getUser(request))) {
 	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
 	return;
@@ -112,11 +117,12 @@ if (op.equals("selBatch")) {
 			long id = StrUtil.toLong(ary[i]);
 			fdao = fdao.getFormDAO(id, fd);
 			
-			ModuleSetupDb msd = new ModuleSetupDb();
-			msd = msd.getModuleSetupDbOrInit(nestFormCode);
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			ModuleSetupDb msdNest = new ModuleSetupDb();
+			msdNest = msdNest.getModuleSetupDbOrInit(nestFormCode);
+			// String listField = StrUtil.getNullStr(msdNest.getString("list_field"));
 			// System.out.println(getClass() + " listField=" + listField);
-			String[] fields = StrUtil.split(listField, ",");
+			String[] fields = msdNest.getColAry(false, "list_field");
+			
 			int len = 0;
 			if (fields!=null)
 				len = fields.length;
@@ -428,9 +434,6 @@ if (!"".equals(conds)) {
 		}
 	}	
 }
-
-ModuleSetupDb msd = new ModuleSetupDb();
-msd = msd.getModuleSetupDbOrInit(formCode);
 
 // 用于传相应模块的msd，因为模块中的main:...，other:...字段需解析，此时仅根据拉单时指定的filter过滤，而不根据模块中的过滤条件
 request.setAttribute(ModuleUtil.MODULE_SETUP, msd);
@@ -914,6 +917,7 @@ if (btnNames!=null) {
         <input type="hidden" name="orderBy" value="<%=orderBy %>" />
         <input type="hidden" name="sort" value="<%=sort %>" />
         <input class="tSearch" type="submit" value="搜索" />
+		<input type="hidden" name="nestType" value="<%=nestType%>" />        
 	<%
 	}
 }
@@ -939,13 +943,9 @@ if (totalpages==0)
 	totalpages = 1;
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(msd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(msd.getString("list_field_order"));
-String[] fieldsOrder = StrUtil.split(listFieldOrder, ",");
-
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
+String[] fieldsWidth = msd.getColAry(false, "list_field_width");
 %>
 <table class="percent98 p9" width="98%" border="0" align="center" cellpadding="3" cellspacing="1">
   <tr>
@@ -1061,7 +1061,7 @@ for (int i=0; i<len; i++) {
 	%>	
 		<td align="left">
         <%if (i==0) {%>
-		<a href="module_show.jsp?parentId=<%=id%>&id=<%=id%>&formCode=<%=formCode%>&isShowNav=0" target="_blank">
+		<a href="module_show.jsp?parentId=<%=id%>&id=<%=id%>&code=<%=moduleCode%>&isShowNav=0" target="_blank">
 		<%
 		}
 		if (fieldName.startsWith("main:")) {

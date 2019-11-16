@@ -7,12 +7,12 @@ import cn.js.fan.util.DateUtil;
 public class PrimaryKey implements Serializable, Cloneable {
     public static final int TYPE_STRING = 0;
     public static final int TYPE_INT = 1;
-    public static final int TYPE_COMPOUND = 2; // ¸´ºÏÀàĞÍ
+    public static final int TYPE_COMPOUND = 2; // å¤åˆç±»å‹
     public static final int TYPE_LONG = 3;
 
-    public static final int TYPE_DATE = 4; // ÈÕÆÚĞÍ
+    public static final int TYPE_DATE = 4; // æ—¥æœŸå‹
 
-    HashMap keys; // µ±Îª¸´ºÏÀàĞÍÊ±µÄkey
+    HashMap keys; // å½“ä¸ºå¤åˆç±»å‹æ—¶çš„key
 
     public PrimaryKey() {
 
@@ -123,7 +123,7 @@ public class PrimaryKey implements Serializable, Cloneable {
         return type;
     }
 
-    // È¡µÃÖ÷¼üµÄÊıÁ¿
+    // å–å¾—ä¸»é”®çš„æ•°é‡
     public int getKeyCount() {
         // if (type==this.TYPE_INT || type==this.TYPE_STRING || type==this.TYPE_LONG || type==this.TYPE_DATE)
         //    return 1;
@@ -268,11 +268,11 @@ public class PrimaryKey implements Serializable, Cloneable {
             return new Object[] {strValue};
         else if (type == TYPE_INT)
             return new Object[] {new Integer(intValue)};
-            // ±¾¾äÖ»Ö§³ÖJDK1.5ÒÔÉÏ
+            // æœ¬å¥åªæ”¯æŒJDK1.5ä»¥ä¸Š
             // return new Object[] {Integer.valueOf(intValue)};
         else if (type == TYPE_LONG)
             return new Object[] {new Long(longValue)};
-            // ±¾¾äÖ»Ö§³ÖJDK1.5ÒÔÉÏ
+            // æœ¬å¥åªæ”¯æŒJDK1.5ä»¥ä¸Š
             // return new Object[] {Long.valueOf(longValue))};
         else if (type==TYPE_DATE) {
             return  new Object[] {dateValue};

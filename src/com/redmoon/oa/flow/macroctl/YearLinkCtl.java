@@ -1,10 +1,13 @@
 package com.redmoon.oa.flow.macroctl;
 
 import java.util.Calendar;
+import java.util.Date;
 
 
 import javax.servlet.http.HttpServletRequest;
 
+import cn.js.fan.util.DateUtil;
+import com.redmoon.oa.visual.SQLBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,7 +21,6 @@ public class YearLinkCtl extends AbstractMacroCtl {
 
 	@Override
 	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-	
 		StringBuilder sb = new StringBuilder();
 		Calendar calendar = Calendar.getInstance();
 		int CurrentYear = calendar.get(Calendar.YEAR);//当前年份
@@ -26,12 +28,12 @@ public class YearLinkCtl extends AbstractMacroCtl {
 		if(ff.isEditable()){//如果是可编辑状态
 			sb.append("<select id= '").append(ff.getName()).append("' name='").append(ff.getName()).append("' >");
 			//前30年
-			 for (int i = 30; i >= 1; i--) {
+			 for (int i = 10; i >= 1; i--) {
 				 sb.append("<option value='").append(CurrentYear-i).append("' >").append(CurrentYear-i).append("</option>");	
 			 }
 			 sb.append("<option value='").append(CurrentYear).append("' selected >").append(CurrentYear).append("</option>");
 			 //后30年
-			 for (int i = 1; i <=30; i++) {
+			 for (int i = 1; i <=10; i++) {
 				sb.append("<option value='").append(CurrentYear+i).append("' >").append(CurrentYear+i).append("</option>");	
 			 }
 			 sb.append("</select>");
@@ -41,6 +43,34 @@ public class YearLinkCtl extends AbstractMacroCtl {
 			}
 		}
 		
+		return sb.toString();
+	}
+
+	/**
+	 * 将宏控件展开为用于查询的HTML字符串
+	 * @param request HttpServletRequest
+	 * @param ff FormField
+	 * @return String
+	 */
+	public String convertToHTMLCtlForQuery(HttpServletRequest request, FormField ff) {
+		if (ff.getCondType().equals(SQLBuilder.COND_TYPE_FUZZY)) {
+			return super.convertToHTMLCtlForQuery(request, ff);
+		}
+		Calendar calendar = Calendar.getInstance();
+		int CurrentYear = calendar.get(Calendar.YEAR);//当前年份
+		StringBuilder sb = new StringBuilder();
+		sb.append("<select id= '").append(ff.getName()).append("' name='").append(ff.getName()).append("' >");
+		sb.append("<option value=''>无</option>");
+		//前30年
+		for (int i = 10; i >= 1; i--) {
+			sb.append("<option value='").append(CurrentYear-i).append("' >").append(CurrentYear-i).append("</option>");
+		}
+		sb.append("<option value='").append(CurrentYear).append("' selected >").append(CurrentYear).append("</option>");
+		//后30年
+		for (int i = 1; i <=10; i++) {
+			sb.append("<option value='").append(CurrentYear+i).append("' >").append(CurrentYear+i).append("</option>");
+		}
+		sb.append("</select>");
 		return sb.toString();
 	}
 
@@ -118,4 +148,21 @@ public class YearLinkCtl extends AbstractMacroCtl {
                 ffNew);
     }
 
+	/**
+	 * 取得表单域的类型
+	 * @return int
+	 */
+	public int getFieldType() {
+		return FormField.FIELD_TYPE_INT;
+	}
+
+	/**
+	 * 用于流程处理时，生成表单默认值，如基础数据宏控件，取其默认值
+	 * @param ff FormField
+	 * @return Object
+	 */
+	public Object getValueForCreate(int flowId, FormField ff) {
+		int y = DateUtil.getYear(new Date());
+		return new Integer(y);
+	}
 }

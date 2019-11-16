@@ -314,7 +314,50 @@ else
 		<table width="100%"  border="0" cellspacing="0" cellpadding="0">
             <tr>
               <td width="100%" colspan="3" align="center">
-			  <%if (canUserSeeDesignerWhenDispose.equals("true")) {
+			  <%
+                  boolean canUserSeeFlowImage = cfg.getBooleanProperty("canUserSeeFlowImage");
+                  if (canUserSeeFlowImage && !"".equals(wf.getImgVisualPath())) {
+              %>
+                  <div id="Designer" class="flow-image-box" style="width:0px; height:0px; overflow-x:scroll; overflow-y: scroll;">
+                      <img id="flowImage" src="<%=wf.getImgVisualPath()%>/<%=wf.getId()%>.jpg" style="width:2593px; height:2161px;"/>
+                  </div>
+                  <script>
+                      function detectZoom() {
+                          var ratio = 1,
+                              screen = window.screen;
+                          var os = getOS();
+                          if (os == 1) { // ie
+                              if (window.devicePixelRatio) {
+                                  ratio = window.devicePixelRatio;
+                              }
+                              else if (screen.deviceXDPI && screen.logicalXDPI) {
+                                  ratio = screen.deviceXDPI / screen.logicalXDPI;
+                              }
+                          } else if (os == 3) { // chrome
+                              ratio = window.top.outerWidth / window.top.innerWidth;
+                          }
+                          else if (window.outerWidth !== undefined && window.innerWidth !== undefined) { // firefox、opera
+                              if (window.devicePixelRatio) {
+                                  ratio = window.devicePixelRatio;
+                              }
+                              else {
+                                  ratio = window.outerWidth / window.innerWidth;
+                              }
+                          }
+                          ratio = Math.round(ratio * 100) / 100;
+                          return ratio;
+                      }
+                      $(function() {
+                          var radio = detectZoom();
+                          if (radio!=1) {
+                              $('#flowImage').width( $('#flowImage').width()/radio);
+                              $('#flowImage').height( $('#flowImage').height()/radio);
+                          }
+                      })
+                  </script>
+                  <%
+                      }
+                  else if (canUserSeeDesignerWhenDispose.equals("true")) {
 					String flowExpireUnit = cfg.get("flowExpireUnit");
 					if (flowExpireUnit.equals("day"))
 						flowExpireUnit = "天";
@@ -333,7 +376,9 @@ else
                   <param name="Organization" value="<%=license.getCompany()%>" />
                   <param name="Key" value="<%=license.getKey()%>" />                  
               </object>
-			  <%}%>
+			  <%
+                  }
+              %>
 			  </td>
             </tr>
         </table></td>

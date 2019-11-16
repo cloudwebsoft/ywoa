@@ -115,6 +115,11 @@ public class FormUtil {
             
             if (ff.getHide()!=FormField.HIDE_NONE)
             	continue;
+
+            // 文件框不作前台是否为空的验证，否则当流程中保存草稿后，再处理时仍会提醒不能为空
+            if (ff.getMacroType().equals("macro_attachment")) {
+                continue;
+            }
             
             // 如果是函数型的，则不进行前台验证，20181201 fgf 仍改为前台进验证
             if (ff.isFunc()) {

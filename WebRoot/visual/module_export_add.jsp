@@ -276,18 +276,15 @@ o("menu9").className="current";
 <div id="targetBox" class="shadow target_box" style="display:none">
 	<div class="target_list">
 <%
-String listField = StrUtil.getNullStr(vsd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(vsd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(vsd.getString("list_field_order"));
-String[] fieldOrder = StrUtil.split(listFieldOrder, ",");
-String listFieldLink = StrUtil.getNullStr(vsd.getString("list_field_link"));
-String[] fieldsLink = StrUtil.split(listFieldLink, ",");
+String[] fields = vsd.getColAry(true, "list_field");
+String[] fieldsWidth = vsd.getColAry(true, "list_field_width");
+String[] fieldsLink = vsd.getColAry(true, "list_field_link");
 
 int len = 0;
-if (fields!=null)
+if (fields!=null) {
 	len = fields.length;
+}
+
 int i;
 Vector v3 = fd.getFields();
 Iterator ir3 = v3.iterator();
@@ -321,7 +318,6 @@ if (len == 0){
         <%  
         }
 	}
-	
 }else{
 	while (ir3.hasNext()) {
 		FormField ff = (FormField) ir3.next();
@@ -335,12 +331,60 @@ if (len == 0){
 			}
 		}
 		%>
-		<span><input type="checkbox" id="<%=ff.getName()%>" name="<%=ff.getName()%>" title="<%=ff.getTitle()%>" <%=checked%> />&nbsp;<%=ff.getTitle()%></span>
+		<span><input type="checkbox" id="<%=ff.getName()%>" name="<%=ff.getName()%>" onclick="checkField(this)" title="<%=ff.getTitle()%>" <%=checked%> />&nbsp;<%=ff.getTitle()%></span>
 		<%
     }
+	
+	// 增加映射型字段
+	for (i=0; i<fields.length; i++) {
+		String fieldName = fields[i];
+		
+		String title = "";
+		boolean isMap = false;
+		if (fieldName.startsWith("main:")) {
+			String[] ary = StrUtil.split(fieldName, ":");
+			if (ary.length > 1) {
+				FormDb mainFormDb = fm.getFormDb(ary[1]);
+				title = mainFormDb.getName() + "：" + mainFormDb.getFieldTitle(ary[2]);
+				isMap = true;
+			}
+		}
+		else if (fieldName.startsWith("other:")) {
+			String[] ary = StrUtil.split(fieldName, ":");
+			if (ary.length<5) {
+				title = "<font color='red'>格式非法</font>";
+			}
+			else {
+				FormDb otherFormDb = fm.getFormDb(ary[2]);
+				if (ary.length>=5) {
+					title = otherFormDb.getName() + "：" + otherFormDb.getFieldTitle(ary[4]);
+					isMap = true;
+				}
+				
+				if (ary.length>=8) {
+					FormDb oFormDb = fm.getFormDb(ary[5]);
+					title += "：" + oFormDb.getFieldTitle(ary[7]);
+					isMap = true;
+				}
+			}
+		}
+		if (isMap) {
+			String checked = "";
+			for (i=0; i<len; i++) {
+				String fieldNameMap = fields[i];
+				if (fieldName.equals(fieldNameMap)) {
+					checked = "checked";
+					break;
+				}
+			}
+		%>
+		<span><input type="checkbox" id="<%=fieldName%>" name="<%=fieldName%>" onclick="checkField(this)" <%=checked%> title="<%=title%>" />&nbsp;<%=title%></span>
+		<%
+		}
+	}
 }
 %>
-	<span><input type="button" class="btn" value="确定" onclick="checkFields()" />&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" class="btn" value="取消" onclick="cancel()" /></span>
+	<span><input type="button" class="btn" value="关闭" onclick="cancel()" /></span>
     </div>
 </div>
 <script type="text/javascript">
@@ -352,7 +396,7 @@ $("#trigger").powerFloat({
 	eventType: "click",
 	targetMode: null,
 	targetAttr: "src",
-	// position: "1-4", // 显示于下方，默认上方
+	position: "1-4", // 显示于下方，默认上方
 	container: $("#customContainer")
 });
 
@@ -370,20 +414,21 @@ function checkField(obj) {
 			gd.remove();
 			$('#viewBox').html('');
 			$('#viewBox').append('<div class="view grid expGrid"></div>');
-
-			var a = JSON.parse("{\"field\":\"" + obj.name + "\", \"title\":\"" + obj.getAttribute("title") + "\", \"width\":150, \"name\":\"" + obj.getAttribute("name") + "\", \"link\":\"#\"}");
+			
+			var objName = obj.getAttribute("name");
+			objName = objName.replaceAll(":", "#");
+			var a = JSON.parse("{\"field\":\"" + obj.name + "\", \"title\":\"" + obj.getAttribute("title") + "\", \"width\":150, \"name\":\"" + objName + "\", \"link\":\"#\"}");
 			moduleCols.push(a);
 			
 			macGrid('grid', moduleCols);
-
-			setCols();
 		}
 	}
 	else {
 		// 检查是否已有含有此列，如果有则删除
 		var k = -1;
 		$.each(gd.config.cols, function(n, c){
-			if(c.name == obj.name) {		
+			// console.log(c.field + "--" + obj.name);
+			if(c.field == obj.name) {
 				k = n;
 				return;
 			}
@@ -399,63 +444,8 @@ function checkField(obj) {
 		moduleCols.splice(k, 1); //删除指定子对象，参数：开始位置,删除个数
 
 		macGrid('grid', moduleCols);
-		
-		setCols();		
 	}
 }
-
-function checkFields() {
-	$("#targetBox").find("input").each(function(){
-		var obj = $(this);
-		if (obj.attr("checked")=="checked") {
-			var isFound = false;
-			// 检查是否已有含有此列，如果没有则添加
-			$.each(gd.config.cols, function(n, c){
-				if(c.name == obj.attr("name")) {
-					isFound = true;
-					return;
-				}
-			});
-			if (!isFound) {
-				gd.remove();
-				$('#viewBox').html('');
-				$('#viewBox').append('<div class="view grid expGrid"></div>');
-	
-				var a = JSON.parse("{\"field\":\"" + obj.attr("name") + "\", \"title\":\"" + obj.attr("title") + "\", \"width\":150, \"name\":\"" + obj.attr("name") + "\", \"link\":\"#\"}");
-				moduleCols.push(a);
-				
-				macGrid('grid', moduleCols);
-	
-				//setCols();
-			}
-		}
-		else {
-			// 检查是否已有含有此列，如果有则删除
-			var k = -1;
-			$.each(gd.config.cols, function(n, c){
-				if(c.name == obj.attr("name")) {		
-					k = n;
-					return;
-				}
-			});
-			
-			if (k==-1)
-				return;
-			
-			gd.remove();
-			$('#viewBox').html('');
-			$('#viewBox').append('<div class="view grid expGrid"></div>');
-			
-			moduleCols.splice(k, 1); //删除指定子对象，参数：开始位置,删除个数
-	
-			macGrid('grid', moduleCols);
-			
-			//setCols();		
-		}
-	});
-	setCols();
-}
- 
 </script>
 <%
 JSONArray jsonAry = new JSONArray();
@@ -465,6 +455,9 @@ for (i=0; i<len; i++) {
 	String title = "";
 	if (fieldName.equals("cws_creator")) {
 		title = "创建者";
+	}
+	else if (fieldName.equals("flowId")) {
+		title = "流程号";
 	}
 	else if (fieldName.equals("ID")) {
 		title = "ID";
@@ -477,11 +470,23 @@ for (i=0; i<len; i++) {
 	}
 	else if (fieldName.equals("cws_flag")) {
 		title = "冲抵状态";
-	}	
+	}
+	else if (fieldName.equals("colOperate")) {
+		title = "操作";
+	}
+	else if (fieldName.equals("cws_create_date")) {
+		title = "创建时间";
+	}
+	else if (fieldName.equals("flow_begin_date")) {
+		title = "流程开始时间";
+	}
+	else if (fieldName.equals("flow_end_date")) {
+		title = "流程结束时间";
+	}
 	else {
 		if (fieldName.startsWith("main")) {
 			String[] ary = StrUtil.split(fieldName, ":");
-			fieldName = fieldName.substring(5);
+			// fieldName = fieldName.substring(5);
 			if (ary.length > 1) {
 				FormDb mainFormDb = fm.getFormDb(ary[1]);
 				title = mainFormDb.getName() + "：" + mainFormDb.getFieldTitle(ary[2]);
@@ -490,7 +495,7 @@ for (i=0; i<len; i++) {
 		else if (fieldName.startsWith("other")) {
 			String[] ary = StrUtil.split(fieldName, ":");
 			if (fieldName.length()>6) {
-				fieldName = fieldName.substring(6);
+				// fieldName = fieldName.substring(6);
 			}
 			if (ary.length<5) {
 				title = "<font color='red'>格式非法</font>";
@@ -514,6 +519,10 @@ for (i=0; i<len; i++) {
 	// field: 'subject', title : 'Subject', width: 140
 	JSONObject json = new JSONObject();
 	json.put("field", fieldName);
+	
+	String name = fieldName.replaceAll(":", "#");
+	json.put("name", name);
+	
 	json.put("title", title);
 	json.put("width", StrUtil.toInt(fieldsWidth[i].equals("#")?"":fieldsWidth[i], 150));
 	if (fieldsLink != null){

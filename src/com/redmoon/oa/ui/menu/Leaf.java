@@ -75,13 +75,23 @@ public class Leaf implements Serializable, ITagSupport {
     
     java.util.Date add_date;
     private int orders = 1, layer = 1, child_count = 0, islocked = 0;
-    final String LOAD = "select code,name,link,parent_code,root_code,orders,layer,child_count,add_date,islocked,type,isHome,pre_code,width,is_has_path,is_resource,target,pvg,icon,is_use,is_nav,form_code,can_repeat,big_icon,is_widget,widget_width,widget_height,kind,is_system,font_icon from " + tableName + " where code=?";
+    final String LOAD = "select code,name,link,parent_code,root_code,orders,layer,child_count,add_date,islocked,type,isHome,pre_code,width,is_has_path,is_resource,target,pvg,icon,is_use,is_nav,form_code,can_repeat,big_icon,is_widget,widget_width,widget_height,kind,is_system,font_icon,description from " + tableName + " where code=?";
     boolean isHome = false;
     final String dirCache = "OA_MENU";
     private String bigIcon;
     private int widgetHeight;
     private int widgetWidth;
     private boolean isSystem;     //判断是否是系统菜单
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    private String description;
 
     public String get(String field) {
         if (field.equals("code"))
@@ -167,6 +177,7 @@ public class Leaf implements Serializable, ITagSupport {
                 kind = rs.getInt(28);
                 isSystem = rs.getInt(29) > 0 ? true : false ;
                 fontIcon = StrUtil.getNullStr(rs.getString(30));
+                description = StrUtil.getNullStr(rs.getString(31));
                 loaded = true; 
             }
         } catch (SQLException e) {
@@ -375,7 +386,7 @@ public class Leaf implements Serializable, ITagSupport {
                      ",orders=" + orders + ",layer=" + layer + ",child_count=" + child_count + ",pre_code=" + StrUtil.sqlstr(preCode) + ",width=" + width +
                      ",parent_code=" + StrUtil.sqlstr(parent_code) +
                      ",is_has_path=" + (hasPath?1:0) + ",is_resource=" + (resource?1:0) + ",target=" + StrUtil.sqlstr(target) + ",pvg=" + StrUtil.sqlstr(pvg) + ",icon=" + StrUtil.sqlstr(icon) + ",is_use=" + (use?1:0) + ",is_nav=" + (nav?1:0) + ",form_code=" + StrUtil.sqlstr(formCode) +
-                     ",can_repeat=" + (canRepeat?1:0) +  ",big_icon=" + StrUtil.sqlstr(bigIcon) + ",is_widget=" + (widget?1:0) + ",widget_width=" + widgetWidth + ",widget_height=" + widgetHeight + ",font_icon=" + StrUtil.sqlstr(fontIcon) + " where code=" + StrUtil.sqlstr(code);
+                     ",can_repeat=" + (canRepeat?1:0) +  ",big_icon=" + StrUtil.sqlstr(bigIcon) + ",is_widget=" + (widget?1:0) + ",widget_width=" + widgetWidth + ",widget_height=" + widgetHeight + ",font_icon=" + StrUtil.sqlstr(fontIcon) + ",description=" + StrUtil.sqlstr(description) + " where code=" + StrUtil.sqlstr(code);
         // logger.info(sql);
         RMConn conn = new RMConn(connname);
         int r = 0;
@@ -421,7 +432,7 @@ public class Leaf implements Serializable, ITagSupport {
                      ",type=" + type + ",isHome=" + (isHome ? "1" : "0") +
                      ",parent_code=" + StrUtil.sqlstr(newParentCode) + ",orders=" + neworders +
                      ",layer=" + (parentLayer+1) + ",pre_code=" + StrUtil.sqlstr(preCode) + ",width=" + width + ",target=" + StrUtil.sqlstr(target) + ",pvg=" + StrUtil.sqlstr(pvg) + ",icon=" + StrUtil.sqlstr(icon) + ",is_use=" + (use?1:0) + ",is_nav=" + (nav?1:0) + ",form_code=" + StrUtil.sqlstr(formCode) +
-                     ",can_repeat=" + (canRepeat?1:0) + ",big_icon=" + StrUtil.sqlstr(bigIcon) + ",is_widget=" + (widget?1:0) + ",widget_width=" + widgetWidth + ",widget_height=" + widgetHeight + ",font_icon=" + StrUtil.sqlstr(fontIcon) + " where code=" + StrUtil.sqlstr(code);
+                     ",can_repeat=" + (canRepeat?1:0) + ",big_icon=" + StrUtil.sqlstr(bigIcon) + ",is_widget=" + (widget?1:0) + ",widget_width=" + widgetWidth + ",widget_height=" + widgetHeight + ",font_icon=" + StrUtil.sqlstr(fontIcon) + ",description=" + StrUtil.sqlstr(description) + " where code=" + StrUtil.sqlstr(code);
 
         String oldParentCode = parent_code;
         parent_code = newParentCode;
@@ -499,7 +510,7 @@ public class Leaf implements Serializable, ITagSupport {
         int childorders = child_count + 1;
 
         String updatesql = "";
-        String insertsql = "insert into " + tableName + " (code,name,parent_code,link,orders,root_code,child_count,layer,type,add_date,pre_code,width,is_has_path,is_resource,target,pvg,icon,is_use,is_nav,form_code,can_repeat,big_icon,is_widget,widget_width,widget_height,font_icon) values (";
+        String insertsql = "insert into " + tableName + " (code,name,parent_code,link,orders,root_code,child_count,layer,type,add_date,pre_code,width,is_has_path,is_resource,target,pvg,icon,is_use,is_nav,form_code,can_repeat,big_icon,is_widget,widget_width,widget_height,font_icon,description) values (";
         insertsql += StrUtil.sqlstr(childleaf.getCode()) + "," +
                 StrUtil.sqlstr(childleaf.getName()) +
                 "," + StrUtil.sqlstr(code) +
@@ -507,7 +518,7 @@ public class Leaf implements Serializable, ITagSupport {
                 childorders + "," + StrUtil.sqlstr(root_code) +
                 ",0," + (layer+1) + "," + childleaf.getType() +
                 "," + StrUtil.sqlstr("" + System.currentTimeMillis()) + "," + StrUtil.sqlstr(childleaf.getPreCode()) + "," + childleaf.getWidth() + "," + (childleaf.isHasPath()?1:0) + "," + (childleaf.isResource()?1:0) + "," + StrUtil.sqlstr(childleaf.getTarget()) + "," + StrUtil.sqlstr(childleaf.getPvg()) + "," + StrUtil.sqlstr(childleaf.getIcon()) + "," + (childleaf.isUse()?1:0) + "," + (childleaf.isNav()?1:0) + "," + StrUtil.sqlstr(childleaf.getFormCode()) +
-                "," + (childleaf.isCanRepeat()?1:0) + "," + StrUtil.sqlstr(childleaf.getBigIcon()) + "," + (childleaf.isWidget()?1:0) + "," + childleaf.getWidgetWidth() + "," + childleaf.getWidgetHeight() + "," + StrUtil.sqlstr(childleaf.getFontIcon()) + ")";
+                "," + (childleaf.isCanRepeat()?1:0) + "," + StrUtil.sqlstr(childleaf.getBigIcon()) + "," + (childleaf.isWidget()?1:0) + "," + childleaf.getWidgetWidth() + "," + childleaf.getWidgetHeight() + "," + StrUtil.sqlstr(childleaf.getFontIcon()) + "," + StrUtil.sqlstr(childleaf.getDescription()) + ")";
 
         Conn conn = new Conn(connname);
         try {
@@ -933,60 +944,51 @@ public class Leaf implements Serializable, ITagSupport {
 		    }
 		}        
 
-        if (pvg.equals("")) {
-            if (type==TYPE_MODULE) {
-                ModulePrivDb mpd = new ModulePrivDb(formCode);
-                return mpd.canUserSee(privilege.getUser(request));
-            }
-            else if (type==TYPE_BASICDATA) {
-            	SelectKindPriv skp = new SelectKindPriv();
-            	int kindId = StrUtil.toInt(formCode, -1);
-            	return skp.canUserAppend(userName, kindId) || skp.canUserModify(userName, kindId) || skp.canUserDel(userName, kindId);
-            }
-            else {
-            	return MenuController.canUserSee(request, this);
-            }
+        if (type==TYPE_MODULE) {
+            ModulePrivDb mpd = new ModulePrivDb(formCode);
+            return mpd.canUserSee(privilege.getUser(request));
+        }
+        else if (type==TYPE_BASICDATA) {
+            SelectKindPriv skp = new SelectKindPriv();
+            int kindId = StrUtil.toInt(formCode, -1);
+            return skp.canUserAppend(userName, kindId) || skp.canUserModify(userName, kindId) || skp.canUserDel(userName, kindId);
         }
         else {
-        	boolean re = false;
-            // 替换全角逗号
-            pvg = pvg.replaceAll("，", ",");
-            String[] ary = StrUtil.split(pvg, ",");
-            for (int i=0; i<ary.length; i++) {
-                // 如果禁止管理员看到
-                if (ary[i].trim().equalsIgnoreCase("!admin")) {
-                    if (privilege.isUserPrivValid(request, "admin")) {
-                        re = false;
+            boolean re = false;
+            if (!pvg.equals("")) {
+                // 替换全角逗号
+                pvg = pvg.replaceAll("，", ",");
+                String[] ary = StrUtil.split(pvg, ",");
+                for (int i = 0; i < ary.length; i++) {
+                    // 如果禁止管理员看到
+                    if (ary[i].trim().equalsIgnoreCase("!admin")) {
+                        if (privilege.isUserPrivValid(request, "admin")) {
+                            re = false;
+                        }
+                    }
+                }
+                // layer=2，对应于菜单上的一级大类项
+                if (layer == 2) {
+                    if (privilege.isUserPrivValid(request, "admin"))
+                        re = true;
+                }
+
+                for (int i = 0; i < ary.length; i++) {
+                    if (layer == 2) {
+                        // 20161115 qcg发现BUG，如果菜单项置为admin可见，则admin.flow即具有流程查询权限的也可见
+                        if (privilege.isUserPrivValid(request, ary[i].trim())
+                                || (!ary[i].trim().equals(Privilege.ADMIN) && privilege.isUserHasPrivStartWith(request, ary[i].trim()))) {
+                            re = true;
+                        }
+                    } else {
+                        if (privilege.isUserPrivValid(request, ary[i].trim()))
+                            re = true;
                     }
                 }
             }
-            // layer=2，对应于菜单上的一级大类项
-            if (layer==2) {
-                if (privilege.isUserPrivValid(request, "admin"))
-                    re = true;
+            else {
+                re = MenuController.canUserSee(request, this);
             }
-
-            for (int i=0; i<ary.length; i++) {
-                if (layer==2) {
-                	// 20161115 qcg发现BUG，如果菜单项置为admin可见，则admin.flow即具有流程查询权限的也可见
-                    if (privilege.isUserPrivValid(request, ary[i].trim())
-                    		|| (!ary[i].trim().equals(Privilege.ADMIN) && privilege.isUserHasPrivStartWith(request, ary[i].trim()))) {
-                        re = true;
-                    }
-                }
-                else {
-                    if (privilege.isUserPrivValid(request, ary[i].trim()))
-                        re = true;
-                }
-            }
-            
-            if (re) {
-            	if (type==TYPE_MODULE) {
-            		ModulePrivDb mpd = new ModulePrivDb(formCode);
-            		re = mpd.canUserSee(privilege.getUser(request));
-            	}
-            }
-
             return re;
         }
     }

@@ -383,6 +383,7 @@ toolbar = new Toolbar({
 					$.ajax({
 						type: "post",
 						url: "portal.jsp",
+						contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
 						data: {
 							op: "add",
 							userName: "<%=userName%>",
@@ -466,7 +467,7 @@ toolbar = new Toolbar({
 					$.ajax({
 						type: "post",
 						url: "portal.jsp",
-						contentType:"application/x-www-form-urlencoded; charset=iso8859-1",								
+						contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
 						data: {
 							op: "edit",
 							groupId: o("groupId").value,

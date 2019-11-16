@@ -1,4 +1,6 @@
-<%@ page contentType="text/html; charset=utf-8" %><%@ page import="java.io.*"%><%@ page import="com.cloudwebsoft.framework.db.*"%><%@ page import="com.redmoon.oa.fileark.*"%><%@ page import="com.redmoon.oa.db.*"%><%@ page import="com.redmoon.oa.pvg.*"%><%@ page import="com.redmoon.oa.message.*"%><%@ page import="com.redmoon.oa.person.*"%><%@ page import="com.redmoon.oa.dept.*"%><%@ page import="cn.js.fan.util.*"%><%@ page import="cn.js.fan.web.*"%><%@ page import="com.redmoon.kit.util.*"%><%@ page import="com.redmoon.oa.flow.*"%><%@ page import = "org.json.*"%><%@ page import="cn.js.fan.mail.SendMail"%><%@ page import="javax.mail.internet.MimeUtility"%><%@page import="com.redmoon.oa.ui.LocalUtil"%><%
+<%@ page contentType="text/html; charset=utf-8" %><%@ page import="java.io.*"%><%@ page import="com.cloudwebsoft.framework.db.*"%><%@ page import="com.redmoon.oa.fileark.*"%><%@ page import="com.redmoon.oa.db.*"%><%@ page import="com.redmoon.oa.pvg.*"%><%@ page import="com.redmoon.oa.message.*"%><%@ page import="com.redmoon.oa.person.*"%><%@ page import="com.redmoon.oa.dept.*"%><%@ page import="cn.js.fan.util.*"%><%@ page import="cn.js.fan.web.*"%><%@ page import="com.redmoon.kit.util.*"%><%@ page import="com.redmoon.oa.flow.*"%><%@ page import = "org.json.*"%><%@ page import="cn.js.fan.mail.SendMail"%><%@ page import="javax.mail.internet.MimeUtility"%><%@page import="com.redmoon.oa.ui.LocalUtil"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %><%
 com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
 String priv = "read";
 if (!privilege.isUserPrivValid(request,priv)) {
@@ -430,14 +432,12 @@ if (action.equals("recall")) {
 		JSONObject json = new JSONObject();
 		if (re){
 			String str = LocalUtil.LoadString(request,"res.common","info_op_success");
-			//out.print(StrUtil.Alert_Redirect(str, "flow_modify.jsp?flowId=" + flowId));
 			json.put("ret", "1");
 			json.put("msg", str);
 			out.print(json);
 		}
 		else {
 			String str = LocalUtil.LoadString(request,"res.flow.Flow","noNodeCanBeWithdrawn");
-			//out.print(StrUtil.Alert_Back(str));
 			json.put("ret", "0");
 			json.put("msg", str);
 			out.print(json);
@@ -453,8 +453,10 @@ try {
 	wfm.doUpload(application, request);
 }
 catch (ErrMsgException e) {
-	e.printStackTrace();
-	// out.print(StrUtil.Alert(e.getMessage()));
+	// 可能会抛出验证非法的错误信息
+	// e.printStackTrace();
+	DebugUtil.e(getClass(), "doUpload", e.getMessage());
+
 	JSONObject json = new JSONObject();
 	json.put("ret", "0");
 	json.put("msg", e.getMessage());
@@ -623,7 +625,8 @@ if (op.equals("finish") || op.equals("AutoSaveArchiveNodeCommit")) {
 		json.put("ret", "0");
 		json.put("msg", e.getMessage());
 		json.put("op", op);
-		out.print(json);		
+		out.print(json);
+		e.printStackTrace();
 	}
 	catch (NullPointerException e) {
 		// 为便于查错
@@ -728,8 +731,9 @@ if (op.equals("editFormValue") || op.equals("saveformvalue") || op.equals("savef
 		json.put("op", op);
 		out.print(json);
 
-		e.printStackTrace();
-		
+		// e.printStackTrace();
+		DebugUtil.e(getClass(), op, e.getMessage());
+		// LogUtil.getLog(getClass()).error(StrUtil.trace(e));
 		return;
 	}
 	if (re) {

@@ -58,8 +58,12 @@
 			int moduleId = ParamUtil.getInt(request, "moduleId");
 			String tagName = ParamUtil.get(request, "tagName");
 			String moduleFormCode = ParamUtil.get(request, "moduleFormCode");
+			
+			ModuleSetupDb msd = new ModuleSetupDb();
+			msd = msd.getModuleSetupDb(moduleFormCode);
+			String formCode = msd.getString("form_code");
 			FormDb fdModule = new FormDb();
-			fdModule = fdModule.getFormDb(moduleFormCode);
+			fdModule = fdModule.getFormDb(formCode);
 
 			com.redmoon.oa.visual.FormDAO moduleFdao = new com.redmoon.oa.visual.FormDAO();
 			moduleFdao = moduleFdao.getFormDAO(moduleId, fdModule);

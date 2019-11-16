@@ -175,7 +175,7 @@
             <td height="28" colspan="3">
                 <input class="btn" type="submit" name="okbtn" value="<lt:Label res='res.flow.Flow' key='sure'/>"/>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <input class="btn" type="button" name="cancelbtn" value="<lt:Label res='res.flow.Flow' key='back'/>" onclick="history.back()"/>
+                <input class="btn" type="button" name="cancelbtn" value="返回" onclick="history.back()"/>
             </td>
         </tr>
     </table>

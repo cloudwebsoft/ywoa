@@ -325,20 +325,15 @@ function SubmitResult() {
 	if (flowForm.nextActionUsers.value=="") {
 		// 检查是否@了用户
 		if (o("cwsWorkflowResult").value.indexOf("@")==-1) {
-			//if (!confirm('<lt:Label res="res.flow.Flow" key="notChosenProcess"/>'))
-				//return false;
-			//else
-				//isConfirmed = true;
-
 			jConfirm('<lt:Label res="res.flow.Flow" key="notChosenProcess"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>', function(r) {
 				//alert();
 				if(r){  
-					flowForm.op.value='finish';	
+					o("op").value='finish';
 					
 					var re = true;
 					try {
 						// 在嵌套表格页面中，定义了onsubmit方法
-						re = flowForm.onsubmit();
+						re = o("flowForm").onsubmit();
 					}
 					catch (e) {}
 					if (re) {
@@ -366,39 +361,37 @@ function SubmitResult() {
 			});
 		}
 	}else{
-		
-		if( confirm('<lt:Label res="res.flow.Flow" key="submitForm"/>'))
-			;
-		else
-			return;	
-	
-		flowForm.op.value='finish';	
-		
-		var re = true;
-		try {
-			// 在嵌套表格页面中，定义了onsubmit方法
-			re = flowForm.onsubmit();
-		}
-		catch (e) {}
-		if (re) {
-			// 去除掉未打勾的nextUsersDiv数据
-			$("div[name='nextUsersDiv']").each(function() {
-			   var objDiv = $(this);
-			   var objs = $(this).find('input');
-			   objs.each(function () {
-				   var obj = $(this);
-				   if (obj.attr('name')=='nextUsers') {
-					if (obj.attr("checked")!="checked") {
-						objDiv.html("");
-						objDiv.hide();
-					}
-				   }
-			   });
-			});
+		jConfirm('<lt:Label res="res.flow.Flow" key="submitForm"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>', function(r) {
+			if (r) {
+				o("op").value='finish';
 
-			$('#bodyBox').showLoading();
-			$('#flowForm').submit();
-		}
+				var re = true;
+				try {
+					// 在嵌套表格页面中，定义了onsubmit方法
+					re = o("flowForm").onsubmit();
+				}
+				catch (e) {}
+				if (re) {
+					// 去除掉未打勾的nextUsersDiv数据
+					$("div[name='nextUsersDiv']").each(function() {
+						var objDiv = $(this);
+						var objs = $(this).find('input');
+						objs.each(function () {
+							var obj = $(this);
+							if (obj.attr('name')=='nextUsers') {
+								if (obj.attr("checked")!="checked") {
+									objDiv.html("");
+									objDiv.hide();
+								}
+							}
+						});
+					});
+
+					$('#bodyBox').showLoading();
+					$('#flowForm').submit();
+				}
+			}
+		});
 	}
 	<%}%>
 	
@@ -445,7 +438,9 @@ function ReviseByUserColor(user, colorindex, doc_id, file_id) {
 	<%}%>
 }
 
-function confirmLock(file_id, userName, doc_id, isRevise){
+function confirmLock(file_id, userName, doc_id, isRevise) {
+	openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 1024, 768);
+/*
 	var islocked = false;
 	var content = "";
 
@@ -511,7 +506,7 @@ function confirmLock(file_id, userName, doc_id, isRevise){
 				openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 800, 600);
 			}
 		}
-	});
+	});*/
 }
 
 function uploaddoc(doc_id, file_id) {	
@@ -2047,8 +2042,6 @@ function showError(pRequest, pStatus, pErrorText) {
 }
 
 function delAtt(docId, attId) {
-	
-
 	jConfirm('<lt:Label res="res.flow.Flow" key="isDelete"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>', function(r) {	
 		if (!r){return;}
 		else{

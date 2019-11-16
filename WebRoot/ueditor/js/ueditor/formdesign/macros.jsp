@@ -177,7 +177,15 @@ window.onload = function() {
 		
 		$G('macroType').value = oNode.getAttribute("macroType");
 		$G('macroType').disabled = true;
-        if (oNode.getAttribute("macroType") == "macro_current_user" || oNode.getAttribute("macroType") == "macro_image" || oNode.getAttribute("macroType") == "nest_table" || oNode.getAttribute("macroType") == "nest_sheet" || oNode.getAttribute("macroType") == "macro_detaillist_ctl" || oNode.getAttribute("macroType") == "module_field_select") {
+        if (oNode.getAttribute("macroType") == "macro_current_user"
+            || oNode.getAttribute("macroType") == "macro_image" ||
+            oNode.getAttribute("macroType") == "nest_table" ||
+            oNode.getAttribute("macroType") == "nest_sheet" ||
+            oNode.getAttribute("macroType") == "macro_detaillist_ctl"
+            || oNode.getAttribute("macroType") == "module_field_select"
+            || oNode.getAttribute("macroType") == "macro_ntko_ctl"
+            || oNode.getAttribute("macroType") == "macro_writepad_ctl"
+            ) {
             $G('desc').style.display = "none";
             $G("edit").style.display = '';
         } else {
@@ -409,7 +417,7 @@ function onMacroTypeChange(obj) {
         $G("edit").style.display = 'none';
         $G("desc").style.display = '';
         setSequence("","");
-        openWin('image_ctl_prop.jsp', 300, 200);
+        openWin('image_ctl_prop.jsp', 450, 250);
     }
 	else if (obj.options[obj.selectedIndex].value=='role_user_select') {
 		$G("canNull").disabled = false;
@@ -446,8 +454,22 @@ function onMacroTypeChange(obj) {
         $G("desc").style.display = '';
         setSequence("","");
         openWin('../../../../flow/macro/curent_user_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
-    }			
-	else{
+    }
+    else if (obj.options[obj.selectedIndex].value=='macro_ntko_ctl') {
+        $G("canNull").disabled = false;
+        $G("edit").style.display = '';
+        $G("desc").style.display = '';
+        setSequence("","");
+        openWin('../../../../flow/macro/macro_ntko_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+    }
+    else if (obj.options[obj.selectedIndex].value=='macro_writepad_ctl') {
+        $G("canNull").disabled = false;
+        $G("edit").style.display = '';
+        $G("desc").style.display = '';
+        setSequence("","");
+        openWin('../../../../flow/macro/macro_writepad_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+    }
+    else{
 		$G("canNull").disabled = false;
 		$G("edit").style.display = 'none';
 		$G("desc").style.display = '';
@@ -456,16 +478,23 @@ function onMacroTypeChange(obj) {
 }
 function editMap(){
     if ($G("macroType").value=="macro_image") {
-        openWin('image_ctl_prop.jsp', 400, 230);
+        openWin('image_ctl_prop.jsp', 450, 250);
         return;
     }
-    if ($G("macroType").value=="macro_current_user") {
+    else if ($G("macroType").value=="macro_current_user") {
         openWin('../../../../flow/macro/curent_user_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
         return;
     }
-    
+    else if ($G("macroType").value == "macro_ntko_ctl") {
+        openWin('../../../../flow/macro/macro_ntko_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+        return;
+    }
+    else if ($G("macroType").value == "macro_writepad_ctl") {
+        openWin('../../../../flow/macro/macro_writepad_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+        return;
+    }
 
-    var jsonStr = ""; 
+    var jsonStr = "";
     if (map.get(macroType.value).value>1) {
         jsonStr = description.value ;
         if (jsonStr=="") {

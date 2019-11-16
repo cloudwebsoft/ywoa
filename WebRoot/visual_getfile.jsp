@@ -11,6 +11,12 @@ if (!privilege.isUserPrivValid(request, priv))
 int id = ParamUtil.getInt(request, "attachId");
 Attachment att = new Attachment(id);
 
+// 如果是ntko控件在添加页面临时生成的记录，则不需要记录日志
+if (att.getVisualId()!=-1) {
+	AttachmentLogDb attLogDb = new AttachmentLogDb();
+	attLogDb.log(privilege.getUser(request), att.getVisualId(), id, AttachmentLogDb.TYPE_DOWNLOAD);
+}
+
 response.setContentType(MIMEMap.get(StrUtil.getFileExt(att.getDiskName())));
 //response.setHeader("Content-disposition","filename="+att.getName());
 response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUnicode(att.getName()));
@@ -22,7 +28,8 @@ BufferedInputStream bis = null;
 BufferedOutputStream bos = null;
 // System.out.println(getClass() + " att.getFullPath():" + att.getFullPath());
 try {
-	bis = new BufferedInputStream(new FileInputStream(att.getFullPath()));
+	String fullPath = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
+	bis = new BufferedInputStream(new FileInputStream(fullPath));
 	bos = new BufferedOutputStream(response.getOutputStream());
 	
 	byte[] buff = new byte[2048];

@@ -42,7 +42,7 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 			e.printStackTrace();
 		}
 		
-		String content = "一米测试"; 
+		String content = "测试";
 		StringBuffer sb = new StringBuffer("http://api.duanxin.cm/?");
 		//StringBuffer sb = new StringBuffer("http://api.duanxin.cm/?");
 		sb.append("action=send&username=70202407");

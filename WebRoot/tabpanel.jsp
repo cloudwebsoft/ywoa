@@ -173,6 +173,15 @@ function reloadTabById(tabId) {
 	tabpanel.reloadTabById(tabId);
 }
 
+function closeTabById(tabId) {
+	var tabs = tabpanel.tabs;
+	for (var i=0; i<tabs.length; i++) {
+		if (tabs[i].id==tabId) {
+			tabpanel.kill(tabId);
+		}
+	}
+}
+
 function getAndShowDesktopTab() {
 	var tabs = tabpanel.tabs;
 	for (var i=0; i<tabs.length; i++) {

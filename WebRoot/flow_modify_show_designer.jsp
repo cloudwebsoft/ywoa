@@ -58,6 +58,9 @@ else{
 	String str = LocalUtil.LoadString(request,"res.flow.Flow","hour");
 	flowExpireUnit = str;
 }
+    
+boolean canUserSeeFlowImage = cfg.getBooleanProperty("canUserSeeFlowImage");
+boolean canUserSeeDesignerWhenDispose = cfgTop.getBooleanProperty("canUserSeeDesignerWhenDispose");
 %>
 <table align="center" class="tabStyle_1 percent80">
     <tr>
@@ -66,25 +69,79 @@ else{
     <tr>
       <td style="background-color: #fff">
       <div id="designerDiv">
-      <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" codebase="activex/cloudym.CAB#version=1,3,0,0" style="width:100%; height:515px">
-        <param name="Workflow" value="<%=wf.getFlowString()%>" />
-        <param name="Mode" value="view" />
-        <!--debug user initiate complete-->
-        <param name="CurrentUser" value="<%=privilege.getUser(request)%>" />
-        <param name="ExpireUnit" value="<%=flowExpireUnit%>" />
-		<%
-        com.redmoon.oa.kernel.License license = com.redmoon.oa.kernel.License.getInstance();	  
-        %>
-        <param name="Organization" value="<%=license.getCompany()%>" />
-        <param name="Key" value="<%=license.getKey()%>" />     
-        <param name="LicenseType" value="<%=license.getType()%>" />        
-      </object>
+          <%
+              if (canUserSeeFlowImage) {
+          %>
+              <div id="Designer" class="flow-image-box" style="width:0px; height:0px; overflow-x:scroll; overflow-y: scroll;">
+                  <img id="flowImage" src="<%=wf.getImgVisualPath()%>/<%=wf.getId()%>.jpg" style="width:2593px;height:2161px"/>
+              </div>
+                <script>
+                    function detectZoom() {
+                        var ratio = 1,
+                            screen = window.screen;
+                        var os = getOS();
+                        if (os == 1) { // ie
+                            if (window.devicePixelRatio) {
+                                ratio = window.devicePixelRatio;
+                            }
+                            else if (screen.deviceXDPI && screen.logicalXDPI) {
+                                ratio = screen.deviceXDPI / screen.logicalXDPI;
+                            }
+                        } else if (os == 3) { // chrome
+                            ratio = window.top.outerWidth / window.top.innerWidth;
+                        }
+                        else if (window.outerWidth !== undefined && window.innerWidth !== undefined) { // firefox、opera
+                            if (window.devicePixelRatio) {
+                                ratio = window.devicePixelRatio;
+                            }
+                            else {
+                                ratio = window.outerWidth / window.innerWidth;
+                            }
+                        }
+                        ratio = Math.round(ratio * 100) / 100;
+                        return ratio;
+                    }
+                    $(function() {
+                        var radio = detectZoom();
+                        if (radio!=1) {
+                            $('#flowImage').width( $('#flowImage').width()/radio);
+                            $('#flowImage').height( $('#flowImage').height()/radio);
+                            $('#Designer').css({"width":"1200px", "height":"515px"});
+                        }
+                    })
+                </script>
+          <%
+              }
+              else {
+          %>
+              <object id="Designer" classid="CLSID:ADF8C3A0-8709-4EC6-A783-DD7BDFC299D7" codebase="activex/cloudym.CAB#version=1,3,0,0" style="width:100%; height:515px">
+                <param name="Workflow" value="<%=wf.getFlowString()%>" />
+                <param name="Mode" value="view" />
+                <!--debug user initiate complete-->
+                <param name="CurrentUser" value="<%=privilege.getUser(request)%>" />
+                <param name="ExpireUnit" value="<%=flowExpireUnit%>" />
+                <%
+                com.redmoon.oa.kernel.License license = com.redmoon.oa.kernel.License.getInstance();
+                %>
+                <param name="Organization" value="<%=license.getCompany()%>" />
+                <param name="Key" value="<%=license.getKey()%>" />
+                <param name="LicenseType" value="<%=license.getType()%>" />
+              </object>
+          <%
+              }
+          %>
       </div>
       </td>
     </tr>
+    <%
+        if (canUserSeeDesignerWhenDispose) {
+    %>
     <tr>
       <td align="center"><input class="btn" name="btnPlay" type="button" reserve="true" onclick="PlayDesigner()" value='<lt:Label res="res.flow.Flow" key="playbackProcess"/>' /></td>
     </tr>
+    <%
+        }
+    %>
 </table>
 </body>
 <script>

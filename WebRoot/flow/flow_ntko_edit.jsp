@@ -5,6 +5,9 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.person.*"%>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
+<%@ page import="com.redmoon.oa.base.IFormMacroCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 String priv="read";
@@ -99,12 +102,12 @@ function TANGER_OCX_OnDocumentOpened(TANGER_OCX_str,TANGER_OCX_obj) {
 	<%}%>
 	// 套表单内容
 	replaceText();
+
 	// 接受修订
 	// TANGER_OCX_AcceptAllRevisions();
 	
 	<%
 	if(true || isRevise!=0){
-	// System.out.println(getClass() + " isRevise222=" + isRevise);
 	%>
 	TANGER_OCX_SetMarkModify(true);
 	TANGER_OCX_ShowRevisions(false); // 默认不显示修订
@@ -113,38 +116,32 @@ function TANGER_OCX_OnDocumentOpened(TANGER_OCX_str,TANGER_OCX_obj) {
 	<%}%>
 }
 
-function TANGER_OCX_SetDocUser(cuser)
-{
-	with(TANGER_OCX.ActiveDocument.Application)
-	{
+function TANGER_OCX_SetDocUser(cuser) {
+	with(TANGER_OCX.ActiveDocument.Application) {
 		UserName = cuser;
 	}	
 }
 
-function TANGER_OCX_SetMarkModify(boolvalue)
-{
+function TANGER_OCX_SetMarkModify(boolvalue) {
 	TANGER_OCX_SetReviewMode(boolvalue);
 	//TANGER_OCX_EnableReviewBar(!boolvalue);
 }
 
-function TANGER_OCX_SetReviewMode(boolvalue)
-{
+function TANGER_OCX_SetReviewMode(boolvalue) {
 	try {
 		TANGER_OCX.ActiveDocument.TrackRevisions = boolvalue;
 	}
 	catch (e) {}
 }
 
-function TANGER_OCX_EnableReviewBar(boolvalue)
-{
+function TANGER_OCX_EnableReviewBar(boolvalue) {
 	TANGER_OCX.ActiveDocument.CommandBars("Reviewing").Enabled = boolvalue;
 	TANGER_OCX.ActiveDocument.CommandBars("Track Changes").Enabled = boolvalue;
 	TANGER_OCX.IsShowToolMenu = boolvalue;	//关闭或打开工具菜单
 }
 
 //接受所有修订
-function TANGER_OCX_AcceptAllRevisions()
-{
+function TANGER_OCX_AcceptAllRevisions() {
    if (typeof(TANGER_OCX.ActiveDocument.AcceptAllRevisions)=="unknown") {
 	   TANGER_OCX.ActiveDocument.AcceptAllRevisions();
    }
@@ -153,10 +150,8 @@ function TANGER_OCX_AcceptAllRevisions()
    //   TANGER_OCX.ActiveDocument.AcceptAllRevisions();
 }
 
-function AddMyMenuItems()
-{
- 	try
-	{
+function AddMyMenuItems() {
+ 	try	{
 		//在自定义主菜单中增加菜单项目
 		<%if (wad.canReceiveRevise()) {%>
 		TANGER_OCX.AddCustomMenuItem('定稿保存',false,false,6);
@@ -240,78 +235,70 @@ function edit() {
 }
 </script>
 <script>
-function TANGER_OCX_ShowRevisions(boolvalue)
-{
-	if (TANGER_OCX.ActiveDocument.ShowRevisions!=undefined)
+function TANGER_OCX_ShowRevisions(boolvalue) {
+	if (TANGER_OCX.ActiveDocument.ShowRevisions != undefined)
 		TANGER_OCX.ActiveDocument.ShowRevisions = boolvalue;
 }
 
 //图片印章
-function userStamp()
-{
-   openChooseStamp("getstamp");
-   //alert(URL);
+function userStamp() {
+	openChooseStamp("getstamp");
+	//alert(URL);
 }
 <% String rootpath = request.getContextPath(); %>
-function openWinForFlowAccess(url,width,height)
-{
-	var newwin = window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=400,left=550,width="+width+",height="+height);
+
+function openWinForFlowAccess(url, width, height) {
+	var newwin = window.open(url, "_blank", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=400,left=550,width=" + width + ",height=" + height);
 }
 
 function openWinStamp(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_win.jsp?stampId="+obj, 300, 130);
+	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_win.jsp?stampId="+obj, 300, 150);
 }
 
 function openChooseStamp(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_choose.jsp", 300, 130);
+	openWinForFlowAccess("<%=rootpath%>/flow/flow_ntko_stamp_choose.jsp", 300, 150);
 }
 
 function test() {
 	AddSignFromURL(URL);
 }
 
-function AddSignFromURL(URL)
-{
-//   alert(TANGER_OCX_key);
-      TANGER_OCX.AddSignFromURL(
-	'<%=userRealName%>',//当前登陆用户
-	URL,//URL
-	50,//left
-	50,
-	"1",
-1,
-100,
-0) 
+function AddSignFromURL(URL) {
+	TANGER_OCX.AddSignFromURL(
+			'<%=userRealName%>',//当前登陆用户
+			URL,//URL
+			50,//left
+			50,
+			"1",
+			1,
+			100,
+			0)
 }
 
-function AddPictureFromURL(URL)
-{
-try{
-	URL = '<%=request.getContextPath()%>/img_show.jsp?path='+ URL;
-    TANGER_OCX.AddPicFromURL(
-		URL,//URL 注意；URL必须返回Word支持的图片类型。
-		true,//是否浮动图片
-		0, 
-		0,
-        1, //当前光标处
-		100,//无缩放
-		1 //文字上方
-	)}
-	catch(e){
-	
+function AddPictureFromURL(URL) {
+	try {
+		URL = '<%=request.getContextPath()%>/img_show.jsp?path=' + URL;
+		TANGER_OCX.AddPicFromURL(
+				URL,//URL 注意；URL必须返回Word支持的图片类型。
+				true,//是否浮动图片
+				0,
+				0,
+				1, //当前光标处
+				100,//无缩放
+				1 //文字上方
+		)
+	} catch (e) {
+
 	}
 };
 </script>
 <script>
-function useHandSign()
-{
+function useHandSign() {
    DoHandSign();
 }
-function DoHandSign()
-{
-	// alert(TANGER_OCX_key);
+function DoHandSign() {
 	TANGER_OCX.DoHandSign(
 	'<%=userRealName%>',//当前登陆用户 必须
 	0,//笔型0－实线 0－4 //可选参数
@@ -325,42 +312,59 @@ function DoHandSign()
 }
 
 // 应用模板，模板中需要有zhengwen标签
-function applyTempalte(templateUrl)
-{	
-	try{
-		//选择对象当前文档的所有内容
-		var bookMarkName ;
-		var value;
+function applyTempalte(templateUrl) {
+	try {
+		// 选择对象当前文档的所有书签内容
 		var bk = TANGER_OCX.ActiveDocument.Bookmarks;
-		// 取当前文件的正文部分
-		if(bk.Exists("zw"))
-		{
-			TANGER_OCX.ActiveDocument.Application.Selection.GoTo(-1,0,0,"zw");
-			var mark = TANGER_OCX.ActiveDocument.Bookmarks("zw");
+		// 如果页面中已经含有zw，则说明是二次套红，取当前文件的正文部分置于剪切板中
+		if(bk.Exists("zw") || bk.Exists("正文")) {
+			var mark;
+			if (bk.Exists("zw")) {
+				TANGER_OCX.ActiveDocument.Application.Selection.GoTo(-1,0,0,"zw");
+				mark = TANGER_OCX.ActiveDocument.Bookmarks("zw");
+			}
+			else {
+				TANGER_OCX.ActiveDocument.Application.Selection.GoTo(-1,0,0,"正文");
+				mark = TANGER_OCX.ActiveDocument.Bookmarks("正文");
+			}
+
 			var range = mark.Range;
-			if(range==null || range==""){
-				alert("模板中没有名称为zw的标签");
+			if (range == null || range == "") {
+				alert("模板中没有名称为zw或正文的标签");
 				return;
 			}
+			// 如果存在则剪切
 			range.Cut();
+
+			// 删除全部内容，以便于重新应用模板
 			TANGER_OCX.ActiveDocument.Application.Selection.HomeKey(6);//光标定位到文件头
 			var curSel = TANGER_OCX.ActiveDocument.Application.Selection;
 			curSel.WholeStory();
 			curSel.Delete();
-			// TANGER_OCX.AddTemplateFromURL("/FileUploadTest/tempDirectory/test.doc");
+
+			// 删除书签，因清除全部内容并不能同时删除书签，会使得全部书签移至被清空文档的首部位置
+			// 致AddTemplateFromURL后模板中的书签可能因同名的原因而无效，最后书签都在文档首部位置
+			var count = TANGER_OCX.ActiveDocument.BookMarks.Count;
+			while (count > 0) {
+				// 注意不能在循环中用Item(i).Delete的方式删除，因为这样会使得长度发生实时变化，使得在删除时报“集合所要求的成员不存在”
+				var markName = TANGER_OCX.ActiveDocument.BookMarks.Item(1).Name;
+				TANGER_OCX.ActiveDocument.BookMarks(markName).Delete();
+				count = TANGER_OCX.ActiveDocument.BookMarks.Count;
+			}
+
+			// 应用模板
 			TANGER_OCX.AddTemplateFromURL(templateUrl);
 		}
-		else
-		{
+		else {
 			var curSel = TANGER_OCX.ActiveDocument.Application.Selection;
 			curSel.WholeStory();
 			curSel.Cut();
 			// 插入模板
 			TANGER_OCX.AddTemplateFromURL(templateUrl);
 		}
+
 		var bkmk = TANGER_OCX.ActiveDocument.BookMarks;
-		if (bkmk.Exists("zw"))
-		{
+		if (bkmk.Exists("zw"))	{
 			var bkmkObj = TANGER_OCX.ActiveDocument.BookMarks("zw");
 			var saverange = bkmkObj.Range;
 			// 粘贴原来的文件内容
@@ -369,21 +373,28 @@ function applyTempalte(templateUrl)
 			// 接受修订
 			TANGER_OCX_AcceptAllRevisions();
 		}
-		else
-		{
+		else if (bkmk.Exists("正文")) {
+			var bkmkObj = TANGER_OCX.ActiveDocument.BookMarks("正文");
+			var saverange = bkmkObj.Range;
+			// 粘贴原来的文件内容
+			saverange.Paste();
+			TANGER_OCX.ActiveDocument.Bookmarks.Add("正文",saverange);
+			// 接受修订
+			TANGER_OCX_AcceptAllRevisions();
+		}
+		else {
 			alert("模板中没有名称为zw的标签（zw表示正文）！");
 		}
 	}
-	catch(err)
-	{
+	catch(err) {
 		alert("错误：" + err.number + ":" + err.description);
 	}
 }
 
-function replaceText()
-{
+function replaceText() {
     rangeWord = TANGER_OCX.ActiveDocument.Content; // 获取当前文档文字部分
 	<%
+	MacroCtlMgr mm = new MacroCtlMgr();
 	FormDb fd = new FormDb();
 	fd = fd.getFormDb(lf.getFormCode());
 	java.util.Iterator irff = fd.getFields().iterator();
@@ -401,9 +412,46 @@ function replaceText()
 				else
 					val = obj.innerHTML;
 			}
+			<%
+			boolean isImg = false;
+			if(ff.getType().equals(FormField.TYPE_MACRO)) {
+				MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+				IFormMacroCtl imc = mu.getIFormMacroCtl();
+				if (imc!=null) {
+					if (imc.getControlType().equals("writePad")
+						// || imc.getControlType().equals("img")
+					) {
+						isImg = true;
+			%>
+				val = window.opener.o("pad_<%=ff.getName()%>").getAttribute("img");
+				if (val!=null && val!="") {
+					var bkmks = TANGER_OCX.ActiveDocument.BookMarks;
+					if (bkmks.Exists("<%=ff.getTitle()%>")) {
+						var markWritePad = TANGER_OCX.ActiveDocument.Bookmarks("<%=ff.getTitle()%>");
+						markWritePad.Select();
+						var picUrl = val + "?time=" + new Date().getTime(); // 防止缓存
+						TANGER_OCX.AddPicFromURL(picUrl,
+								false,//是否浮动图片
+								0, //如果是浮动图片，相对于左边的Left 单位磅
+								5, //如果是浮动图片，相对于当前段落Top
+								1, //当前光标处
+								30, //缩放百分比
+								1 //文字上方
+						);
+					}
+				}
+			<%
+					}
+				}
+			}
+			if (!isImg) {
+			%>
 			searchStr = "【<%=ff.getTitle()%>】";
 			if (rangeWord != undefined)
 				rangeWord.Find.Execute(searchStr,false,false,false,false,false,true,1,false,val,2); // 执行查找替换方法
+			<%
+			}
+			%>
 		}
 		<%
 	}
@@ -434,8 +482,6 @@ function clearLocker(){
 			//jAlert(XMLHttpRequest.responseText,'<lt:Label res="res.flow.Flow" key="prompt"/>');
 		}
 	});
-
 }
-
 </script>
 </html>

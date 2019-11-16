@@ -371,7 +371,7 @@ function isTypeMatched(sourceValue, destValue, sources, dests) {
                 tr += "<td align='center'>目标</td>";
                 tr += "<td align='center'>" + destFieldName + "</td>";
                 tr += "<td align='center'>";
-                tr += "&nbsp;&nbsp<a href='javascript:;' onclick=\"$('#" + trId + "').remove()\">删除</a></td>";
+                tr += "&nbsp;&nbsp<a href='javascript:;' onclick=\"$(this).parent().parent().remove()\">删除</a></td>";
                 tr += "</tr>";
                 $("#mapTableNest tr:last").after(tr);
             }

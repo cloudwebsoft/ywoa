@@ -29,6 +29,8 @@ import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.notice.NoticeDb;
 import com.redmoon.oa.person.*;
+import com.redmoon.oa.sms.IMsgUtil;
+import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.tigase.TigaseConnection;
 import com.redmoon.oa.ui.DesktopMgr;
@@ -551,7 +553,16 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                     att.setSize(size);
                     att.create();
                 }
+            }
 
+            if (re) {
+                // 发送短信
+                IMsgUtil imu = SMSFactory.getMsgUtil();
+                if (imu != null) {
+                    UserDb ud = new UserDb();
+                    ud = ud.getUserDb(receiver);
+                    imu.send(ud, content, sender);
+                }
             }
         } catch (Exception e) {
             logger.error("sendSysMsg: " + e.getMessage());
@@ -595,11 +606,9 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     public String getSenderRealName() {
         String realName = sender;
         if (!sender.equals(MessageDb.SENDER_SYSTEM)) {
-            com.redmoon.oa.person.UserDb ud = new com.redmoon.oa.person.
-                    UserDb();
+            com.redmoon.oa.person.UserDb ud = new com.redmoon.oa.person.UserDb();
             ud = ud.getUserDb(sender);
             if (ud != null && ud.isLoaded()) {
-
                 realName = ud.getRealName();
             }
         }

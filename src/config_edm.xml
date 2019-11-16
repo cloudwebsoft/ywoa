@@ -5,8 +5,8 @@
         <sendInterval desc="每几天发送1次邮件" isDisplay="false">1</sendInterval>
         <sendTotal desc="去掉试用验证邮件，共几封邮件" isDisplay="false">2</sendTotal>
         <sendTime desc="发送时间" isDisplay="false">8:30</sendTime>
-        <redbagReceiveSubject desc="红包兑奖一米OA邮件标题">兑奖成功！</redbagReceiveSubject>
-        <redbagReceiveContent type="textarea" desc="红包兑奖一米OA邮件内容">&lt;html&gt;&#xD;
+        <redbagReceiveSubject desc="红包兑奖邮件标题">兑奖成功！</redbagReceiveSubject>
+        <redbagReceiveContent type="textarea" desc="红包兑奖邮件内容">&lt;html&gt;&#xD;
 	&lt;head&gt;&#xD;
 		&lt;title&gt;&lt;/title&gt;&#xD;
 	&lt;/head&gt;&#xD;

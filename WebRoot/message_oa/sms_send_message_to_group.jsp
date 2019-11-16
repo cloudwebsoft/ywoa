@@ -8,59 +8,6 @@
 <%
 String name = privilege.getUser(request);
 String receiver = ParamUtil.get(request, "receiver");
-
-String op = ParamUtil.get(request, "op");
-if(op.equals("send")) {
-	String content = ParamUtil.get(request, "content");
-	String messageContent = content;
-    IMsgUtil imu = SMSFactory.getMsgUtil();
-	String[] receivers = StrUtil.split(receiver, ",");
-	String isTimeSend = ParamUtil.get(request,"isTimeSend");
-	boolean timing = "1".equals(isTimeSend)?true:false;
-	String timeSendDate = ParamUtil.get(request,"timeSend_Date");
-	//timeSendDate = timeSendDate.replace("/","-")+":00";
-	//String timeSendTime = ParamUtil.get(request,"timeSend"); 
-	//if(timeSendTime == null){
-		//timeSendTime = "00:00";
-	//}
-	java.util.Date timeSend = DateUtil.parse(timeSendDate,"yyyy-MM-dd hh:mm:ss");
-	long batch = SMSSendRecordDb.getBatchCanUse();
-	com.redmoon.oa.person.UserDb ud = new com.redmoon.oa.person.UserDb();
-	int length = receivers.length;//发送短信条数
-	Config cfg = new Config();
-	int remain = cfg.canSendSMS(length,messageContent.length());
-	int count = cfg.getDivNumber(messageContent.length());
-	int i=0;
-	int realSendUserCount = 0;
-	for(; i<length&&remain>0; i++) {
-		ud = ud.getUserDb(receivers[i]);
-		if(ud == null) {
-			continue;
-		}
-		try {
-			if (imu.send(ud,messageContent,name,timing,timeSend,batch)) {
-				realSendUserCount ++;				
-				remain --;
-			}
-		} catch(ErrMsgException e) {
-			out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
-			return;
-		}
-	}
-	int realSendCount = realSendUserCount * count;	
-	if(i<length){
-		if(cfg.getBoundary()==Config.SMS_BOUNDARY_YEAR){
-			out.print(StrUtil.jAlert_Redirect(StrUtil.format(cfg.getProperty("sms.alertYearExceed"), new Object[]{cfg.getIsUsedProperty("yearTotal"), "" + realSendCount}),"提示", "sms_send_message_to_group.jsp"));
-		}else if(cfg.getBoundary()==Config.SMS_BOUNDARY_MONTH){
-			out.print(StrUtil.jAlert_Redirect(StrUtil.format(cfg.getProperty("sms.alertMonthExceed"), new Object[]{cfg.getIsUsedProperty("monthTotal"), "" + realSendCount}),"提示", "sms_send_message_to_group.jsp"));
-		}else{
-			out.print(StrUtil.jAlert_Redirect("发送完毕，本次共发送短信"+realSendCount+"条。","提示","sms_send_message_to_group.jsp"));
-		}
-	}else{
-		out.print(StrUtil.jAlert_Redirect("发送完毕，本次共发送短信"+realSendCount+"条。","提示","sms_send_message_to_group.jsp"));
-	}
-	return;
-}
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -180,6 +127,60 @@ function countChar(textareaName,spanName){
 </script>
 </head>
 <body>
+<%
+    String op = ParamUtil.get(request, "op");
+    if(op.equals("send")) {
+        String content = ParamUtil.get(request, "content");
+        String messageContent = content;
+        IMsgUtil imu = SMSFactory.getMsgUtil();
+        String[] receivers = StrUtil.split(receiver, ",");
+        String isTimeSend = ParamUtil.get(request,"isTimeSend");
+        boolean timing = "1".equals(isTimeSend)?true:false;
+        String timeSendDate = ParamUtil.get(request,"timeSend_Date");
+        //timeSendDate = timeSendDate.replace("/","-")+":00";
+        //String timeSendTime = ParamUtil.get(request,"timeSend");
+        //if(timeSendTime == null){
+        //timeSendTime = "00:00";
+        //}
+        java.util.Date timeSend = DateUtil.parse(timeSendDate,"yyyy-MM-dd hh:mm:ss");
+        long batch = SMSSendRecordDb.getBatchCanUse();
+        com.redmoon.oa.person.UserDb ud = new com.redmoon.oa.person.UserDb();
+        int length = receivers.length;//发送短信条数
+        Config cfg = new Config();
+        int remain = cfg.canSendSMS(length,messageContent.length());
+        int count = cfg.getDivNumber(messageContent.length());
+        int i=0;
+        int realSendUserCount = 0;
+        for(; i<length&&remain>0; i++) {
+            ud = ud.getUserDb(receivers[i]);
+            if(ud == null) {
+                continue;
+            }
+            try {
+                if (imu.send(ud,messageContent,name,timing,timeSend,batch)) {
+                    realSendUserCount ++;
+                    remain --;
+                }
+            } catch(ErrMsgException e) {
+                out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
+                return;
+            }
+        }
+        int realSendCount = realSendUserCount * count;
+        if(i<length){
+            if(cfg.getBoundary()==Config.SMS_BOUNDARY_YEAR){
+                out.print(StrUtil.jAlert_Redirect(StrUtil.format(cfg.getProperty("sms.alertYearExceed"), new Object[]{cfg.getIsUsedProperty("yearTotal"), "" + realSendCount}),"提示", "sms_send_message_to_group.jsp"));
+            }else if(cfg.getBoundary()==Config.SMS_BOUNDARY_MONTH){
+                out.print(StrUtil.jAlert_Redirect(StrUtil.format(cfg.getProperty("sms.alertMonthExceed"), new Object[]{cfg.getIsUsedProperty("monthTotal"), "" + realSendCount}),"提示", "sms_send_message_to_group.jsp"));
+            }else{
+                out.print(StrUtil.jAlert_Redirect("发送完毕，本次共发送短信"+realSendCount+"条。","提示","sms_send_message_to_group.jsp"));
+            }
+        }else{
+            out.print(StrUtil.jAlert_Redirect("发送完毕，本次共发送短信"+realSendCount+"条。","提示","sms_send_message_to_group.jsp"));
+        }
+        return;
+    }
+%>
 <%@ include file="sms_user_inc_menu_top.jsp"%>
 <script src="../inc/flow_dispose_js.jsp"></script>
 <script>

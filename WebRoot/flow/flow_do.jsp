@@ -98,6 +98,51 @@ else if (op.equals("refreshFlow")) {
 	out.print(json);
 	return;
 }
+else if (op.equals("refreshFlowBatch")) {
+	String ids = ParamUtil.get(request, "ids");
+	String[] ary = StrUtil.split(ids, ",");
+	for (int i=0; i<ary.length; i++) {
+		int flowId = StrUtil.toInt(ary[i], -1);
+		
+		WorkflowDb wf = new WorkflowDb();
+		wf = wf.getWorkflowDb(flowId);
+		// Leaf lf = new Leaf();
+		// Leaf lf = lf.getLeaf(wf.getTypeCode());
+		wf.refreshFlow();
+	}
+	
+	JSONObject json = new JSONObject();	
+	json.put("ret", "1");
+	String str = LocalUtil.LoadString(request,"res.common","info_op_success");
+	json.put("msg", str);
+	out.print(json);
+	return;
+}
+else if (op.equals("discardFlowBatch")) {
+	String ids = ParamUtil.get(request, "ids");
+	String[] ary = StrUtil.split(ids, ",");
+	// MyActionDb mad = new MyActionDb();
+	String userName = privilege.getUser(request);
+	for (int i=0; i<ary.length; i++) {
+		int flowId = StrUtil.toInt(ary[i], -1);
+		WorkflowDb wf = new WorkflowDb();
+		wf = wf.getWorkflowDb(flowId);
+		wf.discard(userName);
+/*
+		mad = mad.getLastMyActionDbOfFlow(wf.getId());
+		long actionId = mad.getActionId();
+		WorkflowActionDb lastAction = new WorkflowActionDb();
+		lastAction = lastAction.getWorkflowActionDb((int)actionId);
+		wf.changeStatus(request, WorkflowDb.STATUS_DISCARDED, lastAction);*/
+	}
+	
+	JSONObject json = new JSONObject();
+	json.put("ret", "1");
+	String str = LocalUtil.LoadString(request,"res.common","info_op_success");
+	json.put("msg", str);
+	out.print(json);
+	return;
+}
 else if ("applyProps".equals(op)) {
 	String fieldWrite = ParamUtil.get(request, "fieldWrite");
 	String fieldHide = ParamUtil.get(request, "fieldHide");

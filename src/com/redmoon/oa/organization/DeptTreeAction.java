@@ -26,6 +26,7 @@ public class DeptTreeAction extends ActionSupport {
 	private boolean group = false;
 	private boolean hide = false;
 	private String description = "";
+	private String shortName = "";
 	
 	public int getDeptType() {
 		return deptType;
@@ -150,6 +151,7 @@ public class DeptTreeAction extends ActionSupport {
 		this.group = db.isGroup();
 		this.hide = db.isHide();
 		this.description = db.getDescription();
+		this.shortName = db.getShortName();
 	}
 	
 	/**
@@ -210,5 +212,13 @@ public class DeptTreeAction extends ActionSupport {
 	 */
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getShortName() {
+		return shortName;
+	}
+
+	public void setShortName(String shortName) {
+		this.shortName = shortName;
 	}
 }

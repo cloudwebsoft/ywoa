@@ -359,9 +359,8 @@ if (totalpages==0)
 	totalpages = 1;
 }
 
-String listField = StrUtil.getNullStr(msd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-
+// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+String[] fields = msd.getColAry(false, "list_field");
 result.put("totalCount", total);
 
 len = 0;

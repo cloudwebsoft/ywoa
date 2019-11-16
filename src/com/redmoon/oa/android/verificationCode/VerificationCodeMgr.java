@@ -75,14 +75,14 @@ public class VerificationCodeMgr {
 			jot.put("verificationCode",verificationCode);
 			
 			//发送验证码短信
-			re = SMSFactory.getMsgUtil().send(name,"【一米OA】验证码：" + verificationCode + "，请您尽快完成登录。如非本人操作，请忽略此短信。","");
+			re = SMSFactory.getMsgUtil().send(name,"【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】验证码：" + verificationCode + "，请您尽快完成登录。如非本人操作，请忽略此短信。","");
 			
 			if(!re){
 				jot.put("result", -1);
 				jot.put("verificationCode", "");
 				return jot;
 			}else{
-				System.out.println("-----手机"+name +",【一米OA】验证码:" + verificationCode);
+				System.out.println("-----手机"+name +",【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】验证码:" + verificationCode);
 			}
 		}
 
@@ -141,14 +141,14 @@ public class VerificationCodeMgr {
 			jot.put("verificationCode",verificationCode);
 			
 			//发送验证码短信
-			re = SMSFactory.getMsgUtil().send(name,"【一米OA】验证码：" + verificationCode + "，请您尽快完成登录。如非本人操作，请忽略此短信。","");
+			re = SMSFactory.getMsgUtil().send(name,"【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】验证码：" + verificationCode + "，请您尽快完成登录。如非本人操作，请忽略此短信。","");
 			
 			if(!re){
 				jot.put("result", -1);
 				jot.put("verificationCode", "");
 				return jot;
 			}else{
-				System.out.println("-----手机"+name +",【一米OA】验证码:" + verificationCode);
+				System.out.println("-----手机"+name +",【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】验证码:" + verificationCode);
 			}
 		}
 		

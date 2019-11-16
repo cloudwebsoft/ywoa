@@ -6,7 +6,7 @@ import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
 
 public class ResBundle {
-    // Ä¬ÈÏ×Ö·û¼¯Îª¼òÌåÖĞÎÄ
+    // é»˜è®¤å­—ç¬¦é›†ä¸ºç®€ä½“ä¸­æ–‡
     Logger logger = Logger.getLogger(this.getClass().getName());
     Locale locale;
     ResourceBundle bundle;
@@ -49,11 +49,11 @@ public class ResBundle {
             return "";
         if (!encode.equals("")) {
             try {
-                // gb2312µÄÄÚÈİ¿ÉÒÔÍ¨¹ıÈçÏÂ·½Ê½´¦Àí£¬µ«big5È´²»ĞĞ
+                // gb2312çš„å†…å®¹å¯ä»¥é€šè¿‡å¦‚ä¸‹æ–¹å¼å¤„ç†ï¼Œä½†big5å´ä¸è¡Œ
                 // str = new String(str.getBytes("ISO8859-1"), encode);
 
-                // ¶ÔÓÚgb2312£¬×ÊÔ´ÎÄ¼ş²»ĞèÒª×ª³Éutf-8±àÂë£¬×ªÁË·´¶ø»á±ä³ÉÂÒÂë£¬¶øbig5µÄ×ÊÔ´ÎÄ¼şĞè×ª»»Îªutf-8±àÂë
-                // ÔÎ£¬ÔÚ±¾»úÇøÓò¸ÄÎªÌ¨ÍåÊ±£¬gb2312×ÊÔ´ÎÄ¼ş²»ÄÜ×ª»»Îªutf8±àÂë£¬¶øµ±±¾»úÇøÓò¸Ä»ØÖĞ¹ú¼´¼òÌåÊ±£¬gb2312µÄ×ÊÔ´ÎÄ¼şĞè×ª³Éutf8±àÂë
+                // å¯¹äºgb2312ï¼Œèµ„æºæ–‡ä»¶ä¸éœ€è¦è½¬æˆutf-8ç¼–ç ï¼Œè½¬äº†åè€Œä¼šå˜æˆä¹±ç ï¼Œè€Œbig5çš„èµ„æºæ–‡ä»¶éœ€è½¬æ¢ä¸ºutf-8ç¼–ç 
+                // æ™•ï¼Œåœ¨æœ¬æœºåŒºåŸŸæ”¹ä¸ºå°æ¹¾æ—¶ï¼Œgb2312èµ„æºæ–‡ä»¶ä¸èƒ½è½¬æ¢ä¸ºutf8ç¼–ç ï¼Œè€Œå½“æœ¬æœºåŒºåŸŸæ”¹å›ä¸­å›½å³ç®€ä½“æ—¶ï¼Œgb2312çš„èµ„æºæ–‡ä»¶éœ€è½¬æˆutf8ç¼–ç 
                 str = new String(str.getBytes("ISO8859-1"), "utf-8");
             } catch (java.io.UnsupportedEncodingException ex) {
                 System.out.println("resName=" + resName + " key=" + key + " locale=" + locale);

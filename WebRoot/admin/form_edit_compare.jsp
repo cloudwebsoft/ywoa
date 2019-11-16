@@ -6,6 +6,8 @@
 <%@ page import = "com.redmoon.oa.flow.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import="cn.js.fan.security.AntiXSS" %>
+<%@ page import="org.json.JSONArray" %>
+<%@ page import="org.json.JSONException" %>
 <%
 String rootpath = request.getContextPath();
 // response.addHeader("X-XSS-Protection", "X-XSS-Protection: 0; mode=block");
@@ -96,7 +98,19 @@ int isLog = ParamUtil.getInt(request, "isLog", 0);
 String unitCode = ParamUtil.get(request, "unitCode");
 int isFlow = ParamUtil.getInt(request, "isFlow", 1);
 
-FormParser fp = null;
+String fieldsAry = ParamUtil.get(request, "fieldsAry");
+FormParser fp = new FormParser();
+try {
+	JSONArray ary = new JSONArray(fieldsAry);
+	fp.getFields(ary);
+}
+catch (JSONException e) {
+	e.printStackTrace();
+	out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, "表单域解析错误：" + fieldsAry, true));
+	return;
+}
+
+/*FormParser fp = null;
 try {
 	fp = new FormParser(content);
 }
@@ -104,6 +118,7 @@ catch (ResKeyException e) {
 	out.print(StrUtil.jAlert_Back(e.getMessage(request), "提示"));
 	return;
 }
+*/
 Vector newv = fp.getFields();
 
 try {%>
@@ -322,6 +337,7 @@ while (ir.hasNext()) {
           <input type="hidden" name="isProgress" value="<%=isProgress%>" />
           <input type="hidden" name="isOnlyCamera" value="<%=isOnlyCamera%>" />
           <input type="hidden" name="isFlow" value="<%=isFlow%>" />
+		  <textarea name="fieldsAry" style="display: none;"><%=fieldsAry%></textarea>
           <%if (isFieldChanged) { %>
           <div style="color:red; weight:bold; margin-bottom:10px;">字段类型被改变，如确定需改变，则先从表单中删除，然后再添加，注意删除后数据将丢失！</div>
           <%} %>
@@ -333,7 +349,8 @@ while (ir.hasNext()) {
 		  <input type="button" value="  返回  " class="btn" onclick="window.history.back()" />          
           </td>
         </tr>
-      </table>    </td>
+      </table>
+	</td>
   </tr>
 </table>
 </form>

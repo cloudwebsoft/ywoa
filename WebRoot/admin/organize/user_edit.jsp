@@ -283,7 +283,7 @@ UserSetupDb usd = new UserSetupDb().getUserSetupDb(user.getName());
                    </td>
                   <td height="28">
                   <%
-                  String leaders = usd.getMyleaders();
+                  String leaders = StrUtil.getNullStr(usd.getMyleaders());
                   String leadersName = "";
         		  if (!leaders.equals("")) {
         			  String[] leadersAry = StrUtil.split(leaders, ",");
@@ -298,7 +298,7 @@ UserSetupDb usd = new UserSetupDb().getUserSetupDb(user.getName());
                   %>
                   <input id="leaderName" name="leaderName"  type=text readonly size=20 value="<%=leadersName %>" />
                     <input id="leaderCode" name="leaderCode" type="hidden" value="<%=leaders %>" />
-                    &nbsp;<a href="javascript:;" onclick="javascript:showModalDialog('../../user_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')">&nbsp;&nbsp;&nbsp;选择</a>
+                    &nbsp;<a href="javascript:;" onclick="openWin('../../user_multi_sel.jsp', 800, 600)">&nbsp;&nbsp;选择</a>
 				  </td>
 				  <%} else { %>
 				  <td width=120 height="28" align=left> 

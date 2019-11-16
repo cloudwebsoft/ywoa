@@ -3,14 +3,45 @@ package cn.js.fan.db;
 import cn.js.fan.web.Global;
 import cn.js.fan.util.StrUtil;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.redmoon.oa.sys.DebugUtil;
+import sun.security.util.Debug;
 
 public class SQLFilter {
     public SQLFilter() {
+    }
+
+    /**
+     * 将sql语句中多余的空格去掉，但不能去掉单引号括起来部分的空格，因为查询条件有可能为 where name='张    三'
+     * @return
+     */
+    public static String trimMultiBlank(String sql) {
+        String regEx = "([^']*)('.*?')*([^']*)"; // 一个或多个空格
+        Pattern pp = Pattern.compile(regEx);
+        Matcher mm = pp.matcher(sql);
+
+        // DebugUtil.i(SQLFilter.class, "sql", sql);
+        StringBuffer sb = new StringBuffer();
+        boolean result = mm.find();
+        while (result) {
+            String s1 = mm.group(1);
+            String s3 = mm.group(3);
+            s1 = s1.replaceAll("[ ]+", " ");
+            s3 = s3.replaceAll("[ ]+", " ");
+            String str = s1 + "$2" + s3;
+
+            mm.appendReplacement(sb, str);
+            // DebugUtil.i(SQLFilter.class, "sb", sb.toString());
+
+            result = mm.find();
+        }
+        mm.appendTail(sb);
+        return sb.toString();
     }
 
     /**
@@ -27,16 +58,15 @@ public class SQLFilter {
         // query = "select distinct id from table where id=1";
     	// 注意sql语句中对于数据的处理会区分大小写，所以不能转换为小写
         String query = sql.toLowerCase();
+    	query = trimMultiBlank(query);
 
-        String regEx = "[ ]+"; // 一个或多个空格
-        Pattern pp = Pattern.compile(regEx);
-        Matcher mm = pp.matcher(query);
-        query = mm.replaceAll(" "); // 替换为一个空格
-
-        mm = pp.matcher(sql);
-        sql = mm.replaceAll(" "); // 替换为一个空格
+    	sql = trimMultiBlank(sql); // 替换为一个空格
 
         int begin = query.indexOf(" from ");
+        if (begin==-1) {
+            DebugUtil.i(SQLFilter.class, "getCountSql", "sql语句中缺少from：" + sql);
+            return "select count(*) from (" + sql + ") as mytable";
+        }
         String query_part = query.substring(begin, query.length()).trim();
         String query_part_raw = sql.substring(begin, query.length()).trim();
         
@@ -76,8 +106,8 @@ public class SQLFilter {
         // select sum(score_value) as s, user_name from sq_score_log group by user_name order by s desc
         // 上句中的group by不能被过滤，否则会报Invalid use of group function
         
-        d = -1;
         d = query_part.indexOf(" group by");
+        boolean isSimpleGroup = false;
         if (d != -1) {
             String temp = query_part.substring(d + " group by".length());
             String selectPart = query.substring(0, begin);
@@ -93,6 +123,11 @@ public class SQLFilter {
 	            // 2011-11-17 select id from archive_user_info_instant where user_name in ((select user_name from archive_user_info_instant) intersect (select user_name from archive_studyinfo where end_date is not null and STUDY_TYPE=0 group by user_name having max(degree) = 1.0)) and working_state = 0 and substr(department,1,10) = '2320200016' order by department
 	            else if (temp.indexOf(" and ")!=-1)
 	                canRemove = false;
+	            else {
+                    // select id from form_table_zs_xm_dupl t1 where t1.is_dupl=1 and 1=1 group by xm; // 如果去掉group by 数量可能会减少
+                    canRemove = false;
+                    isSimpleGroup = true;
+                }
             }
             if (canRemove) {
                 query_part = query_part.substring(0, d);
@@ -161,12 +196,23 @@ public class SQLFilter {
 	            	query = "select " + f + query_part_raw;
 	            }
 	            else {
-	            	query = "select count(" + f + ") " + query_part_raw;
+                    if (!isSimpleGroup) {
+                        query = "select count(" + f + ") " + query_part_raw;
+                    }
+	                else {
+                        query = "select count(*) from (select " + f + " " + query_part_raw + ") a";
+                    }
 	            }
             }
         }
         else {
-            query = "select count(distinct " + distinct + ") " + query_part_raw;
+            if (!isSimpleGroup) {
+                query = "select count(distinct " + distinct + ") " + query_part_raw;
+            }
+            else {
+                // select distinct t1.id from form_table_zs_xm_dupl t1 where t1.unit_code='root' and 1=1 and t1.is_dupl=1 and t1.cws_status=1 group by xm
+                query = "select count(*) from (" + sql + ") as mytable";
+            }
         }
         
         // System.out.println("cn.js.fan.db.SQLFilter:" + query);
@@ -306,6 +352,26 @@ public class SQLFilter {
 			e.printStackTrace();
 		}
     	return -1;
+    }
+
+    public static long getLastId(Conn conn, String tableName) throws SQLException {
+        long visualId = -1;
+        String sql;
+
+        if (Global.db.equalsIgnoreCase(Global.DB_SQLSERVER)) {
+            sql = "select SCOPE_IDENTITY()";
+        }
+        else if (Global.db.equalsIgnoreCase(Global.DB_ORACLE)) {
+            sql = "SELECT sequence.currval FROM DUAL";
+        }
+        else { // if (Global.db.equalsIgnoreCase(Global.DB_MYSQL)) {
+            sql = "select last_insert_id() from " + tableName + " limit 1";
+        }
+        ResultSet rs = conn.executeQuery(sql);
+        if (rs.next()) {
+            visualId = rs.getLong(1);
+        }
+        return visualId;
     }
 
     /**

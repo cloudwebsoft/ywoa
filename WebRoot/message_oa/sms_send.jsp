@@ -226,7 +226,7 @@
                 <div align="center">发送时间：</div>
             </td>
             <td width="368" height="26">
-                <input name=timeSend_Date id="timeSend_Date" size="18" readonly=""/>
+                <input name=timeSend_Date id="timeSend_Date" size="18" />
         </tr>
         <tr>
             <td colspan="2" height="26" style="padding-left:14px;"><span><span style="color:#FF0000">注：<br/>

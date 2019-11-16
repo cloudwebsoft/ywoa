@@ -3,7 +3,7 @@
 <%@ page import="com.redmoon.oa.dept.*"%>
 <%@ page import="com.redmoon.oa.person.*"%>
 <%@ page import="com.redmoon.oa.pvg.Privilege"%>
-<HTML><HEAD><TITLE>管理部门图</TITLE>
+<HTML><HEAD><TITLE>用户管理的部门</TITLE>
 <link rel="stylesheet" href="../common.css">
 <script language="JavaScript">
 function openWinDepts() {

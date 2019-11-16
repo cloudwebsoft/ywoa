@@ -231,4 +231,45 @@ public class ModuleSetupDb extends QObjectDb {
 		return save();
 	}
 
+	public String[] getColAry(boolean isIncludeHide, String fieldName) {
+		String str = StrUtil.getNullStr(getString(fieldName));
+		String[] ary = StrUtil.split(str, ",");
+		if (ary == null) {
+		    if (!"list_field".equals(fieldName)) {
+                String listField = StrUtil.getNullStr(getString("list_field"));
+                if (!"".equals(listField)) {
+                    String[] aryField = StrUtil.split(listField, ",");
+                    ary = new String[aryField.length];
+                    for (int i = 0; i < aryField.length; i++) {
+                        ary[i] = "1";
+                    }
+                    return ary;
+                }
+                else {
+                    return new String[0];
+                }
+            }
+            else {
+                return new String[0];
+            }
+		}
+
+		if (isIncludeHide) {
+			return ary;
+		}
+
+		String listFieldShow = StrUtil.getNullStr(getString("list_field_show"));
+		// list_field_show是后来新增的，所以要检查并初始化以兼容之前的版本
+		if (listFieldShow.equals("")) {
+			return ary;
+		}
+		String[] fieldsShow = StrUtil.split(listFieldShow, ",");
+		StringBuffer sb = new StringBuffer();
+		for (int i=0; i<ary.length; i++) {
+			if (fieldsShow[i].equals("1")) {
+				StrUtil.concat(sb, ",", ary[i]);
+			}
+		}
+		return StrUtil.split(sb.toString(), ",");
+	}
 }

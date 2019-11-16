@@ -31,8 +31,8 @@ public class SuperCheckJob implements Job {
 				
 			}else if(cfg.getBooleanProperty("oem_filesEncrypt_validate")){
 				if (!cfg.getBooleanProperty("systemIsOpen")){
-					cfg.put("systemIsOpen", "true");
-					cfg.put("systemStatus", "系统正在维护中.....");
+					// cfg.put("systemIsOpen", "true");
+					// cfg.put("systemStatus", "系统正在维护中.....");
 				}
 			}
 			

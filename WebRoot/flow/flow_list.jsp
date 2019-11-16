@@ -8,6 +8,7 @@
 <%@ page import="com.redmoon.oa.flow.macroctl.*" %>
 <%@ page import="com.redmoon.oa.base.IFormMacroCtl" %>
 <%@ page import="com.redmoon.oa.person.UserDb" %>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt" %>
 <jsp:useBean id="docmanager" scope="page" class="com.redmoon.oa.fileark.DocumentMgr"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -18,7 +19,8 @@
         return;
     }
 
-    int displayMode = ParamUtil.getInt(request, "displayMode", WorkflowMgr.DISPLAY_MODE_SEARCH); // 显示模式，0表示流程查询、1表示待办、2表示我参与的流程、3表示我发起的流程
+    // 原getInt的默认值为DISPLAY_MODE_SEARCH，360浏览器，可能会传过来有问题的值，导致进入了搜索，会致看到全部用户的待办
+    int displayMode = ParamUtil.getInt(request, "displayMode", WorkflowMgr.DISPLAY_MODE_DOING); // 显示模式，0表示流程查询、1表示待办、2表示我参与的流程、3表示我发起的流程
     String op = StrUtil.getNullString(request.getParameter("op"));
     String action = ParamUtil.get(request, "action"); // sel 选择我的流程
 %>
@@ -31,11 +33,30 @@
     <link rel="stylesheet" href="<%=request.getContextPath()%>/js/bootstrap/css/bootstrap.min.css"/>
     <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
     <style>
-        .span-cond input {
-            width: 80px;
+        #searchTable {
+            margin-top: 5px;
+            margin-left: 5px;
+        }
+        .condSpan {
+            display: inline-block;
+            float: left;
+            width: 250px;
+            min-height: 32px;
+        }
+        .condBtnSearch {
+            display: inline-block;
+            float: left;
+            width: 50px;
         }
         .search-form input, select {
             vertical-align: middle;
+        }
+        .search-form input:not([type="radio"]):not([type="button"]) {
+            width: 80px;
+            line-height: 20px; /*否则输入框的文字会偏下*/
+        }
+        .unreaded {
+            font-weight:bold;
         }
     </style>
     <script type="text/javascript" src="../inc/common.js"></script>
@@ -92,9 +113,6 @@
     String title = ParamUtil.get(request, "title");
     String userName = ParamUtil.get(request, "userName");
 
-/*    if ((op.equals("search") || op.equals("")) && typeCode.equals("")) {
-        typeCode = Leaf.CODE_ROOT;
-    }*/
     String myname = ParamUtil.get(request, "userName");
     if (myname.equals("")) {
         myname = privilege.getUser(request);
@@ -126,7 +144,7 @@
         try {
             colProps = new JSONArray(colLeaf.getColProps());
         } catch (org.json.JSONException e) {
-            System.out.println(getClass() + " colLeaf.getColProps()=" + colLeaf.getColProps());
+            DebugUtil.i(getClass(), "colLeaf", "colLeaf.getColProps()=" + colLeaf.getColProps());
             e.printStackTrace();
         }
     }
@@ -189,14 +207,17 @@
 <table id="searchTable" border="0" cellspacing="0" cellpadding="0">
     <tr>
         <td>
-            <form name="formSearch" class="search-form" action="flow_list.jsp" method="get" onsubmit="return searchFormOnSubmit()">
+            <form name="formSearch" class="search-form" action="flow_list.jsp" method="get" onsubmit="return false">
                 <span class="span-cond">
                     <%
                         if (displayMode!=WorkflowMgr.DISPLAY_MODE_SEARCH) {
                     %>
+                    <span class="condSpan">
+                        类型
                 <select id="typeCode" name="f.typeCode" onchange="onTypeCodeChange(this)" style="width:170px;">
                     <option value=""><lt:Label res="res.flow.Flow" key="limited"/></option>
                 </select>
+                        </span>
                     <%
                         }
                         else {
@@ -205,13 +226,27 @@
                     <%
                         }
                     %>
+                    <span class="condSpan">
+                    
                 <select id="by" name="f.by">
                     <option value="title"><lt:Label res="res.flow.Flow" key="tit"/></option>
                     <option value="flowId"><lt:Label res="res.flow.Flow" key="number"/></option>
                 </select>
                 <input id="title" name="f.title" value="<%=title%>"/>
+                    </span>
+                    <span class="condSpan">
                 <lt:Label res="res.flow.Flow" key="organ"/>
                 <input id="starter" name="f.starter" value="<%=userName%>"/>
+                    </span>
+                    <span class="condSpan">
+                    待办状态
+                    <select id="actionStatus" name="actionStatus">
+                        <option value="-1">不限</option>
+                        <option value="<%=WorkflowActionDb.STATE_RETURN%>"><%=WorkflowActionDb.getStatusName(WorkflowActionDb.STATE_RETURN)%></option>
+                        <option value="<%=WorkflowActionDb.STATE_DOING%>"><%=WorkflowActionDb.getStatusName(WorkflowActionDb.STATE_DOING)%></option>
+                    </select>
+                    </span>
+                <span class="condSpan">
                 <lt:Label res="res.flow.Flow" key="state"/>
                 <select id="status" name="f.status">
                     <option value="1000" selected><lt:Label res="res.flow.Flow" key="limited"/></option>
@@ -226,10 +261,13 @@
                     <option value="<%=WorkflowDb.STATUS_REFUSED%>"><%=WorkflowDb.getStatusDesc(WorkflowDb.STATUS_REFUSED)%>
                     </option>
                 </select>
+                </span>
+                <span class="condSpan">
                 从
                 <input id="fromDate" name="f.fromDate"/>
                 至
                 <input id="toDate" name="f.toDate"/>
+                </span>
                 <%
                     if (leaf.isLoaded() && !"".equals(leaf.getCondProps())) {
                         JSONObject json = new JSONObject(leaf.getCondProps());
@@ -275,6 +313,7 @@
                             // 用于给convertToHTMLCtlForQuery辅助传值
                             ff.setCondType(condType);
                 %>
+                    <span class="condSpan">
                 <%=fieldTitle%>
                 <%
                     if (ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {
@@ -287,9 +326,9 @@
                         list.add(ff.getName() + "FromDate");
                         list.add(ff.getName() + "ToDate");
                 %>
-                大于
+                从
                 <input id="<%=ff.getName()%>FromDate" name="<%=ff.getName()%>FromDate" size="15" value="<%=fDate%>"/>
-                小于
+                至
                 <input id="<%=ff.getName()%>ToDate" name="<%=ff.getName()%>ToDate" size="15" value="<%=tDate%>"/>
                 <%
                 } else {
@@ -464,6 +503,9 @@
                 <%
                                 }
                             }
+                    %>
+                    </span>
+                        <%
                         }
                     }
                 %>
@@ -471,7 +513,7 @@
                 <input name="action" value="<%=action%>" type="hidden"/>
                 <input name="myname" value="<%=myname %>" type="hidden"/>
                 </span>
-                <input name="submit" type=submit value='<lt:Label res="res.flow.Flow" key="search"/>' class="tSearch"/>
+                <input type="submit" value='<lt:Label res="res.flow.Flow" key="search"/>' class="tSearch" onclick="doQuery()" />
             </form>
         </td>
     </tr>
@@ -502,6 +544,10 @@
     var colModel = <%=colProps%>;
 
     $(document).ready(function () {
+        // 将tabIdOpener传至flow_dispose.jsp，以便于在流程处理后刷新待办列表
+        var tabIdOpener = getActiveTabId();
+        requestParams.push({name: 'tabIdOpener', value: tabIdOpener});
+        
         flex = $("#grid").flexigrid
         (
             {
@@ -511,6 +557,14 @@
                 colModel: colModel,
                 buttons: [
                     <%
+                    boolean canDisposeBatch = false;
+                    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+                    if (displayMode==WorkflowMgr.DISPLAY_MODE_DOING && cfg.getBooleanProperty("canFlowDisposeBatch")) {
+                        canDisposeBatch = true;
+                    %>
+                    {name: '<lt:Label res="res.flow.Flow" key="agree"/>', bclass: 'pass', onpress: action},
+                    <%}%>
+                    <%
                     if (displayMode==WorkflowMgr.DISPLAY_MODE_SEARCH) {
                         if (leaf != null && leaf.isLoaded() && leaf.getType() != Leaf.TYPE_NONE) {
                     %>
@@ -518,7 +572,7 @@
                     <%
                         }
                     }
-                        if (privilege.isUserPrivValid(request, "admin.flow.query")) {
+                        if (privilege.isUserPrivValid(request, "admin")) {
                     %>
                     {name: '<lt:Label res="res.flow.Flow" key="resetColProps"/>', bclass: 'resetCol', onpress: action},
                     <%
@@ -529,11 +583,11 @@
                             }
                         }
                     %>
-                    {separator: true},
-                    {name: '<lt:Label res="res.flow.Flow" key="search"/>', bclass: '', type: 'include', id: 'searchTable'}
+                    {separator: true}
+                    // {name: '<lt:Label res="res.flow.Flow" key="search"/>', bclass: '', type: 'include', id: 'searchTable'}
                 ],
                 usepager: true,
-                checkbox: false,
+                checkbox: <%=canDisposeBatch%>,
                 useRp: true,
                 rp: 20,
 
@@ -571,11 +625,89 @@
             timepicker: false,
             format: 'Y-m-d'
         });
+        $("[name$='FromDate']").datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d'
+        });
+        $("[name$='ToDate']").datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d'
+        });
     });
 
+    function getIdsSelected(onlyOne) {
+        var selectedCount = $(".cth input[type='checkbox'][value!='on'][checked='checked']", grid.bDiv).length;
+        if (selectedCount == 0) {
+            return "";
+        }
+
+        if (selectedCount > 1 && onlyOne) {
+            return "";
+        }
+
+        var ids = "";
+        // value!='on' 过滤掉复选框按钮
+        $(".cth input[type='checkbox'][value!='on'][checked='checked']", grid.bDiv).each(function(i) {
+            var id = $(this).val().substring(3); // 去掉前面的row
+            if (ids=="")
+                ids = id;
+            else
+                ids += "," + id;
+        });
+        return ids;
+    }
+    
     function action(com, grid) {
-        if (com == '<lt:Label res="res.flow.Flow" key="export"/>') {
-            window.location.href = "flow_query_result_export.jsp?" + $('form').serialize();
+        if (com == '<lt:Label res="res.flow.Flow" key="agree"/>') {
+            var selectedCount = $(".cth input[type='checkbox'][value!='on'][checked='checked']", grid.bDiv).length;
+            if (selectedCount == 0) {
+                jAlert('<lt:Label res="res.flow.Flow" key="selectRecord"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>');
+                return;
+            }
+            //if (!confirm('<lt:Label res="res.flow.Flow" key="isArgee"/>'))
+            //return;
+            jConfirm('<lt:Label res="res.flow.Flow" key="isArgee"/>', '<lt:Label res="res.flow.Flow" key="prompt"/>', function (r) {
+                if (!r) {
+                    return;
+                } else {
+                    var ids = getIdsSelected();
+                    $.ajax({
+                        type: "POST",
+                        url: "../public/flow/finishBatch.do",
+                        data: {
+                            action: "finishBatch",
+                            ids: ids
+                        },
+                        beforeSend: function(XMLHttpRequest){
+                            $('body').showLoading();
+                        },
+                        success: function (html) {
+                            var json = jQuery.parseJSON(html);
+                            json.msg = json.msg.replace(/\\r/ig, "<BR/>");
+                            if (json.ret == "1") {
+                                jAlert(json.msg, "提示", function() {
+                                    doQuery();
+                                })
+                            } else {
+                                jAlert(json.msg, "提示");
+                            }
+                        },
+                        complete: function(XMLHttpRequest, status){
+                            $('body').hideLoading();
+                        },
+                        error: function(XMLHttpRequest, textStatus){
+                            // 请求出错处理
+                            alert("error:" + XMLHttpRequest.responseText);
+                        }
+                    });
+                }
+            });
+
+        }
+        else if (com == '<lt:Label res="res.flow.Flow" key="export"/>') {
+            window.location.href = "flow_query_result_export.jsp?" + $('form').serialize() + "&typeCode=<%=typeCode%>";
         } else if (com == '<lt:Label res="res.flow.Flow" key="resetColProps"/>') {
             jConfirm('<lt:Label res="res.flow.Flow" key="isResetColProps"/>', "提示", function (r) {
                 if (!r) {
@@ -614,6 +746,10 @@
             }
             var title = $.trim($(this).text()); // 去掉可能的回车符
             var name = getNameOfCol(title); // 标题不能重复，否则会致使name重复
+            if (name=="") {
+                // 如果name为空，可能是有些浏览器获取了多余的列
+                return;
+            }
 
             // 最后处理、操作、当前处理、剩余时间，这些列不能排序
             if (name=="f.finallyApply" || name=="operate" || name=="f.currentHandle" || name=="f.remainTime") {
@@ -682,11 +818,6 @@
         $("#grid").flexReload();
     }
 
-    function searchFormOnSubmit() {
-        doQuery();
-        return false;
-    }
-
     <%
     if (displayMode!=WorkflowMgr.DISPLAY_MODE_SEARCH) {
     %>
@@ -695,7 +826,7 @@
             jAlert(obj.options[obj.selectedIndex].text+' <lt:Label res="res.flow.Flow" key="notBeSelect"/>','<lt:Label res="res.flow.Flow" key="prompt"/>');
             return false;
         }
-        window.location.href = "flow_list.jsp?op=search&displayMode=<%=displayMode%>&typeCode=" + obj.options[obj.selectedIndex].value;
+        window.location.href = "flow_list.jsp?op=search&action=<%=action%>&displayMode=<%=displayMode%>&typeCode=" + obj.options[obj.selectedIndex].value;
     }
 
     // ajax取得流程目录树，在流程类型较多的时候可以提升加载体验

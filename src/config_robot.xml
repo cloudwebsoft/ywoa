@@ -48,8 +48,8 @@
     <filearkShareNotice desc="群OA文件分享至QQ群提示" type="textarea">【播报】%s
         来自群OA的文件分享《%s》, 作者：%s
         %s</filearkShareNotice>
-    <joinGiftNote desc="大礼包通知">[@%s]您的大礼包已送达，积分500分，3张米票，即3套一米OA免费优惠券，请进群OA查看“我的红包”，记住要在有效期内使用哦</joinGiftNote>
-    <joinGiftMailTitle desc="大礼包邮件通知">您的大礼包已送达，3张米票，即3套一米OA免费优惠券</joinGiftMailTitle>
+    <joinGiftNote desc="大礼包通知">[@%s]您的大礼包已送达，积分500分，3张米票，即3套云网OA免费优惠券，请进群OA查看“我的红包”，记住要在有效期内使用哦</joinGiftNote>
+    <joinGiftMailTitle desc="大礼包邮件通知">您的大礼包已送达，3张米票，即3套云网OA免费优惠券</joinGiftMailTitle>
     <joinGiftMailContent desc="大礼包邮件通知" type="richtext">&lt;p&gt;请进群OA查看“我的红包”，记住要在有效期内使用哦&lt;/p&gt;</joinGiftMailContent>
     <docShareNote desc="分享有礼通知">【播报】[@%s]分享了文章《%s》给朋友，送免费米票1张，1月内有效，5折菜票1张，3个月内有效</docShareNote>
     <docShareTitle desc="分享有礼邮件通知">感谢您分享了文章《%s》至朋友圈，送免费米票1张，1月内有效，5折菜票1张，3个月内有效</docShareTitle>
@@ -58,8 +58,8 @@
     <docShareTimelineTitle desc="分享有礼邮件通知">感谢您分享了文章《%s》至朋友圈，送免费米票3张，5折菜票1张</docShareTimelineTitle>
     <docShareTimelineContent desc="分享有礼邮件通知" type="richtext">请进群OA查看“我的红包”，记住要在有效期内使用哦</docShareTimelineContent>
     <isBizCardAuthGif desc="名片认证是否送礼">true</isBizCardAuthGif>
-    <bizCardGiftNote desc="大礼包通知">[@%s]认证通过，您的大礼包已送达，3张米票，即3套一米OA免费优惠券，请进群OA查看“我的红包”，记住要在有效期内使用哦</bizCardGiftNote>
-    <bizCardGiftMailTitle desc="大礼包邮件通知">认证通过，您的大礼包已送达，3张米票，即3套一米OA免费优惠券</bizCardGiftMailTitle>
+    <bizCardGiftNote desc="大礼包通知">[@%s]认证通过，您的大礼包已送达，3张米票，即3套云网OA免费优惠券，请进群OA查看“我的红包”，记住要在有效期内使用哦</bizCardGiftNote>
+    <bizCardGiftMailTitle desc="大礼包邮件通知">认证通过，您的大礼包已送达，3张米票，即3套云网OA免费优惠券</bizCardGiftMailTitle>
     <bizCardGiftMailContent desc="大礼包邮件通知" type="richtext">请进群OA查看“我的红包”，记住要在有效期内使用哦</bizCardGiftMailContent>
     <getBackPwdAddFriend desc="提示加机器人可收密码">[@%s] 请加机器人为好友，您将可以收到密码信息</getBackPwdAddFriend>
     <getBackPwdSuccess desc="找回密码提示">[@%s] 找回密码成功，如未收到，请加机器人小菜头为好友</getBackPwdSuccess>

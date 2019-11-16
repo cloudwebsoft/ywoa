@@ -103,6 +103,10 @@
     if (re) {
         String code = ParamUtil.get(request, "code").trim();
         String name = ParamUtil.get(request, "name").trim();
+        String desc = ParamUtil.get(request, "description").trim();
+        if (!"".equals(desc)) {
+            name += "(" + desc + ")";
+        }
         boolean isUse = ParamUtil.getInt(request, "isUse", 0) == 1;
         out.print(StrUtil.jAlert_Redirect(SkinUtil.LoadString(request, "res.label.forum.admin.menu_bottom", "edit_success"), "提示", "menu_right.jsp?op=modify&code=" + StrUtil.UrlEncode(code)));
 %>
@@ -253,9 +257,12 @@
                 <input name="width" value="0" type="hidden"/>
                 <input type=hidden name=parent_code value="<%=parent_code%>"/>
                 <input type=hidden name=root_code value=""/>
+                描述
+                <input type="text" id="description" name="description"/>
                 <%if (op.equals("modify")) {%>
                 <script>
-                    form1.target.value = "<%=leaf.getTarget()%>";
+                    o("target").value = "<%=leaf.getTarget()%>";
+                    o("description").value = "<%=leaf.getDescription()%>";
                 </script>
                 <%}%>
             </td>
@@ -287,14 +294,12 @@
                 &nbsp;&nbsp;
                 <%
                     }
-                    if (isShowBigIcon) {
                 %>
                 大图标
-                <input id="bigIcon" name="bigIcon" title="用于时尚型及绚丽型界面" value="<%=bigIcon%>"/>
+                <input id="bigIcon" name="bigIcon" title="用于门户快捷按钮、时尚型、绚丽型界面" value="<%=bigIcon%>"/>
                 <input name="button" class="btn" type="button" onclick="openWin('menu_big_icon_sel.jsp', 800, 600)" value="选择"/>
                 &nbsp;&nbsp;
                 <%
-                    }
                     if (isShowFontIcon) {
                 %>
                 <span title="用于轻简型界面">字体图标</span>
@@ -621,9 +626,11 @@ $('#basicdata').val('<%=leaf.getFormCode()%>');
                 <%
                     }
                     if (op.equals("modify")) {
+                        if (!"".equals(leaf.getLink(request))) {
                 %>
                 &nbsp;&nbsp;<a href="javascript:;" onclick="addTab('<%=leaf.getName(request)%>', '<%=request.getContextPath()%>/<%=leaf.getLink(request)%>')">打开菜单</a>
                 <%
+                        }
                     }
                 %>
             </td>
@@ -690,6 +697,11 @@ $('#basicdata').val('<%=leaf.getFormCode()%>');
             $('#spanFlow').hide();
             $('#spanModule').hide();
             $('#spanBasicdata').show();
+        }
+        else {
+            $('#spanFlow').hide();
+            $('#spanModule').hide();
+            $('#spanBasicdata').hide();
         }
     }
 

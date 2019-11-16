@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import cn.js.fan.util.StrUtil;
 import com.hankcs.hanlp.HanLP;
+import com.hankcs.hanlp.seg.CRF.CRFSegment;
+import com.hankcs.hanlp.seg.Dijkstra.DijkstraSegment;
+import com.hankcs.hanlp.seg.NShort.NShortSegment;
 import com.hankcs.hanlp.seg.common.Term;
 import com.hankcs.hanlp.suggest.Suggester;
 import com.hankcs.hanlp.tokenizer.NLPTokenizer;
@@ -24,14 +28,57 @@ public class HanLPUtil {
 	
     public static void main(String[] args) {
         System.out.println("首次编译运行时，HanLP会自动构建词典缓存，请稍候……\n");
+        // 分词
+        StringBuffer keywords = new StringBuffer();
+        String xmmc = "中电智能卡有限责任公司"; // 防水材料研发生产项目
+        List list = HanLPUtil.segment(xmmc);
+        if (list.size()>=3) {
+            Iterator ir = list.iterator();
+            while (ir.hasNext()) {
+                String word = (String)ir.next();
+                if (word.equals("项目") || word.equals("有限公司")) {
+                    continue;
+                }
+
+                if (word.length()==4) {
+                    String word1 = word.substring(0, 2);
+                    String word2 = word.substring(2);
+                    StrUtil.concat(keywords, " ", "+" + word1 + " +" + word2);
+                }
+                else if (word.length()>=1) {
+                    StrUtil.concat(keywords, " ", "+" + word);
+                }
+            }
+            System.out.println(keywords);
+        }
+
+
         //第一次运行会有文件找不到的错误但不影响运行，缓存完成后就不会再有了
+        String str = "中电智能卡有限责任公司"; // "北京航空航天大学";
         System.out.println("标准分词：");
-        System.out.println(HanLP.segment("你好，欢迎使用HanLP！"));
+        System.out.println(HanLP.segment(str)); // "你好，欢迎使用HanLP！"));
         System.out.println("\n");
 
-        List<Term> termList = NLPTokenizer.segment("中国科学院计算技术研究所的宗成庆教授正在教授自然语言处理课程");
+        List<Term> termList = NLPTokenizer.segment(str); // "中国科学院计算技术研究所的宗成庆教授正在教授自然语言处理课程");
         System.out.println("NLP分词：");
         System.out.println(termList);
+        System.out.println("\n");
+
+        List<Term> termList2 = NShortSegment.parse(str);
+        System.out.println("短分词：");
+        System.out.println(termList2);
+        System.out.println("\n");
+
+        DijkstraSegment ds = new DijkstraSegment();
+        List<Term> termList3 = ds.seg(str);
+        System.out.println("最短分词：");
+        System.out.println(termList3);
+        System.out.println("\n");
+
+        CRFSegment cs = new CRFSegment();
+        List<Term> termList4 = cs.seg(str);
+        System.out.println("CRF分词：");
+        System.out.println(termList4);
         System.out.println("\n");
 
         System.out.println("智能推荐：");

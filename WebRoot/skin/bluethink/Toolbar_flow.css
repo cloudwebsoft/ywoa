@@ -87,3 +87,7 @@
   background: transparent url(tabpanel-image/flow_finish.png) no-repeat 0 3px;
   padding-left:18px;
 }
+.alter {
+  background: transparent url(tabpanel-image/all.gif) no-repeat 0 3px;
+  padding-left:18px;
+}

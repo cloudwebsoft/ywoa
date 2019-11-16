@@ -211,8 +211,9 @@ public class ModuleListAction extends BaseAction{
 						String sql = ary[0];
 					
 						
-						String listField = StrUtil.getNullStr(msd.getString("list_field"));
-						String[] formFieldArr = StrUtil.split(listField, ",");
+						// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+						// String[] formFieldArr = StrUtil.split(listField, ",");
+						String[] formFieldArr = msd.getColAry(false, "list_field");
 						if(formFieldArr != null && formFieldArr.length>0){
 							ListResult lr = fdao.listResult(formCode,sql,
 									pagenum, pagesize);

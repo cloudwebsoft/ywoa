@@ -39,11 +39,8 @@ var errFunc = function(response) {
 	// alert('Error ' + response.status + ' - ' + response.statusText);
 	alert(response.responseText);
 }
-
-
-
 </script>
-<div id="drag_<%=id%>" class="portlet drag_div bor" >
+<div id="drag_<%=id%>" class="portlet drag_div bor ibox" >
 <div id="drag_<%=id%>_h" class="box" style="padding:0px; _padding-top:5px;">
 <%
 String rootPath = request.getContextPath();

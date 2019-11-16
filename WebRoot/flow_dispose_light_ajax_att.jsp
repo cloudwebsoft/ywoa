@@ -109,7 +109,7 @@ if (doc!=null) {
           <tr id="trAtt<%=am.getId()%>">
             <td height="31" align="left" title="<lt:Label res="res.flow.Flow" key="creator"/>：<%=creatorRealName%> <%=DateUtil.format(am.getCreateDate(), "MM-dd HH:mm")%>">
             <img src="images/attach.gif" />
-			&nbsp;<span id="spanAttLink<%=am.getId()%>"><a href="flow_getfile.jsp?attachId=<%=am.getId()%>&flowId=<%=flowId%>&download=1" target="_blank"><span id="spanAttName<%=am.getId()%>"><%=am.getName()%></span></a></span>
+			&nbsp;<span id="spanAttLink<%=am.getId()%>"><a href="flow_getfile.jsp?attachId=<%=am.getId()%>&flowId=<%=flowId%>" target="_blank"><span id="spanAttName<%=am.getId()%>"><%=am.getName()%></span></a></span>
 			<span id="spanAttNameInput<%=am.getId()%>" style="display:none"><input id="attName<%=am.getId()%>" value="<%=StrUtil.HtmlEncode(am.getName())%>" /><input class="btn" type="button" value="<lt:Label res='res.flow.Flow' key='sure'/>" onclick="renameAtt('<%=am.getId()%>')"></span>
 			&nbsp;&nbsp;
 			<%

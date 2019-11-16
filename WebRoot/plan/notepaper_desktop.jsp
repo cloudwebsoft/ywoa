@@ -30,11 +30,12 @@ int id = ParamUtil.getInt(request, "id");
 UserDesktopSetupDb udsd = new UserDesktopSetupDb();
 udsd = udsd.getUserDesktopSetupDb(id);
 int count = udsd.getCount();
+String kind = ParamUtil.get(request, "kind"); // 是否来自于lte界面
 %>
 <style>
 </style>
-<div id="drag_<%=id%>" class="portlet drag_div bor" >
-  <div id="drag_<%=id%>_h" class="box">
+<div id="drag_<%=id%>" class="portlet drag_div bor ibox" >
+  <div id="drag_<%=id%>_h" class="box ibox-title">
   		<!--<div class="notebg-titlebg">-->
 	    <!--    <div class="icobox-1"><span class="notepaperAddBtn" title="添加便笺" onclick="addTab('添加便笺', '<%=request.getContextPath()%>/plan/plan_add.jsp?action=addNotepaper')"><img src="<%=SkinMgr.getSkinPath(request)%>/images/note-add.png" width="19" height="19" /></span> -->     
 	    <!--    </div>-->
@@ -46,13 +47,26 @@ int count = udsd.getCount();
 	    <!--    <span class="notepaperMoreBtn" title="日程" onclick="addTab('日程', '<%=request.getContextPath()%>/plan/plan_list.jsp')"><img src="<%=SkinMgr.getSkinPath(request)%>/images/note-more.png" width="19" height="19" /></span>-->
 	    <!--    </div>-->
         <!--</div>-->
+	  	<%
+			if ("lte".equals(kind)) {
+		%>
+	  	<h5>
+			<i class="fa <%=udsd.getIcon()%>"></i>&nbsp;&nbsp;<a href="<%=request.getContextPath()%>/plan/plan_list.jsp?isNotepaper=1&isClosed=0"><%=udsd.getTitle()%></a>
+		</h5>
+	  	<%
+			}
+			else {
+	  	%>
         <div class="titleimg">
         <!--<img src="images/desktop/notepaper.png" width="40" height="40" />-->
         <i class="fa <%=udsd.getIcon()%>"></i>
         &nbsp;&nbsp;</div>
         <div class="titletxt">&nbsp;&nbsp;<a href="<%=request.getContextPath()%>/plan/plan_list.jsp?isNotepaper=1&isClosed=0"><%=udsd.getTitle()%></a></div>
+	  	<%
+			}
+	  	%>
   	</div>
-  <div class="article">
+  <div class="article ibox-content">
 		<% 
 		PlanDb pd = new PlanDb();
 		String sql = "select id from " + pd.getTableName() + " where userName=" + StrUtil.sqlstr(privilege.getUser(request)) + " and is_notepaper=1 and is_closed=0 order by myDate desc";

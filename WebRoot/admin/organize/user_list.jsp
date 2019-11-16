@@ -69,6 +69,8 @@
 <script src="<%=request.getContextPath()%>/js/bootstrap/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="../../js/jquery.editinplace.js"></script>
 
+<script src="../../js/BootstrapMenu.min.js"></script>
+
 <link href="../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
 <script type="text/javascript" src="../../js/jquery-showLoading/jquery.showLoading.js"></script>
 
@@ -144,6 +146,7 @@ String deptCode = ParamUtil.get(request,"deptCode");
 	  	<tr>
 	  		<td>
   				<form id="formSearch" name="formSearch" method="post" class="form-inline" role="form" action="user_list.jsp" onsubmit="return searchFormOnSubmit()">
+					<span style="margin-right: 20px">部门编码：<%=deptCode%></span>
 	  			<%
 	  			com.redmoon.oa.sso.Config ssocfg = new com.redmoon.oa.sso.Config();
 	  			com.redmoon.oa.tigase.Config tigasecfg = new com.redmoon.oa.tigase.Config();

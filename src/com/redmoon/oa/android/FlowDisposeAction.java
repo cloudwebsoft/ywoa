@@ -227,12 +227,25 @@ public class FlowDisposeAction {
 			}
 			
 			String fieldHide = StrUtil.getNullString(wa.getFieldHide()).trim();
+			// 将不显示的字段加入fieldHide
+			Iterator ir = v.iterator();
+			while (ir.hasNext()) {
+				FormField ff = (FormField)ir.next();
+				if (ff.getHide()==FormField.HIDE_EDIT || ff.getHide()==FormField.HIDE_ALWAYS) {
+					if ("".equals(fieldHide)) {
+						fieldHide = ff.getName();
+					}
+					else {
+						fieldHide += "," + ff.getName();
+					}
+				}
+			}
 			String[] fdsHide = fieldHide.split(",");
 			int lenHide = fdsHide.length;
 
 			MacroCtlUnit mu;
 			MacroCtlMgr mm = new MacroCtlMgr();
-			Iterator ir = v.iterator();
+			ir = v.iterator();
 			json.put("sender", um.getUserDb(wf.getUserName()).getRealName());
 			// json.put("cwsWorkflowResult",mad.getResult());
 			json.put("cwsWorkflowTitle", wf.getTitle());
@@ -254,7 +267,9 @@ public class FlowDisposeAction {
 			}else{
 				result.put("annexs", workflowAnnexMgr.getFlowAnnex(0,username,flowId));
 			}
-						
+
+			json.put("isFree", 	lf.getType() == Leaf.TYPE_FREE);
+
 			HttpServletRequest request = ServletActionContext.getRequest();
 			privilege.doLogin(request, getSkey());
 

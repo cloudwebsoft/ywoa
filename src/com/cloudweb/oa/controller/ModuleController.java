@@ -9,6 +9,9 @@ import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.js.fan.util.*;
+import com.redmoon.oa.Config;
+import com.redmoon.oa.flow.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,11 +24,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
-import com.redmoon.oa.flow.FormDb;
-import com.redmoon.oa.flow.FormField;
-import com.redmoon.oa.flow.MyActionDb;
-import com.redmoon.oa.flow.WorkflowDb;
-import com.redmoon.oa.flow.WorkflowPredefineDb;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
 import com.redmoon.oa.person.UserDb;
@@ -44,15 +42,14 @@ import com.redmoon.oa.visual.ModulePrivDb;
 import com.redmoon.oa.visual.ModuleSetupDb;
 import com.redmoon.oa.visual.ModuleUtil;
 import com.redmoon.oa.visual.SQLBuilder;
-import com.redmoon.oa.worklog.WorkLogForModuleMgr;
+import com.redmoon.oa.visual.AttachmentLogDb;
+import com.redmoon.oa.visual.Attachment;
 
 import cn.js.fan.db.ListResult;
 import cn.js.fan.db.Paginator;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.ParamUtil;
-import cn.js.fan.util.StrUtil;
+import sun.security.util.Debug;
 
 @Controller
 @RequestMapping("/visual")
@@ -244,71 +241,6 @@ public class ModuleController {
 		return json.toString();		
 	}
 
-	/**
-	 * 对模块日志列表中的sql语句进一步处理，使之与对应的模块相关联，如：副模块、过滤条件
-	 * @param request
-	 * @param sql
-	 * @return
-	 */
-	public String getListSqlForLogRelateModule(HttpServletRequest request, String sql) {
-		String moduleCode = ParamUtil.get(request, "moduleCode");
-		ModuleSetupDb msd = new ModuleSetupDb();
-		msd = msd.getModuleSetupDb(moduleCode);
-		String moduleFormCode = msd.getString("form_code");
-		// 用于传过滤条件
-		request.setAttribute(ModuleUtil.MODULE_SETUP, msd);
-
-		// 取得跟日志对应的模块的sql语句
-		FormDb fd = new FormDb(moduleFormCode);
-		String orderBy = "", sort = "", op = "";
-		String[] ary = new String[0];
-		try {
-			ary = SQLBuilder.getModuleListSqlAndUrlStr(request, fd, op, orderBy, sort);
-		} catch (ErrMsgException e) {
-			e.printStackTrace();
-		}
-		// 替换掉 t1为 t1000 t1.为t1000.
-		String moduleSql = ary[0].replace(" t1", " t1000").replace("t1.", "t1000.").toLowerCase();
-
-		// 解析出表部分，即from...where
-		int p = moduleSql.indexOf(" from ");
-		int q = moduleSql.indexOf(" where ");
-		String moduleTables = moduleSql.substring(p + " form ".length(), q);
-
-		// 解析出条件部分 where ... order by
-		int o = moduleSql.indexOf(" order by ");
-		String moduleConds;
-		if (o == -1) {
-			moduleConds = moduleSql.substring(q + " where ".length());
-		} else {
-			moduleConds = moduleSql.substring(q + " where ".length(), o);
-		}
-
-		// 拼接两个语句
-		p = sql.indexOf(" from ");
-		q = sql.indexOf(" where ");
-		String sqlSelect = sql.substring(0, p);
-		// 取出where部分
-		String sqlWhere = sql.substring(q);
-
-		// 去除orderBy部分
-		String orderByStr = "";
-		o = sqlWhere.indexOf(" order by ");
-		if (o!=-1) {
-			orderByStr = sqlWhere.substring(o);
-			sqlWhere = sqlWhere.substring(0, o);
-		}
-		// sql = sqlSelect + " from form_table_module_log t1," + moduleTables + " where t1.module_id=t1000.id and " + moduleConds + sqlWhere;
-		sql = sqlSelect + " from form_table_module_log t1," + moduleTables + sqlWhere + " and t1.module_id=t1000.id";
-		if (!"".equals(moduleConds)) {
-			sql += " and " + moduleConds;
-		}
-
-		// 恢复orderBy部分
-		sql += orderByStr;
-
-		return sql;
-	}
 	
 	@ResponseBody
 	@RequestMapping(value = "/moduleList", method = RequestMethod.POST, produces={"application/json;charset=UTF-8;"})
@@ -326,21 +258,10 @@ public class ModuleController {
 		
 		ModulePrivDb mpd = new ModulePrivDb(code);
 		
-		String listField = StrUtil.getNullStr(msd.getString("list_field"));
-		String[] fields = StrUtil.split(listField, ",");
-		
-		String listFieldLink = StrUtil.getNullStr(msd.getString("list_field_link"));
-		// list_field_link是后来新增的，所以要检查并初始化以兼容之前的版本
-		if (!listField.equals("") && listFieldLink.equals("")) {
-			for (int i=0; i<fields.length; i++) {
-				if (listFieldLink.equals(""))
-					listFieldLink = "#";
-				else
-					listFieldLink += ",#";
-			}
-		}
-		String[] fieldsLink = StrUtil.split(listFieldLink, ",");		
-		
+		// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+		String[] fields = msd.getColAry(false, "list_field");
+		String[] fieldsLink = msd.getColAry(false, "list_field_link");
+
 		String formCode = msd.getString("form_code");
 		FormDb fd = new FormDb();
 		fd = fd.getFormDb(formCode);		
@@ -374,7 +295,7 @@ public class ModuleController {
 			ary = SQLBuilder.getModuleListSqlAndUrlStr(request, fd, op, orderBy, sort);
 		}
 		catch (ErrMsgException e) {
-			LogUtil.getLog(getClass()).error("SQL：" + e.getMessage());			
+			DebugUtil.i(getClass(), "moduleList", "SQL：" + e.getMessage());
 			return "";
 		}
 
@@ -383,7 +304,7 @@ public class ModuleController {
 		// System.out.println(getClass() + " sql=" + sql);
 		// 如果是日志表，则与需模块相关联，并能支持副模块
 		if (formCode.equals("module_log")) {
-			sql = getListSqlForLogRelateModule(request, sql);
+			sql = SQLBuilder.getListSqlForLogRelateModule(request, sql);
 		}
 		DebugUtil.log(getClass(), "moduleList", "sql=" + sql);
 
@@ -434,10 +355,15 @@ public class ModuleController {
   		boolean canManage = mpd.canUserManage(userName);
   		boolean canModify = mpd.canUserModify(userName);
   		boolean canDel = mpd.canUserDel(userName);
-  		
+
+		Config cfg = new Config();
+		boolean isModuleHistory = cfg.getBooleanProperty("isModuleHistory");
+		boolean isModuleLogRead = cfg.getBooleanProperty("isModuleLogRead");
+		boolean isModuleLogModify = cfg.getBooleanProperty("isModuleLogModify");
+
 		MacroCtlMgr mm = new MacroCtlMgr();
 		UserMgr um = new UserMgr();
-
+		WorkflowDb wf = new WorkflowDb();
 		JSONArray rows = new JSONArray();
 		try {
 			jobject.put("rows", rows);
@@ -509,7 +435,29 @@ public class ModuleController {
 							val += sb.toString();
 						}
 					} else if (fieldName.startsWith("other:")) {
-						val = com.redmoon.oa.visual.FormDAOMgr.getFieldValueOfOther(request, fdao, fieldName);
+						// 将module_id:xmxxgl_qx:id:xmmc替换为module_id:xmxxgl_qx_log:cws_log_id:xmmc
+						String fName = fieldName;
+						int logType = ParamUtil.getInt(request, "log_type", 0);
+						if (logType==FormDAOLog.LOG_TYPE_DEL) {
+							if (formCode.equals("module_log")) {
+								if (fName.indexOf("module_id:") != -1) {
+									int p = fName.indexOf(":");
+									p = fName.indexOf(":", p+1);
+									String prefix = fName.substring(0, p);
+									fName = fName.substring(p + 1);
+									p = fName.indexOf(":");
+									String endStr = fName.substring(p);
+									if (endStr.startsWith(":id:")) {
+										// 将id替换为***_log表中的cws_log_id
+										endStr = ":cws_log_id" + endStr.substring(3);
+									}
+									fName = fName.substring(0, p);
+									fName += "_log";
+									fName = prefix + ":" + fName + endStr;
+								}
+							}
+						}
+						val = com.redmoon.oa.visual.FormDAOMgr.getFieldValueOfOther(request, fdao, fName);
 					} 
 					else if (fieldName.equals("ID")) {
 						fieldName = "CWS_MID"; // module_list.jsp中也作了同样转换
@@ -524,9 +472,9 @@ public class ModuleController {
 					else if (fieldName.equals("cws_creator")) {
 						String realName = "";
 						if (fdao.getCreator()!=null) {
-						UserDb user = um.getUserDb(fdao.getCreator());
-						if (user!=null)
-							realName = user.getRealName();
+							UserDb user = um.getUserDb(fdao.getCreator());
+							if (user!=null)
+								realName = user.getRealName();
 						}
 						val = realName;
 					}
@@ -535,6 +483,23 @@ public class ModuleController {
 					}
 					else if (fieldName.equals("cws_status")) {
 						val = com.redmoon.oa.flow.FormDAO.getStatusDesc(fdao.getCwsStatus());
+					}
+					else if (fieldName.equals("cws_create_date")) {
+						val = DateUtil.format(fdao.getCwsCreateDate(), "yyyy-MM-dd");
+					}
+					else if (fieldName.equals("flow_begin_date")) {
+						int flowId = fdao.getFlowId();
+						if (flowId!=-1) {
+							wf = wf.getWorkflowDb(flowId);
+							val = DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd HH:mm:ss");
+						}
+					}
+					else if (fieldName.equals("flow_end_date")) {
+						int flowId = fdao.getFlowId();
+						if (flowId!=-1) {
+							wf = wf.getWorkflowDb(flowId);
+							val = DateUtil.format(wf.getEndDate(), "yyyy-MM-dd HH:mm:ss");
+						}
 					}
 					else {
 						FormField ff = fdao.getFormField(fieldName);
@@ -554,14 +519,17 @@ public class ModuleController {
 						}
 					}
 
-					if (!fieldsLink[i].equals("#") && !fieldsLink[i].startsWith("$")) {
+					// DebugUtil.i(getClass(), "moduleList", fieldName + " link=" + fieldsLink[i]);
+
+					if (!fieldsLink[i].equals("#") && !fieldsLink[i].equals("&") && !fieldsLink[i].startsWith("$")) {
 						String link = FormUtil.parseAndSetFieldValue(fieldsLink[i], fdao);	
 						if (!link.startsWith("http:")) {
 							link = request.getContextPath() + "/" + link;
 						}
 						val = "<a href=\"javascript:;\" onclick=\"addTab('" + msd.getString("name") + "', '" + link + "')\">" + val + "</a>";
 			        }
-			        else if (i==0 && "#".equals(fieldsLink[i]) && canView) {
+			        else if (((i==0 && "#".equals(fieldsLink[i])) || "&".equals(fieldsLink[i])) && canView) {
+			        	// 在第一列或者fieldsLink[i]为&的列上，生成查看链接
 						if (msd.getInt("btn_display_show")==1) {
 							if (msd.getInt("view_show")==ModuleSetupDb.VIEW_SHOW_CUSTOM) {			
 								val = "<a href=\"javascript:;\" onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/" + msd.getString("url_show") + "?parentId=" + id + "&id=" + id + "&code=" + code + "')\">" + val + "</a>";
@@ -606,7 +574,22 @@ public class ModuleController {
 				}*/
 				if (canLog || canManage){ 
 			    	if (msd.getInt("btn_log_show")==1 && fd.isLog()) {
-			    		sb.append("&nbsp;&nbsp;<a href=\"javascript:;\" onclick=\"addTab('修改日志', '" + request.getContextPath() + "/visual/module_log_list.jsp?op=search&code=module_log&fdaoId=" + id + "&moduleFormCode=" + formCode + "')\">日志</a>");
+						String btnLogName = "日志";
+			    		if (isModuleLogRead) {
+							btnLogName = "修改日志";
+						}
+						String btnHisName = "历史";
+
+						if (isModuleHistory) {
+							sb.append("&nbsp;&nbsp;<a href=\"javascript:;\" onclick=\"addTab('历史记录', '" + request.getContextPath() + "/visual/module_his_list.jsp?op=search&code=" + code + "&fdaoId=" + id + "&formCode=" + formCode + "')\">" + btnHisName + "</a>");
+						}
+						if (isModuleLogModify) {
+							sb.append("&nbsp;&nbsp;<a href=\"javascript:;\" onclick=\"addTab('修改日志', '" + request.getContextPath() + "/visual/module_log_list.jsp?op=search&code=" + code + "&fdaoId=" + id + "&formCode=" + formCode + "')\">" + btnLogName + "</a>");
+						}
+
+			    		if (isModuleLogRead) {
+							sb.append("&nbsp;&nbsp;<a href=\"javascript:;\" onclick=\"addTab('浏览日志', '" + request.getContextPath() + "/visual/module_list.jsp?op=search&code=module_log_read&read_type=" + FormDAOLog.READ_TYPE_MODULE + "&module_code=" + code + "&module_id=" + id + "&form_code=" + formCode + "')\">浏览日志</a>");
+						}
 			    	}
 			    }
 				
@@ -709,7 +692,6 @@ public class ModuleController {
 			    	MyActionDb mad = new MyActionDb();
 			    	long flowId = fdao.getFlowId();
 			    	if (flowId!=0 && flowId!=-1) {
-						WorkflowDb wf = new WorkflowDb();
 						wf = wf.getWorkflowDb((int)flowId);
 						WorkflowPredefineDb wpd = new WorkflowPredefineDb();
 						wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
@@ -923,4 +905,145 @@ public class ModuleController {
 
 		return json.toString();
 	}
+
+
+	/**
+	 * 删除附件日志
+	 * @param ids
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/delLog", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;","application/json;"})
+	public String delLog(String ids) {
+		JSONObject json = new JSONObject();
+
+		String[] ary = StrUtil.split(ids, ",");
+		if (ary==null) {
+			try {
+				json.put("ret", "0");
+				json.put("msg", "请选择记录！");
+			}catch (JSONException e){
+				e.printStackTrace();
+			}
+			return json.toString();
+		}
+
+		try {
+			boolean re = false;
+			for (String strId : ary) {
+				long id = StrUtil.toLong(strId, -1);
+				if (id!=-1) {
+					AttachmentLogDb ald = new AttachmentLogDb();
+					ald = (AttachmentLogDb)ald.getQObjectDb(id);
+
+					boolean isValid = false;
+					com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+					if (pvg.isUserPrivValid(request, "admin")) {
+						isValid = true;
+					}
+					else {
+						Attachment att = new Attachment((int)ald.getLong("att_id"));
+						String formCode = att.getFormCode();
+						ModulePrivDb mpd = new ModulePrivDb(formCode);
+						if (mpd.canUserManage(pvg.getUser(request))) {
+							isValid = true;
+						}
+					}
+
+					if (!isValid) {
+						json.put("ret", "0");
+						json.put("msg", "权限非法！");
+						return json.toString();
+					}
+
+					if (isValid) {
+						re = ald.del();
+					}
+				}
+				else {
+					json.put("ret", "0");
+					json.put("msg", "标识非法！");
+					return json.toString();
+				}
+			}
+
+			if (re) {
+				json.put("ret", "1");
+				json.put("msg", "操作成功！");
+			}
+			else {
+				json.put("ret", "0");
+				json.put("msg", "操作失败！");
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ResKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return json.toString();
+	}
+
+
+	/**
+	 * 列出下载日志
+	 * @param moduleId
+	 * @param attId
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/listAttLog", method = RequestMethod.POST, produces={"text/html;", "application/json;charset=UTF-8;"})
+	public String listAttLog(long moduleId, long attId) {
+		AttachmentLogDb ald = new AttachmentLogDb();
+		String sql = ald.getQuery(request, moduleId, attId);
+		DebugUtil.i(getClass(), "listAttLog", sql);
+		int pageSize = ParamUtil.getInt(request, "rp", 20);
+		int curPage = ParamUtil.getInt(request, "page", 1);
+		ListResult lr = null;
+		try {
+			lr = ald.listResult(sql, curPage, pageSize);
+		} catch (ResKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		JSONArray rows = new JSONArray();
+		JSONObject jobject = new JSONObject();
+
+		try {
+			jobject.put("rows", rows);
+			jobject.put("page", curPage);
+			jobject.put("total", lr.getTotal());
+		}catch (JSONException e){
+			e.printStackTrace();
+		}
+
+		UserDb user = new UserDb();
+		Iterator ir = lr.getResult().iterator();
+		while (ir.hasNext()) {
+			ald = (AttachmentLogDb)ir.next();
+			JSONObject jo = new JSONObject();
+			try {
+				jo.put("id", String.valueOf(ald.getLong("id")));
+				jo.put("logTime", DateUtil.format(ald.getDate("log_time"), "yyyy-MM-dd HH:mm:ss"));
+
+				user = user.getUserDb(ald.getString("user_name"));
+				jo.put("realName", user.getRealName());
+
+				Attachment att = new Attachment((int) ald.getLong("att_id"));
+				jo.put("attName", att.getName());
+
+				jo.put("logType", AttachmentLogDb.getTypeDesc(ald.getInt("log_type")));
+			}catch (JSONException e){
+				e.printStackTrace();
+			}
+
+			rows.put(jo);
+		}
+
+		return jobject.toString();
+	}
+
+
 }

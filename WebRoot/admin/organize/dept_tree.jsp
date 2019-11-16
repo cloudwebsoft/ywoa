@@ -216,10 +216,18 @@ $(function() {
 		  node = data.node;
 		  selectNodeName = data.node.text;
 		  selectNodeId = data.node.id;
-		  if ("list"=="<%=pageType%>")
-		   parent.userFrame.location.href = "user_list.jsp?deptCode="+selectNodeId;
-		  else 
-		   parent.userFrame.setDeptCodeAndName(selectNodeId,selectNodeName);
+		  if (parent.parent) {
+		  	parent.parent.setDeptCode(selectNodeId);
+		  }
+		  if ("list"=="<%=pageType%>") {
+			  parent.userFrame.location.href = "user_list.jsp?deptCode=" + selectNodeId;
+		  }
+		  else {
+			  try {
+				  parent.userFrame.setDeptCodeAndName(selectNodeId, selectNodeName);
+			  }
+			  catch (e) {}
+		  }
 		  for(var i=0;i<listCode.length;i++){
 		  $("#"+listCode[i]+" a").first().css("font-weight","bold");
 		  }
@@ -243,7 +251,21 @@ $(function() {
 				$("#"+listHided[i]+" a").first().css("color","#999");
 			} 		 
 		}).bind('ready.jstree',function(){
-		 positionNode("<%=DeptDb.ROOTCODE%>");
+			<%
+			String curDeptCode = ParamUtil.get(request, "curDeptCode");
+			if ("".equals(curDeptCode)) {
+				curDeptCode = DeptDb.ROOTCODE;
+			}
+			if ("add".equals(pageType)) {
+				%>
+					try {
+						parent.userFrame.setDeptCodeAndName(selectNodeId, selectNodeName);
+					}
+					catch (e) {}
+				<%
+			}
+			%>
+		 	positionNode("<%=curDeptCode%>");
 		});
 		
 		// 初始化，使得单位加粗
@@ -357,7 +379,7 @@ $(function() {
 			beforeSend: function(XMLHttpRequest){
 			},
 			success: function(data, status){
-				parent.parent.modifyDept(code,name,data.parentNodeName,data.parentNodeCode,data.deptType,data.group,data.hide);
+				parent.parent.modifyDept(code, name, data.parentNodeName, data.parentNodeCode, data.deptType, data.group, data.hide, data.description, data.shortName);
 			},
 			complete: function(XMLHttpRequest, status){
 			},

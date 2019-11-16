@@ -5,10 +5,13 @@ import java.lang.reflect.*;
 import com.cloudwebsoft.framework.aop.advice.*;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sms.IMsgUtil;
+import com.redmoon.oa.sys.DebugUtil;
 import org.apache.log4j.Logger;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.person.UserDb;
 import cn.js.fan.util.StrUtil;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * <p>Title: </p>
@@ -50,7 +53,9 @@ public class MobileAfterAdvice extends AfterAdvice {
                 UserDb ud = null;
                 for (int i = 0; i < len; i++) {
                     ud = um.getUserDb(ary[i]);
-                    imu.send(ud, imsg.getContent(), imsg.getSender());
+                    // 去掉html标签
+                    String content = StrUtil.getAbstract(null, imsg.getContent(), 100000, "");
+                    imu.send(ud, content, imsg.getSender());
                 }
             }
         }
@@ -59,21 +64,23 @@ public class MobileAfterAdvice extends AfterAdvice {
             if (imu != null) {
                 UserMgr um = new UserMgr();
                 UserDb ud = um.getUserDb((String) args[0]);
-                imu.send(ud, (String) args[2], MessageDb.SENDER_SYSTEM);
+                // 去掉html标签
+                String content = StrUtil.getAbstract(null, (String) args[2], 100000, "");
+                imu.send(ud, content, MessageDb.SENDER_SYSTEM);
             }
         }
-        else if (method.getName().equals("TransmitMsg")) {
+        else if (method.getName().equals("TransmitMsg")) { // 转发
             IMessage imsg = (IMessage) proxy;
             
             String receiver = imsg.getReceiver();
-                        
             // String receiver = imsg.getFileUpload().getFieldValue("receiver");
+
             // System.out.println(this.getClass().getName() + " receiver=" + imsg.getFileUpload().getFieldValue("receiver"));
             // System.out.println(this.getClass().getName() + " toUser=" + imsg.getReceiver());
             IMsgUtil imu = SMSFactory.getMsgUtil();
             // String isToMobile = StrUtil.getNullStr(imsg.getFileUpload().getFieldValue("isToMobile"));
             
-            // System.out.println(getClass() + " receiver=" + receiver + " imu=" + imu);
+            DebugUtil.i(getClass(), "TransmitMgr", "receiver=" + receiver + " imu=" + imu);
             
             if (imu != null) {
                 String[] ary = receiver.split(",");
@@ -82,7 +89,9 @@ public class MobileAfterAdvice extends AfterAdvice {
                 UserDb ud = null;
                 for (int i = 0; i < len; i++) {
                     ud = um.getUserDb(ary[i]);
-                    imu.send(ud, imsg.getContent(), imsg.getSender());
+                    // 去掉html标签
+                    String content = StrUtil.getAbstract(null, imsg.getContent(), 100000, "");
+                    imu.send(ud, content, imsg.getSender());
                 }
             }        	
         }        

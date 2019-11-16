@@ -7,6 +7,7 @@
 <%@ page import="com.redmoon.oa.visual.*" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.*" %>
 <%@ page import="org.json.*" %>
+<%@ page import="org.apache.commons.lang3.StringUtils" %>
 <%
 String formCode = ParamUtil.get(request, "formCode");
 if(formCode.equals("")){
@@ -235,7 +236,11 @@ if(formCode.equals("")){
 										defaultVal = StrUtil.decodeJSON(ff.getDescription());				
 									}
 									else {
-										defaultVal = StrUtil.decodeJSON(ff.getDefaultValueRaw()); // ff.getDefaultValueRaw()		
+										String desc = ff.getDefaultValueRaw();
+										if ("".equals(desc)) {
+											desc = ff.getDescription();
+										}
+										defaultVal = StrUtil.decodeJSON(desc);
 									}
 									// 20131123 fgf 添加
 									JSONObject json = new JSONObject(defaultVal);
@@ -254,7 +259,9 @@ if(formCode.equals("")){
 								
 								// System.out.println(getClass() + " nestFormCode=" + nestFormCode);
 								
-								String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
+								String[] fields = msd.getColAry(false, "list_field");
+								String listField = "," + StrUtil.getNullStr(StringUtils.join(fields, ",")) + ",";
+								
 								Iterator ir2 = nestfd.getFields().iterator();
 								while (ir2.hasNext()) {
 									FormField ff2 = (FormField)ir2.next();

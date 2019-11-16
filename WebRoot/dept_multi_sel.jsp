@@ -107,11 +107,10 @@ function doGetAllChildren(response){
 		var ary2 = ary[i].split(":");
 		r[i] = ary2;
 	}
-	<%if (openType.equals("open")) {%>
+    if (window.opener)
 		window.opener.setDepts(r);
-	<%}else{%>
+	else
 		window.returnValue = r;
-	<%}%>
 	window.close();	
 }
 
@@ -138,11 +137,10 @@ function selDepts() {
 			getAllChildren(deptCodes);
 	}
 	else {
-		<%if (openType.equals("open")) {%>
+        if (window.opener)
 			window.opener.setDepts(getDepts());
-		<%}else{%>
+		else
 			window.returnValue = getDepts();
-		<%}%>
 		window.close();
 	}
 }
@@ -207,11 +205,10 @@ function insertAdjacentHTML(objId,code,isStart){
 // 在onload及ajax取孩子节点时被调用，onload调用时，不带parentCode参数
 function setDepts(parentCode) {
    	var depts;
-	<%if (openType.equals("open")) {%>
+    if (window.opener)
 		depts = window.opener.getDepts();
-	<%}else{%>
+	else
    		depts = dialogArguments.getDepts();
-   	<%}%>
 	var ary = depts.split(",");
 	for(var i=0; i<form1.elements.length; i++) {
 		if (form1.elements[i].type=="checkbox"){

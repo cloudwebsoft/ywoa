@@ -12,13 +12,13 @@
 XMLConfig cfg = new XMLConfig("config_oa.xml", false, "gb2312");
 License lic = License.getInstance();
 %>
-<title><%=lic.isOem() ? "" : "一米" %>OA安装 - 配置数据库连接</title>
+<title><%=com.redmoon.oa.Config.getInstance().get("enterprise")%>安装 - 配置数据库连接</title>
 <link rel="stylesheet" type="text/css" href="../common.css">
 <table cellpadding="6" cellspacing="0" border="0" width="100%">
 <tr>
 <td width="1%" valign="top"></td>
 <td width="99%" align="center" valign="top">
-    <div align="left"><b>欢迎您使用<%=lic.isOem() ? "" : "一米" %>OA<%=cfg.get("oa.version")%> PostGreSql版本</b></div>
+    <div align="left"><b>欢迎您使用<%=com.redmoon.oa.Config.getInstance().get("enterprise")%><%=cfg.get("oa.version")%> PostGreSql版本</b></div>
     <hr size="0">
 <%
 cfg = new XMLConfig(application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml", true, "iso-8859-1");

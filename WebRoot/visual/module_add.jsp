@@ -6,6 +6,10 @@
 <%@ page import="com.redmoon.oa.flow.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="com.redmoon.oa.visual.FormDAO" %>
+<%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
     String op = ParamUtil.get(request, "op");
@@ -23,7 +27,6 @@
     }
 
     String formCode = msd.getString("form_code");
-// formCode = "contract";
     if (formCode.equals("")) {
         out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid")));
         return;
@@ -41,40 +44,54 @@
     String modUrlList = StrUtil.getNullStr(msd.getString("url_list"));
     if (modUrlList.equals("")) {
         String privurl = ParamUtil.get(request, "privurl");
-        if (privurl.equals(""))
+        if (privurl.equals("")) {
             modUrlList = request.getContextPath() + "/" + "visual/module_list.jsp?code=" + code + "&formCode=" + StrUtil.UrlEncode(formCode);
-        else
+        }
+        else {
             modUrlList = privurl;
+        }
     } else {
         modUrlList = request.getContextPath() + "/" + modUrlList;
     }
 
-// 置嵌套表需要用到的pageType
+    request.setAttribute("modUrlList", modUrlList);
+
+    // 置嵌套表需要用到的pageType
     request.setAttribute("pageType", "add");
-// 置NestSheetCtl需要用到的formCode
+    // 置NestSheetCtl需要用到的formCode
     request.setAttribute("formCode", formCode);
 
     if (fd == null || !fd.isLoaded()) {
-        out.println(StrUtil.jAlert("表单不存在！", "提示"));
+        out.print(StrUtil.jAlert("表单不存在！", "提示"));
         return;
     }
 
     if (op.equals("saveformvalue")) {
         JSONObject json = new JSONObject();
         boolean re = false;
+        String addToUrl = "";
         com.redmoon.oa.visual.FormDAOMgr fdm = new com.redmoon.oa.visual.FormDAOMgr(fd);
         try {
             re = fdm.create(application, request, msd);
+            // 如果指定了添加跳转URL
+            addToUrl = StrUtil.getNullStr(msd.getString("add_to_url"));
+            if (!"".equals(addToUrl)) {
+                addToUrl = ModuleUtil.parseUrl(request, addToUrl, fdm.getFormDAO());
+                if (!addToUrl.startsWith("http")) {
+                    addToUrl = request.getContextPath() + "/" + addToUrl;
+                }
+            }
         } catch (ErrMsgException e) {
             json.put("ret", "-1");
             json.put("msg", e.getMessage());
             out.print(json);
-            e.printStackTrace();
+            // e.printStackTrace();
             return;
         }
         if (re) {
             json.put("ret", "1");
             json.put("msg", "操作成功！");
+            json.put("addToUrl", addToUrl);
         } else {
             json.put("ret", "0");
             json.put("msg", "操作失败！");
@@ -82,16 +99,61 @@
         out.print(json);
         return;
     }
+
+    request.setAttribute("formCode", formCode);
+    request.setAttribute("code", code);
+    request.setAttribute("skinPath", SkinMgr.getSkinPath(request));
+    request.setAttribute("privurl", StrUtil.UrlEncode(ParamUtil.get(request, "privurl")));
+    request.setAttribute("nameTempCwsId", com.redmoon.oa.visual.FormDAO.NAME_TEMP_CWS_IDS);
+
+    Map map = new HashMap();
+    Enumeration reqParamNames = request.getParameterNames();
+    while (reqParamNames.hasMoreElements()) {
+        String paramName = (String) reqParamNames.nextElement();
+        String[] paramValues = request.getParameterValues(paramName);
+        if (paramValues.length == 1) {
+            String paramValue = ParamUtil.getParam(request, paramName);
+            // 过滤掉formCode等
+            if (paramName.equals("code")
+                    || paramName.equals("formCode")
+                    || paramName.equals("moduleCode")
+                    || paramName.equals("mainCode")
+                    || paramName.equals("menuItem")
+                    || paramName.equals("parentId")
+                    || paramName.equals("moduleCodeRelated")
+                    || paramName.equals("formCodeRelated")
+                    || paramName.equals("mode") // 去掉mode及tagName，否则当存在mode=subTagRelated，关联模块中就会有问题
+                    || paramName.equals("tagName")
+                    || paramName.equals("id")
+            ) {
+                ;
+            }
+            else {
+                map.put(paramName, paramValue);
+            }
+        }
+    }
+    request.setAttribute("map", map);
+    request.setAttribute("isHasAttachment", fd.isHasAttachment());
+
+    com.redmoon.oa.visual.Render rd = new com.redmoon.oa.visual.Render(request, fd);
+    request.setAttribute("rend", rd.rendForAdd(msd));
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <title>智能模块设计-添加内容</title>
-    <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <title>添加内容</title>
+    <link type="text/css" rel="stylesheet" href="${skinPath}/css.css"/>
     <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
     <link href="../flowstyle.css" rel="stylesheet" type="text/css"/>
+    <style>
+        input[readonly]{
+            background-color: #ddd;
+        }
+    </style>
     <script src="../inc/common.js"></script>
     <script src="../inc/map.js"></script>
+    <script src="../inc/livevalidation_standalone.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
     <script src="../js/jquery-migrate-1.2.1.min.js"></script>
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
@@ -100,12 +162,11 @@
     <script src="../js/jquery.raty.min.js"></script>
     <script src="../inc/flow_dispose_js.jsp"></script>
     <script src="../inc/flow_js.jsp"></script>
-    <script src="<%=request.getContextPath()%>/inc/ajax_getpage.jsp"></script>
-    <script src="../inc/livevalidation_standalone.js"></script>
+    <script src="../inc/ajax_getpage.jsp"></script>
     <script src="../inc/upload.js"></script>
     <script src="../js/jquery.bgiframe.js"></script>
     <script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
-    <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/jquery-ui/jquery-ui-1.10.4.min.css"/>
+    <link type="text/css" rel="stylesheet" href="${skinPath}/jquery-ui/jquery-ui-1.10.4.min.css"/>
     <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
     <script src="../js/datepicker/jquery.datetimepicker.js"></script>
     <link href="../js/select2/select2.css" rel="stylesheet"/>
@@ -116,25 +177,7 @@
     <script src="../js/jquery.form.js"></script>
     <script type="text/javascript" src="../js/appendGrid/jquery.appendGrid-1.5.1.js"></script>
     <link type="text/css" rel="stylesheet" href="../js/appendGrid/jquery.appendGrid-1.5.1.css"/>
-    <script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCode%>.jsp?pageType=add&code=<%=code%>"></script>
-    <script>
-        function setradio(myitem, v) {
-            var radioboxs = document.all.item(myitem);
-            if (radioboxs != null) {
-                for (i = 0; i < radioboxs.length; i++) {
-                    if (radioboxs[i].type == "radio") {
-                        if (radioboxs[i].value == v)
-                            radioboxs[i].checked = true;
-                    }
-                }
-            }
-        }
-
-        // 控件完成上传后，调用Operate()
-        function Operate() {
-            // alert(redmoonoffice.ReturnMessage);
-        }
-    </script>
+    <script src="../flow/form_js/form_js_${formCode}.jsp?pageType=add&code=${code}"></script>
 </head>
 <body>
 <%@ include file="module_inc_menu_top.jsp" %>
@@ -143,70 +186,31 @@
 </script>
 <div class="spacerH"></div>
 <%@ include file="../inc/tip_phrase.jsp" %>
-<form action="module_add.jsp?op=saveformvalue&code=<%=code%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&privurl=<%=StrUtil.UrlEncode(ParamUtil.get(request, "privurl"))%>" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
-    <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
-        <tr>
-            <td align="left">
-                <%
-                    com.redmoon.oa.visual.Render rd = new com.redmoon.oa.visual.Render(request, fd);
-                    out.print(rd.rendForAdd(msd));
-                %>
-            </td>
-        </tr>
-        <%if (fd.isHasAttachment()) {%>
-        <tr>
-            <td style="padding-top:3px">
-                <script>initUpload()</script>
-            </td>
-        </tr>
-        <%}%>
-        <tr>
-            <td height="30" align="center" style="padding-top: 10px">
-                <input id="btnAdd" class="btn" type="button" value=" 确定 "/>
-                &nbsp;&nbsp;
-                <input class="btn" type="button" value=" 返回 " onclick="window.history.back()"/>
-                <input id="helper" value="1" type="hidden"/>
-            </td>
-        </tr>
-    </table>
-    <span id="spanTempCwsIds"></span>
-</form>
-<br/>
-</body>
 <script>
-    // 记录添加的嵌套表格2记录的ID
-    function addTempCwsId(formCode, cwsId) {
-        var name = "<%=com.redmoon.oa.visual.FormDAO.NAME_TEMP_CWS_IDS%>_" + formCode;
-        var inp;
+    function add() {
         try {
-            inp = document.createElement('<input type="hidden" name="' + name + '" />');
+            ctlOnBeforeSerialize();
         } catch (e) {
-            inp = document.createElement("input");
-            inp.type = "hidden";
-            inp.name = name;
         }
-        inp.value = cwsId;
 
-        spanTempCwsIds.appendChild(inp);
+        var f_helper = new LiveValidation('cwsHelper');
+        if (!LiveValidation.massValidate(f_helper.formObj.fields)) {
+            if (LiveValidation.liveErrMsg.length < 100)
+                jAlert(LiveValidation.liveErrMsg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+            else
+                jAlert("请检查表单中的内容填写是否正常！","提示");
+            return;
+        }
+
+        $('#btnAdd').attr("disabled", true);
+        $('#visualForm').submit();
     }
 
     $(function () {
         SetNewDate();
-        var f_helper = new LiveValidation('helper');
 
         $('#btnAdd').click(function () {
-            try {
-                ctlOnBeforeSerialize();
-            } catch (e) {
-            }
-
-            if (!LiveValidation.massValidate(f_helper.formObj.fields)) {
-                jAlert("请检查表单中的内容填写是否正常！", "提示");
-                return;
-            }
-            $('#btnAdd').attr("disabled", true);
-            $('#visualForm').submit();
-
+            add();
         });
     });
 
@@ -263,11 +267,73 @@
         $('#visualForm').hideLoading();
         var data = $.parseJSON($.trim(responseText));
         if (data.ret == "-1") {
+            if (data.msg != null) {
+                data.msg = data.msg.replace(/\\r/ig, "<BR>");
+            }
             jAlert(data.msg, "提示");
             $('#btnAdd').attr("disabled", false);
         } else {
-            jAlert_Redirect(data.msg, "提示", "<%=modUrlList%>");
+            var url = "${modUrlList}";
+            if (data.addToUrl!="") {
+                url = data.addToUrl;
+            }
+
+            if (url.indexOf("?")!=-1) {
+                url += "&${reqParams}"; // reqParams在module_inc_menu_top.jsp中定义
+            }
+            else {
+                url += "?${reqParams}";
+            }
+
+            jAlert_Redirect(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>', url);
         }
+    }
+</script>
+<form action="module_add.jsp?op=saveformvalue&code=${code}&formCode=${formCode}&privurl=${privurl}" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
+    <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="left">
+                ${rend}
+            </td>
+        </tr>
+        <c:if test="${isHasAttachment}">
+        <tr>
+            <td style="padding-top:3px">
+                <script>initUpload()</script>
+            </td>
+        </tr>
+        </c:if>
+        <tr>
+            <td height="30" align="center" style="padding-top: 10px">
+                <input id="btnAdd" class="btn" type="button" value=" 确定 "/>
+                &nbsp;&nbsp;
+                <input class="btn" type="button" value=" 返回 " onclick="window.history.back()"/>
+                <input id="cwsHelper" name="cwsHelper" value="1" type="hidden"/>
+                <c:forEach items="${map}" var="mymap" >
+                <input type='hidden' name='<c:out value="${mymap.key}" />' value='<c:out value="${mymap.value}" />'/>
+                </c:forEach>
+            </td>
+        </tr>
+    </table>
+    <span id="spanTempCwsIds"></span>
+</form>
+<br/>
+</body>
+<script>
+    // 记录添加的嵌套表格2记录的ID
+    function addTempCwsId(formCode, cwsId) {
+        var name = "${nameTempCwsId}_" + formCode;
+        var inp;
+        try {
+            inp = document.createElement('<input type="hidden" name="' + name + '" />');
+        } catch (e) {
+            inp = document.createElement("input");
+            inp.type = "hidden";
+            inp.name = name;
+        }
+        inp.value = cwsId;
+
+        spanTempCwsIds.appendChild(inp);
     }
 </script>
 </html>

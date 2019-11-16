@@ -7,6 +7,16 @@ import java.util.Iterator;
 
 public class TestFormParser {
     public static void main(String[] args) throws Exception {
+        Pattern patt = Pattern.compile("Windows NT 10\\.0");
+        Matcher mat = patt.matcher("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
+        if(mat.find()){
+            System.out.println("find");
+        }
+        else {
+            System.out.println("not find");
+        }
+        if (true) return;
+
         // String content = "<INPUT title=单选框 value=测试0 CHECKED type=radio name=dxk canNull=\"1\" fieldType=\"0\" maxV=\"\" maxT=\"x=\" minV=\"\" minT=\"d=\"><INPUT title=单选框 value=测试1 CHECKED type=radio name=dxk canNull=\"1\" fieldType=\"0\" maxV=\"\" maxT=\"x=\" minV=\"\" minT=\"d=\">&nbsp;测试1 &nbsp; <INPUT title=单选框 value=测试2 CHECKED type=radio name=dxk canNull=\"1\" fieldType=\"0\" maxV=\"\" maxT=\"x=\" minV=\"\" minT=\"d=\">&nbsp;测试2&nbsp;<INPUT title=单选框 value=测试3 type=radio name=dxk canNull=\"1\" fieldType=\"0\" maxV=\"\" maxT=\"x=\" minV=\"\" minT=\"d=\">测试3&nbsp;</P>";
         String content = "<P><INPUT title=aaa value=宏控件：客户选择窗体 name=aaa canNull=\"1\" kind=\"macro\" macroType=\"macro_customer_list_win\" macroDefaultValue=\"\"><INPUT title=单选框 value=测试1 CHECKED type=radio name=dxk canNull=\"1\" minT=\"d=\" minV=\"\" maxT=\"x=\" maxV=\"\" fieldType=\"0\">&nbsp;测试1 &nbsp;<INPUT title=单选框 value=测试2 type=radio name=dxk canNull=\"1\" minT=\"d=\" minV=\"\" maxT=\"x=\" maxV=\"\" fieldType=\"0\">&nbsp;测试2&nbsp;<INPUT title=单选框 value=测试3 type=radio name=dxk canNull=\"1\" minT=\"d=\" minV=\"\" maxT=\"x=\" maxV=\"\" fieldType=\"0\">测试3&nbsp;</P>";
         // <INPUT title=单选框 value=测试1 CHECKED type=radio name=dxk canNull="1" fieldType="0" maxV="" maxT="x=" minV="" minT="d=">

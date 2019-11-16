@@ -89,17 +89,19 @@
         out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
         return;
     }
-
+    
+    String mode = ParamUtil.get(request, "mode");
     int type = ParamUtil.getInt(request, "type", AddressService.TYPE_USER);
     if (type == AddressService.TYPE_PUBLIC) {
-        if (!privilege.isUserPrivValid(request, "admin.address.public")) {
-            out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid")));
-            return;
+        if (!"show".equals(mode)) {
+            if (!privilege.isUserPrivValid(request, "admin.address.public")) {
+                out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid")));
+                return;
+            }
         }
     }
-
+    
     String who = privilege.getUser(request);
-
     String op = ParamUtil.get(request, "op");
     String typeId = ParamUtil.get(request, "dir_code");
     String person = ParamUtil.get(request, "person");
@@ -137,6 +139,7 @@
                 <input type="text" name="mobile" size="10" value="<%=mobile%>"/>
                 单位&nbsp;
                 <input type="text" name="company" size="10" value="<%=company%>"/>
+                <input type="hidden" name="mode" value="<%=mode%>"/>
                 &nbsp;<input class="tSearch" type="submit" value="搜索"/>
             </form>
         </td>
@@ -164,13 +167,10 @@
 
     String userName = privilege.getUser(request);
     int pageSize = ParamUtil.getInt(request, "pageSize", 20);
-//    AddressDb addr = new AddressDb();
     Address addr = new Address();
     AddressService addressService = new AddressService();
     String sql = addressService.getSql(op, userName, type, typeId, person, company, mobile, orderBy, sort, privilege.getUserUnitCode(request));
-    ListResult lr = addressService.listSql(sql);
-    //String sql = AddressDb.getSqlList(op, userName, type, typeId, person, company, mobile, orderBy, sort);
-    //ListResult lr = addr.listResult(sql, curpage, pageSize);
+    ListResult lr = addressService.listResult(sql, curpage, pageSize);
     int total = lr.getTotal();
     Vector v = lr.getResult();
     Iterator ir = null;
@@ -353,17 +353,17 @@
     });
 
     function changeSort(sortname, sortorder) {
-        window.location.href = "address.jsp?pageSize=" + flex.getOptions().rp + "&orderBy=" + sortname + "&sort=" + sortorder + "<%=searchStr%>";
+        window.location.href = "address.jsp?pageSize=" + flex.getOptions().rp + "&dir_code=<%=typeId%>&mode=<%=mode%>&orderBy=" + sortname + "&sort=" + sortorder + "<%=searchStr%>";
     }
 
     function changePage(newp) {
         if (newp) {
-            window.location.href = "address.jsp?CPages=" + newp + "&type=<%=type%>&pageSize=" + flex.getOptions().rp + "<%=searchStr%>";
+            window.location.href = "address.jsp?CPages=" + newp + "&type=<%=type%>&dir_code=<%=typeId%>&mode=<%=mode%>&pageSize=" + flex.getOptions().rp + "<%=searchStr%>";
         }
     }
 
     function rpChange(pageSize) {
-        window.location.href = "address.jsp?CPages=<%=curpage%>&type=<%=type%>&pageSize=" + pageSize + "<%=searchStr%>";
+        window.location.href = "address.jsp?CPages=<%=curpage%>&type=<%=type%>&dir_code=<%=typeId%>&mode=<%=mode%>&pageSize=" + pageSize + "<%=searchStr%>";
     }
 
     function onReload() {

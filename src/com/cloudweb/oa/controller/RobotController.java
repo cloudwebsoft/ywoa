@@ -185,7 +185,7 @@ public class RobotController {
 						*/
                         int counts = StrUtil.toInt(fdaoNest.getFieldValue("counts"), 0);
                         // 增加积分
-                        int score = StrUtil.toInt(fdao.getFieldValue("score"), 0);
+                        int score = StrUtil.toInt(fdaoSign.getFieldValue("score"), 0);
                         int scoreRemained = StrUtil.toInt(fdao.getFieldValue("score_remained"), 0);
                         score += counts;
                         scoreRemained += counts;
@@ -300,7 +300,7 @@ public class RobotController {
         fdao.setFieldValue("kind", "1"); // 米票
         fdao.setFieldValue("item", "0"); // 奖项
         fdao.setFieldValue("user_name", qq);
-        fdao.setFieldValue("tip", "一米OA标准版");
+        fdao.setFieldValue("tip", "云网OA标准版");
         // 送3张米票，分别第1个月、第2个月、第3个月内有效，另送1张菜票
         Date d = new Date();
         // 30 天内有效
@@ -426,7 +426,7 @@ public class RobotController {
         fdao.setFieldValue("kind", "1"); // 米票
         fdao.setFieldValue("item", "0"); // 奖项
         fdao.setFieldValue("user_name", qq);
-        fdao.setFieldValue("tip", "一米OA标准版");
+        fdao.setFieldValue("tip", "云网OA标准版");
         // 送1张米票，各30天、60天、90天内有效
         Date d = new Date();
         // 30 天内有效

@@ -99,4 +99,7 @@ public class Test {
         	System.out.println("error"+e);
         }
     }
+
+    public void test() {
+	}
 }

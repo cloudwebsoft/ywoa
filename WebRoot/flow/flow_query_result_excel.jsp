@@ -1,6 +1,8 @@
-<%@ page contentType="text/html; charset=GB2312"%><%@ page import="com.redmoon.oa.person.*"%><%@ page import="com.redmoon.oa.dept.*"%><%@ page import="com.redmoon.oa.flow.*"%><%@ page import="java.io.*"%><%@ page import="jxl.*"%><%@ page import="jxl.write.*"%><%@ page import="com.cloudwebsoft.framework.db.*"%><%@ page import="cn.js.fan.db.*"%><%@ page import="java.util.*"%><%@ page import="cn.js.fan.web.*"%><%@ page import="cn.js.fan.util.*"%><%@ page import="cn.js.fan.security.*"%><%@ page import="jxl.*"%><%@ page import="jxl.write.*"%>
+<%@ page contentType="text/html; charset=utf-8"%><%@ page import="com.redmoon.oa.person.*"%><%@ page import="com.redmoon.oa.dept.*"%><%@ page import="com.redmoon.oa.flow.*"%><%@ page import="java.io.*"%><%@ page import="jxl.*"%><%@ page import="jxl.write.*"%><%@ page import="com.cloudwebsoft.framework.db.*"%><%@ page import="cn.js.fan.db.*"%><%@ page import="java.util.*"%><%@ page import="cn.js.fan.web.*"%><%@ page import="cn.js.fan.util.*"%><%@ page import="cn.js.fan.security.*"%><%@ page import="jxl.*"%><%@ page import="jxl.write.*"%>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit"%>
-<%@page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr"%><jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
+<%@page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr"%>
+<%@ page import="com.redmoon.oa.util.RequestUtil" %>
+<jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 if (!privilege.isUserPrivValid(request, "read")) {
 	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
 	return;
@@ -10,7 +12,7 @@ String typeCode = ParamUtil.get(request, "typeCode");
 com.redmoon.oa.flow.Leaf lf = new com.redmoon.oa.flow.Leaf();
 lf = lf.getLeaf(typeCode);
 if (lf==null) {
-	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, "typeCode=" + typeCode + " Á÷³Ì½Úµã²»´æÔÚ£¡"));
+	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, "typeCode=" + typeCode + " æµç¨‹èŠ‚ç‚¹ä¸å­˜åœ¨ï¼"));
 	return;
 }
 
@@ -29,7 +31,7 @@ WorkflowDb wf = new WorkflowDb();
 Vector v = wf.list(sql);
 
 response.setContentType("application/vnd.ms-excel");
-response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUnicode("²éÑ¯½á¹ûµ¼³ö.xls"));  
+response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUnicode("æŸ¥è¯¢ç»“æžœå¯¼å‡º.xls"));  
 
 OutputStream os = response.getOutputStream();
 
@@ -42,7 +44,7 @@ try {
 	WorkbookSettings settings = new WorkbookSettings ();  
 	settings.setWriteAccess(null);  
 
-	// ´ò¿ªÒ»¸öÎÄ¼þµÄ¸±±¾£¬²¢ÇÒÖ¸¶¨Êý¾ÝÐ´»Øµ½Ô­ÎÄ¼þ
+	// æ‰“å¼€ä¸€ä¸ªæ–‡ä»¶çš„å‰¯æœ¬ï¼Œå¹¶ä¸”æŒ‡å®šæ•°æ®å†™å›žåˆ°åŽŸæ–‡ä»¶
 	WritableWorkbook wwb = Workbook.createWorkbook(os, wb, settings);
 	WritableSheet ws = wwb.getSheet(0);
 
@@ -52,9 +54,11 @@ try {
 	DeptMgr dm = new DeptMgr();
 
 	int j = 0;
-	Label t = new Label(0, j, "±êÌâ");
+	Label t = new Label(0, j, "ID");
 	ws.addCell(t);
-	int k = 1;
+	t = new Label(1, j, "æ ‡é¢˜");
+	ws.addCell(t);
+	int k = 2;
 
 	for (int m=0; m<fieldsSelected.length; m++) {
 		FormField ff = fd.getFormField(fieldsSelected[m]);
@@ -63,13 +67,13 @@ try {
 		k++;
 	}
 	
-	t = new Label(k, j, "·¢ÆðÊ±¼ä");
+	t = new Label(k, j, "å‘èµ·æ—¶é—´");
 	ws.addCell(t);
 	k++;
-	t = new Label(k, j, "·¢ÆðÈË");
+	t = new Label(k, j, "å‘èµ·äºº");
 	ws.addCell(t);
 	k++;
-	t = new Label(k, j, "×´Ì¬");
+	t = new Label(k, j, "çŠ¶æ€");
 	ws.addCell(t);
 	k++;
 	
@@ -79,11 +83,17 @@ try {
 		WorkflowDb wfd = (WorkflowDb)ir.next();
 		
 		fdao = fdao.getFormDAO(wfd.getId(), fd);
-				
-		t = new Label(0, j, wfd.getTitle());
+		
+		// ç½®SQLå®æŽ§ä»¶ä¸­éœ€è¦ç”¨åˆ°çš„fdao
+		RequestUtil.setFormDAO(request, fdao);
+		
+		t = new Label(0, j, String.valueOf(wfd.getId()));
+		ws.addCell(t);
+		
+		t = new Label(1, j, wfd.getTitle());
 		ws.addCell(t);
 
-		k = 1;
+		k = 2;
 		for (int m=0; m<fieldsSelected.length; m++) {
 			FormField ff = fd.getFormField(fieldsSelected[m]);
 			String str = fdao.getFieldValue(ff.getName());
@@ -99,7 +109,7 @@ try {
 			k++;
 		}		
 
-		t = new Label(k, j, DateUtil.format(wfd.getMydate(), "yy-MM-dd HH:mm:ss"));
+		t = new Label(k, j, DateUtil.format(wfd.getBeginDate(), "yy-MM-dd HH:mm:ss"));
 		ws.addCell(t);
 		k++;
 		

@@ -7,6 +7,7 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.visual.FormDAO" %>
 <%@ page import="org.json.JSONObject" %>
+<%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 /*
@@ -103,8 +104,9 @@ if (op.equals("saveformvalue")) {
 		String tds = "";
 		String token = "#@#";
 		if (fdao.getCwsId().equals("" + com.redmoon.oa.visual.FormDAO.TEMP_CWS_ID) || fdao.getCwsId().equals("" + FormDAO.NAME_TEMP_CWS_IDS)) {
-			String listField = StrUtil.getNullStr(msd.getString("list_field"));
-			String[] fields = StrUtil.split(listField, ",");
+			// String listField = StrUtil.getNullStr(msd.getString("list_field"));
+			String[] fields = msd.getColAry(false, "list_field");
+			
 			int len = 0;
 			if (fields!=null)
 				len = fields.length;
@@ -141,12 +143,16 @@ else if (op.equals("delAttach")) {
 	com.redmoon.oa.visual.Attachment att = new com.redmoon.oa.visual.Attachment(attachId);
 	att.del();
 }
+
+int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<!--原为ie-stand，但不支持360极速模式，window.opener会为null-->
+	<meta name="renderer" content="webkit">
 <title>智能设计-编辑内容</title>
-<meta name="renderer" content="ie-stand" />
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
@@ -165,8 +171,7 @@ else if (op.equals("delAttach")) {
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css" />
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/jquery.flexbox.js"></script>
-<script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCodeRelated%>.jsp"></script>
-
+<script src="<%=request.getContextPath()%>/flow/form_js/form_js_<%=formCodeRelated%>.jsp?pageType=edit&moduleCode=<%=moduleCode%>&formCode=<%=formCode%>&parentId=<%=parentId%>&flowId=<%=flowId%>&actionId=<%=actionId%>"></script>
 <link href="../js/select2/select2.css" rel="stylesheet" />
 <script src="../js/select2/select2.js"></script>
 <script src="../js/select2/i18n/zh-CN.js"></script>
@@ -248,16 +253,20 @@ function Operate() {
         </td>
     </tr>
 	<%}%>
-    <tr>
-      <td height="30" align="center"><input name="id" value="<%=id%>" type="hidden" />
-      	<input type="submit" class="btn" name="Submit" value="确定" />
+	<tr>
+		<td height="30" align="center">
+			<input name="id" value="<%=id%>" type="hidden"/>
+			<input type="submit" class="btn" name="btnSubmit" value="确定"/>
+			<input type="hidden" name="helper"/>
 		</td>
-    </tr>
+	</tr>
 </table>
 </form>
 </body>
 <script>
-    $(function() {
+	var lv_helper = new LiveValidation('helper');
+	
+	$(function() {
         var options = {
             //target:        '#output2',   // target element(s) to be updated with server response
             beforeSubmit:  preSubmit,  // pre-submit callback
@@ -277,6 +286,12 @@ function Operate() {
         // bind to the form's submit event
         var lastSubmitTime = new Date().getTime();
         $('#visualForm').submit(function() {
+			var re = LiveValidation.massValidate(lv_helper.formObj.fields);
+			if (!re) {
+				jAlert(LiveValidation.liveErrMsg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+				return false;
+			}
+			
             // 通过判断时间，禁多次重复提交
             var curSubmitTime = new Date().getTime();
             // 在0.5秒内的点击视为连续提交两次，实际当出现重复提交时，测试时间差为0
@@ -308,6 +323,8 @@ function Operate() {
                 doFlow();
             }
         }
+		if (data.msg != null)
+			data.msg = data.msg.replace(/\\r/ig, "<BR>");
         jAlert(data.msg, "提示");
     }
 
@@ -315,7 +332,7 @@ function Operate() {
 		// 如果有父窗口，则自动刷新父窗口
         if (window.opener!=null) {
             window.opener.updateRow("<%=formCodeRelated%>", <%=fdao.getId()%>, tds, token);
-            window.close();
+			window.close();
         }
     }
     function doFlow(){

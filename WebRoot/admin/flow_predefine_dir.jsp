@@ -305,15 +305,15 @@
                     fd = fd.getFormDb(StrUtil.getNullString(leaf.getFormCode()));
                     if (leaf.getType() == Leaf.TYPE_LIST || leaf.getType() == Leaf.TYPE_FREE) {
                         if (count > 0) {
-                            canEditForm = false;
+                            canEditForm = true;
             %>
-                <%=fd.getName()%>&nbsp;(流程数量现有<%=count%>个)
-                <input name="formCode" value="<%=leaf.getFormCode()%>" type="hidden">
+                <!--流程数量现有<%=count%>个
+                <input name="formCode" value="<%=leaf.getFormCode()%>" type="hidden">-->
                 <%
                             } else
                                 canEditForm = true;
                         } else
-                            canEditForm = false;
+                            canEditForm = true;
                     }
                     if (canEditForm) {
                 %>
@@ -332,7 +332,7 @@
                 </select>
                 <%if (op.equals("modify")) {%>
                 <script>
-                    form1.formCode.value = "<%=leaf.getFormCode()%>";
+                    o("formCode").value = "<%=leaf.getFormCode()%>";
                 </script>
                 <%}%>
                 <%}%>
@@ -388,9 +388,11 @@
                                 $('#trParams').hide();
                             } else {
                                 $('#afBtnImg')[0].src = "<%=SkinMgr.getSkinPath(request)%>/images/af_arrow_up.png";
+                                <%if (parentLf!=null && parentLf.getLayer() == 2) {%>
                                 $('#trQuery').show();
                                 $('#trQueryCond').show();
                                 $('#trQueryRole').show();
+                                <%}%>
                                 if ($('#trMode').attr("isNotDisplay") != "true")
                                     $('#trMode').show();
                                 $('#trPluin').show();
@@ -405,7 +407,9 @@
                                 <%
                                     }
                                 %>
+                                <%if (parentLf!=null && parentLf.getLayer() == 2) {%>
                                 $('#trParams').show();
+                                <%}%>
                             }
                         });
                     });
@@ -440,7 +444,7 @@
         <tr id="trTemplate" style="display:none">
             <td align="left">公文模板</td>
             <td colspan="2" align="left">
-                <select id="templateId" name="templateId" title="用于流程中拟文及Office在线编辑宏控件">
+                <select id="templateId" name="templateId" title="用于模板套红">
                     <option value="-1">无</option>
                     <%
                         DocTemplateDb dtd = new DocTemplateDb();
@@ -454,7 +458,7 @@
                         }
                     %>
                 </select>
-                （用于流程中拟文及Office在线编辑宏控件）
+                （用于模板套红）
                 <%if (op.equals("modify")) {%>
                 <script>
                     document.getElementById("templateId").value = "<%=leaf.getTemplateId()%>";

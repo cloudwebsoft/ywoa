@@ -110,7 +110,6 @@
     String userName = pvg.getUserName();
     UserDb user = new UserDb();
     user = user.getUserDb(userName);
-    out.print("<div>打卡人：" + user.getRealName() + "</div>");
 
     String skey = pvg.getSkey();
 
@@ -121,7 +120,11 @@
     double lngLoc = 0, latLoc = 0;
     boolean isAbnormal = false;
     boolean hasLocation = false;
+
+    out.print("<div>打卡人：" + user.getRealName() + "</div>");
+
     if (fdao != null) {
+        out.print("<div>班次：" + fdao.getFieldValue("name") + "</div>");
         location = fdao.getFieldValue("location");
         String[] aryLoc = StrUtil.split(location, ",");
         if (aryLoc != null) {
@@ -133,6 +136,7 @@
         radius = fdao.getFieldValue("radius");
         isAbnormal = fdao.getFieldValue("is_abnormal").equals("1");
     }
+
     if ("".equals(radius)) {
         radius = "200";
     }
@@ -151,22 +155,24 @@
 <%
     String dtStr = DateUtil.format(new java.util.Date(), "MM-dd");
     String timeStr = DateUtil.format(new java.util.Date(), "HH:mm:ss");
-    int type = -1;
+    int[] aryPunch = new int[2];
+    aryPunch[0] = -1;
+    aryPunch[1] = AttendanceMgr.NORMAL;
     String typeDesc;
     if (fdao != null) {
-        type = AttendanceMgr.getPunchType(userName, new java.util.Date());
-        if (type == -1) {
+        aryPunch = AttendanceMgr.getPunchType(userName, new java.util.Date());
+        if (aryPunch[0] == -1) {
             typeDesc = "非打卡时间";
         } else {
             // 如果已打卡
-            if (AttendanceMgr.isPunched(userName, type)) {
-                type = -1;
-                typeDesc = "您已打卡";
+            if (AttendanceMgr.isPunched(userName, aryPunch[0])) {
+                typeDesc = AttendanceMgr.getPunchTypeDesc(aryPunch[0]) + "已打卡";
+                aryPunch[0] = -1;
             } else {
-                typeDesc = AttendanceMgr.getPunchTypeDesc(type) + "打卡";
+                typeDesc = AttendanceMgr.getPunchTypeDesc(aryPunch[0]) + AttendanceMgr.getPunchStatusDesc(aryPunch[1]) + "打卡";
             }
         }
-        if (type == -1) {
+        if (aryPunch[0] == -1) {
 %>
 <script>
     $(function () {
@@ -176,7 +182,7 @@
 <%
         }
         if (!hasLocation) {
-            type = -1;
+            aryPunch[0] = -1;
             typeDesc = "未设置打卡地点";
         }
     } else {
@@ -186,9 +192,9 @@
 <div class="btn-box">
     <ul>
         <li id="btn">
-            <a href="javascript:;" onclick="punch(<%=type %>)">
+            <a href="javascript:;" onclick="punch(<%=aryPunch[0] %>)">
         <span style="line-height:1.5">
-        	<%if (type != -1) { %>
+        	<%if (aryPunch[0] != -1) { %>
 			<span><%=dtStr %></span>
 			&nbsp;
 			<span id="spanTime"> <%=timeStr %> </span> <br/>
@@ -205,7 +211,7 @@
 </jsp:include>
 </body>
 <script>
-    var type = <%=type%>;
+    var type = <%=aryPunch[0]%>;
     var isLocationAbnormal = false;
     function punch(type) {
         if (type == -1) {
@@ -386,6 +392,14 @@ return;*/
                 alert('failed ' + this.getStatus());
             }
         }, {enableHighAccuracy: true})
+    });
+
+    // 强制后退时刷新
+    $(document).ready(function(){
+        var pagNum=performance.navigation.type;
+        if(pagNum==2){
+            document.location.reload();
+        }
     });
 
     function callJS() {

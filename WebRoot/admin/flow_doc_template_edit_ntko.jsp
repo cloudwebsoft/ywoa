@@ -48,9 +48,10 @@ function init(){
 	TANGER_OCX.IsUseUTF8Data = true;
 	// 创建新文档
 	// TANGER_OCX.CreateNew("Word.Document");
-	
-	TANGER_OCX.OpenFromURL("<%=dtd.getFileUrl(request)%>");
-	
+
+	// TANGER_OCX.OpenFromURL("<%=dtd.getFileUrl(request)%>");
+	TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/admin/flow_doc_template_getfile.jsp?id=<%=dtd.getId()%>");
+
 	<%
 	UserDb user = new UserDb();
 	user = user.getUserDb(privilege.getUser(request));

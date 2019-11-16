@@ -20,7 +20,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title><%=lic.getCompany()%>系统安装 - 配置数据库连接</title>
     <link rel="stylesheet" type="text/css" href="../common.css">
-    <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <!-- 注意不能用SkinMgr.getSkin(request)，因为如果数据库连接出错，其中调用到数据库的地方就会出错 -->
+    <link type="text/css" rel="stylesheet" href="../skin/nightSky/css.css"/>
 </head>
 <body>
 <table cellpadding="6" cellspacing="0" border="0" width="100%">
@@ -136,7 +137,26 @@
                                     }
                                 }
                             }
-                        } else {
+                        }
+                        else if (version < 5.0) {
+                            // 添加cws_create_date cws_modify_date cws_finish_date抵字段
+                            String sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '" + database + "'";
+                            JdbcTemplate jt = new JdbcTemplate();
+                            ResultIterator ri = jt.executeQuery(sql);
+                            while (ri.hasNext()) {
+                                ResultRecord rr = (ResultRecord) ri.next();
+                                String tableName = rr.getString(1).toLowerCase();
+                                if (tableName.startsWith("form_table_") && !tableName.endsWith("_log")) {
+                                    sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_create_date` datetime AFTER `cws_status`,  ADD COLUMN `cws_modify_date` datetime AFTER `cws_status`,  ADD COLUMN `cws_finish_date` datetime AFTER `cws_status`";
+                                    try {
+                                        jt.executeUpdate(sql);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                        else {
                             // 因嵌套表格2控件的version改为了2，所以需处理一下
                             String sql = "update form_field set description=defaultValue where description='' and macroType='nest_sheet'";
                             try {

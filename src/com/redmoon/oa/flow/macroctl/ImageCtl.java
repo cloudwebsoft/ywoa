@@ -1,8 +1,7 @@
 package com.redmoon.oa.flow.macroctl;
 
 import java.io.File;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -83,7 +82,7 @@ public class ImageCtl extends AbstractMacroCtl {
                 str += "<a title='点击在新窗口中打开' href='" + request.getContextPath() + "/img_show.jsp?path=" + ff.getValue() + "' target='_blank'><img src='" + request.getContextPath() + "/img_show.jsp?path=" + ff.getValue() + "'></a><BR>";
             }
         }
-        str += "<input name='" + ff.getName() + "' type='file' accept='image/gif,image/jpeg,image/jpg,image/png,image/svg' size=15>";
+        str += "<input name='" + ff.getName() + "' type='file' accept='image/gif,image/jpeg,image/jpg,image/png,image/bmp,image/svg' size=15>";
         return str;
     }
     
@@ -144,6 +143,16 @@ public class ImageCtl extends AbstractMacroCtl {
      * @throws CheckErrException 
      */
     public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) throws CheckErrException {
+        boolean isUploaded = false;
+        List<String> list = new ArrayList<String>();
+        list.add("gif");
+        list.add("jpeg");
+        list.add("jpg");
+        list.add("png");
+        list.add("bmp");
+        list.add("svg");
+
+        Vector<String> vt = new Vector<String>();
         Vector<FileInfo> v = fu.getFiles();
         Iterator<FileInfo> ir = v.iterator();
         while (ir.hasNext()) {
@@ -152,26 +161,70 @@ public class ImageCtl extends AbstractMacroCtl {
                                             ff.getName() + " fi.fieldName=" +
                                             fi.getFieldName());
             if (fi.getFieldName().equals(ff.getName())) {
+                isUploaded = true;
                 fu.setFieldValue(ff.getName(), fi.getName());
 
+                if (!list.contains(StrUtil.getFileExt(fi.getName()).toLowerCase())) {
+                    vt.addElement(fi.getName() + " 文件非法，格式只能为：gif、jpeg、jpg、png、bmp、svg");
+                }
+
+                long maxSize = -1;
                 String defaultStr = ff.getDescription();
-                defaultStr = defaultStr.replaceAll("；", ";");
-	        	String[] strAry = StrUtil.split(defaultStr, ";");
-	        	if (strAry!=null && strAry.length==2) {
-	        		long maxSize = StrUtil.toLong(strAry[1], -1);
-	        		if (maxSize!=-1) {
-	        			File f = new File(fi.getTmpFilePath());
-	        			if (f.length() > maxSize*1024) {
-	        	    		String msg = "图片不能大于" + maxSize + "KB";
-	        	    		Vector<String> vt = new Vector<String>();
-	        	    		vt.addElement(msg);
-	        	    		throw new CheckErrException(vt);     			
-	        	    	}
-	        		}
-	        	}                
+                if (defaultStr.startsWith("{")) {
+                    try {
+                        JSONObject json = new JSONObject(defaultStr);
+                        maxSize = StrUtil.toLong(json.getString("maxSize"), -1);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    defaultStr = defaultStr.replaceAll("；", ";");
+                    String[] strAry = StrUtil.split(defaultStr, ";");
+                    if (strAry!=null && strAry.length==2) {
+                        maxSize = StrUtil.toLong(strAry[1], -1);
+                    }
+                }
+                if (maxSize!=-1) {
+                    File f = new File(fi.getTmpFilePath());
+                    if (f.length() > maxSize*1024) {
+                        String msg = "图片不能大于" + maxSize + "KB";
+                        vt.addElement(msg);
+                    }
+                }
                 break;
             }
-        }    	
+        }
+
+        // 如果未上传文件，而字段中有值，说明原来可能保存过文件（如：流程中保存草稿），需检查文件格式是否合法
+        if (!isUploaded) {
+            String fieldValue = ff.getValue();
+            if (ff.getValue()!=null && !"".equals(ff.getValue())) {
+                String[] aryVal = fieldValue.split(",");
+                String ext = "";
+                // 如果有两个元素，则说明是流程中所存
+                if (aryVal.length==2) {
+                    Attachment att = new Attachment(Integer.valueOf(aryVal[1]).intValue());
+                    if (att != null && att.isLoaded()) {
+                        ext = StrUtil.getFileExt(att.getDiskName());
+                        fu.setFieldValue(ff.getName(), att.getDiskName());
+                    }
+                }
+                // 如果只有一个元素，则说明是visual模块所存，字段中存的是diskName
+                else if (aryVal.length==1) {
+                    fu.setFieldValue(ff.getName(), aryVal[0]);
+                    ext = StrUtil.getFileExt(aryVal[0]);
+                }
+                if (!"".equals(ext)) {
+                    if (!list.contains(ext)) {
+                        vt.addElement(ff.getTitle() + " 文件非法，格式只能为：gif、jpeg、jpg、png、bmp、svg");
+                    }
+                }
+            }
+        }
+
+        if (vt.size()>0)
+            throw new CheckErrException(vt);
     }        
 
     public Object getValueForSave(FormField ff, int flowId, FormDb fd,
@@ -315,7 +368,7 @@ public class ImageCtl extends AbstractMacroCtl {
             ir = vt.iterator();
             // 取得ID为最小的attach，并将其删除
             int count = 0;
-            int minId = Integer.MAX_VALUE;
+            long minId = Long.MAX_VALUE;
             com.redmoon.oa.visual.Attachment lastAtt = null;
             while (ir.hasNext()) {
                 com.redmoon.oa.visual.Attachment att = (com.redmoon.oa.

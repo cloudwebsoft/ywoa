@@ -258,7 +258,8 @@ function isTypeMatched(sourceValue, destValue, sources, dests) {
 									return true;
 								}
 							}
-							if (dests[key].macroType!=sources[one].macroType) {
+
+							if (dests[key].macroType!=sources[one].macroType && sources[one].name!="ID") {
 								alert("宏控件 " + dests[key].name + " 与 " + sources[one].name + "的类型不一致");
 								return false;
 							}

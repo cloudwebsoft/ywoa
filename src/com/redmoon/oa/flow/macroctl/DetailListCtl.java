@@ -13,6 +13,7 @@ import java.util.Vector;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
+import cn.js.fan.util.*;
 import jxl.Cell;
 import jxl.Workbook;
 import jxl.read.biff.BiffException;
@@ -25,11 +26,6 @@ import org.json.JSONObject;
 import cn.js.fan.db.Conn;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
-import cn.js.fan.util.CheckErrException;
-import cn.js.fan.util.DateUtil;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.ParamChecker;
-import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
@@ -256,18 +252,42 @@ public class DetailListCtl extends AbstractMacroCtl {
         FormDb fd = new FormDb();
         fd = fd.getFormDb(formCode);
 
-        String listField = StrUtil.getNullStr(msd.getString("list_field"));
-
-        String[] fields = StrUtil.split(listField, ",");
+        // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+        String[] fields = msd.getColAry(false, "list_field");
         if (fields==null) {
             LogUtil.getLog(getClass()).error("createForNestCtl:The fields is null, please set " + formCode + " module's list");
             return -1;
         }
         int cols = fields.length;
 
+        // 找出空行
+        Map<String, String> map = new HashMap<String, String>();
+        for (int i = 0; i < uniqueIndexes.length; i++) {
+            boolean isBlankRow = true;
+            for (int j = 1; j <= cols; j++) {
+                String fieldName = fields[j - 1];
+                if (fieldName.startsWith("main:")) {
+                    continue;
+                }
+                if (fieldName.startsWith("other:")) {
+                    continue;
+                }
+                String val = fu.getFieldValue("detaillist_" + macroField.getName() + "_" + fieldName + "_" + uniqueIndexes[i]);
+                if (val!=null && !val.equals("")) {
+                    isBlankRow = false;
+                    break;
+                }
+            }
+            if (isBlankRow)
+                map.put("" + i, "" + i);
+        }
+
         // 有效性验证
         ParamChecker pck = new ParamChecker(request, fu);
         for (int i = 0; i < rows; i++) {
+            // 跳过空行
+            if (map.get("" + i)!=null)
+                continue;
             for (int j = 0; j < cols; j++) {
                 // LogUtil.getLog(getClass()).info("fields[" + j + "]=" + fields[j]);
             	if (fields[j].startsWith("main:")) {
@@ -302,25 +322,28 @@ public class DetailListCtl extends AbstractMacroCtl {
         }
         String sql = "insert into " + fd.getTableNameByForm() +
                      " (flowId, cws_creator, cws_id, " + fds +
-                     ",flowTypeCode,cws_status) values (?,?,?," + str + ",?,?)";
+                     ",flowTypeCode,cws_status,cws_parent_form) values (?,?,?," + str + ",?,?,?)";
         
         if ("".equals(fds)) {
             sql = "insert into " + fd.getTableNameByForm() +
-            " (flowId, cws_creator, cws_id, flowTypeCode,cws_status) values (?,?,?,?,?)";
+            " (flowId, cws_creator, cws_id, flowTypeCode,cws_status,cws_parent_form) values (?,?,?,?,?,?)";
         }
 
+        String parentFormCode = macroField.getFormCode();
         int ret = 0;
         Conn conn = new Conn(Global.getDefaultDB());
         try {
             conn.beginTrans();
             for (int i = 0; i < rows; i++) {
+                // 跳过空行
+                if (map.get("" + i)!=null)
+                    continue;
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setInt(1, FormDAO.NONEFLOWID);
                 ps.setString(2, creator);
                 ps.setString(3, cwsId);
 
-                LogUtil.getLog(getClass()).info("cwsId=" + cwsId + " creator=" +
-                                                creator);
+                // LogUtil.getLog(getClass()).info("cwsId=" + cwsId + " creator=" + creator);
                 // 赋值
                 for (int j = 0; j < cols; j++) {
                     FormField field = fd.getFormField(fields[j]);
@@ -343,6 +366,7 @@ public class DetailListCtl extends AbstractMacroCtl {
                 String curTime = "" + System.currentTimeMillis();
                 ps.setString(k, "" + curTime); // 用flowTypeCode记录修改时间，同时作为create时用来作为标识，以便在插入后获取
                 ps.setInt(k+1, com.redmoon.oa.flow.FormDAO.STATUS_DONE);
+                ps.setString(k+2, parentFormCode);
                 if (conn.executePreUpdate() == 1)
                     ret++;
                 if (ps != null) {
@@ -410,9 +434,8 @@ public class DetailListCtl extends AbstractMacroCtl {
         FormDb fd = new FormDb();
         fd = fd.getFormDb(formCode);
 
-        String listField = StrUtil.getNullStr(msd.getString("list_field"));
-
-        String[] fields = StrUtil.split(listField, ",");
+        // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+        String[] fields = msd.getColAry(false, "list_field");
         int cols = fields.length;
 
         // 找出空行
@@ -427,8 +450,7 @@ public class DetailListCtl extends AbstractMacroCtl {
             	if (fieldName.startsWith("other:")) {
         			continue;
         		}
-	            FormField ff = fd.getFormField(fieldName);
-	            String val = fu.getFieldValue("detaillist_" + macroField.getName() + "_" + ff.getName() + "_" + uniqueIndexes[i]);
+	            String val = fu.getFieldValue("detaillist_" + macroField.getName() + "_" + fieldName + "_" + uniqueIndexes[i]);
 	            if (val!=null && !val.equals("")) {
 	               isBlankRow = false;
 	               break;
@@ -936,8 +958,8 @@ public class DetailListCtl extends AbstractMacroCtl {
             ModuleSetupDb msd = new ModuleSetupDb();
             msd = msd.getModuleSetupDbOrInit(formCode);
 
-            String listField = StrUtil.getNullStr(msd.getString("list_field"));
-            String[] fieldCodes = StrUtil.split(listField, ",");
+            // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+            String[] fieldCodes = msd.getColAry(false, "list_field");
 
             // System.out.println(getClass() + " " + formCode + " listField=" + listField);
 
@@ -973,6 +995,65 @@ public class DetailListCtl extends AbstractMacroCtl {
         }
         return rows;
 
+    }
+
+    public void setValueForValidate(HttpServletRequest request, FileUpload fu, FormField ff) {
+        // rowOrder表示上传了几行，如：1,2，注意不能单凭rowOrder来判断是否上传，因为有可能出现一行的元素全为空的情况
+        String rowOrder = fu.getFieldValue("detaillist_" + ff.getName() + "_rowOrder");
+        String[] uniqueIndexes = null;
+        if (rowOrder==null) {
+            uniqueIndexes = new String[0];
+        }
+        else {
+            uniqueIndexes = rowOrder.split(",");
+        }
+
+        if (uniqueIndexes.length==0)
+            return;
+
+
+        String formCode = ff.getDescription();
+        try {
+            String defaultVal = StrUtil.decodeJSON(formCode);
+            JSONObject json = new JSONObject(defaultVal);
+            formCode = json.getString("destForm");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            LogUtil.getLog(getClass()).info("saveForNestCtl:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + ff.getDefaultValueRaw());
+        }
+
+        ModuleSetupDb msd = new ModuleSetupDb();
+        msd = msd.getModuleSetupDbOrInit(formCode);
+        // String listField = StrUtil.getNullStr(msd.getString("list_field"));
+        String[] fields = msd.getColAry(false, "list_field");
+
+        int cols = fields.length;
+        // 找出空行
+        int c = 0;
+        Map<String, String> map = new HashMap<String, String>();
+        for (int i = 0; i < uniqueIndexes.length; i++) {
+            for (int j = 1; j <= cols; j++) {
+                String fieldName = fields[j - 1];
+                if (fieldName.startsWith("main:")) {
+                    continue;
+                }
+                if (fieldName.startsWith("other:")) {
+                    continue;
+                }
+                String val = fu.getFieldValue("detaillist_" + ff.getName() + "_" + fieldName + "_" + uniqueIndexes[i]);
+                if (val!=null && !val.equals("")) {
+                    c++;
+                    break;
+                }
+            }
+        }
+
+        if (c > 0) {
+            fu.setFieldValue(ff.getName(), "cws");
+        }
+        else {
+            fu.setFieldValue(ff.getName(), "");
+        }
     }
 
     public String getControlType() {

@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.visual.ModuleSetupDb;
 import org.apache.log4j.Logger;
 import org.apache.struts2.ServletActionContext;
@@ -238,6 +239,19 @@ public class FlowInitAction {
 			}
 
 			String fieldHide = StrUtil.getNullString(wa.getFieldHide()).trim();
+			// 将不显示的字段加入fieldHide
+			ir = v.iterator();
+			while (ir.hasNext()) {
+				FormField ff = (FormField)ir.next();
+				if (ff.getHide()==FormField.HIDE_EDIT || ff.getHide()==FormField.HIDE_ALWAYS) {
+					if ("".equals(fieldHide)) {
+						fieldHide = ff.getName();
+					}
+					else {
+						fieldHide += "," + ff.getName();
+					}
+				}
+			}
 			String[] fdsHide = fieldHide.split(",");
 			int lenHide = fdsHide.length;
 
@@ -260,7 +274,8 @@ public class FlowInitAction {
 			wfd = wfd.getPredefineFlowOfFree(wf.getTypeCode());
 			boolean isLight = wfd.isLight();
 			json.put("isLight", isLight);// 判断时候是@liuchen
-		
+			json.put("isFree", 	lf.getType() == Leaf.TYPE_FREE);
+
 			boolean canDel = false;
 			com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();			
 			if(conf.getIsDisplay("FLOW_BUTTON_DEL")){
@@ -375,7 +390,12 @@ public class FlowInitAction {
 					// options = options.replaceAll("\\\"", "");
 					if (options != null && !options.equals("")) {
 						// options = options.replaceAll("\\\"", "");
-						js = new JSONArray(options);
+						try {
+							js = new JSONArray(options);
+						}
+						catch (JSONException e) {
+							DebugUtil.e(getClass(), "execute", ff.getTitle() + " macro ctl's options cann't convert to JSONArray," + options);
+						}
 					}
 				} else {
 					String type = ff.getType();
@@ -563,9 +583,8 @@ public class FlowInitAction {
 				}
 			}
 			result.put("users", users);
-			
-
 		} catch (JSONException e) {
+			e.printStackTrace();
 			res = "-1";
 			msg = "JSON解析异常";
 			Logger.getLogger(FlowInitAction.class).error(e.getMessage());

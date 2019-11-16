@@ -338,7 +338,9 @@ function ReviseByUserColor(user, colorindex, doc_id, file_id) {
 	<%}%>
 }
 
-function confirmLock(file_id, userName, doc_id, isRevise){
+function confirmLock(file_id, userName, doc_id, isRevise) {
+	openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 1024, 768);
+/*
 	var islocked = false;
 	var content = "";
 
@@ -359,6 +361,7 @@ function confirmLock(file_id, userName, doc_id, isRevise){
 			data = $.parseJSON(data);
 			content = data.content;
 			islocked = data.islocked;
+			console.log(data);
 		},
 		complete: function(XMLHttpRequest, status){
 			
@@ -369,42 +372,42 @@ function confirmLock(file_id, userName, doc_id, isRevise){
 	});		
 	
 	jConfirm(content, '提示', function(r) {
- 	if (r) {
-			$.ajax({
-				async: false,
-				type: "post",
-				url: "flow_dispose_do.jsp",
-				data : {
-					myop: "confirmLock",
-					fileId: file_id,
-					userName: userName
-				},
-				dataType: "html",
-				beforeSend: function(XMLHttpRequest){
-					
-				},
-				success: function(data, status){
-					data = $.parseJSON(data);
-					if (data.ret=="0") {
-						jAlert(data.msg, '提示');
-					}
-					else {
-						openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 800, 600);
-					}
-				},
-				complete: function(XMLHttpRequest, status){
+		if (r) {
+				$.ajax({
+					async: false,
+					type: "post",
+					url: "flow_dispose_do.jsp",
+					data : {
+						myop: "confirmLock",
+						fileId: file_id,
+						userName: userName
+					},
+					dataType: "html",
+					beforeSend: function(XMLHttpRequest){
 
-				},
-				error: function(XMLHttpRequest, textStatus){
-					jAlert(XMLHttpRequest.responseText, '提示');
-				}
-			});			
-		}else{
+					},
+					success: function(data, status){
+						data = $.parseJSON(data);
+						if (data.ret=="0") {
+							jAlert(data.msg, '提示');
+						}
+						else {
+							openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 1024, 768);
+						}
+					},
+					complete: function (XMLHttpRequest, status) {
+
+					},
+					error: function(XMLHttpRequest, textStatus){
+						jAlert(XMLHttpRequest.responseText, '提示');
+					}
+				});
+		} else {
 			if(!islocked){
-				openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 800, 600);
+				openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=<%=flowId%>&actionId=<%=actionId%>&doc_id=" + doc_id + "&isRevise=" + isRevise, 1024, 768);
 			}
 		}
-	});
+	});*/
 }
 
 
@@ -543,8 +546,8 @@ function setPerson(deptCode, deptName, user, userRealName) {
 
 var isOpenWinUsersForPlus = false;
 function openWinUsers(paramIsOpenWinUsersForPlus) {
-	showModalDialog('user_multi_sel.jsp?from=flow',window.self,'dialogWidth:800px;dialogHeight:650px;status:no;help:no;')
-	//openWin('user_multi_sel.jsp?from=flow', 800, 600);
+	// showModalDialog('user_multi_sel.jsp?from=flow',window.self,'dialogWidth:800px;dialogHeight:650px;status:no;help:no;')
+	openWin('user_multi_sel.jsp?from=flow', 800, 600);
 	if (paramIsOpenWinUsersForPlus!=null) {
 		isOpenWinUsersForPlus = paramIsOpenWinUsersForPlus;
 	}
@@ -613,7 +616,8 @@ function setUsers(users, userRealNames, isSeries) {
 			}
 		}
 		if (!isFound) {
-			document.getElementById("nextUsersDiv" + userary[k]).outerHTML = "";
+			// document.getElementById("nextUsersDiv" + userary[k]).outerHTML = "";
+			$("#"+"nextUsersDiv" + userary[k]).prop("outerHTML", "")
 		}
 	}
 	/*
@@ -740,8 +744,8 @@ $(function (){
 <form id="flowForm" name="flowForm" action="flow_dispose_free_do.jsp" method="post" enctype="multipart/form-data">
 <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="main" style="background-color:#dfe8f2; border-bottom:1px solid #bfcad6;  padding-top:5px">
   <tr>
-    <td width="56%" align="left" height="26px">
-    <div>
+    <td width="56%" align="left" height="36px">
+    <div style="margin-top: 10px">
 	<%if (mad.getActionStatus()==WorkflowActionDb.STATE_PLUS) {%>
     	&nbsp;&nbsp;加签处理
     <%}else{%>
@@ -1545,10 +1549,6 @@ function openWinPersonUserGroup() {
 	openWin("user/persongroup_user_multi_sel.jsp", 520, 400);
 }
 
-function refreshAttachments() {
-	ajaxpage("<%=Global.getFullRootPath(request)%>/flow_dispose_ajax_att.jsp?myActionId=<%=myActionId%>&flowId=<%=flowId%>", "attDiv");
-}
-
 var errFunc = function(response) {
     alert('Error ' + response.status + ' - ' + response.statusText);
 	alert(response.responseText);
@@ -1658,7 +1658,8 @@ function refreshAttachments() {
 }
 
 function transfer() {
-	showModalDialog('user_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
+	// showModalDialog('user_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
+	openWin('user_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600);
 }
 
 function suspend() {
@@ -1777,34 +1778,32 @@ toolbar = new Toolbar({
   }
   <%if (mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND) {%>  
   ,'-',{
-	type : 'button',
-	text : '提交',
-	title: '提交至下一节点处理',	  
-	bodyStyle : 'commit',
-	useable : 'T',
-	handler : function(){
-	  if (!LiveValidation.massValidate(lv_cwsWorkflowResult.formObj.fields)) {
-		  jAlert("请检查表单中的内容填写是否正常！", "提示");
-		  return;
-	  }
-		  		
-	  var isConfirmed = false;
-	  if (o("cwsWorkflowTitle") && o("cwsWorkflowTitle").value=="<%=lf.getName()%>") {
-		  if (!confirm("流程标题为默认标题，您确定不修改就提交么？")) {
-			  return;
+		  type: 'button',
+		  text: '提交',
+		  title: '提交至下一节点处理',
+		  bodyStyle: 'commit',
+		  useable: 'T',
+		  handler: function () {
+			  if (!LiveValidation.massValidate(lv_cwsWorkflowResult.formObj.fields)) {
+				  jAlert("请检查表单中的内容填写是否正常！", "提示");
+				  return;
+			  }
+
+			  if (o("cwsWorkflowTitle") && o("cwsWorkflowTitle").value == "<%=lf.getName()%>") {
+				  jConfirm("流程标题为默认标题，您确定不修改就提交么？", "提示", function (r) {
+					  if (r) {
+						  SubmitResult();
+					  }
+				  });
+				  return;
+			  }
+
+			  jConfirm("您确定要提交么？", "提示", function (r) {
+				  if (r) {
+					  SubmitResult();
+				  }
+			  });
 		  }
-		  else
-			isConfirmed = true;
-	  }
-	  
-	  if (!isConfirmed) {
-	  	if (confirm('您确定要提交么？'))
-			;
-		else
-			return;
-	  }
-	  SubmitResult();
-	}
   }
   <%if (mad.getActionStatus()!=WorkflowActionDb.STATE_PLUS && returnv.size()>0) {%>
   ,'-',{
