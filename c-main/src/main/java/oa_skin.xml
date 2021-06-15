@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<all>
+    <skin code="bluethink" default="false">
+        <name>蓝色畅想</name>
+        <author />
+        <path>skin/bluethink</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+ 		<menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>
+    <skin code="nightSky" default="false">
+        <name>璀璨星空</name>
+        <author />
+        <path>skin/nightSky</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+        <menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>
+    <skin code="happyWorld" default="false">
+        <name>欢乐世界</name>
+        <author />
+        <path>skin/happyWorld</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+        <menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>
+    <skin code="greenery" default="false">
+        <name>绿意盎然</name>
+        <author />
+        <path>skin/greenery</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+        <menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>
+    <skin code="placidValley" default="false">
+        <name>宁静山谷</name>
+        <author />
+        <path>skin/placidValley</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+        <menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>
+    <skin code="gov" default="false">
+        <name>政府机关</name>
+        <author />
+        <path>skin/gov</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+        <menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>
+    <skin code="lte" default="true" isDisplay="false">
+        <name>轻简型</name>
+        <author />
+        <path>skin/lte</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+        <topHeight>96</topHeight>
+ 		<menuHeight>0</menuHeight>
+        <bottomHeight>0</bottomHeight>
+        <leftWidth>70</leftWidth>
+        <leftMenuTopBtn>0,0,0,0,0,0,0,0,0</leftMenuTopBtn>
+    </skin>    
+</all>
+

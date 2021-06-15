@@ -1,0 +1,30 @@
+@charset "utf-8";
+.ui-button-text-only .ui-button-text {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    font-size: 14px;
+    color: #262626;
+}
+
+.import_icons {
+    background-image: url(../images/import.png) !important;
+    margin-left: 6px;
+}
+
+.export_icons {
+    background-image: url(../images/export.png) !important;
+    margin-left: 6px;
+}
+
+.select_icons {
+    background-image: url(../images/select.png) !important;
+    margin-left: 6px;
+}
+
+.ui-button-text {
+    padding-top: 5px !important;
+    padding-bottom: 0px !important;
+    font-size: 14px !important;
+    color: #262626;
+    height: 24px;
+}

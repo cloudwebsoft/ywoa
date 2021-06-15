@@ -1,0 +1,174 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>设置用户权限</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .layer1 {
+            background-color: #EBEDED;
+        }
+        .layer2 {
+            background-color: #ffffff;
+        }
+        .menu_item a {
+            color: #608acc;
+            background: #fff;
+            overflow: hidden;
+            display: block;
+            width: 200px;
+            height: 20px;
+            line-height: 15px;
+            border: 1px solid #b4c6dc;
+            padding: 0 20px 0 5px;
+            margin-top: 3px;
+        }
+    </style>
+    <script type="text/javascript" src="../../inc/common.js"></script>
+    <script src="../../js/jquery-1.9.1.min.js"></script>
+    <script src="../../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link rel="stylesheet" href="../../js/bootstrap/css/bootstrap.min.css"/>
+    <script src="../../js/bootstrap/js/bootstrap.min.js"></script>
+    <link href="../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../../js/jquery-showLoading/jquery.showLoading.js"></script>
+</head>
+<body>
+<div th:replace="th/include/tab_user :: navUser(${userName}, 3)"></div>
+<div class="spacerH"></div>
+<div th:inline="text" style="margin: 10px 0px; text-align: center">[[${realName}]] 的权限</div>
+<form id="form1" name="form1" method="post" action="../../user/setPrivs.do" onsubmit="return false">
+    <table id="mainTable" class="tabStyle_1 percent80" cellSpacing="0" cellPadding="3" width="98%" align="center">
+        <thead>
+        <td class="tabStyle_1_title" width="5%">&nbsp;
+        </td>
+        <td width="22%" align="center" class="tabStyle_1_title">权限</td>
+        <td width="26%" align="center" class="tabStyle_1_title">菜单项</td>
+        <td width="5%" align="center" class="tabStyle_1_title">拥有权限</td>
+        <td width="18%" align="center" class="tabStyle_1_title">有权限的角色</td>
+        <td width="10%" align="center" class="tabStyle_1_title">有权限的用户组</td>
+        </thead>
+        <tbody th:each="auth, stat : ${authorityVOList}" th:remove="tag">
+            <tr th:attr="class=${auth.layer}==1?'layer1':'layer2'" th:if="(${auth.isAdmin} and ${isMeAdmin}) or !${auth.isAdmin}">
+                <td style="padding-left: 10px; height:26px" th:inline="text">
+                    <span th:if="${auth.layer eq 2}">
+                        <span th:switch="${auth.isAdmin}" th:remove="tag">
+                            <span th:case="true" th:remove="tag">
+                                <span th:switch="${isMeAdmin}" th:remove="tag">
+                                    <span th:case="true">
+                                        <span th:switch="${auth.authorized}" th:remove="tag">
+                                            <input th:case="true" checked="checked" type="checkbox" name="priv" th:value='${auth.code}'>
+                                            <input th:case="*" type="checkbox" name="priv" th:value='${auth.code}'>
+                                        </span>
+                                    </span>
+                                    <span th:case="*">
+                                        <span th:switch="${auth.authorized}" th:remove="tag">
+                                            <span th:case="true" th:remove="tag">
+                                                <input checked disabled="disabled" type="checkbox" name="priv2" th:value='${auth.code}'>
+                                                <input type="hidden" name="priv" th:value='${auth.code}'>
+                                            </span>
+                                            <span th:case="*" th:remove="tag">
+                                                <input disabled="disabled" type="checkbox" name="priv" th:value='${auth.code}'>
+                                            </span>
+                                        </span>
+                                    </span>
+                                </span>
+                            </span>
+                            <span th:case="*" th:remove="tag">
+                                <span th:switch="${auth.authorized}" th:remove="tag">
+                                    <input th:case="true" checked type="checkbox" name="priv" th:value='${auth.code}'>
+                                    <input th:case="*" type="checkbox" name="priv" th:value='${auth.code}'>
+                                </span>
+                            </span>
+                        </span>
+                    </span>
+                </td>
+                <td align="left" th:attr="title='${auth.code}'" th:inline="text">
+                    [[${auth.name}]]
+                </td>
+                <td align="left" th:title="${auth.code}">
+                    <div class="menu_item" th:each="menu, stat : ${auth.menuList}">
+                        <span th:switch="${not #strings.isEmpty(menu.realLink)}" th:remove="tag">
+                            <span th:case="true" th:remove="tag">
+                                <a href="javascript:;" th:onclick="addTab([[${menu.name}]], [[${menu.realLink}]])" th:inline="text">[[${menu.fullName}]]</a>
+                            </span>
+                            <span th:case="*" th:remove="tag">
+                                <a href="javascript:;" th:inline="text">[[${menu.fullName}]]</a>
+                            </span>
+                        </span>
+                    </div>
+                </td>
+                <td align="center">
+                    <span th:if="${auth.layer==2}" style="font-size: 16px">
+                        <span th:utext="${auth.authorized or auth.roleAuthorized or auth.groupAuthorized} ? '<span style=\'color:red;\'>√</span>':'<span>×</span>'"></span>
+                    </span>
+                </td>
+                <td>
+                    <span th:if="${auth.layer==2 and auth.roleAuthorized}">
+                        <span th:each="role, stat : ${auth.roleList}" th:inline="text">
+                            <a href="javascript:;" title="角色" th:onclick="addTab('[(${role.description})]', 'admin/rolePriv.do?roleCode=' + [[${role.code}]])">[[${role.description}]]</a>
+                            &nbsp;
+                        </span>
+                    </span>
+                </td>
+                <td>
+                    <span th:if="${auth.layer==2 and auth.groupAuthorized}">
+                        <span th:each="group, stat : ${auth.groupList}" th:inline="text">
+                            <a href="javascript:;" title="用户组" th:onclick="addTab('[(${group.description})]', 'admin/groupPriv.do?groupCode=' + [[${group.code}]])">[[${group.description}]]</a>
+                            &nbsp;
+                        </span>
+                    </span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="text-align: center; margin-bottom: 10px">
+        <input type="hidden" name="userName" th:value="${userName}"/>
+        <button id="btnOk" class="btn btn-default">确定</button>
+    </div>
+</form>
+</body>
+<script language="javascript" th:inline="javascript">
+    $(function() {
+        $('#btnOk').click(function() {
+            $.ajax({
+                type: "post",
+                url: "../../user/setPrivs.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function(XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function(data, status){
+                    jAlert(data.msg, "提示");
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function(){
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    })
+
+    $(document).ready(function () {
+        $("#mainTable td").mouseout(function () {
+            if ($(this).parent().parent().get(0).tagName != "THEAD")
+                $(this).parent().find("td").each(function (i) {
+                    $(this).removeClass("tdOver");
+                });
+        });
+
+        $("#mainTable td").mouseover(function () {
+            if ($(this).parent().parent().get(0).tagName != "THEAD")
+                $(this).parent().find("td").each(function (i) {
+                    $(this).addClass("tdOver");
+                });
+        });
+    });
+</script>
+</html>

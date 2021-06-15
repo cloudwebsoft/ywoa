@@ -1,0 +1,101 @@
+@CHARSET "UTF-8";
+html,body{width:100%;height:100%;overflow:hidden;}
+iframe{width:100%;height:100%;padding:0;margin:0;}
+img,body,html{border:0;}
+html,body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,p,blockquote,th,td{margin:0;padding:0;}
+img{vertical-align:middle;}
+/*新建*/
+.new {
+  background: transparent url(tabpanel-image/new.gif) no-repeat 0 2px;
+  padding-left:18px;
+}
+/*修改*/
+.edit {
+  background: transparent url(tabpanel-image/edit.gif) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*保存*/
+.save {
+  background: transparent url(tabpanel-image/save.png) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*删除*/
+.delete {
+  background: transparent url(tabpanel-image/delete.gif) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*查找*/
+.search {
+  background:transparent url(tabpanel-image/search.gif) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*权限设置*/
+.role-setup {
+  background:transparent url(tabpanel-image/role-setup.gif) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*已关联*/
+.linked {
+  background:transparent url(tabpanel-image/linked.gif) no-repeat 0 3px;
+  padding-left:20px;
+}
+/*下面是过滤组件用到的样式*/
+.filter-read-y {
+  background:transparent url(tabpanel-image/read-y.gif) no-repeat 2px 2px;
+	width:20px;
+}
+.filter-read-n {
+  background:transparent url(tabpanel-image/read-n.gif) no-repeat 2px 2px;
+	width:20px;
+}
+.filter-sended {
+  background:transparent url(tabpanel-image/sended.gif) no-repeat 2px 2px;
+	width:20px;
+}
+.btn-all {
+  background:transparent url(tabpanel-image/alter.png) no-repeat 2px 2px;
+  width:20px;
+}
+
+/*图表*/
+.chart {
+  background: transparent url(tabpanel-image/chart.gif) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*运行*/
+.run {
+  background: transparent url(tabpanel-image/manage.png) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*刷新*/
+.refresh {
+  background: transparent url(tabpanel-image/refresh.gif) no-repeat 0 2px;
+  padding-left:20px;
+}
+.filter-order {
+  	background:transparent url(tabpanel-image/order.gif) no-repeat 2px 2px;
+	width:20px;
+}
+/*导出*/
+.export {
+  background: transparent url(tabpanel-image/export.png) no-repeat 0 2px;
+  padding-left:20px;
+}
+/*导入*/
+.import {
+	background: transparent url(tabpanel-image/import.png) no-repeat 0 2px;
+  	padding-left:20px;
+}
+/*导入模版*/
+.importModel {
+    background: transparent url(tabpanel-image/gantt_import_template.png) no-repeat 0 2px;
+    padding-left:20px;
+}
+.design {
+  background: transparent url(tabpanel-image/design.png) no-repeat 0 2px;
+  padding-left:20px;
+}
+.design_query {
+  background: transparent url(tabpanel-image/design_query.png) no-repeat 0 2px;
+  padding-left:20px;
+}

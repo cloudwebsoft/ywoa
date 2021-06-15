@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.OaNoticeAttachMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.OaNoticeAttach">
+        <id column="id" property="id" />
+        <result column="notice_id" property="noticeId" />
+        <result column="name" property="name" />
+        <result column="diskname" property="diskname" />
+        <result column="visualpath" property="visualpath" />
+        <result column="orders" property="orders" />
+        <result column="downloadCount" property="downloadCount" />
+        <result column="upload_date" property="uploadDate" />
+        <result column="file_size" property="fileSize" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, notice_id, name, diskname, visualpath, orders, downloadCount, upload_date, file_size
+    </sql>
+
+    <select id="getNoticeAttById" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from oa_notice_attach where notice_id=#{noticeId}
+    </select>
+
+</mapper>

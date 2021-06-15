@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<isUse desc="是否启用">true</isUse>
+	<accessKeyId desc="处需要替换成开发者自己的AK(在阿里云访问控制台寻找)"></accessKeyId>
+	<accessKeySecret desc="处需要替换成开发者自己的AK(在阿里云访问控制台寻找)"></accessKeySecret>
+	<signName desc="必填:短信签名-可在短信控制台中找到"></signName>
+	<templateCode desc="必填:短信模板-可在短信控制台中找到"></templateCode>
+	<smsExpired desc="验证码有效时间">300</smsExpired>
+</config>
+

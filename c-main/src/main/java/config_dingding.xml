@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<isUse desc="是否启用">false</isUse>
+	<isSyncDingDingToOA desc="初始化时同步方式" options="true|同步用户至OA,false|同步OA账户至钉钉">false</isSyncDingDingToOA>
+	<CORP_ID desc="钉钉corpId"></CORP_ID>
+	<CORP_SECRET isDisplay="false"></CORP_SECRET>
+	<isUserIdUse desc="钉钉帐户与系统用户关联字段" options="1|userId账户,2|邮箱,3|手机号">3</isUserIdUse>
+	<flowAgentId desc="agentId">212551689</flowAgentId>
+	<appkey desc="appkey"></appkey>
+	<appsecret desc="appsecret"></appsecret>
+	<TOKEN desc="注册通讯录回调事件验证URL加解密需要用到的token" isDisplay="false">cloudweb</TOKEN>
+	<AES_KEY desc="数据加密密钥。用于回调数据的加密，长度固定为43个字符，从a-z, A-Z, 0-9共62个字符中选取,您可以随机生成" isDisplay="false"></AES_KEY>
+	<EventChangeReviceURL isDisplay="false">http://partner.yimihome.com/servlet/DdEventChangeReceiveServlet</EventChangeReviceURL>
+</config>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.GroupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.Group">
+        <id column="code" property="code" />
+        <result column="description" property="description" />
+        <result column="isSystem" property="isSystem" />
+        <result column="is_dept" property="isDept" />
+        <result column="is_include_sub_dept" property="isIncludeSubDept" />
+        <result column="dept_code" property="deptCode" />
+        <result column="unit_code" property="unitCode" />
+        <result column="kind" property="kind"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        code, description, isSystem, is_dept, is_include_sub_dept, dept_code, unit_code, kind
+    </sql>
+
+    <select id="listBySql" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+</mapper>

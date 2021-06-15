@@ -1,0 +1,24 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title th:inline="text">错误[[${code}]]</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<BR><BR>
+<table class="errMsgTable" height="30" width="60%" border="0" align="center" cellpadding="0" cellspacing="1" bordercolor="FF0000" bgcolor="FF0000">
+    <tr>
+        <td align="center" bgcolor="FFEFEF">
+            <b>
+                <div class="errMsg">
+                    [[${msg}]]
+                    <a th:if="${isShowBack}" class="historyBack" title="点击此处返回" href="javascript:;" onclick="history.back()">返回</a>
+                </div>
+            </b>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>配置Email</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_config :: navConfig(3)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <table align="center" class="table table-bordered table-hover">
+                    <thead>
+                    <tr class="active">
+                        <td width="20%" class="text-center"><b>按钮</b></td>
+                        <td width="10%" class="text-center"><b>启用</b></td>
+                        <td width="30%" class="text-center"><b>名称</b></td>
+                        <td width="30%" class="text-center"><b>提示信息</b></td>
+                        <td width="10%" class="text-center"><b>操作</b></td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <th:block th:each="json, stat : ${jsonAry}">
+                        <form method="post" th:id="'form' + ${stat.index}" onsubmit="return false">
+                            <tr class="highlight" align="center">
+                                <td>
+                                    <input type="hidden" name="name" th:value="${json[name]}" th:inline="text">
+                                    [[${json[value]}]]
+                                </td>
+                                <td class="form-inline form-group">
+                                    <select th:id="'isDisplay' + ${stat.index}" name="isDisplay" class="form-control">
+                                        <option value="true">是</option>
+                                        <option value="false">否</option>
+                                    </select>
+                                </td>
+                                <td class="form-inline form-group">
+                                    <input type="text" name="value" class="form-control" th:value="${json[value]}">
+                                </td>
+                                <td class="form-inline form-group">
+                                    <input type="text" name="title" class="form-control" th:value="${json[title]}">
+                                </td>
+                                <td>
+                                    <button class="btn btn-default" th:onclick="submitForm('form' + [[${stat.index}]])">确定</button>
+                                </td>
+                            </tr>
+                        </form>
+                        <script th:inline="javascript">
+                            $('#isDisplay' + [[${stat.index}]]).val([[${json[isDisplay]}]]);
+                        </script>
+                    </th:block>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    注：如果以#开头，则表示从资源文件中获取
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</tbody>
+</table>
+<br/>
+</body>
+<script th:inline="javascript">
+    function submitForm(formId) {
+        $.ajax({
+            type: "post",
+            url: "editFlowButtonConfig.do",
+            data: $('#' + formId).serialize(),
+            dataType: "json",
+            beforeSend: function(XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function(data, status){
+                jAlert(data.msg, "提示");
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(){
+                //请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+
+        window.event? window.event.cancelBubble = true : e.stopPropagation();
+    }
+</script>
+</html>                            
+  

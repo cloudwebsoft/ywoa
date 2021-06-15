@@ -1,0 +1,60 @@
+@charset "utf-8";
+section {
+    margin: 4em 0;
+}
+
+.sidebar {
+    margin: 0;
+    padding-top: 1em;
+    background-color: rgb(223, 232, 242);
+    font-size: 14px;
+}
+
+.sidebar h6 {
+    margin: 0 .8em;
+    padding: 0;
+    font-weight: 300;
+    font-size: 14px;
+}
+
+.sidebar li {
+    margin: 2px 0;
+    padding: 0 1em;
+    cursor: default;
+    color: black;
+}
+
+.sidebar li:hover {
+    background-color: #80E3FD;
+}
+
+.sidebar hr {
+    margin: 5px auto;
+    border: 0;
+    padding: 0;
+    width: 96%;
+    height: 1px;
+    background-color: #cccccc;
+}
+
+/*主要样式*/
+.subNav {
+    cursor: pointer;
+    line-height: 30px;
+    margin: 5px 0px
+}
+
+.navContent {
+    display: none;
+    color: #999;
+}
+
+.console {
+    background-color: black;
+    color: white;
+    padding-left: 5px;
+    width: 100%;
+    height: 200px;
+    overflow-y: scroll;
+    overflow-x: scroll;
+}

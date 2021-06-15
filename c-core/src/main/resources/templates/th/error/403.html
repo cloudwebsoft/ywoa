@@ -1,0 +1,19 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>错误403</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<table style="margin-top: 20px" align="center" cellpadding="2" class="tabStyle_1 percent60">
+    <tr>
+        <td class="tabStyle_1_title" height="21" align="left">错误信息</td>
+    </tr>
+    <tr>
+        <td width="80%" height="19" th:text="${message}"></td>
+    </tr>
+</table>
+</body>
+</html>

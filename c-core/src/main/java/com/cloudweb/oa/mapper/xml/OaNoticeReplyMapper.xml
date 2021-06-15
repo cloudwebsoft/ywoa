@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.OaNoticeReplyMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.OaNoticeReply">
+        <id column="id" property="id" />
+        <result column="notice_id" property="noticeId" />
+        <result column="user_name" property="userName" />
+        <result column="content" property="content" />
+        <result column="reply_time" property="replyTime" />
+        <result column="is_readed" property="isReaded" />
+        <result column="read_time" property="readTime" />
+        <association property="user" select="com.cloudweb.oa.mapper.UserMapper.getUserByName" column="{userName=user_name}"></association>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, notice_id, user_name, content, reply_time, is_readed, read_time
+    </sql>
+
+    <select id="getReplyHasContent" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from oa_notice_reply where notice_id=#{noticeId} and content is not null and content&lt;&gt;'' order by id desc
+    </select>
+</mapper>

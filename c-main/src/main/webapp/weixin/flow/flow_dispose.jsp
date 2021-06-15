@@ -1,0 +1,472 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8" %>
+<%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="com.redmoon.oa.person.*" %>
+<%@ page import="com.redmoon.oa.flow.*" %>
+<%@ page import="com.redmoon.oa.android.Privilege" %>
+<%@ page import="cn.js.fan.util.*" %>
+<%@ page import="org.json.*" %>
+<%@ page import="com.redmoon.oa.android.CloudConfig" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>处理流程</title>
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta content="telephone=no" name="format-detection"/>
+    <link rel="stylesheet" href="../css/mui.css">
+    <link rel="stylesheet" href="../css/iconfont.css"/>
+    <link rel="stylesheet" href="../css/mui.picker.min.css">
+    <link rel="stylesheet" href="../css/at_flow.css"/>
+    <link rel="stylesheet" href="../css/my_dialog.css"/>
+
+    <link href="../../lte/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="../../lte/css/font-awesome.css?v=4.4.0" rel="stylesheet">
+    <link href="../../lte/css/animate.css" rel="stylesheet">
+    <link href="../../lte/css/style.css?v=4.1.0" rel="stylesheet">
+    <!-- mui.js 不要放到</body>的前面，因为页面中如果return了，后退按钮就不生效了 -->
+    <script type="text/javascript" src="../../inc/common.js"></script>
+    <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="../js/mui.js"></script>
+</head>
+<style>
+    body {
+        font-size: 17px;
+        background-color: #efeff4;
+    }
+
+    .mui-input-row .input-icon {
+        width: 50%;
+        float: left;
+    }
+
+    .mui-input-row a {
+        margin-right: 10px;
+        float: right;
+        text-align: left;
+        line-height: 1.5;
+    }
+
+    .div_opinion {
+        text-align: left;
+    }
+
+    .opinionContent {
+        margin: 10px;
+        width: 65%;
+        float: right;
+        font-weight: normal;
+    }
+
+    .opinionContent div {
+        text-align: right;
+    }
+
+    .opinionContent div span {
+        padding: 10px;
+    }
+
+    .opinionContent .content_h5 {
+        color: #000;
+        font-size: 17px;
+    }
+
+    #captureFile {
+        display: none;
+    }
+
+    .reply-date {
+        margin-left: 10px;
+    }
+
+    .reply-header {
+        color: #666;
+    }
+
+    .reply-content {
+        margin: 20px 0 10px 0;
+        color: #666;
+    }
+
+    .reply-progress {
+        margin: 0 10px;
+    }
+
+    .info-box {
+        width: 80%;
+        margin: 120px auto;
+        height: 60px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+</style>
+<body>
+<header class="mui-bar mui-bar-nav">
+    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+    <h1 class="mui-title">处理流程</h1>
+</header>
+<%
+    String skey;
+    Privilege pvg = new Privilege();
+    if (!pvg.auth(request)) {
+        out.print("<div class=\"info-box\">请登录</a>");
+        return;
+    }
+    else {
+        skey = pvg.getSkey();
+    }
+
+    String userName = pvg.getUserName();
+    UserDb ud = new UserDb();
+    ud = ud.getUserDb(userName);
+
+    int myActionId = ParamUtil.getInt(request, "myActionId", 0);
+    String flowTypeCode = ParamUtil.get(request, "flowTypeCode"); // 流程类型
+    int type = ParamUtil.getInt(request, "type", 0);
+    String title = ParamUtil.get(request, "title");
+    int flowId = -1;
+    long actionId = -1;
+    if (myActionId != 0) {
+        MyActionDb mad = new MyActionDb();
+        mad = mad.getMyActionDb(myActionId);
+        if (mad == null || !mad.isLoaded()) {
+            out.print("<div class=\"info-box\">待办记录已不存在！</div>");
+            return;
+        }
+        if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_CHECKED) {
+            out.print("<div class=\"info-box\">流程已处理！</div>");
+            return;
+        }
+        actionId = mad.getActionId();
+        flowId = (int) mad.getFlowId();
+        WorkflowDb wf = new WorkflowDb();
+        wf = wf.getWorkflowDb(flowId);
+        flowTypeCode = wf.getTypeCode();
+        // System.out.println(getClass() + " flowId=" + flowId + " flowTypeCode=" + flowTypeCode);
+    }
+    Leaf lf = new Leaf();
+    lf = lf.getLeaf(flowTypeCode);
+    if (lf == null || !lf.isLoaded()) {
+        out.print("<div class=\"info-box\">流程类型已不存在！</a>");
+        return;
+    }
+    String formCode = lf.getFormCode();
+    FormDb fd = new FormDb();
+    fd = fd.getFormDb(formCode);
+    if (fd == null && !fd.isLoaded()) {
+        out.print("<div class=\"info-box\">表单类型已不存在！</a>");
+        return;
+    }
+
+    boolean isInit = myActionId == 0; // 是否为发起流程
+
+    WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+    wpd = wpd.getPredefineFlowOfFree(flowTypeCode);
+    boolean isRecall = wpd.isRecall();
+%>
+<div class="mui-content">
+    <%if (!isInit && !wpd.isLight()) {%>
+    <div style="padding: 10px 10px;">
+        <div id="segmentedControl" class="mui-segmented-control">
+            <a class="mui-control-item mui-active" href="#item1">
+                待办
+            </a>
+            <a class="mui-control-item" href="#item2">
+                过程
+            </a>
+        </div>
+    </div>
+    <%}%>
+    <div>
+        <div id="item1" class="mui-control-content mui-active">
+            <form id="free_flow_form" action="../../public/flow_dispose_free_do.jsp" method="post" enctype="multipart/form-data">
+            </form>
+            <form class="mui-input-group" id="flow_form">
+            </form>
+            <input type="file" id="captureFile" <%--capture="camera"--%> name="upload" accept="image/*" style="cursor: pointer"/>
+            <%
+                String dis = "";
+                if (!fd.isProgress()) {
+                    dis = "display:none";
+                }
+                if (wpd.isReply() && !flowTypeCode.equals("at") && !wpd.isLight() && lf.getType() != Leaf.TYPE_FREE) { %>
+            <div class="annex-group">
+                <div class="reply-form" style="display:none; margin-bottom:10px">
+                    <div class="mui-input-row mui-input-range" s>
+                        <label>进度<span id="progressLabel" style="margin-left:10px"></span></label>
+                        <input id="progress" name="progress" type="range" min="0" max="100" onchange="$('#progressLabel').text(mui('#progress')[0].value)">
+                    </div>
+                    <div class="mui-input-row" data-code="content" data-isnull="false">
+                        <label><span>回复</span><span style='color:red;'>*</span></label>
+                        <div style="text-align:center">
+                            <textarea id="content" name="content" placeholder="请输入回复内容" style="width:96%; height:150px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="mui-input-row mui-checkbox" data-code="isSecret">
+                        <label><span>隐藏</span><span style='color:red;'>*</span></label>
+                        <input type="checkbox" id="isSecret" name="isSecret" value="1"/>
+                    </div>
+                    <div class="mui-button-row">
+                        <button type="button" class="mui-btn mui-btn-primary mui-btn-outlined btn-ok">确定</button>
+                    </div>
+                </div>
+            </div>
+            <%} %>
+        </div>
+
+        <%if (!isInit && !wpd.isLight()) {%>
+        <div id="item2" class="mui-control-content">
+            <div id="vertical-timeline" class="vertical-container light-timeline">
+                <%
+                    UserMgr um = new UserMgr();
+                    MyActionDb mad = new MyActionDb();
+                    Vector<MyActionDb> v = mad.getMyActionDbOfFlow(flowId);
+                    for (MyActionDb myActionDb : v) {
+                        mad = myActionDb;
+                        String userRealName;
+                        if (!mad.getProxyUserName().equals("")) {
+                            userRealName = um.getUserDb(mad.getProxyUserName()).getRealName();
+                        } else {
+                            UserDb user = um.getUserDb(mad.getUserName());
+                            userRealName = user.getRealName();
+                        }
+
+                        WorkflowActionDb wad = new WorkflowActionDb();
+                        wad = wad.getWorkflowActionDb((int) mad.getActionId());
+                %>
+                <div class="vertical-timeline-block" style="margin-bottom:10px">
+                    <div class="vertical-timeline-icon blue-bg">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="vertical-timeline-content">
+                        <h3><%=StrUtil.getNullStr(wad.getTitle())%>
+                        </h3>
+                        <p>
+                            <%
+                                if (mad.getChecker().equals(UserDb.SYSTEM)) {
+                                    String str = LocalUtil.LoadString(request, "res.flow.Flow", "skipOverTime");
+                                    out.print(str);
+                                } else {
+                            %>
+                            <%=mad.getCheckStatusName()%>
+                            <%
+                                }
+                                if (mad.getCheckStatus() != 0 && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_TRANSFER && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
+                                    if (mad.getResultValue() != WorkflowActionDb.RESULT_VALUE_RETURN) {
+                                        if (mad.getSubMyActionId() == MyActionDb.SUB_MYACTION_ID_NONE) {
+                                            out.print("(" + WorkflowActionDb.getResultValueDesc(mad.getResultValue()) + ")");
+                                        }
+                                    }
+                                }
+                            %>
+                        </p>
+                        <%
+                            if (isRecall && mad.canRecall(userName)) {
+                        %>
+                        <a href="#" class="btn btn-sm btn-success btn-recall" myActionId="<%=mad.getId()%>">撤回</a>
+                        <%} %>
+                        <span class="vertical-date">
+                                	<%=userRealName %> <br>
+                                <small><%=DateUtil.format(mad.getCheckDate(), "MM-dd HH:mm")%></small>
+                        		</span>
+                    </div>
+                </div>
+                <%} %>
+            </div>
+        </div>
+        <%}%>
+    </div>
+</div>
+<script src="form_js/<%=lf.getFormCode()%>.jsp?flowId=<%=flowId%>&myActionId=<%=myActionId%>&skey=<%=skey %>&Fcode=<%=flowTypeCode %>&Ftype=<%=type %>&Ftitle=<%=title %>"></script>
+<jsp:include page="../inc/navbar.jsp">
+    <jsp:param name="skey" value="<%=skey%>"/>
+    <jsp:param name="isBarBottomShow" value="false"/>
+</jsp:include>
+<script>
+    // 用于HBuilderX手机端
+    if(!mui.os.plus) {
+        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
+        $('.mui-bar').remove();
+    }
+
+    if(mui.os.plus) {
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        mui.init({
+            beforeback: function() {
+                //获得父页面的webview
+                var list = plus.webview.currentWebview().opener();
+                //触发父页面的自定义事件(refresh),从而进行刷新
+                mui.fire(list, 'refresh');
+                //返回true,继续页面关闭逻辑
+                return true;
+            }
+        });
+    }
+
+    var appProp = {"type": "module", "isOnlyCamera": "<%=fd.isOnlyCamera()%>", "btnAddShow": 0, "btnBackUrl": ""};
+
+    function callJS() {
+        return appProp;
+    }
+
+    var iosCallJS = JSON.stringify(appProp);
+    // var iosCallJS = '{ "type": "module", "isOnlyCamera": "<%=fd.isOnlyCamera()%>", "btnAddShow": 0, "btnBackUrl": "" }';
+
+    function setIsOnlyCamera(isOnlyCamera) {
+        appProp.isOnlyCamera = isOnlyCamera;
+        iosCallJS = JSON.stringify(appProp);
+    }
+
+    function resetIsOnlyCamera() {
+        appProp.isOnlyCamera = "<%=fd.isOnlyCamera()%>"; // 用以在图像宏控件拍完照后，恢复底部拍照按钮的设置
+    }
+</script>
+<script src="../js/jq_mydialog.js"></script>
+<script type="text/javascript" src="../js/newPopup.js"></script>
+<script src="../js/macro/macro.js"></script>
+<script src="../js/mui.picker.min.js"></script>
+
+<link rel="stylesheet" href="../css/photoswipe.css">
+<link rel="stylesheet" href="../css/photoswipe-default-skin/default-skin.css">
+<script type="text/javascript" src="../js/photoswipe.js"></script>
+<script type="text/javascript" src="../js/photoswipe-ui-default.js"></script>
+<script type="text/javascript" src="../js/photoswipe-init-manual.js"></script>
+
+<script type="text/javascript" src="../js/base/mui.form.js"></script>
+<script type="text/javascript" src="../js/mui.flow.wx.js"></script>
+<!--解决iphone拍照变横向的问题-->
+<script type="text/javascript" src="../js/exif.js"></script>
+<script type="text/javascript" charset="utf-8">
+    var content = document.querySelector('.mui-content');
+    var skey = '<%=skey%>';
+    var myActionId = '<%=myActionId%>';
+    var flowTypeCode = '<%=flowTypeCode%>';
+    var title = '<%=title%>';
+    var type = <%=type%>;
+    var options = {
+        "skey": skey,
+        "title": title,
+        "myActionId": myActionId,
+        "type": type,
+        "formCode": '<%=formCode%>',
+        "code": flowTypeCode
+    };
+
+    <%
+    // myActionId为0表示发起流程
+    JSONObject extraData = new JSONObject();
+    if (myActionId==0) {
+        Enumeration paramNames = request.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = (String) paramNames.nextElement();
+            String[] paramValues = ParamUtil.getParameters(request, paramName); // 因为参数来自于url链接中，所以一定得通过ParamUtil.getParameters转换，否则会为乱码
+            if (paramValues.length == 1) {
+                String paramValue = paramValues[0];
+                // 过滤掉formCode、code等，code是企业微信端传过来的，不能被二次消费
+                if (!(paramName.equals("code") || paramName.equals("myActionId") || paramName.equals("title") || paramName.equals("type") || paramName.equals("flowTypeCode") || paramName.equals("skey"))) {
+                     extraData.put(paramName, paramValue);
+                }
+            }
+        }
+    }
+    %>
+
+    options.extraData = '<%=extraData%>';
+
+    window.flow = new mui.Flow(content, options);
+    window.flow.flowDisposeInit();
+
+    function setAgreeBtnName() {
+        // 置同意按钮的名称
+        <%
+            String btnAgreeName = "";
+            if (actionId!=-1) {
+                WorkflowActionDb wa = new WorkflowActionDb();
+                wa = wa.getWorkflowActionDb((int)actionId);
+                btnAgreeName = WorkflowActionDb.getActionProperty(wpd, wa.getInternalName(), "btnAgreeName");
+            }
+            String btnName = "";
+            if (btnAgreeName!=null && !"".equals(btnAgreeName)) {
+                btnName = btnAgreeName;
+            }
+            else {
+                com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
+                btnName = conf.getBtnName("FLOW_BUTTON_AGREE").startsWith("#") ? LocalUtil.LoadString(request, "res.flow.Flow", "agree") : conf.getBtnName("FLOW_BUTTON_AGREE");
+            }
+        %>
+        $('.flow_submit').html('<%=btnName%>');
+    }
+
+    $(function () {
+        <%
+        CloudConfig cloudConfig = CloudConfig.getInstance();
+        int photoMaxSize = cloudConfig.getIntProperty("photoMaxSize");
+        int intPhotoQuality = cloudConfig.getIntProperty("photoQuality");
+        %>
+        maxSize = {
+            width: <%=photoMaxSize%>,
+            height: <%=photoMaxSize%>,
+            level: <%=intPhotoQuality%>
+        };
+        setTimeout(setAgreeBtnName, 1000);
+
+        $('.btn-ok').click(function () {
+            var _tips = "";
+            jQuery("div[data-isnull='false']").each(function (i) {
+                var _code = jQuery(this).data("code");
+                var _val = jQuery("#" + _code).val();
+                if (_val == undefined || _val == "") {
+                    var _text = jQuery(this).find("span:first").text();
+                    _tips += _text + " 不能为空<BR/>"
+                }
+            });
+            if (_tips != null && _tips != "") {
+                mui.toast(_tips);
+                return;
+            }
+
+            var progress = mui('#progress')[0].value;
+            var isSecret = jQuery('#isSecret').is(":checked") ? 1 : 0;
+            $.ajax({
+                type: "post",
+                url: "../../public/flow/addReply.do",
+                data: "skey=<%=skey%>&content=" + jQuery('#content').val() + "&isSecret=" + isSecret + "&progress=" + progress + "&flowId=<%=flowId%>&actionId=<%=actionId%>",
+                dataType: "html",
+                contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                beforeSend: function (XMLHttpRequest) {
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    if (data.ret == "1") {
+                        var $ul = $('.reply-ul');
+                        $ul.show();
+                        var li = '<li class="mui-table-view-cell">';
+                        li += '<div class="reply-header">';
+                        li += '<span class="reply-name"><%=ud.getRealName() %></span>';
+                        li += '<span class="reply-progress">' + progress + '%</span>';
+                        li += '<span class="reply-date"><%=DateUtil.format(new Date(), "yyyy-MM-dd")%></span>';
+                        li += '</div>';
+                        li += '<div class="reply-content">' + $('#content').val() + '</div>';
+                        li += '</li>';
+                        $ul.append(li);
+
+                        $('#progressLabel').text(progress);
+                        $('#content').val('');
+                        // 不删除，使可以继续回复
+                        // $('.reply-form').remove();
+                    }
+                    mui.toast(data.msg);
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

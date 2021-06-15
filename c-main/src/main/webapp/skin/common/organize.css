@@ -1,0 +1,377 @@
+@charset "utf-8";
+/*组织架构人员资料样式*/
+.organize-leftbox {
+	height: 50px;
+	padding-left:20px;
+}
+.organize-btn {
+	border: 1px solid #d4d4d4;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(ie-css3.htc);
+	cursor:pointer;
+	padding-right: 5px;
+	padding-left: 5px;
+	height: 30px;
+	line-height: 27px;
+	float: left;
+	margin-left: 10px;
+	margin-top: 6px;
+	background-color: #FFF;
+}
+
+.organize-btn img{
+	border:0px; 
+	margin:0px; 
+	vertical-align:middle;
+}
+
+.organize-bulebtn {
+	border: 1px solid #87c3f1;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(ie-css3.htc);
+	cursor:pointer;
+	padding-right: 5px;
+	padding-left: 5px;
+	height: 32px;
+	line-height: 32px;
+	float: left;
+	margin-right: 15px;
+	background-color: #ebf9ff;
+	width: 60px;
+	font-weight: bold;
+	text-align: center;
+}
+
+.organize-tab {
+	background-color: #e7edfb;
+	height: 40px;
+	border-top-width: 2px;
+	border-top-style: solid;
+	border-top-color: #87bbf1;
+	margin-top: 0px;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	z-index:999;
+}
+.organize-tab ul {
+	width: 270px;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.organize-tab li {
+	float: left;
+	width: 90px;
+	font-size: 16px;
+	text-align: center;
+	line-height: 40px;
+	font-weight: bold;
+	cursor:pointer;
+}
+.organize-tab-sel {
+	background-image: url(../images/organize/mywork_tab_arrow.png);
+	background-repeat: no-repeat;
+	background-position: bottom;
+	color: #4e96f0;
+}
+.oranize-toolbar {
+	height: 60px;
+	padding-top: 20px;
+	margin-right: auto;
+	margin-left: auto;
+}
+.oranize-toolbar-inquiry {
+	float: left;
+}
+.oranize-checkbox-inpbox {
+	float: left;
+	position: relative;
+	margin-right: 30px;
+}
+
+.oranize-checkbox {
+	line-height: 32px;
+	background-image: url(../images/organize/inbox-arrow.png);
+	background-repeat: no-repeat;
+	height: 32px;
+	width: 75px;
+	cursor:pointer;
+	
+	font-weight: bold;
+	color: #FFF;
+
+	text-indent: 18px;
+}
+.oranize-checkbox-layer {
+	background-color: #87c3f1;
+	height: 60px;
+	width: 75px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(ie-css3.htc);
+	cursor:pointer;
+	position: absolute;
+	left: 0;
+	top: 33px;
+	color: #FFF;
+	text-align: center;
+	font-weight: bold;
+	line-height: 28px;
+	padding-top: 5px;
+}
+.oranize-checkbox-layer p:hover {
+	background-color: #6aa0d5;
+}
+
+.oranize-toolbar-input {
+	width: 150px;
+	line-height: 30px;
+	height: 30px;
+	border: 1px solid #87c3f1;
+	text-indent: 5px;
+	z-index:1;
+}
+.oranize-checkbox-inpbox  li {
+	float: left;
+	margin: 0px;
+}
+.oranize-toolbar-input #textfield {
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	width: 90%;
+	text-indent: 5px;
+	line-height: 30px;
+	height: 30px;
+	z-index:0;
+}
+.oranize-cx-button {
+	background-image: url(../images/organize/btnicon-srch.png);
+	background-repeat: no-repeat;
+	height: 25px !important;
+	width: 25px;
+	background-size:25px 25px;	
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	cursor:pointer;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(ie-css3.htc);
+}
+.oranize-cx-button:hover, .organize-btn:hover, .organize-bulebtn:hover {
+	background-color: #b0dbf9;
+}
+
+/*导入-进度步骤样式*/
+.oranize-number {
+	height: 100px;
+	position: relative;
+	width: 400px;
+	margin-right: auto;
+	margin-left: -200px;
+	left:50%; 
+}
+
+/*灰色圆形样式*/
+.oranize-gray1, .oranize-gray2, .oranize-gray3 {
+	-moz-border-radius: 40px;
+	-webkit-border-radius: 40px;
+	border-radius: 40px;
+	width: 40px;
+	height: 40px;
+	behavior: url(ie-css3.htc);
+	background-color: #d6d6d6;
+	font-size: 24px;
+	text-align: center;
+	line-height: 40px;
+	color: #FFF;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	top: 22px;
+	position: absolute;
+	z-index: 2;
+}
+.oranize-gray1 {
+	left: 40px;
+} .oranize-gray2 {
+	left: 183px;
+} .oranize-gray3 {
+	left: 323px;
+}
+
+/*蓝色圆形样式*/
+.oranize-blue1, .oranize-blue2, .oranize-blue3 {
+	-moz-border-radius: 40px;
+	-webkit-border-radius: 40px;
+	border-radius: 40px;
+	width: 40px;
+	height: 40px;
+	behavior: url(ie-css3.htc);
+	background-color: #87c3f1;
+	font-size: 24px;
+	text-align: center;
+	line-height: 40px;
+	color: #FFF;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	top: 22px;
+	position: absolute;
+	z-index: 3;
+	left: 38px;
+}
+.oranize-roundness-blue1 {
+	left: 50px;
+} .oranize-roundness-blue2 {
+	left: 180px;
+} .oranize-roundness-blue3 {
+	left: 322px;
+} 
+
+/*灰色条样式*/
+.oranize-number-linegray {
+	background-color: #d6d6d6;
+	height: 8px;
+	width: 300px;
+	z-index: 0;
+	position: absolute;
+	top: 41px;
+	left: 45px;
+	font-size:0px;
+}
+/*蓝色条样式*/
+.oranize-number-lineblue1 {
+	background-color: #87c3f1;
+	height: 8px;
+	width: 150px;
+	position: absolute;
+	top: 41px;
+	font-size:0;
+	z-index: 1;
+}
+.oranize-number-lineblue1 {
+	left: 50px;
+} 
+.oranize-number-lineblue2 {
+	left: 180px;
+} 
+.oranize-number-lineblue3 {
+	left: 322px;
+} 
+.oranize-txt1 {
+	position: absolute;
+	text-align: center;
+	width: 100px;
+	left: 8px;
+	top: 67px;
+}
+.oranize-txt2 {
+	position: absolute;
+	text-align: center;
+	width: 100px;
+	left: 154px;
+	top: 67px;
+}
+.oranize-txt3 {
+	position: absolute;
+	text-align: center;
+	width: 100px;
+	left: 293px;
+	top: 67px;
+}
+.oranize-txt-sel {
+	font-weight: bold;
+	color: #ff9a0a;
+}
+.org-btn {
+	font-weight: bold;
+	color: #FFF;
+	text-align: center;
+	height: 36px;
+	width: 120px;
+	background-color: #87c3f1;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(ie-css3.htc);
+	line-height: 32px;
+	cursor:pointer;
+}
+
+.oranize-search-selectAndInput{
+	float:left;
+	border:1px solid #87c3f1;
+	height:32px;
+	width:224px;
+	line-height:32px;
+	position:relative;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(ie-css3.htc);
+}
+.oranize-search-selectAndInput .oranize-search-select{
+	float:left;
+	position:relative;
+	cursor:pointer;
+}
+.oranize-search-selectAndInput .oranize-search-select .oranize-search-select-span{
+	background-color:#EBF9FF;
+	background-image:url(../images/in-box/inbox-arrow.png);
+	background-repeat: no-repeat;
+	background-position: right;
+	display:block;
+	height:100%;
+	font-weight:bold;
+	width:50px;
+	padding-left:4px;
+	border-right:1px solid #87c3f1;
+	-moz-border-radius: 5px 0px 0px 5px;
+	-webkit-border-radius: 5px 0px 0px 5px;
+	border-radius: 5px 0px 0px 5px;
+	behavior: url(ie-css3.htc);
+}
+.oranize-search-selectAndInput .oranize-search-select .oranize-search-select-div{
+	height:62px;
+	width:53px;
+	background-color:#EBF9FF;
+	border:1px solid #87c3f1;
+	position:absolute;
+	top:32px;
+	left:0px;
+	z-index:9999;
+	
+}
+.oranize-search-selectAndInput .oranize-search-select .oranize-search-select-div ul{
+	height:100%;
+	width:100%;
+	list-style:none;
+	font-weight:bold;
+	text-align:center;
+}
+.oranize-search-selectAndInput .oranize-search-select .oranize-search-select-div ul li:hover{
+	background-color:#B0DBF9;
+}
+.oranize-search-selectAndInput .oranize-search-input{
+	border-width:0px !important;
+	height:30px !important;
+	line-height:30px !important;
+	text-indent:2px !important;
+}

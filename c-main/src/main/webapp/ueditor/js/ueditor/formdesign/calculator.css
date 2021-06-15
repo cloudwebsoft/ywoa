@@ -1,0 +1,49 @@
+.jcalculator{
+	background-color:#232323; 
+	position:absolute; 
+	left:30px;
+	top:170px;
+	width:250px;
+	height:300px; 
+	font-family: Helvetica, Arial, Verdana, sans-serif;
+    border-top: 1px solid #000;
+    border-left: 1px solid #000;
+}
+.jcalculator_1 {
+    background: #232323;
+    width:200px;
+    position: absolute;
+    top: 0px;
+    left:250px;
+    height:300px;
+}
+.jcalculator #jcalculator span{
+	cursor: pointer;
+    color: #fff;
+    float: left;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    font-size: 12px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    border-right: 1px solid #000;
+    border-bottom: 1px solid #000;
+    text-align:center;
+}
+.jcalculator_1 #jcalculator_1 span {
+    cursor: pointer;
+    color: #fff;
+    width: 50px;
+    height: 50px;
+    font-size: 12px;
+    text-align:center;
+    margin-left:10px;
+    line-height:25px;
+}
+
+
+.jcalculator #jcalculator span:active {
+    line-height: 52px;
+}
