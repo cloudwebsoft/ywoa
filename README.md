@@ -43,10 +43,10 @@
 
 #### 学习QQ群
 
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group1.png" width="150" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group2.png" width="150" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group3.png" width="150" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group6.png" width="150" align="center"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group1.png" width="150"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group2.png" width="150"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group3.png" width="150"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group6.png" width="150"/>  
 <br>
 <br>
 
