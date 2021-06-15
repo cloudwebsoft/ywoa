@@ -1,0 +1,87 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>许可证</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_config_sys :: navConfigSys(3)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <tbody>
+                    <tr class="active">
+                        <td colspan="2" align="center">许可证信息</td>
+                    </tr>
+                    <tr>
+                        <td width="17%" align="left">授权单位</td>
+                        <td width="83%" align="left">
+                            [[${license.company}]]
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="17%" align="left">使用单位</td>
+                        <td width="83%" align="left">
+                            [[${license.name}]]
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="left">企业号</td>
+                        <td align="left">
+                            [[${license.enterpriseNum}]]
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="left">用户数</td>
+                        <td align="left">[[${license.userCount}]]</td>
+                    </tr>
+                    <tr>
+                        <td align="left">类型</td>
+                        <td align="left" th:inline="text" th:text="${license.type eq 'commercial' ? '专业版' : license.type}"></td>
+                    </tr>
+                    <tr>
+                        <td align="left">到期时间</td>
+                        <td align="left" th:text="${#dates.format(license.expiresDate, 'yyyy-MM-dd')}">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="left">域名</td>
+                        <td align="left">[[${license.domain}]]</td>
+                    </tr>
+                    <tr>
+                        <td align="left">流程最大节点数</td>
+                        <td align="left">[[${license.actionCount}]]</td>
+                    </tr>
+                    <tr>
+                        <td align="left">试用版</td>
+                        <td align="left">[[${license.trial ? '是' : '否'}]]</td>
+                    </tr>
+                    <tr>
+                        <td align="left">流程设计器</td>
+                        <td align="left">[[${license.flowDesigner eq '1' ? 'X版' : 'A版（仅可在IE下设计'}]]</td>
+                    </tr>
+                    <tr>
+                        <td align="left">系统版本</td>
+                        <td align="left">[[${version}]]</td>
+                    </tr>
+                    <tr>
+                        <td align="left">补丁版本</td>
+                        <td align="left">[[${spVersion}]]</td>
+                    </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

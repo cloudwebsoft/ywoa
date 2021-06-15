@@ -1,0 +1,192 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>管理用户组的用户</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<div th:replace="th/include/tab_group :: nav(${group.code}, ${group.description}, 2)"></div>
+<div class="spacerH"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <div class="text-center">属于用户组&nbsp;[[${group.description}]]&nbsp;的用户</div>
+                <form id="formGroupUser" name="formGroupUser" method="post">
+                    <div style="margin: 10px 0px">
+                        <button id="btnAdd" class="btn btn-success" title="选择人员">添加</button>
+                        &nbsp;&nbsp;
+                        <button id="btnDel" class="btn btn-danger" title="删除">删除</button>
+                        <input type="hidden" name="op" value="delBatch"/>
+                        <input type="hidden" name="groupCode" th:value="${group.code}"/>
+                    </div>
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr class="active">
+                            <td width="5%" align="center" ....>
+                                <input id="checkbox" name="checkbox" type="checkbox" onclick="if (this.checked) selAllCheckBox('ids'); else deSelAllCheckBox('ids')"/></td>
+                            <td width="13%" align="center" ....>用户名</td>
+                            <td width="18%" align="center" ....>真实姓名</td>
+                            <td width="10%" align="center" ..>性别</td>
+                            <td align="center">所属部门</td>
+                        </tr>
+                        </thead>
+                        <tbody th:each="json : ${jsonAry}">
+                        <tr th:id="'tr_' + ${json[name]}">
+                            <td align="center" ..>
+                                <input type="checkbox" name="ids" th:value="${json[name]}"/>
+                            </td>
+                            <td>[[${json[name]}]]</td>
+                            <td>[[${json[realName]}]]</td>
+                            <td align="center" th:text="${json[gender]}"></td>
+                            <td align="left">[(${json[deptNames]})]
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </form>
+                <input name="users" id="users" type="hidden" value="">
+                <textarea name="userRealNames" cols="50" rows="5" style="display: none;" wrap="yes" id="userRealNames"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    var selUserNames = "";
+    var selUserRealNames = "";
+
+    function getSelUserNames() {
+        return selUserNames;
+    }
+
+    function getSelUserRealNames() {
+        return selUserRealNames;
+    }
+
+    $(function() {
+        $('#btnAdd').click(function(e) {
+            e.preventDefault();
+            openWinUsers();
+        });
+
+        $('#btnDel').click(function(e) {
+            e.preventDefault();
+            delBatch();
+        });
+    });
+
+    function openWinUsers() {
+        selUserNames = o("users").value;
+        selUserRealNames = o("userRealNames").value;
+        openWin('../userMultiSel.do?unitCode=' + [[${unitCode}]], 800, 600);
+    }
+
+    function setUsers(userNames, userRealNames) {
+        $.ajax({
+            type: "post",
+            url: "addGroupUser.do",
+            data: {
+                userNames: userNames,
+                userRealNames: userRealNames,
+                groupCode: [[${group.code}]],
+                groupDesc: [[${group.description}]]
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                if (data.ret==1) {
+                    jAlert(data.msg, [[#{prompt}]], function() {
+                        window.location.reload();
+                    })
+                }
+                else {
+                    jAlert(data.msg, [[#{prompt}]]);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                //请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function delBatch() {
+        var userNames = getCheckboxValue("ids");
+        if (userNames=="") {
+            jAlert("请先选择记录！", [[#{prompt}]]);
+            return;
+        }
+
+        jConfirm("您确定要删除么？", "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "delGroupUserBatch.do",
+                    data: {
+                        userNames: userNames,
+                        groupCode: [[${group.code}]],
+                        groupDesc: [[${group.description}]]
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        if (data.ret==1) {
+                            jAlert(data.msg, [[#{prompt}]], function() {
+                                var ary = userNames.split(",");
+                                for (var i in ary) {
+                                    $('#tr_' + ary[i]).remove();
+                                }
+                            })
+                        }
+                        else {
+                            jAlert(data.msg, [[#{prompt}]]);
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        // 请求出错处理
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            }
+        });
+    }
+
+    function selAllCheckBox(checkboxname) {
+        var checkboxboxs = document.getElementsByName(checkboxname);
+        if (checkboxboxs != null) {
+            // 如果只有一个元素
+            if (checkboxboxs.length == null) {
+                checkboxboxs.checked = true;
+            }
+            for (i = 0; i < checkboxboxs.length; i++) {
+                checkboxboxs[i].checked = true;
+            }
+        }
+    }
+
+    function deSelAllCheckBox(checkboxname) {
+        var checkboxboxs = document.getElementsByName(checkboxname);
+        if (checkboxboxs != null) {
+            if (checkboxboxs.length == null) {
+                checkboxboxs.checked = false;
+            }
+            for (i = 0; i < checkboxboxs.length; i++) {
+                checkboxboxs[i].checked = false;
+            }
+        }
+    }
+</script>
+</html>

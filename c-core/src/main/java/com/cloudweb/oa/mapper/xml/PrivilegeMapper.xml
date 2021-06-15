@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.PrivilegeMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.Privilege">
+        <id column="priv" property="priv" />
+        <result column="description" property="description" />
+        <result column="isSystem" property="isSystem" />
+        <result column="is_admin" property="isAdmin" />
+        <result column="kind" property="kind" />
+        <result column="layer" property="layer" />
+        <result column="orders" property="orders" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        priv, description, isSystem, is_admin, kind, layer, orders
+    </sql>
+
+    <select id="listBySql" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+</mapper>

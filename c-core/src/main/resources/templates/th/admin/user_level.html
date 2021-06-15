@@ -1,0 +1,167 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>配置管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_config :: navConfig(4)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                    <tr align="center" class="active">
+                        <td width="20%" height="24">在线时长(小时)</td>
+                        <td width="20%" height="24">描述</td>
+                        <td width="35%">图片</td>
+                        <td width="23%">操作</td>
+                    </tr>
+                    </thead>
+                    <th:block th:each="userLevel, stat : ${v}">
+                        <form th:id="'form' + ${stat.index}" method="post">
+                            <tr th:id="'tr' + ${userLevel.level}" align="center">
+                                <td height="24" class="form-inline form-group">
+                                    <input name="newLevel" class="form-control" th:value="${userLevel.level}">
+                                    <input type="hidden" name="level" th:value="${userLevel.level}">
+                                </td>
+                                <td height="24" class="form-inline form-group">
+                                    <input name="desc" class="form-control" th:value="${userLevel.desc}">
+                                </td>
+                                <td align="left" class="form-inline form-group">
+                                    <input name="levelPicPath" class="form-control" th:value="${userLevel.levelPicPath}">
+                                    <th:block th:if="${userLevel.levelPicPath ne ''}">
+                                        <img th:src="@{'/' + ${userLevel.levelPicPath}}"/>
+                                    </th:block>
+                                </td>
+                                <td height="24" align="center">
+                                    <button class="btn btn-warning btn-edit" th:attr="formId='form' + ${stat.index}">修改</button>
+                                    &nbsp;&nbsp;
+                                    <button class="btn btn-danger btn-del" th:attr="level=${userLevel.level}">删除</button>
+                                </td>
+                            </tr>
+                        </form>
+                    </th:block>
+                    <tr align="center">
+                        <form id="formAdd" method="post">
+                            <td height="24" class="form-inline form-group"><input name="level" class="form-control" type="text" id="level"></td>
+                            <td height="24" class="form-inline form-group"><input name="desc" class="form-control" type="text" id="desc"></td>
+                            <td align="left" class="form-inline form-group"><input name="levelPicPath" class="form-control" type="text" id="levelPicPath"></td>
+                            <td height="24" align="center">
+                                <button class="btn btn-success" id="btnAdd">添加</button>
+                            </td>
+                        </form>
+                    </tr>
+                </table>
+                <br>
+                <table width="80%" border="0" align="center" cellpadding="0" cellspacing="0" class="tableframe_gray">
+                    <tr>
+                        <td align="center">&nbsp;注意：图片格式为level + &quot;1-9&quot;+&quot;.gif&quot; ，如：level1.gif。&nbsp;&nbsp;</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    $(function () {
+        $('.btn-edit').click(function (e) {
+            e.preventDefault();
+
+            var formId = $(this).attr('formId');
+            $.ajax({
+                type: "post",
+                url: "modifyUserLevel.do",
+                data: $('#' + formId).serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    jAlert(data.msg, "提示");
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+
+        $('.btn-del').click(function (e) {
+            e.preventDefault();
+            var trId = 'tr' + $(this).attr('level');
+            var level = $(this).attr('level');
+            jConfirm('您确定要删除么？', '提示', function (r) {
+                if (!r) {
+                    return;
+                }
+
+                $.ajax({
+                    type: "post",
+                    url: "delUserLevel.do",
+                    data: {
+                        level: level
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        jAlert(data.msg, "提示");
+                        if (data.ret==1) {
+                            $('#' + trId).remove();
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            });
+        });
+
+        $('#btnAdd').click(function (e) {
+            if (o("levelPicPath").value == "") {
+                jAlert("图片不能为空！", "提示");
+                return false;
+            }
+
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "addUserLevel.do",
+                data: $('#formAdd').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    jAlert(data.msg, "提示", function () {
+                        window.location.reload();
+                    });
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    });
+</script>
+</html>                            
+  

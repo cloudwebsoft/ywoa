@@ -1,0 +1,155 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>添加工号</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        #form1 .realname-box .form-control-feedback {
+            top: 0;
+            right: -85px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <form id="form1" method="post" role="form" style="margin-top: 20px">
+                <div class="table-responsive">
+                    <table align="center" class="table table-bordered table-hover">
+                        <thead>
+                        <tr class="active">
+                            <th colspan="2" class="text-center">添加工号</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td align="right" width="30%">工号</td>
+                            <td>
+                                <div class="col-lg-9 form-inline form-group">
+                                    <input name="name" id="name" class="form-control" title="工号" placeholder="请输入工号"/>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="right">姓名</td>
+                            <td>
+                                <div class="col-lg-7 form-group realname-box">
+                                    <div class="input-group">
+                                        <input id="realName" name="realName" class="form-control" type="text" readonly>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-default" type="button" th:onclick="openWin('../userMultiSel.do?mode=single&unitCode=' + [[${unitCode}]], 800, 600)">选择</button>
+                                        </span>
+                                    </div>
+                                    <input type="hidden" id="userName" name="userName"/>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="text-center">
+                        <button id="btnOk" class="btn btn-default">确定</button>
+                        &nbsp;&nbsp;
+                        <button id="btnBack" class="btn btn-default">返回</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script th:inline="javascript">
+    function setUsers(users, userRealNames) {
+        $("#userName").val(users);
+        $("#realName").val(userRealNames);
+        $('#realName').trigger('change');
+    }
+
+    function getSelUserNames() {
+        return $("#userName").val();
+    }
+
+    function getSelUserRealNames() {
+        return $("#realName").val();
+    }
+
+    $(function () {
+        $('#btnBack').click(function(e) {
+            window.history.back();
+            e.preventDefault();
+        });
+
+        // $("#form1").bootstrapValidator();
+
+        $('#form1').bootstrapValidator({
+            message: 'This value is not valid',
+            excluded: [':disabled', ':hidden', ':not(:visible)'],
+            // 配置校验图标
+            feedbackIcons: {
+                valid: 'glyphicon glyphicon-ok',    // 校验成功
+                invalid: 'glyphicon glyphicon-remove',   // 校验失败
+                validating: 'glyphicon glyphicon-refresh'  // 校验中
+            },
+            // 配置校验字段
+            fields: {
+                name: {
+                    message: '工号验证失败',
+                    validators: {
+                        notEmpty: {
+                            message: '工号不能为空'
+                        },
+                        remote: { // ajax校验，获得一个json数据（{'valid': true or false}）
+                            url: 'checkNotExist.do',
+                            message: '工号已存在',
+                            type: 'POST',          //请求方式
+                            data: function (validator) {  //自定义提交数据，默认为当前input name值
+                                return {
+                                    act: 'is_registered',
+                                    username: $("input[name='username']").val()
+                                };
+                            }
+                        }
+                    }
+                },
+                realName: {
+                    validators: {
+                        notEmpty: {
+                            message: '用户不能为空'
+                        }
+                    }
+                }
+            }
+        }).on('success.form.bv', function (e) {
+            // 阻止默认的提交
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "createAccount.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret==1) {
+                        jAlert(data.msg, "提示", function() {
+                            window.location.href = "listAccount.do";
+                        })
+                    }
+                    else {
+                        jAlert(data.msg, "提示");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    })
+</script>
+</body>
+</html>

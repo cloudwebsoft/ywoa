@@ -1,0 +1,546 @@
+@charset "utf-8";
+@import url("css/common/common.css");
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td {margin:0;padding:0;} 
+table !import {border-collapse:collapse;border-spacing:0;} 
+fieldset,img {border:0px; margin:0px; vertical-align:middle; } 
+address,caption,cite,code,dfn,em,strong,th,var {font-style:normal;font-weight:normal} 
+ol,ul {list-style:none} 
+caption,th {text-align:left} 
+h1,h2,h3,h4,h5,h6 {font-size:100%;font-weight:normal} 
+q:before,q:after {content:''} 
+abbr,acronym { border:0}
+html { height:100%;margin:0px;}
+body {
+	margin:0;
+	padding:0;
+	font-family:"微软雅黑" !important;
+	font-size: 14px;
+	color: #606060 !important;
+}
+#left {
+position:absolute;
+overflow-x:hidden;
+overflow-y:hidden;
+scrollbar-face-color: #F6F6F6;
+background-color: #ececec !important;
+scrollbar-highlight-color: #FFFFFF;
+scrollbar-shadow-color: #CCCCCC;
+scrollbar-3dlight-color: #CCCCCC;
+scrollbar-arrow-color: #999999;
+scrollbar-track-color: #F6F6F6;
+scrollbar-darkshadow-color: #666666;
+}
+.clear {
+	clear: both;
+}
+.hand {
+	cursor:pointer;	
+}
+ a {color: #606060; text-decoration: none;}
+ a:hover {color: #F60 !important; text-decoration: none;}
+ a:visited {color:#606060;}
+
+/*顶部样式开始*/
+.oatop {
+	background-image: url(images/top_bg.png);
+	background-repeat: no-repeat;
+	background-position: left;
+	height: 99px;
+	color: #FFF;
+	overflow: hidden;
+}
+.oatop a {color: #FFF;text-decoration: none;}
+.oatop .upbox {
+	height: 60px;
+	min-width:1210px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<1210?"1210px":"");
+}
+
+.oatop .topleft {
+	float: left;
+	width: 390px;
+	margin-top: 10px;
+	margin-left: 20px;
+	display:inline;
+}
+.oatop .topleft img{
+    max-height:37px;
+    max-width:390px;	
+}
+.oatop .topright {
+	text-align: right;
+    padding-top: 10px;
+	overflow:hidden;
+}
+.oatop .upbox .topright span {
+    margin-left: 10px;
+}
+.oatop .topright .icobox-1 {
+	scolor: #FFF;
+	float: right;
+	text-align: right;
+	width: auto;
+	height: 30px;
+	overflow:hidden;
+}
+.oatop .topright .icobox-1 span {
+	line-height: 25px;
+	margin-right: 20px;
+}
+.oatop .topright .icobox-2 {
+	float:right;
+	height: 30px;
+}
+.oatop .topright .quickIcon {
+	opacity: 0.5;
+	filter:progid:DXImageTransform.Microsoft.Alpha(Opacity=50);  	
+}
+.oatop .topright .icobox-2  span {
+	line-height: 25px;
+	margin-right: 20px;
+	display:inline;
+}
+.downbox {
+	height: 39px;
+	min-width:1000px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<1000?"1000px":"");
+	position: relative;
+}
+.menutab {
+	float: left;
+	width: 222px;
+	margin-left: 22px;
+	font-size: 15px;
+	font-weight: bold;
+	color: #606060;
+	display:inline;
+}
+.menutab a {
+	color: #606060;
+}
+
+.menutab ul {
+	background-image: url(images/submenutab.png);
+	background-repeat: no-repeat;
+	height: 46px;
+	line-height: 46px;
+	background-position-x: left;
+	background-position-y: bottom;
+}
+.menutab li {
+	float: left;
+	width: 111px;
+	text-align: center;
+}
+
+.menutab .selected-1 {/*左侧导航tab标签“菜单”选中状态*/
+	background-image: url(images/menutab-1.png);
+	background-repeat: no-repeat;
+	height: 46px;
+	width: 111px;
+	color: #ff530f;
+}
+.menutab .selected-2 {/*左侧导航tab标签"在线"选中状态*/
+	background-image: url(images/menutab-2.png);
+	background-repeat: no-repeat;
+	height: 46px;
+	width: 111px;
+	color: #ff530f;
+}
+.menutab ul .selected-1 a {
+	color: #ff530f;
+}
+
+.menutab ul .selected-2 a {
+	color: #ff530f;
+}
+.oatop .downbox .userinf {
+	display:inline;
+}
+.oatop .downbox .userinf .putaway {
+	float: left;
+	margin-right: 0px;
+	margin-left: 15px;
+	margin-top: 10px;
+	display:inline;
+}
+
+.username {
+	height: 39px;
+	line-height: 39px;
+	text-align: center;
+}
+
+.username span{
+	margin-right: 20px;
+}
+
+.oatop .downbox .userinf .entrance {
+	background-image: url(images/entrybtn.png);
+	background-repeat: no-repeat;
+	height: 20px;
+	width: 20px;
+	float: right;
+	position:absolute;
+	right: 5px;
+	bottom: 5px;
+}
+.QRCode_printer{
+	background-image: url(images/QRCode_printer.png);
+	background-repeat: no-repeat;
+	height: 20px;
+	width: 20px;
+	cursor:pointer;
+	float:right;
+	margin-left:8px;
+}
+/*顶部样式结束*/
+/*左侧菜单样式开始*/
+.v2main .leftsub {
+	float:left;
+	height:100%;
+	display:inline;
+	width:100%;
+	overflow:auto;
+	background-color:#3c3c3c;
+}
+
+.menuMain1 {
+	height:100%;
+	overflow:hidden;
+}
+
+.v2main .leftsub .boxbg{
+	cursor:pointer;
+	padding:10px 0;
+	height:7%;
+	color:white;
+}
+
+.v2main .leftsub .boxbgHover {
+	background-color: #4d566e;
+	background-image: url(../../images/desktop_arrow.png);
+	background-repeat: no-repeat;
+	background-position: right center;
+	color:white;
+}
+
+
+.v2main .leftsub .boxbg p{
+	text-align:center;
+}
+
+.bor {
+	border: 1px solid #e3e3e3;
+	background-color:#FFF;
+	margin-bottom: 10px;
+	/*min-width:350px;*/
+	height:295px;
+	_height:295px;
+	_width:expression((document.documentElement.clientWidth||document.body.clientWidth)<390?"390px":"");
+	overflow:hidden;
+	
+	-moz-border-radius: 8px 8px 8px 8px;
+	-webkit-border-radius:  8px 8px 8px 8px;
+	border-radius:  8px 8px 8px 8px;
+	behavior: url(../common/ie-css3.htc);
+}
+.bor .box{
+	padding-top:5px;
+	font-size: 14px;
+	text-align: center;
+	font-weight: bold;
+	margin-bottom: 10px;
+	position:relative;
+	height:40px;
+	line-height: 40px;
+}
+.bor .box .titleimg{
+	width:50%;
+	float:left;
+	text-align: right;
+}
+.bor .box .titletxt{
+	text-align: left;
+	line-height: 40px;
+}
+
+.bor .article{
+	line-height: 2.5;
+	text-indent: 10px;
+	word-break:break-all;
+	padding:0 10px 10px 10px;
+}
+
+.bor .no_content{
+	width:100%;
+	text-align:center;
+}
+
+.bor .article .article_table{
+	width:100%;
+	table-layout:fixed;
+}
+
+.bor .article .article_content{
+	padding-left:8px;
+	text-overflow:ellipsis;
+	overflow:hidden;
+	white-space:nowrap;
+	word-break:break-all;
+	background-image: url(../../images/desktop/tyoe-dot.png);
+	background-repeat: no-repeat;
+	background-position:0 13px;
+	line-height: 1.5;
+}
+
+.bor .article .article_time{
+	width:120px;
+	text-align:right;
+	color: #9d9d9d;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.note {
+	border: 1px solid #e3e3e3;
+	background-color: #FFF;
+	width: 100%;
+	margin-bottom: 15px;
+	line-height: 30px;
+	min-height:150px;
+	height:100%;
+	_height:200px;
+}
+.note .uptitle {
+	background-color:#ececec;
+	text-align: center;
+	font-size: 14px;
+	font-weight: bold;
+	position: relative;
+	height: 35px;
+}
+.note .uptitle .icobox-1 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	left: 5px;
+	top: 5px;
+
+}
+
+.note .uptitle .icobox-2 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	right:40px;
+	top: 5px;
+}
+.note .uptitle .icobox-3 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	right:5px;
+	top: 5px;
+	*top: 0px;
+}
+
+.new_f-1 {
+	color: #757575;
+	margin-right:3px;
+}
+.a_font {
+	color: #F90;
+}
+.note .box{
+	position: relative;
+	background-color: #f5f5f5;
+	height: 35px;
+}
+.note .titletxt{
+	font-size: 14px;
+	font-weight: bold;
+	padding-left: 10px;
+	margin-left:5px;
+}
+.note .opbut-1{
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	top: 5px;
+	right: 65px;
+}
+.note .opbut-2{
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	top: 5px;
+	right: 40px;
+}
+
+.note .opbut-3{
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	top: 5px;
+	right: 15px;
+}
+.note .article{
+	line-height: 30px;
+	text-indent: 10px;
+}
+.img:hover{
+	color:#FFF;
+}
+.img{color:#d0e9f9;}
+.img img{
+	opacity: 0.6;
+	filter:progid:DXImageTransform.Microsoft.Alpha(Opacity=60);  
+}
+.titletxt img{padding-right:5px;}
+
+/*control_panel.jsp样式-------add_start*/
+.control_layout {
+	margin-top: 10px;
+	margin-left: 20px;
+}
+.control_layout_disk {
+	padding-top: 10px;
+	margin-left: 20px;
+}
+.control_layout_disk  .disk_font {
+	color: #F30;
+}
+.dialog_margin{ margin-bottom:10px;}/*弹出框边距*/
+.control_layout .selected {
+	border: 1px solid #0eabf7;
+	background-color: #f2f7ff;
+	height: 110px;
+	width: 250px;
+	margin-right: 25px;
+	margin-bottom: 20px;
+	padding-top: 20px;
+	padding-right: 10px;
+	padding-bottom: 10px;
+	padding-left: 10px;
+	float: left;
+	cursor:pointer;	
+	position:relative;
+}/*鼠标经过状态样式*/
+
+.control_layout .control_modular {
+	border: 1px solid #d5d5d5;
+	height: 110px;
+	width: 250px;
+	margin-right: 25px;
+	margin-bottom: 20px;
+	padding-top: 20px;
+	padding-right: 10px;
+	padding-bottom: 10px;
+	padding-left: 10px;
+	float: left;
+	cursor:pointer;
+	position:relative;
+}
+
+.control_layout .control_modular .icon_box, .selected .icon_box {
+	float: left;
+	height: 47px;
+	width: 49px;
+}   /*图标框*/
+
+.control_layout .control_modular .font_box, .selected .font_box {
+	float:right;
+	line-height: 25px;
+	height: 25px;
+	width: 165px;
+}   /*文字框*/ 
+
+.control_layout .control_modular .title, .selected .title {
+	font-size: 14px;
+	font-weight: bold;
+}   /*大标题文字*/ 
+		
+.control_layout .control_modular .subtitle, .selected .subtitle {
+	color: #848484;
+}	/*副标题文字*/   
+
+/*control_panel.jsp样式-------add_end*/
+.onlineCss{
+	height:100% !important;
+	min-height:600px;
+	font-size: 14px ;
+}
+.menuOnlineCss{
+	width:190px;
+}
+.menuOnlineCss a {color:#00aae2 }
+
+.notepaper {
+	background-image:url(<%=request.getContextPath()%>/images/notepaper.jpg);
+	padding:0px 3px 3px 5px;
+	height:140px;
+	OVERFLOW-Y:auto;	
+}
+.notepaperAddBtn{
+	float:left; cursor:pointer; font-size:14px; color:#666;
+}
+.notepaperCloseBtn{
+	float:right;padding-right:10px;cursor:pointer;
+}
+.notepaperMoreBtn{
+	float:right; cursor:pointer; height:25px; font-size:14px; color:#666
+}
+.openConfig{
+    margin-left:100px;
+    margin-top:9px;
+    width:145px;
+}
+.configSpan{
+    color:#00f0ff;
+    cursor:pointer;
+}
+
+/*便签样式_start*/
+.notebg {
+	background-color: #FFF;
+	border: 1px solid #b6d0ea;
+	width: 100%;
+	margin-bottom: 15px;
+	line-height: 30px;
+	min-height:150px;
+	height:100%;
+	_height:250px;
+}
+.notebg-titlebg {
+	background-color: #b6d0ea;	
+	text-align: center;
+	font-size: 14px;
+	font-weight: bold;
+	position: relative;
+	height: 35px;
+}
+.notebg .notebg-titlebg .icobox-1 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	left: 5px;
+	top: 5px;
+
+}
+.notebg .notebg-titlebg .icobox-3 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	right:5px;
+	top: 5px;
+	*top: 0px;
+}
+.notebg .notebg-titlebg .icobox-2 {
+	position: absolute;
+	height: 24px;
+	width: 24px;
+	right:40px;
+	top: 5px;
+}
+/*便签样式_end*/

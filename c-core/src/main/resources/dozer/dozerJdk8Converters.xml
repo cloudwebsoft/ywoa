@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mappings xmlns="http://dozer.sourceforge.net"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://dozer.sourceforge.net
+      http://dozer.sourceforge.net/schema/beanmapping.xsd">
+    <configuration>
+        <custom-converters>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.LocalDate</class-a>
+                <class-b>java.time.LocalDate</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.LocalTime</class-a>
+                <class-b>java.time.LocalTime</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.LocalDateTime</class-a>
+                <class-b>java.time.LocalDateTime</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.OffsetDateTime</class-a>
+                <class-b>java.time.OffsetDateTime</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.ZonedDateTime</class-a>
+                <class-b>java.time.ZonedDateTime</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.ZoneId</class-a>
+                <class-b>java.time.ZoneId</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.Period</class-a>
+                <class-b>java.time.Period</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.Duration</class-a>
+                <class-b>java.time.Duration</class-b>
+            </converter>
+            <converter type="io.craftsman.Jdk8CompatibilityConverter">
+                <class-a>java.time.Instant</class-a>
+                <class-b>java.time.Instant</class-b>
+            </converter>
+            <converter type="io.craftsman.JdkMissingConverter">
+                <class-a>java.util.Locale</class-a>
+                <class-b>java.util.Locale</class-b>
+            </converter>
+        </custom-converters>
+    </configuration>
+</mappings>

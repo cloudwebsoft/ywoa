@@ -11,7 +11,7 @@ build/
 *.launch
 .settings/
 *.sublime-workspace
-/.idea
+#/.idea
 /oa.iml
 /*.txt
 /WebRoot/others
@@ -22,3 +22,10 @@ build/
 /日志.txt
 /WebRoot/others
 /WebRoot/public/robot
+/.idea
+/c-main/target
+/c-core/target
+/c-bbs/target
+/c-common/target
+/tomcat启动时报ZipException.docx
+/c-main/src/main/webapp/js/flow/myflow.js

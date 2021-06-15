@@ -1,0 +1,197 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>系统环境</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_config_sys :: navConfigSys(1)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <tbody>
+                    <tr class="active">
+                        <td width="70%" class="text-center"><b>Java VM （Java虚拟机）内存</b></td>
+                    </tr>
+                    <tr>
+                        <td height="175" align="center">
+                            <table border=0 style="margin:0px;padding:0px">
+                                <td style="border:0px;margin:0px;padding:0px">
+                                    <table style="margin:0px;padding:0px" bgcolor="#000000" cellpadding="1" cellspacing="0" border="0" width="200" align=left>
+                                        <td style="padding:10px">
+                                            <table style="margin:0px;padding:0px" bgcolor="#000000" cellpadding="1" cellspacing="1" border="0" width="100%">
+                                                <tr th:each="item, stat : ${blockList}" th:remove="tag">
+                                                    <th:block th:switch="${item} eq 0">
+                                                        <td th:case="true" style="border:0px;margin:0px;padding:0px;height:25px" bgcolor="#00ff00" th:attr="width=${blockWidth} + '%'"><img src="images/blank.gif" width="1" height="15" border="0"></td>
+                                                        <td th:case="*" style="border:0px;margin:0px;padding:0px;height:25px" bgcolor="#006600" th:attr="width=${blockWidth} + '%'"><img src="images/blank.gif" width="1" height="15" border="0"></td>
+                                                    </th:block>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </table>
+                                </td>
+                                <td style="border:0px">&nbsp;<b>[[${percentFree}]] % 空闲</b></td>
+                            </table>
+                            <br/>
+                            <table width="482" border="0">
+                                <tr style="height: 30px">
+                                    <td width="85" align="left" style="border:0px">已用内存：</td>
+                                    <td width="108" align="left" style="border:0px">[[${usedMemory}]] MB</td>
+                                    <td width="109" align="left" style="border:0px">控件上传：</td>
+                                    <td width="162" align="left" style="border:0px">最大[[${maxWebeditFileSize}]]M</td>
+                                </tr>
+                                <tr style="height: 30px">
+                                    <td align="left" style="border:0px">内存总量：</td>
+                                    <td align="left" style="border:0px">[[${totalMemory}]] MB</td>
+                                    <td align="left" style="border:0px">单个文件上传：</td>
+                                    <td align="left" style="border:0px">最大[[${fileSize}]] M</td>
+                                </tr>
+                                <tr style="height: 30px">
+                                    <td align="left" style="border:0px">最大内存：</td>
+                                    <td align="left" style="border:0px">[[${maxMemory}]] MB</td>
+                                    <td align="left" style="border:0px">
+                                        缓存状态：
+                                    </td>
+                                    <td align="left" style="border:0px">
+                                        <th:block th:switch="${canCache}">
+                                            <span th:case="true">
+                                                启用中&nbsp;&nbsp;&nbsp;<a href="javascript:;" onclick="stopCache()">停用</a>
+                                                &nbsp;&nbsp;
+                                                <a href="javascript:;" onclick="clearCache()">清除</a>
+                                            </span>
+                                            <span th:case="*">
+                                                状态：停用中&nbsp;&nbsp;&nbsp;<a href="javascript:;" onclick="startCache()">启用</a>
+                                            </span>
+                                        </th:block>
+                                    </td>
+                                </tr>
+                                <tr style="height: 30px">
+                                    <td align="left" style="border:0px">处理器数：</td>
+                                    <td align="left" style="border:0px">[[${processors}]] 个
+                                    </td>
+                                    <td align="left" style="border:0px">内存垃圾：</td>
+                                    <td align="left" style="border:0px"><a href="javascript:;" onclick="gc()">收集</a></td>
+                                </tr>
+                            </table>
+                            <br/>
+                            <table width="465" border="0" cellspacing="0" cellpadding="0">
+                                <tr style="height: 30px">
+                                    <td height="48" align="center" style="border:0px">(&nbsp;注意垃圾收集器是低线程级的，不能被强制执行&nbsp;)</td>
+                                </tr>
+                            </table>
+                            <br/>
+                        </td>
+                    </tr>
+                    </tbody>
+                </TABLE>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    function stopCache() {
+        $.ajax({
+            type: "post",
+            url: "stopCache.do",
+            data: {
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                jAlert(data.msg, "提示", function () {
+                    window.location.reload();
+                });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function startCache() {
+        $.ajax({
+            type: "post",
+            url: "startCache.do",
+            data: {
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                jAlert(data.msg, "提示", function () {
+                    window.location.reload();
+                });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function clearCache() {
+        $.ajax({
+            type: "post",
+            url: "clearCache.do",
+            data: {
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                jAlert(data.msg, "提示", function () {
+                    window.location.reload();
+                });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function gc() {
+        $.ajax({
+            type: "post",
+            url: "gc.do",
+            data: {
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                jAlert(data.msg, "提示", function () {
+                    window.location.reload();
+                });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+</script>
+</html>

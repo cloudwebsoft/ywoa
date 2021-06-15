@@ -1,0 +1,120 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>用户组管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle!important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <form id="searchForm" name="searchForm" class="form-inline" method="get" style="margin: 20px 0px">
+        <div class="text-center">
+            单位
+            <select id="searchUnitCode" name="searchUnitCode" class="form-control">
+                <option value="">全部</option>
+                <th:block th:inline="text">
+                    [[${unitOpts}]]
+                </th:block>
+            </select>
+            类别
+            <select id="kind" name="kind" class="form-control">
+                <option value="">无</option>
+                [(${kindOpts})]
+            </select>
+            名称
+            <input type="hidden" name="op" value="search"/>
+            <input type="text" class="form-control" id="what" name="what" th:value="${what}"/>
+            <button id="btnSearch" class="btn btn-default">查询</button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-lg-12 col-lg-offset-0">
+            <div>
+                <button id="btnAdd" class="btn btn-success" style="margin: 10px 0px" onclick="window.location.href='addGroup.do'">添加</button>
+            </div>
+            <div class="table-responsive">
+                <table id="mainTable" class="table table-bordered table-hover">
+                    <thead>
+                    <tr class="active">
+                        <th style="display:none" width="13%" align="center">编码</th>
+                        <th width="11%" align="center" noWrap>类别</th>
+                        <th width="15%" align="center" noWrap>名称</th>
+                        <th width="20%" align="center" noWrap>部门</th>
+                        <th width="6%" align="center" noWrap>是否部门</th>
+                        <th width="15%" nowrap>单位</th>
+                        <th width="5%" align="center" noWrap>系统</th>
+                        <th width="15%" align="center" noWrap>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody th:each="json : ${jsonArr}">
+                    <tr th:id="'tr_' + ${json[code]}">
+                        <td style="display:none" th:text="${json[code]}"><%=code%></td>
+                        <td th:text="${json[kindName]}"></td>
+                        <td th:text="${json[desc]}"></td>
+                        <td th:text="${json[deptName]}"></td>
+                        <td th:text="${json[isDept]} ?  '是' : '否'"></td>
+                        <td th:text="${json[unitName]}"></td>
+                        <td th:text="${json[isSystem]} ?  '是' : '否'"></td>
+                        <td align="center">
+                            <button class="btn btn-warning" th:onclick="addTab([[${json[desc]}]], 'admin/editGroup.do?tabIdOpener=' + getActiveTabId() + '&groupCode=' + [[${json[code]}]])">修改</button>
+                            &nbsp;&nbsp;
+                            <button class="btn btn-danger" th:if="${json[code] != 'Everyone'}" th:onclick="del([[${json[code]}]])">删除</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    function del(groupCode) {
+        jConfirm('您确定要删除么？', '[(#{prompt})]', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "delGroup.do",
+                data: {
+                    groupCode: groupCode
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    if (data.ret == "0") {
+                        jAlert(data.msg, "[(#{prompt})]");
+                    } else {
+                        $('#tr_' + groupCode).remove();
+                        $.toaster({
+                            "priority": "info",
+                            "message": data.msg
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+
+    $(function () {
+        $("#searchUnitCode").val([[${searchUnitCode}]]);
+        $('#kind').val([[${kind}]]);
+    });
+</script>
+</html>

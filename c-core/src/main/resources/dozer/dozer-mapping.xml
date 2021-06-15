@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mappings xmlns="http://dozer.sourceforge.net" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://dozer.sourceforge.net
+          http://dozer.sourceforge.net/schema/beanmapping.xsd">
+    <!--如果两个类需要装换的属性名相同则不需要写这个mapping-->
+    <!--<mapping>-->
+        <!--<class-a>com.youyou.address.entity.ContacterDO</class-a>-->
+        <!--<class-b>com.youyou.address.vo.ContacterVO</class-b>-->
+    <!--</mapping>-->
+</mappings>

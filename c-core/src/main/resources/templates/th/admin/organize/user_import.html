@@ -1,0 +1,144 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>用户导入</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+    <link type="text/css" rel="stylesheet" th:href="@{/skin/common/organize.css}"/>
+</head>
+<body>
+<script src="../../inc/upload.js"></script>
+<div class="container" style="margin-top: 20px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <div class="oranize-number">
+                    <!--最底层灰色条-->
+                    <div class="oranize-number-linegray"></div>
+                    <!--蓝色条1-->
+                    <div class="oranize-number-lineblue1"></div>
+                    <!--灰色条2-->
+                    <div style="display:none;" class="oranize-number-lineblue3"></div>
+                    <!--1步-->
+                    <div class="oranize-blue1">1</div>
+                    <!--2步-->
+                    <div class="oranize-gray2">2</div>
+                    <!--3步-->
+                    <div class="oranize-gray3">3</div>
+                    <!--1步文字-->
+                    <div class="oranize-txt1 oranize-txt-sel">导入Excel</div>
+                    <!--2步文字-->
+                    <div class="oranize-txt2">确认信息</div>
+                    <!--3步文字-->
+                    <div class="oranize-txt3">完成</div>
+                </div>
+                <form action="userImportConfirm.do" method="post" enctype="multipart/form-data" name="form1" id="form1" onsubmit="return checkForm()">
+                    <table class="table table-bordered table-hover" align="center">
+                        <thead>
+                        <tr class="active">
+                            <td class="text-center">导入excel</td>
+                        </tr>
+                        </thead>
+                        <tr>
+                            <td align="left">1.编辑Excel电子表格信息，将员工信息按照模板（<a href="javascript:;" style="color:blue;" onclick="downloadTemplate() ">下载模板</a>）进行整理
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="left">2.选择整理完成的Excel文件进行上传</td>
+                        </tr>
+                        <tr>
+                            <td align="left">3.如果导入已完成，点击此处<a href="javascript:;" title="在导入用户后同步用户所在单位" style="color:blue;" onclick="syncUnitUser()">同步</a>用户所在单位
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="left">4.导入时原兼职部门将被清除</td>
+                        </tr>
+                        <tr>
+                            <td align="left">
+                                <script>initUpload()</script>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height:50px">
+                                <button class="btn btn-default">下一步</button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    $(function() {
+        $('#f1').attr("accept", ".xls,.xlsx");
+    });
+
+    function checkForm() {
+        //获取欲上传的文件路径
+        var filepath = document.getElementById("f1").value;
+        if (filepath=='') {
+            jAlert("请上传文件", "提示");
+            return false;
+        }
+        //为了避免转义反斜杠出问题，这里将对其进行转换
+        var re = /(\\+)/g;
+        var filename = filepath.replace(re, "#");
+        //对路径字符串进行剪切截取
+        var one = filename.split("#");
+        //获取数组中最后一个，即文件名
+        var two = one[one.length - 1];
+        //再对文件名进行截取，以取得后缀名
+        var three = two.split(".");
+        //获取截取的最后一个字符串，即为后缀名
+        var last = three[three.length - 1];
+        //添加需要判断的后缀名类型
+        var tp = "xls,xlsx";
+        //返回符合条件的后缀名在字符串中的位置
+        var rs = tp.indexOf(last);
+        //如果返回的结果大于或等于0，说明包含允许上传的文件类型
+        if (rs >= 0) {
+            return true;
+        } else {
+            jAlert("请上传文件Excel文件！", "提示");
+            return false;
+        }
+        return true;
+    }
+
+    function downloadTemplate() {
+        window.location.href = "user_template.xls";
+    }
+
+    function syncUnitUser() {
+        jConfirm('您确定要同步么？', '提示', function (r) {
+            if (r) {
+                $.ajax({
+                    type: "post",
+                    url: "syncUnit.do",
+                    data: {
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        jAlert(data.msg, [[#{prompt}]]);
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            }
+        });
+    }
+</script>
+</html>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>工号管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle!important;
+        }
+        /*自定义行间色*/
+        .white {
+            background-color: white;
+        }
+        .lightblue {
+            background-color: lightblue;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <form id="formSearch" method="post" class="form-inline" style="margin-top: 20px">
+        <table width="80%" border="0" align="center">
+            <tr>
+                <td width="100%" align="center">
+                    <th:block th:if="${unitCode eq 'root'}">
+                        单位
+                        <select id="searchUnitCode" name="searchUnitCode" class="form-control">
+                            <option value="">全部</option>
+                            <th:block th:inline="text">
+                                [[${unitOpts}]]
+                            </th:block>
+                        </select>
+                    </th:block>
+                    按&nbsp;
+                    <select id="by" name="by" class="form-control">
+                        <option value='userName'>姓名</option>
+                        <option value='account'>工号</option>
+                    </select>
+                    &nbsp;
+                    <input id="what" name="what" th:value="${what}" size="20" class="form-control"/>
+                    &nbsp;
+                    <button id="btnSearch" type="submit" class="btn btn-default">查询</button>
+                    <input name="op" type="hidden" value="search"/>
+                </td>
+            </tr>
+        </table>
+    </form>
+    <div id="toolbar">
+        <button class="btn btn-success" onclick="window.location.href='addAccount.do'"><span class="glyphicon glyphicon-plus"></span>&nbsp;添加</button>
+    </div>
+    <table id="table"></table>
+</div>
+</body>
+<script type="text/javascript" th:inline="javascript">
+    $(function () {
+        $("#by").value = [[${by}]];
+        $("#searchUnitCode").val([[${searchUnitCode}]]);
+
+        // 初始化Table
+        initTable();
+
+        $('#btnSearch').click(function(e) {
+            doQuery();
+            e.preventDefault();
+        })
+    });
+
+    function doQuery() {
+        $('#table').bootstrapTable('refresh');
+    }
+
+    function initTable() {
+        $('#table').bootstrapTable({
+            url: 'getAccountList.do',//请求后台的URL（*）
+            // method: 'get',//请求方式（*）
+            //得到查询的参数
+            queryParams : function (params) {
+                var temp = $("#formSearch").serializeJsonObject();
+                temp["pageSize"] = params.limit;                        //页面大小
+                temp["pageNum"] = (params.offset / params.limit) + 1;  //页码
+                temp["sort"] = params.sort;                         //排序列名
+                temp["order"] = params.order;                   //排位命令（desc，asc）
+                return temp;
+            },
+            toolbar: '#toolbar',//工具按钮用哪个容器
+            striped: true,//是否显示行间隔色
+            cache: false,//是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+            pagination: true,//是否显示分页（*）
+            sortable: true,//是否启用排序
+            sortOrder: "asc",//排序方式
+            sidePagination: "server",//分页方式：client客户端分页，server服务端分页（*）
+            pageNumber: 1,//初始化加载第一页，默认第一页
+            pageSize: 20,//每页的记录行数（*）
+            pageList: [20, 30, 50, 100],//可供选择的每页的行数（*）
+            // search: true,//是否显示表格搜索，此搜索是客户端搜索，不会进服务端
+            contentType: "application/x-www-form-urlencoded", // 默认是 application/json
+            dataType: "json",//期待返回数据类型
+            strictSearch: true,
+            showColumns: true,//是否显示列按钮
+            showRefresh: true,//是否显示刷新按钮
+            minimumCountColumns: 2,//最少允许的列数
+            clickToSelect: true,//是否启用点击选中行
+            // height: 700,//行高，如果没有设置height属性，表格自动根据记录条数取得表格高度
+            uniqueId: "account",//每一行的唯一标识，一般为主键列
+            showToggle: false,//是否显示详细视图和列表视图的切换按钮
+            cardView: false,//是否显示详细视图
+            detailView: false,//是否显示父子表
+            // showExport: true,
+            // exportTypes: ['csv', 'txt', 'xml'],
+            columns: [
+                {field: "chk", checkbox: true, title: "选择", class: "tablebody", align: "center", valign: "middle"},
+                {
+                    field: 'account',
+                    sortable: true,
+                    valign: 'middle',
+                    title: '工号'
+                }, {
+                    field: 'realName',
+                    sortable: true,
+                    valign: 'middle',
+                    title: '姓名'
+                }, {
+                    field: 'deptName',
+                    sortable: true,
+                    width: '400px',
+                    valign: 'middle',
+                    title: '部门'
+                }, {
+                    field: 'op',
+                    width: '200px',
+                    valign: 'middle',
+                    title: '操作',
+                    events: operateEvents, // 行事件，formatter中按钮的事件必须在行事件中处理才能响应
+                    formatter: operateFormatter //自定义方法，添加操作按钮
+                },
+            ],
+            responseHandler: function (res) {
+                return {
+                    "rows": res.data,
+                    "total": res.total
+                };
+            }/*,
+                rowStyle: function (row, index) {
+                    // 隔行变色
+                    var classesArr = ['white', 'lightblue'];
+                    var strclass = "";
+                    if (index % 2 === 0) {
+                        // 偶数行
+                        strclass = classesArr[0];
+                    } else {
+                        // 奇数行
+                        strclass = classesArr[1];
+                    }
+                    return {classes: strclass};
+                },*/
+        });
+    }
+
+    function operateFormatter(value, row, index) {
+        return [
+            '<button class="btn btn-warning btn-edit"><span class="glyphicon glyphicon-edit"></span>&nbsp;编辑</button>',
+            '<button class="btn btn-danger btn-del"><span class="glyphicon glyphicon-trash"></span>&nbsp;删除</button>',
+        ].join('&nbsp;&nbsp;');
+    }
+
+    window.operateEvents= {
+        // 修改
+        "click .btn-edit": function (e, value, row, index) {
+            /*var idlist = $('#table').bootstrapTable('getAllSelections');
+            for (var i = 0; i < idlist.length; i++) {
+                alert(idlist[i].account);
+            }*/
+            // 防止点击后选中复选框
+            window.event? window.event.cancelBubble = true : e.stopPropagation();
+            addTab('编辑工号', 'admin/editAccount.do?name=' + row.account + '&tabIdOpener=' + getActiveTabId());
+        },
+        // 删除
+        "click .btn-del": function (e, value, row, index) {
+            window.event? window.event.cancelBubble = true : e.stopPropagation();
+            jConfirm("您确定要删除么？", "[(#{prompt})]", function (r) {
+                if (!r) {
+                    return;
+                }
+                $.ajax({
+                    type: "post",
+                    url: "delAccount.do",
+                    data: {
+                        account: row.account
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        if (data.ret==1) {
+                            $('#table').bootstrapTable('refresh');
+                            $.toaster({
+                                "priority": "info",
+                                "message": data.msg
+                            });
+                        }
+                        else {
+                            jAlert(data.msg, "[(#{prompt})]");
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            });
+        }
+    }
+</script>
+</html>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<rule type="1">
+		<formCode>form_archive</formCode>
+		<fields>content</fields>
+	</rule>
+</config>

@@ -1,0 +1,16 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<div id="tabs1" th:fragment="navUser(userName, item)">
+    <ul>
+        <li id="menu1" th:attr="class=${item} eq 1 ? 'current':''"><a th:href="@{/admin/organize/{page}(page='editUser.do', userName=${userName})}"><span>用户信息</span></a></li>
+        <li id="menu2" th:attr="class=${item} eq 2 ? 'current':''"><a th:href="@{/admin/organize/{page}(page='userSetRole.do', userName=${userName})}"><span>角色</span></a></li>
+        <li id="menu3" th:attr="class=${item} eq 3 ? 'current':''"><a th:href="@{/admin/organize/{page}(page='userPriv.do', userName=${userName})}"><span>权限</span></a></li>
+        <li id="menu4" th:attr="class=${item} eq 4 ? 'current':''"><a th:href="@{/admin/organize/{page}(page='userAdminDept.do', userName=${userName})}"><span>管理部门</span></a></li>
+        <li id="menu5" th:attr="class=${item} eq 5 ? 'current':''"><a href="javascript:;" th:onclick="addTab('设置代理', 'user/user_proxy_list.jsp?userName=' + encodeURI('[(${userName})]'))"><span>设置代理</span></a></li>
+    </ul>
+</div>
+</body>
+</html>

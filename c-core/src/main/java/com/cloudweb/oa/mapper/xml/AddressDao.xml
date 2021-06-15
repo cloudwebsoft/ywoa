@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.dao.AddressDao">
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.bean.Address">
+        <id column="ID" property="id" />
+        <result column="PERSON" property="person" />
+        <result column="JOB" property="job" />
+        <result column="TEL" property="tel" />
+        <result column="POSTALCODE" property="postalcode" />
+        <result column="EMAIL" property="email" />
+        <result column="MOBILE" property="mobile" />
+        <result column="INTRODUCTION" property="introduction" />
+        <result column="ADDRESS" property="address" />
+        <result column="USERNAME" property="userName" />
+        <result column="ADDDATE" property="addDate" />
+        <result column="TYPE" property="type" />
+        <result column="FIRSTNAME" property="firstname" />
+        <result column="FAMILYNAME" property="familyname" />
+        <result column="MIDDLENAME" property="middleName" />
+        <result column="NICKNAME" property="nickname" />
+        <result column="STREET" property="street" />
+        <result column="CITY" property="city" />
+        <result column="PROVINCE" property="province" />
+        <result column="COUNTRY" property="country" />
+        <result column="FAX" property="fax" />
+        <result column="COMPANYSTREET" property="companyStreet" />
+        <result column="COMPANYCITY" property="companyCity" />
+        <result column="COMPANYPOSTCODE" property="companyPostcode" />
+        <result column="COMPANYPROVICE" property="companyProvice" />
+        <result column="COMPANYCOUNTRY" property="companyCountry" />
+        <result column="OPERATIONWEB" property="operationweb" />
+        <result column="OPERATIONPHONE" property="operationPhone" />
+        <result column="OPERATIONFAX" property="operationFax" />
+        <result column="BEEPPAGER" property="BeepPager" />
+        <result column="COMPANY" property="company" />
+        <result column="DEPARTMENT" property="department" />
+        <result column="WEB" property="web" />
+        <result column="TYPEID" property="typeId" />
+        <result column="MSN" property="MSN" />
+        <result column="QQ" property="QQ" />
+        <result column="unit_code" property="unitCode" />
+        <result column="weixin" property="weixin" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ID, PERSON, JOB, TEL, POSTALCODE, EMAIL, MOBILE, INTRODUCTION, ADDRESS, USERNAME, ADDDATE, TYPE, FIRSTNAME, FAMILYNAME, MIDDLENAME, NICKNAME, STREET, CITY, PROVINCE, COUNTRY, FAX, COMPANYSTREET, COMPANYCITY, COMPANYPOSTCODE, COMPANYPROVICE, COMPANYCOUNTRY, OPERATIONWEB, OPERATIONPHONE, OPERATIONFAX, BEEPPAGER, COMPANY, DEPARTMENT, WEB, TYPEID, MSN, QQ, unit_code, weixin
+    </sql>
+
+    <sql id="params">
+        id,person,firstname, familyname, middleName,job,tel,nickname,fax,mobile,web,companyStreet,companyCity,companyPostcode,companyProvice,companyCountry,operationweb,operationPhone,operationFax,BeepPager,company,email,city,street,address,country,postalcode,province,introduction,userName,department,type,addDate,typeId,qq,msn,weixin
+    </sql>
+    <select id="getAddress" parameterType="int" resultType="com.cloudweb.oa.bean.Address">
+        select
+        <include refid="params"/>,
+        unit_code as unitcode
+        from address
+        where id = #{id}
+    </select>
+    <select id="getAddressByMobile" parameterType="string" resultType="com.cloudweb.oa.bean.Address">
+        select
+        <include refid="params"/>,
+        unit_code as unitcode
+        from address
+        where MOBILE = #{mobile}
+    </select>
+    <insert id="create" parameterType="com.cloudweb.oa.bean.Address">
+        insert into
+        address(
+        <include refid="params"/>,unit_code
+        )
+        values(#{id},#{person},#{firstname},#{familyname},#{middleName},#{job},#{tel},#{nickname},#{fax},#{mobile},#{web},#{companyStreet},#{companyCity},#{companyPostcode},#{companyProvice},#{companyCountry},#{operationweb},#{operationPhone},#{operationFax},#{BeepPager},#{company},#{email},#{city},#{street},#{address},#{country},#{postalcode},#{province},#{introduction},#{userName},#{department},#{type},#{addDate},#{typeId},#{QQ},#{MSN},#{weixin},#{unitCode})
+    </insert>
+    <delete id="del">
+        delete from address where ID = #{id}
+    </delete>
+    <update id="save" parameterType="com.cloudweb.oa.bean.Address">
+        update address set
+                           person=#{person},firstname=#{firstname},familyname=#{familyname}, middleName=#{middleName},job=#{job},tel=#{tel},nickname=#{nickname},
+                           fax=#{fax},mobile=#{mobile},web=#{web},companyStreet=#{companyStreet},companyCity=#{companyCity},companyPostcode=#{companyPostcode},
+                           companyProvice=#{companyProvice},companyCountry=#{companyCountry},operationweb=#{operationweb},operationPhone=#{operationPhone},operationFax=#{operationFax},
+                           BeepPager=#{BeepPager},company=#{company},email=#{email},city=#{city},street=#{street},address=#{address},country=#{country},postalcode=#{postalcode},
+                           province=#{province},introduction=#{introduction},userName=#{userName},department=#{department},type=#{type},typeId=#{typeId},qq=#{QQ},msn=#{MSN},weixin=#{weixin}
+        where ID = #{id}
+    </update>
+    <!--<select id="listResult" resultType="com.cloudweb.oa.bean.Address">-->
+    <!--select-->
+    <!--<include refid="params"/>,unit_code as unitcode-->
+    <!--from address-->
+    <!--<where>-->
+    <!--<if test="type == 0">-->
+    <!--userName = #{userName}-->
+    <!--</if>-->
+    <!--<if test="type == 1">-->
+    <!--and unit_code = #{userName}-->
+    <!--</if>-->
+    <!--<if test="type != null and type != ''">-->
+    <!--and type = #{type}-->
+    <!--</if>-->
+    <!--<if test="typeId != null and typeId != ''">-->
+    <!--and typeId = #{typeId}-->
+    <!--</if>-->
+    <!--<if test="person != null and person != ''">-->
+    <!--and person like #{person}-->
+    <!--</if>-->
+    <!--<if test="company != null and company != ''">-->
+    <!--and company like #{company}-->
+    <!--</if>-->
+    <!--<if test="mobile != null and mobile != ''">-->
+    <!--and mobile like #{mobile}-->
+    <!--</if>-->
+    <!--</where>-->
+    <!--<if test="orderBy != null and sort != null">-->
+    <!--order by ${orderBy} ${sort}-->
+    <!--</if>-->
+    <!--limit #{start},#{pageSize}-->
+    <!--</select>-->
+
+    <select id="selectList" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+</mapper>

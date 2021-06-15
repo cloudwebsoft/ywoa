@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.OaNoticeMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.OaNotice">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="user_name" property="userName"/>
+        <result column="create_date" property="createDate"/>
+        <result column="is_dept_notice" property="isDeptNotice"/>
+        <result column="users_know" property="usersKnow"/>
+        <result column="is_show" property="isShow"/>
+        <result column="begin_date" property="beginDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="color" property="color"/>
+        <result column="is_bold" property="isBold"/>
+        <result column="unit_code" property="unitCode"/>
+        <result column="notice_level" property="noticeLevel"/>
+        <result column="is_all" property="isAll"/>
+        <result column="flowId" property="flowId"/>
+        <result column="is_reply" property="isReply"/>
+        <result column="is_forced_response" property="isForcedResponse"/>
+
+        <association property="user" select="com.cloudweb.oa.mapper.UserMapper.getUserByName" column="{userName=user_name}"></association>
+    </resultMap>
+
+    <resultMap id="noticeWithAtt" type="com.cloudweb.oa.entity.OaNotice">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="user_name" property="userName"/>
+        <result column="create_date" property="createDate"/>
+        <result column="is_dept_notice" property="isDeptNotice"/>
+        <result column="users_know" property="usersKnow"/>
+        <result column="is_show" property="isShow"/>
+        <result column="begin_date" property="beginDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="color" property="color"/>
+        <result column="is_bold" property="isBold"/>
+        <result column="unit_code" property="unitCode"/>
+        <result column="notice_level" property="noticeLevel"/>
+        <result column="is_all" property="isAll"/>
+        <result column="flowId" property="flowId"/>
+        <result column="is_reply" property="isReply"/>
+        <result column="is_forced_response" property="isForcedResponse"/>
+        <association property="user" select="com.cloudweb.oa.mapper.UserMapper.getUserByName" column="{userName=user_name}"></association>
+        <collection property="oaNoticeAttList" ofType="com.cloudweb.oa.entity.OaNoticeAttach" select="com.cloudweb.oa.mapper.OaNoticeAttachMapper.getNoticeAttById" column="{noticeId=id}"></collection>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, title, content, user_name, create_date, is_dept_notice, users_know, is_show, begin_date, end_date, color, is_bold, unit_code, notice_level, is_all, flowId, is_reply, is_forced_response
+    </sql>
+
+    <select id="selectNoticeList" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+
+    <select id="selectByIdWithAtt" parameterType="long" resultMap="noticeWithAtt">
+        select * from oa_notice where id=#{id}
+    </select>
+
+    <select id="selectMyNoticeOnDesktop" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from oa_notice where begin_date &lt;= #{curDate} and (end_date is null or end_date &gt;= #{curDate})
+        and (id in (select notice_id from oa_notice_reply where user_name = #{userName}) or user_name=#{userName})
+        order by id desc
+    </select>
+
+    <select id="listImportant" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from oa_notice where notice_level=1 and begin_date &lt;= #{curDate} and (end_date is null or end_date&gt;= #{curDate})
+        and (id in (select notice_id from oa_notice_reply where user_name = #{userName}))
+        order by id desc
+    </select>
+
+    <delete id="del" parameterType="long">
+        delete from oa_notice where id=#{id}
+    </delete>
+
+</mapper>

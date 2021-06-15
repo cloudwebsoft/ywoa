@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<isUse desc="是否启用企业微信">false</isUse>
+	<serverName desc="企业微信服务器">qyapi.weixin.qq.com</serverName>
+	<isSyncWxToOA desc="同步方式" options="true|以微信端为准(手动同步）,false|以OA端为准（自动或手动同步）">false</isSyncWxToOA>
+	<corpId desc="企业微信corpId"></corpId>
+	<token desc="接收消息服务器配置，微信回调接口token" isDisplay="false">cloudweb</token>
+	<encodingAESKey desc="接收消息服务器配置，加密后43位字符串" isDisplay="false"></encodingAESKey>
+	<isWork desc="true表示企业微信，false表示微信企业号" isDisplay="false">true</isWork>
+	<secret desc="secret是管理组凭证密钥，系统管理员在企业号管理后台创建管理组时，企业微信号后台为该管理组分配一个唯一的secret" isDisplay="false">l1xt6YZsgEs_eVXFrj1ybmmwqcd9OKYFn4g2IO6SG_BAyMS8Os2XIw_ZeU6v6pDt</secret>
+	<secretContacts desc="企业微信中通讯录的secret"></secretContacts>
+	<isUserIdUseMobile desc="微信帐户与系统用户关联字段">false</isUserIdUseMobile>
+	<isUserIdUseEmail desc="使用微信端邮箱对应用户" isDisplay="false">false</isUserIdUseEmail>
+	<isUserIdUseAccount desc="微信端使用工号作为用户ID" isDisplay="false">false</isUserIdUseAccount>
+	<agentMenu desc="应用配置，第1个agentId为默认">
+		<item>
+			<agentName>云网OA</agentName>
+			<agentId>1000006</agentId>
+			<secret></secret>
+			<logo>39opgGQk1B7HgDv3eT3l27S9wvR3e1pUkLJTqrpgSLHgkzp4bexXVPqn3x_m1uK2b</logo>
+			<homeUrl>http://partner.yimihome.com/weixin/message/msg_new_list.jsp</homeUrl>
+			<button />
+		</item>
+	</agentMenu>
+
+	<!--微信公众号 secret -->
+	<wxServiceAppId desc="微信公众号appId" isDisplay="false" />
+	<wxServiceSecret desc="微信公众号secret" isDisplay="false" />
+
+</config>
+

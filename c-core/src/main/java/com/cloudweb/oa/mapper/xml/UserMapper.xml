@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.UserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.User">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="pwd" property="pwd" />
+        <result column="pwdRaw" property="pwdRaw" />
+        <result column="regDate" property="regDate" />
+        <result column="realName" property="realName" />
+        <result column="picture" property="picture" />
+        <result column="email" property="email" />
+        <result column="gender" property="gender" />
+        <result column="QQ" property="qq" />
+        <result column="birthday" property="birthday" />
+        <result column="IDCard" property="IDCard" />
+        <result column="isMarriaged" property="isMarriaged" />
+        <result column="state" property="state" />
+        <result column="city" property="city" />
+        <result column="address" property="address" />
+        <result column="postCode" property="postCode" />
+        <result column="phone" property="phone" />
+        <result column="mobile" property="mobile" />
+        <result column="hobbies" property="hobbies" />
+        <result column="lastTime" property="lastTime" />
+        <result column="isValid" property="isValid" />
+        <result column="emailName" property="emailName" />
+        <result column="MSN" property="msn" />
+        <result column="proxy" property="proxy" />
+        <result column="proxyBeginDate" property="proxyBeginDate" />
+        <result column="proxyEndDate" property="proxyEndDate" />
+        <result column="diskSpaceAllowed" property="diskSpaceAllowed" />
+        <result column="diskSpaceUsed" property="diskSpaceUsed" />
+        <result column="rankCode" property="rankCode" />
+        <result column="online_time" property="onlineTime" />
+        <result column="uin" property="uin" />
+        <result column="unit_code" property="unitCode" />
+        <result column="person_no" property="personNo" />
+        <result column="user_type" property="userType" />
+        <result column="duty" property="duty" />
+        <result column="party" property="party" />
+        <result column="resume" property="resume" />
+        <result column="photo" property="photo" />
+        <result column="isPass" property="isPass" />
+        <result column="entryDate" property="entryDate" />
+        <result column="weixin" property="weixin" />
+        <result column="dingding" property="dingding" />
+        <result column="orders" property="orders" />
+        <result column="last_login" property="lastLogin" />
+
+    </resultMap>
+
+    <resultMap id="ResultMapWithRole" type="com.cloudweb.oa.entity.User">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="realName" property="realName" />
+        <result column="pwd" property="pwd" />
+        <result column="pwdRaw" property="pwdRaw" />
+        <collection property="userRoleList" ofType="com.cloudweb.oa.entity.Role" select="com.cloudweb.oa.mapper.UserOfRoleMapper.getUserRoleByUserName" column="{userName=name}"></collection>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, pwd, pwdRaw, regDate, realName, picture, email, gender, QQ, birthday, IDCard, isMarriaged, state, city, address, postCode, phone, mobile, hobbies, lastTime, isValid, emailName, MSN, proxy, proxyBeginDate, proxyEndDate, diskSpaceAllowed, diskSpaceUsed, rankCode, online_time, uin, unit_code, person_no, user_type, duty, party, resume, photo, isPass, entryDate, weixin, dingding, orders, last_login
+    </sql>
+
+    <resultMap id="RealNameResultMap" type="com.cloudweb.oa.entity.User">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="realName" property="realName" />
+    </resultMap>
+
+    <select id="getUserByName" resultMap="RealNameResultMap">
+        select id,name,realName from users where name=#{userName}
+    </select>
+
+    <select id="getUserByNameWithRole" resultMap="ResultMapWithRole">
+        select id,name,realName,pwd,pwdRaw from users where name=#{userName}
+    </select>
+
+    <select id="getRecentSelected" resultMap="BaseResultMap">
+        select u.name,u.realName,u.gender from users u,user_recently_selected a where a.userName=u.name and u.isValid=1 and a.name=#{userName} order by a.times desc
+    </select>
+
+    <select id="getRecentSelectedOfUnit" resultMap="BaseResultMap">
+        select u.name,u.realName,u.gender from users u,user_recently_selected a where a.userName=u.name and u.isValid=1 and a.name=#{userName} and u.unit_code=#{unitCode} order by a.times desc
+    </select>
+
+    <select id="listBySql" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+
+    <select id="listNameBySql" parameterType="string" resultType="java.lang.String">
+        ${sql}
+    </select>
+</mapper>

@@ -1,0 +1,247 @@
+@charset "utf-8";
+
+.toolbar-box {
+	height: 45px;
+}
+
+.toolbar {
+  background-color: #f4f4f4;
+  padding-top: 5px;
+  height: 45px;
+  width: 100%;
+  white-space: nowrap;
+  /*background: url(tabpanel-image/Toolbar/bg.gif) repeat-x;*/
+  /*position: fixed;*/
+  z-index:100;
+}
+
+.toolbar .button_table {
+  cursor: pointer;
+}
+.toolbar .toolbar_disabled {
+  filter: alpha(opacity = 60);
+  -moz-opacity: 0.6;
+  opacity: 0.6;
+}
+.toolbar .toolbar_disabled * {
+  cursor: no-drop;
+}
+
+.toolbar td {
+	vertical-align: middle;
+	border: 0px;
+}
+
+.toolbar .spacer {
+  height: 17px;
+  font-size: 1px;
+  border-left: solid 1px #9AC6FF;
+  border-right: solid 1px white;
+  display: block;
+  margin: 0 2px;
+  padding: 0;
+}
+
+.toolbar .textfield {
+  padding: 2px 3px 1px 3px;
+  background: #FFFFFF url(tabpanel-image/text-bg.gif) repeat-x 0 0;
+  border: 1px solid #B5B8C8;
+  width: 140px;
+}
+
+.toolbar .b_left {
+  width: 3px;
+}
+
+.toolbar .b_right {
+  width: 3px;
+}
+
+.toolbar .b_center {
+	
+}
+
+.toolbar .over .b_left {
+	background-color: #c2e5f2;
+  	width: 3px;
+}
+
+.toolbar .over .b_right {
+	background-color: #c2e5f2;
+	width: 3px;
+}
+
+.toolbar .over .b_center {
+	background-color: #c2e5f2;
+}
+
+.toolbar .b_center a {
+	display:block;
+	vertical-align:middle;
+	padding-top: 7px;
+	padding-bottom: 4px;
+	margin-left: 2px;
+	margin-right: 2px;
+	text-decoration:none;
+	white-space:nowrap;
+	height:30px;
+	*height:auto;
+	color:#333;
+}
+
+.toolbar .down .b_left {
+	background-color: #d7e8f2;
+}
+
+.toolbar .down .b_right {
+	background-color: #d7e8f2;
+}
+
+.toolbar .down .b_center {
+	background-color: #d7e8f2;
+}
+
+.toolbar .filterTable {
+	position: absolute;
+	right:2px;
+	top:2px;
+}
+.toolbar .filterTable {
+	cursor: pointer;
+}
+
+.toolbar .filter-spacer {
+  height: 21px;
+  font-size: 1px;
+  border-left: solid 1px #84A4CE;
+  border-right: solid 1px white;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.toolbar .border-center-active {
+	background: url(tabpanel-image/Toolbar/tb_border.gif) repeat-x 0px -105px !important;
+}
+
+.toolbar .border-left-active {
+  background: url(tabpanel-image/Toolbar/tb_border.gif) no-repeat 0 -63px !important;
+}
+
+.toolbar .border-right-active {
+  background: url(tabpanel-image/Toolbar/tb_border.gif) no-repeat 0 -84px !important;
+}
+
+.az {
+	display: none;
+	height: 26px;
+	line-height: 26px;
+	width: 100%;
+	background: url(tabpanel-image/Toolbar/bg.gif) repeat-x;
+	background-color: #D6E3F3;
+	position: absolute;
+	left: 0;
+	z-index: 2;
+}
+
+.az table {
+  table-layout: fixed;
+  width: 100%;
+  cursor: pointer;
+}
+
+.az table tr td {
+  text-align: center;
+  font-size: 11px;
+  padding:0;
+  margin:0;
+  color: #444444;
+}
+.az table tr td.tdover {
+  font-weight: bold;
+  color: #23508E;
+}
+.az table tr td.tdovered {
+  font-weight: bold;
+  color: red;
+}
+
+.az-fix {
+	position: absolute;
+	display: none;
+	z-index: 3;
+}
+
+.az-fix td {
+	font-size: 1px;
+	height: 6px;
+}
+
+.az-fix .left {
+	width: 4px;
+	background: url(tabpanel-image/Toolbar/fix_border.gif) no-repeat 0 0;
+}
+
+.az-fix .right {
+	width: 4px;
+	background: url(tabpanel-image/Toolbar/fix_border.gif) no-repeat -5px 0;
+}
+
+.az-fix .center {
+	background: url(tabpanel-image/Toolbar/fix_bg.gif) repeat-x;
+}
+
+.az-fix-2 {
+	position: absolute;
+	display: none;
+	z-index: 3;
+}
+
+.az-fix-2 td {
+	font-size: 1px;
+	height: 5px;
+}
+
+.az-fix-2 .left {
+	width: 4px;
+	background: url(tabpanel-image/Toolbar/fix_border_2.gif) no-repeat 0 0;
+}
+
+.az-fix-2 .right {
+	width: 4px;
+	background: url(tabpanel-image/Toolbar/fix_border_2.gif) no-repeat -5px 0;
+}
+
+.az-fix-2 .center {
+	background: url(tabpanel-image/Toolbar/fix_bg_2.gif) repeat-x;
+}
+.dialog .imgbg{
+	background-color:#016fe0;
+}
+.portalLiBg{
+	background-image:url(images/portalLiBg.png);
+	background-repeat:no-repeat;
+	cursor:pointer;
+}
+#sortable .ui-selected{
+	background-image:url(images/portalLiBgClick.png);
+	 color: white;
+	 background-repeat:no-repeat
+}
+#sortable { list-style-type: none; margin: 0; padding: 0; }
+#sortable li { 
+	margin: 3px 3px 3px 0; 
+	padding: 5px;
+	float: left;
+	width: 130px; 
+	height: 34px; 
+	font-size: 10pt; 
+	text-align: center;
+	color:#FFF;
+	line-height:34px; 
+}
+
+#sortable .ui-selecting { background: #FECA40; }
+.portalIcon{
+	padding-top:3px;
+}

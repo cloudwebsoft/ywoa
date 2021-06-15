@@ -1,0 +1,19 @@
+<!DOCTYPE dwr PUBLIC
+    "-//GetAhead Limited//DTD Direct Web Remoting 1.0//EN"
+    "http://www.getahead.ltd.uk/dwr/dwr10.dtd">
+	
+<dwr>
+	<allow>
+        <convert converter="bean" match="cn.js.fan.db.PrimaryKey" />
+        <convert converter="bean" match="com.redmoon.oa.dept.DeptUserDb" />
+        <create creator="new" javascript="DeptUserDb">
+        	<param name="class" value="com.redmoon.oa.message.MessageDb"/>        
+            <include method="list2DWR" />
+        </create>
+        <convert converter="bean" match="com.redmoon.oa.message.MessageDb" />
+        <create creator="new" javascript="MessageDb">
+        	<param name="class" value="com.redmoon.oa.message.MessageDb"/>
+            <include method="getNewMsgsOfUser" />
+        </create>
+	</allow>
+</dwr>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<sso>
+		<isUse desc="是否启用">false</isUse>	
+    	<key desc="同步密码(24位)">cloudwebcloudwebcloudweb</key>
+		<sparkServer desc="spark服务器(用于与OA的集成)">localhost</sparkServer>
+		<larkServerOuter desc="Lark服务器外网地址">localhost</larkServerOuter>
+		<larkServerInner desc="Lark服务器内网地址">192.168.201.1</larkServerInner>
+		<targetUrl desc="目标地址">http://127.0.0.1:9090/SyncUtil</targetUrl>
+	</sso>
+</root>
