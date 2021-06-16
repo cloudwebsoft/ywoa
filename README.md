@@ -44,10 +44,11 @@
 
 #### 学习QQ群
 
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group1.png" width="150" height="200" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group2.png" width="150" height="200" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group3.png" width="150" height="200" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group6.png" width="150" height="200" align="center"/>  
+群二维码<br>
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group1.png" width="150" height="150" align="center"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group2.png" width="150" height="150" align="center"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group3.png" width="150" height="150" align="center"/>  
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group6.png" width="150" height="150" align="center"/>  
 <br>
 
 立即扫描上面`最右侧`的二维码入群，即刻免费获得相关文档及数据字典！<br>
