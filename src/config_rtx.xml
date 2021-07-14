@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<config>
-    <serverAddr desc="服务器地址">127.0.0.1</serverAddr>
-    <notifyDelay desc="系统消息提示窗口关闭的延迟时间（秒）">10</notifyDelay>
-    <sysMsgOnlyUseRTX desc="系统消息仅使用腾讯通发送">true</sysMsgOnlyUseRTX>
-</config>
-

@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-		<isUse desc="是否启用视频会议">false</isUse>	
-    	<siteName desc="视频会议站点名称">yimihome.infowarelab.cn</siteName>
-		<sequence desc="视频会议站点名称"></sequence>
-</root>

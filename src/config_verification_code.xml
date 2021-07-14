@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<config>
-    <verificationCode>
-        <expireSecond desc="验证码过期时间(秒)">180</expireSecond>
-        <verificationCodeStr desc="验证码字符串">0123456789</verificationCodeStr>
-        <verificationCodeNum desc="验证码位数">4</verificationCodeNum>
-    </verificationCode>
-</config>
-
