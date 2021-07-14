@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.UserDesktopSetupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.UserDesktopSetup">
+        <id column="id" property="id" />
+        <result column="user_name" property="userName" />
+        <result column="title" property="title" />
+        <result column="more_url" property="moreUrl" />
+        <result column="module_rows" property="moduleRows" />
+        <result column="module_code" property="moduleCode" />
+        <result column="module_item" property="moduleItem" />
+        <result column="is_system" property="isSystem" />
+        <result column="td" property="td" />
+        <result column="order_in_td" property="orderInTd" />
+        <result column="word_count" property="wordCount" />
+        <result column="portal_id" property="portalId" />
+        <result column="system_id" property="systemId" />
+        <result column="can_delete" property="canDelete" />
+        <result column="meta_data" property="metaData" />
+        <result column="icon" property="icon" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, user_name, title, more_url, module_rows, module_code, module_item, is_system, td, order_in_td, word_count, portal_id, system_id, can_delete, meta_data, icon
+    </sql>
+
+</mapper>

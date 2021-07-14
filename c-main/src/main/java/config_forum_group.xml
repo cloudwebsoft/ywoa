@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <create_money_code desc="创建圈子时所需币种">experience</create_money_code>
+    <create_money_sum desc="所需金额">50</create_money_sum>
+    <max_group_create desc="用户最多能创建圈子数">5</max_group_create>
+    <max_group_attend desc="用户最多能加入的圈子数">10</max_group_attend>
+</config>
+

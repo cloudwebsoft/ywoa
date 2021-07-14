@@ -1,0 +1,133 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>设置用户组权限</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .layer1 {
+            background-color: #EBEDED;
+        }
+        .layer2 {
+            background-color: #ffffff;
+        }
+        .menu_item a {
+            color: #608acc;
+            background: #fff;
+            overflow: hidden;
+            display: block;
+            width: 200px;
+            height: 20px;
+            line-height: 15px;
+            border: 1px solid #b4c6dc;
+            padding: 0 20px 0 5px;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_group :: nav(${group.code}, ${group.description}, 3)"></div>
+<div class="spacerH"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <div th:inline="text" style="margin: 10px 0px; text-align: center">[[${group.description}]] 的权限</div>
+                <form id="form1" name="form1" method="post" action="setGroupPriv.do" onsubmit="return false">
+                    <table id="mainTable" class="table table-bordered table-hover" width="98%" align="center">
+                        <thead>
+                        <tr class="active">
+                            <td width="5%" align="center">&nbsp;
+                            </td>
+                            <td width="35%" align="center">权限</td>
+                            <td align="center">菜单项</td>
+                        </tr>
+                        </thead>
+                        <tbody th:each="auth, stat : ${authorityVOList}" th:remove="tag">
+                        <tr th:attr="class=${auth.layer}==1?'layer1':'layer2'" th:if="(${auth.isAdmin} and ${isMeAdmin}) or !${auth.isAdmin}">
+                            <td style="height:26px" th:inline="text" align="center">
+                                <span th:if="${auth.layer eq 2}">
+                                    <span th:switch="${auth.isAdmin}" th:remove="tag">
+                                        <span th:case="true" th:remove="tag">
+                                            <span th:switch="${isMeAdmin}" th:remove="tag">
+                                                <span th:case="true">
+                                                    <span th:switch="${auth.authorized}" th:remove="tag">
+                                                        <input th:case="true" checked="checked" type="checkbox" name="priv" th:value='${auth.code}'>
+                                                        <input th:case="*" type="checkbox" name="priv" th:value='${auth.code}'>
+                                                    </span>
+                                                </span>
+                                                <span th:case="*">
+                                                    <span th:switch="${auth.authorized}" th:remove="tag">
+                                                        <span th:case="true" th:remove="tag">
+                                                            <input checked disabled="disabled" type="checkbox" name="priv2" th:value='${auth.code}'>
+                                                            <input type="hidden" name="priv" th:value='${auth.code}'>
+                                                        </span>
+                                                        <span th:case="*" th:remove="tag">
+                                                            <input disabled="disabled" type="checkbox" name="priv" th:value='${auth.code}'>
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </span>
+                                        <span th:case="*" th:remove="tag">
+                                            <span th:switch="${auth.authorized}" th:remove="tag">
+                                                <input th:case="true" checked type="checkbox" name="priv" th:value='${auth.code}'>
+                                                <input th:case="*" type="checkbox" name="priv" th:value='${auth.code}'>
+                                            </span>
+                                        </span>
+                                    </span>
+                                </span>
+                            </td>
+                            <td align="left" th:attr="title='${auth.code}'" th:inline="text">
+                                [[${auth.name}]]
+                            </td>
+                            <td align="left" th:title="${auth.code}">
+                                <div class="menu_item" th:each="menu, stat : ${auth.menuList}">
+                                    <span th:switch="${not #strings.isEmpty(menu.realLink)}" th:remove="tag">
+                                        <span th:case="true" th:remove="tag">
+                                            <a href="javascript:;" th:onclick="addTab([[${menu.name}]], [[${menu.realLink}]])" th:inline="text">[[${menu.fullName}]]</a>
+                                        </span>
+                                        <span th:case="*" th:remove="tag">
+                                            <a href="javascript:;" th:inline="text">[[${menu.fullName}]]</a>
+                                        </span>
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div style="text-align: center; margin-bottom: 10px">
+                        <input type="hidden" name="groupCode" th:value="${group.code}"/>
+                        <button id="btnOk" class="btn btn-default">确定</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script language="javascript" th:inline="javascript">
+    $(function() {
+        $('#btnOk').click(function() {
+            $.ajax({
+                type: "post",
+                url: "setGroupPrivs.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function(XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function(data, status){
+                    jAlert(data.msg, "提示");
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function(){
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    });
+</script>
+</html>

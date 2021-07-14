@@ -1,0 +1,729 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>用户管理</title>
+    <script type="text/javascript" src="../../inc/common.js"></script>
+    <link type="text/css" rel="stylesheet" href="../../skin/common/organize.css"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/flexigrid/flexigrid.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+
+    <!--[if lte IE 9]>
+    <script src="@{/js/bootstrap/js/respond.min.js}"></script>
+    <script src="@{/js/bootstrap/js/html5shiv.min.js}"></script>
+    <![endif]-->
+
+    <script src="../../js/jquery-1.9.1.min.js"></script>
+    <script src="../../js/jquery-migrate-1.2.1.min.js"></script>
+    <link href="../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <script src="../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <script type="text/javascript" src="../../js/flexigrid.js"></script>
+    <link rel="stylesheet" href="../../js/bootstrap/css/bootstrap.min.css"/>
+    <script src="../../js/bootstrap/js/bootstrap.min.js"></script>
+    <script src="../../js/BootstrapMenu.min.js"></script>
+    <script type="text/javascript" src="../../js/jquery.editinplace.js"></script>
+    <link href="../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script type="text/javascript" src="../../js/jquery.toaster.js"></script>
+<body scroll="no">
+<div style="border-left:1px solid #DDD;height:100%;width:100%; padding: 5px 0px">
+    <div class="spacerH"></div>
+    <table align="center">
+        <tr>
+            <td>
+                <form id="formSearch" name="formSearch" method="post" class="form-inline" role="form" action="../../user/list.do" onsubmit="return searchFormOnSubmit()">
+                    <span style="margin-right: 20px">部门编码：[[${deptCode}]]</span>
+                    <span th:remove="tag" th:if="${isLarkUsed}">
+                    <button type="button" class="btn btn-default" title="同步至精灵" onclick="syncToLark()">同步至精灵</button>
+                    </span>
+                    <span th:remove="tag" th:if="${isUseWx}">
+                        <span th:remove="tag" th:switch="${isSyncWxToOA}">
+                            <button th:case="true" type="button" class="btn btn-default" title="同步微信企业号账户至OA" onclick="syncToWeixin(0)">微信同步</button>
+                            <button th:case="*" type="button" class="btn btn-default" title="同步OA账户至微信，无邮箱及手机的将不能被同步" onclick="syncToWeixin(1)">微信同步</button>
+                        </span>
+                    </span>
+                    <span th:remove="tag" th:if="${isUseDingDing}">
+                        <span th:remove="tag" th:switch="${isSyncDingDingToOA}">
+                            <button th:case="true" type="button" class="btn btn-default" title="同步钉钉至OA" onclick="syncToDingDing(0)">钉钉同步</button>
+                            <button th:case="*" type="button" class="btn btn-default" title="同步OA至钉钉" onclick="syncToDingDing(1)">钉钉同步</button>
+                        </span>
+                    </span>
+                    <span th:remove="tag" th:if="${isValid}">
+                        <button type="button" class="btn btn-default" title="调出部门" onclick="changeDept()">调出</button>
+                        <button type="button" class="btn btn-default" title="调入部门" th:onclick="openWin('../../userMultiSel.do?unitCode=' + [[${unitCode}]],'800','480')">调入</button>
+                    </span>
+                    <button id="btnLeaveOffice" type="button" class="btn btn-default" title="停用账号" onclick="leaveOffice()">停用</button>
+                    <button id="btnEnable" style="display: none" type="button" class="btn btn-default" title="启用账号" onclick="enableBatch()">启用</button>
+                    <span th:remove="tag" th:if="${isValid}">
+                        <button type="button" class="btn btn-default" title="用户权限" onclick="changePriv()">权限</button>
+                    </span>
+                    <span th:remove="tag" th:if="${isValid eq 1 && isBindMobile}">
+                        <button type="button" class="btn btn-default" title="绑定手机端硬件号" onclick="bindBatch()">绑定</button>
+                        <button type="button" class="btn btn-default" title="解绑手机端硬件号" onclick="unbindBatch()">解绑</button>
+                    </span>
+                    <button type="button" class="btn btn-default" title="导出全部用户" onclick="exportAll()">导出</button>
+                    <span th:remove="tag" th:if="${canDelUser}">
+                    <button type="button" class="btn btn-default" title="删除" onclick="delBatch()">删除</button>
+                    </span>
+                    <div class="btn-group">
+                        <button id="btnValidTxt" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                            启用<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu" id="btnValidItems">
+                            <li type="realName" val="1"><a href="#">启用</a></li>
+                            <li type="userName" val="0"><a href="#">停用</a></li>
+                        </ul>
+                    </div>
+                    <script>
+                        $('#btnValidItems li').on('click', function () {
+                            $('#btnValidTxt').html($(this).text() + "<span class=\"caret\"></span>");
+                            var v = $(this).text() == "启用" ? 1 : 0;
+                            $('#isValid').val(v);
+                        });
+
+                        $(function () {
+                            $('#btnValidItems li').each(function () {
+                                if ($(this).attr("val") == [[${isValid}]]) {
+                                    $('#btnValidTxt').html($(this).text() + "<span class=\"caret\"></span>");
+                                }
+                            });
+                        });
+                    </script>
+                    <div class="input-group" style="width: auto;">
+                        <div class="input-group-btn">
+                            <button style="width:80px" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                <span id="spanSearchType">请选择 </span>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu" id="btnSearchTypeItems">
+                                <li type="realName"><a href="#">姓名</a></li>
+                                <li type="userName"><a href="#">帐户</a></li>
+                                <li type="account"><a href="#">工号</a></li>
+                                <li type="mobile"><a href="#">手机</a></li>
+                                <li type="email"><a href="#">邮箱</a></li>
+                            </ul>
+                        </div>
+                        <input id="condition" name="condition" th:value="${condition}" type="text" class="form-control" style="width:150px;"/>
+                    </div>
+
+                    <input id="searchType" name="searchType" type="hidden" th:value="${searchType}"/>
+                    <!--<input type="hidden" name="deptCode" th:value="${deptCode}"/>-->
+                    <input type="hidden" id="isValid" name="isValid" th:value="${isValid}"/>
+                    <script th:inline="javascript">
+                        $('#btnSearchTypeItems li').on('click', function () {
+                            $('#spanSearchType').html($(this).text());
+                            $('#searchType').val($(this).attr("type"));
+                        });
+
+                        $(function () {
+                            $('#btnSearchTypeItems li').each(function () {
+                                if ($(this).attr("type") == [[${searchType}]]) {
+                                    $('#spanSearchType').html($(this).text());
+                                }
+                            });
+                        });
+                    </script>
+                    <input name="op" type="hidden" value="search"/>
+                    <div class="input-group" style="width: auto;">
+                        <input type="submit" value="" class="oranize-cx-button"/>
+                    </div>
+                </form>
+            </td>
+        </tr>
+    </table>
+    <table id="mainTable">
+    </table>
+    <form name="hidForm" action="" method="post">
+        <input name="op" type="hidden"/>
+        <input name="deptCode" th:value="${deptCode}" type="hidden"/>
+        <input name="CPages" th:value="${curPage}" type="hidden"/>
+        <input name="pageSize" th:value="${pageSize}" type="hidden"/>
+        <input name="ids" type="hidden"/>
+    </form>
+
+</div>
+</body>
+<script th:inline="javascript">
+    function delBatch() {
+        var ids = getFlexgridCheckboxValue();
+        if (ids == "") {
+            jAlert("请先选择用户！", "提示");
+            return;
+        }
+
+        jConfirm('您确定要删除么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+
+            $.ajax({
+                type: "post",
+                url: "../../user/delUsers.do",
+                data: {
+                    ids: ids
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    // 调出至部门
+    function selectNode(codes, name) {
+        var ids = getFlexgridCheckboxValue();
+        var deptCodes = codes;
+        jConfirm('您确定要选择 ' + name + ' 么？', '提示', function (r) {
+            if (!r)
+                return;
+            $.ajax({
+                type: "post",
+                url: "../../user/changeDepts.do",
+                data: {
+                    deptCodes: deptCodes,
+                    ids: ids
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    // $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    // $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    // lzm 将所有用户同步至微信
+    function syncToWeixin(type) {
+        var op = type == 1 ? "syncWeixin" : "syncWeixinToOA";
+        var prompt = type == 1 ? "您确定要将所有的用户同步至微信么？\n导入数据可能会花费较长时间，请耐心等候 ！" : "您确定要将所有微信企业号用户导入至OA？\n导入数据可能会花费较长时间，请耐心等候";
+        jConfirm(prompt, "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "../../user/synAll.do?op=" + op,
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    success: function (data, status) {
+                        parent.parent.setToaster($.parseJSON(data).msg);
+                    },
+                    error: function () {
+                        jAlert("操作失败！", "提示");
+                    }
+                });
+            }
+        })
+    }
+
+    function syncToDingDing(type) {
+        var op = type == 1 ? "syncOAToDingding" : "syncDingdingToOA";
+        var prompt = type == 1 ? "您确定要将所有的用户同步至钉钉么？\n导入数据可能会花费较长时间，请耐心等候 ！" : "您确定要将所有钉钉用户导入至OA？\n导入数据可能会花费较长时间，请耐心等候";
+        jConfirm(prompt, "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "../../user/synAll.do?op=" + op,
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    success: function (data, status) {
+                        parent.parent.setToaster(data);
+                    },
+                    error: function () {
+                        jAlert("操作失败！", "提示");
+                    }
+                });
+            }
+        })
+    }
+
+    function syncToLark() {
+        jConfirm("您确定要将所有用户信息同步至精灵么？\n导入数据可能会花费较长时间，请耐心等候！", "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "../../user/synAll.do?op=sync",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    success: function (data, status) {
+                        parent.parent.setToaster(data);
+                    },
+                    error: function () {
+                        jAlert("操作失败！", "提示");
+                    }
+                });
+            }
+        })
+    }
+
+    function changeDept() {
+        var ids = getFlexgridCheckboxValue();
+        if (ids == "") {
+            jAlert("请选择要调动的用户！", "[(#{prompt})]");
+            return;
+        }
+        openWin("../../deptMultiSel.do", 800, 600, "yes");
+    }
+
+    function leaveOffice() {
+        var userNames = getFlexgridCheckboxValue();
+        if (userNames == "") {
+            jAlert("请先选择要停用的用户！", "[(#{prompt})]");
+            return;
+        }
+
+        jConfirm('您确定要停用么！', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+
+            $.ajax({
+                type: "post",
+                url: "../../user/leaveOffBatch.do",
+                data: {
+                    userNames: userNames
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    // data = $.parseJSON(data); // 只有当dataType为html时才需要parseJSON
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    // alert(XMLHttpRequest.responseText);
+                    data = $.parseJSON(XMLHttpRequest.responseText);
+                    jAlert(data.code + ": " + data.message, '[(#{prompt})]');
+                }
+            });
+        });
+    }
+
+    $(document).ready(function () {
+        $("#mainTable td").mouseout(function () {
+            if ($(this).parent().parent().get(0).tagName != "THEAD")
+                $(this).parent().find("td").each(function (i) {
+                    $(this).removeClass("tdOver");
+                });
+        });
+
+        $("#mainTable td").mouseover(function () {
+            if ($(this).parent().parent().get(0).tagName != "THEAD")
+                $(this).parent().find("td").each(function (i) {
+                    $(this).addClass("tdOver");
+                });
+        });
+    });
+
+    function exportAll() {
+        window.open("../../admin/exportUser.do?isValid=[(${isValid})]");
+    }
+
+    // 权限
+    function changePriv() {
+        var ids = getFlexgridCheckboxValue();
+        if (ids == "") {
+            jAlert("请选择用户！", "提示");
+            return;
+        }
+        var idsArr = ids.split(",");
+        if (idsArr.length > 1) {
+            jAlert("只能选择一个用户！", "提示");
+            return;
+        }
+        addTab('用户权限', 'admin/organize/userPriv.do?userId=' + ids);
+    }
+
+    var flex;
+
+    function changeSort(sortname, sortorder) {
+        if (!sortorder)
+            sortorder = "desc";
+
+        var params = $("#formSearch").serialize();
+        // console.log(params);
+        var urlStr = "../../user/list.do?" + params;
+        urlStr += "&pageSize=" + $("#maintable").getOptions().rp + "&orderBy=" + sortname + "&sort=" + sortorder;
+        $("#grid").flexOptions({url: urlStr});
+        $("#grid").flexReload();
+    }
+
+    function onReload() {
+        doQuery();
+    }
+
+    $(document).ready(function () {
+        var requestParams = [];
+        requestParams.push({name: 'deptCode', value: '[(${deptCode})]'});
+        var colModel = eval("[" + "[(${colProps})]" + "]");
+
+        flex = $("#mainTable").flexigrid({
+                url: "../../user/list.do",
+                params: requestParams,
+                dataType: 'json',
+                colModel: colModel,
+
+                sortname: [[${orderBy}]],
+                sortorder: [[${sort}]],
+                usepager: true,
+                checkbox: true,
+                useRp: true,
+                rp: [[${pageSize}]],
+                // title: "通知",
+                singleSelect: true,
+                resizable: false,
+                showTableToggleBtn: true,
+                showToggleBtn: true,
+
+                onChangeSort: changeSort,
+                // onChangePage: changePage,
+                // onRpChange: rpChange,
+                onLoad: onLoad,
+                onReload: onReload,
+                /*
+                onRowDblclick: rowDbClick,
+                onColSwitch: colSwitch,
+                onColResize: colResize,
+                onToggleCol: toggleCol,*/
+                autoHeight: true,
+                width: document.documentElement.clientWidth,
+                height: document.documentElement.clientHeight - 84
+            }
+        );
+    });
+
+    function onLoad() {
+        try {
+            onFlexiGridLoaded();
+        } catch (e) {
+        }
+    }
+
+    function getFlexgridCheckboxValue() {
+        var ids = "";
+        $(".cth input[type='checkbox'][value!='on']", mainTable.bDiv).each(function (i) {
+            if ($(this).is(":checked")) {
+                if (ids == "")
+                    ids = $(this).val().substring(3);
+                else
+                    ids += "," + $(this).val().substring(3);
+            }
+        });
+        return ids;
+    }
+
+    // 启用
+    function enableBatch() {
+        var ids = getFlexgridCheckboxValue();
+        if (ids == "") {
+            jAlert("请先选择要启用的用户！", "提示");
+            return;
+        }
+
+        jConfirm('您确定要启用么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+
+            $.ajax({
+                type: "post",
+                url: "../../user/enableBatch.do",
+                data: {
+                    ids: ids
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    //绑定
+    function bindBatch() {
+        var ids = getFlexgridCheckboxValue();
+        if (ids == "") {
+            jAlert("请先选择要绑定的用户！", "提示");
+            return;
+        }
+        jConfirm('您确定要绑定么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "../../user/bindBatch.do",
+                contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                data: {
+                    ids: ids
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    //解绑
+    function unbindBatch() {
+        var ids = getFlexgridCheckboxValue();
+        if (ids == "") {
+            jAlert("请先选择要解绑的用户！", "提示");
+            return;
+        }
+        jConfirm('您确定要解绑么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "../../user/unbindBatch.do",
+                contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                data: {
+                    ids: ids
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    function setUsers(users, userRealNames) {
+        jConfirm('您确定要调入么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+
+            if (users == "") {
+                jAlert("请选择调入人员");
+                return;
+            }
+
+            $.ajax({
+                type: "post",
+                url: "../../user/transferUsers.do",
+                contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                data: {
+                    deptCode: [[${deptCode}]],
+                    userNames: users
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                    if (data.ret == "1") {
+                        doQuery();
+                        // 置全选checkbox为非选中状态
+                        $(".hDiv input[type='checkbox']").removeAttr("checked");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    function getSelUserNames() {
+        return "";
+    }
+
+    function getSelUserRealNames() {
+        return "";
+    }
+
+    function openWin(url, width, height) {
+        var newwin = window.open(url, "_blank", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,top=50,left=120,width=" + width + ",height=" + height);
+    }
+
+    function editCol(celDiv, id, colName) {
+        $(celDiv).click(function () {
+            // 该插件会上传值：original_value、update_value
+            $(celDiv).editInPlace({
+                url: "../../user/changeOrder.do",
+                params: "colName=" + colName + "&id=" + id + "&deptCode=[(${deptCode})]",
+                error: function (obj) {
+                    alert(JSON.stringify(obj));
+                },
+                success: function (data) {
+                    data = $.parseJSON(data);
+                    if (data.ret == 0) { // 值未更改
+                        $.toaster({
+                            "priority": "info",
+                            "message": data.msg
+                        });
+                    } else {
+                        $.toaster({
+                            "priority": "info",
+                            "message": data.msg
+                        });
+                        $("#mainTable").flexReload();
+                    }
+                }
+            });
+        });
+    }
+
+    function doQuery() {
+        var v = $('#isValid').val();
+        if (v == 0) {
+            $('#btnEnable').show();
+            $('#btnLeaveOffice').hide();
+        } else {
+            $('#btnEnable').hide();
+            $('#btnLeaveOffice').show();
+        }
+
+        // IE下正常，但是在chrome下url中的中文在controller中获取乱码
+        /*var params = $("#formSearch").serialize();
+        var urlStr = "../../user/list.do?" + params;
+        $("#mainTable").flexOptions({url: urlStr});
+        $("#mainTable").flexReload();*/
+
+        // 将表单中的内容存至json中
+        var data = {};
+        $("#formSearch").serializeArray().map(function (x) {
+            if (data[x.name] !== undefined) {
+                if (!data[x.name].push) {
+                    data[x.name] = [data[x.name]];
+                }
+                data[x.name].push(x.value || '');
+            } else {
+                data[x.name] = x.value || '';
+            }
+        });
+
+        // params是json数组，里面存放的是键值对
+        // var params = $("#mainTable").getOptions().params;
+        var params = [];
+        $.each(data, function (index, dt) {
+            params.push({name: index, value: dt});
+        });
+
+        $("#mainTable").flexOptions({params: params});
+        $("#mainTable").flexReload();
+    }
+
+    function searchFormOnSubmit() {
+        doQuery();
+        return false;
+    }
+</script>
+</html>

@@ -1,0 +1,76 @@
+/*分页样式*/
+._my-paging-box {
+	display: inline-block;
+}
+._my-paging-box .pg-item {
+	float: left;
+	line-height: 30px;
+}
+._my-paging-box .pg-item+.pg-item {
+	margin-left: 15px;
+}
+/*总条数*/
+._my-paging-box .total span {
+	display: inline-block;
+	padding: 0 5px;
+}
+/*每页条数*/
+._my-paging-box .sizes {
+	cursor: pointer;
+	padding: 0 1px 0 8px;
+	min-width: 100px;
+	box-sizing: border-box;
+	border: 1px solid #dcdfe6;
+	border-radius: 3px;
+	height: 30px;
+}
+
+/*分页按钮*/
+._my-paging-box .link-list {
+	margin: 0;
+	padding: 0;
+}
+._my-paging-box .link-list li {
+	float: left;
+	list-style: none;
+}
+._my-paging-box .link-list li+li {
+	margin-left: 8px;
+}
+._my-paging-box .link-btn {
+	padding: 0 10px;
+	height: 30px;
+	line-height: 30px;
+	border-radius: 3px;
+	cursor: pointer;
+	text-align: center;
+	background: #f4f4f5;
+}
+._my-paging-box .link-btn:hover {
+	color: #409eff;
+}
+._my-paging-box .link-btn.active {
+	background: #409eff;
+	color: #fff;
+}
+._my-paging-box .link-btn.disabled {
+	background: #eee;
+	color: #ccc;
+	cursor: default;
+}
+
+/*跳*/
+.jumper span {
+	float: left;
+}
+.jumper input {
+	float: left;
+	margin: 0 5px;
+	padding: 0 5px;
+	width: 50px;
+	height: 30px;
+	border-radius: 2px;
+	border: 1px solid #999;
+	box-sizing: border-box;
+	text-align: center;
+}

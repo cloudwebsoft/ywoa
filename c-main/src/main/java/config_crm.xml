@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <!--<dayWorkPlanModifyTime desc="日工作计划超过当天几点不能修改">11:30</dayWorkPlanModifyTime>-->
+    <visitRemindInterval desc="回访提醒时间间隔（分钟），小于等于0，则不提醒">15</visitRemindInterval>
+    <visitRemindTitle desc="回访提醒标题">系统提醒：%s 联系%s的%s</visitRemindTitle>
+    <visitRemindContent desc="回访提醒内容">系统提醒：%s 联系%s的%s，请及时办理</visitRemindContent>
+    <actionRemindInterval desc="行动提醒时间间隔（分钟），小于等于0，则不提醒">1</actionRemindInterval>
+    <actionRemindTitle desc="行动提醒标题">系统提醒：请及时联系客户：%s</actionRemindTitle>
+    <actionRemindContent desc="行动提醒内容">系统提醒：您已经%s天未联系%s了，请及时联系</actionRemindContent>
+    <neglectTitle desc="回落提醒标题">系统提醒：客户%s已被回落</neglectTitle>
+    <neglectContent desc="回落提醒内容">系统提醒：客户%s已被回落，请注意及时联系！</neglectContent>
+    <payPlanRemindBeforeDay desc="应收款项提前提醒的天数，小于等于0，则不提醒">3</payPlanRemindBeforeDay>
+    <payPlanRemindTitle desc="应收款项提醒标题">系统提醒：请及时联系客户：%s应收款项事宜</payPlanRemindTitle>
+    <payPlanRemindContent desc="应收款项提醒内容">系统提醒：请及时联系客户：%s，计划回款日期：%s</payPlanRemindContent>
+    <payPlanRemindTime desc="应收款项每天自动提醒时间，默认为10点钟，小于0则不自动打分">10</payPlanRemindTime>
+    <stockAlertRemindTime desc="库存预警每天自动提醒时间，默认为10点钟，小于0则不自动打分">10</stockAlertRemindTime>
+    <stockAlertRemindTitle desc="库存预警提醒标题">系统提醒：产品%s库存预警</stockAlertRemindTitle>
+    <stockAlertRemindContent desc="库存预警提醒内容">系统提醒：产品%s当前库存仅为%s，低于库存预警值%s</stockAlertRemindContent>
+    <serviceRemindTitle desc="服务提醒标题" isDisplay="false">系统提醒：请为客户：%s提供服务</serviceRemindTitle>
+    <serviceRemindContent desc="服务提醒内容" isDisplay="false">系统提醒：请为客户：%s提供服务，服务日期：%s，服务内容：%s</serviceRemindContent>
+    <assessDesc desc="评价说明" isDisplay="false">总分为各项得分乘以权重之和</assessDesc>
+
+    <targetHuikuanMonth desc="每月回款指标" isDisplay="false">6000</targetHuikuanMonth>
+    <weightContactVisit desc="面访联系权重" isDisplay="false">0.15</weightContactVisit>
+    <weightContactPhone desc="电话联系权重" isDisplay="false">0.1</weightContactPhone>
+    <weightNewCustomer desc="新建用户权重" isDisplay="false">0.25</weightNewCustomer>
+    <weightHuikuan desc="回款数权重" isDisplay="false">0.5</weightHuikuan>
+
+    <canDelDays desc="客户数据在多长时间内允许删除">5</canDelDays>
+
+    <customerNeglectMax desc="个人无行动的客户最大数量，以免从回落池中过度获取">300</customerNeglectMax>
+    
+    <levels>
+        <level>
+            <code>level1</code>
+            <name>优</name>
+            <score>14</score>
+            <percent>90</percent>
+            <desc />
+        </level>
+        <level>
+            <code>level2</code>
+            <name>良</name>
+            <score>12</score>
+            <percent>80</percent>
+            <desc />
+        </level>
+        <level>
+            <code>level3</code>
+            <name>中</name>
+            <score>10</score>
+            <percent>70</percent>
+            <desc />
+        </level>
+        <level>
+            <code>level4</code>
+            <name>可</name>
+            <score>8</score>
+            <percent>60</percent>
+            <desc />
+        </level>
+        <level>
+            <code>level5</code>
+            <name>差</name>
+            <score>6</score>
+            <percent>0</percent>
+            <desc />
+        </level>
+    </levels>
+</config>
+

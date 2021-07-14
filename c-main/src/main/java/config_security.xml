@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<password>
+		<isForceChangeInitPassword desc="是否强制更改默认密码">true</isForceChangeInitPassword>
+		<initPassword desc="初始密码">123</initPassword>
+		<minLen desc="密码最小长度">3</minLen>
+		<maxLen desc="密码最大长度">20</maxLen>
+		<strenth desc="密码组合规则" options="0|不限,1|密码必须为字母加数字的组合,2|密码必须为字母加数字的组合且含大写字母,3|密码必须为字母、数字加符号组合">0</strenth>
+		<strenthLevelMin desc="最低密码强度" options="0|低,1|中,2|强,3|很强,4|非常强">0</strenthLevelMin>
+		<isForceChangeWhenWeak desc="当弱口令时是否强制更改密码">true</isForceChangeWhenWeak>
+	</password>
+	<isDefendBruteforceCracking desc="是否防暴力破解,30秒内登录最大出错次数为3，否则将延时60秒登录">false</isDefendBruteforceCracking>
+	<isRememberUserName desc="是否记住用户名">true</isRememberUserName>
+	<isRememberPwdDisplay desc="是否记住密码选项是否可见">true</isRememberPwdDisplay>
+	<isLoginAuto desc="是否可以自动登录">true</isLoginAuto>
+	<isAccessUpfileNeedLogin desc="访问upfile目录是否需登录">false</isAccessUpfileNeedLogin>
+	<isPwdCanReset desc="是否可通过邮箱重置密码，如开启，则强制用户在登录后完善邮箱信息" options="0|否,1|是">0</isPwdCanReset>
+	<pwdName desc="登录密码输入框的name">wdmm</pwdName>
+	<pwdAesKey desc="登录密码AES加密的密钥 (需要前端和后端保持一致，十六位)">njyyhlrjcloudweb</pwdAesKey>
+	<pwdAesIV desc="登录密码AES加密的密钥偏移量 (需要前端和后端保持一致，十六位)">cloudwebnjyyhlrj</pwdAesIV>
+</config>

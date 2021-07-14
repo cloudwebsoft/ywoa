@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<autoAssessTime desc="每天自动打分时间，默认为10点钟，小于0则不自动打分">10</autoAssessTime>
+	<nodes>
+		<node>
+			<code>flow</code>
+			<name>流程绩效</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>
+			<desc>月流程平均绩效*100</desc>
+		</node>
+		<node>
+			<code>fileark</code>
+			<name>文件柜</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>(月个人文章发布数/月总文章发布数)*100</desc>
+		</node>
+		<node>
+			<code>workplan</code>
+			<name>工作计划</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>基数80，计划的参与数（每一条+3） 未及时完成数（每一条-4） 计划的回复数（每一条+1）</desc>
+			<items>
+				<item desc="基准分">80</item>
+				<item desc="计划参与数权重">3</item>
+				<item desc="计划未及时完成数权重">-4</item>
+				<item desc="计划回复数权重">1</item>
+			</items>
+		</node>		
+		<node>
+			<code>worklog</code>
+			<name>工作报告</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>填写天数/月总天数*100</desc>
+		</node>
+		<node>
+			<code>kaoqin</code>
+			<name>考勤</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>100-迟到或早退次数*5</desc>
+			<items>
+				<item desc="迟到或早退次数权重">-5</item>
+			</items>			
+		</node>
+		<node>
+			<code>leave</code>
+			<name>请假</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>100-天数*3</desc>
+			<items>
+				<item desc="请假天数权重">-3</item>
+			</items>			
+		</node>
+		<node>
+			<code>task</code>
+			<name>任务督办</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>基数80，督办的参与数(每一条+1) 未及时完成数（每一条-3）</desc>
+			<items>
+				<item desc="基数">80</item>
+				<item desc="督办的参与数权重">1</item>
+				<item desc="未及时完成数权重">-3</item>
+			</items>			
+		</node>	
+		<node>
+			<code>plan</code>
+			<name>日程安排</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>100*日程数/当月天数</desc>
+			<items>
+			</items>			
+		</node>
+		<node>
+			<code>message</code>
+			<name>消息</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>60 + 发消息数*0.1</desc>
+			<items>
+				<item desc="基数">60</item>
+				<item desc="发消息数权重">0.1</item>
+			</items>
+		</node>
+		<node>
+			<code>forum</code>
+			<name>论坛</name>	
+			<className>com.redmoon.oa.assess.AssPreNodeAction</className>			
+			<desc>60 + 新贴数*0.5 + 回贴数*0.6</desc>
+			<items>
+				<item desc="基数">60</item>
+				<item desc="新贴数权重">0.5</item>
+				<item desc="回贴数权重">0.6</item>
+			</items>			
+		</node>			
+	</nodes>		
+</config>

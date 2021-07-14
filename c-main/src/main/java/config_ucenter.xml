@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ucConfig>
+	<uc>
+		<isActive>false</isActive>
+		<ucIp desc="UCenter IP">192.168.1.4</ucIp>
+		<ucApi desc="UCenter的URL">http://192.168.1.4/ucenter</ucApi>
+		<ucKey desc="通信密匙">cloudweb</ucKey>
+		<ucAppId desc="应用的ID">3</ucAppId>
+		<ucConnect desc="连接模式（默认为空）"></ucConnect>
+	</uc>
+</ucConfig>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<env>
+    <contract>
+        <contractExpireRemindInterval desc="合同到期提醒时间间隔（天）">5</contractExpireRemindInterval>
+        <contractExpireRemindBeforeDay desc="在合同到期前多少天开始提醒">20</contractExpireRemindBeforeDay>
+        <contractExpireDay desc="开始日期在多少天内的合同快到期时发出提醒">1095</contractExpireDay>
+        <contractExpireRemindTitle desc="合同到期提醒标题">系统提醒：合同%s快要到期了</contractExpireRemindTitle>
+        <contractExpireRemindContent desc="合同到期提醒内容">合同%s的到期时间为%s，快要到期了，请及时处理</contractExpireRemindContent>
+    </contract>
+</env>

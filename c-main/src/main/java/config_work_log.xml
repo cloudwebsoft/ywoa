@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<canEditPreviousWorklog desc="能否修改以前的工作日志、周报或月报">true</canEditPreviousWorklog>
+	<editPreviousWorklogLimit desc="报告写好后几天之后不能修改">3</editPreviousWorklogLimit>
+    <dayLimit desc="工作日报超出几天内可补写">2</dayLimit>
+	<weekLimit desc="周报超出几天内可补写">3</weekLimit>
+	<monthLimit desc="月报超出几天内可补写">5</monthLimit>	
+    <items>
+        <item>
+            <title>请填写工作报告</title>
+            <canNull>false</canNull>
+			<wordCount>20</wordCount>
+        </item>
+    </items>
+</config>
+

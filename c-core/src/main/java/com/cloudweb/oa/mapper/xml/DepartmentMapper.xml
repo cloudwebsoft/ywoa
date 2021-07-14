@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.DepartmentMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.Department">
+        <id column="code" property="code" />
+        <result column="name" property="name" />
+        <result column="description" property="description" />
+        <result column="parentCode" property="parentCode" />
+        <result column="rootCode" property="rootCode" />
+        <result column="orders" property="orders" />
+        <result column="childCount" property="childCount" />
+        <result column="addDate" property="addDate" />
+        <result column="dept_type" property="deptType" />
+        <result column="layer" property="layer" />
+        <result column="id" property="id" />
+        <result column="is_show" property="isShow" />
+        <result column="short_name" property="shortName" />
+        <result column="is_group" property="isGroup" />
+        <result column="is_hide" property="isHide" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        code, name, description, parentCode, rootCode, orders, childCount, addDate, dept_type, layer, id, is_show, short_name, is_group, is_hide
+    </sql>
+
+    <sql id="Dept_User_Column_List">
+        code, name, description, parentCode, rootCode, d.orders, childCount, addDate, dept_type, layer, d.id, is_show, short_name, is_group, is_hide
+    </sql>
+
+    <select id="getChildren" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from department where parentCode=#{code} order by orders
+    </select>
+
+    <select id="getDeptsOfUser" resultMap="BaseResultMap">
+        select <include refid="Dept_User_Column_List" />
+        from dept_user du,department d where du.dept_code=d.code and du.user_name=#{userName} order by du.id asc
+    </select>
+
+</mapper>

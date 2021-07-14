@@ -1,0 +1,140 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+	<title>修改密码</title>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+	<style>
+		.table th, .table td {
+			vertical-align: middle !important;
+		}
+	</style>
+</head>
+<head>
+<body>
+<div class="container" style="margin-top: 10px">
+	<div class="row">
+		<div class="col-lg-10 col-lg-offset-1">
+			<div class="table-responsive">
+				<form id="form1" method="post">
+					<table class="table table-bordered table-hover">
+						<tr class="active">
+							<td colspan="2" align="center">密码强度不足，请修改密码</td>
+						</tr>
+						<tr>
+							<td width="50%" align="right">原密码&nbsp;</td>
+							<td align="left" class="form-inline form-group">
+								<input name="pwd3" type="password" id="pwd3" autocomplete="off" class="form-control"/>
+							</td>
+						</tr>
+						<tr>
+							<td width="50%" align="right">密码&nbsp;</td>
+							<td align="left" class="form-inline form-group">
+								<input name="pwd" type="password" id="pwd" autocomplete="off" class="form-control" onkeyup="checkPwd(this.value)"/>
+								<span style="color:#FF0000" id="checkResult"></span>
+							</td>
+						</tr>
+						<tr>
+							<td align="right">确认密码&nbsp;</td>
+							<td align="left" class="form-inline form-group">
+								<input name="pwd2" type="password" id="pwd2" autocomplete="off" class="form-control"/>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" align="center">
+								<button id="btnOk" class="btn btn-default" disabled>确定</button>
+								<input name="userName" id="userName" th:value="${userName}" type="hidden"/>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+<script th:inline="javascript">
+	var url = "../" + "[(${url})]";
+
+	$(function() {
+		$('#btnEnter').click(function(e) {
+			e.preventDefault();
+			window.location.href = url;
+		});
+
+		$('#btnOk').click(function(e) {
+			e.preventDefault();
+
+			if ($("#pwd3").val() == "") {
+				jAlert("旧密码不能为空", "提示");
+				return;
+			} else if ($("#pwd").val() == "") {
+				jAlert("新密码不能为空", "提示");
+				return;
+			} else if ($("#pwd2").val() == "") {
+				jAlert("确认密码不能为空", "提示");
+				return;
+			} else if ($("#pwd").val() != $("#pwd2").val()) {
+				jAlert("密码与确认密码不一致", "提示");
+				return;
+			}
+
+			$.ajax({
+				type: "post",
+				url: "changePwd.do",
+				data: $('#form1').serialize(),
+				dataType: "json",
+				beforeSend: function (XMLHttpRequest) {
+				},
+				success: function (data, status) {
+					if (data.ret==1) {
+						jAlert(data.msg, "提示", function() {
+							window.location.href = url;
+						});
+					}
+					else {
+						jAlert(data.msg, "提示");
+					}
+				},
+				complete: function (XMLHttpRequest, status) {
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		})
+	});
+
+	function checkPwd(pwdNew) {
+		if (pwdNew=="") {
+			return;
+		}
+		$.ajax({
+			type: "post",
+			url: "checkPwd.do",
+			data: {
+				pwd: pwdNew
+			},
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+			},
+			success: function (data, status) {
+				data = $.parseJSON(data);
+				$("#checkResult").text(data.msg);
+				if (data.ret==1) {
+					$('#btnOk').attr('disabled', false);
+				}
+				else {
+					$('#btnOk').attr('disabled', true);
+				}
+			},
+			complete: function (XMLHttpRequest, status) {
+			},
+			error: function (XMLHttpRequest, textStatus) {
+				// 请求出错处理
+				jAlert(XMLHttpRequest.responseText, "提示");
+			}
+		});
+	}
+</script>
+</html>

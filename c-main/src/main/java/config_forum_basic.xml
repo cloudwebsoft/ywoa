@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<basic>
+    <item code="delReason" name="删除原因">
+        <options>
+            <option value="发布广告贴">发布广告贴</option>
+            <option value="政治问题">政治问题</option>
+            <option value="" />
+        </options>
+        <defaultValue value="无">无</defaultValue>
+    </item>
+    <item code="onTopReason" name="置顶原因">
+        <options>
+            <option value="贴子很棒">贴子很棒</option>
+        </options>
+        <defaultValue value="贴子很棒">贴子很棒</defaultValue>
+    </item>
+    <item code="riseOrFallReason" name="沉降原因">
+        <options>
+            <option value="贴子很棒">贴子很棒</option>
+        </options>
+        <defaultValue value="贴子很棒">贴子很棒</defaultValue>
+    </item>    
+    <item code="changeBoardReason" name="转移原因">
+        <options>
+            <option value="主题不符">主题不符</option>
+        </options>
+        <defaultValue value="主题不符">主题不符</defaultValue>
+    </item>
+    <item code="mergeReason" name="合并转移">
+        <options>
+            <option value="贴子为同一主题">贴子为同一主题</option>
+        </options>
+        <defaultValue value="贴子为同一主题">贴子为同一主题</defaultValue>
+    </item>    
+</basic>
+

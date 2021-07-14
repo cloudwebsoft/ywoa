@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <tables>
+        <table name="plugin_auction" objName="com.redmoon.forum.plugin.auction.AuctionDb">
+            <primaryKey type="long">
+                <unit>
+                    <name>msgRootId</name>
+                    <type>long</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_auction (name,userType,counts,msgRootId,state,userName,sellType,beginDate,endDate,shopDir,curBidPrice,catalogCode,isShow) values(?,?,?,?,?,?,?,?,?,?,0,?,?)</create>
+            <save>update plugin_auction set name=?,userType=?,counts=?,state=?,userName=?,sellType=?,beginDate=?,endDate=?,shopDir=?,curBidPrice=?,orderId=?,recommand=?,catalogCode=?,isShow=?,image=? where msgRootId=?</save>
+            <load>select name,userType,counts,state,userName,sellType,beginDate,endDate,shopDir,curBidPrice,orderId,recommand,catalogCode,isShow,image from plugin_auction where msgRootId=?</load>
+            <list>select msgRootId from plugin_auction order by addDate desc</list>
+            <del>delete from plugin_auction where msgRootId=?</del>
+            <objectCache>com.redmoon.forum.plugin.auction.AuctionCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="plugin_auction_worth" objName="com.redmoon.forum.plugin.auction.AuctionWorthDb">
+            <primaryKey type="int">
+                <unit>
+                    <name>id</name>
+                    <type>int</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_auction_worth (msgRootId,moneyCode,price,dlt,referPrice,isValid,id) values(?,?,?,?,?,?,?)</create>
+            <save>update plugin_auction_worth set moneyCode=?,price=?,dlt=?,referPrice=?,isValid=?,msgRootId=? where id=?</save>
+            <load>select moneyCode,price,dlt,referPrice,isValid,msgRootId from plugin_auction_worth where id=?</load>
+            <list>select id from plugin_auction_worth order by addDate desc</list>
+            <del>delete from plugin_auction_worth where id=?</del>
+            <objectCache>com.redmoon.forum.plugin.auction.AuctionWorthCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="plugin_auction_bid" objName="com.redmoon.forum.plugin.auction.AuctionBidDb">
+            <primaryKey type="int">
+                <unit>
+                    <name>id</name>
+                    <type>int</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_auction_bid (msgRootId,name,price,bidDate,id) values(?,?,?,?,?)</create>
+            <save>update plugin_auction_bid set name=?,price=? where id=?</save>
+            <load>select msgRootId,name,price,bidDate from plugin_auction_bid where id=?</load>
+            <list>select id from plugin_auction_bid order by bidDate desc</list>
+            <del>delete from plugin_auction_bid where id=?</del>
+            <objectCache>com.redmoon.forum.plugin.auction.AuctionBidCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="plugin_auction_order" objName="com.redmoon.forum.plugin.auction.AuctionOrderDb">
+            <primaryKey type="int">
+                <unit>
+                    <name>id</name>
+                    <type>int</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_auction_order (auctionId,auctionSellType,seller,buyer,price,moneyCode,totalPrice,amount,sellerScore,buyerScore,state,id,payTime,deliverTime,commodityName,orderDate) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
+            <save>update plugin_auction_order set auctionId=?,auctionSellType=?,seller=?,buyer=?,price=?,moneyCode=?,totalPrice=?,amount=?,sellerScore=?,buyerScore=?,state=?,payTime=?,deliverTime=?,commodityName=? where id=?</save>
+            <load>select auctionId,auctionSellType,seller,buyer,price,moneyCode,totalPrice,amount,sellerScore,buyerScore,state,orderDate,payTime,deliverTime,commodityName from plugin_auction_order where id=?</load>
+            <list>select id from plugin_auction_bid order by bidDate desc</list>
+            <del>delete from plugin_auction_order where id=?</del>
+            <objectCache>com.redmoon.forum.plugin.auction.AuctionOrderCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="plugin_auction_shop" objName="com.redmoon.forum.plugin.auction.AuctionShopDb">
+            <primaryKey type="String">
+                <unit>
+                    <name>userName</name>
+                    <type>String</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_auction_shop (userName,shopName,address,tel,description,isValid,reason,id,openDate,IS_RECOMMANDED,contacter,skinCode) values(?,?,?,?,?,?,?,?,?,?,?,?)</create>
+            <save>update plugin_auction_shop set shopName=?,address=?,tel=?,description=?,isValid=?,reason=?,logo=?,logoWidth=?,skinCode=?,IS_RECOMMANDED=?,contacter=?,hit=? where userName=?</save>
+            <load>select shopName,address,tel,description,isValid,reason,openDate,id,logo,logoWidth,skinCode,IS_RECOMMANDED,contacter,hit from plugin_auction_shop where userName=?</load>
+            <list>select userName from plugin_auction_shop order by IS_RECOMMANDED desc, openDate desc</list>
+            <del>delete from plugin_auction_shop where userName=?</del>
+            <objectCache>com.redmoon.forum.plugin.auction.AuctionShopCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="plugin_auction_shop_dir" objName="com.redmoon.forum.plugin.auction.AuctionShopDirDb">
+            <primaryKey type="compound">
+                <unit>
+                    <name>userName</name>
+                    <type>String</type>
+                </unit>
+                <unit>
+                    <name>code</name>
+                    <type>String</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_auction_shop_dir (code,dirName,catalogCode,userName,color) values(?,?,?,?,?)</create>
+            <save>update plugin_auction_shop_dir set dirName=?,catalogCode=?,color=? where userName=? and code=?</save>
+            <load>select dirName,catalogCode,color from plugin_auction_shop_dir where userName=? and code=?</load>
+            <list>select userName,code from plugin_auction_shop_dir order by sort asc</list>
+            <del>delete from plugin_auction_shop_dir where userName=? and code=?</del>
+            <objectCache>com.redmoon.forum.plugin.auction.AuctionShopDirCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="plugin_info" objName="com.redmoon.forum.plugin.info.InfoDb">
+            <primaryKey type="long">
+                <unit>
+                    <name>id</name>
+                    <type>long</type>
+                </unit>
+            </primaryKey>
+            <create>insert into plugin_info (id, typeCode, userName, addDate) values(?,?,?,?)</create>
+            <save>update plugin_info set typeCode=? where id=?</save>
+            <load>select typeCode,userName,addDate from plugin_info where id=?</load>
+            <list>select id from plugin_info order by addDate desc</list>
+            <del>delete from plugin_info where id=?</del>
+            <objectCache>com.redmoon.forum.plugin.info.InfoCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+        <table name="blog_user_dir" objName="com.redmoon.blog.UserDirDb">
+            <primaryKey type="compound">
+                <unit>
+                    <name>blog_id</name>
+                    <type>long</type>
+                </unit>
+                <unit>
+                    <name>code</name>
+                    <type>String</type>
+                </unit>
+            </primaryKey>
+            <create>insert into blog_user_dir (code,dirName,blog_id,color,addDate) values(?,?,?,?,?)</create>
+            <save>update blog_user_dir set dirName=?,color=? where blog_id=? and code=?</save>
+            <load>select dirName,color from blog_user_dir where blog_id=? and code=?</load>
+            <list>select blog_id,code from blog_user_dir order by sort asc</list>
+            <del>delete from blog_user_dir where blog_id=? and code=?</del>
+            <objectCache>com.redmoon.blog.UserDirCache</objectCache>
+            <objCachable>true</objCachable>
+            <listCachable>true</listCachable>
+        </table>
+    </tables>
+</config>
+

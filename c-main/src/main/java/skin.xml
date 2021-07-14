@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<all>
+    <skin code="default" default="true">
+        <name>蓝色经典</name>
+        <author />
+        <path>skin/default</path>
+        <tableBorderColor>#edeced</tableBorderColor>
+    </skin>
+	<!--
+    <skin code="newyear" default="false">
+        <name>新春佳节</name>
+        <author />
+        <path>skin/newyear</path>
+        <tableBorderColor>#3399CC</tableBorderColor>
+    </skin>
+    <skin code="christmas" default="false">
+        <name>圣诞快乐</name>
+        <author />
+        <path>skin/christmas</path>
+        <tableBorderColor>#CAD9E3</tableBorderColor>
+    </skin>
+    <skin code="sweet" default="false">
+        <name>情人节</name>
+        <author />
+        <path>skin/sweet</path>
+        <tableBorderColor>#CAD9E3</tableBorderColor>
+    </skin>	
+	-->
+</all>
+

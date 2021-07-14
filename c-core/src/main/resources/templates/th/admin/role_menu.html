@@ -1,0 +1,215 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+	<title>管理角色菜单</title>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+	<link type="text/css" rel="stylesheet" th:href="@{/js/TreeGrid/TreeGrid.css}"/>
+	<style>
+		.image_hand, .image_nohand {
+			margin-right: 5px;
+		}
+	</style>
+</head>
+<head>
+<body>
+<div th:replace="th/include/tab_role :: navRole(${role.code}, ${role.description}, 5)"></div>
+<div class="spacerH"></div>
+<div class="container">
+	<div class="row">
+		<div class="col-lg-10 col-lg-offset-1">
+			<div class="table-responsive">
+				<div>
+					<input style="display:none" type="button" value="关闭所有节点" onclick="expandAll('N')"/>
+				</div>
+				<div id="divTree"></div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+<script type="text/javascript" th:src="@{/js/TreeGrid/TreeGrid.js}"></script>
+<script language="javascript" th:inline="javascript">
+	var contextPath= [[@{/}]];
+
+	var config = {
+		id: "treeTable",
+		width: "800",
+		renderTo: "divTree",
+		headerAlign: "left",
+		headerHeight: "30",
+		dataAlign: "left",
+		indentation: "20",
+		hoverRowBackground: "false",
+		folderColumnIndex: "1",
+		itemClick: "itemClickEvent",
+		folderOpenIcon: contextPath + "js/TreeGrid/images/folderOpen.gif",
+		folderCloseIcon: contextPath + "js/TreeGrid/images/folderClose.gif",
+		defaultLeafIcon: contextPath + "js/TreeGrid/images/defaultLeaf.gif",
+		columns:[
+			{headerText: "", headerAlign: "center", dataAlign: "center", width: "20", handler: "customCheckBox"},
+			{headerText: "菜单项", dataField: "name", headerAlign: "center", handler: "showName"},
+			{headerText: "类型", dataField: "privName", headerAlign: "center", dataAlign: "center", width: "200", handler: "getTypeName"},
+			{headerText: "权限/模块说明", dataField: "privName", headerAlign: "center", dataAlign: "center", width: "200"},
+			{headerText: "模块/流程/基础数据", dataField: "moduleName", headerAlign: "center", dataAlign: "center", width: "200", handler: "openModule"}			],
+		data: [(${menuJsonStr})]
+	};
+
+	/*
+        单击数据行后触发该事件
+        id：行的id
+        index：行的索引。
+        data：json格式的行数据对象。
+    */
+	function itemClickEvent(id, index, data){
+		jQuery("#currentRow").val(id + ", " + index + ", " + TreeGrid.json2str(data));
+	}
+
+	function getTypeName(row, col) {
+		if (row.type==3) {
+			return "流程";
+		}
+		else if (row.type==0) {
+			return "链接";
+		}
+		else if (row.type==2) {
+			return "模块";
+		}
+		else if (row.type==4) {
+			return "基础数据";
+		}
+		else {
+			return "预设菜单项";
+		}
+	}
+
+	function customCheckBox(row, col) {
+		var disableStr = "", checkStr="", title = "";
+		if (row.type==2 || row.type==3 || row.type==4) {
+			disableStr = "disabled";
+		}
+		else {
+			if (row.priv=="" && row.type==0) {
+				disableStr = "disabled";
+				title = "菜单上未设权限";
+			}
+		}
+		if　(row.canSee) {
+			checkStr = "checked";
+		}
+		var priv = row.priv;
+		var moduleCode = row.moduleCode;
+		var canSee = row.canSee;
+		var menuCode = row.id;
+		return "<input id='chk" + row.id + "' title='" + title + "' " + checkStr + " " + disableStr + " type='checkbox' value='1' onclick='doCheck(\"" + menuCode + "\", " + canSee + ", \"" + priv + "\", \"" + moduleCode + "\", this.checked)' />";
+	}
+
+	function doCheck(menuCode, canSee, priv, moduleCode, isChecked) {
+		if (priv!="") {
+			$.ajax({
+				type: "post",
+				url: "setMenuPriv.do",
+				data: {
+					isPriv: isChecked,
+					priv: priv,
+					roleCode: [[${role.code}]],
+					menuCode: menuCode
+				},
+				contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
+				dataType: "html",
+				beforeSend: function(XMLHttpRequest){
+					$('#divTree').showLoading();
+				},
+				success: function(data, status){
+					data = $.parseJSON(data);
+					$.toaster({priority : 'info', message : data.msg });
+				},
+				complete: function(XMLHttpRequest, status){
+					$('#divTree').hideLoading();
+				},
+				error: function(XMLHttpRequest, textStatus){
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		}
+	}
+
+	function showName(row, col){
+		var name = row[col.dataField] || "";
+		var re = name;
+		if (row.link!="") {
+			re = "<a href='javascript:;' onclick=\"addTab('" + name + "', '" + row.link + "')\">" + name + "</a>";
+		}
+		return re;
+	}
+
+	function openModule(row, col) {
+		var tabId = "";
+		if (window.top.mainFrame) {
+			tabId = window.top.mainFrame.getActiveTab().id;
+		}
+		else {
+			tabId = window.top.getActiveTabName();
+		}
+		if (row.type==3) {
+			return "<a href='javascript:;' onclick='addTab(\"" + row.aliasName + "\", \"" + contextPath + "admin/flow_dir_priv_m.jsp?dirCode=" + row.aliasCode + "&tabIdOpener=" + tabId + "\")'>" + row.aliasName + "</a>";
+		}
+		else if (row.type==0) {
+			return "";
+		}
+		else if (row.type==2) {
+			var moduleName = row.moduleName;
+			var moduleCode = row.moduleCode;
+			if (moduleCode) {
+				return "<a href='javascript:;' onclick='addTab(\"" + moduleName + "\", \"" + contextPath + "visual/module_priv_list.jsp?code=" + moduleCode + "&tabIdOpener=" + tabId + "&formCode=" + row.formCode + "\")'>" + row.moduleName + "</a>";
+			}
+		}
+		else if (row.type==4) {
+			return "<a href='javascript:;' onclick='addTab(\"" + row.aliasName + "\", \"" + contextPath + "admin/basic_select_kind_priv_m.jsp?kindId=" + row.aliasCode + "&tabIdOpener=" + tabId + "\")'>" + row.aliasName + "</a>";
+		}
+		else {
+			// return "预设菜單項";
+		}
+	}
+
+	//创建一个组件对象
+	var treeGrid = new TreeGrid(config);
+	treeGrid.show();
+
+	/*
+        展开、关闭所有节点。
+        isOpen=Y表示展开，isOpen=N表示关闭
+    */
+	function expandAll(isOpen){
+		treeGrid.expandAll(isOpen);
+	}
+
+	/*
+        取得当前选中的行，方法返回TreeGridItem对象
+    */
+	function selectedItem(){
+		var treeGridItem = treeGrid.getSelectedItem();
+		if(treeGridItem!=null){
+			//获取数据行属性值
+			alert(treeGridItem.id + ", " + treeGridItem.index + ", " + treeGridItem.data.code);
+
+			//获取父数据行
+			var parent = treeGridItem.getParent();
+			if(parent!=null){
+				//jQuery("#currentRow").val(parent.data.name);
+			}
+
+			//获取子数据行集
+			var children = treeGridItem.getChildren();
+			if(children!=null && children.length>0){
+				jQuery("#currentRow").val(children[0].data.name);
+				// console.log(children[0].data.name);
+			}
+		}
+	}
+
+	$(function() {
+		$('#treeTable').addClass("tabStyle_1 table table-bordered table-hover");
+	});
+</script>
+</html>

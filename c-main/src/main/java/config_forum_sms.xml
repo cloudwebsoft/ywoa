@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="gb2312"?>
+<config>
+	<sms code="zjmobile" isUsed="false">
+		<className>com.redmoon.forum.sms.ZJMobileMsgUtil</className>
+		<headAddr>01199200</headAddr>
+		<serialNo>0001</serialNo>
+		<tailAddr>000</tailAddr><!--从0至999-->
+		<expireHour>24</expireHour><!--多少小时内收到的回复有效-->
+		<sendSmsUrl>http://192.168.0.111/ISendSMS.jsp</sendSmsUrl>
+	</sms>
+</config>

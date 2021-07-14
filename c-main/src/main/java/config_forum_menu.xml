@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<items>
+    <item>
+    	<code>style</code>
+    </item>
+    <item>
+    	<code>view_frame</code>
+    </item>
+    <item>
+    	<code>login</code>
+    </item>
+	<item>
+    	<code>exit</code>
+    </item>
+  </items>
+</config>
+

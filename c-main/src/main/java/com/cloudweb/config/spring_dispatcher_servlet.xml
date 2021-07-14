@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd 
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd 
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+
+	<!--  
+	<context:annotation-config />  
+	-->
+	 
+	<!-- 自动扫描的包名 -->  
+   <!--  <context:component-scan base-package="com.cloudweb.oa" >  -->
+    	<!-- <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />   -->
+  		<!-- 将Service注解的实体排除  防止事务化的Service被普通化  -->
+  		<!-- <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service" />   -->
+	<!-- </context:component-scan> -->
+	
+	<context:property-placeholder location="classpath:application.properties"/>
+	
+<!--	<context:component-scan base-package="com.cloudweb.oa" />
+	<context:component-scan base-package="com.redmoon.oa.controller"/>
+	<context:component-scan base-package="com.redmoon.oa.exam.controller" />-->
+
+	<!-- 默认的注解映射的支持 jackson支持 -->
+	<mvc:annotation-driven />
+	
+    <!-- 对静态资源文件的访问  方案一 （二选一） -->  
+    <!-- <mvc:default-servlet-handler/>   -->
+      
+    <!-- 对静态资源文件的访问  方案二 （二选一）
+    <mvc:resources mapping="/resources/**" location="/resources/" />
+    -->  
+    
+    <!-- 拦截器  
+    <mvc:interceptors>  
+    	<bean class="com.will.mvc.MyInteceptor" />  
+    </mvc:interceptors> 
+    --> 
+    
+    <!-- 视图解释类，没有order优先级最低 -->
+<!--	<bean id="internalResourceViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/pages/"></property>
+		<property name="suffix" value=".jsp"></property>
+	</bean>-->
+<!--	有没有UrlBasedViewResolver都一样
+		<bean id="viewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="10"></property>
+	</bean>-->
+
+    <!-- 上传  -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding">
+	        <value>UTF-8</value>
+	    </property>
+		<!-- 设置上传文件的最大尺寸为100MB -->
+		<property name="maxUploadSize">
+			<value>104857600</value>
+		</property>
+		<property name="maxInMemorySize">
+	        <value>4096</value>
+	    </property>
+		<property name="resolveLazily">
+			<value>true</value>
+		</property>
+	</bean>
+</beans>

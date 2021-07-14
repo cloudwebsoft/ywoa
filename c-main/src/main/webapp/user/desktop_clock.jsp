@@ -1,0 +1,250 @@
+<%@ page import="cn.js.fan.util.ParamUtil" %>
+<%@ page contentType="text/html;charset=utf-8" %>
+<%
+    int id = ParamUtil.getInt(request, "id");
+%>
+<style>
+    .clock-box {
+        width: 210px;
+        height: 210px;
+        border: 5px solid #8bc7f2;
+        margin: 20px auto;
+        margin-top: 40px;
+        border-radius: 50%;
+        box-shadow: 0 0 20px 3px #fff inset;
+        position: relative;
+    }
+
+    /*原点*/
+    .origin {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ff0000;
+        top: 95px;
+        left: 95px;
+        position: absolute;
+    }
+
+    /* 指针 */
+    .clock_line {
+        position: absolute;
+        position: absolute;
+        z-index: 20;
+    }
+
+    .hour_line {
+        width: 50px;
+        height: 4px;
+        top: 98px;
+        left: 100px;
+        background-color: #000;
+        border-radius: 2px;
+        transform-origin: 0 50%;
+        box-shadow: 1px -3px 8px 3px #aaa;
+    }
+
+    .minute_line {
+        width: 65px;
+        height: 2px;
+        top: 99px;
+        left: 95px;
+        background-color: #000;
+        transform-origin: 7.692% 50%;
+        box-shadow: 1px -3px 8px 1px #aaa;
+    }
+
+    .second_line {
+        width: 85px;
+        height: 1px;
+        top: 99.5px;
+        left: 90px;
+        background-color: #f60;
+        transform-origin: 11.765% 50%;
+        box-shadow: 1px -3px 7px 1px #bbb;
+    }
+
+    .dot_box {
+        width: inherit;
+        height: inherit;
+    }
+
+    /*时钟数字*/
+    .dot {
+        width: 20px;
+        height: 20px;
+        line-height: 40px;
+        text-align: center;
+        font-size: 12px;
+        position: absolute;
+    }
+
+    .clock-scale {
+        width: 98px;
+        height: 2px;
+        transform-origin: 0% 50%;
+        z-index: 7;
+        position: absolute;
+        top: 99.5px;
+        left: 100px;
+    }
+
+    .scale-show {
+        width: 6px;
+        height: 2px;
+        background-color: #555;
+        float: left;
+    }
+
+    .scale-hidden {
+        width: 92px;
+        height: 2px;
+        float: left;
+    }
+
+    /*日期*/
+    .date_info {
+        width: 120px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        position: absolute;
+        top: 105px;
+        left: 40px;
+        z-index: 11;
+        color: #555;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .time_info {
+        width: 77px;
+        height: 25px;
+        line-height: 25px;
+        text-align: center;
+        position: absolute;
+        top: 135px;
+        left: 60px;
+        z-index: 11;
+        color: #555;
+        background: #253e3e;
+    }
+
+    .time {
+        width: 25px;
+        height: 25px;
+        float: left;
+        color: #fff;
+        font-size: 12px;
+    }
+
+    #minute_time {
+        border-left: 1px solid #fff;
+        border-right: 1px solid #fff;
+    }
+</style>
+<div id="drag_<%=id%>" class="portlet drag_div bor ibox" style="padding:0;">
+    <div id="drag_<%=id%>_h" style="height:3px;padding:0;margin:0;font-size:1px"></div>
+    <div class="portlet_content ibox-content" style="height:300px !important;padding:0;margin:0;border: 0px">
+        <div class="clock-box" id="clock">
+            <!-- 原点 -->
+            <div class="origin"></div>
+            <!-- 时钟数 -->
+            <div class="dot_box">
+                <div class="dot">6</div>
+                <div class="dot">5</div>
+                <div class="dot">4</div>
+                <div class="dot">3</div>
+                <div class="dot">2</div>
+                <div class="dot">1</div>
+                <div class="dot">12</div>
+                <div class="dot">11</div>
+                <div class="dot">10</div>
+                <div class="dot">9</div>
+                <div class="dot">8</div>
+                <div class="dot">7</div>
+            </div>
+            <!-- 时、分、秒针 -->
+            <div class="clock_line hour_line" id="hour_line"></div>
+            <div class="clock_line minute_line" id="minute_line"></div>
+            <div class="clock_line second_line" id="second_line"></div>
+            <!-- 日期 -->
+            <div class="date_info" id="date_info"></div>
+            <!-- 时间 -->
+            <div class="time_info">
+                <div class="time" id="hour_time"></div>
+                <div class="time" id="minute_time"></div>
+                <div class="time" id="second_time"></div>
+            </div>
+        </div>
+        <script>
+            jQuery(function () {
+                var clock = document.getElementById("clock");
+
+                function initNumXY() {
+                    // 1、12个数字的位置设置
+                    var radius = 80;//大圆半径
+                    var dot_num = 360 / jQuery(".dot").length;//每个div对应的弧度数
+                    //每一个dot对应的弧度;
+                    var ahd = dot_num * Math.PI / 180;
+                    jQuery(".dot").each(function (index, el) {
+                        jQuery(this).css({
+                            "left": 90 + Math.sin((ahd * index)) * radius,
+                            "top": 82 + Math.cos((ahd * index)) * radius
+                        });
+                    });
+                    // 2、刻钟设置
+                    for (var i = 0; i < 60; i++) {
+                        clock.innerHTML += "<div class='clock-scale'> " +
+                            "<div class='scale-hidden'></div>" +
+                            "<div class='scale-show'></div>" +
+                            "</div>";
+                    }
+                    var scale = document.getElementsByClassName("clock-scale");
+                    for (var i = 0; i < scale.length; i++) {
+                        scale[i].style.transform = "rotate(" + (i * 6 - 90) + "deg)";
+                    }
+                }
+
+                initNumXY();//调用上面的函数
+
+                //获取时钟id
+                var hour_line = document.getElementById("hour_line"),
+                    minute_line = document.getElementById("minute_line"),
+                    second_line = document.getElementById("second_line"),
+                    date_info = document.getElementById("date_info"),//获取date_info
+                    hour_time = document.getElementById("hour_time"),// 获去时间id
+                    minute_time = document.getElementById("minute_time"),
+                    second_time = document.getElementById("second_time");
+
+                //3、设置动态时间
+                function setTime() {
+                    var nowdate = new Date();
+                    //获取年月日时分秒
+                    var year = nowdate.getFullYear(),
+                        month = nowdate.getMonth() + 1,
+                        day = nowdate.getDay(),
+                        hours = nowdate.getHours(),
+                        minutes = nowdate.getMinutes(),
+                        seconds = nowdate.getSeconds(),
+                        date = nowdate.getDate();
+                    var weekday = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+                    // 获取日期id
+                    date_info.innerHTML = year + "年" + month + "月" + day + "日   " + weekday[day];
+                    hour_time.innerHTML = hours >= 10 ? hours : "0" + hours;
+                    minute_time.innerHTML = minutes >= 10 ? minutes : "0" + minutes;
+                    second_time.innerHTML = seconds >= 10 ? seconds : "0" + seconds;
+                    // console.log(year + "年" + month + "月" + day + "日   " + weekday[day]);
+                    //时分秒针设置
+                    var hour_rotate = (hours * 30 - 90) + (Math.floor(minutes / 12) * 6);
+                    hour_line.style.transform = 'rotate(' + hour_rotate + 'deg)';
+                    minute_line.style.transform = 'rotate(' + (minutes * 6 - 90) + 'deg)';
+                    second_line.style.transform = 'rotate(' + (seconds * 6 - 90) + 'deg)';
+                }
+
+                // setTime();
+                setInterval(setTime, 1000);
+            });
+        </script>
+    </div>
+</div>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <isCaptureFlow desc="现场拍照是否走流程">false</isCaptureFlow>
+    <isCaptureWhenLocation desc="定位签到时是否必须拍照">false</isCaptureWhenLocation>
+    <diskSpace desc="空间大小(默认10G，单位为M，-1表示不限)">10240</diskSpace>
+    <diskSpaceUsed desc="已用磁盘空间，单位为M">127</diskSpaceUsed>
+    <is_location desc="定位签到模块是否显示">true</is_location>
+    <mobile>
+    <iosAppId mainVer="1.3" desc="对应images/ios_android.png">id914824559</iosAppId>
+    </mobile>
+	<key desc="同步密码(24位)">cloudwebcloudwebcloudweb</key>
+	<photoMaxSize desc="最大宽度和高度，0表示不限">800</photoMaxSize>
+	<photoQuality desc="压缩质量，0表示不限">80</photoQuality>
+</config>
+

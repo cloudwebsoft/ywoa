@@ -1,0 +1,134 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>配置Email</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_config :: navConfig(2)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <form method="post" id="form1">
+                    <table class="table table-bordered table-hover">
+                        <tr class="active">
+                            <td height="24" colspan="2" align="center">流程交办时用于提醒的Email配置</td>
+                        </tr>
+                        <tr>
+                            <td width="36%" height="24" align="right">是否启用：</td>
+                            <td width="64%" align="left" class="form-inline form-group">
+                                <input type="checkbox" name="flowNotifyByEmail" value="true" class="form-control" th:checked="${flowNotifyByEmail}"/>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">邮箱服务器地址：</td>
+                            <td align="left" class="form-inline form-group"><input name="Application.smtpServer" class="form-control" th:value="${global.smtpServer}"/></td>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">邮箱服务器端口：</td>
+                            <td align="left" class="form-inline form-group"><input type="text" class="form-control" name="Application.smtpPort" th:value="${global.smtpPort}"/></td>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">邮箱登录账号：</td>
+                            <td align="left" class="form-inline form-group"><input type="text" class="form-control" name="Application.smtpUser" th:value="${global.smtpUser}"/></td>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">邮箱登录密码：</td>
+                            <td align="left" class="form-inline form-group"><input type="text" class="form-control" name="Application.smtpPwd" th:value="${global.smtpPwd}"/></td>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">邮箱地址：</td>
+                            <td align="left" class="form-inline form-group"><input type="text" class="form-control" name="Application.email" th:value="${global.email}"/>
+                                ( 例如：123456@qq.com )
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">是否采用SSL安全套接字连接：</td>
+                            <td align="left" class="form-inline form-group"><input type="checkbox" class="form-control" name="Application.smtpSSL" value="true" th:checked="${global.smtpSSL}"/></td>
+                        </tr>
+                        <tr>
+                            <td height="24" align="right">邮箱服务器编码：</td>
+                            <td align="left" class="form-inline form-group">
+                                <select id="smtpCharset" name="Application.smtpCharset" class="form-control" onchange="showOther(this)">
+                                    <option value="">默认</option>
+                                    <option value="UTF-8">UTF-8</option>
+                                    <option value="gb2312">gb2312</option>
+                                    <option value="other">其他</option>
+                                </select>
+                                <input type="text" id="otherCharset" name="otherCharset" th:value="${global.smtpCharset}" style="display:none"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="24" colspan="2" align="center">
+                                <button id="btnOk" class="btn btn-default">确定</button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+$(function() {
+    [# th:switch="${global.smtpCharset eq '' || global.smtpCharset eq 'UTF-8' || global.smtpCharset eq 'gb2312'}"]
+        [# th:case="true" ]
+        $("#smtpCharset").find("option[value='" + [[${global.smtpCharset}]] + "']").attr("selected", true);
+        $('#otherCharset').hide();
+        [/]
+        [# th:case="*" ]
+        $("#smtpCharset").find("option[value='other']").attr("selected", true);
+        $('#otherCharset').show();
+        [/]
+    [/]
+});
+
+function showOther(obj) {
+	var temp = obj.options[obj.selectedIndex].value;
+	if (temp == 'other') {
+		$('#otherCharset').show();
+	} else {
+		$('#otherCharset').hide();
+	}
+}
+
+$(function() {
+    $('input').iCheck({
+        checkboxClass: 'icheckbox_minimal-grey',
+        radioClass: 'iradio_minimal-grey',
+        increaseArea: '10%' // optional
+    });
+
+    $('#btnOk').click(function(e) {
+        e.preventDefault();
+
+        $.ajax({
+            type: "post",
+            url: "editEmailConfig.do",
+            data: $('#form1').serialize(),
+            dataType: "json",
+            beforeSend: function(XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                jAlert(data.msg, "提示");
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function(){
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    });
+});
+
+</script>
+</html>

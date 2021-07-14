@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<isUse desc="是否启动">true</isUse>
+    <initYear desc="使用积分制的初始年份">2016</initYear>
+    <calcuDay desc="每月的几号计算分数">5</calcuDay>
+</config>
+

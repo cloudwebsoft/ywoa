@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <hot />
+    <focus>
+        <id>50477,50476,50467,50466,50465,50464,50463,50455,50436,50432</id>
+        <title />
+        <abstract />
+    </focus>
+    <sideBar>
+        <blocks>
+            <block isDisplay="true" isNumber="true" count="10">newTopic,hotTopic,recommandTopic</block>
+            <block count="5" isDisplay="true" isNumber="true">rankPost,newUsers,managers</block>
+            <block count="10" isDisplay="true" isNumber="false">star,none,none</block>
+            <block count="10" isDisplay="true" isNumber="false">userDefine,none,none</block>
+        </blocks>
+        <blockItems>
+            <item desc="最新主题">newTopic</item>
+            <item desc="热门主题">hotTopic</item>
+            <item desc="推荐主题">recommandTopic</item>
+            <item desc="社区之星">star</item>
+            <item desc="发贴排行">rankPost</item>
+            <item desc="新进用户">newUsers</item>
+            <item desc="管理团队">managers</item>
+            <item desc="自定义">userDefine</item>
+        </blockItems>
+        <userDefine />
+    </sideBar>
+</config>
+

@@ -1,0 +1,501 @@
+@charset "utf-8";
+@import url("../common/common.css");
+
+.mywork-list-tab {
+    background-color: #e7edfb;
+    height: 48px;
+    border-top-width: 2px;
+    border-top-style: solid;
+    border-top-color: #87bbf1;
+    margin-top: 0px;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index:999;
+}
+
+ul,ol,li{list-style:decimal;}
+
+/*日报样式*/
+.mywork-list-wrap {
+    width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+    _margin-top: 0px;
+    position: relative;
+}
+.mywork-list-tab ul {
+    width: 270px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.mywork-list-tab li {
+    float: left;
+    width: 90px;
+    font-size: 16px;
+    text-align: center;
+    line-height: 48px;
+    font-weight: bold;
+    cursor:pointer;
+}
+.mywork-list-tab-sel {
+    background-image: url(../../images/mywork/mywork_tab_arrow.png);
+    background-repeat: no-repeat;
+    background-position: bottom;
+    color: #4e96f0;
+}
+
+.mywork-list-time {
+    text-align: center;
+    height: 60px;
+    margin-bottom: 10px;
+    padding-top: 5px;
+}
+.mywork-list-time ul {
+    width: 380px;
+    margin-right: auto;
+    margin-left: auto;
+    max-height:470px;
+    min-height:300px;
+}
+
+.mywork-list-time li {
+    float: left;
+}
+
+.mywork-list-time-week {
+    text-align: center;
+    height: 60px;
+    margin-bottom: 10px;
+    padding-top: 5px;
+}
+
+.mywork-list-time-week ul {
+    width: 470px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.mywork-list-time-week li {
+    float: left;
+}
+
+.mywork-list-time-span1 {
+    background-image: url(../../images/mywork/mywork_tab_timeleft.png);
+    background-repeat: no-repeat;
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+    display: block;
+    margin-right: 20px;
+    margin-top: 20px;
+}
+.mywork-list-time-span2 {
+    border: 1px solid #dedede;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    position: relative;
+    padding: 5px;
+    z-index: 2;
+    height: 20px;
+    behavior: url(css/common/ie-css3.htc);
+    margin-right: 20px;
+    margin-top: 15px;
+    background-color: #FFF;
+}
+.mywork-list-time-span3 {
+    background-image: url(../../images/mywork/mywork_tab_time_grayright.png);
+    background-repeat: no-repeat;
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+    display: block;
+    margin-top: 20px;
+    margin-right: 20px;
+}
+
+.mywork-list-time-span4 {
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    position: relative;
+    padding: 5px;
+    z-index: 2;
+    width: 70px;
+    height: 20px;
+    behavior: url(css/common/ie-css3.htc);
+    margin-right: 20px;
+    margin-top: 15px;
+    background-color: #87c3f1;
+    font-size: 14px;
+    line-height: 20px;
+    color: #FFF;
+    font-weight: bold;
+    cursor: pointer;
+}
+.mywork-list-time-span5 {
+    background-image: url(../../images/mywork/mywork_tab_timeright.png);
+    background-repeat: no-repeat;
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+    display: block;
+    margin-top: 20px;
+    margin-right: 20px;
+}
+.mywork-list-time-span4:hover { background-color:#419fe7;}
+.mywork-list-master {
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    padding: 10px 10px 3px 10px;
+    behavior: url(css/common/ie-css3.htc);
+    background-color: #ebebeb;
+    margin-bottom: 20px;
+}
+.mywork-list-master-file {
+	margin-top:5px;
+    margin-bottom: 10px;
+}
+.mywork-list-master-file div {
+    margin-top:5px;
+}
+
+.mywork-list-master-p1 {
+    color: #A2A2A2;
+    height: 30px;
+}
+
+.mywork-list-master-p2 {
+}
+.mywork-list-master-p2 #textarea {
+    border: 1px solid #d4d4d4;
+    font-size: 100%;
+    line-height: 22px;
+    margin: 0px;
+    padding: 10px;
+    width:1061px;
+    height: 200px;
+    overflow: auto;
+    z-index:3;
+    background-color: #FFF;
+}
+.mywork-list-master-comment {
+    border: 1px solid #d4d4d4;
+    font-size: 100%;
+    line-height: 22px;
+    margin: 0px;
+    padding: 8px;
+    width:1066px;
+    overflow: auto;
+    z-index:3;
+    background-color: #FFF;
+}
+
+.mywork-list-master-p3 {
+    position: relative;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+.mywork-list-master-enclosure {
+    line-height: 30px;
+    border: 1px solid #d4d4d4;
+    height: 30px;
+    background-color: #FFF;
+    width: 94px;
+    background-image: url(../../images/mywork/mywork_enclosure.png);
+    background-repeat: no-repeat;
+    background-position: 8px 6px;
+    text-indent: 30px;
+    cursor:pointer;
+}
+.mywork-list-master-release {
+    background-color:#87c3f1;
+    line-height: 30px;
+    height: 30px;
+    width: 78px;
+    text-align: center;
+    font-weight: bold;
+    color: #FFF;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    behavior: url(css/common/ie-css3.htc);
+    z-index:3;
+    cursor:pointer;
+    _margin-right:20px;
+}
+.mywork-list-master-cancel {
+	background-color:#FFF;
+    line-height: 30px;
+    height: 30px;
+    width: 78px;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    top: 0px;
+    right: 83px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    behavior: url(css/common/ie-css3.htc);
+    z-index:3;
+    cursor:pointer;
+    _margin-right:20px;	
+    border: 1px solid #87c3f1;
+}
+.mywork-list-master-enclosure:hover {
+    background-color:#EBF1FA;
+}
+.mywork-list-master-release:hover, .mywork-list-master-restore-btn:hover { background-color:#419fe7;}
+.mywork-list-master-p4 {
+    margin-bottom: 5px;
+}
+
+
+.mywork-list-master-restore {
+    position: relative;
+    margin-top: 5px;
+    height: 30px;
+}
+.mywork-list-master-restore-btn {
+    background-color:#87c3f1;
+    line-height: 30px;
+    height: 30px;
+    width: 78px;
+    text-align: center;
+    font-weight: bold;
+    color: #FFF;
+    position: absolute;
+    right: 0px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    behavior: url(css/common/ie-css3.htc);
+    z-index:3;
+    cursor:pointer;
+    top: 0px;
+    }
+.mywork-list-triangle {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 12px solid #FFF;
+    margin-left: 30px;
+}
+
+.mywork-list-filleting {
+    background-color: #FFF;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    padding: 10px;
+    behavior: url(css/common/ie-css3.htc);  
+    margin-bottom: 20px;
+    line-height: 25px;
+    z-index:1;
+    position:relative;
+    word-break:break-all;
+}
+
+.mywork-list-filleting p {
+    margin-bottom: 5px;
+ 
+ }
+ .mywork-list-filleting p .span_praiseusers{
+ 	color: #3fa4ea;
+ 	padding: 5px;
+ 
+ }
+.mywork-list-filleting-r {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #dcdcdc;
+    position: relative;
+    color: #A2A2A2;
+    height: 30px;
+    margin-bottom: 8px;
+    }
+
+.mywork-list-filleting-restore {
+    line-height: 30px;
+    height:30px;
+    width: 20px;
+    font-weight: bold;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    cursor:pointer;
+}
+.mywork-list-master-tabb1 {
+    background-color: #FFF;
+    padding: 10px;
+    border: 1px solid #d4d4d4;
+    margin-bottom: 5px;
+    word-break:break-all;
+    min-height:100px;
+    _height:100px;
+    padding-left:30px;
+}
+.mywork-list-restore-box {
+    border: 1px solid #ffc21d;
+    height: 42px;
+    width:100%;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    behavior: url(css/common/ie-css3.htc);
+    margin-top: 10px;
+    margin-bottom: 10px;
+    _margin-right:15px;
+    background-color: #FFF;
+}
+.mywork-list-box-f {
+    position: relative;
+    height: 30px;
+    font-weight: bold;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.mywork-list-box-f-1 {
+    line-height: 30px;
+    height:30px;
+    width: 58px;
+    font-weight: bold;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    text-align: center;
+    color: #FFF;
+    background-color: #ffd460;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    behavior: url(css/common/ie-css3.htc);
+    cursor:pointer;
+}
+.mywork-list-box-f-2 {
+    line-height: 30px;
+    height:30px;
+    width: 58px;
+    font-weight: bold;
+    position: absolute;
+    right: 121px;
+    top: 10px;
+    text-align: center;
+    border: 1px solid #dedede;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    behavior: url(css/common/ie-css3.htc);
+}
+
+.mywork-list-box-f-1:hover {
+    background-color:#f6bf2c;
+}
+.mywork-list-wrap a {
+    color: #168FE9;
+    font-weight: bold;
+}
+.mywork-list-wrap a:hover {
+    color: #F90;
+    font-weight: bold;
+}
+.mywork-font-1 {
+    color: #A2A2A2;
+}
+.mywork-list-line {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #dcdcdc;
+}
+.mywork-list-more {
+    text-align: center;
+    cursor:pointer;
+    color:#3fa4ea;
+}
+.mywork-list-backtop {
+    background-image: url(../../images/mywork/back_top_icon.png);
+    background-repeat: no-repeat;
+    height: 36px;
+    width: 36px;
+    cursor:pointer;
+    position:fixed;
+    right: 10px;
+    bottom: 0px;
+    }
+.mywork-list-backtop:hover {
+    opacity: 0.8;
+    filter:alpha(Opacity=80);
+    }
+.mywork-list-search {
+    position: absolute;
+    height: 30px;
+    width: 180px;
+    left: 916px;
+    top: 19px;
+    text-align: left;
+    border: 1px solid #D8D8D8;
+}
+.mywork-list-search #contentCond {
+    border-top-width: 0px;
+    border-right-width: 0px;
+    border-bottom-width: 0px;
+    border-left-width: 0px;
+    border-top-style: none;
+    border-right-style: none;
+    border-bottom-style: none;
+    border-left-style: none;
+    height: 30px;
+}
+.mywork-list-comment {
+    background-image: url(../../images/mywork/icon-comment.png);
+    background-repeat: no-repeat;
+    background-position: right;
+    height: 25px;
+    right: 10px;
+    width:30px;
+    float: right;
+    cursor:pointer;
+}
+.mywork-list-praise-bg{
+	background-image: url(../../images/mywork/icon_praise.png);
+}
+.mywork-list-cancel-praise-bg{
+	background-image: url(../../images/mywork/icon_praise_selected.png);
+}
+.mywork-list-praise{
+    background-repeat: no-repeat;
+    height: 25px;
+    right: 60px;
+    width:30px;
+    float: right;
+    cursor:pointer;
+}
+.reviewNameLabel{
+    color:#3fa4ea;
+}
+.divComment{
+    height:20px;	
+}
+.editUeditorBorde{
+    border: 1px solid #9dc5f6;
+}
+.editTitle{
+    color:#ff8533;
+}
+.searchImg{
+    cursor:pointer;
+    z-index:3;
+    position:absolute;
+    margin-top:3px;
+    right:5px;
+}

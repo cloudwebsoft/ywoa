@@ -1,0 +1,65 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>用户组 - 添加</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<div th:replace="th/include/tab_group :: nav(${group.code}, ${group.description}, 3)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 20px">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <div class="table-responsive">
+                <form id="form1" method="post">
+                    <table class="table table-bordered table-hover" cellSpacing="0" cellPadding="3" width="48%" align="center">
+                        <thead>
+                        <tr>
+                            <th colspan="2" align="center" noWrap class="active text-center">用户组&nbsp;-&nbsp;[[${group.description}]]&nbsp;所属角色</th>
+                        </tr>
+                        </thead>
+                        <tbody th:each="roleVO : ${roleVOList}">
+                        <tr>
+                            <td width="9%" align="center">
+                                <input type="checkbox" name="roleCode" th:checked="${roleVO.checked}" th:value="${roleVO.code}"/>
+                            </td>
+                            <td width="91%" th:text="${roleVO.description}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <input type="hidden" name="groupCode" th:value="${group.code}"/>
+                </form>
+                <div class="text-center">
+                    <button id="btnOk" class="btn btn-default">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+$(function() {
+    $('#btnOk').click(function() {
+        $.ajax({
+            type: "post",
+            url: "setGroupOfRole.do",
+            data: $('#form1').serialize(),
+            dataType: "json",
+            beforeSend: function(XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function(data, status){
+                jAlert(data.msg, "提示");
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(){
+                //请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    })
+})
+</script>
+</html>

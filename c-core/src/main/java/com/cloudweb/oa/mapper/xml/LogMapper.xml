@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.LogMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.Log">
+        <id column="ID" property="id" />
+        <result column="USER_NAME" property="userName" />
+        <result column="LOG_DATE" property="logDate" />
+        <result column="LOG_TYPE" property="logType" />
+        <result column="IP" property="ip" />
+        <result column="ACTION" property="action" />
+        <result column="device" property="device" />
+        <result column="unit_code" property="unitCode" />
+        <result column="remark" property="remark" />
+        <result column="level" property="level" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ID, USER_NAME, LOG_DATE, LOG_TYPE, IP, ACTION, device, unit_code, remark, level
+    </sql>
+
+    <select id="listBySql" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+</mapper>

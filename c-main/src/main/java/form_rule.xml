@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <form code="regist" res="res.label.forum.user" onErrorExit="false">
+			<rules>
+				<rule>String, RegName, 		#RegName ,		not, min&gt;0, max&lt;=20, exclude=%|#, sql=mysql</rule>
+				<rule>String, Password, 	#Password ,		not, min&gt;0, max&lt;20</rule>
+				<rule>String, Password2, 	#Password2 ,	not, min&gt;0, max&lt;20</rule>
+				<rule>String, Question, 	#Question ,		empty, max&lt;50</rule>
+				<rule>String, Answer, 		#Answer ,		empty, max&lt;50</rule>
+				<rule>String, RealName, 	#RealName ,		empty, max&lt;20</rule>
+				<rule>String, Career, 		#Career ,		empty, max&lt;50</rule>
+				<rule>String, Gender, 		#Gender ,		not, min=1</rule>
+				<rule>String, Job, 			#Job, 			empty</rule>
+				<rule>String, BirthYear,	#BirthYear, 	not</rule>
+				<rule>String, BirthMonth, 	#BirthMonth, 	not</rule>
+				<rule>String, BirthDay, 	#BirthDay, 		not</rule>
+				<rule>int, 	  Marriage, 	#Marriage, 		not</rule>
+				<rule>String, Phone, 		#phone,			empty, max&lt;50</rule>
+				<rule>String, Mobile, 		#Mobile, 		empty, max&lt;12</rule>
+				<rule>String, State, 		#State, 		empty, max&lt;=50</rule>
+				<rule>String, City, 		#City, 			empty, max&lt;=50</rule>
+				<rule>String, Address, 		#Address, 		empty, max&lt;=255</rule>
+				<rule>String, PostCode, 	#PostCode, 		empty, max&lt;=20</rule>
+				<rule>String, IDCard, 		#IDCard, 		empty, max&lt;=50</rule>
+				<rule>String, RealPic, 		#RealPic, 		empty, max&lt;=50</rule>
+				<rule>String, Hobbies, 		#Hobbies, 		empty, max&lt;=50</rule>
+				<rule>String, Email, 		#Email, 		not, max&lt;=50, email=true</rule>
+				<rule>String, OICQ, 		#OICQ, 			empty, max&lt;=15, isNum=true</rule>
+				<rule>String, Content, 		#sign, 			empty, max&lt;=100</rule>
+				<rule>String, ip, 			#ip, 			IP, max&lt;=15</rule>
+				<rule>boolean,isSecret, 	#isSecret, 		false</rule>
+				<rule>String, timeZone,     #timeZone,      not</rule>
+				<rule>String, home,			#home,			empty, max&lt;=200</rule>
+				<rule>String, msn,			MSN,			empty, max&lt;=200</rule>
+				<rule>String, locale,		#locale,			empty, max&lt;=20</rule>
+				<rule>String, fetion,		#fetion,			empty, max&lt;=50</rule>
+				<rule>int, 	  province_id, 	#province_id, 		0</rule>
+				<rule>int, 	  city_id, 		#city_id, 		0</rule>
+				<rule>int, 	  country_id, 	#country_id, 		0</rule>
+			</rules>
+			<unionRules>
+				<rule>Password=Password2</rule>
+			</unionRules>
+    </form>
+    <form code="user_modify" res="res.label.forum.user" onErrorExit="false">
+			<rules>
+				<rule>String, RegName, 		#RegName ,		not, min&gt;0, max&lt;20, onError=resume, exclude=%|#</rule>
+				<rule>String, Password, 	#Password ,		empty, min&gt;=0, max&lt;20</rule>
+				<rule>String, Password2, 	#Password2 ,	empty, min&gt;=0, max&lt;20</rule>
+				<rule>String, Question, 	#Question ,		empty, max&lt;50</rule>
+				<rule>String, Answer, 		#Answer ,		empty, max&lt;50</rule>
+				<rule>String, RealName, 	#RealName ,		empty, max&lt;20</rule>
+				<rule>String, Career, 		#Career ,		empty, max&lt;50</rule>
+				<rule>String, Gender, 		#Gender ,		not, min=1</rule>
+				<rule>String, Job, 			#Job, 			empty</rule>
+				<rule>String, BirthYear,	#BirthYear, 	not</rule>
+				<rule>String, BirthMonth,	#BirthMonth, 	not</rule>
+				<rule>String, BirthDay, 	#BirthDay, 		not</rule>
+				<rule>int, 	  Marriage, 	#Marriage, 		not</rule>
+				<rule>String, Phone, 		#phone, 		empty, max&lt;50</rule>
+				<rule>String, Mobile, 		#Mobile, 		empty, max&lt;12</rule>
+				<rule>String, State, 		#State, 		empty, max&lt;=50</rule>
+				<rule>String, City, 		#City, 			empty, max&lt;=50</rule>
+				<rule>String, Address, 		#Address, 		empty, max&lt;=255</rule>
+				<rule>String, PostCode, 	#PostCode, 		empty, max&lt;=20</rule>
+				<rule>String, IDCard, 		#IDCard, 		empty, max&lt;=50</rule>
+				<rule>String, RealPic, 		#RealPic, 		empty, max&lt;=50</rule>
+				<rule>String, Hobbies, 		#Hobbies, 		empty, max&lt;=50</rule>
+				<rule>String, Email, 		#Email, 		not, max&lt;=50, email=true</rule>
+				<rule>String, OICQ, 		#OICQ, 			empty, max&lt;=15, isNum=true</rule>
+				<rule>String, Content, 		#sign, 			empty, max&lt;=100</rule>
+				<rule>String, ip, 			#ip, 			IP, max&lt;=15</rule>
+				<rule>boolean,isSecret, 	#isSecret, 		false</rule>
+				<rule>String, timeZone,     #timeZone,      not</rule>
+				<rule>String, home,			#home,			empty, max&lt;=200</rule>
+				<rule>String, msn,			MSN,			empty, max&lt;=200</rule>
+				<rule>String, locale,			#locale,			empty, max&lt;=20</rule>
+				<rule>String, faction,			#faction,			empty, max&lt;=30</rule>
+				<rule>String, fetion,			#fetion,			empty, max&lt;=50</rule>
+				<rule>String, nick, 		#nick ,		not, min&gt;0, max&lt;20, onError=resume, exclude=&lt;|%|#</rule>							
+				<rule>int, 	  is_music_autostart, 	#is_music_autostart, 		not</rule>
+				<rule>int, 	  province_id, 	#province_id, 		0</rule>
+				<rule>int, 	  city_id, 		#city_id, 		0</rule>
+				<rule>int, 	  country_id, 	#country_id, 		0</rule>					
+			</rules>
+			<unionRules>
+				<rule>Password=Password2</rule>
+			</unionRules>
+    </form>	
+</root>

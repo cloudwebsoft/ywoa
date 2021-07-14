@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<all>
+    <theme code="default">
+        <name>默认主题</name>
+        <author>Fan Gang-feng</author>
+        <path>/forum/images/theme</path>
+        <banner>banner.jpg</banner>
+        <height>120</height>
+    </theme>
+</all>
+

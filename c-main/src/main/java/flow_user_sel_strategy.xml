@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<all>
+	<item code="freefirst">
+		<name>最闲者优先</name>
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.flow.strategy.FreeFirst</className>
+	</item>
+	
+	<item code="OnlyOne">
+		<name>只需其中一人处理</name>
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.flow.strategy.OnlyOne</className>
+	</item>	
+
+	<item code="all">
+		<name>角色中全部人员均需处理</name>
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.flow.strategy.AllOfRole</className>
+	</item>	
+	
+	<item code="x">
+		<name>角色中x人处理</name>
+		<author>古月圣</author>
+		<className>com.redmoon.oa.flow.strategy.XOfRole</className>
+	</item>	
+	
+	<item code="OnlySelectOne">
+		<name>只能选择一个用户</name>
+		<author>bluewind</author>
+		<className>com.redmoon.oa.flow.strategy.OnlySelectOne</className>
+	</item>		
+	
+	<item code="AllSelected">
+		<name>角色中全部人员默认被选中</name>
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.flow.strategy.AllSelected</className>
+	</item>		
+	
+	<item code="GoDown">
+		<name>自选用户时采用下达模式</name>
+		<desc>自选用户时，不能勾选其他人已选的下一节点的用户，不能与存在分支异或发散时联用</desc>
+		<author>Fan Gang-feng</author>
+		<className>com.redmoon.oa.flow.strategy.GoDown</className>
+	</item>	
+	<item code="AtLeastSelectOne">
+		<name>至少选择一个用户</name>
+		<author>bluewind</author>
+		<className>com.redmoon.oa.flow.strategy.AtLeastSelectOne</className>
+	</item>			
+</all>
+

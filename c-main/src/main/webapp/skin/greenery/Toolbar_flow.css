@@ -1,0 +1,93 @@
+@charset "utf-8";
+.save {
+  background: transparent url(tabpanel-image/flow_save.png) no-repeat 0 2px;
+  padding-left:18px;
+}
+.commit {
+  background: transparent url(tabpanel-image/flow_commit.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.doc {
+  background: transparent url(tabpanel-image/flow_doc.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.del {
+  background: transparent url(tabpanel-image/flow_del.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.chart {
+  background: transparent url(tabpanel-image/flow_chart.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.transfer {
+  background: transparent url(tabpanel-image/flow_transfer.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.suspend {
+  background: transparent url(tabpanel-image/flow_suspend.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.disagree {
+  background: transparent url(tabpanel-image/flow_disagree.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.return {
+  background: transparent url(tabpanel-image/flow_return.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.toRetuner {
+  background: transparent url(tabpanel-image/flow_toretuner.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.discard {
+  background: transparent url(tabpanel-image/flow_discard.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.archive {
+  background: transparent url(tabpanel-image/flow_archive.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.process {
+  background: transparent url(tabpanel-image/flow_process.gif) no-repeat 0 3px;
+  padding-left:18px;
+}
+.plus {
+  background: transparent url(tabpanel-image/plus.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.linkProject {
+  background: transparent url(tabpanel-image/link.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.netdiskfile {
+  background: transparent url(tabpanel-image/netdisk.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.distribute {
+  background: transparent url(tabpanel-image/flow_transfer2.gif) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.attention {
+  background: transparent url(tabpanel-image/attention.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.cancelAttention {
+  background: transparent url(tabpanel-image/cancelAttention.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.debug {
+  background: transparent url(tabpanel-image/debug.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.manage {
+  background: transparent url(tabpanel-image/alter.png) no-repeat 0px 3px;
+  padding-left:18px;
+}
+.finish {
+  background: transparent url(tabpanel-image/flow_finish.png) no-repeat 0 3px;
+  padding-left:18px;
+}
+.alter {
+  background: transparent url(tabpanel-image/all.gif) no-repeat 0 3px;
+  padding-left:18px;
+}

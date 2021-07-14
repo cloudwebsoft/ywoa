@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<macroCtl code="Age" isDisplay="true">
+		<name>年龄</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.AgeFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>
+
+	<macroCtl code="Calc" isDisplay="true">
+		<name>四则计算</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.CalculateFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>
+	
+	<macroCtl code="getMonthDiff" isDisplay="true">
+		<name>月份数</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.MonthDiffFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>	
+	
+	<macroCtl code="Max" isDisplay="true">
+		<name>取最大值</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.MaxFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>
+		
+	<macroCtl code="if" isDisplay="true">
+		<name>if</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.IfImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>		
+	
+	<macroCtl code="getHourDiff" isDisplay="true">
+		<name>小时数</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.HourDiffFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>		
+	
+	<macroCtl code="connStr" isDisplay="true">
+		<name>连接字符串</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.ConnStrFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>			
+	
+	<macroCtl code="getUserInfo" isDisplay="true">
+		<name>取用户信息</name>
+		<author>Blue Wind</author>
+		<className>com.redmoon.oa.visual.func.UserFuncImpl</className>
+		<data></data>
+		<desc></desc>
+		<version></version>
+	</macroCtl>			
+</config>

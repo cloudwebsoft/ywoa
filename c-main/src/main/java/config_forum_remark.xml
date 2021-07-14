@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <remark>
+        <sign code="elite">
+            <name>精华印章</name>
+            <url>plugin/remark/images/sign_elite.gif</url>
+            <!--相对于cwbbs/forum目录-->
+        </sign>
+        <sign code="cool">
+            <name>酷炫印章</name>
+            <url>plugin/remark/images/sign_cool.gif</url>
+            <!--相对于cwbbs/forum目录-->
+        </sign>
+        <sign code="special">
+            <name>非同一般印章</name>
+            <url>plugin/remark/images/sign_special.gif</url>
+        </sign>
+        <sign code="water">
+            <name>水贴印章</name>
+            <url>plugin/remark/images/sign_water.gif</url>
+        </sign>
+        <sign code="rubbish">
+            <name>垃圾印章</name>
+            <url>plugin/remark/images/sign_rubbish.gif</url>
+        </sign>
+    </remark>
+</config>
+

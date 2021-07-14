@@ -1,0 +1,21 @@
+input[type='checkbox'][status="three"]{
+	width: 20px;
+	height: 20px;
+	vertical-align:middle;
+	opacity: 0;
+}
+.checkbox-bg{
+	background: url(green.png) no-repeat;
+	width: 20px;
+	height: 20px;
+	display: inline-block;
+}
+.checkbox-0{
+	background-position: 0 0;
+}
+.checkbox-1{
+	background-position: -48px 0;
+}
+.checkbox-2{
+	background-position: -96px 0;
+}

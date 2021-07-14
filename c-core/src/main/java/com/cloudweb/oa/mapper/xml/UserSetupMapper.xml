@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.UserSetupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.UserSetup">
+        <id column="USER_NAME" property="userName" />
+        <result column="MESSAGE_TO_DEPT" property="messageToDept" />
+        <result column="MESSAGE_TO_USERGROUP" property="messageToUsergroup" />
+        <result column="MESSAGE_TO_USERROLE" property="messageToUserrole" />
+        <result column="MESSAGE_TO_MAX_USER" property="messageToMaxUser" />
+        <result column="MESSAGE_USER_MAX_COUNT" property="messageUserMaxCount" />
+        <result column="IS_MSG_WIN_POPUP" property="isMsgWinPopup" />
+        <result column="IS_CHAT_SOUND_PLAY" property="isChatSoundPlay" />
+        <result column="IS_CHAT_ICON_SHOW" property="isChatIconShow" />
+        <result column="is_message_sound_play" property="isMessageSoundPlay" />
+        <result column="skin_code" property="skinCode" />
+        <result column="weather_code" property="weatherCode" />
+        <result column="clock_code" property="clockCode" />
+        <result column="calendar_code" property="calendarCode" />
+        <result column="is_webedit" property="isWebedit" />
+        <result column="msg_space_allowed" property="msgSpaceAllowed" />
+        <result column="msg_space_used" property="msgSpaceUsed" />
+        <result column="ui_mode" property="uiMode" />
+        <result column="wallpaper" property="wallpaper" />
+        <result column="is_show_sidebar" property="isShowSidebar" />
+        <result column="mydesktop_prop" property="mydesktopProp" />
+        <result column="last_msg_notify_time" property="lastMsgNotifyTime" />
+        <result column="email_name" property="emailName" />
+        <result column="email_pwd" property="emailPwd" />
+        <result column="is_msg_chat" property="isMsgChat" />
+        <result column="local" property="local" />
+        <result column="is_bind_mobile" property="isBindMobile" />
+        <result column="key_id" property="keyId" />
+        <result column="client" property="client" />
+        <result column="token" property="token" />
+        <result column="myleaders" property="myleaders" />
+        <result column="menu_mode" property="menuMode" />
+        <result column="agree_date" property="agreeDate" />
+        <result column="cid" property="cid" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        USER_NAME, MESSAGE_TO_DEPT, MESSAGE_TO_USERGROUP, MESSAGE_TO_USERROLE, MESSAGE_TO_MAX_USER, MESSAGE_USER_MAX_COUNT, IS_MSG_WIN_POPUP, IS_CHAT_SOUND_PLAY, IS_CHAT_ICON_SHOW, is_message_sound_play, skin_code, weather_code, clock_code, calendar_code, is_webedit, msg_space_allowed, msg_space_used, ui_mode, wallpaper, is_show_sidebar, mydesktop_prop, last_msg_notify_time, email_name, email_pwd, is_msg_chat, local, is_bind_mobile, key_id, client, token, myleaders, menu_mode, agree_date, cid
+    </sql>
+
+</mapper>

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<email>
+	<emailType type="163.com">
+		<pop3>pop.163.com</pop3>
+		<smtp>smtp.163.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="vip.163.com">
+		<pop3>pop.vip.163.com</pop3>
+		<smtp>smtp.vip.163.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="126.com">
+		<pop3>pop.126.com</pop3>
+		<smtp>smtp.126.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="188.com">
+		<pop3>pop.188.com</pop3>
+		<smtp>smtp.188.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="yeah.net">
+		<pop3>pop.yeah.net</pop3>
+		<smtp>smtp.yeah.net</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="netease.com">
+		<pop3>pop.netease.com</pop3>
+		<smtp>smtp.netease.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="sina.com">
+		<pop3>pop.sina.com</pop3>
+		<smtp>smtp.sina.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="vip.sina.com">
+		<pop3>pop.vip.sina.com</pop3>
+		<smtp>smtp.vip.sina.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="vip.sina.com">
+		<pop3>pop.vip.sina.com</pop3>
+		<smtp>smtp.vip.sina.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="mail.yahoo.cn">
+		<pop3>pop.mail.yahoo.cn</pop3>
+		<smtp>smtp.mail.yahoo.cn</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="sohu.com">
+		<pop3>pop.sohu.com</pop3>
+		<smtp>smtp.sohu.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="tom.com">
+		<pop3>pop.tom.com</pop3>
+		<smtp>smtp.tom.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="gmail.com">
+		<pop3>pop.gmail.com</pop3>
+		<smtp>smtp.gmail.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="qq.com">
+		<pop3>pop.qq.com</pop3>
+		<smtp>smtp.qq.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="139.com">
+		<pop3>pop.139.com</pop3>
+		<smtp>smtp.139.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="263.net">
+		<pop3>263.net</pop3>
+		<smtp>smtp.263.net</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="x263.net">
+		<pop3>pop.x263.net</pop3>
+		<smtp>smtp.x263.net</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="263.net.cn">
+		<pop3>263.net.cn</pop3>
+		<smtp>263.net.cn</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="263xmail.com">
+		<pop3>pop.263xmail.com</pop3>
+		<smtp>smtp.263xmail.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="21cn.com">
+		<pop3>pop.21cn.com</pop3>
+		<smtp>smtp.21cn.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="21cn.net">
+		<pop3>pop.21cn.net</pop3>
+		<smtp>smtp.21cn.net</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="vip.21cn.com">
+		<pop3>vip.21cn.com</pop3>
+		<smtp>vip.21cn.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="y.vip.21cn.com">
+		<pop3>pop.y.vip.21cn.com</pop3>
+		<smtp>smtp.y.vip.21cn.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="yahoo.com">
+		<pop3>pop.mail.yahoo.com.cn</pop3>
+		<smtp>smtp.mail.yahoo.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="gmail.com">
+		<pop3>pop.gmail.com</pop3>
+		<smtp>smtp.gmail.com</smtp>
+		<popPort>110</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	<emailType type="hotmail.com">
+		<pop3>pop3.live.com</pop3>
+		<smtp>smtp.live.com</smtp>
+		<popPort>995</popPort>
+		<smtpPort>25</smtpPort>
+		<SSLPopPort>995</SSLPopPort>
+		<SSLSmtpProt>465</SSLSmtpProt>
+	</emailType>
+	
+</email>

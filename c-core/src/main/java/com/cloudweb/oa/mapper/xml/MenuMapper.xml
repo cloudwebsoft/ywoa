@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.MenuMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.Menu">
+        <id column="code" property="code" />
+        <result column="name" property="name" />
+        <result column="isHome" property="isHome" />
+        <result column="link" property="link" />
+        <result column="parent_code" property="parentCode" />
+        <result column="root_code" property="rootCode" />
+        <result column="orders" property="orders" />
+        <result column="child_count" property="childCount" />
+        <result column="add_date" property="addDate" />
+        <result column="islocked" property="islocked" />
+        <result column="type" property="type" />
+        <result column="layer" property="layer" />
+        <result column="pre_code" property="preCode" />
+        <result column="width" property="width" />
+        <result column="is_has_path" property="isHasPath" />
+        <result column="is_resource" property="isResource" />
+        <result column="target" property="target" />
+        <result column="pvg" property="pvg" />
+        <result column="icon" property="icon" />
+        <result column="is_use" property="isUse" />
+        <result column="is_nav" property="isNav" />
+        <result column="form_code" property="formCode" />
+        <result column="can_repeat" property="canRepeat" />
+        <result column="big_icon" property="bigIcon" />
+        <result column="is_widget" property="isWidget" />
+        <result column="widget_width" property="widgetWidth" />
+        <result column="widget_height" property="widgetHeight" />
+        <result column="kind" property="kind" />
+        <result column="is_system" property="isSystem" />
+        <result column="font_icon" property="fontIcon" />
+        <result column="description" property="description" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        code, name, isHome, link, parent_code, root_code, orders, child_count, add_date, islocked, type, layer, pre_code, width, is_has_path, is_resource, target, pvg, icon, is_use, is_nav, form_code, can_repeat, big_icon, is_widget, widget_width, widget_height, kind, is_system, font_icon, description
+    </sql>
+</mapper>

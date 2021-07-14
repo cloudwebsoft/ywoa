@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <forum>
+        <seotitle desc="标题附加字" help=""></seotitle>
+        <seokeywords desc="Meta Keywords" help=""></seokeywords>
+        <seodescription desc="Meta Description" help=""></seodescription>
+        <seohead desc="其他头部信息" help="" />
+    </forum>
+</config>
+

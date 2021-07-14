@@ -1,0 +1,126 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+	<title>管理权限</title>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.min.css'}" />
+	<link type="text/css" rel="stylesheet" th:href="@{/js/appendGrid/jquery.appendGrid-1.5.1.css}" />
+</head>
+<body>
+<div>
+    <button id="btnAdd" class="btn btn-success" style="margin: 20px 0px 5px 250px" th:onclick="window.location.href='addPriv.do'">添加</button>
+</div>
+<form id="form1" action="priv_m.jsp?op=edit" method="post" style="margin-top: 10px">
+	<table id="tblPrivs" align="center">
+	</table>
+	<input name="oldPrivs" th:value="${oldPrivs}" type="hidden"/>
+</form>
+<div style="text-align:center; padding:10px">
+	<button id="btnSubmit" class="btn btn-default">确定</button>
+</div>
+</body>
+<script th:src="@{/js/jquery-ui/jquery-ui-1.10.4.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/appendGrid/jquery.appendGrid-1.5.1.js}"></script>
+<script th:inline="javascript">
+$(function () {
+    $('#tblPrivs').appendGrid({
+        // caption: '',
+        i18n: {
+            append: '添加新行',
+            rowDrag: '拖动',
+            removeLast: '删除最后一行',
+            insert: '添加一行在上方',
+            moveUp: '上移',
+            moveDown: '下移',
+            remove: '删除'
+        },        
+        initRows: 0,
+        rowDragging: true,      
+        hideButtons: {
+            append: true,
+        	// remove: true,
+        	removeLast: true,        	
+            insert: true
+        },      
+        columns: [
+ 			//  宽度隐藏比较字段操作
+            { name: 'desc', display: '类别', type: 'text', ctrlAttr: { maxlength: 100 }, ctrlCss: { width: '150px', border:'0'} },
+            { name: 'desc2', display: '名称', type: 'text', ctrlAttr: { maxlength: 100 }, ctrlCss: { width: '200px', border:'0'} },
+            { name: 'privX', display: '编码', type: 'text', ctrlAttr: { maxlength: 40, readonly: 'true', disabled:true }, ctrlCss: { width: '200px', border:'0'} },
+            { name: 'priv', display: '编码', type: 'hidden', ctrlAttr: { maxlength: 100 }, ctrlCss: { width: '30px'} },            
+            { name: 'isSystem', display: '系统保留', type: 'text', ctrlAttr: { maxlength: 100, readonly: 'true', disabled:true }, ctrlCss: { width: '60px', border:'0'} }
+        ],
+        customRowButtons: [
+                { uiButton: { icons: { primary: 'ui-icon-arrowthick-1-w' }, text: false }, click: moveLeft, btnCss: { 'max-width': '20px' }, btnAttr: { title: '左移' }, atTheFront: true },
+            	{ uiButton: { icons: { primary: 'ui-icon-arrowthick-1-e' }, text: false }, click: moveRight, btnCss: { 'max-width': '20px' }, btnAttr: { title: '右移' }, atTheFront: true },
+            	{ uiButton: { icons: { primary: 'ui-icon-newwin' }, text: false }, click: privView, btnCss: { 'max-width': '20px' }, btnAttr: { title: '查看' } }
+            ]   
+    });
+    
+	function moveLeft(evtObj, uniqueIndex, rowData) {
+		var rowIndex = $('#tblPrivs').appendGrid('getRowIndex', uniqueIndex);
+		if (rowData.desc=="") {			
+			$('#tblPrivs').appendGrid('setCtrlValue', 'desc', rowIndex, rowData.desc2);
+			$('#tblPrivs').appendGrid('setCtrlValue', 'desc2', rowIndex, "");
+		}
+		else {
+			jAlert("不能向左移动", "提示");
+		}
+	}
+
+	function moveRight(evtObj, uniqueIndex, rowData) {
+		var rowIndex = $('#tblPrivs').appendGrid('getRowIndex', uniqueIndex);
+		if (rowData.desc2=="") {			
+			$('#tblPrivs').appendGrid('setCtrlValue', 'desc2', rowIndex, rowData.desc);
+			$('#tblPrivs').appendGrid('setCtrlValue', 'desc', rowIndex, "");
+		}
+		else {
+			jAlert("不能向右移动", "提示");
+		}		
+	}
+	
+	function privView(evtObj, uniqueIndex, rowData) {
+		if  (rowData.desc2=='') {
+			$.toaster({
+				"priority": "info",
+				"message": "该项为分类，无权限配置"
+			});
+		}
+		else {
+			addTab(rowData.desc2, "admin/privDetail.do?priv=" + rowData.priv);
+		}
+	}
+
+    $(function () {
+        $('#tblPrivs').appendGrid('load', [(${jsonArr})]);
+    });
+
+    $('#btnSubmit').click(function () {
+		$.ajax({
+			type: "post",
+			url: "setPrivs.do",
+			data: $('#form1').serialize(),
+			dataType: "json",
+			beforeSend: function(XMLHttpRequest){
+				$('body').showLoading();
+			},
+			success: function(data, status){
+			    if (data.ret==1) {
+                    $.toaster({priority : 'info', message : data.msg });
+                }
+			    else {
+			        jAlert(data.msg, [[${[prompt]}]]);
+                }
+			},
+			complete: function(XMLHttpRequest, status){
+				$('body').hideLoading();
+			},
+			error: function(XMLHttpRequest, textStatus){
+				// 请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+    });
+});
+</script>
+</html>

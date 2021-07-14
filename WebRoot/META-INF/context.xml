@@ -1,8 +1,0 @@
-<Context>  
-	<Resource name="jdbc/oa" auth="Container" type="javax.sql.DataSource"  
-		maxActive="50" maxIdle="30" maxWait="10000" logAbandoned="true" 
-		username="root" 
-		password="myoa888" 
-		driverClassName="com.mysql.jdbc.Driver"
-		url="jdbc:mysql://localhost:3306/redmoonoa?useUnicode=true&amp;characterEncoding=UTF-8&amp;zeroDateTimeBehavior=convertToNull"/>
-</Context>
