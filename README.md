@@ -1,3 +1,5 @@
+国内用户请访问这里：https://gitee.com/bestfeng/yimioa
+
 # <img alt="logo" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/logo_cwoa.png" style="vertical-align:middle"  width="42" height="42"/>    云网OA，流程专家
 
 #### 介绍
@@ -22,10 +24,11 @@
 拥有完整成熟的OA功能，包括门户管理、工作流、文档管理、人事管理、考勤、CRM、项目管理等。  <br>
 
 系统内置多种风格界面，还可以换肤。<br>
-<img alt="经典版" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/15533959311091584686097.png" style="margin: 5px 5px" width="400" height="200" align="center"/>
-<img alt="时尚版" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/155339595585069552112.png" style="margin: 5px 5px" width="400" height="200" align="center"/><br/><br/>
-<img alt="绚丽版" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/15533959900231455589150.png" style="margin: 5px 5px" width="400" height="200" align="center"/>
-<img alt="轻简版" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/15533960280471224504503.png" style="margin: 5px 5px" width="400" height="200" align="center"/>
+<img alt="经典版" src="http://www.yimihome.com/upfile/att/2019/3/15533959311091584686097.png" width="400" height="200" align="center"/>
+<img alt="时尚版" src="http://www.yimihome.com/upfile/att/2019/3/155339595585069552112.png" width="400" height="200" align="center"/>
+<br>
+<img alt="绚丽版" src="http://www.yimihome.com/upfile/att/2019/3/15533959900231455589150.png" width="400" height="200" align="center"/>
+<img alt="轻简版" src="http://www.yimihome.com/upfile/att/2019/3/15533960280471224504503.png" width="400" height="200" align="center"/>
 
 #### 系统优势
 
@@ -43,11 +46,7 @@
 
 #### 学习QQ群
 
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group1.png" width="150" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group2.png" width="150" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group3.png" width="150" align="center"/>  
-<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group6.png" width="150" align="center"/>  
-<br>
+<img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group1.png" width="150" height="200" align="center"/><img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group2.png" width="150" height="200" align="center"/><img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group3.png" width="150" height="200" align="center"/><img alt="群二维码" src="https://gitee.com/bestfeng/yimioa/raw/oa_git6.0/c-main/src/main/webapp/images/git/group6.png" width="150" height="200" align="center"/>  
 <br>
 
 立即扫描上面`最右侧`的二维码入群，即刻免费获得相关文档及数据字典！<br>
