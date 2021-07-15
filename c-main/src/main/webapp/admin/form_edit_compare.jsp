@@ -10,7 +10,9 @@
 <%@ page import="org.json.JSONException" %>
 <%@ page import="org.json.JSONObject" %>
 <%@ page import="com.redmoon.oa.visual.ModuleSetupDb" %>
-<%@ page import="com.redmoon.oa.flow.macroctl.ModuleFieldSelectCtl" %>
+<%@ page import="com.cloudweb.oa.api.IModuleFieldSelectCtl" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%
 response.setHeader("X-xss-protection", "0;mode=block");
 %>
@@ -160,7 +162,9 @@ response.setHeader("X-xss-protection", "0;mode=block");
       <table width="100%" border="0" align="center" cellpadding="3" cellspacing="0">
         
         <tr>
-          <td colspan="3" align="center">(红色表示将被删除的字段，蓝色表示将被添加的字段，黄色背景表示字段类型被改变)</td>
+          <td colspan="3" align="center" height="30">
+			  (红色表示将被删除的字段，蓝色表示将被添加的字段，黄色背景表示字段类型被改变)
+		  </td>
           </tr>
         <tr>
           <td width="49%" valign="top">
@@ -245,7 +249,9 @@ while (ir.hasNext()) {
 					}
 					JSONObject json;
 					try {
-						strDesc = ModuleFieldSelectCtl.formatJSONStr(strDesc);
+						MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+						IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+						strDesc = moduleFieldSelectCtl.formatJSONString(strDesc);
 						json = new JSONObject(strDesc);
 						String moduleCode = json.getString("sourceFormCode");
 						ModuleSetupDb msd = new ModuleSetupDb();
@@ -389,7 +395,9 @@ while (ir.hasNext()) {
 						}
 						JSONObject json;
 						try {
-							strDesc = ModuleFieldSelectCtl.formatJSONStr(strDesc);
+							MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+							IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+							strDesc = moduleFieldSelectCtl.formatJSONString(strDesc);
 							json = new JSONObject(strDesc);
 							String moduleCode = json.getString("sourceFormCode");
 							ModuleSetupDb msd = new ModuleSetupDb();
@@ -430,7 +438,7 @@ while (ir.hasNext()) {
           <%}%></table></td>
         </tr>
 		  <tr>
-			  <td style="padding-left: 20px">
+			  <td style="padding-left: 20px; height: 30px">
 				  <%
 					  if (addList.size() == 0 && delList.size() == 0) {
 						  out.print("<span style='color:green'>未增加或删除字段</span>");

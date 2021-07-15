@@ -39,6 +39,7 @@ public class WorkplanDesktopUnit implements IDesktopUnit {
         return url;
     }
 
+    @Override
     public String display(HttpServletRequest request, UserDesktopSetupDb uds) {
         DesktopMgr dm = new DesktopMgr();
         com.redmoon.oa.ui.DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
@@ -46,7 +47,7 @@ public class WorkplanDesktopUnit implements IDesktopUnit {
         Privilege privilege = new Privilege();
         WorkPlanDb wpd = new WorkPlanDb();
         String sql = "select distinct p.id from work_plan p, work_plan_user u where u.workPlanId=p.id and u.userName=" +
-                     StrUtil.sqlstr(privilege.getUser(request)) + " order by p.beginDate desc";
+                     StrUtil.sqlstr(privilege.getUser(request)) + " order by p.id desc";
         try {
             ListResult lr = wpd.listResult(sql, 1, uds.getCount());
             Iterator ir = lr.getResult().iterator();

@@ -9,6 +9,9 @@
 <%@ page import = "com.redmoon.oa.android.*"%>
 <%@ page import = "java.util.regex.*"%>
 <%@ page import = "org.json.*"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.ISQLCtl" %>
 <%
 Privilege pvg = new Privilege();
 String skey = ParamUtil.get(request, "skey");
@@ -53,8 +56,9 @@ if (ff==null) {
 String op = ParamUtil.get(request, "op");
 // if (op.equals("onChange")) {
 	JSONObject json = new JSONObject();
-	SQLCtl sqlCtl = new SQLCtl();
-	
+	MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+	ISQLCtl sqlCtl = macroCtlService.getSQLCtl();
+
 	JSONObject field = null;
 	try {
 		field = sqlCtl.getCtl(request, flowId, ff);

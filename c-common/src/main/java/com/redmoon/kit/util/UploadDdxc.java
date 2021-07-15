@@ -304,7 +304,7 @@ public class UploadDdxc {
                 logger.info("fullSavePath=" + fullSavePath + " fu.getRealPath()=" + fu.getRealPath());
                 logger.info("blockPath=" + blockPath);
             }
-            FileUtil.AppendFile(fullSavePath, blockPath);
+            FileUtil.appendFile(fullSavePath, blockPath);
             // 删除上传线程产生的临时文件
             File file = new File(blockPath);
             file.delete();

@@ -281,7 +281,6 @@
 				}else if(data_types == NOTICES){
 					var id = this.getAttribute("id");
 					url = "../notice/notice_detail.jsp?id="+id;
-					
 				}else if(data_types == MESSAGES){
 					var skey = params.skey;
 					var id = this.getAttribute("id");

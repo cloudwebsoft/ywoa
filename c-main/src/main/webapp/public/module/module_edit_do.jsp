@@ -24,7 +24,7 @@
 		com.redmoon.oa.android.Privilege pri = new com.redmoon.oa.android.Privilege();
 		String userName = pri.getUserName(skey);
 		JSONObject json = new JSONObject();
-		if(userName.equals("")){
+		if("".equals(userName)){
 			json.put("res", "-1");
 			json.put("msg", "skey不存在！");
 			out.print(json.toString());
@@ -35,7 +35,7 @@
 		ModuleSetupDb msd = new ModuleSetupDb();
 		msd = msd.getModuleSetupDb(moduleCode);
 		String formCode = msd.getString("form_code");
-		int id = ParamUtil.getInt(request, "id");
+		long id = ParamUtil.getLong(request, "id", -1);
 		try {
 			FormMgr fm = new FormMgr();
 			FormDb fdEdit = fm.getFormDb(formCode);

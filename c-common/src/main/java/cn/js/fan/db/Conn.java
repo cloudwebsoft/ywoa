@@ -446,8 +446,9 @@ public class Conn implements IConnection {
     // perform a query without records returned
     public int executePreUpdate() throws SQLException {
         int rowcount = 0;
-        if (con == null)
+        if (con == null) {
             return 0;
+        }
         try {
             long beginTime = System.currentTimeMillis();
             rowcount = pstmt.executeUpdate();

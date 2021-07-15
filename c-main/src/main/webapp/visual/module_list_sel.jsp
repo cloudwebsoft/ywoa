@@ -19,6 +19,10 @@
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <%@ page import="cn.js.fan.web.SkinUtil" %>
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%@ page import="com.cloudweb.oa.api.ISQLCtl" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IModuleFieldSelectCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
     /*
@@ -60,9 +64,13 @@
     }
 
     ModulePrivDb mpd = new ModulePrivDb(moduleCode);
-    if (!mpd.canUserSee(privilege.getUser(request))) {
-        out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-        return;
+    com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+    boolean isModuleFieldSelectCtlCheckPrivilege = cfg.getBooleanProperty("isModuleFieldSelectCtlCheckPrivilege");
+    if (isModuleFieldSelectCtlCheckPrivilege) {
+        if (!mpd.canUserSee(privilege.getUser(request))) {
+            out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+            return;
+        }
     }
 
     // 用于传过滤条件
@@ -105,7 +113,9 @@
     String filter = "";
     try {
         // System.out.println(getClass() + " openerField.getDescription()=" + openerField.getDescription());
-        String desc = ModuleFieldSelectCtl.formatJSONStr(openerField.getDescription());
+        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+        String desc = moduleFieldSelectCtl.formatJSONString(openerField.getDescription());
         json = new JSONObject(desc);
         filter = com.redmoon.oa.visual.ModuleUtil.decodeFilter(json.getString("filter"));
 
@@ -219,7 +229,7 @@
         String fieldName = m.group(1);
 
         if ("cwsCurUser".equals(fieldName) || "curUser".equals(fieldName)
-                || "curUserDept".equals(fieldName) || "curUserRole".equals(fieldName) || "admin.dept".equals(fieldName) || "parentId".equals(fieldName)) {
+                || "curUserDept".equals(fieldName) || "curUserRole".equals(fieldName) || "admin.dept".equals(fieldName)) {
             isFound = true;
             continue;
         }
@@ -227,15 +237,20 @@
         if (fieldName.startsWith("@")) {
             fieldName = fieldName.substring(1);
         }
+
+        String fieldNameReal = fieldName;
+        if ("parentId".equals(fieldName) || "mainId".equals(fieldName)) {
+            fieldNameReal = "cws_id";
+        }
 %>
 <script>
-    if (window.opener.o("<%=fieldName%>") == null) {
+    if (window.opener.o("<%=fieldNameReal%>") == null) {
         console.error("条件字段：<%=fieldName%>在表单中不存在！");
     } else {
         if (condStr == "")
-            condStr = "<%=fieldName%>=" + encodeURI(window.opener.o("<%=fieldName%>").value);
+            condStr = "<%=fieldName%>=" + encodeURI(window.opener.o("<%=fieldNameReal%>").value);
         else
-            condStr += "&<%=fieldName%>=" + encodeURI(window.opener.o("<%=fieldName%>").value);
+            condStr += "&<%=fieldName%>=" + encodeURI(window.opener.o("<%=fieldNameReal%>").value);
     }
 </script>
 <%
@@ -812,7 +827,7 @@
             <%
                     // System.out.println(getClass() + " " + destF + "-" + setValue);
                     funs += "setOpenerFieldValue('" + destF + "', o('helper" + k + "_" + i + "').value," + isMacro + ", o('helperSource" + k + "_" + i + "').value, o('helperJs" + k + "_" + i + "').value);\n";
-                    if (ifmc instanceof SQLCtl) {
+                    if (ifmc instanceof ISQLCtl) {
                         // 调用onSQLCtlRelateFieldChange_，以使得控件被映射时能够生成
                         // 因为当convertToHtmlCtl时，生成的是input，且已经有value，
                         // 而在macro_sql_ctl_js.jsp是用setInterval来检测变化的，而值在映射过来后并不变化，所以不这样处理，无法生成控件，而只能看到一个带有字段值的文本框

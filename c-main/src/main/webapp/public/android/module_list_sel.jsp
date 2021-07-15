@@ -13,6 +13,9 @@
 <%@ page import = "com.redmoon.oa.person.*"%>
 <%@ page import = "java.util.regex.*"%>
 <%@ page import = "org.json.*"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IModuleFieldSelectCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.android.Privilege"/>
 <%
 String skey = ParamUtil.get(request, "skey");
@@ -68,7 +71,9 @@ FormField openerField = openerFd.getFormField(openerFieldName);
 JSONArray mapAry = new JSONArray();
 try {
 	// System.out.println(getClass() + " openerField.getDescription()=" + openerField.getDescription());
-	String desc = ModuleFieldSelectCtl.formatJSONStr(openerField.getDescription());
+	MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+	IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+	String desc = moduleFieldSelectCtl.formatJSONString(openerField.getDescription());
 	JSONObject json = new JSONObject(desc);
 	filter = com.redmoon.oa.visual.ModuleUtil.decodeFilter(json.getString("filter")); 
 

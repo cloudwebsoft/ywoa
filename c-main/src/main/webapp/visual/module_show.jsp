@@ -220,20 +220,14 @@
 <div id="visualDiv">
     <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
         <tr>
-            <td align="left">
+            <td align="center">
                 <form name="visualForm" id="visualForm">
-                    <table width="100%">
-                        <tr>
-                            <td>
-                                ${rend}
-                            </td>
-                        </tr>
-                    </table>
+                    ${rend}
                 </form>
             </td>
         </tr>
         <tr>
-            <td align="left"></td>
+            <td align="center"></td>
         </tr>
         <c:if test="${isHasAttachment}">
             <tr>

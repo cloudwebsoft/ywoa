@@ -10,6 +10,9 @@
 <%@ page import = "com.redmoon.oa.pvg.Privilege"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import = "com.redmoon.oa.visual.*"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.INestSheetCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -25,7 +28,8 @@
 	}
 	long parentId = ParamUtil.getLong(request, "parentId");
 	int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
-	NestSheetCtl ntc = new NestSheetCtl();
+	MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+	INestSheetCtl ntc = macroCtlService.getNestSheetCtl();
 	boolean re = false;
 	String op = ParamUtil.get(request, "op");
 	StringBuffer requestParamBuf = new StringBuffer();

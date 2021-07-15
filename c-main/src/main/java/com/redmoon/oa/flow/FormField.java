@@ -1686,7 +1686,12 @@ public class FormField implements Cloneable,Serializable {
          String val;
          // 使价格型控件在编辑状态时，也能显示为两位小数
          if (ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
-             val = NumberUtil.round(StrUtil.toDouble(ff.getValue(), 0), 2);
+             if (ff.getValue()!=null) {
+                 val = NumberUtil.round(StrUtil.toDouble(ff.getValue(), 0), 2);
+             }
+             else {
+                 val = StrUtil.getNullStr(ff.getValue());
+             }
          }
          else {
              val = StrUtil.getNullStr(ff.getValue());
@@ -2012,7 +2017,12 @@ public class FormField implements Cloneable,Serializable {
         }
 	    else {
             if (fieldType==FormField.FIELD_TYPE_PRICE) {
-                value = NumberUtil.round(StrUtil.toDouble(value, 0), 2);
+                if (!StringUtils.isEmpty(value)) {
+                    value = NumberUtil.round(StrUtil.toDouble(value, 0), 2);
+                }
+                else {
+                    value = StrUtil.getNullStr(value);
+                }
             }
             else {
                 value = StrUtil.getNullStr(value);

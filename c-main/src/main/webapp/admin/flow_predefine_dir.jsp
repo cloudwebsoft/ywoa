@@ -480,7 +480,7 @@
                     %>
                 </select>
                 （用于模板套红）
-                <%if (op.equals("modify")) {%>
+                <%if ("modify".equals(op)) {%>
                 <script>
                     document.getElementById("templateId").value = "<%=leaf.getTemplateId()%>";
                 </script>
@@ -495,7 +495,7 @@
                     <option value="0">正常</option>
                     <option value="1">调试</option>
                 </select>
-                <%if (op.equals("modify")) {%>
+                <%if ("modify".equals(op)) {%>
                 <script>
                     o("isDebug").value = "<%=leaf.isDebug()?1:0%>";
                 </script>
@@ -504,9 +504,9 @@
         </tr>
         <tr id="trDept" style="display:none">
             <td align="left">能发起流程的部门</td>
-            <td width="43%" align="left"><input type="hidden" name="depts" value="<%=op.equals("modify")?leaf.getDept().trim():""%>">
+            <td width="43%" align="left"><input type="hidden" name="depts" value="<%="modify".equals(op)?leaf.getDept().trim():""%>">
                 <textarea name="deptNames" style="width: 100%;" rows="5" readOnly wrap="yes" id="deptNames"><%
-                    if (op.equals("modify")) {
+                    if ("modify".equals(op)) {
                         String[] arydepts = StrUtil.split(leaf.getDept(), ",");
                         int len = 0;
                         String deptNames = "";

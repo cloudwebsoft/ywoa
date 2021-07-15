@@ -18,8 +18,8 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title><%=msd.getString("name")%>
-    </title>
+    <meta charset="utf-8">
+    <title><%=msd.getString("name")%></title>
     <meta http-equiv="pragma" content="no-cache">
     <meta http-equiv="cache-control" content="no-cache">
     <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -61,12 +61,16 @@
     }
 </style>
 <body>
+<header class="mui-bar mui-bar-nav">
+    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+    <a class="mui-icon mui-pull-right mui-a-color"></a>
+    <h1 class="mui-title"><%=msd.getString("name")%></h1>
+</header>
 <div class="mui-content">
     <div class="mui-content-padded">
     </div>
-    <div id="pullrefresh" class="mui-scroll-wrapper"
-         style="margin-top: 60px;">
-        <div class="mui-scroll">
+    <div class="mui-scroll-wrapper">
+        <div id="pullrefresh" class="mui-scroll">
             <form class="search_form mui-input-group" id="search_content">
 
             </form>
@@ -79,7 +83,7 @@
 </div>
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/macro/open_window_macro.js"></script>
-<script type="text/javascript" src="../js/mui.min.js"></script>
+<script type="text/javascript" src="../js/mui.js"></script>
 <script src="../js/mui.picker.min.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
@@ -88,6 +92,15 @@
 <script src="../js/jq_mydialog.js"></script>
 <script src="../../js/jquery.raty.min.js"></script>
 <script>
+    function getContextPath() {
+        var strFullPath = document.location.href;
+        var strPath = document.location.pathname;
+        var pos = strFullPath.indexOf(strPath);
+        var prePath = strFullPath.substring(0, pos);
+        var postPath = strPath.substring(0, strPath.substr(1).indexOf('/') + 1);
+        return (prePath + postPath);
+    }
+
     <%
     Privilege pvg = new Privilege();
     pvg.auth(request);
@@ -95,10 +108,32 @@
     %>
     var skey = '<%=skey%>';
     var moduleCode = '<%=moduleCode%>';
-    var options = {"ajax_params": {"skey": skey, "moduleCode": moduleCode}, "url": "../../public/android/module/list"};
+
+    // 将路径改为完整的路径，否则ios中5+app会因为spring security不允许url中包括../而致无法访问
+    var url = "../../public/android/module/list";
+    if(mui.os.plus && mui.os.ios) {
+        url = getContextPath() + "/public/android/module/list";
+    }
+
+    var options = {"ajax_params": {"skey": skey, "moduleCode": moduleCode}, "url": url};
     var content = document.querySelector('.mui-content');
-    var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
-    PullToRefrshListApi.loadListDate();
+
+    mui.init();
+    (function($) {
+        $.ready(function() {
+            var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
+            PullToRefrshListApi.loadListData();
+        });
+    })(mui);
+
+    if(!mui.os.plus) {
+        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
+        jQuery('.mui-bar').remove();
+    }
+    // 当5+app中添加完毕返回此页面时执行刷新
+    window.addEventListener('refreshList', function(e){
+        location.reload();
+    });
 </script>
 
 <jsp:include page="../inc/navbar.jsp">

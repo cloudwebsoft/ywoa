@@ -1,11 +1,5 @@
-<%@ page language="java" import="java.util.*" pageEncoding="utf-8" %>
-<%@page import="com.redmoon.oa.visual.*" %>
-<%@page import="com.redmoon.oa.android.Privilege" %>
-<%@page import="com.redmoon.weixin.mgr.WXUserMgr" %>
-<%@page import="com.redmoon.oa.person.UserDb" %>
-<%@page import="cn.js.fan.util.ParamUtil" %>
-<%@page import="org.json.JSONObject" %>
-<%@page import="cn.js.fan.util.StrUtil" %>
+<%@ page language="java" import="cn.js.fan.util.ParamUtil" pageEncoding="utf-8" %>
+<%@ page import="com.redmoon.oa.visual.ModuleSetupDb" %>
 <%
     String moduleCode = ParamUtil.get(request, "moduleCode");
     ModuleSetupDb msd = new ModuleSetupDb();
@@ -16,28 +10,38 @@
     }
     String formCode = msd.getString("form_code");
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
-    <title><%=msd.getString("name")%>
-    </title>
+    <meta charset="utf-8">
+    <title><%=msd.getString("name")%></title>
     <meta http-equiv="pragma" content="no-cache">
     <meta http-equiv="cache-control" content="no-cache">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta content="telephone=no" name="format-detection"/>
     <link rel="stylesheet" href="../css/mui.css">
     <link rel="stylesheet" href="../css/my_dialog.css"/>
     <link rel="stylesheet" href="../css/iconfont.css"/>
-    <link rel="stylesheet" type="text/css"
-          href="../css/mui.picker.min.css"/>
+    <link rel="stylesheet" type="text/css" href="../css/mui.picker.min.css"/>
 </head>
 <style>
     html,
     body {
         background-color: #efeff4;
+    }
+
+    .mui-input-row .input-icon {
+        width: 50%;
+        float: left;
+    }
+
+    .mui-input-row a {
+        margin-right: 10px;
+        float: right;
+        text-align: left;
+        line-height: 1.5;
     }
 
     .mui-bar ~ .mui-content .mui-fullscreen {
@@ -126,6 +130,11 @@
     int id = ParamUtil.getInt(request, "id", 0);
 %>
 <body>
+<header class="mui-bar mui-bar-nav">
+    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+    <a class="mui-icon mui-pull-right mui-a-color"></a>
+    <h1 class="mui-title"><%=msd.getString("name")%></h1>
+</header>
 <div class="mui-content">
     <div id="slider" class="mui-slider mui-fullscreen">
         <div id="sliderSegmentedControl"
@@ -134,7 +143,6 @@
                 <a class="mui-control-item mui-active" href="#item1mobile">
                     查看信息
                 </a>
-
             </div>
         </div>
         <div class="mui-slider-group" id="tabContent">
@@ -155,37 +163,41 @@
 <script type="text/javascript" src="../js/photoswipe.js"></script>
 <script type="text/javascript" src="../js/photoswipe-ui-default.js"></script>
 <script type="text/javascript" src="../js/photoswipe-init-manual.js"></script>
-
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 <script type="text/javascript" src="../js/newPopup.js"></script>
 <script src="../js/macro/open_window_macro.js"></script>
 <script src="../js/macro/macro.js"></script>
-<script type="text/javascript" src="../js/mui.min.js"></script>
+<script type="text/javascript" src="../js/mui.js"></script>
 <script src="../js/mui.picker.min.js"></script>
 <script type="text/javascript" src="../js/config.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.js"></script>
-<script type="text/javascript"
-        src="../js/mui.pullToRefresh.material.js"></script>
-
+<script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
 <script src="../js/visual/module_list.js"></script>
 <script type="text/javascript" src="../js/base/mui.form.js"></script>
 <script type="text/javascript" src="../js/visual/mui_module.js"></script>
-
 <script src="../js/jq_mydialog.js"></script>
 <script>
     function callJS() {
         return "";
     }
 
-    mui.init();
-    //阻尼系数
-    var deceleration = mui.os.ios ? 0.003 : 0.0009;
-    mui('.mui-scroll-wrapper').scroll({
-        bounce: false,
-        indicators: true, //是否显示滚动条
-        deceleration: deceleration
-    });
+    // 会导致pullRefresh初始化失败
+    // mui.init();
+
+    if(!mui.os.plus) {
+        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
+        $('.mui-bar').remove();
+    }
+
     mui.ready(function () {
+        // 阻尼系数，越小越灵敏
+        var deceleration = mui.os.ios ? 0.003 : 0.0009;
+        mui('.mui-scroll-wrapper').scroll({
+            bounce: false,
+            indicators: true, //是否显示滚动条
+            deceleration: deceleration
+        });
+
         var skey = '<%=skey%>';
         var moduleCode = '<%=moduleCode%>';
         var id = <%=id%>;
@@ -199,9 +211,7 @@
         window.ModuleForm = new mui.ModuleForm(content, options);
         window.ModuleForm.moduleDetail();
     });
-
 </script>
-
 <script src="../flow/form_js/<%=formCode%>.jsp?pageType=showModule&id=<%=id%>"></script>
 <jsp:include page="../inc/navbar.jsp">
     <jsp:param name="skey" value="<%=skey%>" />

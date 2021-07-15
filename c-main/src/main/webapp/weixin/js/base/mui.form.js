@@ -496,33 +496,86 @@
                     jQuery(".annex-group").before(self.flowInitFiles(_files, isShowPage));
                 }
             }
+
             jQuery(".mui-content").on("tap", ".attFile", function () {
                 var url = jQuery(this).attr("link");
-                var ext = jQuery(this).attr("ext");
+                /*var ext = jQuery(this).attr("ext");
                 if (ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp") {
                     var w=0, h=0;
                     if (this.tagName=="IMG") { // 图像宏控件
                         w = jQuery(this).width();
                         h = jQuery(this).height();
                     }
-                    // self.showImg(url, w, h); // photoswipe显示不出图片，原因不明，故弃用
-                    mui.openWindow({
-                        "url": url
-                    })
-                } else {
+                    self.showImg(url, w, h); // photoswipe显示不出图片，原因不明，故弃用
+                }*/
+
+                if (mui.os.plus) {
+                    var btnArray = ['是', '否'];
+                    mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+                        if (e.index == 0) {
+                            var rootPath = self.getContextPath();
+                            // 链接为../../public/android/flow/getFile，故需转换，否则会报400错误
+                            var p = url.indexOf("/public/");
+                            if (p!=-1) {
+                                url = url.substring(p);
+                            }
+                            url = rootPath + url;
+                            var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+                                if (status == 200) {
+                                    // 调用第三方应用打开文件
+                                    plus.runtime.openFile(d.filename, {}, function (e) {
+                                        alert('打开失败');
+                                    });
+                                } else {
+                                    alert("下载失败: " + status);
+                                }
+                            });
+                            dtask.start();
+                        }
+                    });
+                }
+                else {
                     mui.openWindow({
                         "url": url
                     })
                 }
+
                 return false;
             });
             $(".mui-content").on('tap', '.att_download', function (event) {
                 var elem = this;
                 var li = elem.parentNode.parentNode;
                 var url = jQuery(li).find('.attFile').attr('link');
-                mui.openWindow({
-                    "url": url
-                })
+                if (mui.os.plus) {
+                    var btnArray = ['是', '否'];
+                    mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+                        if (e.index == 0) {
+                            var rootPath = self.getContextPath();
+                            // 链接为../../public/android/flow/getFile，故需转换，否则会报400错误
+                            var p = url.indexOf("/public/");
+                            if (p!=-1) {
+                                url = url.substring(p);
+                            }
+                            url = rootPath + url;
+                            var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+                                if (status == 200) {
+                                    // 调用第三方应用打开文件
+                                    plus.runtime.openFile(d.filename, {}, function (e) {
+                                        alert('打开失败');
+                                    });
+                                } else {
+                                    alert("下载失败: " + status);
+                                }
+                            });
+                            dtask.start();
+                        }
+                    });
+                }
+                else {
+                    mui.openWindow({
+                        "url": url
+                    })
+                }
             });
 
             if (data.viewJs) {
@@ -808,7 +861,6 @@
                                 jQuery(".att_ul").remove();
                             }
                         }
-
                     }
                 });
             });
@@ -817,9 +869,36 @@
                 var elem = this;
                 var li = elem.parentNode.parentNode;
                 var url = jQuery(li).find('.attFile').attr('link');
-                mui.openWindow({
-                    "url": url
-                })
+                if (mui.os.plus) {
+                    var btnArray = ['是', '否'];
+                    mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+                        if (e.index == 0) {
+                            var rootPath = self.getContextPath();
+                            // 链接为../../public/android/flow/getFile，故需转换，否则会报400错误
+                            var p = url.indexOf("/public/");
+                            if (p!=-1) {
+                                url = url.substring(p);
+                            }
+                            url = rootPath + url;
+                            var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+                                if (status == 200) {
+                                    // 调用第三方应用打开文件
+                                    plus.runtime.openFile(d.filename, {}, function (e) {
+                                        alert('打开失败');
+                                    });
+                                } else {
+                                    alert("下载失败: " + status);
+                                }
+                            });
+                            dtask.start();
+                        }
+                    });
+                }
+                else {
+                    mui.openWindow({
+                        "url": url
+                    })
+                }
             });
         },
         formatDateTime: function (date) {
@@ -916,9 +995,36 @@
                     }
                     self.showImg(url, w, h);
                 } else {
-                    mui.openWindow({
-                        "url": url
-                    })
+                    if (mui.os.plus) {
+                        var btnArray = ['是', '否'];
+                        mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+                            if (e.index == 0) {
+                                var rootPath = self.getContextPath();
+                                // 链接为../../public/android/flow/getFile，故需转换，否则会报400错误
+                                var p = url.indexOf("/public/");
+                                if (p!=-1) {
+                                    url = url.substring(p);
+                                }
+                                url = rootPath + url;
+                                var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+                                    if (status == 200) {
+                                        // 调用第三方应用打开文件
+                                        plus.runtime.openFile(d.filename, {}, function (e) {
+                                            alert('打开失败');
+                                        });
+                                    } else {
+                                        alert("下载失败: " + status);
+                                    }
+                                });
+                                dtask.start();
+                            }
+                        });
+                    }
+                    else {
+                        mui.openWindow({
+                            "url": url
+                        })
+                    }
                 }
             });
             $(formSelector).on("tap", ".icon-location", function () {
@@ -1000,7 +1106,13 @@
             var pos = strFullPath.indexOf(strPath);
             var prePath = strFullPath.substring(0, pos);
             var postPath = strPath.substring(0, strPath.substr(1).indexOf('/') + 1);
-            return (prePath + postPath);
+            // 有的服务器上会在路径中带上weixin，如contextPath为：http://****.com/weixin
+            var contextPath = prePath + postPath;
+            var	p = contextPath.indexOf("/weixin");
+            if (p!=-1) {
+                contextPath = contextPath.substring(0, p);
+            }
+            return contextPath;
         }
 
     });

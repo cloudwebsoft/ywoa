@@ -12,6 +12,9 @@
 <%@ page import="java.text.*"%>
 <%@page import="com.redmoon.oa.pvg.Privilege"%>
 <%@page import="com.redmoon.oa.sms.SMSTemplateDb"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 
 <%
@@ -65,7 +68,9 @@ function setObj(th,id){
 <TR>
 <TD width="19%" align=right>短信类型：</TD>
 <TD width="71%" align=left>&nbsp;<%
-out.print(BasicSelectCtl.convertToHTMLCtl(request, "sms_type", "sms_type"));
+	MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+	IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
+	out.print(basicSelectCtl.convertToHtmlCtl(request, "sms_type", "sms_type"));
 String type = stDb.getString("type");
 %>
 <script>

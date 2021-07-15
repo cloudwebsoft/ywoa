@@ -4,11 +4,14 @@ import cn.js.fan.db.ListResult;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.db.SQLFilter;
-import cn.js.fan.util.DateUtil;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.ParamUtil;
-import cn.js.fan.util.StrUtil;
+import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.api.IModuleFieldSelectCtl;
+import com.cloudweb.oa.api.INestSheetCtl;
+import com.cloudweb.oa.service.MacroCtlService;
+import com.cloudweb.oa.service.WorkflowService;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.ThreadContext;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.android.Privilege;
@@ -19,10 +22,10 @@ import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.flow.macroctl.ModuleFieldSelectCtl;
-import com.redmoon.oa.flow.macroctl.NestSheetCtl;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
+import com.redmoon.oa.stamp.StampDb;
+import com.redmoon.oa.stamp.StampPriv;
 import com.redmoon.oa.sys.DebugUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -34,10 +37,14 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -48,12 +55,18 @@ public class FlowController {
     private static int RES_SUCCESS = 0;                      //成功
     private static int RES_FAIL = -1;                        //失败
     private static int RES_EXPIRED = -2;                     //SKEY过期
-    
+
     private final static String OFFICE_EQUIPMENT = "office_equipment";
     private final static String RELATE_SELECT = "relate_select";//联动选择 办公用品 库存的
 
     @Autowired
     HttpServletRequest request;
+
+    @Autowired
+    private WorkflowService workflowService;
+
+    @Autowired
+    private ThreadContext threadContext;
 
     @ResponseBody
     @RequestMapping(value = "/flow/doingorreturn", produces = {"application/json;charset=UTF-8;"})
@@ -77,11 +90,11 @@ public class FlowController {
                 e.printStackTrace();
             }
         }
-        String beginDate = "",endDate="";
+        String beginDate = "", endDate = "";
         if (!showyear.equals("") && !showmonth.equals("")) {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, StrUtil.toInt(showyear));
-            cal.set(Calendar.MONTH, StrUtil.toInt(showmonth)-1);
+            cal.set(Calendar.MONTH, StrUtil.toInt(showmonth) - 1);
             cal.set(Calendar.DAY_OF_MONTH, 1);
             beginDate = DateUtil.format(cal, "yyyy-MM-dd");
             cal.add(Calendar.MONTH, 1);
@@ -98,9 +111,9 @@ public class FlowController {
         if (isFlowProxy) {
             sql += " or m.proxy=" + StrUtil.sqlstr(myname);
         }
-        sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<> " +WorkflowDb.STATUS_DELETED +" and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
+        sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<> " + WorkflowDb.STATUS_DELETED + " and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
         if (op.equals("search")) {
-            sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" +WorkflowDb.STATUS_DELETED + " and f.status<>" +WorkflowDb.STATUS_DISCARDED + " and (m.user_name=" + StrUtil.sqlstr(myname);
+            sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" + WorkflowDb.STATUS_DELETED + " and f.status<>" + WorkflowDb.STATUS_DISCARDED + " and (m.user_name=" + StrUtil.sqlstr(myname);
             if (isFlowProxy) {
                 sql += " or m.proxy=" + StrUtil.sqlstr(myname);
             }
@@ -108,8 +121,7 @@ public class FlowController {
             if (!title.equals("")) {
                 if (StrUtil.isNumeric(title)) {
                     sql += " and f.id=" + title;
-                }
-                else {
+                } else {
                     sql += " and f.title like " + StrUtil.sqlstr("%" + title + "%");
                 }
             }
@@ -150,7 +162,7 @@ public class FlowController {
                 wfd = wfd.getWorkflowDb((int) mad.getFlowId());
 
                 lf = lf.getLeaf(wfd.getTypeCode());
-                if (lf==null) {
+                if (lf == null) {
                     lf = new Leaf();
                     continue;
                 }
@@ -158,7 +170,7 @@ public class FlowController {
                 JSONObject flow = new JSONObject();
                 flow.put("myActionId", String.valueOf(mad.getId()));
                 flow.put("flowId", String.valueOf(mad.getFlowId()));
-                flow.put("name", StringEscapeUtils.unescapeHtml(wfd.getTitle()) );
+                flow.put("name", StringEscapeUtils.unescapeHtml(wfd.getTitle()));
                 flow.put("status", WorkflowActionDb.getStatusName(mad.getActionStatus()));
                 flow.put("beginDate", DateUtil.format(wfd.getBeginDate(), "MM-dd HH:mm"));
                 flow.put("type", String.valueOf(lf.getType()));
@@ -187,10 +199,10 @@ public class FlowController {
 
         Privilege privilege = new Privilege();
         boolean re = privilege.Auth(skey);
-        if(re){
+        if (re) {
             try {
-                json.put("res","-2");
-                json.put("msg","时间过期");
+                json.put("res", "-2");
+                json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -214,11 +226,10 @@ public class FlowController {
                 sql += " or m.proxy=" + StrUtil.sqlstr(myname);
             }
             sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<> " + WorkflowDb.STATUS_DELETED;
-            if (!"".equals(title) && title!=null) {
+            if (!"".equals(title) && title != null) {
                 if (StrUtil.isNumeric(title)) {
                     sql += " and f.id=" + title;
-                }
-                else {
+                } else {
                     sql += " and f.title like " + StrUtil.sqlstr("%" + title + "%");
                 }
             }
@@ -229,32 +240,32 @@ public class FlowController {
         try {
             ListResult lr = wf.listResult(sql, curpage, pagesize);
             long total = lr.getTotal();
-            json.put("res","0");
-            json.put("msg","操作成功");
-            json.put("total",String.valueOf(total));
+            json.put("res", "0");
+            json.put("msg", "操作成功");
+            json.put("total", String.valueOf(total));
             Vector v = lr.getResult();
             Iterator ir = null;
-            if (v!=null)
+            if (v != null)
                 ir = v.iterator();
             JSONObject result = new JSONObject();
-            result.put("count",String.valueOf(pagesize));
+            result.put("count", String.valueOf(pagesize));
             MyActionDb mad = new MyActionDb();
             UserMgr um = new UserMgr();
             Leaf lf = new Leaf();
-            JSONArray flows  = new JSONArray();
+            JSONArray flows = new JSONArray();
             while (ir.hasNext()) {
-                WorkflowDb wfd = (WorkflowDb)ir.next();
+                WorkflowDb wfd = (WorkflowDb) ir.next();
 
                 lf = lf.getLeaf(wfd.getTypeCode());
-                if (lf==null) {
+                if (lf == null) {
                     lf = new Leaf();
                 }
 
                 JSONObject flow = new JSONObject();
                 flow.put("flowId", String.valueOf(wfd.getId()));
-                flow.put("name", StringEscapeUtils.unescapeHtml(wfd.getTitle()) );
-                flow.put("status",wfd.getStatusDesc());
-                flow.put("beginDate", DateUtil.format(wfd.getBeginDate(),"MM-dd HH:mm"));
+                flow.put("name", StringEscapeUtils.unescapeHtml(wfd.getTitle()));
+                flow.put("status", wfd.getStatusDesc());
+                flow.put("beginDate", DateUtil.format(wfd.getBeginDate(), "MM-dd HH:mm"));
                 flow.put("type", lf.getCode());
                 flow.put("typeName", lf.getName());
 
@@ -264,7 +275,7 @@ public class FlowController {
 
                 Iterator ir2 = mad.listResult(sql, 1, 1).getResult().iterator();
                 if (ir2.hasNext()) {
-                    mad = (MyActionDb)ir2.next();
+                    mad = (MyActionDb) ir2.next();
                     lastUser = um.getUserDb(mad.getUserName()).getRealName();
                 }
 
@@ -272,8 +283,8 @@ public class FlowController {
 
                 flows.put(flow);
             }
-            result.put("flows",flows);
-            json.put("result",result);
+            result.put("flows", flows);
+            json.put("result", result);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -283,7 +294,7 @@ public class FlowController {
         return json.toString();
     }
 
-    public JSONArray getCwsWorkflowResultDetail(long flowId, long myActionId,String username) {
+    public JSONArray getCwsWorkflowResultDetail(long flowId, long myActionId, String username) {
         JSONArray jsonArr = new JSONArray();
         UserDb userDb = new UserDb();
         String processListSql = "select id from flow_my_action where flow_id="
@@ -299,14 +310,14 @@ public class FlowController {
             try {
                 userDb = userDb.getUserDb(child_mad.getUserName());
                 String content = MyActionMgr.renderResultForMobile(child_mad);
-                obj.put("result",StringEscapeUtils.unescapeHtml(content));
-                obj.put("photo",StrUtil.getNullStr(userDb.getPhoto()));
+                obj.put("result", StringEscapeUtils.unescapeHtml(content));
+                obj.put("photo", StrUtil.getNullStr(userDb.getPhoto()));
                 obj.put("readDate", DateUtil.format(child_mad.getReadDate(),
                         "MM-dd HH:mm"));
                 obj.put("userName", userDb.getRealName());
                 obj.put("gender", userDb.getGender());
                 obj.put("myActionId", child_mad.getId());
-                obj.put("annexs", workFlowAnnex.getFlowAnnex(child_mad.getId(),username,0));
+                obj.put("annexs", workFlowAnnex.getFlowAnnex(child_mad.getId(), username, 0));
                 jsonArr.put(obj);
             } catch (JSONException e) {
                 log.error("@详情列表" + e.getMessage());
@@ -348,22 +359,19 @@ public class FlowController {
                 json.put("res", res);
                 json.put("msg", msg);
                 return json.toString();
-            }
-            else if (mad.getCheckStatus()==MyActionDb.CHECK_STATUS_PASS) {
+            } else if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_PASS) {
                 res = "-1";
                 msg = "流程节点已由其他人员处理，不需要再处理";
                 json.put("res", res);
                 json.put("msg", msg);
                 return json.toString();
-            }
-            else if (mad.getCheckStatus()==MyActionDb.CHECK_STATUS_PASS_BY_RETURN) {
+            } else if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_PASS_BY_RETURN) {
                 res = "-1";
                 msg = "待办流程已因被返回而忽略，不需要再处理！";
                 json.put("res", res);
                 json.put("msg", msg);
                 return json.toString();
-            }
-            else if (mad.getCheckStatus()==MyActionDb.CHECK_STATUS_TRANSFER) {
+            } else if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_TRANSFER) {
                 res = "-1";
                 msg = "	流程已指派，不需要再处理!";
                 json.put("res", res);
@@ -371,7 +379,7 @@ public class FlowController {
                 return json.toString();
             }
 
-            if(!mad.isReaded()){
+            if (!mad.isReaded()) {
                 mad.setReadDate(new Date());
                 mad.setReaded(true);
                 mad.save();
@@ -417,14 +425,15 @@ public class FlowController {
                     String macroCode = mu.getCode();
 
                     if ("module_field_select".equals(macroCode)) {
-                        JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
-                        if (jsonObj!=null) {
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        if (jsonObj != null) {
                             if (jsonObj.getBoolean("isRealTime")) {
                                 // 自动映射
                                 if (!StringUtils.isEmpty(ff.getValue())) {
                                     isRealTime = true;
-                                    ModuleFieldSelectCtl mfsc = new ModuleFieldSelectCtl();
-                                    mfsc.autoMap(request, (int)flowId, ff.getValue(), ff);
+                                    moduleFieldSelectCtl.autoMap(request, (int) flowId, ff.getValue(), ff);
                                 }
                             }
                         }
@@ -451,7 +460,7 @@ public class FlowController {
             String userName = privilege.getUserName(skey);
             WorkflowPredefineDb wfp = new WorkflowPredefineDb();
             wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
-            if (wa.getStatus()== WorkflowActionDb.STATE_DOING || wa.getStatus()== WorkflowActionDb.STATE_RETURN) {
+            if (wa.getStatus() == WorkflowActionDb.STATE_DOING || wa.getStatus() == WorkflowActionDb.STATE_RETURN) {
                 ;
             } else {
                 // 有可能会是重激活的情况，或者是异或聚合的情况
@@ -482,12 +491,11 @@ public class FlowController {
             // 将不显示的字段加入fieldHide
             Iterator<FormField> ir = v.iterator();
             while (ir.hasNext()) {
-                FormField ff = (FormField)ir.next();
-                if (ff.getHide()==FormField.HIDE_EDIT || ff.getHide()==FormField.HIDE_ALWAYS) {
+                FormField ff = (FormField) ir.next();
+                if (ff.getHide() == FormField.HIDE_EDIT || ff.getHide() == FormField.HIDE_ALWAYS) {
                     if ("".equals(fieldHide)) {
                         fieldHide = ff.getName();
-                    }
-                    else {
+                    } else {
                         fieldHide += "," + ff.getName();
                     }
                 }
@@ -515,11 +523,11 @@ public class FlowController {
                 JSONArray jsonArr = getCwsWorkflowResultDetail(flowId,
                         myActionId, username);
                 json.put("lightDetail", jsonArr);
-            }else{
-                result.put("annexs", workflowAnnexMgr.getFlowAnnex(0,username,flowId));
+            } else {
+                result.put("annexs", workflowAnnexMgr.getFlowAnnex(0, username, flowId));
             }
 
-            json.put("isFree", 	lf.getType() == Leaf.TYPE_FREE);
+            json.put("isFree", lf.getType() == Leaf.TYPE_FREE);
 
             privilege.doLogin(request, skey);
 
@@ -537,15 +545,14 @@ public class FlowController {
             // 如果当前为发起节点则不能退回
             if (wf.getStartActionId() == mad.getActionId()) {
                 canReturn = false;
-            }
-            else {
+            } else {
                 canReturn = returnv.size() > 0
                         || wfp.getReturnStyle() == WorkflowPredefineDb.RETURN_STYLE_FREE;
             }
 
             json.put("canReturn", String.valueOf(canReturn));
 
-            json.put("url", "public/flow_dispose_do.jsp");
+            json.put("url", "public/flow_dispose_do.jsp"); // 似乎已无用 20210706
 
             // fgf 20170519
             json.put("isProgress", fd.isProgress());
@@ -560,15 +567,15 @@ public class FlowController {
 
             // 判断删除按钮是否显示
             boolean isReadOnly = false;
-            if (wa.getKind()==WorkflowActionDb.KIND_READ) {
+            if (wa.getKind() == WorkflowActionDb.KIND_READ) {
                 isReadOnly = true;
             }
             boolean canDel = false;
             com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
-            if(conf.getIsDisplay("FLOW_BUTTON_DEL")){
+            if (conf.getIsDisplay("FLOW_BUTTON_DEL")) {
                 String flag = wa.getFlag();
-                if (!isReadOnly && flag.length()>=4 && flag.substring(3, 4).equals("1") && mad.getActionStatus()!=WorkflowActionDb.STATE_RETURN) {
-                    if (mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND) {
+                if (!isReadOnly && flag.length() >= 4 && flag.substring(3, 4).equals("1") && mad.getActionStatus() != WorkflowActionDb.STATE_RETURN) {
+                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
                         canDel = true;
                     }
                 }
@@ -577,10 +584,10 @@ public class FlowController {
 
             // 结束流程标志
             boolean canFinishAgree = false;
-            if(conf.getIsDisplay("FLOW_BUTTON_FINISH")){
+            if (conf.getIsDisplay("FLOW_BUTTON_FINISH")) {
                 String flag = wa.getFlag();
-                if (wf.isStarted() && flag.length()>=12 && flag.substring(11, 12).equals("1")) {
-                    if (mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND) {
+                if (wf.isStarted() && flag.length() >= 12 && flag.substring(11, 12).equals("1")) {
+                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
                         canFinishAgree = true;
                     }
                 }
@@ -684,14 +691,17 @@ public class FlowController {
                     }
 
                     if ("nest_sheet".equals(macroCode) || "nest_table".equals(macroCode) || "macro_detaillist_ctl".equals(macroCode)) {
-                        JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
-                        if (jsonObj!=null) {
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        INestSheetCtl ntc = macroCtlService.getNestSheetCtl();
+                        JSONObject jsonObj = ntc.getCtlDescription(ff);
+                        if (jsonObj != null) {
                             field.put("desc", jsonObj);
                         }
-                    }
-                    else if ("module_field_select".equals(macroCode)) {
-                        JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
-                        if (jsonObj!=null) {
+                    } else if ("module_field_select".equals(macroCode)) {
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        if (jsonObj != null) {
                             field.put("desc", jsonObj);
                         }
                     }
@@ -701,7 +711,7 @@ public class FlowController {
                     String[][] optionsArray = FormParser.getOptionsArrayOfSelect(fd, ff);
                     for (int i = 0; i < optionsArray.length; i++) {
                         String[] optionsItem = optionsArray[i];
-                        if(optionsItem!=null && optionsItem.length==2){
+                        if (optionsItem != null && optionsItem.length == 2) {
                             JSONObject option = new JSONObject();
                             option.put("value", optionsItem[0]);
                             option.put("name", optionsItem[1]);
@@ -785,8 +795,7 @@ public class FlowController {
                             if (fileExist.exists()) {
                                 file.put("preview", "public/flow_att_preview.jsp?attachId=" + am.getId());
                             }
-                        }
-                        else {
+                        } else {
                             file.put("preview", "public/flow_att_preview.jsp?attachId=" + am.getId());
                         }
                     }
@@ -796,8 +805,9 @@ public class FlowController {
                     file.put("canDel", wa.canDelAttachment());
 
                     file.put("name", am.getName());
-                    downPath = "public/flow_getfile.jsp?" + "flowId=" + flowId
-                            + "&attachId=" + am.getId();
+                    // downPath = "public/flow_getfile.jsp?" + "flowId=" + flowId + "&attachId=" + am.getId();
+                    downPath = "public/android/getFile.do?" + "flowId=" + flowId + "&attachId=" + am.getId();
+
                     file.put("url", downPath);
                     file.put("size", String.valueOf(am.getSize()));
                     files.put(file);
@@ -809,7 +819,7 @@ public class FlowController {
             boolean flagXorRadiate = wa.isXorRadiate();
             Vector vMatched = null;
             if (flagXorRadiate) {
-                vMatched = WorkflowRouter.matchNextBranch(wa, privilege.getUserName(skey),condBuf,myActionId);
+                vMatched = WorkflowRouter.matchNextBranch(wa, privilege.getUserName(skey), condBuf, myActionId);
                 String conds = condBuf.toString();
                 boolean hasCond = !conds.equals(""); // 是否含有条件
                 flagXorRadiate = hasCond;
@@ -929,14 +939,14 @@ public class FlowController {
         }
         return json.toString();
     }
-    
-    public JSONArray getCwsWorkflowResultDetail(long flowId,String userName){
+
+    public JSONArray getCwsWorkflowResultDetail(long flowId, String userName) {
         WorkflowAnnexMgr wfam = new WorkflowAnnexMgr();
         JSONArray jsonArr = new JSONArray();
         UserMgr um = new UserMgr();
         UserDb userDb = new UserDb();
         String processListSql = "select id from flow_my_action where flow_id="
-                + flowId+" order by receive_date asc";
+                + flowId + " order by receive_date asc";
         MyActionDb mad = new MyActionDb();
         Vector vProcess = mad.list(processListSql);
         Iterator ir = vProcess.iterator();
@@ -947,17 +957,17 @@ public class FlowController {
                 userDb = userDb.getUserDb(pmad.getUserName());
 
                 String content = MyActionMgr.renderResultForMobile(pmad);
-                obj.put("result",StringEscapeUtils.unescapeHtml(content) );
-                obj.put("readDate",DateUtil.format(pmad.getReadDate(), "MM-dd HH:mm"));
+                obj.put("result", StringEscapeUtils.unescapeHtml(content));
+                obj.put("readDate", DateUtil.format(pmad.getReadDate(), "MM-dd HH:mm"));
                 obj.put("userName", userDb.getRealName());
-                obj.put("photo",StrUtil.getNullStr(userDb.getPhoto()));
+                obj.put("photo", StrUtil.getNullStr(userDb.getPhoto()));
                 obj.put("gender", userDb.getGender());
                 obj.put("myActionId", pmad.getId());
-                obj.put("annexs", wfam.getFlowAnnex(pmad.getId(), userName,0));
+                obj.put("annexs", wfam.getFlowAnnex(pmad.getId(), userName, 0));
 
                 jsonArr.put(obj);
             } catch (JSONException e) {
-                log.error("@详情列表"+e.getMessage());
+                log.error("@详情列表" + e.getMessage());
             }
         }
         return jsonArr;
@@ -996,7 +1006,7 @@ public class FlowController {
         try {
             com.redmoon.oa.flow.Leaf lf = new com.redmoon.oa.flow.Leaf();
             lf = lf.getLeaf(wf.getTypeCode());
-            if(lf==null){
+            if (lf == null) {
                 try {
                     json.put("res", "-1");
                     json.put("msg", "流程目录不存在");
@@ -1020,14 +1030,15 @@ public class FlowController {
                 if ("macro".equals(ff.getType())) {
                     mu = mm.getMacroCtlUnit(ff.getMacroType());
                     if ("module_field_select".equals(mu.getCode())) {
-                        JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
-                        if (jsonObj!=null) {
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        if (jsonObj != null) {
                             if (jsonObj.getBoolean("isRealTime")) {
                                 // 自动映射
                                 if (!StringUtils.isEmpty(ff.getValue())) {
                                     isRealTime = true;
-                                    ModuleFieldSelectCtl mfsc = new ModuleFieldSelectCtl();
-                                    mfsc.autoMap(request, (int)flowId, ff.getValue(), ff);
+                                    moduleFieldSelectCtl.autoMap(request, (int) flowId, ff.getValue(), ff);
                                 }
                             }
                         }
@@ -1042,12 +1053,12 @@ public class FlowController {
 
             UserMgr um = new UserMgr();
             mm = new MacroCtlMgr();
-            ri = jt.executeQuery(sql, new Object[] {lf.getFormCode()});
-            json.put("res","0");
-            json.put("msg","操作成功");
-            json.put("sender",um.getUserDb(wf.getUserName()).getRealName());
-            json.put("createDate",DateUtil.format(wf.getMydate(), "yyyy-MM-dd HH:mm:ss"));
-            json.put("status",wf.getStatusDesc());
+            ri = jt.executeQuery(sql, new Object[]{lf.getFormCode()});
+            json.put("res", "0");
+            json.put("msg", "操作成功");
+            json.put("sender", um.getUserDb(wf.getUserName()).getRealName());
+            json.put("createDate", DateUtil.format(wf.getMydate(), "yyyy-MM-dd HH:mm:ss"));
+            json.put("status", wf.getStatusDesc());
             json.put("flowTypeName", lf.getName());
 
             // fgf 20170519
@@ -1067,16 +1078,16 @@ public class FlowController {
 
             boolean isLight = wfd.isLight();
             json.put("isLight", isLight);//判断时候是@liuchen
-            if(isLight){
-                if(flowId!=null && !flowId.equals("")){
+            if (isLight) {
+                if (flowId != null && !flowId.equals("")) {
                     JSONArray jsonArr = getCwsWorkflowResultDetail(flowId, userName);
-                    json.put("lightDetail",jsonArr);
+                    json.put("lightDetail", jsonArr);
                 }
-            }else{
+            } else {
                 result.put("annexs", wfam.getFlowAnnex(0, userName, flowId));
             }
 
-            JSONArray fields  = new JSONArray();
+            JSONArray fields = new JSONArray();
 
             boolean isHideField = true;
             String fieldHide = "";
@@ -1084,12 +1095,11 @@ public class FlowController {
             // 将不显示的字段加入fieldHide
             Iterator ir = fd.getFields().iterator();
             while (ir.hasNext()) {
-                FormField ff = (FormField)ir.next();
-                if (ff.getHide()==FormField.HIDE_ALWAYS) {
+                FormField ff = (FormField) ir.next();
+                if (ff.getHide() == FormField.HIDE_ALWAYS) {
                     if ("".equals(fieldHide)) {
                         fieldHide = ff.getName();
-                    }
-                    else {
+                    } else {
                         fieldHide += "," + ff.getName();
                     }
                 }
@@ -1098,15 +1108,14 @@ public class FlowController {
             MyActionDb mad = new MyActionDb();
             mad = mad.getMyActionDbOfFlow(wf.getId(), privilege.getUserName(skey));
             // 管理员查看时，其本人可能并未参与流程，则mad将为null
-            if (mad!=null) {
+            if (mad != null) {
                 WorkflowActionDb wad = new WorkflowActionDb();
                 wad = wad.getWorkflowActionDb((int) mad.getActionId());
 
                 String fHide = StrUtil.getNullString(wad.getFieldHide()).trim();
                 if ("".equals(fieldHide)) {
                     fieldHide = fHide;
-                }
-                else {
+                } else {
                     fieldHide += "," + fHide;
                 }
             }
@@ -1154,50 +1163,51 @@ public class FlowController {
                     if (mu != null) {
                         val = mu.getIFormMacroCtl().getControlText(privilege.getUserName(skey), ff);
                         macroCode = mu.getCode();
-                        if(macroCode!=null && !macroCode.equals("")){
-                            if(macroCode.equals("macro_opinion") || macroCode.equals("macro_opinionex")){
-                                if(!val.equals("")){
+                        if (macroCode != null && !macroCode.equals("")) {
+                            if (macroCode.equals("macro_opinion") || macroCode.equals("macro_opinionex")) {
+                                if (!val.equals("")) {
                                     jsonArr = new JSONArray(val);
-                                }else{
+                                } else {
                                     jsonArr = new JSONArray();
                                 }
                             }
 
-                            if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                                JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
-                                if (jsonObj!=null) {
+                            if ("nest_sheet".equals(macroCode) || "nest_table".equals(macroCode) || "macro_detaillist_ctl".equals(macroCode)) {
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                INestSheetCtl ntc = macroCtlService.getNestSheetCtl();
+                                JSONObject jsonObj = ntc.getCtlDescription(ff);
+                                if (jsonObj != null) {
                                     field.put("desc", jsonObj);
-                                }
-                                else {
+                                } else {
                                     field.put("desc", ff.getDescription());
                                 }
-                            }
-                            else if (macroCode.equals("module_field_select")) {
-                                JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
-                                if (jsonObj!=null) {
+                            } else if (macroCode.equals("module_field_select")) {
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                                JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                                if (jsonObj != null) {
                                     field.put("desc", jsonObj);
-                                }
-                                else {
+                                } else {
                                     field.put("desc", ff.getDescription());
                                 }
                             }
                         }
                     }
                 }
-                field.put("title",rr.getString("title"));
-                field.put("code",ff.getName());
-                if(jsonArr!=null){
-                    field.put("value",jsonArr);
-                }else{
-                    field.put("value",val);
+                field.put("title", rr.getString("title"));
+                field.put("code", ff.getName());
+                if (jsonArr != null) {
+                    field.put("value", jsonArr);
+                } else {
+                    field.put("value", val);
                 }
-                field.put("type",rr.getString("type"));
-                String level="";
+                field.put("type", rr.getString("type"));
+                String level = "";
                 if (ff.getType().equals("checkbox")) {
                     // level = "个人兴趣";
                     level = ff.getTitle();
                 }
-                field.put("level",level);
+                field.put("level", level);
                 field.put("macroCode", macroCode);
                 fields.put(field);
             }
@@ -1212,7 +1222,7 @@ public class FlowController {
             int doc_id = wf.getDocId();
             DocumentMgr dm = new DocumentMgr();
             Document doc = dm.getDocument(doc_id);
-            if (doc!=null) {
+            if (doc != null) {
                 java.util.Vector attachments = doc.getAttachments(1);
                 ir = attachments.iterator();
                 while (ir.hasNext()) {
@@ -1251,22 +1261,22 @@ public class FlowController {
                             if (fileExist.exists()) {
                                 file.put("preview", "public/flow_att_preview.jsp?attachId=" + am.getId());
                             }
-                        }
-                        else {
+                        } else {
                             file.put("preview", "public/flow_att_preview.jsp?attachId=" + am.getId());
                         }
                     }
 
-                    file.put("name",am.getName());
-                    downPath = "public/flow_getfile.jsp?"+"flowId="+flowId+"&attachId="+am.getId();
-                    file.put("url",downPath);
-                    file.put("size",String.valueOf(am.getSize()));
+                    file.put("name", am.getName());
+                    // downPath = "public/flow_getfile.jsp?"+"flowId="+flowId+"&attachId="+am.getId();
+                    downPath = "public/android/getFile.do?" + "flowId=" + flowId + "&attachId=" + am.getId();
+                    file.put("url", downPath);
+                    file.put("size", String.valueOf(am.getSize()));
                     files.put(file);
                 }
             }
-            result.put("fields",fields);
-            result.put("files",files);
-            json.put("result",result);
+            result.put("fields", fields);
+            result.put("files", files);
+            json.put("result", result);
         } catch (JSONException e) {
             e.printStackTrace();
         } catch (SQLException ex) {
@@ -1305,11 +1315,11 @@ public class FlowController {
             children = dir.getChildren(Leaf.CODE_ROOT);
             Iterator ri = children.iterator();
             JSONObject result = new JSONObject();
-            JSONArray parentNames  = new JSONArray();
+            JSONArray parentNames = new JSONArray();
             while (ri.hasNext()) {
                 Leaf childlf = (Leaf) ri.next();
 
-                JSONArray childNames  = new JSONArray();
+                JSONArray childNames = new JSONArray();
 
                 if (childlf.isOpen() && dv.canUserSeeWhenInitFlow(request, childlf)) {
                     Iterator ir = dir.getChildren(childlf.getCode()).iterator();
@@ -1318,18 +1328,18 @@ public class FlowController {
                         if (chlf.isOpen() && chlf.isMobileStart() && dv.canUserSeeWhenInitFlow(request, chlf)) {
                             JSONObject parentName = new JSONObject();
                             parentName.put("parentName", chlf.getName());
-                            if(chlf.getType()!=Leaf.TYPE_NONE){
+                            if (chlf.getType() != Leaf.TYPE_NONE) {
                                 parentName.put("parentCode", chlf.getCode());
                                 parentName.put("parentType", chlf.getType());
                             }
-                            parentName.put("childNames",childNames);
+                            parentName.put("childNames", childNames);
                             parentNames.put(parentName);
                         }
                     }
                 }
             }
-            result.put("parentNames",parentNames);
-            json.put("result",result);
+            result.put("parentNames", parentNames);
+            json.put("result", result);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -1407,7 +1417,10 @@ public class FlowController {
                         if ("".equals(strDesc)) {
                             strDesc = ff.getDefaultValueRaw();
                         }
-                        strDesc = ModuleFieldSelectCtl.formatJSONStr(strDesc);
+
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                        strDesc = moduleFieldSelectCtl.formatJSONString(strDesc);
                         try {
                             JSONObject jsonField = new JSONObject(strDesc);
                             String value = StrUtil.getNullStr(ff.getValue());
@@ -1421,12 +1434,10 @@ public class FlowController {
                                 }
                                 // 如果value中存在值，则说明需自动映射
                                 if (!"".equals(value)) {
-                                    ModuleFieldSelectCtl mfsc = new ModuleFieldSelectCtl();
-                                    mfsc.autoMap(request, (int)flowId, value, ff);
+                                    moduleFieldSelectCtl.autoMap(request, (int) flowId, value, ff);
                                 }
                             }
-                        }
-                        catch (JSONException e) {
+                        } catch (JSONException e) {
                             e.printStackTrace();
                         }
                     }
@@ -1468,12 +1479,11 @@ public class FlowController {
             // 将不显示的字段加入fieldHide
             ir = v.iterator();
             while (ir.hasNext()) {
-                FormField ff = (FormField)ir.next();
-                if (ff.getHide()==FormField.HIDE_EDIT || ff.getHide()==FormField.HIDE_ALWAYS) {
+                FormField ff = (FormField) ir.next();
+                if (ff.getHide() == FormField.HIDE_EDIT || ff.getHide() == FormField.HIDE_ALWAYS) {
                     if ("".equals(fieldHide)) {
                         fieldHide = ff.getName();
-                    }
-                    else {
+                    } else {
                         fieldHide += "," + ff.getName();
                     }
                 }
@@ -1500,14 +1510,14 @@ public class FlowController {
             wfd = wfd.getPredefineFlowOfFree(wf.getTypeCode());
             boolean isLight = wfd.isLight();
             json.put("isLight", isLight);// 判断时候是@liuchen
-            json.put("isFree", 	lf.getType() == Leaf.TYPE_FREE);
+            json.put("isFree", lf.getType() == Leaf.TYPE_FREE);
 
             boolean canDel = false;
             com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
-            if(conf.getIsDisplay("FLOW_BUTTON_DEL")){
+            if (conf.getIsDisplay("FLOW_BUTTON_DEL")) {
                 String flag = wa.getFlag();
-                if (flag.length()>=4 && flag.substring(3, 4).equals("1") && mad.getActionStatus()!=WorkflowActionDb.STATE_RETURN) {
-                    if (mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND) {
+                if (flag.length() >= 4 && flag.substring(3, 4).equals("1") && mad.getActionStatus() != WorkflowActionDb.STATE_RETURN) {
+                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
                         canDel = true;
                     }
                 }
@@ -1516,10 +1526,10 @@ public class FlowController {
 
             // 结束流程标志
             boolean canFinishAgree = false;
-            if(conf.getIsDisplay("FLOW_BUTTON_FINISH")){
+            if (conf.getIsDisplay("FLOW_BUTTON_FINISH")) {
                 String flag = wa.getFlag();
-                if (wf.isStarted() && flag.length()>=12 && flag.substring(11, 12).equals("1")) {
-                    if (mad.getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND) {
+                if (wf.isStarted() && flag.length() >= 12 && flag.substring(11, 12).equals("1")) {
+                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
                         canFinishAgree = true;
                     }
                 }
@@ -1615,8 +1625,7 @@ public class FlowController {
                         // options = options.replaceAll("\\\"", "");
                         try {
                             js = new JSONArray(options);
-                        }
-                        catch (JSONException e) {
+                        } catch (JSONException e) {
                             DebugUtil.e(getClass(), "execute", ff.getTitle() + " macro ctl's options cann't convert to JSONArray," + options);
                         }
                     }
@@ -1625,17 +1634,15 @@ public class FlowController {
                     if (fieldType != null && !fieldType.equals("")) {
                         if (fieldType.equals("DATE") || fieldType.equals("DATE_TIME")) {
                             // 有可能已经通过表单域选择宏控件传值映射带过来了值
-                            if (ff.getValue()!=null && !"".equals(ff.getValue())) {
+                            if (ff.getValue() != null && !"".equals(ff.getValue())) {
                                 controlValue = ff.getValue();
-                            }
-                            else {
+                            } else {
                                 controlValue = ff.getDefaultValueRaw();
                             }
                         } else {
-                            if (ff.getValue()!=null && !"".equals(ff.getValue())) {
+                            if (ff.getValue() != null && !"".equals(ff.getValue())) {
                                 controlValue = ff.getValue();
-                            }
-                            else {
+                            } else {
                                 controlValue = ff.getDefaultValue();
                             }
                         }
@@ -1645,7 +1652,7 @@ public class FlowController {
                 }
                 // 判断是否为意见输入框
                 if (macroCode != null && !macroCode.equals("")) {
-                    if (macroCode.equals("macro_opinion")||macroCode.equals("macro_opinionex")) {
+                    if (macroCode.equals("macro_opinion") || macroCode.equals("macro_opinionex")) {
                         if (controlText != null
                                 && !controlText.trim().equals("")) {
                             opinionArr = new JSONArray(controlText);
@@ -1657,14 +1664,17 @@ public class FlowController {
                     }
 
                     if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                        JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
-                        if (jsonObj!=null) {
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        INestSheetCtl ntc = macroCtlService.getNestSheetCtl();
+                        JSONObject jsonObj = ntc.getCtlDescription(ff);
+                        if (jsonObj != null) {
                             field.put("desc", jsonObj);
                         }
-                    }
-                    else if (macroCode.equals("module_field_select")) {
-                        JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
-                        if (jsonObj!=null) {
+                    } else if (macroCode.equals("module_field_select")) {
+                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        if (jsonObj != null) {
                             field.put("desc", jsonObj);
                         }
                     }
@@ -1680,8 +1690,7 @@ public class FlowController {
                         try {
                             option.put("value", optionsItem[0]);
                             option.put("name", optionsItem[1]);
-                        }
-                        catch (Exception e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                         js.put(option);
@@ -1704,9 +1713,9 @@ public class FlowController {
                     level = ff.getTitle();
                 }
                 field.put("level", level);
-                if(macroType.equals("select") && desc.equals(OFFICE_EQUIPMENT)){
+                if (macroType.equals("select") && desc.equals(OFFICE_EQUIPMENT)) {
                     field.put("macroType", RELATE_SELECT);
-                }else{
+                } else {
                     field.put("macroType", macroType);
                 }
                 field.put("editable", String.valueOf(ff.isEditable()));
@@ -1738,12 +1747,12 @@ public class FlowController {
             boolean flagXorRadiate = wa.isXorRadiate();
             Vector vMatched = null;
             if (flagXorRadiate) {
-                vMatched = WorkflowRouter.matchNextBranch(wa,privilege.getUserName(skey),condBuf,startActionId);
+                vMatched = WorkflowRouter.matchNextBranch(wa, privilege.getUserName(skey), condBuf, startActionId);
                 String conds = condBuf.toString();
-                boolean hasCond = conds.equals("")?false:true; // 是否含有条件 
-                if(hasCond){
+                boolean hasCond = conds.equals("") ? false : true; // 是否含有条件
+                if (hasCond) {
                     flagXorRadiate = true;
-                }else{
+                } else {
                     flagXorRadiate = false;
                 }
 
@@ -1874,7 +1883,7 @@ public class FlowController {
                 e.printStackTrace();
             }
         }
-        
+
         int actionId = myActionId;
         WorkflowMgr wfm = new WorkflowMgr();
         WorkflowDb wf = wfm.getWorkflowDb(flowId);
@@ -1899,10 +1908,9 @@ public class FlowController {
                     mad = (MyActionDb) ir.next();
 
                     // 防止用户重复
-                    if (map.get(mad.getUserName())==null) {
+                    if (map.get(mad.getUserName()) == null) {
                         map.put(mad.getUserName(), mad.getUserName());
-                    }
-                    else {
+                    } else {
                         continue;
                     }
 
@@ -1918,7 +1926,7 @@ public class FlowController {
                     }
 
                     JSONObject user = new JSONObject();
-                    user.put("id",String.valueOf(wa.getId()));
+                    user.put("id", String.valueOf(wa.getId()));
                     user.put("name", wa.getUserRealName());
                     user.put("actionTitle", wa.getTitle());
                     users.put(user);
@@ -1927,7 +1935,7 @@ public class FlowController {
                 WorkflowActionDb wa = new WorkflowActionDb();
                 MyActionDb mad = new MyActionDb();
                 mad = mad.getMyActionDb(actionId);
-                wa = wa.getWorkflowActionDb((int)mad.getActionId());
+                wa = wa.getWorkflowActionDb((int) mad.getActionId());
 
                 Vector returnv = wa.getLinkReturnActions();
 
@@ -2018,11 +2026,11 @@ public class FlowController {
                     users.put(user);
                 } else {
                     boolean isStrategySelectable = towa.isStrategySelectable();
-                    if (deptCode!=null) {
+                    if (deptCode != null) {
                         deptCode = deptCode.trim(); // @android存在bug，多了一个空格
                     }
                     WorkflowRouter workflowRouter = new WorkflowRouter();
-                    Vector vuser = workflowRouter.matchActionUser(request, towa, wa, false,deptCode);
+                    Vector vuser = workflowRouter.matchActionUser(request, towa, wa, false, deptCode);
                     userir = vuser.iterator();
                     while (userir != null && userir.hasNext()) {
                         UserDb ud = (UserDb) userir.next();
@@ -2056,11 +2064,11 @@ public class FlowController {
             res = "-1";
             msg = "下一步处理用户获取失败";
             log.error(e.getMessage());
-        }finally{
+        } finally {
             try {
                 json.put("result", result);
-                json.put("res",res);
-                json.put("msg",msg);
+                json.put("res", res);
+                json.put("msg", msg);
             } catch (JSONException e) {
                 log.error(e.getMessage());
             }
@@ -2077,9 +2085,9 @@ public class FlowController {
         Privilege privilege = new Privilege();
         boolean re = privilege.Auth(skey);
 
-        if(re){
+        if (re) {
             try {
-                jReturn.put("res",RES_EXPIRED);
+                jReturn.put("res", RES_EXPIRED);
                 jResult.put("returnCode", "");
                 jReturn.put("result", jResult);
                 return jReturn.toString();
@@ -2093,17 +2101,17 @@ public class FlowController {
         try {
             String sql = "insert into flow_annex (id,flow_id,content,user_name,reply_name,add_date,action_id,is_secret) values(?,?,?,?,?,?,?,?)";
             long id = SequenceManager.nextID(SequenceManager.OA_FLOW_ANNEX);
-            if(myActionId != 0){
+            if (myActionId != 0) {
                 //@流程
                 MyActionDb mad = new MyActionDb(myActionId);
-                flow_id = (int)mad.getFlowId();
+                flow_id = (int) mad.getFlowId();
                 long action_id = mad.getActionId();
                 String reply_name = mad.getUserName();
-                re = workflowAnnexMgr.create(sql, new Object[]{id,flow_id,content,name,reply_name,new Date(),action_id,is_secret});
-            }else{
+                re = workflowAnnexMgr.create(sql, new Object[]{id, flow_id, content, name, reply_name, new Date(), action_id, is_secret});
+            } else {
                 //普通流程
                 sql = "insert into flow_annex (id,flow_id,content,user_name,reply_name,add_date,action_id,is_secret,parent_id,progress) values(?,?,?,?,?,?,?,?,?,?)";
-                re = workflowAnnexMgr.create(sql, new Object[]{id,flow_id,content,name,name,new Date(),0,0,-1,progress});
+                re = workflowAnnexMgr.create(sql, new Object[]{id, flow_id, content, name, name, new Date(), 0, 0, -1, progress});
 
                 if (re) {
                     WorkflowDb wf = new WorkflowDb(flow_id);
@@ -2115,7 +2123,7 @@ public class FlowController {
                     FormDb fd = new FormDb();
                     fd = fd.getFormDb(formCode);
                     // 进度为0的时候不更新
-                    if (fd.isProgress() && progress>0) {
+                    if (fd.isProgress() && progress > 0) {
                         com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
                         fdao = fdao.getFormDAO(flow_id, fd);
                         fdao.setCwsProgress(progress);
@@ -2123,7 +2131,7 @@ public class FlowController {
                     }
                 }
             }
-            if(re){
+            if (re) {
                 jReturn.put("res", RES_SUCCESS);
                 jResult.put("returnCode", RES_SUCCESS);
                 UserDb userDb = new UserDb(name);
@@ -2136,8 +2144,8 @@ public class FlowController {
         } catch (Exception e) {
             flag = false;
             log.error(StrUtil.trace(e));
-        } finally{
-            if(!flag){
+        } finally {
+            if (!flag) {
                 try {
                     jReturn.put("res", RES_FAIL);
                     jResult.put("returnCode", "");
@@ -2149,5 +2157,131 @@ public class FlowController {
         }
 
         return jReturn.toString();
+    }
+
+    @RequestMapping("/getFile")
+    public void getFile(HttpServletResponse response) throws IOException, ErrMsgException {
+        BufferedInputStream bis = null;
+        BufferedOutputStream bos = null;
+        try {
+            bos = new BufferedOutputStream(response.getOutputStream());
+
+            String op = ParamUtil.get(request, "op");
+            //下载全路径 ，下载标题
+            String url = "";
+            String title = "";
+            String skey = ParamUtil.get(request, "skey");
+            com.redmoon.oa.android.Privilege pri = new com.redmoon.oa.android.Privilege();
+            String userName = pri.getUserName(skey);
+            if ("".equals(userName)) {
+                response.setContentType("text/html;charset=utf-8");
+                bos.write("skey不存在".getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if (!"".equals(op)) {
+                if ("stamp".equals(op)) {
+                    String opinionName = ParamUtil.get(request, "opinionName");
+                    if (opinionName != null && !"".equals(opinionName.trim())) {
+                        StampPriv sp = new StampPriv();
+                        StampDb sd = sp.getPersonalStamp(opinionName);
+                        if (sd != null) {
+                            title = sd.getImage();
+                            url = cn.js.fan.web.Global.getRealPath() + "/upfile/stamp/" + title;
+
+                        }
+                    }
+                }
+            } else {
+                int flowId = ParamUtil.getInt(request, "flowId");
+                int attId = ParamUtil.getInt(request, "attachId");
+                WorkflowDb wf = new WorkflowDb();
+                wf = wf.getWorkflowDb(flowId);
+                Document doc = new Document();
+                doc = doc.getDocument(wf.getDocId());
+                Attachment att = doc.getAttachment(1, attId);
+                title = att.getName();
+                url = cn.js.fan.web.Global.getRealPath() + "/" + att.getVisualPath() + "/" + att.getDiskName();
+
+                // 判断是否超出下载次数限制
+                AttachmentLogMgr alm = new AttachmentLogMgr();
+                if (!alm.canDownload(userName, flowId, attId)) {
+                    throw new ErrMsgException(alm.getErrMsg(request));
+                }
+                // 下载记录存至日志
+                AttachmentLogMgr.log(userName, flowId, attId, AttachmentLogDb.TYPE_DOWNLOAD);
+            }
+
+            // 用下句会使IE在本窗口中打开文件
+            // response.setContentType(MIMEMap.get(StrUtil.getFileExt(att.getDiskName())));
+            // 使客户端直接下载，上句会使IE在本窗口中打开文件，下句也一样
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-disposition", "attachment; filename=" + StrUtil.GBToUnicode(title));
+            // 多番尝试，UTF8ToUnicode在mui.plus打开时也还是乱码
+            // response.setHeader("Content-disposition", "attachment; filename=" + StrUtil.Unicode2GB(title));
+
+            bis = new BufferedInputStream(new FileInputStream(url));
+
+            byte[] buff = new byte[2048];
+            int bytesRead;
+
+            while (-1 != (bytesRead = bis.read(buff, 0, buff.length))) {
+                bos.write(buff, 0, bytesRead);
+            }
+        } catch (final IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (bis != null) {
+                bis.close();
+            }
+            if (bos != null) {
+                bos.close();
+            }
+        }
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/flow/finishAction", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    public String finishAction(HttpServletRequest request) {
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        try {
+            // 将场景置为流程
+            threadContext.setSceneFlow();
+            json = workflowService.finishActionByMobile(request, new com.redmoon.oa.pvg.Privilege());
+        }
+        catch (ErrMsgException | ClassCastException | NullPointerException | IllegalArgumentException e) {
+            DebugUtil.i(getClass(), "finishAction", StrUtil.trace(e));
+            // 置为异常状态
+            threadContext.setAbnormal(true);
+            json.put("res", "-1");
+            json.put("msg", e.getMessage());
+            json.put("op", "Exception occured in finishAction");
+        }
+        finally {
+            // 清缓存
+            threadContext.remove();
+        }
+        return json.toString();
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/flow/finishActionFree", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    public String finishActionFree(HttpServletRequest request) {
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        try {
+            // 将场景置为流程
+            threadContext.setSceneFlow();
+            json = workflowService.finishActionFreeByMobile(request, new com.redmoon.oa.pvg.Privilege());
+        } catch (ErrMsgException | ClassCastException | NullPointerException | IllegalArgumentException e) {
+            // 置为异常状态
+            threadContext.setAbnormal(true);
+            json.put("res", "-1");
+            json.put("msg", e.getMessage());
+            json.put("op", "");
+            e.printStackTrace();
+        } finally {
+            // 清缓存
+            threadContext.remove();
+        }
+        return json.toString();
     }
 }

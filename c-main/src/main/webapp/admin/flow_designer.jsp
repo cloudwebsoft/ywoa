@@ -23,15 +23,15 @@
     com.redmoon.oa.kernel.License license = com.redmoon.oa.kernel.License.getInstance();
 
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="renderer" content="ie-stand"/>
     <meta http-equiv="pragma" content="no-cache"/>
     <meta http-equiv="Cache-Control" content="no-cache,must-revalidate"/>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>流程设计器</title>
+    <title>流程设计 - <%=wpd.getTitle()%></title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <%@ include file="../inc/nocache.jsp" %>
     <script src="../inc/common.js"></script>

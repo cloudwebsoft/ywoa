@@ -403,4 +403,20 @@ public class ConstUtil {
      * 嵌套表格字段名的前缀，以免与主表中的字段重名
      */
     public static final String NEST_TABLE_FIELD_PREFIX = "nest_field_";
+
+    /**
+     * 无，用于基础数据宏控件
+     */
+    public static final String NONE = "    ";
+
+    /**
+     * 窗口选择
+     */
+    public static final int MODE_WIN = 1;
+    /**
+     * 下拉选择
+     */
+    public static final int MODE_SELECT = 0;
+
+    public static final int MODULE_FIELD_SELECT_CTL_MAX_COUNT = 500;
 }

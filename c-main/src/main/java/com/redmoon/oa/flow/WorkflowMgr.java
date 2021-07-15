@@ -56,7 +56,6 @@ import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.flow.macroctl.SQLCtl;
 import com.redmoon.oa.flow.strategy.IStrategy;
 import com.redmoon.oa.flow.strategy.StrategyMgr;
 import com.redmoon.oa.flow.strategy.StrategyUnit;
@@ -3671,7 +3670,7 @@ public class WorkflowMgr {
             if (field == null) {
                 field = fd.getFormFieldByTitle(fieldTitle);
                 if (field == null) {
-                    LogUtil.getLog(SQLCtl.class).error("表单：" + fd.getName() + "，脚本：" + strWithFields + "中，字段：" + fieldTitle + " 不存在！");
+                    LogUtil.getLog(WorkflowMgr.class).error("表单：" + fd.getName() + "，脚本：" + strWithFields + "中，字段：" + fieldTitle + " 不存在！");
                 }
             }
             // System.out.println(getClass() + " scriptStr=" + scriptStr + " fieldTitle=" + fieldTitle + " ff=" + ff);
@@ -3825,7 +3824,7 @@ public class WorkflowMgr {
             if (field == null) {
                 field = fd.getFormFieldByTitle(fieldTitle);
                 if (field == null) {
-                    LogUtil.getLog(SQLCtl.class).error("表单：" + fd.getName() + "，脚本：" + strWithFields + "中，字段：" + fieldTitle + " 不存在！");
+                    LogUtil.getLog(WorkflowMgr.class).error("表单：" + fd.getName() + "，脚本：" + strWithFields + "中，字段：" + fieldTitle + " 不存在！");
                 }
             }
             m.appendReplacement(sb, field.getName());

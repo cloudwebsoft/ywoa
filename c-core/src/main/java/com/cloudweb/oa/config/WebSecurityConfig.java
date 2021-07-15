@@ -162,7 +162,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         // 导出至word时，图片宏控件需用到img_show.jsp
         http.authorizeRequests()
                     .antMatchers("/**/*.css", "/","/index", "/login","/doLogin.do","/setup/**", "/login-error","/error.jsp", "/401",
-                            "/inc/**", "/skin/**", "/images/**","/css/**","/js/**", "/activex/**", "/public/**", "/weixin/**",
+                            "/inc/**", "/skin/**", "/images/**","/css/**","/js/**", "/activex/**", "/public/**", "/weixin/**", "/dingding/**",
                             "/document/**", "/static/**", "/servlet/WXCallBack", "/actuator/**", "/img_show.jsp", "/flow/macro/**", "/flow/form_js/**", "/wap/**").permitAll()
                     .anyRequest().authenticated() // 所有请求都需要认证
                 .and()

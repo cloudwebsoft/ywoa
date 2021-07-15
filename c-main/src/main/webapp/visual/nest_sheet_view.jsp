@@ -693,7 +693,7 @@ if ("edit".equals(op) || "view".equals(op)) {
         // 如果一项权限都没有，则不显示操作列，20180615 fgf 还是得显示，因为需要查看
 		boolean isOpShow = true;
 		if (op.equals("edit") && !isArchive) {
-			if (canAdd || canEdit || canImport || canExport || (canSel && queryId!=-1) || (canSel && mapAry.length()>0)) {
+			if (canAdd || canEdit || canImport || canExport || (canSel && queryId!=-1) || (canSel/* && mapAry.length()>0*/)) {
 				isOpShow = true;
 			}
 		}		
@@ -715,7 +715,7 @@ if ("edit".equals(op) || "view".equals(op)) {
 		if ("edit".equals(op) && canSel && queryId!=-1) {%>
         <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>, true)" />        
         <%}%>      
-        <%if ("edit".equals(op) && canSel && mapAry.length()>0) {%>
+        <%if ("edit".equals(op) && canSel/* && mapAry.length()>0*/) {%>
         <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)" />        
         <%}%>           
         </td>
@@ -1064,7 +1064,7 @@ if ("edit".equals(op) || "view".equals(op)) {
 		<%if (canSel && queryId!=-1) {%>
         <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>, true)" />        
         <%}%>
-        <%if (canSel && mapAry.length()>0) {%>
+        <%if (canSel/* && mapAry.length()>0*/) {%>
         <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)" />        
         <%}%>        
         </td>

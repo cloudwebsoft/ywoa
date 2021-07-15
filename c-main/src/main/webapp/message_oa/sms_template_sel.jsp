@@ -14,6 +14,9 @@
 <%@ page import = "com.redmoon.oa.basic.*"%>
 <%@page import="com.redmoon.oa.sms.SMSTemplateMgr"%>
 <%@page import="com.redmoon.oa.sms.SMSTemplateDb"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	if (!privilege.isUserPrivValid(request, "read")) {
@@ -122,7 +125,11 @@ function doSort(orderBy) {
     <td height="23" align="left">  
     <form name="formSearch" action="sms_template_sel.jsp" method="post">
 		短信类型
-        <%out.print(BasicSelectCtl.convertToHTMLCtl(request, "sms_type", "sms_type"));%>
+        <%
+			MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+			IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
+			out.print(basicSelectCtl.convertToHtmlCtl(request, "sms_type", "sms_type"));
+		%>
         <input name="op" value="search" type="hidden">
         <input name="submit" type=submit value="搜索" class="tSearch">
     </form>

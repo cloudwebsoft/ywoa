@@ -228,7 +228,7 @@ if ("selBatch".equals(op)) {
 			fdaoNest.setCwsId(String.valueOf(parentId));
 			fdaoNest.setCreator(privilege.getUser(request));
 			fdaoNest.setUnitCode(privilege.getUserUnitCode(request));
-			fdaoNest.setCwsQuoteId((int)id);
+			fdaoNest.setCwsQuoteId(id);
 			fdaoNest.setCwsParentForm(parentFormCode);
 			fdaoNest.setCwsQuoteForm(formCode);
 			boolean re = fdaoNest.create();
@@ -308,7 +308,7 @@ if ("selBatch".equals(op)) {
 		if (nestType.equals(ConstUtil.NEST_SHEET) || nestType.equals(ConstUtil.NEST_DETAIL_LIST)) {
 		%>
 		<script>
-		window.close();
+			window.close();
 		</script>
 		<%
 		}

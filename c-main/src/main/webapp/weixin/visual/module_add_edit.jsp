@@ -104,6 +104,11 @@
     }
 </style>
 <body>
+<header class="mui-bar mui-bar-nav">
+    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+    <a class="mui-icon mui-pull-right mui-a-color"></a>
+    <h1 class="mui-title"><%=msd.getString("name")%></h1>
+</header>
 <div class="mui-content">
     <form class="mui-input-group" id="module_form">
 

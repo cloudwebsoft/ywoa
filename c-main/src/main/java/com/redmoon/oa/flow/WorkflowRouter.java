@@ -185,7 +185,7 @@ public class WorkflowRouter {
                         // if (deptOfUserWithMultiDept == null)
                         // deptOfUserWithMultiDept应该不再可能为null，2012-08-28 fgf
                         // 如果未选择所兼职的部门，则抛出异常
-                        if (deptOfUserWithMultiDept == null || deptOfUserWithMultiDept.equals("")) {
+                        if (deptOfUserWithMultiDept == null || "".equals(deptOfUserWithMultiDept)) {
                             throw new MatchUserException(); // 返回异常，以使得flow_dispose.jsp在try catch后显示多个部门供选择
                         }
                     }
@@ -227,7 +227,7 @@ public class WorkflowRouter {
 
                 // 如果节点的入度（不含来自被忽略的节点）大于1，而节点已经设置或者匹配好了人员，则不允许再次匹配用户，但如果是表单中选择的人员，则允许再次匹配用户
                 if (nextActionFromCount > 1 &&
-                        !nextAction.getUserName().equals("") && !nextAction.getJobCode().startsWith(WorkflowActionDb.PRE_TYPE_FIELD_USER)) {
+                        !"".equals(nextAction.getUserName()) && !nextAction.getJobCode().startsWith(WorkflowActionDb.PRE_TYPE_FIELD_USER)) {
                     String[] users = StrUtil.split(nextAction.getUserName(), ",");
                     for (String user : users) {
                         vt.addElement(um.getUserDb(user));
@@ -414,7 +414,7 @@ public class WorkflowRouter {
                     String dept = nextAction.getDept().trim();
                     // LogUtil.getLog(getClass()).info("matchActionUser: dept=" + dept + "--" + " jobName=" + nextAction.getJobName() + "。");
                     // 只加入限定部门范围内的用户
-                    if (!dept.equals("")) {
+                    if (!"".equals(dept)) {
                         String[] arydept = StrUtil.split(dept, ",");
                         int len1 = arydept.length;
                         Iterator ir = v_user.iterator();
@@ -444,7 +444,8 @@ public class WorkflowRouter {
                             Leaf lf = new Leaf();
                             lf = lf.getLeaf(wf.getTypeCode());
                             FormDAO fdao = new FormDAO();
-                            FormDb fd = new FormDb(lf.getFormCode());
+                            FormDb fd = new FormDb();
+                            fd = fd.getFormDb(lf.getFormCode());
                             fdao = fdao.getFormDAO(wf.getId(), fd);
                             depts = fdao.getFieldValue(deptField);
                         }
@@ -669,9 +670,12 @@ public class WorkflowRouter {
                                         e.printStackTrace();
                                     }
 
+                                    FormDAO fdaoMain = new FormDAO();
+                                    fdaoMain = fdaoMain.getFormDAO(wf.getId(), fd);
+
                                     FormDb nestfd = new FormDb();
                                     nestfd = nestfd.getFormDb(nestFormCode);
-                                    String cwsId = String.valueOf(wf.getId());
+                                    String cwsId = String.valueOf(fdaoMain.getId());
                                     // 取得嵌套表中的数据
                                     String sql = "select id from " + nestfd.getTableNameByForm() + " where cws_id=" + StrUtil.sqlstr(cwsId);
                                     sql += " and cws_parent_form=" + StrUtil.sqlstr(ff.getFormCode());

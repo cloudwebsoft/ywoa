@@ -102,10 +102,12 @@ public class ProtectFilter implements Filter {
                 response.setHeader("X-Content-Type-Options", "nosniff");
             }
             else {
-                response.setHeader("Content-Security-Policy", "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' api.map.baidu.com dlswbr.baidu.com mapclick.map.baidu.com blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'");
+                // http://g.alicdn.com/dingding/dingtalk-jsapi/2.3.0/dingtalk.open.js 钉钉，用于dd_login.jsp
+                // hm.baidu.com为百度统计
+                response.setHeader("Content-Security-Policy", "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' g.alicdn.com hm.baidu.com api.map.baidu.com dlswbr.baidu.com mapclick.map.baidu.com blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'");
             }
 
-            if (url.indexOf("error.jsp") == -1) {
+            if (!url.contains("error.jsp")) {
                 boolean isValid = true;
                 String kind = "";
                 String param = "";

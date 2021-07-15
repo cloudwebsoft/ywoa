@@ -29,7 +29,7 @@
     while (ri.hasNext()) {
         ResultRecord rr = (ResultRecord) ri.next();
         String tableName = rr.getString(1).toLowerCase();
-        if (tableName.startsWith("form_table_") && !tableName.endsWith("_log")) {
+        if ((tableName.startsWith("form_table_") && !tableName.endsWith("_log")) || "form_table_module_log".equals(tableName)) {
             sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_quote_form` varchar(20) AFTER `cws_status`";
             try {
                 jt.executeUpdate(sql);

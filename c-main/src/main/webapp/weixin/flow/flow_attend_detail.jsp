@@ -193,7 +193,7 @@
 <script src="../js/jq_mydialog.js"></script>
 <script type="text/javascript" src="../js/newPopup.js"></script>
 <script src="../js/macro/macro.js"></script>
-<script type="text/javascript" src="../js/mui.min.js"></script>
+<script type="text/javascript" src="../js/mui.js"></script>
 <script type="text/javascript" src="../js/mui.picker.min.js"></script>
 
 <link rel="stylesheet" href="../css/photoswipe.css">

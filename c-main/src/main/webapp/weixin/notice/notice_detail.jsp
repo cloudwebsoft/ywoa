@@ -6,6 +6,7 @@
 <%@page import="com.redmoon.oa.notice.*" %>
 <%@page import="com.redmoon.oa.person.*" %>
 <%@page import="cn.js.fan.util.*" %>
+<%@ page import="cn.js.fan.web.Global" %>
 <%
     Privilege pvg = new Privilege();
     pvg.auth(request);
@@ -16,16 +17,15 @@
     ud = ud.getUserDb(userName);
     String realName = ud.getRealName();
 
-    String path = request.getContextPath();
-    String basePath = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + path + "/";
     long noticeId = ParamUtil.getLong(request, "id", 0);
     NoticeDb nd = new NoticeDb();
     nd = nd.getNoticeDb(noticeId);
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
-    <title>通知公告</title>
+    <meta charset="utf-8">
+    <title>通知公告-详情</title>
     <meta http-equiv="pragma" content="no-cache">
     <meta http-equiv="cache-control" content="no-cache">
     <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -111,7 +111,7 @@
             while (ir.hasNext()) {
                 NoticeAttachmentDb nad = (NoticeAttachmentDb) ir.next();
         %>
-        <li class="mui-table-view-cell mui-media att_li" fId="<%=nad.getId() %>">
+        <li class="mui-table-view-cell mui-media att-li" fId="<%=nad.getId() %>">
             <div class="mui-slider-handle">
                 <a class="attFile" href="javascript:;" link="<%=nad.getVisualPath() + nad.getDiskName() %>">
                     <img class="mui-media-object mui-pull-left"
@@ -193,12 +193,10 @@
     <%}%>
 </div>
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
-<script type="text/javascript" src="../css/mui.css"></script>
-<script type="text/javascript" src="../js/mui.min.js"></script>
+<script type="text/javascript" src="../js/mui.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
-<script src="../js/jq_mydialog.js"></script>
-
+<script type="text/javascript" src="../js/jq_mydialog.js"></script>
 <script>
     if(!mui.os.plus) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
@@ -231,14 +229,36 @@
     $(".mui-table-view").on("tap", ".attFile", function () {
         var url = jQuery(this).attr("link");
         var p = url.lastIndexOf(".");
-        var ext = url.substring(p);
+        var ext = url.substring(p + 1);
         if (ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp") {
             showImg(url);
         }
         else {
-            mui.openWindow({
-                "url": "<%=request.getContextPath()%>/" + url
-            })
+            // url得是完整的路径，否则会报400错误
+            url = "<%=Global.getFullRootPath(request)%>/" + url;
+            if (mui.os.plus) {
+                var btnArray = ['是', '否'];
+                mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+                    if (e.index == 0) {
+                        var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+                            if (status == 200) {
+                                // 调用第三方应用打开文件
+                                plus.runtime.openFile(d.filename, {}, function (e) {
+                                    alert('打开失败');
+                                });
+                            } else {
+                                alert("下载失败: " + status);
+                            }
+                        });
+                        dtask.start();
+                    }
+                });
+            }
+            else {
+                mui.openWindow({
+                    "url": url
+                })
+            }
         }
     });
 
@@ -246,7 +266,7 @@
         var openPhotoSwipe = function () {
             var pswpElement = document.querySelectorAll('.pswp')[0];
             var items = [{
-                src: "../../public/img_show.jsp?path=" + encodeURI(path),
+                src: "<%=request.getContextPath()%>/public/img_show.jsp?path=" + encodeURI(path),
                 w: 964,
                 h: 1024
             }

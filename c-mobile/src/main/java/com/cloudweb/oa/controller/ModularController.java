@@ -7,6 +7,10 @@ import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.api.IModuleFieldSelectCtl;
+import com.cloudweb.oa.api.INestSheetCtl;
+import com.cloudweb.oa.service.MacroCtlService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.android.Privilege;
@@ -14,16 +18,12 @@ import com.redmoon.oa.base.IFormMacroCtl;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.flow.macroctl.ModuleFieldSelectCtl;
-import com.redmoon.oa.flow.macroctl.NestSheetCtl;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.util.RequestUtil;
 import com.redmoon.oa.visual.*;
 import com.redmoon.oa.visual.FormDAO;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.asm.Advice;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -639,12 +639,16 @@ public class ModularController {
                         }
 
                         if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                            JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            INestSheetCtl nestSheetCtl = macroCtlService.getNestSheetCtl();
+                            JSONObject jsonObj = nestSheetCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
                         } else if (macroCode.equals("module_field_select")) {
-                            JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                            JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
@@ -933,12 +937,16 @@ public class ModularController {
                         }
 
                         if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                            JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            INestSheetCtl nestSheetCtl = macroCtlService.getNestSheetCtl();
+                            JSONObject jsonObj = nestSheetCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
                         } else if (macroCode.equals("module_field_select")) {
-                            JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                            JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
@@ -1134,14 +1142,18 @@ public class ModularController {
                             }
 
                             if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                                JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                INestSheetCtl nestSheetCtl = macroCtlService.getNestSheetCtl();
+                                JSONObject jsonObj = nestSheetCtl.getCtlDescription(ff);
                                 if (jsonObj != null) {
                                     field.put("desc", jsonObj);
                                 } else {
                                     field.put("desc", ff.getDescription());
                                 }
                             } else if (macroCode.equals("module_field_select")) {
-                                JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                                JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                                 if (jsonObj != null) {
                                     field.put("desc", jsonObj);
                                 } else {
@@ -1815,12 +1827,16 @@ public class ModularController {
                         }
 
                         if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                            JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            INestSheetCtl nestSheetCtl = macroCtlService.getNestSheetCtl();
+                            JSONObject jsonObj = nestSheetCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
                         } else if (macroCode.equals("module_field_select")) {
-                            JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                            JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
@@ -2064,12 +2080,16 @@ public class ModularController {
                         }
 
                         if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                            JSONObject jsonObj = NestSheetCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            INestSheetCtl nestSheetCtl = macroCtlService.getNestSheetCtl();
+                            JSONObject jsonObj = nestSheetCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }
                         } else if (macroCode.equals("module_field_select")) {
-                            JSONObject jsonObj = ModuleFieldSelectCtl.getCtlDesc(ff);
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                            JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                             if (jsonObj != null) {
                                 field.put("desc", jsonObj);
                             }

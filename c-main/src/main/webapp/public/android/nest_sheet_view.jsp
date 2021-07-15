@@ -14,6 +14,9 @@
 <%@ page import = "com.redmoon.oa.person.*"%>
 <%@ page import = "com.redmoon.oa.util.*"%>
 <%@ page import = "org.json.*"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.INestSheetCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.android.Privilege"/>
 <%--
 - 功能描述：嵌套表格2列表接口
@@ -263,7 +266,9 @@ if (op.equals("edit") || op.equals("view")) {
 		if (fdaoV.size()==0) {
 			// 如果嵌套表中没有记录，则说明是正在发起流程
 			if (op.equals("edit")) {
-				re = NestSheetCtl.autoSel(request, StrUtil.toInt(cwsId), nestField);
+				MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+				INestSheetCtl nestSheetCtl = macroCtlService.getNestSheetCtl();
+				re = nestSheetCtl.autoSelect(request, StrUtil.toInt(cwsId), nestField);
 				if (re) {
 					fdaoV = fdao.list(formCode, sql);
 				}

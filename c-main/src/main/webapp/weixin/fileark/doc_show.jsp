@@ -200,17 +200,41 @@
             showImg(url);
         }
         else {
-            mui.openWindow({
-                "url": "<%=request.getContextPath()%>/" + url
-            })
+            // url得是完整的路径，否则会报400错误
+            url = "<%=Global.getFullRootPath(request)%>/" + url;
+            if (mui.os.plus) {
+                var btnArray = ['是', '否'];
+                mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+                    if (e.index == 0) {
+                        var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+                            if (status == 200) {
+                                // 调用第三方应用打开文件
+                                plus.runtime.openFile(d.filename, {}, function (e) {
+                                    alert('打开失败');
+                                });
+                            } else {
+                                alert("下载失败: " + status);
+                            }
+                        });
+                        dtask.start();
+                    }
+                });
+            }
+            else {
+                mui.openWindow({
+                    "url": url
+                })
+            }
         }
     })
 
     function showImg(path) {
+        // path格式为：public/doc_getfile.jsp?skey=9d46250122c00913201c3666395d3eead8c4165846b5b0e0&id=304&attachId=285
+        console.log(path);
         var openPhotoSwipe = function () {
             var pswpElement = document.querySelectorAll('.pswp')[0];
             var items = [{
-                src: "../../public/img_show.jsp?path=" + encodeURI(path),
+                src: "../../" + path,
                 w: 964,
                 h: 1024
             }
