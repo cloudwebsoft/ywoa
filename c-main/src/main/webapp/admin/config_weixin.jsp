@@ -12,15 +12,15 @@
 <%@ page import="org.json.JSONObject" %>
 <%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>微信配置</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <script type="text/javascript" src="../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
@@ -71,31 +71,28 @@
         value = ParamUtil.get(request, "value");
         myconfig.setProperty(name, value);
 
-        if (name.equals("isUserIdUseMobile")) {
+        if ("isUserIdUseMobile".equals(name)) {
             if ("1".equals(value)) {
                 myconfig.setProperty("isUserIdUseEmail", "false");
                 myconfig.setProperty("isUserIdUseMobile", "false");
                 myconfig.setProperty("isUserIdUseAccount", "false");
-            }
-            else if ("2".equals(value)) {
+            } else if ("2".equals(value)) {
                 myconfig.setProperty("isUserIdUseEmail", "true");
                 myconfig.setProperty("isUserIdUseMobile", "false");
                 myconfig.setProperty("isUserIdUseAccount", "false");
-            }
-            else if ("3".equals(value)) {
+            } else if ("3".equals(value)) {
                 myconfig.setProperty("isUserIdUseEmail", "false");
                 myconfig.setProperty("isUserIdUseMobile", "true");
                 myconfig.setProperty("isUserIdUseAccount", "false");
-            }
-            else if ("4".equals(value)) {
+            } else if ("4".equals(value)) {
                 myconfig.setProperty("isUserIdUseEmail", "false");
                 myconfig.setProperty("isUserIdUseMobile", "false");
                 myconfig.setProperty("isUserIdUseAccount", "true");
             }
         }
 
-        myconfig.reload();
-        out.println(fchar.jAlert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "提示", "config_weixin.jsp"));
+        Config.reload();
+        out.println(StrUtil.jAlert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "提示", "config_weixin.jsp"));
         return;
     }
 %>
@@ -110,12 +107,12 @@
         while (ir.hasNext()) {
             Element e = (Element) ir.next();
             name = e.getName();
-            if (name.equals("agentMenu"))
+            if ("agentMenu".equals(name))
                 continue;
 
             String isDisplay = StrUtil.getNullStr(e.getAttributeValue("isDisplay"));
             // System.out.println(getClass() + " name=" + name + " isDisplay=" + isDisplay);
-            if (isDisplay.equals("false")) {
+            if ("false".equals(isDisplay)) {
                 continue;
             }
 
@@ -141,30 +138,28 @@
                     $('#attr<%=k%>').val("<%=value%>");
                 </script>
                 <%
-                }
-                else if (name.equals("isUserIdUseMobile")) {
-                    %>
-                    <select id="attr<%=k%>" name="value">
-                        <option value="1">系统帐户</option>
-                        <option value="2">邮箱</option>
-                        <option value="3">手机号</option>
-                        <option value="4">工号</option>
-                    </select>
-                    <script>
-                        <%
-                        String relateVal = "1";
-                        if (myconfig.isUserIdUseEmail())
-                            relateVal = "2";
-                        else if (myconfig.isUserIdUseMobile())
-                            relateVal = "3";
-                        else if (myconfig.isUserIdUseAccount())
-                            relateVal = "4";
-                        %>
-                        $('#attr<%=k%>').val('<%=relateVal%>');
-                    </script>
+                } else if (name.equals("isUserIdUseMobile")) {
+                %>
+                <select id="attr<%=k%>" name="value">
+                    <option value="1">系统帐户</option>
+                    <option value="2">邮箱</option>
+                    <option value="3">手机号</option>
+                    <option value="4">工号</option>
+                </select>
+                <script>
                     <%
-                }
-                else {
+                    String relateVal = "1";
+                    if (myconfig.isUserIdUseEmail())
+                        relateVal = "2";
+                    else if (myconfig.isUserIdUseMobile())
+                        relateVal = "3";
+                    else if (myconfig.isUserIdUseAccount())
+                        relateVal = "4";
+                    %>
+                    $('#attr<%=k%>').val('<%=relateVal%>');
+                </script>
+                <%
+                } else {
                     String opts = StrUtil.getNullStr(e.getAttributeValue("options"));
                     if ("".equals(opts)) {
                 %>

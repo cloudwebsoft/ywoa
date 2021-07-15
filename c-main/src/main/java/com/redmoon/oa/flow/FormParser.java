@@ -1,26 +1,22 @@
 package com.redmoon.oa.flow;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
-import cn.js.fan.util.ParamUtil;
+import SuperDog.DogStatus;
+import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
-import cn.js.fan.web.SkinUtil;
+import cn.js.fan.util.StrUtil;
+import cn.js.fan.web.Global;
+import com.cloudweb.oa.api.INestSheetCtl;
+import com.cloudweb.oa.api.INestTableCtl;
+import com.cloudweb.oa.service.MacroCtlService;
 import com.cloudweb.oa.utils.ConstUtil;
-import com.cloudwebsoft.framework.util.NetUtil;
-import com.raq.web.view.tag.ListTag;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.redmoon.oa.Config;
 import com.redmoon.oa.base.IFormDAO;
-import com.redmoon.oa.kernel.License;
+import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
+import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
+import com.redmoon.oa.superCheck.CheckSuperKey;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.util.RequestUtil;
-import com.redmoon.oa.visual.ModuleSetupDb;
 import com.redmoon.weixin.util.HttpPostFileUtil;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.htmlparser.Node;
@@ -38,19 +34,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import SuperDog.DogStatus;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.StrUtil;
-import cn.js.fan.web.Global;
-
-import com.cloudwebsoft.framework.util.LogUtil;
-import com.redmoon.oa.Config;
-import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
-import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.flow.macroctl.NestSheetCtl;
-import com.redmoon.oa.flow.macroctl.NestTableCtl;
-import com.redmoon.oa.superCheck.CheckSuperKey;
-import com.redmoon.oa.visual.FuncUtil;
+import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -289,7 +279,8 @@ public class FormParser {
                         String macroType = ff.getMacroType();
                         if (macroType.equals(ConstUtil.NEST_TABLE)) {
                             // 加入嵌套表格
-                            NestTableCtl nac = new NestTableCtl();
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            INestTableCtl nac = macroCtlService.getNestTableCtl();
                             request.setAttribute("cwsId", "" + fdao.getId());
                             request.setAttribute("pageType", "archive");
                             String str = nac.getNestTable(request, ff);
@@ -301,7 +292,8 @@ public class FormParser {
                         } else if (macroType.equals(ConstUtil.NEST_SHEET)
                                 || macroType.equals("macro_detaillist_ctl")) {
                             // 加入嵌套表格2
-                            NestSheetCtl nac = new NestSheetCtl();
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            INestSheetCtl nac = macroCtlService.getNestSheetCtl();
                             request.setAttribute("cwsId", "" + fdao.getId());
                             request.setAttribute("pageType", "archive");
                             request.setAttribute("formCode", fd.getCode());

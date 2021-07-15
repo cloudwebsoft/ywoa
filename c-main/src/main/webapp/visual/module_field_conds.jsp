@@ -18,6 +18,9 @@
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%@ page import="com.redmoon.oa.Config" %>
 <%@ page import="org.apache.http.client.utils.URIBuilder" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%
 	String op = ParamUtil.get(request, "op");
 	String code = ParamUtil.get(request, "code"); // 模块编码
@@ -292,9 +295,10 @@ if (hasCond) {
 				<%
 					// 基础数据
 					if (ff.getMacroType().equals("macro_flow_select")) {
-						BasicSelectCtl bsc = new BasicSelectCtl();
+						MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+						IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
 						SelectMgr sm = new SelectMgr();
-						SelectDb sd = sm.getSelect(bsc.getDesc(ff));
+						SelectDb sd = sm.getSelect(basicSelectCtl.getDesc(ff));
 						if (sd.getType() == SelectDb.TYPE_LIST) {
 					%>
 					<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>

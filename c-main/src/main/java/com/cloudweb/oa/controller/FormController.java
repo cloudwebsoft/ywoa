@@ -4,6 +4,7 @@ import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
 import com.alibaba.fastjson.JSONArray;
+import com.cloudweb.oa.api.ISQLCtl;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.flow.macroctl.*;
 import com.redmoon.oa.notice.NoticeAttachmentDb;
@@ -190,7 +191,7 @@ public class FormController {
                     }
                     if (FormField.TYPE_MACRO.equals(ff2.getType())) {
                         mu = mm.getMacroCtlUnit(ff2.getMacroType());
-                        if (mu.getIFormMacroCtl() instanceof SQLCtl || mu.getIFormMacroCtl() instanceof FormulaCtl) {
+                        if (mu.getIFormMacroCtl() instanceof ISQLCtl || mu.getIFormMacroCtl() instanceof FormulaCtl) {
                             isFound = true;
                         }
                     }

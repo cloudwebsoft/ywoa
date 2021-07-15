@@ -14,7 +14,9 @@ import javax.servlet.http.HttpServletResponse;
 import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
+import com.cloudweb.oa.api.INestTableCtl;
 import com.cloudweb.oa.entity.Account;
+import com.cloudweb.oa.service.MacroCtlService;
 import com.cloudweb.oa.service.ModuleService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
@@ -22,7 +24,6 @@ import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.flow.*;
-import com.redmoon.oa.flow.macroctl.NestTableCtl;
 import com.redmoon.oa.util.ExcelUploadUtil;
 import com.redmoon.oa.util.WordUtil;
 import com.redmoon.oa.visual.FormDAO;
@@ -93,7 +94,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", "模块：" + code + "不存在！");
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return json.toString();
@@ -106,7 +106,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return json.toString();
@@ -119,7 +118,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", "请选择记录！");
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return json.toString();
@@ -145,11 +143,9 @@ public class ModuleController {
 				json.put("ret", "0");
 				json.put("msg", e.getMessage());
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return json.toString();
@@ -167,7 +163,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", "模块：" + code + "不存在！");
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return json.toString();
@@ -186,7 +181,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());
 			} catch (JSONException ex) {
-				// TODO Auto-generated catch block
 				ex.printStackTrace();
 			}
 			return json.toString();
@@ -201,7 +195,6 @@ public class ModuleController {
 				json.put("msg", "操作失败");
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -220,7 +213,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", "模块：" + code + "不存在！");
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return json.toString();
@@ -240,7 +232,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());
 			} catch (JSONException ex) {
-				// TODO Auto-generated catch block
 				ex.printStackTrace();
 			}
 			return json.toString();
@@ -255,7 +246,6 @@ public class ModuleController {
 				json.put("msg", "操作失败");
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -274,7 +264,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", "模块：" + code + "不存在！");
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return json.toString();
@@ -293,7 +282,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());
 			} catch (JSONException ex) {
-				// TODO Auto-generated catch block
 				ex.printStackTrace();
 			}
 			return json.toString();
@@ -308,7 +296,6 @@ public class ModuleController {
 				json.put("msg", "操作失败");
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -1477,7 +1464,6 @@ public class ModuleController {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());
 			} catch (JSONException ex) {
-				// TODO Auto-generated catch block
 				ex.printStackTrace();
 			}
 			return json.toString();
@@ -1492,7 +1478,6 @@ public class ModuleController {
 				json.put("msg", "操作失败");
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -1567,10 +1552,8 @@ public class ModuleController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return json.toString();
@@ -1596,7 +1579,6 @@ public class ModuleController {
 		try {
 			lr = ald.listResult(sql, curPage, pageSize);
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -2997,7 +2979,9 @@ public class ModuleController {
 					viewContent = FormViewMgr.makeViewContent(msd);
 				}
 
-				Vector fieldV = NestTableCtl.parseFieldsFromView(fd, viewContent);
+				MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+				INestTableCtl nestTableCtl = macroCtlService.getNestTableCtl();
+				Vector fieldV = nestTableCtl.parseFieldsByView(fd, viewContent);
 				fields = new String[fieldV.size()];
 				int i = 0;
 				Iterator ir = fieldV.iterator();

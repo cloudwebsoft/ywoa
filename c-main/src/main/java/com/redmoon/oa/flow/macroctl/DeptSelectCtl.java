@@ -14,6 +14,7 @@ import cn.js.fan.util.ParamUtil;
 
 import com.cloudweb.oa.entity.Department;
 import com.cloudweb.oa.service.IDepartmentService;
+import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
@@ -105,8 +106,9 @@ public class DeptSelectCtl extends AbstractMacroCtl {
             }
             return deptName;
         }
-        else
+        else {
             return "";
+        }
     }
 
     /**
@@ -213,7 +215,7 @@ public class DeptSelectCtl extends AbstractMacroCtl {
         DeptView dv = new DeptView(lf);
         StringBuffer outStr = new StringBuffer(100);
 
-        outStr.append("<option value=''>" + BasicSelectCtl.NONE + "</option>");
+        outStr.append("<option value=''>" + ConstUtil.NONE + "</option>");
 
         if(isOnlyChildren){
             try {
@@ -231,10 +233,11 @@ public class DeptSelectCtl extends AbstractMacroCtl {
         }
         else{
             try {
-                if (StrUtil.getNullStr(ff.getDefaultValueRaw()).equals("user_admin_dept"))
+                if (StrUtil.getNullStr(ff.getDefaultValueRaw()).equals("user_admin_dept")) {
                     dv.getUserAdminDeptAsOptions(request, outStr, lf, lf.getLayer());
-                else
+                } else {
                     dv.getDeptAsOptions(outStr, lf, lf.getLayer(), isInclude);
+                }
             } catch (ErrMsgException e) {
                 LogUtil.getLog(getClass()).error("convertToHTMLCtl:" + e.getMessage());
             }
@@ -295,6 +298,7 @@ public class DeptSelectCtl extends AbstractMacroCtl {
      * 获取用来保存宏控件toHtml后的值的表单中的HTML元素中保存的值，生成用以禁用控件的脚本
      * @return String
      */
+    @Override
     public String getDisableCtlScript(FormField ff, String formElementId) {
         // 参数ff来自于数据库
         String deptCode = StrUtil.getNullStr(ff.getValue());
@@ -489,6 +493,7 @@ public class DeptSelectCtl extends AbstractMacroCtl {
                 + "', deptName);\n";
     }
 
+    @Override
     public String getControlType() {
         return "select";
     }
@@ -583,8 +588,9 @@ public class DeptSelectCtl extends AbstractMacroCtl {
          */
         Vector children = dm.getChildren(deptCode);
         int size = children.size();
-        if (size == 0)
+        if (size == 0) {
             return childrens;
+        }
         /*
          * 遍历获取子节点的部门
          */
@@ -733,7 +739,7 @@ public class DeptSelectCtl extends AbstractMacroCtl {
 
         JSONArray childrens = new JSONArray();
         try {
-            res = "<option value=''>" + BasicSelectCtl.NONE + "</option>";
+            res = "<option value=''>" + ConstUtil.NONE + "</option>";
 
             if(onlyChildren){
                 res = getDeptNameAsOptionsOnlyChildren(deptCode, childrens, isInclude).toString();
@@ -743,7 +749,7 @@ public class DeptSelectCtl extends AbstractMacroCtl {
 
             JSONArray ary = new JSONArray();
             JSONObject children = new JSONObject();
-            children.put("name", BasicSelectCtl.NONE);
+            children.put("name", ConstUtil.NONE);
             children.put("value", "");
             ary.put(children);
 

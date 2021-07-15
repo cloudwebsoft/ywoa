@@ -5,7 +5,6 @@
 <%@ page import="com.redmoon.oa.flow.*" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
-<%@ page import="com.redmoon.oa.flow.macroctl.NestTableCtl" %>
 <%@ page import="com.redmoon.oa.flow.query.QueryScriptUtil" %>
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%@ page import="com.redmoon.oa.util.NestTableNodeVisitor" %>
@@ -31,6 +30,9 @@
 <%@ page import="org.htmlparser.tags.TableColumn" %>
 <%@ page import="java.util.*" %>
 <%@ page import="com.redmoon.oa.util.NestTableNodeAlignVisitor" %>
+<%@ page import="com.cloudweb.oa.api.INestTableCtl" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <style>
     .nest-table {
         width: 100%;
@@ -271,7 +273,9 @@
         viewForm = c;
 
         // 解析出行中的字段，按td从左至右顺序
-        Vector<FormField> fields = NestTableCtl.parseFieldsFromView(fd, viewContent);
+        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+        INestTableCtl nestTableCtl = macroCtlService.getNestTableCtl();
+        Vector<FormField> fields = nestTableCtl.parseFieldsByView(fd, viewContent);
         MacroCtlMgr mm = new MacroCtlMgr();
 
         if (op.toLowerCase().contains("show")) {
@@ -550,7 +554,7 @@
 
                 String trTmp = r[0];
                 // 将textarea转为input，清除 cws_span_***;
-                trTmp = NestTableCtl.convertTextareaToInputAndClearCwsSpan(trTmp);
+                trTmp = nestTableCtl.convertTextarea2InputAndClearCwsSpan(trTmp);
 
                 // 插入在最后一个</table>之前
                 p = viewForm.lastIndexOf("</tbody>");
@@ -728,7 +732,7 @@
         }
 
         // 将textarea转为input，清除cws_span_***
-        tableHtml = NestTableCtl.convertTextareaToInputAndClearCwsSpan(tableHtml);
+        tableHtml = nestTableCtl.convertTextarea2InputAndClearCwsSpan(tableHtml);
 
         // 对新增行中的字段作不可写及隐藏处理
         tableHtml += "<script>" + scriptsForDisableAndHideForAdd.toString() + "</script>";
@@ -798,6 +802,7 @@
         <%
         }
 
+	// 模块添加页面不支持拉单，因为拉单后会刷新嵌套表格，而此时parentId为-1，无法关联记录
         if ("edit".equals(op) && canSel) {
             if (queryId!=-1) {
         %>
@@ -893,6 +898,7 @@
 
     // 删除行
     function delNestTr<%=nestFieldName%>() {
+        var nestFieldName = "<%=nestFieldName%>";
         var $trs = $("input[type=checkbox][name='chk<%=nestFieldName%>']:checked");
         if ($trs.length == 0) {
             jAlert('请选择记录', '提示');
@@ -902,12 +908,50 @@
             if (!r) {
                 return;
             } else {
+                var ids = '';
                 $trs.each(function () {
-                    $(this).parents("tr:eq(0)").remove();
+                    var id = $('#nest_field_dataId' + nestFieldName + '_' + $(this).val()).val();
+                    if (ids == '') {
+                        ids = id;
+                    }
+                    else {
+                        ids += ',' + id;
+                    }
                 });
 
-                initTdNo();
-                callCalculateOnloadNestTable('nestTable_<%=nestFieldName%>');
+                $.ajax({
+                    type: "post",
+                    url: "<%=request.getContextPath()%>/flow/macro/delNestTableRows.do",
+                    data: {
+                        ids: ids,
+                        formCode: "<%=nestFormCode%>"
+                    },
+                    dataType: "html",
+                    beforeSend: function(XMLHttpRequest){
+                        $("body").showLoading();
+                    },
+                    success: function(data, status){
+                        data = $.parseJSON(data);
+                        if (data.ret=="1") {
+                            $trs.each(function () {
+                                $(this).parents("tr:eq(0)").remove();
+                            });
+
+                            initTdNo();
+                            callCalculateOnloadNestTable('nestTable_<%=nestFieldName%>');
+                        }
+                        else {
+                            jAlert(data.msg, '提示');
+                        }
+                    },
+                    complete: function(XMLHttpRequest, status){
+                        $("body").hideLoading();
+                    },
+                    error: function(XMLHttpRequest, textStatus){
+                        // 请求出错处理
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
             }
         });
     }

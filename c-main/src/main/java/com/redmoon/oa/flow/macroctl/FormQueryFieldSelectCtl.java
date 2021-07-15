@@ -34,8 +34,8 @@ public class FormQueryFieldSelectCtl extends AbstractMacroCtl {
      * @param request HttpServletRequest
      * @param ff FormField
      * @return String
-     * @todo Implement this com.redmoon.oa.base.IFormMacroCtl method
      */
+    @Override
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
         String str = "";
         String v = "";

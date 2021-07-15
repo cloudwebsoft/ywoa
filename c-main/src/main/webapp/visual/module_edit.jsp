@@ -462,7 +462,7 @@
 <form action="update.do?id=${id}&code=${code}&isShowNav=${isShowNav}&parentId=${parentId}" method="post" enctype="multipart/form-data" id="visualForm" name="visualForm">
 	<table style="margin-bottom:10px" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
 		<tr>
-			<td align="left">
+			<td align="center">
 			${rend}
 			</td>
 		</tr>

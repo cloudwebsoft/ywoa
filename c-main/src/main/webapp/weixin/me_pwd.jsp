@@ -70,6 +70,14 @@
     }
 
     $('.mui-btn').click(function() {
+        if ($('#oldPassword').val()=='') {
+            mui.toast('请输入旧密码！');
+            return;
+        }
+        if ($('#password').val()=='') {
+            mui.toast('请输入新密码！');
+            return;
+        }
         if ($('#password').val()!=$('#pwdConfirm').val()) {
             mui.toast('密码与确认密码不一致！');
             return;
@@ -91,7 +99,7 @@
                                     window.location.href = "me.jsp";
                                 }
                                 else if (returnCode == 1) {
-                                    mui.toast("原密码输入不正确");
+                                    mui.toast("旧密码输入不正确");
                                 }
                                 else {
                                     mui.toast("操作失败");

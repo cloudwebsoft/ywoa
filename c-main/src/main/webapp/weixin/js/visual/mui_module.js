@@ -134,7 +134,6 @@
 					return;
 				}
 				self.moduleSendServer();
-			
 			});
 			Form.bindFileDel();
 
@@ -180,12 +179,46 @@
 			
 			mui('body').on("tap", ".attFile", function(){
 				var url = jQuery(this).attr("link");
-				/*
-				mui.openWindow({
-				    "url":url
-				})
-				*/
-				self.showImg(url);
+				var ext = jQuery(this).attr("ext");
+				if (ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp") {
+					var w=0, h=0;
+					if (this.tagName=="IMG") { // 图像宏控件
+						w = jQuery(this).width();
+						h = jQuery(this).height();
+					}
+					self.showImg(url, w, h);
+				} else {
+					if (mui.os.plus) {
+						var btnArray = ['是', '否'];
+						mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+							if (e.index == 0) {
+								var rootPath = self.getContextPath();
+								// 链接为../../public/android/flow/getFile，故需转换，否则会报400错误
+								var p = url.indexOf("/public/");
+								if (p!=-1) {
+									url = url.substring(p);
+								}
+								url = rootPath + url;
+								var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+									if (status == 200) {
+										// 调用第三方应用打开文件
+										plus.runtime.openFile(d.filename, {}, function (e) {
+											alert('打开失败');
+										});
+									} else {
+										alert("下载失败: " + status);
+									}
+								});
+								dtask.start();
+							}
+						});
+					}
+					else {
+						mui.openWindow({
+							"url": url
+						})
+					}
+				}
 			});	
 		},
 		moduleSendServer:function(){
@@ -193,7 +226,7 @@
 			var skey = self.options.skey;
 			// console.info(self.options);
 			var moduleCode = self.options.moduleCode;
-			var _url = "../visual/module_list.jsp?&skey="+skey+"&moduleCode="+moduleCode;
+			var _url = "../visual/module_list.jsp?skey="+skey+"&moduleCode="+moduleCode;
 			if("formCodeRelated" in self.options){
 				if(self.options.formCodeRelated != ""){
 					var _parentId = self.options.parentId;
@@ -202,9 +235,11 @@
 				}	
 			}
 
+			var isAdd = true;
 			var id = self.options.id;
 			var ajax_url = AJAX_REQUEST_URL.MODULE_ADD_DO + "?moduleCode=" + moduleCode + "&skey=" + skey + "&id=" + id;
 			if (id != 0 && "add" != self.options.pageType) {
+				isAdd = false;
 				ajax_url = AJAX_REQUEST_URL.MODULE_EDIT_DO + "?moduleCode=" + moduleCode + "&skey=" + skey + "&id=" + id;
 			}
 			var formData = new FormData($('#module_form')[0]);
@@ -232,10 +267,21 @@
 						var res = data.res;
 						var msg = data.msg;
 						$.toast(msg);
-						if(res == "0"){
-							mui.openWindow({
-							    "url":_url
-							});			
+						if(res == "0") {
+							// 当运行到pullRefresh_native方法中var id = self.getAttribute('data-pullrefresh-plus-' + attrWebviewId)时
+							// 以url作为webviewId时，会报DomException，属性非法的错误
+							/*mui.openWindow({
+							    "url": _url
+							});	*/
+
+							// 如果是添加操作，则返回列表页，且刷新，如果是编辑，则不作处理
+							if (isAdd) {
+								//获得父页面的webview
+								var listView = plus.webview.currentWebview().opener();
+								// 触发父页面的自定义事件(refreshList),从而进行刷新
+								mui.fire(listView, 'refreshList');
+								mui.back();
+							}
 						}
 					},
 					error:function(xhr,type,errorThrown){
@@ -253,6 +299,7 @@
 			var datas = {"skey":skey,"id":id,"moduleCode":moduleCode};
 			 $.post(url,datas,function(data){
 				 var res = data.res;
+				 // console.log(data);
 				 if(res == "0"){
 					 var _formRelated = data.formRelated;
 					 $.each(_formRelated,function(index,item){
@@ -261,9 +308,9 @@
 						 var _tabTitle = '<a class="mui-control-item relate-form-item"  formCodeRelated ="'+_formCodeRelated+'" href="#item_'+_formCodeRelated+'">'+_name+'</a>';
 						 var _tabContent = '<div id="item_'+_formCodeRelated+'" class="mui-slider-item mui-control-content">';
 					
-						 _tabContent += '<div class="mui-scroll-wrapper" id="pullrefresh_'+_formCodeRelated+'">';
+						 _tabContent += '<div class="mui-scroll-wrapper">';
 						 _tabContent += '<div class="mui-content-padded"></div>';	 
-						 _tabContent += '<div class="mui-scroll">';
+						 _tabContent += '<div class="mui-scroll" id="pullrefresh_'+_formCodeRelated+'">';
 						 _tabContent += '<form class="search_form mui-input-group" id="search_'+_formCodeRelated+'" >';
 						 _tabContent += '</form>';
 						 _tabContent += '<ul class="mui-table-view mui-table-view-chevron" id="ul_'+_formCodeRelated+'">';
@@ -282,9 +329,9 @@
 						 var _tabTitle = '<a class="mui-control-item relate-form-item" subTagIndex="' + subTagIndex + '" isSubTag="true" tagName="'+_tagName+'" href="#item_'+subTagIndex+'">'+_tagName+'</a>';
 						 var _tabContent = '<div id="item_'+subTagIndex+'" class="mui-slider-item mui-control-content">';
 					
-						 _tabContent += '<div class="mui-scroll-wrapper" id="pullrefresh_'+subTagIndex+'">';
+						 _tabContent += '<div class="mui-scroll-wrapper">';
 						 _tabContent += '<div class="mui-content-padded"></div>';	 
-						 _tabContent += '<div class="mui-scroll">';
+						 _tabContent += '<div class="mui-scroll" id="pullrefresh_'+subTagIndex+'">';
 						 _tabContent += '<form class="search_form mui-input-group" id="search_'+subTagIndex+'" >';
 						 _tabContent += '</form>';
 						 _tabContent += '<ul class="mui-table-view mui-table-view-chevron" id="ul_'+subTagIndex+'">';
@@ -294,7 +341,14 @@
 						 _tabContent += '</div>'; 
 						 jQuery("#tabTitle").append(_tabTitle);
 						 jQuery("#tabContent").append(_tabContent);			 
-					 });					 
+					 });
+
+					 // 使新增的mui-scroll-wrapper可以滚动
+					 mui('.mui-scroll-wrapper').scroll({
+						 bounce: true, // 是否启用回弹
+						 indicators: true, //是否显示滚动条
+						 deceleration: 0.0006 //阻尼系数,系数越小滑动越灵敏，默认0.0006
+					 });
 					 
 					 var _fields = data.fields;
 					 if(_fields.length>0){
@@ -317,27 +371,65 @@
 			
 			mui('body').on("tap", ".attFile", function(){
 				var url = jQuery(this).attr("link");
-				/*
-				mui.openWindow({
-				    "url":url
-				})
-				*/
-				self.showImg(url);
+				var ext = jQuery(this).attr("ext");
+				if (ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp") {
+					var w=0, h=0;
+					if (this.tagName=="IMG") { // 图像宏控件
+						w = jQuery(this).width();
+						h = jQuery(this).height();
+					}
+					self.showImg(url, w, h);
+				} else {
+					if (mui.os.plus) {
+						var btnArray = ['是', '否'];
+						mui.confirm('您确定要下载么？', '', btnArray, function(e) {
+							if (e.index == 0) {
+								var rootPath = self.getContextPath();
+								// 链接为../../public/android/flow/getFile，故需转换，否则会报400错误
+								var p = url.indexOf("/public/");
+								if (p!=-1) {
+									url = url.substring(p);
+								}
+								url = rootPath + url;
+								var dtask = plus.downloader.createDownload(url, {}, function (d, status) {
+									if (status == 200) {
+										// 调用第三方应用打开文件
+										plus.runtime.openFile(d.filename, {}, function (e) {
+											alert('打开失败');
+										});
+									} else {
+										alert("下载失败: " + status);
+									}
+								});
+								dtask.start();
+							}
+						});
+					}
+					else {
+						mui.openWindow({
+							"url": url
+						})
+					}
+				}
 			});		
 	
 			$('#tabTitle').on('tap', '.relate-form-item', function(event) {
 				var ele = this;
 				var _formCodeRelated = this.getAttribute("formCodeRelated");
 				if (_formCodeRelated!=null) {
+					var url = "../../public/android/module/listRelate";
+					if(mui.os.plus && mui.os.ios) {
+						url = getContextPath() + "/public/android/module/listRelate";
+					}
+
 					var options = {
 							"pullRefreshContainer":"#pullrefresh_"+_formCodeRelated,
 							"ulContainer":"#ul_"+_formCodeRelated,
 							"searchContainer":"#search_"+_formCodeRelated,
 							"ajax_params":{"skey":self.options.skey,"moduleCode":self.options.moduleCode,"formCodeRelated":_formCodeRelated,"parentId":self.options.id},
-							"url":"../../public/android/module/listRelate"
+							"url": url
 							};
-					var PullToRefrshListApi = new $.PullToRefrshList(
-							self.element,options);
+					var PullToRefrshListApi = new $.PullToRefrshList(self.element,options);
 					PullToRefrshListApi.loadList();
 				}
 				var tagName = this.getAttribute("tagName");
@@ -348,13 +440,34 @@
 							"ulContainer":"#ul_"+subTagIndex,
 							"searchContainer":"#search_"+subTagIndex,
 							"ajax_params":{"skey":self.options.skey,"moduleCode":self.options.moduleCode,"subTagIndex":subTagIndex, "mode":"subTagRelated", "parentId":self.options.id},
-							"url":"../../public/android/module/listRelate"
+							"url": url
 							};
-					var PullToRefrshListApi = new $.PullToRefrshList(
-							self.element,options);
-					PullToRefrshListApi.loadList();
+					if(mui.os.plus) {
+						mui.plusReady(function() {
+							var PullToRefrshListApi = new $.PullToRefrshList(self.element, options);
+							PullToRefrshListApi.loadList();
+						});
+					}
+					else {
+						var PullToRefrshListApi = new $.PullToRefrshList(self.element,options);
+						PullToRefrshListApi.loadList();
+					}
 				}				
 			});
+		},
+		getContextPath: function () {
+			var strFullPath = document.location.href;
+			var strPath = document.location.pathname;
+			var pos = strFullPath.indexOf(strPath);
+			var prePath = strFullPath.substring(0, pos);
+			var postPath = strPath.substring(0, strPath.substr(1).indexOf('/') + 1);
+			// 有的服务器上会在路径中带上weixin，如contextPath为：http://****.com/weixin
+			var contextPath = prePath + postPath;
+			var	p = contextPath.indexOf("/weixin");
+			if (p!=-1) {
+				contextPath = contextPath.substring(0, p);
+			}
+			return contextPath;
 		}
 	})
 })(mui,document,window)

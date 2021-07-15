@@ -18,11 +18,18 @@
 	var FLOW_DISPOSE_AJAX_URL = "../../public/android/flow/dispose?"// 流程处理
 	var _FLOW_DISPOSE_AJAX_URL = "public/android/flow/dispose?"// 流程处理
 
-	var FREE_FLOW_DISPOSE_AJAX_URL= "../../public/flow_dispose_free_do.jsp";// 自由流程处理
-	var _FREE_FLOW_DISPOSE_AJAX_URL= "public/flow_dispose_free_do.jsp";// 自由流程处理
+	// 20210706改为finishAction
+	// var FREE_FLOW_DISPOSE_AJAX_URL= "../../public/flow_dispose_free_do.jsp";// 自由流程处理
+	// var _FREE_FLOW_DISPOSE_AJAX_URL= "public/flow_dispose_free_do.jsp";// IOS自由流程处理
 
-	var PRESET_FLOW_DISPOSE_AJAX_URL= "../../public/flow_dispose_do.jsp";// 预定流程处理
-	var _PRESET_FLOW_DISPOSE_AJAX_URL= "public/flow_dispose_do.jsp";// 预定流程处理
+	var FREE_FLOW_DISPOSE_AJAX_URL= "../../public/android/flow/finishActionFree";// 自由流程处理
+	var _FREE_FLOW_DISPOSE_AJAX_URL= "public/android/flow/finishActionFree";// IOS自由流程处理
+
+	// var PRESET_FLOW_DISPOSE_AJAX_URL= "../../public/flow_dispose_do.jsp";// 预定流程处理
+	// var _PRESET_FLOW_DISPOSE_AJAX_URL= "public/flow_dispose_do.jsp";// IOS预定流程处理
+
+	var PRESET_FLOW_DISPOSE_AJAX_URL= "../../public/android/flow/finishAction";// 预定流程处理
+	var _PRESET_FLOW_DISPOSE_AJAX_URL= "public/android/flow/finishAction";// IOS预定流程处理
 
 	var FLOW_RETURN_AJAX_URL = "../../public/android/flow/getreturn";
 	var _FLOW_RETURN_AJAX_URL = "public/android/flow/getreturn";
@@ -339,7 +346,7 @@
 					var _val = jQuery("#"+_code).val();
 					
 					// 防止当提交时报“回复 不能为空”
-					if (jQuery('#op').val()=="finish") {
+					if (jQuery('#op').val()=="finish" || jQuery('#op').val()=="del") {
 						if (_code=="content") {
 							// 通过判断其父节点的class是否为reply-form，确定是否为回复
 							if (jQuery(this).parent().attr("class")=="reply-form") {

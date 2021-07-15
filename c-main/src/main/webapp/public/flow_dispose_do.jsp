@@ -600,17 +600,6 @@ if (op.equals("editFormValue") || op.equals("saveformvalue") || op.equals("savef
 		return;
 	}
 	if (re) {
-		if (op.equals("saveformvalue")) {
-			// out.print(StrUtil.Alert_Redirect("保存成功！", "flow_dispose.jsp?myActionId=" + myActionId));
-		}
-		else if (op.equals("AutoSaveArchiveNodeCommit")) {
-			// response.sendRedirect("flow_dispose.jsp?action=afterAutoSaveArchiveNodeCommit&myActionId=" + myActionId);
-		}
-		else if (op.equals("AutoSaveArchiveNodeManualFinish")) {
-			// response.sendRedirect("flow_dispose.jsp?action=afterAutoSaveArchiveNodeManualFinish&myActionId=" + myActionId);
-		}
-		else if (op.equals("saveformvalueBeforeXorCondSelect")) {
-		}
 		JSONObject json = new JSONObject();
 		json.put("res", "0");
 		json.put("op", op);

@@ -4,6 +4,9 @@ import SuperDog.DogStatus;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.*;
+import cn.js.fan.web.SkinUtil;
+import com.cloudweb.oa.api.IAttachmentCtl;
+import com.cloudweb.oa.api.IAttachmentsCtl;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
@@ -13,6 +16,7 @@ import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.base.IFormMacroCtl;
 import com.redmoon.oa.base.IFormValidator;
 import com.redmoon.oa.flow.macroctl.*;
+import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.shell.BSHShell;
 import com.redmoon.oa.superCheck.CheckSuperKey;
@@ -26,6 +30,7 @@ import com.redmoon.oa.visual.ModuleUtil;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -290,8 +295,8 @@ public class FormDAOMgr {
                 // 用于创建时校验，此时ifdao为null，不为null则说明是编辑模块时
                 if (ifdao!=null) {
                     // 20190914 AttahcmentCtl中也可能是保存了草稿，但扩展名非法的情况，还是需通过setValueForValidate检测
-                    if (ifmctl instanceof AttachmentCtl ||
-                            ifmctl instanceof AttachmentsCtl ||
+                    if (ifmctl instanceof IAttachmentCtl ||
+                            ifmctl instanceof IAttachmentsCtl ||
                             ifmctl instanceof ImageCtl) {
                         ff.setValue(ifdao.getFieldValue(ff.getName()));
                     }
@@ -683,8 +688,7 @@ public class FormDAOMgr {
 
     /**
      * 当拉单时检查字段是否有重复，注意并不检查ids中是否有重复的记录
-     * @param request
-     * @throws ResKeyException
+     * @param request 请求
      */
     public static boolean checkFieldIsUniqueNestOnPull(HttpServletRequest request, long parentId, String parentFormCode, FormDb sourceFormDb, FormDb nestFormDb, String[] ids) {
         com.redmoon.oa.visual.FormDAO sourceFormDao = new com.redmoon.oa.visual.FormDAO();
@@ -835,6 +839,65 @@ public class FormDAOMgr {
         }
     }
 
+    public void validateNestFields(HttpServletRequest request, int flowId, String[] fdsWritable, FormDAO fdao) throws ErrMsgException {
+        if (fdsWritable!=null) {
+            for (String fieldName : fdsWritable) {
+                if (!fieldName.startsWith("nest.")) {
+                    continue;
+                }
+
+                fieldName = fieldName.substring("nest.".length());
+
+                // 取得嵌套表
+                Vector v = fdao.getFormDb().getFields();
+                Iterator ir = v.iterator();
+                boolean isFound = false;
+                while (ir.hasNext()) {
+                    FormField ff = (FormField) ir.next();
+                    if (ff.getType().equals(FormField.TYPE_MACRO)) {
+                        // System.out.println(getClass() + " ff.getMacroType()=" + ff.getMacroType());
+                        // 此处对nest_table不做检查，因为此时nest_table还没有得到保存，且其在保存时本身也会做检查
+                        if (ConstUtil.NEST_SHEET.equals(ff.getMacroType())) {
+                            isFound = true;
+                            String nestFormCode = ff.getDescription();
+                            try {
+                                String defaultVal = StrUtil.decodeJSON(ff.getDescription());
+                                JSONObject json = new JSONObject(defaultVal);
+                                nestFormCode = json.getString("destForm");
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+
+                            FormDb nestfd = new FormDb();
+                            nestfd = nestfd.getFormDb(nestFormCode);
+                            // 取得嵌套表中的数据
+                            String sql = "select id from " + nestfd.getTableNameByForm() + " where cws_id=" + StrUtil.sqlstr(String.valueOf(fdao.getId()));
+                            sql += " and cws_parent_form=" + StrUtil.sqlstr(ff.getFormCode());
+                            sql += " order by cws_order";
+                            com.redmoon.oa.visual.FormDAO fdaoNest = new com.redmoon.oa.visual.FormDAO();
+                            Vector<com.redmoon.oa.visual.FormDAO> vNest = fdaoNest.list(nestFormCode, sql);
+                            for (com.redmoon.oa.visual.FormDAO formDAO : vNest) {
+                                fdaoNest = formDAO;
+
+                                Vector<FormField> fields = fdaoNest.getFields();
+                                for (FormField nestFf : fields) {
+                                    if (nestFf.getName().equals(fieldName)) {
+                                        // 如果不能为空，则检查
+                                        if (!nestFf.isCanNull()) {
+                                            if (StringUtils.isEmpty(nestFf.getValue())) {
+                                                throw new ErrMsgException(String.format(SkinUtil.LoadString(request, "res.checker", "err_blank_nest"), nestFf.getTitle()));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 保存表单域的值，因为android上控件因不能写被删除替换时，表单域不会再post过来，注释本方法20130329 fgf
      * @param request HttpServletRequest
@@ -942,13 +1005,14 @@ public class FormDAOMgr {
 
        Privilege pvg = new Privilege();
        String userName = pvg.getUser(request);
+       String[] fds;
 
        if (lf.getType() == Leaf.TYPE_FREE) {
            // 自由流程根据用户所属的角色，得到可写表单域
            WorkflowPredefineDb wfpd = new WorkflowPredefineDb();
            wfpd = wfpd.getPredefineFlowOfFree(wf.getTypeCode());
 
-           String[] fds = wfpd.getFieldsWriteOfUser(wf, userName);
+           fds = wfpd.getFieldsWriteOfUser(wf, userName);
            int len = fds.length;
 
            // 将可写的域筛选出
@@ -966,7 +1030,7 @@ public class FormDAOMgr {
        else {
            // 预设流程根据动作中的设定得到可写表单域
            String fieldWrite = StrUtil.getNullString(action.getFieldWrite()).trim();
-           String[] fds = fieldWrite.split(",");
+           fds = fieldWrite.split(",");
            int len = fds.length;
            // 将可写的域筛选出
            for (FormField ff : fields) {
@@ -1002,6 +1066,8 @@ public class FormDAOMgr {
        if (!isSaveDraft) {
     	   // 对可写表单域进行有效性验证
     	   validateFields(request, fu, fieldsWritable, fdao, true);
+    	   // 对嵌套表单的可写表单域进行有效性验证，因为拉单后，可能有必填项未填
+    	   validateNestFields(request, flowId, fds, fdao);
 
 	       // 对fields中的值进行有效性判断
 	       FormValidatorConfig fvc = new FormValidatorConfig();

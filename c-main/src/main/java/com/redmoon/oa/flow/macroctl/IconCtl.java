@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Calendar;
 
 /**
- * <p>Title: 利用JQuery raty实现的图标控件</p>
+ * <p>Title: 利用JQuery实现的图标控件</p>
  *
  * <p>
  * </p>
@@ -118,7 +118,7 @@ public class IconCtl extends AbstractMacroCtl {
             style = "style='width:" + ff.getCssWidth() + "'";
         }
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String strReadOnly = "";
         if (ff.isReadonly()) {
             strReadOnly = " readonly='readonly' ";

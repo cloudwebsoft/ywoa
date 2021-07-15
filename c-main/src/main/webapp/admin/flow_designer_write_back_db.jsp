@@ -18,8 +18,6 @@
 <%@ page import="java.sql.*"%>
 <%@ page import="org.jdom.input.*"%>
 <%@ page import="org.jdom.output.*"%>
-<%@ page import="com.redmoon.oa.visual.*"%>
-<%@page import="com.redmoon.oa.flow.macroctl.SQLCtl"%>
 <%@page import="org.jdom.Document"%>
 <%@page import="com.cloudwebsoft.framework.db.*"%>
 <%

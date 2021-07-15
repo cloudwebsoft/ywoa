@@ -15,6 +15,9 @@
 <%@ page import="jxl.write.*" %>
 <%@ page import="org.json.*" %>
 <%@ page import="com.redmoon.oa.flow.FormViewDb" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.api.INestTableCtl" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
     String priv = "read";
@@ -62,7 +65,9 @@
                     return;
                 }
 
-                Vector fieldsV = NestTableCtl.parseFieldsFromView(fd, formViewDb.getString("content"));
+                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                INestTableCtl nestTableCtl = macroCtlService.getNestTableCtl();
+                Vector fieldsV = nestTableCtl.parseFieldsByView(fd, formViewDb.getString("content"));
                 fields = new String[fieldsV.size()];
                 int i = 0;
                 Iterator ir = fieldsV.iterator();

@@ -113,9 +113,11 @@ public class MacroCtlUnit implements Serializable {
         IFormMacroCtl ipu = null;
         try {
             ipu = (IFormMacroCtl) Class.forName(className).newInstance();
-        } catch (Exception e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             LogUtil.getLog(getClass()).error("getIFormMacroCtl: code=" + code + " className=" + className + " " + StrUtil.trace(e));
+            e.printStackTrace();
         }
+
         return ipu;
     }
 

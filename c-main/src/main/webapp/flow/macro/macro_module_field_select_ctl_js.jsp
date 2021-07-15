@@ -11,11 +11,12 @@
 <%@ page import = "com.redmoon.oa.visual.*"%>
 <%@ page import = "java.util.regex.*"%>
 <%@ page import = "java.util.*"%>
-<%@ page import = "org.json.*"%>
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <%@ page import="com.cloudweb.oa.api.IModuleUtil" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.api.IModuleFieldSelectCtl" %>
 <%
 	response.setHeader("X-Content-Type-Options", "nosniff");
 	response.setHeader("Content-Security-Policy", "default-src 'self' http: https:; script-src 'self'; frame-ancestors 'self'");
@@ -67,7 +68,9 @@
 		strDesc = ff.getDefaultValueRaw();
 	}
 	try {
-		strDesc = ModuleFieldSelectCtl.formatJSONStr(strDesc);
+		MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+		IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+		strDesc = moduleFieldSelectCtl.formatJSONString(strDesc);
 		JSONObject json = new JSONObject(strDesc);
 		sourceFormCode = json.getString("sourceFormCode");
 		byFieldName = json.getString("idField");
@@ -110,9 +113,9 @@
 
 	response.setContentType("text/javascript;charset=utf-8");
 
-	int mode = ParamUtil.getInt(request, "mode", ModuleFieldSelectCtl.MODE_SELECT); // 默认为下拉菜单方式
+	int mode = ParamUtil.getInt(request, "mode", ConstUtil.MODE_SELECT); // 默认为下拉菜单方式
 	ArrayList<String> fieldList = new ArrayList<>();
-	if (mode == ModuleFieldSelectCtl.MODE_SELECT) {
+	if (mode == ConstUtil.MODE_SELECT) {
 		// 处理filter，解析出其中的主表字段
 		Pattern p = Pattern.compile(
 				"\\{\\$([A-Z0-9a-z-_@\\u4e00-\\u9fa5\\xa1-\\xff]+)\\}", // 前为utf8中文范围，后为gb2312中文范围

@@ -633,7 +633,7 @@
 
 <table id="mapTableNest" class="tabStyle_1" width="100%" border="0" align="center" cellspacing="0">
     <tr>
-        <td colspan="5" class="tabStyle_1_title">字段映射（如无映射，则不显示选择按钮）</td>
+        <td colspan="5" class="tabStyle_1_title">字段映射<%--（如无映射，则不显示选择按钮）--%></td>
     </tr>
     <tr>
         <td width="13%" align="center">源字段</td>

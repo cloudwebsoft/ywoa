@@ -39,6 +39,9 @@ management:
     health:
       #显示健康具体信息  默认不会显示详细信息
       show-details: always
+  health:
+    redis:
+      enabled: false
 
 mybatis:
   mapper-locations: classpath*:com/cloudweb/oa/mapper/xml/*.xml

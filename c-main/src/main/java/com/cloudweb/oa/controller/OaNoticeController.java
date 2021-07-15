@@ -498,23 +498,20 @@ public class OaNoticeController {
             return json.toString();
         }
 
-        // 如果这里再resolveMultipart一次，将取不到附件
-        // MultipartHttpServletRequest multiRequest = multipartResolver.resolveMultipart(request);
-        // create方法参数中如果不含有request, 则会报错：ClassCastException: com.sun.proxy.$Proxy144 cannot be cast to org.springframework.web.multipart.MultipartHttpServletRequest
-        MultipartHttpServletRequest multiRequest = (MultipartHttpServletRequest) request;
+        MultipartHttpServletRequest multiRequest = multipartResolver.resolveMultipart(request);
 
-        String title = ParamUtil.get(request, "title");
-        String content = ParamUtil.get(request, "content");
-        int isReply = ParamUtil.getInt(request, "isReply", 0);
-        int isForcedResponse = ParamUtil.getInt(request, "isForcedResponse", 0);
-        int isall = ParamUtil.getInt(request, "isall", 0);
+        String title = ParamUtil.get(multiRequest, "title");
+        String content = ParamUtil.get(multiRequest, "content");
+        int isReply = ParamUtil.getInt(multiRequest, "isReply", 0);
+        int isForcedResponse = ParamUtil.getInt(multiRequest, "isForcedResponse", 0);
+        int isall = ParamUtil.getInt(multiRequest, "isall", 0);
 
-        LocalDate beginDate = DateUtil.parseLocalDate(ParamUtil.get(request, "beginDate"), "yyyy-MM-dd");
-        LocalDate endDate = DateUtil.parseLocalDate(ParamUtil.get(request, "endDate"), "yyyy-MM-dd");
+        LocalDate beginDate = DateUtil.parseLocalDate(ParamUtil.get(multiRequest, "beginDate"), "yyyy-MM-dd");
+        LocalDate endDate = DateUtil.parseLocalDate(ParamUtil.get(multiRequest, "endDate"), "yyyy-MM-dd");
 
-        int isToMobile = ParamUtil.getInt(request, "isToMobile", 0);
-        String receiver = ParamUtil.get(request, "receiver");
-        int level = ParamUtil.getInt(request, "level", 0);
+        int isToMobile = ParamUtil.getInt(multiRequest, "isToMobile", 0);
+        String receiver = ParamUtil.get(multiRequest, "receiver");
+        int level = ParamUtil.getInt(multiRequest, "level", 0);
 
         String userName = SpringUtil.getUserName();
         DeptUserDb dud = new DeptUserDb();
@@ -631,6 +628,7 @@ public class OaNoticeController {
             json.put("msg", "上传格式非法！");
             return json.toString();
         }
+
         MultipartHttpServletRequest multiRequest = multipartResolver.resolveMultipart(request);
 
         long id = ParamUtil.getLong(multiRequest, "id", -1);

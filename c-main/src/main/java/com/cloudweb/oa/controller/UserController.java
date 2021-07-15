@@ -764,7 +764,7 @@ public class UserController {
             }
             sql += " order by orders desc," + orderBy + " " + sort;
         } else {
-            if (op.equals("search")) {
+            if ("search".equals(op)) {
                 sql = "select DISTINCT u.name from users u,department d,dept_user du where u.name = du.user_name and d.code = du.dept_code and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
                 if ("".equals(condition)) {
                     sql += " and u.isValid = " + isValid;
@@ -773,7 +773,7 @@ public class UserController {
                     if ("realName".equals(searchType)) {
                         sql += " and realName like " + StrUtil.sqlstr("%" + condition + "%");
                     } else if ("userName".equals(searchType)) {
-                        sql += " and name like " + StrUtil.sqlstr("%" + condition + "%");
+                        sql += " and u.name like " + StrUtil.sqlstr("%" + condition + "%");
                     } else if ("mobile".equals(searchType)) {
                         sql += " and mobile like " + StrUtil.sqlstr("%" + condition + "%");
                     } else if ("account".equals(searchType)) {

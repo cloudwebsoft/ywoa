@@ -2424,15 +2424,9 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                     File fileExist = new File(htmlfile);
                     if (fileExist.exists()) {
                         // 替换编码x-cp20936为gb2312，否则客户端webview将会乱码
-                        String cont;
-                        try {
-                            cont = FileUtil.ReadFile(htmlfile, "gb2312");
-                            cont = cont.replaceAll("x-cp20936", "gb2312");
-                            FileUtil.WriteFile(htmlfile, cont, "gb2312");
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        }
-
+                        String cont = FileUtil.ReadFile(htmlfile, "gb2312");
+                        cont = cont.replaceAll("x-cp20936", "gb2312");
+                        FileUtil.WriteFile(htmlfile, cont, "gb2312");
                         returnValue = true;
                     } else {
                         returnValue = false;

@@ -235,6 +235,7 @@
         <filearkCanAuthorSetFilePriv kind="fileark" desc="非目录管理员的作者能否设置浏览范围">false</filearkCanAuthorSetFilePriv>
         <flowIsBtnExportWordShow kind="flow" desc="我的流程查看页面中是否显示‘导出Word’按钮">false</flowIsBtnExportWordShow>
 
-        <isNestSheetCheckPrivilege desc="是否检查嵌套表格2的模块权限">false</isNestSheetCheckPrivilege>
+        <isNestSheetCheckPrivilege kind="module" desc="是否检查嵌套表格拉单时的模块权限">false</isNestSheetCheckPrivilege>
+        <isModuleFieldSelectCtlCheckPrivilege kind="module" desc="是否检查表单域选择宏控件所选择模块的权限">false</isModuleFieldSelectCtlCheckPrivilege>
     </oa>
 </env>

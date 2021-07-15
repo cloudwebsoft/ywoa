@@ -1,31 +1,19 @@
 package com.redmoon.oa.tag;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.base.QObjectDb;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 import javax.servlet.jsp.tagext.JspFragment;
 import javax.servlet.jsp.tagext.SimpleTagSupport;
-
-import cn.js.fan.util.ParamUtil;
-import cn.js.fan.util.StrUtil;
-
-import com.cloudwebsoft.framework.base.QObjectDb;
-import com.cloudwebsoft.framework.util.LogUtil;
-import com.redmoon.oa.flow.FormField;
-import com.redmoon.oa.flow.macroctl.SQLCtl;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Iterator;
+import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ForEachQObject extends SimpleTagSupport {
 	private Object items;

@@ -8,6 +8,10 @@
 <%@ page import="org.json.*"%>
 <%@ page import="java.util.regex.*"%>
 <%@ page import="com.redmoon.oa.flow.macroctl.domain.NestFieldMaping"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IModuleFieldSelectCtl" %>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <%
     /*
      * 用于当表单设计时，选择表单域选择器宏控件，弹出本窗口
@@ -60,7 +64,9 @@
         matcher = pattern.matcher(params);
         params = matcher.replaceAll(replacementStr);
 
-        params = ModuleFieldSelectCtl.formatJSONStr(params);
+        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+        params = moduleFieldSelectCtl.formatJSONString(params);
         //System.out.println(getClass() + " params:" + params);
         try {
             jsonObject = new JSONObject(params);
@@ -434,7 +440,7 @@
         <input title="显示弹窗选择按钮" id="canOpenWinSel" name="canOpenWinSel" type="checkbox" />
         弹窗选择
         &nbsp;&nbsp;
-        <input title="ajax远程获取下拉框的选项，如勾选则点击下拉箭头时无下拉列表，反之则有下拉列表，最大显示<%=ModuleFieldSelectCtl.MAX_COUNT%>行" id="isAjax" name="isAjax" type="checkbox" />
+        <input title="ajax远程获取下拉框的选项，如勾选则点击下拉箭头时无下拉列表，反之则有下拉列表，最大显示<%=ConstUtil.MODULE_FIELD_SELECT_CTL_MAX_COUNT%>行" id="isAjax" name="isAjax" type="checkbox" />
         远程获取
       </span>
             &nbsp;&nbsp;&nbsp;&nbsp;

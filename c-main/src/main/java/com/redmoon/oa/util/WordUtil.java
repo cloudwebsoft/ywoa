@@ -8,6 +8,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTStyle;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTStyles;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class WordUtil {
 
@@ -16,8 +17,8 @@ public class WordUtil {
         FileOutputStream fos = null;
         try {
             if (!"".equals(fileName)) {
-                File file = new File(fileName);
-                byte b[] = content.getBytes();
+                // File file = new File(fileName);
+                byte b[] = content.getBytes(StandardCharsets.UTF_8);
                 bais = new ByteArrayInputStream(b);
                 POIFSFileSystem poifs = new POIFSFileSystem();
                 DirectoryEntry directory = poifs.getRoot();
@@ -47,6 +48,7 @@ public class WordUtil {
      * @throws Exception
      */
     public static void htmlToWord(String html, BufferedOutputStream bos) throws Exception {
+
         // 加上header，可便默认打开为页面视图而不是web视图
         String header = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n" +
                 "<html xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\"\n" +

@@ -10,6 +10,9 @@
 <%@ page import="com.redmoon.oa.pvg.Privilege" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.visual.*" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.INestTableCtl" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -21,7 +24,8 @@
         String parentFormCode = ParamUtil.get(request, "parentFormCode");
         String formCode = ParamUtil.get(request, "formCode");
         int flowId = ParamUtil.getInt(request, "flowId", -1);
-        NestTableCtl ntc = new NestTableCtl();
+        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+        INestTableCtl ntc = macroCtlService.getNestTableCtl();
         String op = ParamUtil.get(request, "op");
         String nestType = ParamUtil.get(request, "nestType");
         String nestFieldName = ParamUtil.get(request, "nestFieldName");

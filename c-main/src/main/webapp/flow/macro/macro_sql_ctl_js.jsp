@@ -9,6 +9,9 @@
 <%@ page import = "com.redmoon.oa.pvg.*"%>
 <%@ page import = "java.util.regex.*"%>
 <%@ page import = "org.json.*"%>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.api.ISQLCtl" %>
 <%
 response.setHeader("X-Content-Type-Options", "nosniff");
 response.setHeader("Content-Security-Policy", "default-src 'self' http: https:; script-src 'self'; frame-ancestors 'self'");
@@ -24,6 +27,8 @@ FormDb fd = new FormDb();
 fd = fd.getFormDb(formCode);
 
 FormField ff = fd.getFormField(fieldName);
+MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+ISQLCtl sqlCtl = macroCtlService.getSQLCtl();
 
 String pageType = ParamUtil.get(request, "pageType");
 boolean isList = false;
@@ -37,8 +42,7 @@ if (op.equals("onChange")) {
 		response.setContentType("text/html;charset=utf-8");
 
 		JSONObject json = new JSONObject();
-		SQLCtl ctl = new SQLCtl();
-		String html = ctl.getCtlHtml(request, flowId, mainId, ff, pageType);
+		String html = sqlCtl.getCtlHtml(request, flowId, mainId, ff, pageType);
 
 		if (html.indexOf("<input") != -1) {
 			json.put("type", "input");
@@ -61,9 +65,9 @@ response.setContentType("text/javascript;charset=utf-8");
 String[] ary;
 String desc = StrUtil.getNullStr(ff.getDescription());
 if ("".equals(desc)) {
-	ary = SQLCtl.getSql(ff.getDefaultValue());
+	ary = sqlCtl.getSqlByDesc(ff.getDefaultValue());
 } else {
-	ary = SQLCtl.getSql(desc);
+	ary = sqlCtl.getSqlByDesc(desc);
 }
 		
 String sql = ary[0];

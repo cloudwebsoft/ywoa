@@ -4,6 +4,9 @@
 <%@page import="cn.js.fan.util.ParamUtil"%>
 <%@page import="org.json.JSONObject"%>
 <%@page import="cn.js.fan.util.StrUtil"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IModuleFieldSelectCtl" %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 	<head>
@@ -91,8 +94,10 @@
 	<%
 			String skey = ParamUtil.get(request,"skey");
 			String desc = ParamUtil.get(request,"desc");
-			
-			desc = ModuleFieldSelectCtl.formatJSONStr(desc);
+
+			MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+            IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+			desc = moduleFieldSelectCtl.formatJSONString(desc);
 			// System.out.println(getClass() + " desc=" + desc);
 			
 			JSONObject obj = new JSONObject(desc);

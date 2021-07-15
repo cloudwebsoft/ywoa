@@ -1,31 +1,37 @@
 package com.redmoon.oa.visual;
 
-import java.io.*;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import cn.js.fan.db.*;
+import cn.js.fan.util.*;
+import cn.js.fan.util.file.FileUtil;
+import cn.js.fan.web.Global;
+import com.cloudweb.oa.api.IAttachmentCtl;
+import com.cloudweb.oa.api.IBasicSelectCtl;
 import com.cloudweb.oa.api.IModuleUtil;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
-import com.redmoon.oa.flow.macroctl.AttachmentCtl;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.kit.util.FileInfo;
+import com.redmoon.kit.util.FileUpload;
+import com.redmoon.oa.base.IFormDAO;
+import com.redmoon.oa.base.IFormMacroCtl;
+import com.redmoon.oa.db.SequenceManager;
+import com.redmoon.oa.dept.DeptDb;
+import com.redmoon.oa.dept.DeptUserDb;
+import com.redmoon.oa.flow.*;
+import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
+import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
+import com.redmoon.oa.flow.query.QueryScriptUtil;
+import com.redmoon.oa.kernel.License;
+import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
+import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.sys.DebugUtil;
-import com.redmoon.oa.ui.LocalUtil;
 import com.redmoon.oa.util.RequestUtil;
+import com.redmoon.oa.visual.func.CalculateFuncImpl;
+import com.redmoon.oa.visual.func.ConnStrFuncImpl;
 import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.math.raw.Mod;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -34,52 +40,17 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.InputSource;
 
-import bsh.EvalError;
-import bsh.Interpreter;
-
-import com.cloudwebsoft.framework.db.JdbcTemplate;
-import com.cloudwebsoft.framework.util.LogUtil;
-import com.redmoon.kit.util.FileInfo;
-import com.redmoon.kit.util.FileUpload;
-import com.redmoon.oa.base.IFormDAO;
-import com.redmoon.oa.base.IFormMacroCtl;
-import com.redmoon.oa.basic.SelectDb;
-import com.redmoon.oa.db.SequenceManager;
-import com.redmoon.oa.dept.DeptDb;
-import com.redmoon.oa.dept.DeptUserDb;
-import com.redmoon.oa.flow.BranchMatcher;
-import com.redmoon.oa.flow.FormDb;
-import com.redmoon.oa.flow.FormField;
-import com.redmoon.oa.flow.FormParser;
-import com.redmoon.oa.flow.FormQueryDb;
-import com.redmoon.oa.flow.Leaf;
-import com.redmoon.oa.flow.SQLGeneratorFactory;
-import com.redmoon.oa.flow.WorkflowDb;
-import com.redmoon.oa.flow.WorkflowPredefineDb;
-import com.redmoon.oa.flow.WorkflowUtil;
-import com.redmoon.oa.flow.macroctl.BasicSelectCtl;
-import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
-import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.flow.query.QueryScriptUtil;
-import com.redmoon.oa.kernel.License;
-import com.redmoon.oa.person.UserDb;
-import com.redmoon.oa.pvg.Privilege;
-import com.redmoon.oa.pvg.RoleDb;
-import com.redmoon.oa.util.BeanShellUtil;
-import com.redmoon.oa.visual.func.CalculateFuncImpl;
-import com.redmoon.oa.visual.func.ConnStrFuncImpl;
-
-import cn.js.fan.util.DateUtil;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.NumberUtil;
-import cn.js.fan.util.ParamUtil;
-import cn.js.fan.util.RandomSecquenceCreator;
-import cn.js.fan.util.ResKeyException;
-import cn.js.fan.util.StrUtil;
-import cn.js.fan.util.file.FileUtil;
-import cn.js.fan.web.Global;
-
-import nl.bitwalker.useragentutils.*;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>Title: </p>
@@ -107,6 +78,10 @@ public class ModuleUtil {
 	public static final String FILTER_CUR_USER_DEPT = "{$curUserDept}";
 	public static final String FILTER_CUR_USER_ROLE = "{$curUserRole}";
 	public static final String FILTER_ADMIN_DEPT = "{$admin.dept}";
+	/**
+	 * 主表ID
+	 */
+	public static final String FILTER_MAIN_ID = "{$mainId}";
 	
     public static final String seperator = "-|-";
 
@@ -137,6 +112,9 @@ public class ModuleUtil {
     	else if (FILTER_CUR_DATE.equals(preStr)) {
     		return "当前日期";
     	}
+    	else if (FILTER_MAIN_ID.equals(preStr)) {
+    		return "主表ID";
+		}
     	else {
     		return "";
     	}
@@ -798,15 +776,10 @@ public class ModuleUtil {
         	
         	sb.append("[/modules]\r\n");
 
-    		try {
-				String scriptStr = FileUtil.ReadFile(Global.getRealPath() + "flow/form_js/form_js_" + formCode + ".jsp", "utf-8");
-	        	sb.append("[form_js]\r\n");
-				sb.append(scriptStr);
-	        	sb.append("[/form_js]\r\n");
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			String scriptStr = FileUtil.ReadFile(Global.getRealPath() + "flow/form_js/form_js_" + formCode + ".jsp", "utf-8");
+			sb.append("[form_js]\r\n");
+			sb.append(scriptStr);
+			sb.append("[/form_js]\r\n");
 			
 			// 导出基础数据
 			sb.append("[basic_select_ctls]\r\n");
@@ -818,7 +791,7 @@ public class ModuleUtil {
 				if (ff.getType().equals(FormField.TYPE_MACRO)) {
 		            MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
 		            IFormMacroCtl ictl = mu.getIFormMacroCtl();
-		            if (ictl instanceof BasicSelectCtl) {
+		            if (ictl instanceof IBasicSelectCtl) {
 		            	String ctlCode = ff.getDefaultValue();
 		            	if (StringUtils.isEmpty(ctlCode)) {
 		            		ctlCode = ff.getDescription();
@@ -2619,7 +2592,8 @@ public class ModuleUtil {
 							if ("==".equals(token)) {
 								condStr = val + "=={$" + fieldName + "} || \"\".equals({$" + fieldName + "})";
 							} else if ("<>".equals(token)) {
-								condStr = val + "!={$" + fieldName + "} || \"\".equals({$" + fieldName + "})";
+								// condStr = val + "!={$" + fieldName + "} || \"\".equals({$" + fieldName + "})";
+								condStr = val + "!={$" + fieldName + "} && !\"\".equals({$" + fieldName + "})";
 							}
 						}
 					}
@@ -2901,7 +2875,7 @@ public class ModuleUtil {
 							if (ffCond!=null && FormField.TYPE_MACRO.equals(ffCond.getType())) {
 								MacroCtlUnit mu = mm.getMacroCtlUnit(ffCond.getMacroType());
 								IFormMacroCtl imc = mu.getIFormMacroCtl();
-								if (imc instanceof AttachmentCtl) {
+								if (imc instanceof IAttachmentCtl) {
 									value = StrUtil.getNullStr(fdao.getFieldValue(fieldName));
 								}
 							}

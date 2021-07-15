@@ -2970,7 +2970,6 @@ Function.prototype.bind = Function.prototype.bind || function(to) {
 									$.fn.pullRefresh = $.fn.pullRefresh_native;
 									$container.pullRefresh(pullRefreshOptions);
 								});
-
 							} else if($.os.android) { //非原生转圈，但是Android环境
 								$.plusReady(function() {
 									// 这里改写$.fn.pullRefresh

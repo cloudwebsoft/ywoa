@@ -82,7 +82,7 @@
 
     com.redmoon.weixin.Config.reload();
     com.redmoon.oa.android.CloudConfig.reload();
-    com.redmoon.oa.robot.Config.reload();
+    // com.redmoon.oa.robot.Config.reload();
 
     com.redmoon.forum.Config forumCfg = com.redmoon.forum.Config.getInstance();
     forumCfg.refresh();

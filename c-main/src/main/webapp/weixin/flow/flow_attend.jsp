@@ -66,6 +66,15 @@
 <script type="text/javascript" src="../js/mui.PullToRefresh.wx.js"></script>
 <script src="../js/jq_mydialog.js"></script>
 <script>
+    function getContextPath() {
+        var strFullPath = document.location.href;
+        var strPath = document.location.pathname;
+        var pos = strFullPath.indexOf(strPath);
+        var prePath = strFullPath.substring(0, pos);
+        var postPath = strPath.substring(0, strPath.substr(1).indexOf('/') + 1);
+        return (prePath + postPath);
+    }
+
     if(mui.os.plus) {
         // 使搜索区域下方空白不致过大，因为搜索框中的input的margin-bottom为15px，而在原生手机端中则不会有此margin-bottom
         $('#pullrefresh').css('margin-top', '-15px');

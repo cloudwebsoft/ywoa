@@ -14,114 +14,102 @@
 	var TOTAL = 0;
 	var PAGE_SIZE = 10;
 	var OP = "";
+	var myScrollClass; // 调用pullToRefresh后得到的对象
 	var self ;// 罗珠敏备注 坑爹 调用了下拉刷新控件后 this对象 已经改变为 下拉刷新的this所以 要 设置为全局变量
 	$.PullToRefrshList = $.Class.extend({
-		init: function(element, options) {
-					 this.element = element,
-					 this.default = {
-					 	"pullRefreshContainer":"#pullrefresh",
-					 	"ulContainer":".mui-table-view",
-					 	"searchContainer":"#search_content",
-					 	"liContainer":".mui-table-view-cell"
-					 }
-					 this.options = $.extend(true,this.default,options);
-					 this.bindEvent();
-			 },
-		loadListDate:function(){
-			self = this;
-			var pullRefreshSelector = self.options.pullRefreshContainer;
-			mui.init({
-				pullRefresh: {
-					container:pullRefreshSelector ,
-					down: {
-						callback: this.pulldownRefresh
-					},
-					up: {
-						height:20,// 可选,默认50.触发下拉刷新拖动距离, 
-						contentrefresh: '正在加载...',
-						contentnomore:'没有更多数据了',//可选，请求完毕若没有更多数据时显示的提醒内容；
-						auto:true,
-						callback: this.pullupRefresh
-					}
+		init: function (element, options) {
+			this.element = element,
+				this.default = {
+					"pullRefreshContainer": "#pullrefresh",
+					"ulContainer": ".mui-table-view",
+					"searchContainer": "#search_content",
+					"liContainer": ".mui-table-view-cell"
 				}
-			});
-			if (mui.os.plus) {
-				mui.plusReady(function() {
-					setTimeout(function() {
-						mui(pullRefreshSelector).pullRefresh().pullupLoading();
-					}, 1000);
-				});
-			} else {
-				mui.ready(function() {
-					mui(pullRefreshSelector).pullRefresh().pullupLoading();
-				});
-			}
+			this.options = $.extend(true, this.default, options);
+			this.bindEvent();
 		},
-		loadList:function(){
+		loadListData: function () {
 			self = this;
 			var pullRefreshSelector = self.options.pullRefreshContainer;
-			$(pullRefreshSelector).pullToRefresh({
+			var options = {
+				container:pullRefreshSelector,
 				down: {
 					callback: this.pulldownRefresh
 				},
 				up: {
+					height:20,// 可选,默认50.触发下拉刷新拖动距离,
+					// contentrefresh: '正在加载...',
+					// contentnomore:'没有更多数据了',//可选，请求完毕若没有更多数据时显示的提醒内容；
 					auto:true,
-					callback: this.pullupRefresh							
+					callback: this.pullupRefresh
 				}
-			});
-			
+			}
+
+			mui(pullRefreshSelector).pullToRefresh(options);
 		},
-		pulldownRefresh:function(){
+		loadList: function () {
+			TOTAL = 0; // 初始化，否则多个tab点击时，会因上一个tab的ajax_get加载的TOTAL带来影响
+			self = this;
+			var pullRefreshSelector = self.options.pullRefreshContainer;
+			var options = {
+				down: {
+					callback: this.pulldownRefresh
+				},
+				up: {
+					auto: true,
+					callback: this.pullupRefresh
+				}
+			}
+			mui(pullRefreshSelector).pullToRefresh(options);
+		},
+		pulldownRefresh: function () {
+			myScrollClass = this;
 			var params = self.options.ajax_params;
 			var searchContainer = self.options.searchContainer;
 	    	jQuery(searchContainer).val("");
 			PAGE_NUM = 1;
 			OP = "";
 			var ajax_param = $.extend(true,{"pageNum":PAGE_NUM,"pageSize":PAGE_SIZE,"op":OP},params);
-			self.ajax_get(self.options.url,0,ajax_param);
+			self.ajax_get(self.options.url, 0, ajax_param, myScrollClass);
 		},
 		pullupRefresh:function(){
-			
-			if(OP == "search"){
-				var _searchContainer =  self.options.searchContainer;
-				var url_params =  jQuery(_searchContainer).serialize() ;
-				var n_url = self.options.url+"?"+url_params;
+			myScrollClass = this;
+			if (OP == "search") {
+				var _searchContainer = self.options.searchContainer;
+				var url_params = jQuery(_searchContainer).serialize();
+				var n_url = self.options.url + "?" + url_params;
 				PAGE_NUM += 1;
 				var params = self.options.ajax_params;
-				var ajax_param = $.extend(true,{"pageNum":PAGE_NUM,"pageSize":PAGE_SIZE,"op":OP},params);
-			    self.ajax_get(n_url,1,ajax_param);
-				
-			}else{
+				var ajax_param = $.extend(true, {"pageNum": PAGE_NUM, "pageSize": PAGE_SIZE, "op": OP}, params);
+				self.ajax_get(n_url, 1, ajax_param, myScrollClass);
+			} else {
 				var params = self.options.ajax_params;
-				if(TOTAL == 0){
+				if (TOTAL == 0) {
 					PAGE_NUM = 1;
-					var ajax_param = $.extend(true,{"pageNum":PAGE_NUM,"pageSize":PAGE_SIZE,"op":OP},params);
-					self.ajax_get(self.options.url,1,ajax_param);
-				}else if(PAGE_NUM*PAGE_SIZE <TOTAL){
+					var ajax_param = $.extend(true, {"pageNum": PAGE_NUM, "pageSize": PAGE_SIZE, "op": OP}, params);
+					self.ajax_get(self.options.url, 1, ajax_param, myScrollClass);
+				} else if (PAGE_NUM * PAGE_SIZE < TOTAL) {
 					PAGE_NUM += 1;
-					var ajax_param = $.extend(true,{"pageNum":PAGE_NUM,"pageSize":PAGE_SIZE,"op":OP},params);
-					self.ajax_get(self.options.url,1,ajax_param);
+					var ajax_param = $.extend(true, {"pageNum": PAGE_NUM, "pageSize": PAGE_SIZE, "op": OP}, params);
+					self.ajax_get(self.options.url, 1, ajax_param, myScrollClass);
 				}
-				
 			}
-			
-			
 		},
 		bindEvent: function() {
 			var self = this;
-			$(".mui-input-group").on("tap",".f_search_btn",function(){
-				mui( self.options.pullRefreshContainer).pullRefresh().enablePullupToRefresh();
-				mui( self.options.pullRefreshContainer).pullRefresh().refresh(true);
+			$(".mui-input-group").on("tap", ".f_search_btn", function () {
+				// 初始化pullToRefresh
+				// myScrollClass.refresh(true);
 				OP = "search";
-				var _searchContainer =  self.options.searchContainer;
-				var url_params =  jQuery(_searchContainer).serialize() ;
-				var n_url = self.options.url+"?"+url_params;
+				var _searchContainer = self.options.searchContainer;
+				var url_params = jQuery(_searchContainer).serialize();
+				var n_url = self.options.url + "?" + url_params;
 				PAGE_NUM = 1;
-				  var params = self.options.ajax_params;
-				  var data_types = self.options.ajaxDatasType;
-				  var ajax_param;	
-			      ajax_param = $.extend(true,{"pageNum":PAGE_NUM,"pageSize":PAGE_SIZE,"op":OP},params);
-			      self.ajax_get(n_url,-1,ajax_param);
+				var params = self.options.ajax_params;
+				var data_types = self.options.ajaxDatasType;
+				var ajax_param;
+				ajax_param = $.extend(true, {"pageNum": PAGE_NUM, "pageSize": PAGE_SIZE, "op": OP}, params);
+				self.ajax_get(n_url, -1, ajax_param, myScrollClass);
 			});
 			$(".mui-input-group").on("tap",".date_btn",function(){
 				var optionsJson = this.getAttribute('data-options') || '{}';
@@ -171,7 +159,8 @@
 					moduleCode = params.formCodeRelated;	
 				}
 				mui.openWindow({
-				    "url":"../visual/module_detail.jsp?skey="+params.skey+"&moduleCode="+moduleCode+"&id="+id
+				    "url":"../visual/module_detail.jsp?skey="+params.skey+"&moduleCode="+moduleCode+"&id="+id,
+					"id": "module_detail_" + moduleCode + "_" + id
 				})	
 			});
 			
@@ -240,11 +229,7 @@
 					
 					});
 				}
-	
-			
 			});
-			
-
 		},
 		conditionType:function(data_arr){
 			var self = this;
@@ -327,7 +312,7 @@
 			btn+= '</div>';
 			jQuery(_searchContainer).append(btn);
 		},
-		ajax_get:function(url,type,datas){
+		ajax_get:function(url,type,datas, myScrollClass){
 			var refreshSelector = self.options.pullRefreshContainer;
 			var ulSelector =  self.options.ulContainer;
 			var liSelector = self.options.liContainer;
@@ -355,28 +340,28 @@
 					}else if(!canEdit && canDel ){
 						_opContent+= '<a class="mui-btn mui-btn-red" op="del">删除</a>';
 					}
-					jQuery(".mui-content-padded").html(_addContent);					
+					jQuery(".mui-content-padded").html(_addContent);
 					if(TOTAL == 0){
 						if(type == 1 ){
-							mui(refreshSelector).pullRefresh().endPullupToRefresh(true);
+							myScrollClass.endPullUpToRefresh(true);
 						}else if(type == -1){
 							jQuery(liSelector).remove();
-							mui(refreshSelector).pullRefresh().endPullupToRefresh(true);
+							myScrollClass.endPullUpToRefresh(true);
 						}else{
 							jQuery(liSelector).remove();
-							mui(refreshSelector).pullRefresh().endPulldownToRefresh(); // refresh
+							myScrollClass.endPullDownToRefresh(); // refresh
 						}
 					}else{
 						if(type == 0 || type == -1){
 							jQuery(ulSelector).find("li").remove();
 						}
 						// console.info(type+"--"+OP);
-						if((type == 1 || type == 0)&& OP == ""){
-							jQuery(searchContainer+" div").remove();
-							if("conditions" in   data.result){
+						if ((type == 1 || type == 0) && OP == "") {
+							jQuery(searchContainer + " div").remove();
+							if ("conditions" in data.result) {
 								var conditions = data.result.conditions;
-								if(typeof(conditions) == 'object'){
-									if(conditions.length>0){
+								if (typeof (conditions) == 'object') {
+									if (conditions.length > 0) {
 										self.conditionType(conditions);
 									}
 								}
@@ -405,20 +390,19 @@
 								});
 							_li+='</div>';
 							_li += '</li>';
-							if(type == 1){
-								mui(refreshSelector).pullRefresh().endPullupToRefresh(PAGE_NUM*PAGE_SIZE >=TOTAL); // 参数为true代表没有更多数据了。
+							if (type == 1) {
 								jQuery(ulSelector).append(_li);
-							}else if(type == 0){
+								myScrollClass.endPullUpToRefresh(PAGE_NUM * PAGE_SIZE >= TOTAL); // 参数为true代表没有更多数据了。
+							} else if (type == 0) {
 								jQuery(ulSelector).append(_li);
-								mui(refreshSelector).pullRefresh().endPulldownToRefresh(); // refresh
-																							// completed
-								if(PAGE_NUM*PAGE_SIZE <TOTAL){
-									mui(refreshSelector).pullRefresh().enablePullupToRefresh();
+								myScrollClass.endPullDownToRefresh(); // refresh
+								// completed
+								if (PAGE_NUM * PAGE_SIZE < TOTAL) {
+									myScrollClass.endPullUpToRefresh();
 								}
-							}else if(type == -1){
+							} else if (type == -1) {
 								jQuery(ulSelector).append(_li);
-								
-								mui(refreshSelector).pullRefresh().endPullupToRefresh(PAGE_NUM*PAGE_SIZE >=TOTAL); // 参数为true代表没有更多数据了。
+								myScrollClass.endPullUpToRefresh(PAGE_NUM * PAGE_SIZE >= TOTAL); // 参数为true代表没有更多数据了。
 							}
 						});
 					}

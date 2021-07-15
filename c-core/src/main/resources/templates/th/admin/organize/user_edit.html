@@ -80,7 +80,7 @@
 <div th:replace="th/include/tab_user :: navUser(${user.name}, 1)"></div>
 <div class="spacerH"></div>
 <div id="d" style="border-left:1px solid #DDD;">
-    <form method="post" action="../../user/update.do" enctype="MULTIPART/FORM-DATA" onsubmit="return false" id="memberForm" name="memberForm">
+    <form method="post" action="../../user/update.do" autocomplete="off" enctype="MULTIPART/FORM-DATA" onsubmit="return false" id="memberForm" name="memberForm">
         <table width=100% border=0 cellpadding=0 cellspacing=0 class="tabStyle_1">
             <tr>
                 <td colspan="4" align=left class="tabStyle_1_title">用户信息</td>

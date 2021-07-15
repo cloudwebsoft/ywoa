@@ -10,6 +10,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.api.ISQLCtl;
 import com.cloudweb.oa.security.FormSecurityUtil;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
@@ -24,11 +25,9 @@ import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.flow.macroctl.SQLCtl;
 import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
-import com.redmoon.oa.person.UserSetupDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.sms.IMsgUtil;
@@ -388,7 +387,7 @@ public class FormDAOMgr {
                 if (ff.getType().equals(FormField.TYPE_MACRO)) {
                     MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
                     // 跳过SQL控件，因为当SQL控件不可写时，仍需记录其值
-                    if (mu.getIFormMacroCtl() instanceof SQLCtl) {
+                    if (mu.getIFormMacroCtl() instanceof ISQLCtl) {
                         continue;
                     }
                 }
@@ -1354,7 +1353,7 @@ public class FormDAOMgr {
                     if (ff.getType().equals(FormField.TYPE_MACRO)) {
                         MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
                         // 跳过SQL控件，因为当SQL控件不可写时，仍需记录其值
-                        if (mu.getIFormMacroCtl() instanceof SQLCtl) {
+                        if (mu.getIFormMacroCtl() instanceof ISQLCtl) {
                             continue;
                         }
                     }

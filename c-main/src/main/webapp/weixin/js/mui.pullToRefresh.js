@@ -101,7 +101,7 @@
 			var self = this;
 			if ($.isFunction(self.options.down.callback)) {
 				self.pullDownTips = (function() {
-					var element = document.querySelector('.' + CLASS_PULL_TOP_TIPS);
+					var element = self.element.querySelector('.' + CLASS_PULL_TOP_TIPS);
 					if (element) {
 						element.parentNode.removeChild(element);
 					}
@@ -194,7 +194,7 @@
 			var detail = e.detail;
 			if (!this.isDragging) {
 				if (detail.direction === 'down' && this._canPullDown()) {
-					if (document.querySelector('.' + CLASS_PULL_TOP_TIPS)) {
+					if (this.element.querySelector('.' + CLASS_PULL_TOP_TIPS)) {
 						e.stopPropagation();
 						e.detail.gesture.preventDefault();
 						return;

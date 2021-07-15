@@ -29,7 +29,7 @@
     <meta http-equiv="pragma" content="no-cache"/>
     <meta http-equiv="Cache-Control" content="no-cache,must-revalidate"/>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>流程设计器</title>
+    <title>流程设计 - <%=wpd.getTitle()%></title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <%@ include file="../inc/nocache.jsp" %>
     <script src="../inc/common.js"></script>

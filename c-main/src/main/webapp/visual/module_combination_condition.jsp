@@ -19,6 +19,7 @@
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.BasicSelectCtl" %>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	String moduleCode = ParamUtil.get(request, "moduleCode");
@@ -119,7 +120,7 @@
 			String str = FormParser.getOptionsOfSelect(fd,field);
 			// 如果没有空的选项
 			if (!str.contains(" value=''") && !str.contains(" value=\"\"")) {
-				str = "<option value=''>" + BasicSelectCtl.NONE + "</option>" + str;
+				str = "<option value=''>" + ConstUtil.NONE + "</option>" + str;
 			}
 			json.put("ret","2");
 			json.put("msg",str);
@@ -166,10 +167,11 @@
   	map.put("<%=ModuleUtil.FILTER_CUR_USER%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER)%>");
   	map.put("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT)%>");
   	map.put("<%=ModuleUtil.FILTER_CUR_USER_ROLE%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_ROLE)%>");
-  	map.put("<%=ModuleUtil.FILTER_ADMIN_DEPT%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_ADMIN_DEPT)%>");
+	map.put("<%=ModuleUtil.FILTER_ADMIN_DEPT%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_ADMIN_DEPT)%>");
+	map.put("<%=ModuleUtil.FILTER_MAIN_ID%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_MAIN_ID)%>");
   	map.put("<%=ModuleUtil.FILTER_CUR_DATE%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_DATE)%>");
   	
-  	function add(){
+  	function add() {
   		var roleValue = $("#roleHidden").val();
   		var deptValue = $("#deptHidden").val();
   		var fieldNameValue = $("#fieldNameHidden").val();
@@ -233,8 +235,7 @@
 		if(tb.rows.length == 1){
 			add();
 		}	
-		
-		
+
 		var getObj = document.getElementsByName("logical");
 		for(var j=0;j<getObj.length;j++){
 			if(j == (getObj.length-1)){
@@ -243,7 +244,6 @@
 				getObj[j].style.display="inline-block";
 			}
 		}
-		
 	}
 	
 	function changeColumn(str){
@@ -484,6 +484,9 @@
         <li role="presentation" val="<%=ModuleUtil.FILTER_ADMIN_DEPT %>">
             <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_ADMIN_DEPT) %></a>
         </li>
+		<li role="presentation" val="<%=ModuleUtil.FILTER_MAIN_ID %>">
+			<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_MAIN_ID) %></a>
+		</li>
         <%if (!"".equals(mainFormCode)) { %>
         <li role="presentation" val="mainFormOpt">
             <a role="menuitem" tabindex="-1" href="#">主表字段</a>
@@ -562,6 +565,9 @@
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_ADMIN_DEPT %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_ADMIN_DEPT) %></a>
 					        </li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_MAIN_ID %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_MAIN_ID) %></a>
+							</li>
 					        <%if (!"".equals(mainFormCode)) { %>
 					        <li role="presentation" val="mainFormOpt">
 					            <a role="menuitem" tabindex="-1" href="#">主表字段</a>
@@ -679,6 +685,9 @@
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_ADMIN_DEPT %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_ADMIN_DEPT) %></a>
 					        </li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_MAIN_ID %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_MAIN_ID) %></a>
+							</li>
 					        <%if (!"".equals(mainFormCode)) { %>
 					        <li role="presentation" val="mainFormOpt">
 					            <a role="menuitem" tabindex="-1" href="#">主表字段</a>
@@ -814,7 +823,7 @@
 
 									var val = "<%=e.getChildText("value")%>";
 									if (val.indexOf("{$")==0) {
-										if (val.indexOf("<%=ModuleUtil.FILTER_CUR_DATE%>")==0 ||val.indexOf("<%=ModuleUtil.FILTER_CUR_USER%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_ROLE%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_ADMIN_DEPT%>")==0) {
+										if (val.indexOf("<%=ModuleUtil.FILTER_CUR_DATE%>")==0 ||val.indexOf("<%=ModuleUtil.FILTER_CUR_USER%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_ROLE%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_ADMIN_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_MAIN_ID%>")==0) {
 											$("#columnInput<%=i%>").html("<input type='text' name='columnName' id='columnName<%=i%>' value='<%=e.getChildText("value")%>'/>");								
 											$('#columnName<%=i%>').attr("val", val);
 											$('#columnName<%=i%>').val(map.get(val).value);

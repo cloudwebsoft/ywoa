@@ -17,7 +17,7 @@
     <meta content="telephone=no" name="format-detection"/>
     <link rel="stylesheet" href="../weixin/css/mui.css">
     <link rel="stylesheet" href="../weixin/css/my_dialog.css"/>
-    <script type="text/javascript" src="../../weixin/js/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="../weixin/js/jquery-1.9.1.min.js"></script>
     <script src="http://g.alicdn.com/dingding/dingtalk-jsapi/2.3.0/dingtalk.open.js"></script>
 </head>
 <body>

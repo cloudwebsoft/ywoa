@@ -16,14 +16,7 @@ public class SalesFahuodanDb extends QObjectDb {
 		if (sfd == null) {
 			sfd = new SalesFahuodanDb();
 			String filePath = Global.realPath + "sales/template/fahuodan.htm";
-			String c = "";
-			try {
-				c = FileUtil.ReadFile(filePath, "gb2312");
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
+			String c = FileUtil.ReadFile(filePath, "gb2312");
 			try {
 				sfd.create(new JdbcTemplate(), new Object[]{unitCode, c});
 			} catch (ResKeyException e) {

@@ -15,7 +15,11 @@ public interface WorkflowService {
 
     JSONObject finishAction(HttpServletRequest request, Privilege privilege) throws ErrMsgException;
 
+    JSONObject finishActionByMobile(HttpServletRequest request, Privilege privilege) throws ErrMsgException;
+
     JSONObject finishActionFree(HttpServletRequest request, Privilege privilege) throws ErrMsgException;
+
+    JSONObject finishActionFreeByMobile(HttpServletRequest request, Privilege privilege) throws ErrMsgException;
 
     JSONObject createNestSheetRelated(HttpServletRequest request) throws ErrMsgException;
 

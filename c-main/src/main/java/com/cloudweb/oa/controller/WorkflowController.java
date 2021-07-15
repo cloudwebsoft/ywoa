@@ -1786,7 +1786,7 @@ public class WorkflowController {
         try {
             // 将场景置为流程
             threadContext.setSceneFlow();
-            json = workflowService.finishAction(request, new com.redmoon.oa.workplan.Privilege());
+            json = workflowService.finishAction(request, new com.redmoon.oa.pvg.Privilege());
         }
         catch (ErrMsgException | ClassCastException | NullPointerException | IllegalArgumentException e) {
             DebugUtil.i(getClass(), "finishAction", StrUtil.trace(e));
@@ -1810,7 +1810,7 @@ public class WorkflowController {
         try {
             // 将场景置为流程
             threadContext.setSceneFlow();
-            json = workflowService.finishActionFree(request, new com.redmoon.oa.workplan.Privilege());
+            json = workflowService.finishActionFree(request, new com.redmoon.oa.pvg.Privilege());
         } catch (ErrMsgException | ClassCastException | NullPointerException | IllegalArgumentException e) {
             // 置为异常状态
             threadContext.setAbnormal(true);
@@ -2244,6 +2244,7 @@ public class WorkflowController {
         catch (ErrMsgException | ClassCastException | NullPointerException | IllegalArgumentException e) {
             // 置为异常状态
             threadContext.setAbnormal(true);
+            e.printStackTrace();
             json.put("ret", 0);
             json.put("msg", e.getMessage());
             json.put("op", "");
