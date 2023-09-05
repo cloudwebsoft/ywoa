@@ -6,7 +6,7 @@ import java.util.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: 对象类用于直接存取数据库</p>
@@ -23,7 +23,6 @@ import org.apache.log4j.*;
 public abstract class ObjectRaw {
 
     public String connname = "";
-    public transient Logger logger = null;
     public String QUERY_LIST;
     public String QUERY_LOAD;
     public String QUERY_DEL;
@@ -39,10 +38,9 @@ public abstract class ObjectRaw {
      * 初始化，需在构造函数中调用，用来初始化数据库的查询语句等
      */
     public void init() {
-        logger = Logger.getLogger(this.getClass().getName());
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("默认数据库名不能为空");
         setQueryCreate();
         setQuerySave();
         setQueryDel();

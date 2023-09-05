@@ -56,7 +56,6 @@ public class ListPart implements ITemplate {
         if (steps == null) {
             steps = new ArrayList();
         }
-        // System.out.println(getClass() + ":" + step.getClass() + "--" + step.toString());
         steps.add(step);
     }
 

@@ -1,7 +1,5 @@
 package cn.js.fan.cache.jcs;
 
-import cn.js.fan.kernel.Scheduler;
-
 /**
  * Simple timer that keeps the currentTime variable of Cache accurate to one
  * second of the real clock time.
@@ -44,8 +42,6 @@ public class CacheTimer extends Thread {
         //Run the timer indefinetly.
         while (true) {
             currentTime = System.currentTimeMillis();
-            // System.out.println(getClass() + " run.");
-
             rmCache.timer();
 
             try {

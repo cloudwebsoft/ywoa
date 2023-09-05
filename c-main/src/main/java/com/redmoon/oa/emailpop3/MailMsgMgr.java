@@ -28,13 +28,10 @@ public class MailMsgMgr {
             ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
         if (pvg.isUserLogin(request)) {
-            try {
-                mailMsgDb.create(application, request, pvg.getUser(request));
-            } catch (ErrMsgException e) {
-                throw e;
-            }
-        } else
+            mailMsgDb.create(application, request, pvg.getUser(request));
+        } else {
             throw new ErrMsgException(SkinUtil.LoadString(request, "err_not_login"));
+        }
         return true;
     }
 
@@ -49,31 +46,31 @@ public class MailMsgMgr {
             ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
         if (pvg.isUserLogin(request)) {
-            try {
-                mailMsgDb.modify(application, request, pvg.getUser(request));
-            } catch (ErrMsgException e) {
-                throw e;
-            }
-        } else
+            mailMsgDb.modify(application, request, pvg.getUser(request));
+        } else {
             throw new ErrMsgException(SkinUtil.LoadString(request, "err_not_login"));
+        }
         return true;
     }
 
     public boolean delMulti(HttpServletRequest request) throws ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        if (!pvg.isUserLogin(request))
+        if (!pvg.isUserLogin(request)) {
             throw new ErrMsgException(SkinUtil.LoadString(request, "err_not_login"));
+        }
         String[] ids = request.getParameterValues("ids");
-        if (ids == null)
+        if (ids == null) {
             throw new ErrMsgException("缺少标识!");
+        }
 
         return mailMsgDb.delMsg(ids);
     }
 
     public boolean del(HttpServletRequest request, boolean isDustbin) throws ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        if (!pvg.isUserLogin(request))
+        if (!pvg.isUserLogin(request)) {
             throw new ErrMsgException(SkinUtil.LoadString(request, "err_not_login"));
+        }
         int id = ParamUtil.getInt(request, "id");
         return del(id, isDustbin);
     }
@@ -84,8 +81,9 @@ public class MailMsgMgr {
             mmd.setType(MailMsgDb.TYPE_DUSTBIN);
             return mmd.save();
         }
-        else
+        else {
             return mmd.del();
+        }
     }
 
     public MailMsgDb getMailMsgDb(HttpServletRequest request, int id) throws ErrMsgException {
@@ -98,9 +96,10 @@ public class MailMsgMgr {
         epd = epd.getEmailPop3Db(pvg.getUser(request), emailAddress);
         if (epd != null) {
             return mailMsgDb;
-        } else
+        } else {
             throw new ErrMsgException(SkinUtil.LoadString(request,
                         "pvg_invalid"));
+        }
     }
 
     public MailMsgDb getMailMsgDb(int id) throws ErrMsgException {

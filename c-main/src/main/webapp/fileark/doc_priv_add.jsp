@@ -40,9 +40,8 @@
         function openWinUsers() {
             selUserNames = form1.name.value;
             selUserRealNames = form1.userRealName.value;
-            showModalDialog('../user_multi_sel.jsp', window.self, 'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
+            openWin('../user_multi_sel.jsp', 800, 600);
         }
-
 
         function openWinDepts(formDept) {
             openWin('../dept_multi_sel.jsp', 800, 600);

@@ -18,7 +18,6 @@ import com.redmoon.oa.oacalendar.OACalendarDb;
 import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
 import cn.js.fan.web.SkinUtil;
 
 /**
@@ -31,8 +30,6 @@ import cn.js.fan.web.SkinUtil;
  */
 //日程安排
 public class KaoqinMgr {
-    Logger logger = Logger.getLogger(KaoqinMgr.class.getName());
-
     public KaoqinMgr() {
 
     }
@@ -61,8 +58,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		int latevalue = Integer.parseInt(props.getProperty("latevalue"));	// 上班时间后多少分钟后算迟到
@@ -190,8 +186,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(KaoqinMgr.class).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		int minsAheadOfWorkBegin = Integer.parseInt(props.getProperty("mins_ahead_of_workbegin"));//上班时间前多少分钟可以开始上班考勤
@@ -349,8 +344,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(KaoqinMgr.class).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		int latevalue = Integer.parseInt(props.getProperty("latevalue")); // 上班时间后多少分钟后算迟到
@@ -621,7 +615,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(KaoqinMgr.class).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		int latevalue = Integer.parseInt(props.getProperty("latevalue")) + 1;	// 上班时间后多少分钟后算迟到
@@ -689,14 +683,14 @@ public class KaoqinMgr {
 				try {
 					kq.create();
 				} catch (ErrMsgException e) {
-					e.printStackTrace();
+					LogUtil.getLog(KaoqinMgr.class).error(e);
 				}
 			}
 			else {
 				try {
 					kq.save();
 				} catch (ErrMsgException e) {
-					e.printStackTrace();
+					LogUtil.getLog(KaoqinMgr.class).error(e);
 				}
 			}
        	}
@@ -750,8 +744,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		int latevalue = Integer.parseInt(props.getProperty("latevalue"));	// 上班时间后多少分钟后算迟到
@@ -978,7 +971,7 @@ public class KaoqinMgr {
 		java.util.Date bDate = DateUtil.parse(beginDate, "yyyy-MM-dd");
 		java.util.Date eDate = DateUtil.parse(endDate, "yyyy-MM-dd");
 		
-		String sql = "select f.flowId from form_table_qjsqd f, flow fl where f.flowId=fl.id and f.flowTypeCode='qj' and (fl.status=" + WorkflowDb.STATUS_STARTED + " or fl.status=" + WorkflowDb.STATUS_FINISHED + ")";
+		String sql = "select f.flowId from ft_qjsqd f, flow fl where f.flowId=fl.id and f.flowTypeCode='qj' and (fl.status=" + WorkflowDb.STATUS_STARTED + " or fl.status=" + WorkflowDb.STATUS_FINISHED + ")";
 		sql += " and f.applier=" + StrUtil.sqlstr(userName);
 		sql += " and ((f.qjkssj>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and f.qjkssj<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd") + ") or (f.qjjssj<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd") + " and f.qjjssj>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + ") or (f.qjkssj<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and f.qjjssj>=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd") + "))";
 		sql += " and f.result='1'";
@@ -1021,8 +1014,7 @@ public class KaoqinMgr {
 			try {
 				qjDays += oacal.getWorkDayCount(DateUtil.addDate(qjbDate, -1), qjeDate);
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(KaoqinMgr.class).error(e);
 			}
 		}
 		return qjDays;		
@@ -1043,7 +1035,7 @@ public class KaoqinMgr {
 		java.util.Date bDate = DateUtil.parse(beginDate, "yyyy-MM-dd");
 		java.util.Date eDate = DateUtil.parse(endDate, "yyyy-MM-dd");
 		
-		String sql = "select f.flowId from form_table_jbsqd f, flow fl where f.flowId=fl.id and f.flowTypeCode='jbsq' and (fl.status=" + WorkflowDb.STATUS_STARTED + " or fl.status=" + WorkflowDb.STATUS_FINISHED + ")";
+		String sql = "select f.flowId from ft_jbsqd f, flow fl where f.flowId=fl.id and f.flowTypeCode='jbsq' and (fl.status=" + WorkflowDb.STATUS_STARTED + " or fl.status=" + WorkflowDb.STATUS_FINISHED + ")";
 		sql += " and f.applier=" + StrUtil.sqlstr(userName);
 		sql += " and ((f.kssj>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and f.kssj<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd") + ") or (f.jssj<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd") + " and f.jssj>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + ") or (f.kssj<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and f.jssj>=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd") + "))";
 		sql += " and f.result='1'";
@@ -1097,7 +1089,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(KaoqinMgr.class).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		
@@ -1267,7 +1259,7 @@ public class KaoqinMgr {
 		try {
 			cfgparser.parse("config.xml");
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		java.util.Properties props = cfgparser.getProps();
 		int latevalue = Integer.parseInt(props.getProperty("latevalue"));	// 上班时间后多少分钟后算迟到

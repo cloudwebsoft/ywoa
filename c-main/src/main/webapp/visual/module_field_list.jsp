@@ -20,9 +20,18 @@
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <%@ page import="org.apache.commons.lang3.StringUtils" %>
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.ICloudUtil" %>
+<%@ page import="com.cloudwebsoft.framework.util.IPUtil" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.JarFileUtil" %>
 <%
 	String op = ParamUtil.get(request, "op");
-	String code = ParamUtil.get(request, "code"); // 模块编码
+	String code = ParamUtil.get(request, "moduleCode"); // 模块编码
+	if ("".equals(code)) {
+		code = ParamUtil.get(request, "code");
+	}
 	String formCode = ParamUtil.get(request, "formCode");
 	Config cfg = new Config();
 	boolean isServerConnectWithCloud = cfg.getBooleanProperty("isServerConnectWithCloud");
@@ -37,6 +46,10 @@
 	if (path.startsWith("/")) {
 		path = path.substring(1);
 	}
+
+	ICloudUtil cloudUtil = SpringUtil.getBean(ICloudUtil.class);
+	String userSecret = cloudUtil.getUserSecret();
+	String ip = IPUtil.getRemoteAddr(request);
 %>
 <!DOCTYPE html>
 <html>
@@ -45,6 +58,7 @@
 	<title>模块设置</title>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
 	<link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
 	<style>
 		.role-sel-btn {
 			vertical-align: baseline;
@@ -79,6 +93,7 @@
 	<script type="text/javascript" src="../js/formpost.js"></script>
 	<script src="../js/json2.js"></script>
 	<script type="text/javascript" src="../js/activebar2.js"></script>
+	<script src="../js/layui/layui.js" charset="utf-8"></script>
 
 	<script>
 		function window_onload() {
@@ -138,7 +153,12 @@ if (!fd.isLoaded()) {
 }
 
 int work_log = vsd.getInt("is_workLog");
-%>
+
+String strProps = vsd.getString("props");
+com.alibaba.fastjson.JSONObject props = com.alibaba.fastjson.JSONObject.parseObject(strProps);
+if (props == null) {
+	props = new com.alibaba.fastjson.JSONObject();
+}%>
 <%@ include file="module_setup_inc_menu_top.jsp"%>
 <script>
 o("menu1").className="current";
@@ -182,8 +202,35 @@ o("menu1").className="current";
 					<option value="0" <%=vsd.getInt("is_edit_inplace") == 0 ? "selected" : ""%>>否</option>
 				</select>
 			</td>
-			<td align="center">&nbsp;</td>
-			<td align="left">&nbsp;</td>
+			<td align="center">操作方式</td>
+			<td align="left">
+				<select id="opStyle" name="opStyle">
+					<option value="1" selected>选项卡</option>
+					<option value="0">抽屉</option>
+				</select>
+				<%
+					String tabTitle = "";
+					if (props != null && props.size()>0) {
+						if (props.containsKey("tabTitle")) {
+							tabTitle = props.getString("tabTitle");
+						}
+					}
+				%>
+				<span id="spanTabTitle">标题&nbsp;<input id="tabTitle" name="tabTitle" title="选项卡标题，如：{$xmmc}-${id}" style="width:150px" value="<%=tabTitle%>"/></span>
+				<script>
+					$(function() {
+						$('#opStyle').val('<%=props.containsKey("opStyle") ? props.getIntValue("opStyle") : 1%>');
+
+						$('#opStyle').change(function() {
+							if ($(this).val() == '1') {
+								$('#spanTabTitle').show();
+							} else {
+								$('#spanTabTitle').hide();
+							}
+						});
+					});
+				</script>
+			</td>
 		</tr>
 		<tr style="display:<%=code.equals(formCode)?"":"none"%>">
 			<td align="center">事件提醒</td>
@@ -193,8 +240,13 @@ o("menu1").className="current";
 				<span style="margin:10px"><img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.getNullStr(vsd.getString("msg_prop")).equals("")?"none":"" %>"/></span>
 				<textarea id="msgProp" style="display:none"><%=StrUtil.getNullStr(vsd.getString("msg_prop"))%></textarea>
 			</td>
-			<td align="center">添加后跳转</td>
-			<td align="left"><input id="add_to_url" name="add_to_url" value="<%=StrUtil.getNullStr(vsd.getString("add_to_url"))%>"/></td>
+			<td align="center"></td>
+			<td align="left">
+				<!--
+				添加后跳转，20211116已改至pageSetup中
+				<input id="add_to_url" name="add_to_url" value="<%=StrUtil.getNullStr(vsd.getString("add_to_url"))%>"/>
+				-->
+			</td>
 			<td align="center">&nbsp;</td>
 			<td align="left">&nbsp;</td>
 		</tr>
@@ -205,6 +257,12 @@ o("menu1").className="current";
 					<option value="1">显示</option>
 					<option value="0">隐藏</option>
 				</select>
+				<input id="btnDisplayName" name="btnDisplayName" title="按钮名称" style="width: 100px" value="<%=StrUtil.getNullStr(props.getString("btnDisplayName"))%>" />
+				<a href="javascript:;" onclick="openCondition(o('btnDisplayCond'), o('imgCondsDisplayBtn'))" title="当满足条件时显示按钮"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+				<span style="margin:10px">
+					<img id="imgCondsDisplayBtn" src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.isEmpty(props.getString("btnDisplayCond"))?"none":""%>"/>
+				</span>
+				<textarea id="btnDisplayCond" name="btnDisplayCond" style="display:none"><%=StrUtil.getNullStr(props.getString("btnDisplayCond"))%></textarea>
 				<script>
 					o("btn_display_show").value = "<%=vsd.getInt("btn_display_show")%>";
 				</script>
@@ -215,6 +273,12 @@ o("menu1").className="current";
 					<option value="1">显示</option>
 					<option value="0">隐藏</option>
 				</select>
+				<input id="btnAddName" name="btnAddName" title="按钮名称" style="width: 100px" value="<%=StrUtil.getNullStr(props.getString("btnAddName"))%>" />
+				<a style="display:none" href="javascript:;" onclick="openCondition(o('btnAddCond'), o('imgCondsAddBtn'))" title="当满足条件时显示按钮"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+				<span style="margin:10px">
+					<img id="imgCondsAddBtn" src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.isEmpty(props.getString("btnAddCond"))?"none":""%>"/>
+				</span>
+				<textarea id="btnAddCond" name="btnAddCond" style="display:none"><%=StrUtil.getNullStr(props.getString("btnAddCond"))%></textarea>
 				<script>
 					o("btn_add_show").value = "<%=vsd.getInt("btn_add_show")%>";
 				</script>
@@ -225,6 +289,12 @@ o("menu1").className="current";
 					<option value="1">显示</option>
 					<option value="0">隐藏</option>
 				</select>
+				<input id="btnEditName" name="btnEditName" title="按钮名称" style="width: 100px" value="<%=StrUtil.getNullStr(props.getString("btnEditName"))%>" />
+				<a href="javascript:;" onclick="openCondition(o('btnEditCond'), o('imgCondsEditBtn'))" title="当满足条件时显示按钮"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+				<span style="margin:10px">
+					<img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.isEmpty(props.getString("btnEditCond"))?"none":""%>" id="imgCondsEditBtn"/>
+				</span>
+				<textarea id="btnEditCond" name="btnEditCond" style="display:none"><%=StrUtil.getNullStr(props.getString("btnEditCond"))%></textarea>
 				<script>
 					o("btn_edit_show").value = "<%=vsd.getInt("btn_edit_show")%>";
 				</script>
@@ -232,35 +302,50 @@ o("menu1").className="current";
 		</tr>
 		<tr>
 			<td align="center">流程按钮</td>
-			<td align="left"><select id="btn_flow_show" name="btn_flow_show">
+			<td align="left">
+				<select id="btn_flow_show" name="btn_flow_show">
 				<option value="1">显示</option>
 				<option value="0">隐藏</option>
-			</select>
+				</select>
+				<input id="btnFlowName" name="btnFlowName" title="按钮名称" style="width: 100px" value="<%=StrUtil.getNullStr(props.getString("btnFlowName"))%>" />
+				<a href="javascript:;" onclick="openCondition(o('btnFlowCond'), o('imgCondsFlowBtn'))" title="当满足条件时显示按钮"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+				<span style="margin:10px">
+					<img id="imgCondsFlowBtn" src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.isEmpty(props.getString("btnFlowCond"))?"none":""%>"/>
+				</span>
+				<textarea id="btnFlowCond" name="btnFlowCond" style="display:none"><%=StrUtil.getNullStr(props.getString("btnFlowCond"))%></textarea>
 				<script>
 					o("btn_flow_show").value = "<%=vsd.getInt("btn_flow_show")%>";
 				</script>
 			</td>
 			<td align="center">日志按钮</td>
-			<td align="left"><select id="btn_log_show" name="btn_log_show">
+			<td align="left">
+				<select id="btn_log_show" name="btn_log_show">
 				<option value="1">显示</option>
 				<option value="0">隐藏</option>
-			</select>
+				</select>
 				<script>
 					o("btn_log_show").value = "<%=vsd.getInt("btn_log_show")%>";
 				</script>
 			</td>
 			<td align="center">删除按钮</td>
-			<td align="left"><select id="btn_del_show" name="btn_del_show">
+			<td align="left">
+				<select id="btn_del_show" name="btn_del_show">
 				<option value="1">显示</option>
 				<option value="0">隐藏</option>
-			</select>
+				</select>
+				<input id="btnDelName" name="btnDelName" title="按钮名称" style="width: 100px" value="<%=StrUtil.getNullStr(props.getString("btnDelName"))%>" />
+				<a href="javascript:;" onclick="openCondition(o('btnDelCond'), o('imgCondsDelBtn'))" title="当满足条件时显示按钮"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+				<span style="margin:10px">
+					<img id="imgCondsDelBtn" src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.isEmpty(props.getString("btnDelCond"))?"none":""%>"/>
+				</span>
+				<textarea id="btnDelCond" name="btnDelCond" style="display:none"><%=StrUtil.getNullStr(props.getString("btnDelCond"))%></textarea>
 				<script>
 					o("btn_del_show").value = "<%=vsd.getInt("btn_del_show")%>";
 				</script>
 			</td>
 		</tr>
 		<tr>
-			<td align="center">显示视图</td>
+			<td align="center">详情视图</td>
 			<td align="left">
 				<select id="view_show" name="view_show" onchange="onChangeViewShow(this)">
 					<option value="<%=ModuleSetupDb.VIEW_DEFAULT%>">默认</option>
@@ -299,17 +384,22 @@ o("menu1").className="current";
         <%
 			SelectMgr sm = new SelectMgr();
 			MacroCtlMgr mm = new MacroCtlMgr();
+			MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+			IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
+
 			Iterator ir = fd.getFields().iterator();
 			while (ir.hasNext()) {
 				FormField ff = (FormField) ir.next();
-				MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-				if (mu != null && mu.getCode().equals("macro_flow_select")) {
-					String valRaw = ff.getDefaultValueRaw();
-					SelectDb sd = sm.getSelect(valRaw);
-					if (sd.getType() == SelectDb.TYPE_TREE) {
+				if (ff.getType().equals(FormField.TYPE_MACRO)) {
+					MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+					if (mu != null && ("macro_flow_select".equals(mu.getCode()) || "macro_basic_tree_select_ctl".equals(mu.getCode()))) {
+						String basicCode = basicSelectCtl.getCode(ff);
+						SelectDb sd = sm.getSelect(basicCode);
+						if (sd.getType() == SelectDb.TYPE_TREE) {
 		%>
 		        	<option value="<%=ff.getName() %>"><%=ff.getTitle() %></option>
 		<%
+						}
 					}
 				}
 			}
@@ -373,7 +463,7 @@ o("menu1").className="current";
 			<td align="center">生成视图</td>
 			<td align="left">
 				<select id="exportWordView" name="exportWordView" title="生成word时指定视图">
-					<option value="<%=ConstUtil.MODULE_EXPORT_WORD_VIEW_SELECT%>">用户自选</option>
+					<%--<option value="<%=ConstUtil.MODULE_EXPORT_WORD_VIEW_SELECT%>">用户自选</option>--%>
 					<option value="<%=ConstUtil.MODULE_EXPORT_WORD_VIEW_FORM%>">根据表单</option>
 					<%
 						FormViewDb formViewDb = new FormViewDb();
@@ -398,12 +488,12 @@ o("menu1").className="current";
 			<td align="left">
 				<select id="view_list" name="view_list" onchange="onChangeViewList(this)">
 					<option value="<%=ModuleSetupDb.VIEW_DEFAULT%>">默认</option>
-					<option value="<%=ModuleSetupDb.VIEW_LIST_GANTT%>">任务看板</option>
-					<option value="<%=ModuleSetupDb.VIEW_LIST_GANTT_LIST%>">任务看板/列表</option>
+					<option value="<%=ModuleSetupDb.VIEW_LIST_GANTT%>">任务视图</option>
+					<option value="<%=ModuleSetupDb.VIEW_LIST_GANTT_LIST%>">任务视图/列表</option>
 					<option value="<%=ModuleSetupDb.VIEW_LIST_TREE%>">树形（一对多）</option>
 					<!--<option value="<%=ModuleSetupDb.VIEW_LIST_MODULE_TREE%>">树形（一对一）</option>-->
-					<option value="<%=ModuleSetupDb.VIEW_LIST_CALENDAR%>">日历看板</option>
-					<option value="<%=ModuleSetupDb.VIEW_LIST_CALENDAR_LIST%>">日历看板/列表</option>
+					<option value="<%=ModuleSetupDb.VIEW_LIST_CALENDAR%>">日历视图</option>
+					<option value="<%=ModuleSetupDb.VIEW_LIST_CALENDAR_LIST%>">日历视图/列表</option>
 					<option value="<%=ModuleSetupDb.VIEW_LIST_CUSTOM%>">自定义</option>
 				</select>
 				<script>
@@ -558,23 +648,85 @@ o("menu1").className="current";
 			</td>
 		</tr>
 		<tr>
+			<td align="center">复选框列</td>
+			<td align="left">
+				<select id="isColCheckboxShow" name="isColCheckboxShow">
+					<option value="true">显示</option>
+					<option value="false">隐藏</option>
+				</select>
+			</td>
+			<td align="center">操作列</td>
+			<td align="left">
+				<select id="isColOperateShow" name="isColOperateShow">
+					<option value="true">显示</option>
+					<option value="false">隐藏</option>
+				</select>
+				<select id="isColOperateTextShow" name="isColOperateTextShow" title="隐藏文字后，操作列中仅显示图标">
+					<option value="true">显示文字</option>
+					<option value="false">隐藏文字</option>
+				</select>
+				<%
+					boolean isColCheckboxShow = true;
+					boolean isColOperateShow = true;
+					boolean isColOperateTextShow = false;
+					String zipName = "";
+					int zipOnlyAttachment = 0;
+					int exportFormat = 0;
+					if (props != null && props.size()>0) {
+						if (props.containsKey("isColCheckboxShow")) {
+							isColCheckboxShow = props.getBoolean("isColCheckboxShow");
+						}
+						if (props.containsKey("isColOperateShow")) {
+							isColOperateShow = props.getBoolean("isColOperateShow");
+						}
+						if (props.containsKey("isColOperateTextShow")) {
+							isColOperateTextShow = props.getBoolean("isColOperateTextShow");
+						}
+						if (props.containsKey("zipName")) {
+							zipName = props.getString("zipName");
+						}
+						if (props.containsKey("zipOnlyAttachment")) {
+							zipOnlyAttachment = props.getIntValue("zipOnlyAttachment");
+						}
+						if (props.containsKey("exportFormat")) {
+							exportFormat = props.getIntValue("exportFormat");
+						}
+					}
+				%>
+			</td>
+			<td align="center">行展开</td>
+			<td><input id="is_expand" name="is_expand" type="checkbox" title="嵌套表格可以在列表中展开" value="1" <%=vsd.getInt("is_expand") == 1 ? "checked" : ""%>/></td>
+		</tr>
+		<tr>
 			<td align="center">映射字段</td>
 			<td align="left">
-				排序
-				<select id="other_multi_order" name="other_multi_order" title="映射字段有多个值时按ID号排序">
+				按
+				<select id="other_multi_order" name="other_multi_order" title="单重映射字段有多条记录时按ID号排序方式">
 					<option value="1">升序</option>
 					<option value="0">降序</option>
 				</select>
+				排序
 				<script>
 					$('#other_multi_order').val('<%=vsd.getInt("other_multi_order")%>');
 				</script>
 			</td>
 			<td align="center">分隔符</td>
 			<td align="left">
-				<input id="other_multi_ws" name="other_multi_ws" title="为空时默认分隔符为半角逗号" value="<%=StrUtil.getNullStr(vsd.getString("other_multi_ws"))%>"/>
+				<input id="other_multi_ws" name="other_multi_ws" title="单重映射字段有多条记录时的分隔符，为空时默认分隔符为半角逗号" value="<%=StrUtil.getNullStr(vsd.getString("other_multi_ws"))%>"/>
 			</td>
-			<td align="center">&nbsp;</td>
-			<td>&nbsp;</td>
+			<td align="center">压缩</td>
+			<td>
+				文件名<input id="zipName" name="zipName" title="默认为ID，可加入字段名，如：{$field}_{$id}" style="width:100px" />&nbsp;
+				<input id="zipOnlyAttachment" name="zipOnlyAttachment" type="checkbox" title="勾选后可以将表单内容导出成word文件" value="1" />
+				&nbsp;仅附件
+				<script>
+					$("#isColCheckboxShow").val("<%=isColCheckboxShow%>");
+					$("#isColOperateShow").val("<%=isColOperateShow%>");
+					$("#isColOperateTextShow").val("<%=isColOperateTextShow%>");
+					$("#zipName").val("<%=zipName%>");
+					$("#zipOnlyAttachment").prop('checked', <%=zipOnlyAttachment==1%>);
+				</script>
+			</td>
 		</tr>
 		<tr id="fieldDateRow">
 			<td align="center">日期字段</td>
@@ -671,12 +823,44 @@ o("menu1").className="current";
 			</td>
 		</tr>
 		<%} %>
+
+		<tr>
+			<td align="center">导出格式</td>
+			<td align="left">
+				按
+				<select id="exportFormat" name="exportFormat" title="指定导出Excel的格式">
+					<option value="0">按系统配置</option>
+					<option value="1">xls</option>
+					<option value="2">xls(xml格式快速导出)</option>
+				</select>
+				<script>
+					$('#exportFormat').val('<%=exportFormat%>');
+				</script>
+			</td>
+			<td align="center">选择列导出</td>
+			<td align="left">
+				<%
+					int exportColSize = 0;
+					String exporColProps = vsd.getString("export_col_props");
+					String[] aryCols = StrUtil.split(exporColProps, ",");
+					if (aryCols != null) {
+						exportColSize = aryCols.length;
+					}
+				%>
+				<%=exportColSize%>个&nbsp;<a href="javascript:;" onclick="clearExportColProps()">清空字段</a>
+			</td>
+			<td align="center"></td>
+			<td>
+
+			</td>
+		</tr>
+
 		<tr>
 			<td colspan="6" align="center">
 				<input id="btnModuleProp" class="btn btn-default" type="button" value="确定"/>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<%
-					String moduleUrlList = request.getContextPath() + "/visual/module_list.jsp?code=" + code + "&formCode=" + StrUtil.UrlEncode(formCode);
+					String moduleUrlList = request.getContextPath() + "/visual/moduleListPage.do?code=" + code + "&formCode=" + StrUtil.UrlEncode(formCode);
 					if (vsd.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT) {
 						moduleUrlList = request.getContextPath() + "/visual/module_list_gantt.jsp?code=" + code + "&formCode=" + StrUtil.UrlEncode(formCode);
 					} else if (vsd.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR) {
@@ -704,31 +888,29 @@ o("menu1").className="current";
 </form>
 <%
 String listField = StrUtil.getNullStr(vsd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
+String[] fields = vsd.getColAry(true, "list_field");
+
 String listFieldWidth = StrUtil.getNullStr(vsd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
+String[] fieldsWidth = vsd.getColAry(true, "list_field_width");
+
 String listFieldOrder = StrUtil.getNullStr(vsd.getString("list_field_order"));
-String[] fieldOrder = StrUtil.split(listFieldOrder, ",");
+String[] fieldOrder = vsd.getColAry(true, "list_field_order");
+
 String listFieldLink = StrUtil.getNullStr(vsd.getString("list_field_link"));
-String[] fieldsLink = StrUtil.split(listFieldLink, ",");
+String[] fieldsLink = vsd.getColAry(true, "list_field_link");
+
 String listFieldShow = StrUtil.getNullStr(vsd.getString("list_field_show"));
-String[] fieldsShow = StrUtil.split(listFieldShow, ",");
-String[] fieldsTitle = vsd.getColAry(true, "list_field_title");
+String[] fieldsShow = vsd.getColAry(true, "list_field_show");
+
 String listFieldTitle = StrUtil.getNullStr(vsd.getString("list_field_title"));
-/*String[] fieldsTitle = StrUtil.split(listFieldTitle, ",");*/
-String[] fieldsAlign = vsd.getColAry(true, "list_field_align");
+String[] fieldsTitle = vsd.getColAry(true, "list_field_title");
+
 String listFieldAlign = StrUtil.getNullStr(vsd.getString("list_field_align"));
+String[] fieldsAlign = vsd.getColAry(true, "list_field_align");
 
 int len = 0;
 if (fields!=null) {
 	len = fields.length;
-}
-
-if (fieldsShow==null || fields.length != fieldsShow.length) {
-	fieldsShow = new String[len];
-	for (int i=0; i<len; i++) {
-		fieldsShow[i] = "1";
-	}
 }
 
 int i;
@@ -749,14 +931,14 @@ int i;
 	<thead>
 	<tr>
 		<td class="tabStyle_1_title" width="4%">序号</td>
-		<td class="tabStyle_1_title" width="12%">字段名称</td>
-		<td class="tabStyle_1_title" width="15%">字段标题</td>
-		<td class="tabStyle_1_title" width="15%">标题别名</td>
+		<td class="tabStyle_1_title" width="10%">字段名称</td>
+		<td class="tabStyle_1_title" width="11%">字段标题</td>
+		<td class="tabStyle_1_title" width="11%">标题别名</td>
 		<td class="tabStyle_1_title" width="6%">位置</td>
 		<td class="tabStyle_1_title" width="5%">显示</td>
 		<td class="tabStyle_1_title" width="5%">顺序号</td>
 		<td class="tabStyle_1_title" width="5%">宽度</td>
-		<td class="tabStyle_1_title" width="17%">链接</td>
+		<td class="tabStyle_1_title" width="18%">链接</td>
 		<td class="tabStyle_1_title">操作</td>
 	</tr>
 	</thead>
@@ -790,14 +972,23 @@ for (i=0; i<len; i++) {
 	else if (fieldName.equals("cws_create_date")) {
 		title = "创建时间";
 	}
+	else if (fieldName.equals("cws_modify_date")) {
+		title = "修改时间";
+	}
 	else if (fieldName.equals("flow_begin_date")) {
 		title = "流程开始时间";
 	}
 	else if (fieldName.equals("flow_end_date")) {
 		title = "流程结束时间";
 	}
+	else if (fieldName.equals("cws_cur_handler")) {
+		title = "当前处理";
+	}
 	else if (fieldName.equals("cws_id")) {
 		title = "关联ID";
+	}
+	else if ("cws_visited".equals(fieldName)) {
+		title = "是否已读";
 	}
 	else {
 		if (fieldName.startsWith("main")) {
@@ -878,7 +1069,6 @@ for (i=0; i<len; i++) {
 			$.ajax({
 				type: "post",
 				url: "colModify.do",
-				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
 				data: $('#' + formId).serialize(),
 				dataType: "html",
 				beforeSend: function (XMLHttpRequest) {
@@ -886,7 +1076,9 @@ for (i=0; i<len; i++) {
 				},
 				success: function (data, status) {
 					data = $.parseJSON(data);
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				},
 				complete: function (XMLHttpRequest, status) {
 					$('body').hideLoading();
@@ -904,6 +1096,9 @@ for (i=0; i<len; i++) {
 
 			loadDataToWebeditCtrl(o(formId), o("webedit"));
 			we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+			we.AddField("userSecret", "<%=userSecret%>");
+			we.AddField("ip", "<%=ip%>");
+
 			we.AddField("listField", "<%=listField%>");
 			we.AddField("listFieldWidth", "<%=listFieldWidth%>");
 			we.AddField("listFieldOrder", "<%=listFieldOrder%>");
@@ -930,7 +1125,9 @@ for (i=0; i<len; i++) {
 					},
 					success: function (data, status) {
 						data = $.parseJSON(data);
-						jAlert(data.msg, "提示");
+						layer.msg(data.msg, {
+							offset: '6px'
+						});
 					},
 					complete: function (XMLHttpRequest, status) {
 						$('body').hideLoading();
@@ -941,7 +1138,9 @@ for (i=0; i<len; i++) {
 					}
 				});
 			} else {
-				jAlert(data.msg, "提示");
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
 			}
 			<%
             }
@@ -949,42 +1148,43 @@ for (i=0; i<len; i++) {
 		}
 
 		function delCol(fieldNameRaw) {
-			jConfirm('您确定要删除么？', '提示', function (r) {
-				if (!r) {
-					return;
-				} else {
-					$.ajax({
-						type: "post",
-						url: "colDel.do",
-						contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
-						data: {
-							code: "<%=code%>",
-							formCode: "<%=formCode%>",
-							fieldName: fieldNameRaw
-						},
-						dataType: "html",
-						beforeSend: function (XMLHttpRequest) {
-							$('body').showLoading();
-						},
-						success: function (data, status) {
-							data = $.parseJSON(data);
-							if (data.ret == "1") {
-								jAlert(data.msg, "提示", function () {
-									window.location.reload()
-								});
-							} else {
-								jAlert(data.msg, "提示");
-							}
-						},
-						complete: function (XMLHttpRequest, status) {
-							$('body').hideLoading();
-						},
-						error: function (XMLHttpRequest, textStatus) {
-							// 请求出错处理
-							alert(XMLHttpRequest.responseText);
+			layer.confirm('您确定要删除么', {icon: 3, title: '提示'}, function(index) {
+				$.ajax({
+					type: "post",
+					url: "colDel.do",
+					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+					data: {
+						code: "<%=code%>",
+						formCode: "<%=formCode%>",
+						fieldName: fieldNameRaw
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('body').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						if (data.ret == "1") {
+							layer.alert(data.msg, {
+								yes: function() {
+									window.location.reload();
+								}
+							});
+						} else {
+							layer.msg(data.msg, {
+								offset: '6px'
+							});
 						}
-					});
-				}
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('body').hideLoading();
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						alert(XMLHttpRequest.responseText);
+					}
+				});
+				layer.close(index);
 			})
 		}
 	</script>
@@ -1003,12 +1203,15 @@ for (i=0; i<len; i++) {
 					<%if (fd.isFlow()) {%>
 					<option value="flowId">-流程号-</option>
 					<option value="cws_status">-记录状态-</option>
+					<option value="cws_cur_handler">-当前处理-</option>
 					<option value="flow_begin_date">-流程开始时间-</option>
 					<option value="flow_end_date">-流程结束时间-</option>
 					<%}%>
 					<option value="cws_flag">-冲抵状态-</option>
 					<option value="colOperate">-操作列-</option>
 					<option value="cws_create_date">-创建时间-</option>
+					<option value="cws_modify_date">-修改时间-</option>
+					<option value="cws_visited">-是否已读-</option>
 					<option value="cws_id">-关联ID-</option>
 					<%
 						Vector v = fd.getFields();
@@ -1077,11 +1280,15 @@ for (i=0; i<len; i++) {
 			success: function (data, status) {
 				data = $.parseJSON(data);
 				if (data.ret == "1") {
-					jAlert(data.msg, "提示", function () {
-						window.location.reload()
+					layer.alert(data.msg, {
+						yes: function() {
+							window.location.reload();
+						}
 					});
 				} else {
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				}
 			},
 			complete: function (XMLHttpRequest, status) {
@@ -1100,6 +1307,9 @@ for (i=0; i<len; i++) {
 
 		loadDataToWebeditCtrl(o(formId), o("webedit"));
 		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+		we.AddField("userSecret", "<%=userSecret%>");
+		we.AddField("ip", "<%=ip%>");
+
 		we.AddField("listField", "<%=listField%>");
 		we.AddField("listFieldWidth", "<%=listFieldWidth%>");
 		we.AddField("listFieldOrder", "<%=listFieldOrder%>");
@@ -1127,12 +1337,16 @@ for (i=0; i<len; i++) {
 				success: function (data, status) {
 					data = $.parseJSON(data);
 					if (data.ret=="1") {
-						jAlert(data.msg, "提示", function() {
-							window.location.reload();
+						layer.alert(data.msg, {
+							yes: function() {
+								window.location.reload();
+							}
 						});
 					}
 					else {
-						jAlert(data.msg, "提示");
+						layer.msg(data.msg, {
+							offset: '6px'
+						});
 					}
 				},
 				complete: function (XMLHttpRequest, status) {
@@ -1144,7 +1358,9 @@ for (i=0; i<len; i++) {
 				}
 			});
 		} else {
-			jAlert(data.msg, "提示");
+			layer.msg(data.msg, {
+				offset: '6px'
+			});
 		}
 		<%
         }
@@ -1298,7 +1514,7 @@ for (i=0; i<len; i++) {
 	</table>
 </form>
 
-<form id="formModuleFilter" method="post" name="frmFilter" id="frmFilter" onsubmit="return frmFilter_onsbumit()">
+<form id="formModuleFilter" method="post" name="frmFilter" onsubmit="return frmFilter_onsbumit()">
 <table cellspacing="0" class="tabStyle_1 percent98" cellpadding="3" width="95%" align="center">
     <tr>
       <td align="center"  class="tabStyle_1_title">过滤条件</td>
@@ -1401,36 +1617,40 @@ else {
         </select>
         &nbsp;&nbsp;
 		记录状态
-        <select id="cws_status" name='cws_status'>
+        <select id="cws_status" name='cws_status' title="如果条件中已含有cws_status，则不生效">
         <option value='<%=SQLBuilder.CWS_STATUS_NOT_LIMITED%>'>不限</option>
         <option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DRAFT%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_DRAFT)%></option>
         <option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_NOT%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_NOT)%></option>
         <option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DONE%>' selected><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_DONE)%></option>
         <option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_REFUSED%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_REFUSED)%></option>
         <option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DISCARD%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_DISCARD)%></option>
-        </select>     
-        &nbsp;&nbsp;
-        单位
-        <select id="isUnitShow" name="isUnitShow" title="模块列表过滤条件中的单位下拉框">
-        <option value="0">隐藏</option>
-        <option value="1">显示</option>
         </select>
-        默认
-        <select id="unitCode" name="unitCode">
-        <option value="-1">不限</option>
-        <option value="0">本单位</option>
-        </select>        
-        <script>
-		$(function() {
-			$('#orderby').val("<%=vsd.getString("orderby")%>");
-			$('#sort').val("<%=vsd.getString("sort")%>");
-			$('#cws_status').val("<%=vsd.getInt("cws_status")%>");
-			$('#isUnitShow').val("<%=vsd.getInt("is_unit_show")%>");
-			$('#unitCode').val("<%=vsd.getInt("unit_code")%>");
-		});
-		</script>
       </td>
     </tr>
+	<tr>
+		<td>
+			单位
+			<select id="isUnitShow" name="isUnitShow" title="模块列表过滤条件中的单位下拉框">
+				<option value="0">隐藏</option>
+				<option value="1">显示</option>
+			</select>
+			&nbsp;&nbsp;默认
+			<select id="unitCode" name="unitCode" title="默认显示本单位的记录">
+				<option value="-1">不限</option>
+				<option value="0">本单位</option>
+			</select>
+			&nbsp;&nbsp;注：此处配置在表单域选择宏控件、嵌套表格及嵌套表格2宏控件的过滤条件中也生效。
+			<script>
+				$(function() {
+					$('#orderby').val("<%=vsd.getString("orderby")%>");
+					$('#sort').val("<%=vsd.getString("sort")%>");
+					$('#cws_status').val("<%=vsd.getInt("cws_status")%>");
+					$('#isUnitShow').val("<%=vsd.getInt("is_unit_show")%>");
+					$('#unitCode').val("<%=vsd.getInt("unit_code")%>");
+				});
+			</script>
+		</td>
+	</tr>
     <tr>
       <td align="center" ><input class="btn btn-default" type="submit" value="确定" />
         <input name="code" value="<%=code%>" type="hidden" />
@@ -1446,91 +1666,43 @@ else {
 			<td colspan="3" class="tabStyle_1_title">行首图标</td>
 		</tr>
 		<tr>
-			<td width="52%" align="right">当
-				<select id="promptField" name="promptField">
-					<option value="">无</option>
-					<%
-						ir = fd.getFields().iterator();
-						while (ir.hasNext()) {
-							FormField ff = (FormField) ir.next();
-					%>
-					<option value="<%=ff.getName()%>" fieldType="<%=ff.getFieldType()%>"><%=ff.getTitle()%>
-					</option>
-					<%
-						}
-					%>
-				</select>
-				<select id="promptCondNum" name="promptCond">
-					<option value="=">=</option>
-					<option value=">=">>=</option>
-					<option value=">">></option>
-					<option value="<=">&lt;=</option>
-					<option value="&lt;"><</option>
-				</select>
-				<select id="promptCondStr" name="promptCond" disabled style="display:none">
-					<option value="=">=</option>
-					<option value="<>"><></option>
-				</select>
-				<script>
-					$(function () {
-						$('#promptField').change(function () {
-							var fieldType = this.options[this.selectedIndex].getAttribute("fieldType");
-							if (fieldType == <%=FormField.FIELD_TYPE_INT%> || fieldType == <%=FormField.FIELD_TYPE_FLOAT%>
-									|| fieldType == <%=FormField.FIELD_TYPE_LONG%> || fieldType == <%=FormField.FIELD_TYPE_PRICE%> || fieldType == <%=FormField.FIELD_TYPE_DOUBLE%>
-									|| fieldType == <%=FormField.FIELD_TYPE_DATE%> || fieldType ==<%=FormField.FIELD_TYPE_DATETIME%>) {
-								$('#promptCondNum').show();
-								$("#promptCondNum").attr("disabled", false);
-								$('#promptCondStr').hide();
-								$("#promptCondStr").attr("disabled", true);
-							} else {
-								$('#promptCondNum').hide();
-								$("#promptCondNum").attr("disabled", true);
-								$('#promptCondStr').show();
-								$("#promptCondStr").attr("disabled", false);
-							}
-						});
-					});
-				</script>
-				<input id="promptValue" name="promptValue" value="<%=StrUtil.HtmlEncode(StrUtil.getNullStr(vsd.getString("prompt_value")))%>"/>
-				时，行首显示图标
+			<td width="52%" align="right">
+				<img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
+				<a href="javascript:;" onclick="openCondition(o('promptCond'), o('imgPromptCond'))" title="当满足条件时，显示链接">配置条件</a>
+				<span style="margin:10px">
+					<img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=StrUtil.isEmpty(vsd.getString("prompt_cond"))?"none":""%>" id="imgPromptCond"/>
+				</span>
+				<textarea id="promptCond" name="promptCond" style="display:none"><%=vsd.getString("prompt_cond")%></textarea>
+				行首显示图标
 			</td>
 			<td width="23%">
 				<%
-					com.redmoon.forum.ui.FileViewer fileViewer = new com.redmoon.forum.ui.FileViewer(Global.getAppPath(request) + "images/prompt/");
-					fileViewer.init();
+					JarFileUtil jarFileUtil = SpringUtil.getBean(JarFileUtil.class);
+					List<String> listPrompt = new ArrayList<>();
+					jarFileUtil.loadFiles("static/images/prompt", "", listPrompt);
 				%>
 				<select id="promptIcon" name="promptIcon" class="js-example-templating js-states form-control">
 					<option value="">无</option>
 					<%
-						while (fileViewer.nextFile()) {
-							if (fileViewer.getFileName().lastIndexOf("gif") != -1 || fileViewer.getFileName().lastIndexOf("jpg") != -1 || fileViewer.getFileName().lastIndexOf("png") != -1 || fileViewer.getFileName().lastIndexOf("bmp") != -1) {
-								String fileName = fileViewer.getFileName();
+						for (String fileName : listPrompt) {
 					%>
-					<option value="<%=fileName%>" style="background-image: url('<%=request.getContextPath()%>/images/prompt/<%=fileName%>');"><%=fileName %>
+					<option value="<%=fileName%>" style="background-image: url('../showImgInJar.do?path=<%=fileName%>');"><%=fileName %>
 					</option>
 					<%
-							}
 						}
 					%>
 				</select>
 				<script>
 					var mapPrompt = new Map();
 					<%
-                    fileViewer.init();
-                    while(fileViewer.nextFile()) {
-                          if (fileViewer.getFileName().lastIndexOf("gif") != -1 || fileViewer.getFileName().lastIndexOf("jpg") != -1 || fileViewer.getFileName().lastIndexOf("png") != -1 || fileViewer.getFileName().lastIndexOf("bmp") != -1) {
-                            String fileName = fileViewer.getFileName();
-                          %>
-					mapPrompt.put('<%=fileName%>', '<%=request.getContextPath()%>/images/prompt/<%=fileName%>');
+                    for (String fileName : listPrompt) {
+					%>
+					mapPrompt.put('<%=fileName%>', '<%=fileName%>');
 					<%
-                  }
-              }
-              %>
+              		}
+              		%>
 					$(function () {
 						$('#promptIcon').val("<%=StrUtil.getNullStr(vsd.getString("prompt_icon"))%>");
-						$('#promptField').val("<%=StrUtil.getNullStr(vsd.getString("prompt_field"))%>");
-						$('#promptCondNum').val("<%=StrUtil.getNullStr(vsd.getString("prompt_cond"))%>");
-						$('#promptCondStr').val("<%=StrUtil.getNullStr(vsd.getString("prompt_cond"))%>");
 						// 带图片
 						$("#promptIcon").select2({
 							templateResult: formatStatePrompt,
@@ -1542,8 +1714,13 @@ else {
 						if (!state.id) {
 							return state.text;
 						}
+						var name = state.text;
+						var p = name.lastIndexOf("/");
+						if (p!=-1) {
+							name = name.substring(p+1);
+						}
 						var $state = $(
-								'<span><img src="' + mapPrompt.get(state.id).value + '" class="img-flag" /> ' + state.text + '</span>'
+								'<span><img src="../showImgInJar.do?path=' + mapPrompt.get(state.id).value + '" class="img-flag" /> ' + name + '</span>'
 						);
 						return $state;
 					};
@@ -1566,7 +1743,10 @@ else {
 							},
 							success: function (data, status) {
 								data = $.parseJSON(data);
-								$.toaster({priority: 'info', message: data.msg});
+								// $.toaster({priority: 'info', message: data.msg});
+								layer.msg(data.msg, {
+									offset: '6px'
+								});
 							},
 							complete: function (XMLHttpRequest, status) {
 								$('body').hideLoading();
@@ -1679,7 +1859,7 @@ else {
 		</tr>
 	</form>
 	<%}%>
-	<form action="module_field_list.jsp?op=addTag" method="post" name="formTag" id="formTag" onsubmit="if (o('tagNameAdd').value=='') {jAlert('名称不能为空！','提示'); return false;}">
+	<form action="module_field_list.jsp?op=addTag" method="post" name="formTag" id="formTag" onsubmit="if (o('tagNameAdd').value=='') {layer.msg('名称不能为空！'); return false;}">
 		<tr>
 			<td colspan="3" align="right" style="PADDING-LEFT: 10px">
 				名称
@@ -1735,34 +1915,34 @@ else {
 </table>
 <script>
 	function delTag(index) {
-		jConfirm('您确定要删除么？', '提示', function (r) {
-			if (!r) {
-				return;
-			} else {
-				$.ajax({
-					type: "post",
-					url: "delTag",
-					data: $('#formTag' + index).serialize(),
-					dataType: "html",
-					beforeSend: function (XMLHttpRequest) {
-						$('body').showLoading();
-					},
-					success: function (data, status) {
-						data = $.parseJSON(data);
-						$.toaster({priority: 'info', message: data.msg});
-						if (data.ret==1) {
-							$('#trTag' + index).remove();
-						}
-					},
-					complete: function (XMLHttpRequest, status) {
-						$('body').hideLoading();
-					},
-					error: function (XMLHttpRequest, textStatus) {
-						alert("error:" + XMLHttpRequest.responseText);
+		layer.confirm('您确定要删除么', {icon: 3, title: '提示'}, function(index) {
+			$.ajax({
+				type: "post",
+				url: "delTag",
+				data: $('#formTag' + index).serialize(),
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					// $.toaster({priority: 'info', message: data.msg});
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
+					if (data.ret==1) {
+						$('#trTag' + index).remove();
 					}
-				});
-			}
-		})
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					alert("error:" + XMLHttpRequest.responseText);
+				}
+			});
+			layer.close(index);
+		});
 	}
 
 	function modifyTag(index) {
@@ -1776,7 +1956,10 @@ else {
 			},
 			success: function (data, status) {
 				data = $.parseJSON(data);
-				$.toaster({priority: 'info', message: data.msg});
+				// $.toaster({priority: 'info', message: data.msg});
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
 			},
 			complete: function (XMLHttpRequest, status) {
 				$('body').hideLoading();
@@ -1801,12 +1984,16 @@ else {
 				success: function (data, status) {
 					data = $.parseJSON(data);
 					if (data.ret==1) {
-						jAlert(data.msg, '提示', function() {
-							window.location.reload();
-						})
+						layer.alert(data.msg, {
+							yes: function() {
+								window.location.reload();
+							}
+						});
 					}
 					else {
-						jAlert(data.msg, '提示');
+						layer.msg(data.msg, {
+							offset: '6px'
+						});
 					}
 				},
 				complete: function (XMLHttpRequest, status) {
@@ -1821,13 +2008,14 @@ else {
 </script>
 <br />
 <table cellspacing="0" class="tabStyle_1 percent98" cellpadding="3" width="95%" align="center">
-  <tr>
-    <td class="tabStyle_1_title" width="9%">名称</td>
-    <td width="46%" class="tabStyle_1_title">操作列链接</td>
-    <td class="tabStyle_1_title" width="24%">链接可见角色</td>
-    <td class="tabStyle_1_title" width="7%">顺序号</td>
-    <td width="14%" class="tabStyle_1_title">操作</td>
-  </tr>
+	<tr>
+		<td class="tabStyle_1_title" width="9%">名称</td>
+		<td width="39%" class="tabStyle_1_title">操作列链接</td>
+		<td class="tabStyle_1_title" width="24%">链接可见角色</td>
+		<td class="tabStyle_1_title" width="7%">顺序号</td>
+		<td class="tabStyle_1_title" width="7%">样式</td>
+		<td width="14%" class="tabStyle_1_title">操作</td>
+	</tr>
   <%
 String op_link_name = StrUtil.getNullStr(vsd.getString("op_link_name"));
 String[] linkNames = StrUtil.split(op_link_name, ",");
@@ -1854,14 +2042,33 @@ if (linkNames!=null && linkRoles==null) {
 		linkRoles[i] = "";
 	}
 }
+String op_link_color = StrUtil.getNullStr(vsd.getString("op_link_color"));
+String[] linkColors = StrUtil.split(op_link_color, ",");
+String op_link_icon = StrUtil.getNullStr(vsd.getString("op_link_icon"));
+String[] linkIcons = StrUtil.split(op_link_icon, ",");
+if (linkNames != null) {
+	if (linkIcons == null || (linkIcons != null && (linkNames != null && linkIcons.length != linkNames.length))) {
+		linkIcons = new String[linkNames.length];
+		for (i = 0; i < linkNames.length; i++) {
+			linkIcons[i] = "";
+		}
+	}
+	if (linkColors == null || (linkColors != null && (linkNames != null && linkColors.length != linkNames.length))) {
+		linkColors = new String[linkNames.length];
+		for (i = 0; i < linkNames.length; i++) {
+			linkColors[i] = "";
+		}
+	}
+}
 
 com.redmoon.oa.flow.Leaf rootlf = new com.redmoon.oa.flow.Leaf();
 rootlf = rootlf.getLeaf(com.redmoon.oa.flow.Leaf.CODE_ROOT);
 com.redmoon.oa.flow.DirectoryView flowdv = new com.redmoon.oa.flow.DirectoryView(rootlf);
 
 len = 0;
-if (linkNames!=null)
+if (linkNames!=null) {
 	len = linkNames.length;
+}
 for (i=0; i<len; i++) {
 	String linkName = linkNames[i];
 	
@@ -1870,6 +2077,8 @@ for (i=0; i<len; i++) {
 	String linkValue = linkValues[i];
 	String linkEvent = linkEvents[i];
 	String linkRole = linkRoles[i];
+	String linkColor = linkColors[i];
+	String linkIcon = linkIcons[i];
 	
 	if (linkField.equals("#")) {
 		linkField = "";
@@ -1882,6 +2091,12 @@ for (i=0; i<len; i++) {
 	}
 	if (linkEvent.equals("#")) {
 		linkEvent = "";
+	}
+	if (linkColor.equals("#")) {
+		linkColor = "";
+	}
+	if (linkIcon.equals("#")) {
+		linkIcon = "";
 	}
 	int m = i+1;
 	%>
@@ -1910,7 +2125,7 @@ for (i=0; i<len; i++) {
 		  <%
 	  }
 	  %>
-      <%if (linkEvent.equals("flow")) {%>
+      <%if ("flow".equals(linkEvent)) {%>
       	发起流程
       	<%
 		try {
@@ -1943,14 +2158,45 @@ for (i=0; i<len; i++) {
 		%>
       	<input name="linkEvent" type="hidden" value="flow"/>
       	<input name="linkHref" type="hidden" value="<%=StrUtil.HtmlEncode(linkHrefs[i])%>" />
-      <%}else{%>
+      <%}
+      else if("module".equals(linkEvent)) {
+		  JSONObject json = null;
+		  String moduleCode = "";
+		  try {
+			  json = new JSONObject(StrUtil.decodeJSON(linkHrefs[i]));
+			  moduleCode = json.getString("moduleCode");
+		  } catch (JSONException e) {
+			  e.printStackTrace();
+		  }
+	  %>
+		  <select id="moduleCode<%=m%>" name="moduleCode" style="width: 200px">
+			  <option value=""></option>
+			  <%
+				  ir = v.iterator();
+				  while (ir.hasNext()) {
+					  ModuleSetupDb msdBtn = (ModuleSetupDb)ir.next();
+			  %>
+			  <option value="<%=msdBtn.getString("code")%>"><%=msdBtn.getString("name")%></option>
+			  <%
+				  }
+			  %>
+		  </select>
+		  <input name="linkEvent" type="hidden" value="module"/>
+		  <script>
+			  $(function() {
+				  $('#moduleCode<%=m%>').val('<%=moduleCode%>');
+			  })
+		  </script>
+		<%
+	  }
+      else{%>
        	事件
       <select id="linkEvent" name="linkEvent">
           <option value="link">链接</option>
           <option value="click">点击</option>
           <!--<option value="flow">发起流程</option> 编辑时，不能选“发起流程”-->
       </select>
-      <input name="linkHref" size="30" value="<%=StrUtil.HtmlEncode(StrUtil.decodeJSON(linkHrefs[i]))%>" />
+      <input name="linkHref" size="30" style="width:240px" value="<%=StrUtil.HtmlEncode(StrUtil.decodeJSON(linkHrefs[i]))%>" />
 	  <%}%>
 	  <script>
 	  $(function() {
@@ -1983,64 +2229,77 @@ for (i=0; i<len; i++) {
 			}	 
 		}      
 		%>
-        <textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescsLinkAdd<%=i%>" name="roleDescs" style="width:80%; height:40px" readonly="readonly"><%=descs %></textarea>
+        <textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescsLinkAdd<%=i%>" name="roleDescs" style="width:80%; height:40px" readonly><%=descs %></textarea>
         <input id="roleCodesLinkAdd<%=i%>" name="roleCodesLink" type="hidden" value="<%=roleCodes %>" />
 		<a href="javascript:;" onclick="selRoles('LinkAdd<%=i%>')"><img title="选择角色" class="role-sel-btn" src="../images/role_sel.png" /></a>
       </td>
-      <td align="center"><input name="linkOrder" size="5" value="<%=linkOrders[i]%>" /></td>
-      <td align="center">
-		  <%if (isCombCond) {%>
+		<td align="center"><input name="linkOrder" size="5" value="<%=linkOrders[i]%>" /></td>
+		<td align="center">
+			<input id="iconLink<%=i%>" name="linkIcon" type="hidden" value="<%=linkIcon%>" />
+			<i id="fontIconLink<%=i%>" class="fa <%=linkIcon%>" style="font-size: 14px; color: <%=linkColor%>"></i>&nbsp;&nbsp;<a title="选择图标" href="javascript:;" onclick="selFontIcon('fontIconLink<%=i%>', 'iconLink<%=i%>')">选择</a>
+			<select id="linkColor<%=i%>" name="linkColor">
+				<option value="">黑色</option>
+				<option value="#ed5565" style="color:#ed5565">红色</option>
+				<option value="#f8ac59" style="color:#f8ac59">黄色</option>
+				<option value="#1c84c6" style="color:#1c84c6">蓝色</option>
+				<option value="#1ab394" style="color:#1ab394">绿色</option>
+				<option value="#23c6c8" style="color:#23c6c8">青色</option>
+				<option value="#c2c2c2" style="color:#c2c2c2">灰色</option>
+			</select>
+			<script>
+				$(function() {
+					$('#linkColor<%=i%>').val('<%=linkColor%>');
+				})
+			</script>
+		</td>
+      	<td align="center">
 		  <input class="btn btn-default" type="button" value="修改" onclick="submitModifyFormLink('<%=i%>')" />
-		  <%}%>
         &nbsp;&nbsp;
         <input class="btn btn-default" name="button" type="button" onclick="delLink('<%=linkName%>', <%=i%>)" value="删除" />      </td>
     </tr>
   </form>
 	<script>
 		function delLink(linkName, i) {
-			jConfirm('您确定要删除么？', '提示', function (r) {
-				if (!r) {
-					return;
-				} else {
-					jConfirm('您确定要删除么？', '提示', function (r) {
-						if (!r) {
-							return;
-						} else {
-							$.ajax({
-								type: "post",
-								url: "linkDel.do",
-								contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
-								data: {
-									linkName: linkName,
-									code: "<%=code%>",
-									formCode: "<%=formCode%>"
-								},
-								dataType: "html",
-								beforeSend: function (XMLHttpRequest) {
-									$('body').showLoading();
-								},
-								success: function (data, status) {
-									data = $.parseJSON(data);
-									if (data.ret == "1") {
-										jAlert(data.msg, "提示", function () {
-											$('#trLink' + i).remove();
-										});
-									} else {
-										jAlert(data.msg, "提示");
-									}
-								},
-								complete: function (XMLHttpRequest, status) {
-									$('body').hideLoading();
-								},
-								error: function (XMLHttpRequest, textStatus) {
-									// 请求出错处理
-									alert(XMLHttpRequest.responseText);
+			layer.confirm('您确定要删除么', {icon: 3, title: '提示'}, function(index) {
+				$.ajax({
+					type: "post",
+					url: "linkDel.do",
+					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+					data: {
+						linkName: linkName,
+						code: "<%=code%>",
+						formCode: "<%=formCode%>"
+					},
+					dataType: "html",
+					beforeSend: function (XMLHttpRequest) {
+						$('body').showLoading();
+					},
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						if (data.ret == "1") {
+							layer.alert(data.msg, {
+								yes: function() {
+									layer.close(layer.index);
+									$('#trLink' + i).remove();
 								}
 							});
+						} else {
+							layer.msg(data.msg, {
+								offset: '6px'
+							});
 						}
-					})
-				}
-			})
+					},
+					complete: function (XMLHttpRequest, status) {
+						$('body').hideLoading();
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						// 请求出错处理
+						alert(XMLHttpRequest.responseText);
+					}
+				});
+
+				layer.close(index);
+			});
 		}
 	</script>
   <%
@@ -2058,9 +2317,6 @@ for (i=0; i<len; i++) {
   %>
     <script>
 		function submitModifyFormLink(i) {
-			<%
-			if (isServerConnectWithCloud) {
-			%>
 			$.ajax({
 				type: "post",
 				url: "linkModify.do",
@@ -2072,7 +2328,9 @@ for (i=0; i<len; i++) {
 				},
 				success: function (data, status) {
 					data = $.parseJSON(data);
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				},
 				complete: function (XMLHttpRequest, status) {
 					$('body').hideLoading();
@@ -2082,59 +2340,6 @@ for (i=0; i<len; i++) {
 					alert(XMLHttpRequest.responseText);
 				}
 			});
-			<%
-			}else {
-			%>
-			var we = o("webedit");
-			we.PostScript = "<%=path%>/public/module/modifyLink.do";
-
-			loadDataToWebeditCtrl(o("formLink" + i), o("webedit"));
-			we.AddField("cwsVersion", "<%=cfg.get("version")%>");
-
-			we.AddField("tName", "<%=tName%>");
-			we.AddField("tUrl", "<%=tUrl%>");
-			we.AddField("tOrder", "<%=tOrder%>");
-			we.AddField("tField", "<%=tField.replaceAll("\"", "\\\\\"")%>");
-			we.AddField("tCond", "<%=tCond%>");
-			we.AddField("tValue", "<%=tValue%>");
-			we.AddField("tEvent", "<%=tEvent%>");
-			we.AddField("tRole", "<%=tRole%>");
-			we.UploadToCloud();
-
-			var data = $.parseJSON(o("webedit").ReturnMessage);
-			if (data.ret=="1") {
-				$.ajax({
-					type: "post",
-					url: "linkSave.do",
-					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
-					data: {
-						code: "<%=code%>",
-						formCode: "<%=formCode%>",
-						result: JSON.stringify(data.result)
-					},
-					dataType: "html",
-					beforeSend: function (XMLHttpRequest) {
-						$('body').showLoading();
-					},
-					success: function (data, status) {
-						data = $.parseJSON(data);
-						jAlert(data.msg, "提示");
-					},
-					complete: function (XMLHttpRequest, status) {
-						$('body').hideLoading();
-					},
-					error: function (XMLHttpRequest, textStatus) {
-						// 请求出错处理
-						alert(XMLHttpRequest.responseText);
-					}
-				});
-			}
-			else {
-				jAlert(data.msg, "提示");
-			}
-			<%
-			}
-			%>
 		}
 
         var curM;
@@ -2148,70 +2353,110 @@ for (i=0; i<len; i++) {
             openWin('../flow/form_data_map.jsp?formCode=<%=formCode%>&flowTypeCode=' + $('#flowTypeCode' + m).val(), 800, 600);
         }
     </script>
-  <form action="module_field_list.jsp?op=addLink" method="post" name="formLink" id="formLink" onsubmit="if (o('linkNameAdd').value=='') {jAlert('名称不能为空！','提示'); return false;}">
-    <tr >
-      <td colspan="2" align="center" style="PADDING-LEFT: 10px">
-<img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
-<a href="javascript:;" onclick="openCondition(o('linkCondsAdd'), o('imgCondsAdd'))" title="当满足条件时，显示链接">配置条件</a>
-<span style="margin:10px">
-<img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:none" id="imgCondsAdd"/>
-</span>
-<textarea id="linkCondsAdd" name="linkFieldCond" style="display:none"></textarea>
-名称
-<input id="linkNameAdd" name="linkName" size="10" />
-事件
-<select id="linkEventeAdd" name="linkEvent">
-  <option value="link">链接</option>
-  <option value="click">点击</option>
-  <option value="flow">发起流程</option>
-</select>
-<input id="linkHref" name="linkHref" title="注：点击事件方法中如有双引号将会被自动替换为单引号" />
-        <div id="divFlow" style="display:none">
-          <select id="flowTypeCodeAdd" name="flowTypeCode">
-        <%
-        flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
-        %>
-          </select>
-			<input id="paramsAdd" name="params" type="hidden"/>
-          	<a href="javascript:;" id="btnFlowMap"><i class="fa fa-cog" style="margin-right:5px"></i>映射字段</a>
-			<script>
-				$(function () {
-					$('#linkEventeAdd').change(function () {
-						if ($(this).val() == 'flow') {
-							$('#divFlow').show();
-							$('#linkHref').hide();
-						} else {
-							$('#divFlow').hide();
-							$('#linkHref').show();
-						}
+	<form action="module_field_list.jsp?op=addLink" method="post" name="formLink" id="formLink" onsubmit="if (o('linkNameAdd').value=='') {jAlert('名称不能为空！','提示'); return false;}">
+		<tr>
+			<td colspan="2" align="center" style="PADDING-LEFT: 10px">
+				<img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
+				<a href="javascript:;" onclick="openCondition(o('linkCondsAdd'), o('imgCondsAdd'))" title="当满足条件时，显示链接">配置条件</a>
+				<span style="margin:10px">
+					<img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:none" id="imgCondsAdd"/>
+				</span>
+				<textarea id="linkCondsAdd" name="linkFieldCond" style="display:none"></textarea>
+				名称
+				<input id="linkNameAdd" name="linkName" size="10"/>
+				事件
+				<select id="linkEventeAdd" name="linkEvent">
+					<option value="link">链接</option>
+					<option value="click">点击</option>
+					<option value="flow">发起流程</option>
+					<option value="module">进入模块</option>
+				</select>
+				<input id="linkHref" name="linkHref" title="注：点击事件方法中如有双引号将会被自动替换为单引号" style="width: 150px"/>
+				<div id="divFlow" style="display:none">
+					<select id="flowTypeCodeAdd" name="flowTypeCode">
+						<%
+							flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
+						%>
+					</select>
+					<input id="paramsAdd" name="params" type="hidden"/>
+					<a href="javascript:;" id="btnFlowMap"><i class="fa fa-cog" style="margin-right:5px"></i>映射字段</a>
+				</div>
+				<div id="divModule" style="display: none">
+					<select id="moduleCodeAdd" name="moduleCode" style="width: 200px">
+						<option value=""></option>
+						<%
+							ir = v.iterator();
+							while (ir.hasNext()) {
+								ModuleSetupDb msdBtn = (ModuleSetupDb)ir.next();
+						%>
+						<option value="<%=msdBtn.getString("code")%>"><%=msdBtn.getString("name")%></option>
+						<%
+							}
+						%>
+					</select>
+				</div>
+				<script>
+					$(function () {
+						$('#linkEventeAdd').change(function () {
+							if ($(this).val() == 'flow') {
+								$('#divFlow').show();
+								$('#linkHref').hide();
+								$('#divModule').hide();
+							}
+							else if ($(this).val() == 'module') {
+								$('#divFlow').hide();
+								$('#linkHref').hide();
+								$('#divModule').show();
+							}
+							else {
+								$('#divFlow').hide();
+								$('#linkHref').show();
+								$('#divModule').hide();
+							}
+						});
+
+						$('#btnFlowMap').click(function () {
+							if ($('#flowTypeCodeAdd').val() == 'not') {
+								layer.msg('请选择流程！', {
+									offset: '6px'
+								});
+								return;
+							}
+							curParamId = "paramsAdd";
+							openWin('../flow/form_data_map.jsp?formCode=<%=formCode%>&flowTypeCode=' + $('#flowTypeCodeAdd').val(), 800, 600);
+						})
 					});
 
-					$('#btnFlowMap').click(function () {
-						if ($('#flowTypeCodeAdd').val() == 'not') {
-							jAlert('请选择流程！', '提示');
-							return;
-						}
-						curParamId = "paramsAdd";
-						openWin('../flow/form_data_map.jsp?formCode=<%=formCode%>&flowTypeCode=' + $('#flowTypeCodeAdd').val(), 800, 600);
-					})
-				});
-
-				function setSequence(mapJson) {
-					$('#' + curParamId).val(mapJson);
-				}
-			</script>
-      </div>
-</td>
-      <td align="center"><textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescsLinkAdd" name="roleDescsLink" style="width:80%; height:40px" readonly="readonly"></textarea>
-        <input id="roleCodesLinkAdd" name="roleCodesLink" type="hidden" />
-	  	<a href="javascript:" onclick="selRoles('LinkAdd')"><img title="选择角色" class="role-sel-btn" src="../images/role_sel.png" /></a>
-	  </td>
-      <td align="center"><input name="linkOrder" size="5" value="<%=linkNames!=null?StrUtil.toDouble(linkOrders[i-1])+1:1%>" />
-        <input name="formCode" value="<%=formCode%>" type="hidden" />
-      <input name="code" value="<%=code%>" type="hidden" /></td>
-      <td align="center" style="PADDING-LEFT: 10px"><input class="btn btn-default" type="button" value="添加" onclick="submitAddFormLink()" /></td>
-    </tr>
-  </form>
+					function setSequence(mapJson) {
+						$('#' + curParamId).val(mapJson);
+					}
+				</script>
+			</td>
+			<td align="center"><textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescsLinkAdd" name="roleDescsLink" style="width:80%; height:40px" readonly></textarea>
+				<input id="roleCodesLinkAdd" name="roleCodesLink" type="hidden"/>
+				<a href="javascript:" onclick="selRoles('LinkAdd')"><img title="选择角色" class="role-sel-btn" src="../images/role_sel.png"/></a>
+			</td>
+			<td align="center">
+				<input name="linkOrder" size="5" value="<%=linkNames!=null?StrUtil.toDouble(linkOrders[i-1])+1:1%>"/>
+				<input name="formCode" value="<%=formCode%>" type="hidden"/>
+				<input name="code" value="<%=code%>" type="hidden"/>
+			</td>
+			<td align="center">
+				<input id="iconLinkAdd" name="linkIcon" type="hidden" />
+				<i id="fontIconLinkAdd" class="fa " style="font-size: 14px"></i>&nbsp;&nbsp;<a title="选择图标" href="javascript:;" onclick="selFontIcon('fontIconLinkAdd', 'iconLinkAdd')">选择</a>
+				<select name="linkColor">
+					<option value="">黑色</option>
+					<option value="#ed5565" style="color:#ed5565">红色</option>
+					<option value="#f8ac59" style="color:#f8ac59">黄色</option>
+					<option value="#1c84c6" style="color:#1c84c6">蓝色</option>
+					<option value="#1ab394" style="color:#1ab394">绿色</option>
+					<option value="#23c6c8" style="color:#23c6c8">青色</option>
+					<option value="#c2c2c2" style="color:#c2c2c2">灰色</option>
+				</select>
+			</td>
+			<td align="center" style="PADDING-LEFT: 10px"><input class="btn btn-default" type="button" value="添加" onclick="submitAddFormLink()"/></td>
+		</tr>
+	</form>
 </table>
 <script>
 	function submitAddFormLink() {
@@ -2230,12 +2475,16 @@ for (i=0; i<len; i++) {
 			success: function (data, status) {
 				data = $.parseJSON(data);
 				if (data.ret=="1") {
-					jAlert(data.msg, "提示", function() {
-						window.location.reload();
+					layer.alert(data.msg, {
+						yes: function() {
+							window.location.reload();
+						}
 					});
 				}
 				else {
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				}
 			},
 			complete: function (XMLHttpRequest, status) {
@@ -2255,6 +2504,8 @@ for (i=0; i<len; i++) {
 
 		loadDataToWebeditCtrl(o("formLink"), o("webedit"));
 		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+		we.AddField("userSecret", "<%=userSecret%>");
+		we.AddField("ip", "<%=ip%>");
 
 		we.AddField("tName", "<%=tName%>");
 		we.AddField("tUrl", "<%=tUrl%>");
@@ -2285,12 +2536,16 @@ for (i=0; i<len; i++) {
 				success: function (data, status) {
 					data = $.parseJSON(data);
 					if (data.ret=="1") {
-						jAlert(data.msg, "提示", function() {
-							window.location.reload();
+						layer.alert(data.msg, {
+							yes: function() {
+								window.location.reload();
+							}
 						});
 					}
 					else {
-						jAlert(data.msg, "提示");
+						layer.msg(data.msg, {
+							offset: '6px'
+						});
 					}
 				},
 				complete: function (XMLHttpRequest, status) {
@@ -2303,7 +2558,9 @@ for (i=0; i<len; i++) {
 			});
 		}
 		else {
-			jAlert(data.msg, "提示");
+			layer.msg(data.msg, {
+				offset: '6px'
+			});
 		}
 		<%
         }
@@ -2381,10 +2638,11 @@ for (i=0; i<len; i++) {
 	%>
   <form action="module_field_list.jsp?op=modifyBtn" method="post" name="formBtn<%=i%>" id="formBtn<%=i%>">
     <tr id="tr_btn_<%=btnName%>">
-      <td align="center"><%=btnName%>
+      <td align="center">
+		  <input name="btnNewName" value="<%=btnName%>" size="8" />
           <input name="formCode" value="<%=formCode%>" type="hidden" />
-          <input name="code" value="<%=code%>" type="hidden" />
-          <input name="btnName" value="<%=btnName%>" type="hidden" />
+		  <input name="code" value="<%=code%>" type="hidden" />
+		  <input name="btnName" value="<%=btnName%>" type="hidden" />
       <td>
       <%
 	  // 非查询
@@ -2419,21 +2677,76 @@ for (i=0; i<len; i++) {
 		}
 		else if (json.getString("btnType").equals("flowBtn")) {
 			String flowTypeCode = json.getString("flowTypeCode");
+			boolean isSelRow = false;
+			if (json.has("isSelRow")) {
+				isSelRow = json.getBoolean("isSelRow");
+			}
 			%>
 			<span>
 				流程
-				  <select id="btnFlowTypeCode<%=i%>" name="flowTypeCode">
-					  <%
-						  flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
-					  %>
-				  </select>
+				<select id="btnFlowTypeCode<%=i%>" name="flowTypeCode">
+				  <%
+					  flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
+				  %>
+				</select>
+				<select id="isSelRow<%=i%>" name="isSelRow">
+					<option value="false">无需选择记录</option>
+					<option value="true">需选择记录</option>
+				</select>
 			</span>
 			<script>
 				o("btnFlowTypeCode<%=i%>").value = "<%=flowTypeCode%>";
+				o("isSelRow<%=i%>").value = "<%=isSelRow%>";
 			</script>`
 			</span>
 		<%
-				}
+		} else if (json.getString("btnType").equals("moduleBtn")) {
+			String moduleCode = json.getString("moduleCode");
+			int mode = json.getInt("mode");
+			boolean isSelRow = true;
+			String moduleAction = "";
+			int selRowMax = -1;
+			if (json.has("isSelRow")) {
+				isSelRow = json.getBoolean("isSelRow");
+			}
+			if (json.has("moduleAction")) {
+				moduleAction = json.getString("moduleAction");
+			}
+			if (json.has("selRowMax")) {
+				selRowMax = json.getInt("selRowMax");
+			}
+			%>
+			<select id="btnModuleCode<%=i%>" name="moduleCode" style="width: 200px">
+				<option value=""></option>
+				<%
+					ir = v.iterator();
+					while (ir.hasNext()) {
+						ModuleSetupDb msdBtn = (ModuleSetupDb)ir.next();
+				%>
+				<option value="<%=msdBtn.getString("code")%>"><%=msdBtn.getString("name")%></option>
+				<%
+					}
+				%>
+			</select>
+			<select id="btnMode<%=i%>" name="mode">
+				<option value="0">抽屉</option>
+				<option value="1">对话框</option>
+			</select>
+			<select id="isSelRow<%=i%>" name="isSelRow">
+				<option value="false">无需选择记录</option>
+				<option value="true">需选择记录</option>
+			</select>
+			限选<input id="selRowMax<%=i%>" name="selRowMax" title="空或者-1表示不限" style="width:50px" />条
+			<script>
+				o("btnModuleCode<%=i%>").value = "<%=moduleCode%>";
+				o("btnMode<%=i%>").value = "<%=mode%>";
+				o("isSelRow<%=i%>").value = "<%=isSelRow%>";
+				o("selRowMax<%=i%>").value = "<%=selRowMax%>";
+			</script>
+			提交参数：
+			<input id="moduleAction<%=i%>" name="moduleAction" title="参数名为moduleAction，用于二次开发" value="<%=moduleAction%>"/>
+			<%
+		}
 		else {
 		  	isCond = true;
 		}		
@@ -2465,7 +2778,7 @@ for (i=0; i<len; i++) {
 			}	 
 		}
 	  %>
-        <textarea title="为空则表示角色不限，均可以看见此按钮" style="width:80%; height:40px" id="roleDescs<%=i%>" name="roleDescs" readonly="readonly"><%=descs%></textarea>
+        <textarea title="为空则表示角色不限，均可以看见此按钮" style="width:80%; height:40px" id="roleDescs<%=i%>" name="roleDescs" readonly><%=descs%></textarea>
         <input id="roleCodes<%=i%>" name="roleCodes" value="<%=roleCodes%>" type=hidden />
 		<a href="javascript:;" onclick="selRoles('<%=i%>')"><img title="选择角色" class="role-sel-btn" src="../images/role_sel.png" /></a>
       <%}%>   
@@ -2473,31 +2786,9 @@ for (i=0; i<len; i++) {
       <td align="center"><input name="btnOrder" size="5" value="<%=btnOrders[i]%>" /></td>
       <td align="center">
       <%if (!btnScripts[i].startsWith("{") || (btnScripts[i].startsWith("{") && !isCond)) {%>      
-      <select id="btnBclass<%=i %>" name="btnBclass" class="js-example-templating js-states form-control">
-      <%
-      ArrayList<String[]> btnAry = CSSUtil.getFlexigridBtn();
-      int btnAryLen = btnAry.size();
-      for (int k=0; k<btnAryLen; k++) {
-      	String[] ary = btnAry.get(k);
-      	String selected = "";
-      	if (btnBclasses[i].equals(ary[0])) {
-      		selected = "selected";
-      	}
-      	%>
-      	<option value="<%=ary[0] %>" <%=selected %> style="background-image: url('<%=SkinMgr.getSkinPath(request)%>/flexigrid/<%=ary[1] %>');"><%=ary[0]%></option>
-      	<%
-      }
-      %>
-      </select>      
-      <script>
-		$(function () {
-		    //带图片
-		    $("#btnBclass<%=i%>").select2({
-		        templateResult: formatState,
-		        templateSelection: formatState
-		    });
-		});      
-      </script>
+		  <input id="btnBclass<%=i%>" name="btnBclass" type="hidden" value="<%=btnBclasses[i]%>"/>
+		  <i id="fontIcon<%=i%>" class="fa <%=btnBclasses[i]%>" style="font-size: 14px"></i>&nbsp;&nbsp;
+		  <a title="选择图标" href="javascript:;" onclick="selFontIcon('fontIcon<%=i%>', 'btnBclass<%=i%>')">选择</a>
       <%}else{%>
           <input type="hidden" name="btnBclass" size="5" value="<%=btnBclasses[i]%>" />
           查询
@@ -2505,14 +2796,14 @@ for (i=0; i<len; i++) {
       </td>
       <td align="center"><input class="btn btn-default" type="button" value="修改" onclick="submitModifyBtn('formBtn<%=i%>')" />
         &nbsp;&nbsp;
-        <input class="btn btn-default" name="button" type="button" onclick="delBtn('<%=btnName%>')" value="删除" />      </td>
+        <input class="btn btn-default" name="button" type="button" onclick="delBtn('<%=btnName%>')" value="删除" />
+	  </td>
     </tr>
   </form>
 	<script>
+		$('#btnModuleCode<%=i%>').select2();
+
 		function submitModifyBtn(formId) {
-			<%
-            if (isServerConnectWithCloud) {
-            %>
 			$.ajax({
 				type: "post",
 				url: "btnModify.do",
@@ -2524,7 +2815,9 @@ for (i=0; i<len; i++) {
 				},
 				success: function (data, status) {
 					data = $.parseJSON(data);
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				},
 				complete: function (XMLHttpRequest, status) {
 					$('body').hideLoading();
@@ -2534,36 +2827,18 @@ for (i=0; i<len; i++) {
 					alert(XMLHttpRequest.responseText);
 				}
 			});
-			<%
-            }else {
-            	String tNameBtn = StrUtil.getNullStr(msd.getString("btn_name"));
-				String tOrderBtn = StrUtil.getNullStr(msd.getString("btn_order"));
-				String tScriptBtn = StrUtil.getNullStr(msd.getString("btn_script"));
-				String tBclassBtn = StrUtil.getNullStr(msd.getString("btn_bclass"));
-				String tRoleBtn = StrUtil.getNullStr(msd.getString("btn_role"));
-            %>
-			var we = o("webedit");
-			we.PostScript = "<%=path%>/public/module/modifyBtn.do";
+		}
 
-			loadDataToWebeditCtrl(o(formId), o("webedit"));
-			we.AddField("cwsVersion", "<%=cfg.get("version")%>");
-			we.AddField("tName", "<%=tNameBtn%>");
-			we.AddField("tOrder", "<%=tOrderBtn%>");
-			we.AddField("tScript", "<%=tScriptBtn.replaceAll("\"", "\\\\\"")%>");
-			we.AddField("tBclass", "<%=tBclassBtn%>");
-			we.AddField("tRole", "<%=tRoleBtn%>");
-			we.UploadToCloud();
-
-			var data = $.parseJSON(o("webedit").ReturnMessage);
-			if (data.ret == "1") {
+		function delBtn(btnName) {
+			layer.confirm('您确定要删除么', {icon: 3, title: '提示'}, function(index) {
 				$.ajax({
 					type: "post",
-					url: "btnSave.do",
+					url: "btnDel.do",
 					contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
 					data: {
+						btnName: btnName,
 						code: "<%=code%>",
-						formCode: "<%=formCode%>",
-						result: JSON.stringify(data.result)
+						formCode: "<%=formCode%>"
 					},
 					dataType: "html",
 					beforeSend: function (XMLHttpRequest) {
@@ -2571,7 +2846,18 @@ for (i=0; i<len; i++) {
 					},
 					success: function (data, status) {
 						data = $.parseJSON(data);
-						jAlert(data.msg, "提示");
+						if (data.ret == "1") {
+							layer.alert(data.msg, {
+								yes: function() {
+									layer.close(layer.index);
+									$('#tr_btn_' + btnName).remove();
+								}
+							});
+						} else {
+							layer.msg(data.msg, {
+								offset: '6px'
+							});
+						}
 					},
 					complete: function (XMLHttpRequest, status) {
 						$('body').hideLoading();
@@ -2581,52 +2867,9 @@ for (i=0; i<len; i++) {
 						alert(XMLHttpRequest.responseText);
 					}
 				});
-			} else {
-				jAlert(data.msg, "提示");
-			}
-			<%
-            }
-            %>
-		}
 
-		function delBtn(btnName) {
-			jConfirm('您确定要删除么？', '提示', function (r) {
-				if (!r) {
-					return;
-				} else {
-					$.ajax({
-						type: "post",
-						url: "btnDel.do",
-						contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
-						data: {
-							btnName: btnName,
-							code: "<%=code%>",
-							formCode: "<%=formCode%>"
-						},
-						dataType: "html",
-						beforeSend: function (XMLHttpRequest) {
-							$('body').showLoading();
-						},
-						success: function (data, status) {
-							data = $.parseJSON(data);
-							if (data.ret == "1") {
-								jAlert(data.msg, "提示", function () {
-									$('#tr_btn_' + btnName).remove();
-								});
-							} else {
-								jAlert(data.msg, "提示");
-							}
-						},
-						complete: function (XMLHttpRequest, status) {
-							$('body').hideLoading();
-						},
-						error: function (XMLHttpRequest, textStatus) {
-							// 请求出错处理
-							alert(XMLHttpRequest.responseText);
-						}
-					});
-				}
-			})
+				layer.close(index);
+			});
 		}
 	</script>
   <%}%>
@@ -2641,47 +2884,87 @@ for (i=0; i<len; i++) {
 			  &nbsp;批处理
 			  <input type="radio" name="btnBatchOrScript" value="1"/>&nbsp;脚本
 			  <input type="radio" name="btnBatchOrScript" value="2"/>&nbsp;流程
+			  <input type="radio" name="btnBatchOrScript" value="3"/>&nbsp;添加模块
 		  </div>
-      <span id="spanBatch">
+		  <span id="spanBatch">
       置
       <select id="batchField" name="batchField">
 <%
-ir = fd.getFields().iterator();
-while (ir.hasNext()) {
-	FormField ff = (FormField) ir.next();
+	ir = fd.getFields().iterator();
+	while (ir.hasNext()) {
+		FormField ff = (FormField) ir.next();
 %>
         <option value="<%=ff.getName()%>"><%=ff.getTitle()%></option>
 <%
-}
+	}
 %>     
       </select>
       为
-      <input id="batchValue" name="batchValue" />
+      <input id="batchValue" name="batchValue"/>
       </span>
-      <span id="spanScript" style="display:none">
+		  <span id="spanScript" style="display:none">
       <textarea id="btnScript" name="btnScript" cols="50" rows="2"></textarea>
       </span>
-		  <span id="spanFlow" style="display:none">
-			  <select id="btnFlowTypeCode" name="flowTypeCode">
-				  <%
-					  flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
-				  %>
-			  </select>
-		  </span>
+	  <span id="spanFlow" style="display:none">
+		  <select id="btnFlowTypeCode" name="flowTypeCode">
+			  <%
+				  flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
+			  %>
+		  </select>
+		  <select name="isSelRow">
+			<option value="false">无需选择记录</option>
+			<option value="true">需选择记录</option>
+		  </select>
+	  </span>
+	  <span id="spanAddModule" style="display:none">
+		  <select id="addBtnModuleCode" name="moduleCode" style="width: 200px">
+			  <option value=""></option>
+			  <%
+				  ir = v.iterator();
+				  while (ir.hasNext()) {
+				  	ModuleSetupDb msdBtn = (ModuleSetupDb)ir.next();
+			  %>
+			  	<option value="<%=msdBtn.getString("code")%>"><%=msdBtn.getString("name")%></option>
+			  <%
+				  }
+			  %>
+		  </select>
+		  <select id="addBtnMode" name="mode">
+			  <option value="1">对话框</option>
+			  <option value="0">抽屉</option>
+		  </select>
+		  <select name="isSelRow">
+			<option value="false">无需选择记录</option>
+			<option value="true" selected>需选择记录</option>
+		  </select>
+		  限选<input id="selRowMax<%=i%>" name="selRowMax" title="空或者-1表示不限" style="width:50px" />条&nbsp;
+		  提交参数：
+		  <input id="moduleAction<%=i%>" name="moduleAction" title="参数名为moduleAction，用于二次开发" />
+	  </span>
       <script>
-	  $('input[name=btnBatchOrScript]').click(function() {
+		  $('#addBtnModuleCode').select2();
+
+		  $('input[name=btnBatchOrScript]').click(function() {
 		  if ($(this).val()==0) {
 			  $('#spanBatch').show();
 			  $('#spanScript').hide();
 			  $('#spanFlow').hide();
+			  $('#spanAddModule').hide();
 		  }
 		  else if ($(this).val() == 2) {
 			  $('#spanFlow').show();
 			  $('#spanBatch').hide();
 			  $('#spanScript').hide();
+			  $('#spanAddModule').hide();
 		  }
-		  else {
+		  else if ($(this).val() == 1) {
 			  $('#spanScript').show();
+			  $('#spanFlow').hide();
+			  $('#spanBatch').hide();
+			  $('#spanAddModule').hide();
+		  } else {
+			  $('#spanAddModule').show();
+			  $('#spanScript').hide();
 			  $('#spanFlow').hide();
 			  $('#spanBatch').hide();
 		  }
@@ -2689,7 +2972,7 @@ while (ir.hasNext()) {
 	  </script>
       </td>
       <td align="center">
-        <textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescsAdd" name="roleDescs" style="width:80%; height:40px" readonly="readonly"></textarea>
+        <textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescsAdd" name="roleDescs" style="width:80%; height:40px" readonly></textarea>
         <input id="roleCodesAdd" name="roleCodes" type="hidden" />
 		<a href="javascript:;" onclick="selRoles('Add')"><img title="选择角色" class="role-sel-btn" src="../images/role_sel.png" /></a>
         <script>
@@ -2699,7 +2982,7 @@ while (ir.hasNext()) {
         	var codeId = "roleCodes" + param;
         	objCode = o(codeId);
         	objDesc = o(descId);
-        	openWin('../role_multi_sel.jsp?roleCodes=' + objCode.value + '&unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>', 526, 435);
+        	openWin('../role_multi_sel.jsp?roleCodes=' + objCode.value + '&unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>', 680, 495);
         }
         
 		function setRoles(roles, descs) {
@@ -2710,61 +2993,38 @@ while (ir.hasNext()) {
       </td>
       <td align="center"><input name="btnOrder" size="5" value="<%=btnNames!=null?StrUtil.toDouble(btnOrders[i-1])+1:1%>" /></td>
       <td align="center">
-      <select id="btnBclassAdd" name="btnBclass" class="js-example-templating js-states form-control">
-      <%
-      ArrayList<String[]> btnAry = CSSUtil.getFlexigridBtn();
-      int btnAryLen = btnAry.size();
-      for (int k=0; k<btnAryLen; k++) {
-      	String[] ary = btnAry.get(k);
-      	%>
-      	<option value="<%=ary[0] %>" style="background-image: url('<%=SkinMgr.getSkinPath(request)%>/flexigrid/<%=ary[1] %>');"><%=ary[0]%></option>
-      	<%
-      }
-      %>
-      </select>
-      <script>
-      var map = new Map();
-      <%
-      for (int k=0; k<btnAryLen; k++) {
-      	String[] ary = btnAry.get(k);
-      	%>
-     	map.put('<%=ary[0]%>', '<%=SkinMgr.getSkinPath(request)%>/flexigrid/<%=ary[1] %>');
-      	<%
-      }
-      %>
-      	var oMenuIcon;
-		$(function () {
-		    //带图片
-		    oMenuIcon = $("#btnBclassAdd").select2({
-		        templateResult: formatState,
-		        templateSelection: formatState
-		    });
-		    
-			var btnName = new LiveValidation('btnName');
-			btnName.add( Validate.Presence );
-		});
-		
-		function formatState(state) {
-		    if (!state.id) { return state.text; }
-		    var $state = $(
-		      '<span><img src="' + map.get(state.text).value + '" class="img-flag" /> ' + state.text + '</span>'
-		    );
-		    return $state;
-		};      	
-      	</script>
+		  <input id="btnBclassAdd" name="btnBclass" type="hidden"/>
+		  <i id="fontIconAdd" class="fa " style="font-size: 14px"></i>&nbsp;&nbsp;
+		  <a title="选择图标" href="javascript:;" onclick="selFontIcon('fontIconAdd', 'btnBclassAdd')">选择</a>
       </td>
       <td align="center">
-      <input class="btn btn-default" type="button" value="添加" onclick="submitAddBtn()" />
-      <input name="formCode" value="<%=formCode%>" type="hidden" />
-      <input name="code" value="<%=code%>" type="hidden" />      
+		  <input class="btn btn-default" type="button" value="添加" onclick="submitAddBtn()" />
+		  <input name="formCode" value="<%=formCode%>" type="hidden" />
+		  <input name="code" value="<%=code%>" type="hidden" />
       </td>
     </tr>
   </form>
 </table>
 <script>
+	var curElId = '', curElHidden = '';
+	function selFontIcon(eId, eHidden) {
+		openWin('../util/fontawesome.html', 800, 600);
+		curElId = eId;
+		curElHidden = eHidden;
+	}
+
+	function setFontIcon(icon) {
+		$('#' + curElId).removeClass();
+		$('#' + curElId).addClass('fa');
+		$('#' + curElId).addClass(icon);
+		$('#' + curElHidden).val(icon);
+	}
+
 	function submitAddBtn() {
 		if ($('#btnName').val().indexOf("\"")!=-1 || $('#btnName').val().indexOf("'")!=-1) {
-			jAlert("按钮名称中不能含有单引号或双引号", "提示");
+			layer.msg("按钮名称中不能含有单引号或双引号", {
+				offset: '6px'
+			});
 			return;
 		}
 
@@ -2775,8 +3035,11 @@ while (ir.hasNext()) {
 		else if (btnBatchOrScriptVal == '1') {
 			$('#opAddBtn').val('addBtn');
 		}
-		else {
+		else if (btnBatchOrScriptVal == '2') {
 			$('#opAddBtn').val('addBtnFlow');
+		}
+		else if (btnBatchOrScriptVal == '3') {
+			$('#opAddBtn').val('addBtnModule');
 		}
 
 		<%
@@ -2794,11 +3057,15 @@ while (ir.hasNext()) {
 			success: function (data, status) {
 				data = $.parseJSON(data);
 				if (data.ret == "1") {
-					jAlert(data.msg, "提示", function () {
-						window.location.reload()
+					layer.alert(data.msg, {
+						yes: function() {
+							window.location.reload();
+						}
 					});
 				} else {
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				}
 			},
 			complete: function (XMLHttpRequest, status) {
@@ -2810,115 +3077,11 @@ while (ir.hasNext()) {
 			}
 		});
 		<%
-        }else {
-			String tNameBtn = StrUtil.getNullStr(msd.getString("btn_name"));
-			String tOrderBtn = StrUtil.getNullStr(msd.getString("btn_order"));
-			String tScriptBtn = StrUtil.getNullStr(msd.getString("btn_script"));
-			String tBclassBtn = StrUtil.getNullStr(msd.getString("btn_bclass"));
-			String tRoleBtn = StrUtil.getNullStr(msd.getString("btn_role"));
-        %>
-		var we = o("webedit");
-		if (btnBatchOrScriptVal == '0') {
-			we.PostScript = "<%=path%>/public/module/addBtnBatch.do";
-		} else if (btnBatchOrScriptVal == '1') {
-			we.PostScript = "<%=path%>/public/module/addBtn.do";
-		}
-		else {
-			we.PostScript = "<%=path%>/public/module/addBtnFlow.do";
-		}
-
-		loadDataToWebeditCtrl(o("formBtn"), o("webedit"));
-		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
-
-		we.AddField("tName", "<%=tNameBtn%>");
-		we.AddField("tOrder", "<%=tOrderBtn%>");
-		we.AddField("tScript", "<%=tScriptBtn.replaceAll("\"", "\\\\\"")%>");
-		we.AddField("tBclass", "<%=tBclassBtn%>");
-		we.AddField("tRole", "<%=tRoleBtn%>");
-		we.UploadToCloud();
-
-		var data = $.parseJSON(o("webedit").ReturnMessage);
-		if (data.ret == "1") {
-			$.ajax({
-				type: "post",
-				url: "btnSave.do",
-				contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
-				data: {
-					code: "<%=code%>",
-					formCode: "<%=formCode%>",
-					result: JSON.stringify(data.result)
-				},
-				dataType: "html",
-				beforeSend: function (XMLHttpRequest) {
-					$('body').showLoading();
-				},
-				success: function (data, status) {
-					data = $.parseJSON(data);
-					if (data.ret=="1") {
-						jAlert(data.msg, "提示", function() {
-							window.location.reload();
-						});
-					}
-					else {
-						jAlert(data.msg, "提示");
-					}
-				},
-				complete: function (XMLHttpRequest, status) {
-					$('body').hideLoading();
-				},
-				error: function (XMLHttpRequest, textStatus) {
-					// 请求出错处理
-					alert(XMLHttpRequest.responseText);
-				}
-			});
-		} else {
-			jAlert(data.msg, "提示");
-		}
-		<%
         }
         %>
 	}
 </script>
 <br />
-<%
-	if (!isServerConnectWithCloud) {
-%>
-<TABLE align="center" class="tabStyle_1 percent60" style="margin-top: 20px; width:450px">
-	<TR>
-		<TD align="left" class="tabStyle_1_title">上传助手</TD>
-	</TR>
-	<TR>
-		<td align="center">
-			<object classid="CLSID:DE757F80-F499-48D5-BF39-90BC8BA54D8C" codebase="../activex/cloudym.CAB#version=1,3,0,0" width=450 height=86 align="middle" id="webedit">
-				<param name="Encode" value="utf-8">
-				<param name="MaxSize" value="<%=Global.MaxSize%>">
-				<!--上传字节-->
-				<param name="ForeColor" value="(255,255,255)">
-				<param name="BgColor" value="(107,154,206)">
-				<param name="ForeColorBar" value="(255,255,255)">
-				<param name="BgColorBar" value="(0,0,255)">
-				<param name="ForeColorBarPre" value="(0,0,0)">
-				<param name="BgColorBarPre" value="(200,200,200)">
-				<param name="FilePath" value="">
-				<param name="Relative" value="2">
-				<!--上传后的文件需放在服务器上的路径-->
-				<param name="Server" value="<%=host%>">
-				<param name="Port" value="<%=port%>">
-				<param name="VirtualPath" value="<%=Global.virtualPath%>">
-				<param name="PostScript" value="<%=path%>/public/module/modifyLink.do">
-				<param name="PostScriptDdxc" value="">
-				<param name="SegmentLen" value="204800">
-				<param name="BasePath" value="">
-				<param name="InternetFlag" value="">
-				<param name="Organization" value="<%=license.getCompany()%>" />
-				<param name="Key" value="<%=license.getKey()%>" />
-			</object>
-		</TD>
-	</TR>
-	</table>
-<%
-	}
-%>
 </body>
 <script>
 var work_log = "<%=work_log%>";
@@ -2939,7 +3102,9 @@ function changeWorkLog(){
 
 function formAddMulti_onsubmit() {
 	if (formAddMulti.fieldName.value=="") {
-		jAlert("字段不能为空！","提示");
+		layer.msg("字段不能为空！", {
+			offset: '6px'
+		});
 		return false;
 	}
 }
@@ -3037,7 +3202,9 @@ function setMsgProp(msgProp) {
 		beforeSend: function(XMLHttpRequest){
 		},
 		success: function(data, status) {
-            jAlert(data.msg, "提示");
+			layer.msg(data.msg, {
+				offset: '6px'
+			});
 		},
 		complete: function(XMLHttpRequest, status){
 		},
@@ -3173,7 +3340,9 @@ $(function() {
 						map.put($(this).val(), $(this).val());
 					else {
 						isFound = true;
-						jAlert($(this).find("option:selected").text() + "存在重复！", "提示");
+						layer.msg($(this).find("option:selected").text() + "存在重复！", {
+							offset: '6px'
+						});
 						return false;
 					}
 
@@ -3201,7 +3370,9 @@ $(function() {
 				},
 				success: function (data, status) {
 					data = $.parseJSON(data);
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				},
 				complete: function (XMLHttpRequest, status) {
 					$('body').hideLoading();
@@ -3225,7 +3396,9 @@ $(function() {
 				},
 				success: function (data, status) {
 					data = $.parseJSON(data);
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 					if (data.ret == 1) {
 						reloadTab("<%=tabIdOpener%>");
 					}
@@ -3262,7 +3435,10 @@ $(function() {
 			},
 			success: function (data, status) {
 				data = $.parseJSON(data);
-				$.toaster({priority: 'info', message: data.msg});
+				// $.toaster({priority: 'info', message: data.msg});
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
 			},
 			complete: function (XMLHttpRequest, status) {
 				$('body').hideLoading();
@@ -3301,6 +3477,46 @@ $(function() {
 					$(this).addClass("tdOver");
 				});
 		});
+
+		$('input, select, textarea').each(function() {
+			if (!$('body').hasClass('form-inline')) {
+				$('body').addClass('form-inline');
+			}
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+				$(this).addClass('form-control');
+				$(this).attr('autocomplete', 'off');
+			}
+		});
 	});
+
+	function clearExportColProps() {
+		layer.confirm('您确定要清空么', {icon: 3, title: '提示'}, function(index) {
+			$.ajax({
+				type: "post",
+				url: "clearExportColProps",
+				data: {
+					moduleCode: "<%=code%>"
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$('body').showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					// $.toaster({priority: 'info', message: data.msg});
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
+				},
+				complete: function (XMLHttpRequest, status) {
+					$('body').hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					jAlert(XMLHttpRequest.responseText, "提示");
+				}
+			});
+		});
+	}
 </script>
 </html>

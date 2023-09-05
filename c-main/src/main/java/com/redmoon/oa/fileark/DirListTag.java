@@ -1,13 +1,13 @@
 package com.redmoon.oa.fileark;
 
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Iterator;
 import javax.servlet.jsp.tagext.*;
 import java.util.Vector;
 
 public class DirListTag extends TagSupport {
     int[] ids = null;
-    Logger logger = Logger.getLogger(DirListTag.class.getName());
     String parentCode;
     Iterator ir;
     static String cachePrix = "dirlist";
@@ -41,7 +41,7 @@ public class DirListTag extends TagSupport {
             }
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return SKIP_BODY;
     }

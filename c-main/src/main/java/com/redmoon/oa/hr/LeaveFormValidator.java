@@ -5,8 +5,8 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
-import org.apache.log4j.Logger;
 
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
@@ -24,9 +24,6 @@ import com.redmoon.oa.flow.WorkflowDb;
 
 public class LeaveFormValidator implements IFormValidator {
 
-
-
-	Logger logger = Logger.getLogger(LeaveFormValidator.class.getName());
 	public LeaveFormValidator() {
 	}
 
@@ -50,7 +47,7 @@ public class LeaveFormValidator implements IFormValidator {
 		user.setValid(0);
 		user.save();
 
-		String sql = "select id from form_table_personbasic where user_name=" + StrUtil.sqlstr(userName);
+		String sql = "select id from ft_personbasic where user_name=" + StrUtil.sqlstr(userName);
 		try {
 			JdbcTemplate jt = new JdbcTemplate();
 			ResultIterator ri = jt.executeQuery(sql);
@@ -64,7 +61,7 @@ public class LeaveFormValidator implements IFormValidator {
 				formdao.save();	// 可以直接update,但调用FormDAO的save方法可以触发onUpdate方法中的事件
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 

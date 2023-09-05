@@ -2,12 +2,14 @@ package com.cloudwebsoft.framework.template.plugin;
 
 import java.io.FileInputStream;
 import java.net.URL;
+
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
 import org.jdom.output.XMLOutputter;
-import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -20,7 +22,6 @@ public class PluginMgr {
     final String group = "TEMPALTE_PLUGIN";
     final String ALLPLUGIN = "TEMPALTE_ALLPLUGIN";
 
-    static Logger logger;
     public final String FILENAME = "plugin_template.xml";
 
     public static Document doc = null;
@@ -31,8 +32,6 @@ public class PluginMgr {
 
     public PluginMgr() {
         rmCache = RMCache.getInstance();
-
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -41,18 +40,9 @@ public class PluginMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
-            SAXBuilder sb = new SAXBuilder();
-            try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
-                root = doc.getRootElement();
-                fin.close();
-                isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
-            }
+            IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+            doc = configUtil.getDocument("plugin_template.xml");
+            root = doc.getRootElement();
         }
     }
 
@@ -66,7 +56,7 @@ public class PluginMgr {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -76,7 +66,7 @@ public class PluginMgr {
             pu = (PluginUnit)rmCache.getFromGroup(code, group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (pu==null) {
             init();
@@ -96,7 +86,7 @@ public class PluginMgr {
                             rmCache.putInGroup(code, group,
                                                pu);
                         } catch (Exception e) {
-                            logger.error("getPluginUnit:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getPluginUnit:" + e.getMessage());
                         }
                         return pu;
                     }
@@ -114,7 +104,7 @@ public class PluginMgr {
         try {
             v = (Vector) rmCache.getFromGroup(ALLPLUGIN, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector();
@@ -131,7 +121,7 @@ public class PluginMgr {
                     rmCache.putInGroup(ALLPLUGIN, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllPlugin:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllPlugin:" + e.getMessage());
                 }
             }
         }

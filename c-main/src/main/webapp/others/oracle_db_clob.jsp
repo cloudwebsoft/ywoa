@@ -6,7 +6,7 @@
 <%@ page import="java.util.*"%>
 <%@ page import="java.sql.*"%>
 <%@ page import="cn.js.fan.security.*"%>
-<%@ page import="com.redmoon.forum.util.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -53,10 +53,9 @@ try{
 		String tableName = rs_table.getObject(3).toString();
 		// if (tableName.equalsIgnoreCase("sq_message")) {
 		if(tableName.indexOf("$")==-1 && tableName.indexOf("SDO_")==-1 && tableName.indexOf("METASTYLESHEET")==-1 && !rs_table.getObject(3).toString().startsWith("ARGUMENT$") &&!rs_table.getObject(3).toString().startsWith("BIN$") && !rs_table.getObject(3).toString().startsWith("OL$") && !rs_table.getObject(3).toString().startsWith("EXF$")&& !rs_table.getObject(3).toString().startsWith("DR$")){
-			// System.out.println(rs_table.getObject(3));
 			rs_column = td.getColumns(rs_table.getObject(3).toString());
 			while (rs_column.next()) {
-				System.out.println(rs_column.getObject(4).toString());
+				LogUtil.getLog(getClass()).info(rs_column.getObject(4).toString());
 				String colName = rs_column.getObject(4).toString();
 				column_type = Integer.parseInt(rs_column.getObject(5).toString());
 				if(column_type == java.sql.Types.CLOB){

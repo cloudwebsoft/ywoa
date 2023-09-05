@@ -5,7 +5,6 @@ import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.flow.MyActionDb;
 import com.redmoon.oa.flow.WorkflowActionDb;
 import com.redmoon.oa.flow.WorkflowDb;
-import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Vector;

@@ -7,8 +7,8 @@
         <id column="id" property="id" />
         <result column="notice_id" property="noticeId" />
         <result column="name" property="name" />
-        <result column="diskname" property="diskname" />
-        <result column="visualpath" property="visualpath" />
+        <result column="diskname" property="diskName" />
+        <result column="visualpath" property="visualPath" />
         <result column="orders" property="orders" />
         <result column="downloadCount" property="downloadCount" />
         <result column="upload_date" property="uploadDate" />

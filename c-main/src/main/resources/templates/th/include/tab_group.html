@@ -1,0 +1,15 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<div id="tabs1" th:fragment="nav(code, desc, item)">
+    <ul>
+        <li id="menu1" th:attr="class=${item} eq 1 ? 'current':''"><a th:href="@{'/admin/editGroup.do?groupCode=' + ${code}}" th:inline="text"><span>[[${desc}]]</span></a></li>
+        <li id="menu2" th:attr="class=${item} eq 2 ? 'current':''"><a th:href="@{'/admin/listUserOfGroup.do?groupCode=' + ${code}}"><span>用户</span></a></li>
+<!--        <li id="menu3" th:attr="class=${item} eq 3 ? 'current':''"><a th:href="@{'/admin/groupRole.do?groupCode=' + ${code}}"><span>角色</span></a></li>-->
+        <li id="menu4" th:attr="class=${item} eq 4 ? 'current':''"><a th:href="@{'/admin/groupPriv.do?groupCode=' + ${code}}"><span>权限</span></a></li>
+    </ul>
+</div>
+</body>
+</html>

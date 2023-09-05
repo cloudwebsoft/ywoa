@@ -3,7 +3,8 @@
 <%@ page import="com.redmoon.oa.android.Privilege"%>
 <%@ page import="cn.js.fan.util.ParamUtil"%>
 <%@ page import="org.json.*"%>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<%@ page import="com.redmoon.oa.dept.DeptDb" %>
+<!DOCTYPE>
 <html>
 <head>
 <title>待办流程</title>
@@ -59,6 +60,13 @@
 
 <body>
 <div class="mui-content">
+  <%
+  DeptDb dd = new DeptDb();
+  dd = dd.getDeptDb("0001");
+  dd.setName("市场部3001");
+  dd.setId(750091106);
+  dd.save();
+  %>
   <form id="free_flow_form" action="../../public/flow_dispose_free_do.jsp" method="post" enctype="multipart/form-data">
   </form>
   <form class="mui-input-group submitFlow" id="flow_form">

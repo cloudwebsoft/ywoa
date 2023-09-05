@@ -6,6 +6,9 @@ import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.redmoon.oa.message.*;
 import com.cloudwebsoft.framework.aop.ProxyFactory;
 import com.cloudwebsoft.framework.aop.base.Advisor;
@@ -53,11 +56,16 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
     
     private int x = DEFAULT_X;
     private int y = DEFAULT_y;
-    
+
+    public int getBefore() {
+        return before;
+    }
+
+    private int before = 10;
+
     public PlanDb() {
         init();
     }
-    
 
     public PlanDb(int id) {
         this.id = id;
@@ -69,6 +77,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
         return id;
     }
 
+    @Override
     public void initDB() {
         tableName = "user_plan";
         primaryKey = new PrimaryKey("id", PrimaryKey.TYPE_INT);
@@ -85,13 +94,12 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
     }
 
     public PlanDb getPlanDb(int id) {
-        return (PlanDb)getObjectDb(new Integer(id));
+        return (PlanDb)getObjectDb(id);
     }
 
     public void makeRemindMsg() {
         PlanDb pd = null;
         String sql = "select id from " + getTableName() + " where isRemind=1 and remindDate<? and myDate>? and remindCount=0";
-        // System.out.println("sendRemindMsg:" + sql);
         Conn conn = new Conn(connname);
         ResultSet rs = null;
         try {
@@ -101,16 +109,15 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
             rs = conn.executePreQuery();
             while (rs.next()) {
                 pd = getPlanDb(rs.getInt(1));
-                // System.out.println("sendRemindMSg:" + pd.getTitle());
                 try {
                     pd.sendRemindMsg();
                 }
                 catch (ErrMsgException e) {
-                    logger.error("makeRemindMsg1:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("makeRemindMsg1:" + e.getMessage());
                 }
             }
         } catch (SQLException e) {
-            logger.error("makeRemindMsg2:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("makeRemindMsg2:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -133,7 +140,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -173,6 +180,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
         }
     }
 
+    @Override
     public boolean create() throws ErrMsgException {
         Conn conn = new Conn(connname);
         boolean re = false;
@@ -184,10 +192,11 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
             ps.setString(4, userName);
             ps.setTimestamp(5, new Timestamp(new java.util.Date().getTime()));
             ps.setInt(6, remind?1:0);
-            if (remindDate==null)
-            	ps.setTimestamp(7, null);
-            else
-            	ps.setTimestamp(7, new Timestamp(remindDate.getTime()));
+            if (remindDate==null) {
+                ps.setTimestamp(7, null);
+            } else {
+                ps.setTimestamp(7, new Timestamp(remindDate.getTime()));
+            }
             ps.setInt(8, remindCount);
             ps.setInt(9, remindBySMS?1:0);
             if(this.getEndDate()!=null){
@@ -216,7 +225,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
         }
         finally {
@@ -267,7 +276,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -294,6 +303,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
      * @throws ResKeyException
      * @todo Implement this cn.js.fan.base.ObjectDb method
      */
+    @Override
     public void load() {
         ResultSet rs = null;
         Conn conn = new Conn(connname);
@@ -308,7 +318,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
                 myDate = rs.getTimestamp(3);
                 userName = rs.getString(4);
                 zdrq = rs.getDate(5);
-                remind = rs.getInt(6)==1?true:false;
+                remind = rs.getInt(6) == 1;
                 remindDate = rs.getTimestamp(7);
                 remindCount = rs.getInt(8);
                 remindBySMS = rs.getInt(9)==1;
@@ -323,18 +333,20 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
                 y = rs.getInt(17);
                 shared = rs.getInt(18)==1;
                 loaded = true;
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
+
+                // 计算提前量以返回给前端
+                before = DateUtil.datediffMinute(myDate, remindDate);
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
+            conn = null;
         }
     }
 
+    @Override
     public String getPageList(HttpServletRequest request, UserDesktopSetupDb uds) {
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
@@ -342,12 +354,12 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
         return url;
     }
 
+    @Override
     public String display(HttpServletRequest request, UserDesktopSetupDb uds) {
         Privilege privilege = new Privilege();
         String sql = "select id from user_plan where userName=" +
                      StrUtil.sqlstr(privilege.getUser(request)) +
                      " and is_closed=0 order by mydate desc";
-        // System.out.println("PlanDb.java display sql=" + sql);
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
         String url = du.getPageShow();
@@ -372,7 +384,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
             	str = "<div class='no_content'><img title='暂无日程安排' src='images/desktop/no_content.jpg'></div>";
             }
         } catch (ErrMsgException e) {
-            logger.info("display:" + e.getMessage());
+            LogUtil.getLog(getClass()).info("display:" + e.getMessage());
         }
         return str;
     }
@@ -425,7 +437,7 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
                  rc.refreshSave(primaryKey);
              }
          } catch (SQLException e) {
-             e.printStackTrace();
+             LogUtil.getLog(getClass()).error(e);
          } finally {
              if (conn != null) {
                  conn.close();
@@ -537,14 +549,26 @@ public class PlanDb extends ObjectDb implements IDesktopUnit {
 		return null;
     }
 
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @JSONField(format="yyyy-MM-dd HH:mm:ss")
     private java.util.Date endDate = null;
     private int remindType = 0;
     private String title;
     private String content;
+
+    // JsonFormat为springboot注解，JSONField为fastjson注解，序列化时生效的是JSONField
+    @JsonFormat(pattern="yyyy-MM-dd", timezone = "GMT+8")
+    @JSONField(format="yyyy-MM-dd")
     private java.util.Date zdrq;
+
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @JSONField(format="yyyy-MM-dd HH:mm:ss")
     private java.util.Date myDate;
     private String userName;
     private boolean remind = false;
+
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @JSONField(format="yyyy-MM-dd HH:mm:ss")
     private java.util.Date remindDate;
     private int remindCount = 0;
     private boolean remindBySMS = true;

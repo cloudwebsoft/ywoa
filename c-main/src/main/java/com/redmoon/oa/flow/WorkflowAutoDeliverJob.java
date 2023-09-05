@@ -1,9 +1,8 @@
 package com.redmoon.oa.flow;
 
 import com.redmoon.oa.ui.LocalUtil;
-import org.quartz.Job;
-import org.quartz.JobExecutionException;
-import org.quartz.JobExecutionContext;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 import com.cloudwebsoft.framework.aop.ProxyFactory;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.message.IMessage;
@@ -28,6 +27,7 @@ import cn.js.fan.web.Global;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * <p>Title: </p>
@@ -41,7 +41,12 @@ import com.redmoon.oa.sms.SMSFactory;
  * @author not attributable
  * @version 1.0
  */
-public class WorkflowAutoDeliverJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class WorkflowAutoDeliverJob extends QuartzJobBean {
     public WorkflowAutoDeliverJob() {
     }
 
@@ -52,7 +57,7 @@ public class WorkflowAutoDeliverJob implements Job {
         // 取得三天内的过期待办记录
         java.util.Date d = DateUtil.addDate(new java.util.Date(), -3);
 
-        // System.out.println(getClass() + " WorkflowJob autoDeliverActionExpired:" + DateUtil.format(d, "yyyy-MM-dd HH:mm:ss"));
+        // LogUtil.getLog(getClass()).info(getClass() + " WorkflowJob autoDeliverActionExpired:" + DateUtil.format(d, "yyyy-MM-dd HH:mm:ss"));
 
         MyActionDb mad2 = new MyActionDb();
         // LogUtil.getLog(getClass()).info(DateUtil.format(d, "yyyy-MM-dd HH:mm:ss"));
@@ -74,7 +79,7 @@ public class WorkflowAutoDeliverJob implements Job {
 
         while (ri.hasNext()) {
         	wld = new WorkflowLinkDb();
-            ResultRecord rr = (ResultRecord) ri.next();
+            ResultRecord rr = ri.next();
             MyActionDb mad = mad2.getMyActionDb(rr.getLong(1));
             
             String curUserName = mad.getUserName();
@@ -89,8 +94,8 @@ public class WorkflowAutoDeliverJob implements Job {
             // LogUtil.getLog(getClass()).info("actionInnerName=" + actionInnerName);
             
             // 如果设置了超期处理
-            if (!actionInnerName.equals("")) {
-                if (actionInnerName.equals("next")) {
+            if (!StrUtil.isEmpty(actionInnerName)) {
+                if ("next".equals(actionInnerName)) {
                     // 更改状态
                     // mad.setActionStatus(WorkflowActionDb.STATE_IGNORED);
                     LogUtil.getLog(getClass()).info("actionInnerName=" + actionInnerName + " actionStatus=" +
@@ -130,12 +135,14 @@ public class WorkflowAutoDeliverJob implements Job {
                         t = t.replaceFirst("\\$flowTitle", wf.getTitle());
                         c = c.replaceFirst("\\$flowTitle", wf.getTitle());
 
-                        c += WorkflowMgr.getFormAbstractTable(wf);
+                        // getFormAbstractTable中SpringUtil.getRequest()会报错：No thread-bound request found: Are you referring to request attributes outside of an actual web request, or processing a request outside of the originally receiving thread?
+                        // c += WorkflowMgr.getFormAbstractTable(wf);
 
-                        if (imsg != null)
+                        if (imsg != null) {
                             imsg.sendSysMsg(mad.getUserName(), t, c);
-                        else
+                        } else {
                             md.sendSysMsg(mad.getUserName(), t, c);
+                        }
                     } catch (ErrMsgException ex2) {
                         ex2.printStackTrace();
                     }
@@ -153,110 +160,15 @@ public class WorkflowAutoDeliverJob implements Job {
                         // 赋予为被跳过的用户，以便于在autoPassActionNoUserMatched中matchActionUser时，因为request为null，但是仍需取得用户名，所以利用wa的userName来传值
                         curAction.setUserName(curUserName);
                         
-                        wa = wa.autoPassActionNoUserMatched(request, myActionId, wa1, curAction, null);
+                        wa = wa.autoPassActionNoUserMatched(request, myActionId, wa1, curAction, null, true);
                         // 如果连续存在未匹配到用户的节点，则继续跳过
                         while (wa != null) {
-                            wa = wa.autoPassActionNoUserMatched(request, myActionId, wa1, wa, null);
+                            wa = wa.autoPassActionNoUserMatched(request, myActionId, wa1, wa, null, true);
                         }
                     } catch (Exception e) {
                         LogUtil.getLog(getClass()).error(StrUtil.trace(e));
                     }
-
-                    if (true)
-                        continue;
-
-                    // 下面的操作，未考虑到后续节点上人员也为空的情况
-                    // 取得后续节点
-                    Vector v = curAction.getLinkToActions();
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        WorkflowActionDb nextwa = (WorkflowActionDb) ir.next();
-
-                        // @task:待测，检查后续节点的入度，如果为非异或聚合，则检查聚合节点前面的节点是否均已办理完毕
-                        Vector vfrom = nextwa.getLinkFromActions();
-                        boolean isFinished = true;
-                        boolean flagXorAggregate = false;
-                        if (nextwa.getFlag().length() >= 8) {
-                            if (nextwa.getFlag().substring(7, 8).equals("1"))
-                                flagXorAggregate = true;
-                        }
-                        // Logger.getLogger(getClass()).info("afterChangeStatus:flagXorAggregate=" + flagXorAggregate);
-                        if (!flagXorAggregate) {
-                            Iterator irFrom = vfrom.iterator();
-                            while (irFrom.hasNext()) {
-                                WorkflowActionDb wfa = (WorkflowActionDb) irFrom.next();
-                                if (wfa.getStatus() == WorkflowActionDb.STATE_FINISHED ||
-                                    wfa.getStatus() == WorkflowActionDb.STATE_IGNORED)
-                                    ;
-                                else {
-                                    isFinished = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (isFinished) {
-                            // 激活后续节点
-                            nextwa.setStatus(WorkflowActionDb.STATE_DOING);
-                            try {
-                                nextwa.save();
-                            } catch (ErrMsgException ex) {
-                                ex.printStackTrace();
-                            }
-
-                            // 匹配节点上的用户
-                            Vector vt = null;
-                            try {
-                                WorkflowRouter workflowRouter = new WorkflowRouter();
-                                vt = workflowRouter.matchActionUser(null, nextwa, curAction, false, null);
-                            } catch (ErrMsgException ex1) {
-                                ex1.printStackTrace();
-                                return;
-                            } catch (MatchUserException e) {
-                                e.printStackTrace();
-                                return;
-                            }
-
-                            String t = SkinUtil.LoadString(null,
-                                                           "res.module.flow",
-                                                           "msg_user_actived_title");
-                            String c = SkinUtil.LoadString(null,
-                                                           "res.module.flow",
-                                                           "msg_user_actived_content");
-                            t = t.replaceFirst("\\$flowTitle", wf.getTitle());
-                            c = c.replaceFirst("\\$flowTitle", wf.getTitle());
-                            c = c.replaceFirst("\\$fromUser", UserDb.SYSTEM);
-
-                            c += WorkflowMgr.getFormAbstractTable(wf);
-
-                            LogUtil.getLog(getClass()).info("mad.getActionStatus()2=" +
-                                                            mad.getActionStatus());
-
-                            Iterator ir2 = vt.iterator();
-                            while (ir2.hasNext()) {
-                                UserDb user = (UserDb) ir2.next();
-                                try {
-                                    wf.notifyUser(user.getName(), new java.util.Date(),
-                                                  mad.getId(), curAction,
-                                                  nextwa,
-                                                  WorkflowActionDb.STATE_DOING,
-                                                  (long) wf.getId());
-                                    // 发送给后续节点通知处理短信
-                                    try {
-                                        if (imsg != null)
-                                            imsg.sendSysMsg(user.getName(), t, c);
-                                        else
-                                            md.sendSysMsg(user.getName(), t, c);
-                                    } catch (ErrMsgException ex2) {
-                                        ex2.printStackTrace();
-                                    }
-                                } catch (ErrMsgException e) {
-                                    LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-                                }
-                            }
-                        }
-                    }
-                } else if (actionInnerName.equals("starter")) { // 超时返回给发起人
+                } else if ("starter".equals(actionInnerName)) { // 超时返回给发起人
                     // 更改状态
                     // mad.setActionStatus(WorkflowActionDb.STATE_IGNORED);
                     LogUtil.getLog(getClass()).info("starter actionInnerName=" + actionInnerName + " actionStatus=" +
@@ -307,10 +219,11 @@ public class WorkflowAutoDeliverJob implements Job {
 
                         c += WorkflowMgr.getFormAbstractTable(wf);
 
-                        if (imsg != null)
+                        if (imsg != null) {
                             imsg.sendSysMsg(mad.getUserName(), t, c);
-                        else
+                        } else {
                             md.sendSysMsg(mad.getUserName(), t, c);
+                        }
                     } catch (ErrMsgException ex2) {
                         LogUtil.getLog(getClass()).error(StrUtil.trace(ex2));
                     }
@@ -377,9 +290,7 @@ public class WorkflowAutoDeliverJob implements Job {
 
                         String tail = WorkflowMgr.getFormAbstractTable(wf);
 
-                        Iterator ir = curAction.getTmpUserNameActived().iterator();
-                        while (ir.hasNext()) {
-                            MyActionDb mad3 = (MyActionDb) ir.next();
+                        for (MyActionDb mad3 : curAction.getTmpUserNameActived()) {
                             t = t.replaceFirst("\\$flowTitle", wf.getTitle());
                             String fc = c.replaceFirst("\\$flowTitle", wf.getTitle());
                             fc = fc.replaceFirst("\\$fromUser", userRealName);
@@ -409,15 +320,13 @@ public class WorkflowAutoDeliverJob implements Job {
 
                             if (flowNotifyByEmail) {
                                 user = user.getUserDb(mad3.getUserName());
-                                if (!user.getEmail().equals("")) {
+                                if (!StrUtil.isEmpty(user.getEmail())) {
                                     String action = "userName=" + user.getName() + "|" + "myActionId=" + mad3.getId();
                                     action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-                                    fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath() +
-                                            "/public/flow_dispose.jsp?action=" + action +
+                                    fc += "<BR />>>&nbsp;<a href='" +
+                                            WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                                             "' target='_blank'>请点击此处办理</a>";
-                                    sendmail.initMsg(user.getEmail(),
-                                                     senderName,
-                                                     t, fc, true);
+                                    sendmail.initMsg(user.getEmail(), senderName, t, fc, true);
                                     sendmail.send();
                                     sendmail.clear();
                                 }
@@ -426,12 +335,11 @@ public class WorkflowAutoDeliverJob implements Job {
                     }
                 }
             }
-
         }
-
     }
 
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         autoDeliverActionExpired();
     }

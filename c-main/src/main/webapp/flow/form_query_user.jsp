@@ -52,7 +52,6 @@ function openWinUsers() {
 	doWhat = "users";
 	selUserNames = form1.users.value;
 	selUserRealNames = form1.userRealNames.value;
-	//showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:640px;dialogHeight:480px;status:no;help:no;')
 	window.open("../user_multi_sel.jsp","_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,top=50,left=120,width=640,height=480");
 	
 }
@@ -72,7 +71,6 @@ function openWinPrincipal() {
 	doWhat = "principal";
 	selUserNames = form1.principal.value;
 	selUserRealNames = form1.principalRealNames.value;
-	//showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:500px;dialogHeight:400px;status:no;help:no;')
 	window.open("../user_multi_sel.jsp","_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,top=50,left=120,width=500,height=400");
 }
 

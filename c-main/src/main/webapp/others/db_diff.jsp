@@ -11,6 +11,7 @@
 <%@ page import="com.cloudwebsoft.framework.db.DataSource" %>
 <%@ page import="org.apache.ibatis.annotations.Param" %>
 <%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%!
     /**
      * 数据库比较工具，同步数据库中的表、字段
@@ -45,12 +46,13 @@
                 sql += " DEFAULT '" + columnDef + "'";
             }
         }
-        System.out.println(sql);
+        // System.out.println(sql);
+        LogUtil.getLog(getClass()).info(sql);
         try {
             JdbcTemplate jtOld = new JdbcTemplate(new DataSource(dbSource));
             jtOld.executeUpdate(sql);
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -65,7 +67,7 @@
                 JdbcTemplate jtOld = new JdbcTemplate(new DataSource(dbSource));
                 jtOld.executeUpdate(sql);
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                LogUtil.getLog(getClass()).error(e);
             }
         }
     }
@@ -96,16 +98,16 @@
                 sql += " DEFAULT '" + columnDef + "'";
             }
         }
-        System.out.println(sql);
+
         try {
             JdbcTemplate jtOld = new JdbcTemplate(new DataSource(dbSource));
             jtOld.executeUpdate(sql);
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -204,7 +206,6 @@
         if (riDb.hasNext()) {
             ResultRecord rr = (ResultRecord) riDb.next();
             database = rr.getString(1);
-            System.out.println(getClass() + " database=" + database);
         }
 
         // 旧系统版本
@@ -231,7 +232,7 @@
             while (ri.hasNext()) {
                 ResultRecord rr = (ResultRecord) ri.next();
                 String tableName = rr.getString(1).toLowerCase();
-                if (tableName.startsWith("form_table_")) {
+                if (tableName.startsWith("ft_")) {
                     sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_flag` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `cws_status`, ADD COLUMN `cws_quote_id` INTEGER UNSIGNED AFTER `cws_flag`";
                     try {
                         jt.executeUpdate(sql);
@@ -255,7 +256,7 @@
             while (ri.hasNext()) {
                 ResultRecord rr = (ResultRecord) ri.next();
                 String tableName = rr.getString(1).toLowerCase();
-                if (tableName.startsWith("form_table_")) {
+                if (tableName.startsWith("ft_")) {
                     // sql = "ALTER TABLE `" + tableName + "` DROP COLUMN `cws_parent_form`";
                     sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_parent_form` varchar(20) AFTER `cws_status`";
                     try {
@@ -274,7 +275,7 @@
             while (ri.hasNext()) {
                 ResultRecord rr = (ResultRecord) ri.next();
                 String tableName = rr.getString(1).toLowerCase();
-                if (tableName.startsWith("form_table_") && !tableName.endsWith("_log")) {
+                if (tableName.startsWith("ft_") && !tableName.endsWith("_log")) {
                     sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_create_date` datetime AFTER `cws_status`,  ADD COLUMN `cws_modify_date` datetime AFTER `cws_status`,  ADD COLUMN `cws_finish_date` datetime AFTER `cws_status`";
                     try {
                         jt.executeUpdate(sql);
@@ -292,7 +293,7 @@
             while (ri.hasNext()) {
                 ResultRecord rr = (ResultRecord) ri.next();
                 String tableName = rr.getString(1).toLowerCase();
-                if (tableName.startsWith("form_table_") && !tableName.endsWith("_log")) {
+                if (tableName.startsWith("ft_") && !tableName.endsWith("_log")) {
                     sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_quote_form` varchar(20) AFTER `cws_status`";
                     try {
                         jt.executeUpdate(sql);
@@ -354,7 +355,6 @@
         table_dif = true;
         table_old = rs_table_old.getObject(3).toString();
         n++;
-        System.out.println(getClass() + " " + n + "、 table_old=" + table_old);
         if (true) {
             // continue;
         }
@@ -364,7 +364,6 @@
                 Conn conn_old = new Conn(connName);
                 Connection con_old = conn_old.getCon();
                 DatabaseMetaData dmd_old = con_old.getMetaData();
-                // System.out.println("table_new=" + table_new + " table_old=" + table_old + " rs_table_old.getObject(3)=" + rs_table_old.getObject(3));
                 // 在比对时，发现有些删除的表还有残留在mysql的data目录下
                 try {
                     // mysql-connector-java 6.0以下用这个方法
@@ -392,7 +391,6 @@
                 while (rs_column_old.next()) {
                     column_dif = true;
                     column_old = rs_column_old.getObject(4).toString();
-                    System.out.println(getClass() + " column_old=" + column_old);
                     while (rs_column_new.next()) {
                         column_new = rs_column_new.getObject(4).toString();
                         // out.print("column_old=" + column_old + " column_new=" + column_new + "<BR>");
@@ -506,7 +504,6 @@
     while (rs_table_new.next()) {
         table_dif = true;
         table_new = rs_table_new.getObject(3).toString();
-        // System.out.println("table_new=" + table_new);
         while (rs_table_old.next()) {
             table_old = rs_table_old.getObject(3).toString();
             if (table_new.equals(table_old)) {

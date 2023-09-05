@@ -1,10 +1,12 @@
 package cn.js.fan.db;
 
+import cn.js.fan.util.file.FileUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Vector;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import org.apache.log4j.Logger;
 import java.util.*;
 
 /**
@@ -39,18 +41,15 @@ public class PageConn {
   public int curPage = 1;
   public long total = 0; //由sql语句得到的总记录条数
 
-  Logger logger;
   HashMap mapIndex;
   String connname;
 
   public PageConn(String connname) {
-    logger = Logger.getLogger(PageConn.class.getName());
     mapIndex = new HashMap();
     this.connname = connname;
   }
 
   public PageConn(String connname, int curPage, int pageSize) {
-    logger = Logger.getLogger(PageConn.class.getName());
     mapIndex = new HashMap();
     this.curPage = curPage;
     this.pageSize = pageSize;
@@ -111,9 +110,7 @@ public class PageConn {
       }
     }
     catch (Exception e) {
-      if (logger.isDebugEnabled()) {
-        logger.debug(e.getMessage());
-      }
+      LogUtil.getLog(getClass()).error(e);
       return null;
     }
     finally {
@@ -181,14 +178,12 @@ public class PageConn {
         ResultSetMetaData rm = rs.getMetaData();
         colcount = rm.getColumnCount();
         for (int i = 1; i <= colcount; i++) {
-          //System.out.println(rm.getColumnName(i));
           mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
         }
 
         rs.setFetchSize(pageSize);
 
         int absoluteLocation = pageSize * (curPage - 1) + 1;
-        //System.out.println("绝对定位于: " + absoluteLocation);
         if (rs.absolute(absoluteLocation) == false) {
           return null;
         }
@@ -207,7 +202,7 @@ public class PageConn {
       }
     }
     catch (Exception e) {
-      logger.error(e.getMessage());
+      LogUtil.getLog(getClass()).error(e.getMessage());
       return null;
     }
     finally {

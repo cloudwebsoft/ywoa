@@ -251,7 +251,7 @@ while (irff.hasNext()) {
         删除
         <%}%>
         </td>
-        <td><a href="javascript:;" onclick="addTab('原始记录<%=fdaoLog.getLogId()%>', '<%=request.getContextPath()%>/visual/module_show.jsp?id=<%=fdaoLog.getLogId()%>&formCode=<%=StrUtil.UrlEncode(fdaoLog.getFormDb().getCode())%>')"><%=fdaoLog.getLogId()%></a></td>
+        <td><a href="javascript:;" onclick="addTab('原始记录<%=fdaoLog.getLogId()%>', '<%=request.getContextPath()%>/visual/moduleShowPage.do?id=<%=fdaoLog.getLogId()%>&formCode=<%=StrUtil.UrlEncode(fdaoLog.getFormDb().getCode())%>')"><%=fdaoLog.getLogId()%></a></td>
 <%
 	irff = fields.iterator();
 	while (irff.hasNext()) {

@@ -2,11 +2,10 @@ package com.redmoon.oa.job;
 
 import java.sql.SQLException;
 
-import org.apache.jcs.access.exception.CacheException;
-import org.apache.log4j.Logger;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import com.cloudwebsoft.framework.util.LogUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.jcs3.access.exception.CacheException;
+import org.quartz.*;
 import com.redmoon.oa.ui.menu.Leaf;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 
@@ -14,6 +13,7 @@ import cn.js.fan.cache.jcs.RMCache;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.StrUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 
 /**
@@ -24,7 +24,12 @@ import cn.js.fan.util.StrUtil;
  * @author: 罗珠敏
  * @Date: 2016-2-16上午10:04:53
  */
-public class SetMenuDutyMobileAppJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class SetMenuDutyMobileAppJob extends QuartzJobBean {
 
 	// 督办，定位签到
 	private final static String[] CODES_ARR = {"supervis","435441682"};
@@ -39,9 +44,9 @@ public class SetMenuDutyMobileAppJob implements Job {
      *
      * @param jobExecutionContext JobExecutionContext
      * @throws JobExecutionException
-     * @todo Implement this org.quartz.Job method
      */
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+	public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
     	executeJob();
     }
@@ -81,8 +86,7 @@ public class SetMenuDutyMobileAppJob implements Job {
 				}
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(SetMenuDutyMobileAppJob.class).error(
+			LogUtil.getLog(SetMenuDutyMobileAppJob.class).error(
 					" SQLException:" + e.getMessage());
 		}
 		return flag;
@@ -107,8 +111,7 @@ public class SetMenuDutyMobileAppJob implements Job {
 				code = record.getString(1);
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(SetMenuDutyMobileAppJob.class).error(
+			LogUtil.getLog(SetMenuDutyMobileAppJob.class).error(
 					" SQLException:" + e.getMessage());
 		}
 		return code;
@@ -136,13 +139,11 @@ public class SetMenuDutyMobileAppJob implements Job {
 				rmcache.clear();
 				
 			}
-		} catch (SQLException e) {
-			Logger.getLogger(SetMenuDutyMobileAppJob.class).error("updateMobileAppCode  SQLException:" + e.getMessage());
-		} catch (CacheException e) {
-			Logger.getLogger(SetMenuDutyMobileAppJob.class).error("updateMobileAppCode  SQLException:" + e.getMessage());
+		} catch (SQLException | CacheException e) {
+			LogUtil.getLog(SetMenuDutyMobileAppJob.class).error("updateMobileAppCode  SQLException:" + e.getMessage());
 		}
-    	
-    	return flag;
+
+		return flag;
     }
   
 }

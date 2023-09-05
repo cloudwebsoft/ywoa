@@ -1,0 +1,1 @@
+<view data-event-opts="{{[['tap',[['click',['$event']]]]]}}" class="{{['u-col','u-col-'+span]}}" style="{{'padding:'+('0 '+($root.m0/2+'rpx'))+';'+('margin-left:'+(100/12*offset+'%')+';')+('flex:'+('0 0 '+100/12*span+'%')+';')+('align-items:'+(uAlignItem)+';')+('justify-content:'+(uJustify)+';')+('text-align:'+(textAlign)+';')}}" bindtap="__e"><slot></slot></view>

@@ -3,6 +3,7 @@ package cn.js.fan.db;
 import java.io.*;
 import java.util.*;
 import cn.js.fan.util.DateUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class PrimaryKey implements Serializable, Cloneable {
     public static final int TYPE_STRING = 0;
@@ -25,19 +26,19 @@ public class PrimaryKey implements Serializable, Cloneable {
 
     public PrimaryKey(HashMap keys) {
         this.keys = keys;
-        this.type = this.TYPE_COMPOUND;
+        this.type = TYPE_COMPOUND;
     }
 
     public PrimaryKey(String name, Object value) {
         this.name = name;
 
-        if (value.getClass().isInstance(new Integer(0))) {
+        if (value.getClass().isInstance(0)) {
             this.type = TYPE_INT;
-            this.intValue = ((Integer)value).intValue();
+            this.intValue = (Integer) value;
         }
-        else if (value.getClass().isInstance(new Long(0))) {
+        else if (value.getClass().isInstance(0L)) {
             this.type = TYPE_LONG;
-            this.longValue = ((Long)value).longValue();
+            this.longValue = (Long) value;
         }
         else if (value.getClass().isInstance(new Date())) {
             this.type = TYPE_DATE;
@@ -49,12 +50,13 @@ public class PrimaryKey implements Serializable, Cloneable {
         }
     }
 
+    @Override
     public Object clone() {
         PrimaryKey o = null;
         try {
             o = (PrimaryKey)super.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         if (keys!=null) {
             o.keys = new HashMap();
@@ -71,7 +73,7 @@ public class PrimaryKey implements Serializable, Cloneable {
     public void setValue(Object value) {
         if (value instanceof Integer) {
             this.type = TYPE_INT;
-            this.intValue = ((Integer)value).intValue();
+            this.intValue = (Integer) value;
         }
         else  if (value instanceof String) {
             this.type = TYPE_STRING;
@@ -79,7 +81,7 @@ public class PrimaryKey implements Serializable, Cloneable {
         }
         else if (value instanceof Long) {
             this.type = TYPE_LONG;
-            this.longValue = ((Long)value).longValue();
+            this.longValue = (Long) value;
         }
         else if (value instanceof HashMap) {
             this.type = TYPE_COMPOUND;
@@ -89,13 +91,14 @@ public class PrimaryKey implements Serializable, Cloneable {
             this.type = TYPE_DATE;
             this.dateValue = (Date)value;
         }
-        else if (value instanceof java.sql.Date) {
-            this.type = TYPE_DATE;
-            this.dateValue = (Date)value;
-        }
         else {
-            throw new IllegalArgumentException("PrimaryKey setValue: Object value " + value +
-                         " are not valid type. value.getClass()=" + value.getClass() + " Object=" + value);
+            if (value == null) {
+                throw new IllegalArgumentException("value is null.");
+            }
+            else {
+                throw new IllegalArgumentException("PrimaryKey setValue: Object value " + value +
+                        " are not valid type. value.getClass()=" + value.getClass() + " Object=" + value);
+            }
         }
     }
 
@@ -127,15 +130,17 @@ public class PrimaryKey implements Serializable, Cloneable {
     public int getKeyCount() {
         // if (type==this.TYPE_INT || type==this.TYPE_STRING || type==this.TYPE_LONG || type==this.TYPE_DATE)
         //    return 1;
-        if (type==this.TYPE_COMPOUND) {
+        if (type== TYPE_COMPOUND) {
             if (keys!=null) {
                 return keys.size();
             }
-            else
+            else {
                 return 0;
+            }
         }
-        else
+        else {
             return 1;
+        }
     }
 
     public HashMap getKeys() {
@@ -143,23 +148,25 @@ public class PrimaryKey implements Serializable, Cloneable {
     }
 
     public String getName() {
-        if (type==this.TYPE_INT || type==this.TYPE_STRING || type==this.TYPE_LONG || type==this.TYPE_DATE)
+        if (type== TYPE_INT || type== TYPE_STRING || type== TYPE_LONG || type== TYPE_DATE) {
             return name;
-        else {
+        } else {
             if (keys!=null) {
                 Iterator ir = keys.keySet().iterator();
                 String str = "";
                 while (ir.hasNext()) {
                     String objname = (String)ir.next();
-                    if (str.equals(""))
+                    if ("".equals(str)) {
                         str += objname;
-                    else
+                    } else {
                         str += "," + objname;
+                    }
                 }
                 return str;
             }
-            else
+            else {
                 return null;
+            }
         }
     }
 
@@ -172,33 +179,36 @@ public class PrimaryKey implements Serializable, Cloneable {
     }
 
     public Object getValue() {
-        if (type==TYPE_STRING)
+        if (type==TYPE_STRING) {
             return strValue;
-        else if (type==TYPE_INT)
-            return new Integer(intValue);
-        else if (type==TYPE_LONG)
-            return new Long(longValue);
-        else if (type==TYPE_DATE)
+        } else if (type==TYPE_INT) {
+            return intValue;
+        } else if (type==TYPE_LONG) {
+            return longValue;
+        }else if (type==TYPE_DATE) {
             return dateValue;
-        else if (type==this.TYPE_COMPOUND) {
+        } else if (type== TYPE_COMPOUND) {
             if (keys!=null) {
                 Iterator ir = keys.keySet().iterator();
                 String str = "";
                 while (ir.hasNext()) {
                     String keyname = (String)ir.next();
                     KeyUnit ku = (KeyUnit)keys.get(keyname);
-                    if (str.equals(""))
+                    if (str.equals("")) {
                         str += ku.getStrValue();
-                    else
+                    } else {
                         str += "|" + ku.getStrValue();
+                    }
                 }
                 return str;
             }
-            else
+            else {
                 return null;
+            }
         }
-        else
+        else {
             return null;
+        }
     }
 
     public Object getKeyValue(String keyName) {
@@ -209,18 +219,17 @@ public class PrimaryKey implements Serializable, Cloneable {
             }
             return ku.getValue();
         }
-        else
+        else {
             return null;
+        }
     }
 
     public void setKeyValue(String keyName, Object value) {
         KeyUnit ku = (KeyUnit)keys.get(keyName);
         if (ku!=null) {
-            // System.out.println(getClass() + " dddd=" + keys.get("dddd") + " ku.getValue=" + ku.getValue() + " keyName=" + value);
             ku.setValue(value);
         }
         else {
-            // System.out.println(getClass() + " keyName2=" + value);
             keys.put(keyName, new KeyUnit(value));
         }
     }
@@ -230,8 +239,9 @@ public class PrimaryKey implements Serializable, Cloneable {
         if (obj==null) {
             return -65536;
         }
-        else
-            return ((Long)obj).longValue();
+        else {
+            return (Long) obj;
+        }
     }
 
     public int getKeyIntValue(String keyName) {
@@ -239,8 +249,9 @@ public class PrimaryKey implements Serializable, Cloneable {
         if (obj==null) {
             return -65536;
         }
-        else
-            return ((Integer)obj).intValue();
+        else {
+            return (Integer) obj;
+        }
     }
 
     public String getKeyStrValue(String keyName) {
@@ -248,8 +259,9 @@ public class PrimaryKey implements Serializable, Cloneable {
         if (obj==null) {
             return null;
         }
-        else
+        else {
             return (String)obj;
+        }
     }
 
     public Date getKeyDateValue(String keyName) {
@@ -257,25 +269,26 @@ public class PrimaryKey implements Serializable, Cloneable {
         if (obj==null) {
             return null;
         }
-        else
+        else {
             return (Date)obj;
+        }
     }
 
     public Object[] toObjectArray() {
-        // System.out.println(getClass() + " toObjectArray type=" + type +
-        //                   " intValue=" + intValue);
-        if (type == TYPE_STRING)
+        if (type == TYPE_STRING) {
             return new Object[] {strValue};
-        else if (type == TYPE_INT)
-            return new Object[] {new Integer(intValue)};
-            // 本句只支持JDK1.5以上
-            // return new Object[] {Integer.valueOf(intValue)};
-        else if (type == TYPE_LONG)
-            return new Object[] {new Long(longValue)};
-            // 本句只支持JDK1.5以上
-            // return new Object[] {Long.valueOf(longValue))};
+        } else if (type == TYPE_INT) {
+            return new Object[] {intValue};
+        }
+        // 本句只支持JDK1.5以上
+        // return new Object[] {Integer.valueOf(intValue)};
+        else if (type == TYPE_LONG) {
+            return new Object[] {longValue};
+        }
+        // 本句只支持JDK1.5以上
+        // return new Object[] {Long.valueOf(longValue))};
         else if (type==TYPE_DATE) {
-            return  new Object[] {dateValue};
+            return new Object[] {dateValue};
         }
         else if (type == TYPE_COMPOUND) {
             if (keys != null) {
@@ -286,23 +299,26 @@ public class PrimaryKey implements Serializable, Cloneable {
                     String keyname = (String) ir.next();
                     KeyUnit ku = (KeyUnit) keys.get(keyname);
                     objs[ku.getOrders()] = ku.getValue();
-                    // System.out.println(getClass() + " toObjectArray objs[" + ku.getOrders() + "]=" + objs[ku.getOrders()]);
                     k++;
                 }
                 return objs;
-            } else
+            } else {
                 return null;
-        } else
+            }
+        } else {
             return null;
+        }
     }
 
+    @Override
     public String toString() {
-        if (type==TYPE_STRING)
+        if (type==TYPE_STRING) {
             return strValue;
-        else if (type==TYPE_INT)
-            return "" + intValue;
-        else if (type==TYPE_LONG)
-            return "" + longValue;
+        } else if (type==TYPE_INT) {
+            return String.valueOf(intValue);
+        } else if (type==TYPE_LONG) {
+            return String.valueOf(longValue);
+        }
         else if (type==TYPE_DATE) {
             return DateUtil.format(dateValue, "yyyy-MM-dd HH:mm:ss");
         }
@@ -313,18 +329,22 @@ public class PrimaryKey implements Serializable, Cloneable {
                 while (ir.hasNext()) {
                     String keyname = (String)ir.next();
                     KeyUnit ku = (KeyUnit)keys.get(keyname);
-                    if (str.equals(""))
+
+                    if (str.equals("")) {
                         str += ku.getStrValue();
-                    else
+                    } else {
                         str += "|" + ku.getStrValue();
+                    }
                 }
                 return str;
             }
-            else
+            else {
                 return "";
+            }
         }
-        else
+        else {
             return "";
+        }
     }
 
     private int type;

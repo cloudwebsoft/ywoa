@@ -6,19 +6,19 @@ import javax.sql.DataSource;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import cn.js.fan.util.StrUtil;
 import com.cloudweb.oa.utils.DruidManager;
 import com.cloudweb.oa.utils.SpringUtil;
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.*;
 import com.cloudwebsoft.framework.console.ConnMonitor;
 import cn.js.fan.util.RandomSecquenceCreator;
 import com.cloudwebsoft.framework.console.ConsoleConfig;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- *
  * <p>Title: 对于java.sql.Connection的封装</p>
  *
  * <p>Description: 用以取代cn.js.fan.db.Conn，增加了isSupportTransaction()判别是否支持事务</p>
@@ -48,7 +48,6 @@ public class Connection implements IConnection {
     String DBDriver = "";  // "com.microsoft.jdbc.sqlserver.SQLServerDriver";
     String ConnStr = "";   // "jdbc:microsoft:sqlserver://127.0.0.1:1433;DatabaseName=zjnldw;User=sa;Password=111111";
 
-    Logger logger;
     boolean isUsePool = false;
 
     boolean supportTransaction = false;
@@ -65,10 +64,9 @@ public class Connection implements IConnection {
         }
 
         this.connName = connname;
-        logger = Logger.getLogger(Connection.class.getName());
         DBInfo dbi = Global.getDBInfo(connname);
         if (dbi == null) {
-            logger.error("Conn:数据库连接池" + connname + "未找到");
+            LogUtil.getLog(getClass()).error("Conn:数据库连接池" + connname + "未找到");
             return;
         } else {
             isUsePool = dbi.isUsePool;
@@ -79,13 +77,12 @@ public class Connection implements IConnection {
 
         if (isUsePool) {
             initUsePool();
-        }
-        else {
+        } else {
             initNotUsePool();
         }
 
-        // 系统设定不支持事务处理
-        if (!Global.isTransactionSupported) {
+        // 如果系统设定不支持事务处理
+        /*if (!Global.isTransactionSupported) {
             supportTransaction = false;
         } else {
             try {
@@ -93,14 +90,16 @@ public class Connection implements IConnection {
                 DatabaseMetaData dm = null;
                 dm = con.getMetaData();
                 supportTransaction = dm.supportsTransactions();
+
+                System.out.println(getClass() + " supportTransaction " + (double)(System.currentTimeMillis() - t) /1000);
             } catch (SQLException e) {
-                logger.error("Conn:" + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
+        }*/
+
+        if (ConsoleConfig.isDebug()) {
+            ConnMonitor.onGetConnection(this);
         }
-
-        ConnMonitor.onGetConnection(this);
-
     }
 
     @Override
@@ -110,6 +109,7 @@ public class Connection implements IConnection {
 
     /**
      * 是否支持事务 2006.6.6
+     *
      * @return boolean
      */
     public boolean isSupportTransaction() {
@@ -117,52 +117,44 @@ public class Connection implements IConnection {
     }
 
     public void initNotUsePool() {
-      try {
+        // 从JDBC 4.0开始，不需要加载驱动
+        /*try {
           Class.forName(DBDriver);
-      }
-      catch (java.lang.ClassNotFoundException e) {
-          logger.error("警告:Class not found exception occur. Message is:");
-          logger.error(e.getMessage());
-      }
-      try {
-          if (ConnStr.startsWith("proxool.")) {
-              con = DriverManager.getConnection(ConnStr);
-          }
-          else {
-              // Druid连接池获取连接
-              con = DruidManager.getInstance().getConnection();
-          }
-      }
-      // display sql error message
-      catch (SQLException e) {
-          // DebugUtil.e(getClass(), "initNotUsePool", e.getMessage());
-          e.printStackTrace();
-      }
+        }
+        catch (java.lang.ClassNotFoundException e) {
+          LogUtil.getLog(getClass()).error("警告:Class not found exception occur. Message is:");
+          LogUtil.getLog(getClass()).error(e.getMessage());
+        }*/
+        try {
+            if (StrUtil.isEmpty(ConnStr)) {
+                // Druid连接池获取连接
+                con = DruidManager.getInstance().getConnection();
+            } else {
+                con = DriverManager.getConnection(ConnStr);
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
     }
 
     public void initUsePool() {
-      try {
-        Context initCtx = new InitialContext();
-        Context envCtx = (Context) initCtx.lookup("java:comp/env");
-        DataSource ds = (DataSource) envCtx.lookup(PoolName);
-        con = ds.getConnection();
-        // if (stmt==null)
-        //    stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-        //                               ResultSet.CONCUR_READ_ONLY);
-      }
-      // display corresponding error message when onload error occur
-      catch (NamingException e) {
-        logger.error("Connection pool fail. Message is:");
-        logger.error(e.getMessage());
-      }
-      catch (SQLException e) {
-        logger.error("SQL Exception occur. Message is:");
-        logger.error(e.getMessage());
-      }
+        try {
+            Context initCtx = new InitialContext();
+            Context envCtx = (Context) initCtx.lookup("java:comp/env");
+            DataSource ds = (DataSource) envCtx.lookup(PoolName);
+            con = ds.getConnection();
+        } catch (NamingException e) {
+            LogUtil.getLog(getClass()).error("Connection pool fail. Message is:");
+            LogUtil.getLog(getClass()).error(e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("SQL Exception occur. Message is:");
+            LogUtil.getLog(getClass()).error(e.getMessage());
+        }
     }
 
     /**
      * 取得原始的连接
+     *
      * @return Connection
      */
     public java.sql.Connection getCon() {
@@ -175,6 +167,7 @@ public class Connection implements IConnection {
 
     /**
      * 使用stmt查询
+     *
      * @param sql String
      * @return ResultSet
      * @throws SQLException
@@ -183,17 +176,23 @@ public class Connection implements IConnection {
         if (con == null) {
             return null;
         }
-        if (stmt==null) {
+        long t = System.currentTimeMillis();
+        if (stmt == null) {
             stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                       ResultSet.CONCUR_READ_ONLY);
+                    ResultSet.CONCUR_READ_ONLY);
         }
+
         try {
             long beginTime = System.currentTimeMillis();
             rs = stmt.executeQuery(sql);
+            if (Global.getInstance().isDebug()) {
+                LogUtil.getLog(getClass()).info("sql: " + sql);
+                LogUtil.getLog(getClass()).info("take " + (System.currentTimeMillis() - t) + " ms");
+            }
             ConnMonitor.onExecuteQuery(this, sql, System.currentTimeMillis() - beginTime);
         } catch (SQLException e) {
-            // if (debug)
-                System.out.println("executeQuery exception: sql=" + sql + "\r\n" + e.getMessage());
+            LogUtil.getLog(getClass()).error("sql:" + sql);
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
         return rs;
@@ -201,6 +200,7 @@ public class Connection implements IConnection {
 
     /**
      * 用于DB2
+     *
      * @param sql String
      * @return ResultSet
      * @throws SQLException
@@ -209,37 +209,41 @@ public class Connection implements IConnection {
         if (con == null) {
             return null;
         }
-        if (stmt==null) {
+        if (stmt == null) {
             stmt = con.createStatement(ResultSet.TYPE_FORWARD_ONLY,
-                                       ResultSet.CONCUR_READ_ONLY);
+                    ResultSet.CONCUR_READ_ONLY);
         }
         try {
             long beginTime = System.currentTimeMillis();
             rs = stmt.executeQuery(sql);
+            if (Global.getInstance().isDebug()) {
+                LogUtil.getLog(getClass()).info("sql: " + sql);
+                LogUtil.getLog(getClass()).info("take " + (System.currentTimeMillis() - beginTime) + " ms");
+            }
             ConnMonitor.onExecuteQuery(this, sql, System.currentTimeMillis() - beginTime);
         } catch (SQLException e) {
-            if (debug) {
-                System.out.println("Query:" + sql + "---" + e.getMessage());
-            }
+            LogUtil.getLog(getClass()).error("sql:" + sql);
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
         return rs;
     }
 
     public void addBatch(String sql) throws SQLException {
-        if (stmt==null) {
+        if (stmt == null) {
             stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                       ResultSet.CONCUR_READ_ONLY);
+                    ResultSet.CONCUR_READ_ONLY);
         }
         stmt.addBatch(sql);
     }
 
-    public int[] executeBatch()throws SQLException {
+    public int[] executeBatch() throws SQLException {
         return stmt.executeBatch();
     }
 
     /**
      * 使用stmt更新
+     *
      * @param sql String
      * @return int
      * @throws SQLException
@@ -251,18 +255,23 @@ public class Connection implements IConnection {
 
         if (stmt == null) {
             stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                       ResultSet.CONCUR_READ_ONLY);
+                    ResultSet.CONCUR_READ_ONLY);
         }
         int rowcount = 0;
-
+        if (Global.getInstance().isDebug()) {
+            LogUtil.getLog(getClass()).info("executeUpdate: " + sql);
+        }
         try {
             long beginTime = System.currentTimeMillis();
             rowcount = stmt.executeUpdate(sql);
+            if (Global.getInstance().isDebug()) {
+                LogUtil.getLog(getClass()).info("sql: " + sql);
+                LogUtil.getLog(getClass()).info("take " + (System.currentTimeMillis() - beginTime) + " ms");
+            }
             ConnMonitor.onExecuteQuery(this, sql, System.currentTimeMillis() - beginTime);
         } catch (SQLException e) {
-            if (debug) {
-                System.out.println("Update:" + sql + "--" + e.getMessage());
-            }
+            LogUtil.getLog(getClass()).error("sql:" + sql);
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
         return rowcount;
@@ -270,6 +279,7 @@ public class Connection implements IConnection {
 
     /**
      * 取得结果集的列数
+     *
      * @return int
      */
     public int getColumns() {
@@ -277,12 +287,15 @@ public class Connection implements IConnection {
         try {
             this.resultsMeta = this.rs.getMetaData();
             columns = this.resultsMeta.getColumnCount();
-        } catch (SQLException e) {}
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
         return columns;
     }
 
     /**
      * 取得结果集的行数
+     *
      * @return int
      */
     public int getRows() {
@@ -293,7 +306,7 @@ public class Connection implements IConnection {
             rows = rs.getRow();
             rs.beforeFirst();
         } catch (SQLException e) {
-            System.out.println("getRows error:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return this.rows;
     }
@@ -320,7 +333,6 @@ public class Connection implements IConnection {
                 rs.close();
             } catch (Exception e) {
                 // 在IAS904版本上，rs.close会出现问题，所以不应该catch SQLException
-                System.out.println("Conn finalize1: " + e.getMessage());
             }
             rs = null;
         }
@@ -328,7 +340,6 @@ public class Connection implements IConnection {
             try {
                 stmt.close();
             } catch (Exception e) {
-                System.out.println("Conn finalize2: " + e.getMessage());
             }
             stmt = null;
         }
@@ -338,7 +349,6 @@ public class Connection implements IConnection {
                     con.close();
                 }
             } catch (Exception e) {
-                System.out.println("Conn finalize: " + e.getMessage());
             }
             con = null; // 防止因为多线程,导致二次关闭,使得其他线程出错
         }
@@ -347,25 +357,26 @@ public class Connection implements IConnection {
 
     /**
      * 开始事务
+     *
      * @throws SQLException
      */
     public void beginTrans() throws SQLException {
         if (!isSupportTransaction()) {
-            System.out.println("Transaction is not supported");
+            LogUtil.getLog(getClass()).warn("Transaction is not supported");
             return;
         }
         try {
             // boolean autoCommit=con.getAutoCommit();
             con.setAutoCommit(false);
         } catch (SQLException ex) {
-            ex.printStackTrace();
-            System.out.print("beginTrans Errors");
+            LogUtil.getLog(getClass()).error(ex);
             throw ex;
         }
     }
 
     /**
      * 提交事务
+     *
      * @throws SQLException
      */
     public void commit() throws SQLException {
@@ -375,13 +386,9 @@ public class Connection implements IConnection {
         try {
             con.commit();
         } catch (SQLException ex) {
-            ex.printStackTrace();
-            if (debug) {
-                System.out.print("Commit Errors");
-            }
+            LogUtil.getLog(getClass()).error(ex);
             throw ex;
-        }
-        finally {
+        } finally {
             con.setAutoCommit(true);
         }
     }
@@ -397,11 +404,7 @@ public class Connection implements IConnection {
             con.rollback();
             con.setAutoCommit(true);
         } catch (SQLException ex) {
-            ex.printStackTrace();
-            if (debug) {
-                System.out.print("Rollback Errors");
-            }
-            // throw ex;
+            LogUtil.getLog(getClass()).error(ex);
         }
     }
 
@@ -410,8 +413,7 @@ public class Connection implements IConnection {
         try {
             result = con.getAutoCommit();
         } catch (SQLException ex) {
-            ex.printStackTrace();
-            System.out.println("getAutoCommit fail" + ex.getMessage());
+            LogUtil.getLog(getClass()).error(ex);
             throw ex;
         }
         return result;
@@ -422,8 +424,7 @@ public class Connection implements IConnection {
         try {
             re = con.getTransactionIsolation();
         } catch (SQLException e) {
-            e.printStackTrace();
-            System.out.println("getTransactionIsolation fail" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -431,41 +432,40 @@ public class Connection implements IConnection {
     public void setFetchSize(int size) {
         try {
             // 如果使用了预编译
-            if (pstmt!=null) {
+            if (pstmt != null) {
                 pstmt.setFetchSize(size);
                 return;
             }
             // 如果没有使用预编译，为照顾到PageConn中的编写方式，此处要检测stmt是否为null
-            if (stmt==null) {
+            if (stmt == null) {
                 stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                           ResultSet.CONCUR_READ_ONLY);
+                        ResultSet.CONCUR_READ_ONLY);
             }
             stmt.setFetchSize(size);
-
         } catch (SQLException e) {
-            System.out.println("setFetchSize fail:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
-
     }
 
     /**
      * Sets the max number of rows that should be returned from executing a
      * statement. The operation is automatically bypassed if CWBBS knows that the
      * the JDBC driver or database doesn't support it.
+     *
      * @param maxRows the max number of rows to return.
      */
     public void setMaxRows(int maxRows) throws
             SQLException {
         try {
             // 如果使用了预编译
-            if (pstmt!=null) {
+            if (pstmt != null) {
                 pstmt.setMaxRows(maxRows);
                 return;
             }
             // 如果没有使用预编译，为照顾到PageConn中的编写方式，此处要检测stmt是否为null
             if (stmt == null) {
                 stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                           ResultSet.CONCUR_READ_ONLY);
+                        ResultSet.CONCUR_READ_ONLY);
             }
             stmt.setMaxRows(maxRows);
         } catch (Throwable t) {
@@ -474,45 +474,50 @@ public class Connection implements IConnection {
             // However, it is a good idea to update the meta-data so that
             // we don't have to incur the cost of catching an exception
             // each time.
-            System.out.println("conn.setMaxRows:" + t.getMessage());
-            t.printStackTrace();
+            LogUtil.getLog(getClass()).error(t);
         }
     }
 
     /**
      * 创建pstmt
+     *
      * @param sql String
      * @return PreparedStatement
      * @throws SQLException
      */
     public PreparedStatement prepareStatement(String sql) throws SQLException {
-        if (pstmt!=null) {
+        if (pstmt != null) {
             pstmt.close();
             pstmt = null;
         }
+        if (Global.getInstance().isDebug()) {
+            LogUtil.getLog(getClass()).info("sql: " + sql);
+        }
         pstmt = con.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE,
-                                       ResultSet.CONCUR_READ_ONLY);
+                ResultSet.CONCUR_READ_ONLY);
         return pstmt;
     }
 
     /**
      * 创建pstmt，因为DB2中的LOB字段在读取时，光标类型只能是TYPE_FORWARD_ONLY
+     *
      * @param sql String
      * @return PreparedStatement
      * @throws SQLException
      */
     public PreparedStatement prepareStatementTFO(String sql) throws SQLException {
-        if (pstmt!=null) {
+        if (pstmt != null) {
             pstmt.close();
             pstmt = null;
         }
         pstmt = con.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY,
-                                       ResultSet.CONCUR_READ_ONLY);
+                ResultSet.CONCUR_READ_ONLY);
         return pstmt;
     }
 
     /**
      * 使用pstmt查询
+     *
      * @return ResultSet
      * @throws SQLException
      */
@@ -520,10 +525,12 @@ public class Connection implements IConnection {
         try {
             long beginTime = System.currentTimeMillis();
             rs = pstmt.executeQuery();
+            if (Global.getInstance().isDebug()) {
+                LogUtil.getLog(getClass()).info("executePreQuery take " + (System.currentTimeMillis() - beginTime) + " ms");
+            }
             ConnMonitor.onExecutePreQuery(this, System.currentTimeMillis() - beginTime);
-        }
-        catch (SQLException e) {
-            System.out.print("executePreQuery:" + pstmt.toString() + "---" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
 
@@ -532,6 +539,7 @@ public class Connection implements IConnection {
 
     /**
      * 使用pstmt更新
+     *
      * @return int
      * @throws SQLException
      */
@@ -545,24 +553,21 @@ public class Connection implements IConnection {
             rowcount = pstmt.executeUpdate();
             ConnMonitor.onExecutePreQuery(this, System.currentTimeMillis() - beginTime);
         } catch (SQLException e) {
-            if (debug) {
-                System.out.println(getClass() + "executePreUpdate:" + pstmt.toString() + "---"  + e.getMessage());
-            }
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
         return rowcount;
     }
 
     public boolean isClosed() {
-        if (con==null) {
+        if (con == null) {
             return true;
         }
         boolean re = false;
         try {
             re = con.isClosed();
-        }
-        catch (SQLException e) {
-            System.out.println(getClass() + " isClosed:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }

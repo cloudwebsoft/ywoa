@@ -2,13 +2,13 @@ package com.redmoon.oa.basic;
 
 import java.util.*;
 import cn.js.fan.cache.jcs.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class TreeSelectChildrenCache {
     String parentCode;
     RMCache rmCache = RMCache.getInstance();
     static String cachePrix = "tree_select_dirlist_";
-    static Logger logger = Logger.getLogger(TreeSelectChildrenCache.class.getName());
+
     Vector list = null;
     static String group = "tree_select_children";
 
@@ -27,14 +27,14 @@ public class TreeSelectChildrenCache {
             v = (Vector) rmCache.getFromGroup(cachePrix + parentCode, group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v == null) {
             try {
                 v = load();
                 rmCache.putInGroup(cachePrix + parentCode, group, v);
             } catch (Exception e) {
-                logger.error("getDocList:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getDocList:" + e.getMessage());
             }
         }
         else {
@@ -58,7 +58,7 @@ public class TreeSelectChildrenCache {
             RMCache rmCache = RMCache.getInstance();
             rmCache.remove(cachePrix + parentCode, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(TreeSelectChildrenCache.class).error(e.getMessage());
         }
     }
 
@@ -67,7 +67,7 @@ public class TreeSelectChildrenCache {
             RMCache rmCache = RMCache.getInstance();
             rmCache.invalidateGroup(group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(TreeSelectChildrenCache.class).error(e.getMessage());
         }
     }
 }

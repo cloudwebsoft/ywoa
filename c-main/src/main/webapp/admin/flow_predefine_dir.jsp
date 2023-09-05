@@ -13,7 +13,7 @@
 <%@ page import="java.util.Iterator" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Vector" %>
-<%@ taglib uri="/WEB-INF/tlds/HelpDocTag.tld" prefix="help" %>
+<%@ page import="com.redmoon.oa.dept.DeptView" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -65,21 +65,18 @@
             })
         }
 
+        function getDepts() {
+            return o("depts").value;
+        }
+
         function openWinDepts() {
-            var ret = showModalDialog('../dept_multi_sel.jsp', window.self, 'dialogWidth:480px;dialogHeight:320px;status:no;help:no;')
-            if (ret == null)
-                return;
-            o("deptNames").value = "";
-            o("depts").value = "";
-            for (var i = 0; i < ret.length; i++) {
-                if (o("deptNames").value == "") {
-                    o("depts").value += ret[i][0];
-                    o("deptNames").value += ret[i][1];
-                } else {
-                    o("depts").value += "," + ret[i][0];
-                    o("deptNames").value += "," + ret[i][1];
-                }
-            }
+            openWin('../deptMultiSel.do', 640, 480);
+        }
+
+        function selectNode(code, name) {
+            o("depts").value = code;
+            o("deptNames").value = name;
+
             if (o("depts").value.indexOf("<%=DeptDb.ROOTCODE%>") != -1) {
                 o("depts").value = "<%=DeptDb.ROOTCODE%>";
                 o("deptNames").value = "全部";
@@ -219,7 +216,6 @@
             <td colspan="2">
                 <input name="description" id="description" value="<%=StrUtil.getNullStr(description)%>" size="50" onblur="content_change()"/>
                 例如：<span name="description_show" id="description_show" size="50"><%=FlowPredefineDirUtil.titleReplaceSTC(StrUtil.getNullStr(description), code) %></span>&nbsp;&nbsp;&nbsp;
-                <help:HelpDocTag id="948" type="content" size="200"></help:HelpDocTag>
             </td>
         </tr>
         <%}%>
@@ -534,11 +530,12 @@
                 (&nbsp;空表示所有部门都可以发起流程&nbsp;)
             </td>
             <td align="left"><p>
-                <input class="btn" title="选择部门" onclick="openWinDepts()" type="button" value="添 加" name="button"/>
+                <input class="btn" title="选择部门" onclick="openWinDepts()" type="button" value="选择" name="button"/>
             </p>
                 <p>
-                    <input class="btn" title="清空部门" onclick="form1.deptNames.value='';form1.depts.value=''" type="button" value="清 空" name="button"/>
-                </p></td>
+                    <input class="btn" title="清空部门" onclick="form1.deptNames.value='';form1.depts.value=''" type="button" value="清空" name="button"/>
+                </p>
+            </td>
         </tr>
         <tr id="trUnit" style="display:none">
             <td align="left">单位</td>
@@ -550,77 +547,9 @@
                     <%
                         DeptDb rootDept = new DeptDb();
                         rootDept = rootDept.getDeptDb(DeptDb.ROOTCODE);
-                    %>
-                    <option value="<%=DeptDb.ROOTCODE%>"><%=rootDept.getName()%>
-                    </option>
-                    <%
-                        // Iterator ir = privilege.getUserAdminUnits(request).iterator();
-                        Iterator ir = rootDept.getChildren().iterator();
-                        while (ir.hasNext()) {
-                            DeptDb dd = (DeptDb) ir.next();
-                            String cls = "", val = "";
-                            if (dd.getType() == DeptDb.TYPE_UNIT) {
-                                cls = " class='unit' ";
-                                val = dd.getCode();
-                    %>
-                    <option <%=cls%> value="<%=val%>">&nbsp;&nbsp;&nbsp;&nbsp;<%=dd.getName()%>
-                    </option>
-                    <%
-                        }
-                    %>
-                    <!--
-                <%
-                Iterator ir2 = dd.getChildren().iterator();
-                while (ir2.hasNext()) {
-                    DeptDb dd2 = (DeptDb)ir2.next();
-                    String cls2 = "", val2 = "";
-                    if (dd2.getType()==DeptDb.TYPE_UNIT) {
-                        cls2 = " class='unit' ";
-                        val2 = dd2.getCode();
-                    }
-                    %>
-                      <option <%=cls2%> value="<%=val2%>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%=dd2.getName()%></option>
-                      <%
-                      Iterator ir3 = dd2.getChildren().iterator();
-                      while (ir3.hasNext()) {
-                          DeptDb dd3 = (DeptDb)ir3.next();
-                          String cls3 = "", val3 = "";
-                          if (dd3.getType()==DeptDb.TYPE_UNIT) {
-                              cls3 = " class='unit' ";
-                              val3 = dd3.getCode();
-                          }
-                          %>
-                            <option <%=cls3%> value="<%=val3%>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%=dd3.getName()%></option>
-                              <%
-                              Iterator ir4 = dd3.getChildren().iterator();
-                              while (ir4.hasNext()) {
-                                  DeptDb dd4 = (DeptDb)ir4.next();
-                                  String cls4 = "", val4 = "";
-                                  if (dd4.getType()==DeptDb.TYPE_UNIT) {
-                                      cls4 = " class='unit' ";
-                                      val4 = dd4.getCode();
-                                  }
-                                  %>
-                                    <option <%=cls4%> value="<%=val4%>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%=dd4.getName()%></option>
-                                      <%
-                                      Iterator ir5 = dd4.getChildren().iterator();
-                                      while (ir5.hasNext()) {
-                                          DeptDb dd5 = (DeptDb)ir5.next();
-                                          String cls5 = "", val5 = "";
-                                          if (dd5.getType()==DeptDb.TYPE_UNIT) {
-                                            cls5 = " class='unit' ";
-                                            val5 = dd5.getCode();
-                                          }
-                                          %>
-                                            <option <%=cls5%> value="<%=val5%>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%=dd5.getName()%></option>
-                                      <%}                                
-                              }
-                      }
-                }
-                %>
-                -->
-                    <%
-                        }
+                        DeptView dv = new DeptView(rootDept);
+                        StringBuffer outStr = new StringBuffer();
+                        out.print(dv.getDeptAsOptionsOnlyUnit(outStr, rootDept, rootDept.getLayer()));
                     %>
                 </select>(公共流程为所有子单位可见)
                 <%if (op.equals("modify")) {%>
@@ -637,7 +566,7 @@
                     }%>
             </td>
         </tr>
-        <%if (op.equals("modify")) {%>
+        <%if (op.equals("modify") && License.getInstance().isPlatform()) {%>
         <tr id="trQuery" style="display:none">
             <td align="left">关联查询</td>
             <td colspan="2" align="left">
@@ -759,7 +688,7 @@
                                 Iterator irMap = map.keySet().iterator();
                             %>
 							<select id="queryField<%=count%>" name="queryField">
-							<option value="">无</option>	
+							<option value="">无</option>
 							<%
                                 while (irMap.hasNext()) {
                                     String keyName = (String) irMap.next();
@@ -773,7 +702,6 @@
                                         }
                                     }
                                 }
-
                             %>
                               <script>
                               $("#field<%=count%>").val("<%=key%>");
@@ -822,7 +750,7 @@
                         }
                     }
                 %>
-                <textarea name="roleDescs" cols="45" rows="5"><%=descs%></textarea>
+                <textarea name="roleDescs" cols="50" rows="5"><%=descs%></textarea>
                 <input name="queryRole" value="<%=roleCodes%>" type="hidden"/>
                 <%
                     String urlUnitCode = "";
@@ -832,12 +760,21 @@
                         urlUnitCode = user.getUnitCode();
                     }
                 %>
-                <input class="btn" type="button" onclick="showModalDialog('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=urlUnitCode%>',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="选择"/>
+                <input class="btn" type="button" onclick="openWinRole()" value="选择"/>
                 <br/>
                 (空表示所有人员都能看见)
+                <script>
+                    function openWinRole() {
+                        openWin('../roleMultilSelBack.do?roleCodes=' + o('queryRole').value + '&unitCode=<%=urlUnitCode%>', 640, 480);
+                    }
+                </script>
             </td>
         </tr>
         <%}%>
+        <tr>
+            <td>类型编码</td>
+            <td colspan="2" title="用于二次开发"><%=code%></td>
+        </tr>
         <tr>
             <td colspan="3" align="center" valign="top"><input class="btn" onclick="check()" type="button" value="确定"/></td>
         </tr>

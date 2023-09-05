@@ -49,7 +49,9 @@
         <result column="dingding" property="dingding" />
         <result column="orders" property="orders" />
         <result column="last_login" property="lastLogin" />
-
+        <result column="open_id" property="openId" />
+        <result column="union_id" property="unionId" />
+        <result column="login_name" property="loginName" />
     </resultMap>
 
     <resultMap id="ResultMapWithRole" type="com.cloudweb.oa.entity.User">
@@ -63,7 +65,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, name, pwd, pwdRaw, regDate, realName, picture, email, gender, QQ, birthday, IDCard, isMarriaged, state, city, address, postCode, phone, mobile, hobbies, lastTime, isValid, emailName, MSN, proxy, proxyBeginDate, proxyEndDate, diskSpaceAllowed, diskSpaceUsed, rankCode, online_time, uin, unit_code, person_no, user_type, duty, party, resume, photo, isPass, entryDate, weixin, dingding, orders, last_login
+        id, name, pwd, pwdRaw, regDate, realName, picture, email, gender, QQ, birthday, IDCard, isMarriaged, state, city, address, postCode, phone, mobile, hobbies, lastTime, isValid, emailName, MSN, proxy, proxyBeginDate, proxyEndDate, diskSpaceAllowed, diskSpaceUsed, rankCode, online_time, uin, unit_code, person_no, user_type, duty, party, resume, photo, isPass, entryDate, weixin, dingding, orders, last_login, open_id, union_id, login_name
     </sql>
 
     <resultMap id="RealNameResultMap" type="com.cloudweb.oa.entity.User">

@@ -2,18 +2,26 @@ package cn.js.fan.web;
 
 import cn.js.fan.util.XMLProperties;
 
-import java.net.URL;
+import java.io.*;
+
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.entity.SysConfig;
+import com.cloudweb.oa.service.ISysConfigService;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import org.jdom.Document;
-import java.io.FileInputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import java.util.List;
 import java.util.Iterator;
 import java.util.Vector;
 import cn.js.fan.security.SecurityUtil;
-import cn.js.fan.kernel.ISchedulerUnit;
-import cn.js.fan.kernel.Scheduler;
+import org.logicalcobwebs.proxool.configuration.JAXPConfigurator;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.xml.sax.InputSource;
 
 import java.net.URLDecoder;
 
@@ -24,39 +32,39 @@ public class Config {
 
     private String cfgpath;
 
-    Logger logger;
     Document doc = null;
     Element root = null;
 
     //String DESKey = "fgfkeydw";//DES密钥长度为64bit，1个字母为八位，需8个字母，不能超过8个，否则会出错
 
     public Config() {
-        // URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
-        URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
-        cfgpath = cfgURL.getFile();
-        cfgpath = URLDecoder.decode(cfgpath);
-        // getFile()与getPath()获得的值是一样的
-        // System.out.println("Config: cfgURL path=" + cfgURL.getFile());
-        // System.out.println("Config: cfgURL path2=" + URLDecoder.decode(cfgURL.getFile()));
-        // System.out.println("Config: cfgURL path3=" + cfgURL.getPath());
-        // System.out.println("Config: cfgURL path4=" + URLDecoder.decode(cfgURL.getPath()));
-        properties = new XMLProperties(cfgpath);
-
-        logger = Logger.getLogger(Config.class.getName());
-
-        SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
-            doc = sb.build(fin);
-            root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-            logger.error("Config:" + e.getMessage());
-        } catch (java.io.IOException e) {
-            logger.error("Config:" + e.getMessage());
-        }
-        // System.out.println("Config: itis=" + logger);
+            IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+            String xml = configUtil.getXml("config_sys");
 
+            SAXBuilder sb = new SAXBuilder();
+            doc = sb.build(new InputSource(new StringReader(xml)));
+            root = doc.getRootElement();
+            properties = new XMLProperties("config_sys", doc, true);
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
+        }
+    }
+
+    public Config(boolean isNotUseCache) {
+        if (isNotUseCache) {
+            try {
+                ISysConfigService sysConfigService = SpringUtil.getBean(ISysConfigService.class);
+                SysConfig sysConfig = sysConfigService.getSysConfig("config_sys");
+                String xml = sysConfig.getXml();
+                SAXBuilder sb = new SAXBuilder();
+                doc = sb.build(new InputSource(new StringReader(xml)));
+                root = doc.getRootElement();
+                properties = new XMLProperties("config_sys", doc, true);
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
+            }
+        }
     }
 
     public String getProperty(String name) {
@@ -75,47 +83,17 @@ public class Config {
         try {
             pwd = SecurityUtil.MD5(pwd);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         properties.setProperty(ADMIN_PWD, pwd);
         return true;
     }
 
-    // 初始化调度中心，加载调度项
-    public void initScheduler() {
-        // 清空原来的调度项
-        Scheduler.getInstance().ClearUnits();
-
-        Element which = root.getChild("scheduler");
-        if (which == null) {
-            return;
-        }
-
-        List list = which.getChildren();
-
-        Iterator ir = list.iterator();
-        while (ir.hasNext()) {
-            Element e = (Element) ir.next();
-            String className = e.getTextTrim();
-
-            try {
-                Class cls = Class.forName(className);
-
-                ISchedulerUnit isu = (ISchedulerUnit)cls.newInstance();
-
-                isu.registSelf();
-                // logger.info(isu);
-            } catch (Exception e1) {
-                e1.printStackTrace();
-                logger.error("initScheduler:" + e1.getMessage());
-            }
-        }
-    }
-
     public Vector getDBInfos() {
         Element which = root.getChild("DataBase");
-        if (which == null)
+        if (which == null) {
             return new Vector();
+        }
 
         Vector v = new Vector();
 
@@ -125,20 +103,13 @@ public class Config {
             Element e = (Element) ir.next();
             DBInfo di = new DBInfo();
             di.name = e.getChildTextTrim("name");
-            // logger.info("di.name=" + di.name);
             String strDefault = e.getChildTextTrim("Default");
-            if (strDefault.equals("true"))
-                di.isDefault = true;
-            else
-                di.isDefault = false;
+            di.isDefault = strDefault.equals("true");
             di.DBDriver = e.getChildTextTrim("DBDriver");
             di.ConnStr = e.getChildTextTrim("ConnStr");
             di.PoolName = e.getChildTextTrim("PoolName");
             String UsePool = e.getChildTextTrim("UsePool");
-            if (UsePool.equals("true"))
-                di.isUsePool = true;
-            else
-                di.isUsePool = false;
+            di.isUsePool = UsePool.equals("true");
             v.addElement(di);
         }
         return v;

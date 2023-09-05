@@ -5,10 +5,9 @@ import java.io.Serializable;
 import javax.servlet.http.HttpServletRequest;
 
 import cn.js.fan.web.SkinUtil;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class DesktopUnit implements Serializable {
-    transient Logger logger = Logger.getLogger(this.getClass().getName());
     public static final String TYPE_LIST = "list";
     public static final String TYPE_DOCUMENT = "document";
     
@@ -17,8 +16,6 @@ public class DesktopUnit implements Serializable {
     }
 
     public void renew() {
-        if (logger==null)
-            logger = Logger.getLogger(this.getClass().getName());
     }
 
     public void setCode(String code) {
@@ -110,7 +107,7 @@ public class DesktopUnit implements Serializable {
         try {
             ipu = (IDesktopUnit) Class.forName(className).newInstance();
         } catch (Exception e) {
-            logger.error("getIDesktopUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getIDesktopUnit:" + e.getMessage());
         }
         return ipu;
     }

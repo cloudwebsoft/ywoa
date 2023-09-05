@@ -2,6 +2,7 @@ package com.cloudweb.oa.service.impl;
 
 import cn.js.fan.cache.jcs.RMCache;
 import cn.js.fan.util.StrUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -14,20 +15,22 @@ import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
-import com.mysql.cj.QueryBindings;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.service.department.DepartmentService;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.sso.SyncUtil;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.mgr.WXDeptMgr;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -65,9 +68,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         String nodeName = dept.getName();
         this.parentNodeName = nodeName + "\\" + this.parentNodeName;
         String parentNodeCode = dept.getParentCode();
-        if ("-1".equals(parentNodeCode)) {
-            return;
-        } else {
+        if (!"-1".equals(parentNodeCode)) {
             generateParentNodeName(parentNodeCode);
         }
     }
@@ -85,12 +86,16 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
             if ("".equals(maxCode) || maxCode == null) {
                 maxCode = "0";
             } else {
-                maxCode = maxCode.substring(parentCode.length());
+                if (parentCode.length() < maxCode.length()) {
+                    maxCode = maxCode.substring(parentCode.length());
+                } else {
+                    maxCode = String.valueOf(getChildren(parentCode).size());
+                }
             }
             num = StrUtil.toInt(maxCode) + 1;
         }
 
-        Department dept = null;
+        Department dept;
         do {
             if (ConstUtil.DEPT_ROOT.equals(parentCode)) {
                 newNodeCode = StrUtil.PadString(String.valueOf(num), '0', 4, true);
@@ -137,6 +142,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         List<Department> list = departmentMapper.getChildren(department.getParentCode());
         for (Department dept : list) {
             if (department.getName().equals(dept.getName())) {
+                DebugUtil.e(getClass(), "create", department.getName() + " 名称重复");
                 throw new ValidateException("#dept.name.multi");
             }
         }
@@ -144,17 +150,25 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         QueryWrapper<Department> qw = new QueryWrapper<>();
         qw.eq("code", department.getParentCode());
         Department deptParent = departmentMapper.selectOne(qw);
+        if (deptParent == null) {
+            throw new ValidateException(department.getName() + "的父节点" + department.getParentCode() + "不存在");
+        }
 
         department.setLayer(deptParent.getLayer() + 1);
         department.setOrders(list.size() + 1);
         if (department.getId() == null) {
             department.setId((int) SequenceManager.nextID(SequenceManager.OA_DEPT));
         }
-
+        // 有的数据库也是5.7.28，但是不在此处设置addDate就会报错，报默认值0000-00-00非法
+        department.setAddDate(LocalDateTime.now());
         departmentMapper.insert(department);
 
         deptParent.setChildCount(deptParent.getChildCount() + 1);
-        return updateByCode(deptParent);
+        boolean re = updateByCode(deptParent);
+        if (re) {
+            departmentCache.refreshCreate();
+        }
+        return re;
     }
 
     @Override
@@ -198,9 +212,19 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     public boolean updateByCode(Department department) {
-        QueryWrapper<Department> qw = new QueryWrapper<>();
-        qw.eq("code", department.getCode());
-        boolean re = departmentMapper.update(department, qw) == 1;
+        // QueryWrapper<Department> qw = new QueryWrapper<>();
+        // qw.eq("code", department.getCode());
+        // boolean re = update(department, qw);
+        // boolean re = departmentMapper.update(department, qw) == 1;
+        /*lambdaUpdate()
+                .eq(Department::getCode, department.getCode())
+                .set(Department::getId, department.getId())
+                .update();*/
+        // 强制修改id，而用上面的方法均修改不了
+        boolean re = lambdaUpdate()
+                .eq(Department::getCode, department.getCode())
+                .set(Department::getId, department.getId())
+                .update(department);
         if (re) {
             departmentCache.refreshSave(department.getCode());
             departmentCache.refreshChildren(department.getParentCode());
@@ -261,7 +285,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
                 try {
                     rmcache.clear();
                 } catch (CacheException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -274,13 +298,14 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         return departmentMapper.getChildren(code);
     }
 
+    @Override
     public String getFullNameOfDept(Department department) {
         String name = department.getName();
-        while (!department.getParentCode().equals("-1")
+        while (!"-1".equals(department.getParentCode())
                 && !department.getParentCode().equals(ConstUtil.DEPT_ROOT)) {
             department = getDepartment(department.getParentCode());
-            if (department != null && !department.getParentCode().equals("")) {
-                name = department.getName() + "-" + name;
+            if (department != null && !"".equals(department.getParentCode())) {
+                name = department.getName() + "\\" + name;
             } else {
                 return "";
             }
@@ -308,7 +333,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
      * @return
      */
     @Override
-    public List getAllChild(List list, String code) {
+    public List<Department> getAllChild(List<Department> list, String code) {
         List<Department> children = getChildren(code);
         if (children.isEmpty()) {
             return children;
@@ -352,7 +377,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class})
-    public boolean delWithChildren(String code) throws ValidateException {
+    public boolean delWithChildren(String code, boolean canDelWhenHasUser) throws ValidateException {
         QueryWrapper<Department> qw = new QueryWrapper<>();
         qw.eq("code", code);
         Department department = departmentMapper.selectOne(qw);
@@ -362,19 +387,22 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
             return false;
         }
 
+        /*
         if (department.getChildCount() > 0) {
             throw new ValidateException("请删除部门下的子部门后，再删除本部门！");
         }
-
+        */
         List<DeptUser> duList = deptUserService.listByDeptCode(code);
 
-        if (duList.size() > 0) {
-            throw new ValidateException("部门：" + department.getName() + " 下有" + duList.size() + "名人员，请先将人员安排至其它部门再删除！");
+        if (!canDelWhenHasUser) {
+            if (duList.size() > 0) {
+                throw new ValidateException("部门：" + department.getName() + " 下有" + duList.size() + "名人员，请先将人员安排至其它部门再删除！");
+            }
         }
         // 删除孩子节点
         List<Department> children = getChildren(code);
         for (Department dept : children) {
-            delWithChildren(dept.getCode());
+            delWithChildren(dept.getCode(), canDelWhenHasUser);
         }
 
         boolean re = departmentMapper.delete(qw) == 1;
@@ -393,7 +421,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     @Override
     public boolean del(String code, String userName) throws ValidateException {
         Department department = getDepartment(code);
-        boolean re = delWithChildren(code);
+        boolean re = delWithChildren(code, false);
         if (re) {
             com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
             if (ssoCfg.getBooleanProperty("isUse")) {
@@ -424,28 +452,13 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
 
         // 得到被移动节点原来的位置
         int oldPosition = department.getOrders();
-        String oldParentCode = department.getParentCode();
-
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        if (cfg.getBooleanProperty("isLarkUsed")) {
-            if (!parentDept.getCode().equals(oldParentCode)) {
-                throw new ValidateException("因启用了lark精灵，所以只能在同级部门之间移动！");
-            }
-        }
 
         department.setParentCode(parentCode);
-        int newPosition = position + 1; // 新位置为position + 1
+        int newPosition = position; //  + 1; // 新位置为position + 1
         department.setOrders(newPosition);
         QueryWrapper<Department> qw = new QueryWrapper<>();
         qw.eq("code", code);
         departmentMapper.update(department, qw);
-
-        // 同步至精灵
-        com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
-        SyncUtil su = new SyncUtil();
-        if (ssoCfg.getBooleanProperty("isUse")) {
-            su.orgSync(department, SyncUtil.MODIFY, new Privilege().getUser(request));
-        }
 
         // 同步至微信
         com.redmoon.weixin.Config weixinCfg = com.redmoon.weixin.Config.getInstance();
@@ -483,11 +496,6 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
                     dept.setOrders(dept.getOrders() - 1);
                     dept.update(qw);
                 }
-            }
-
-            // 同步至精灵
-            if (ssoCfg.getBooleanProperty("isUse")) {
-                su.orgSync(department, SyncUtil.MODIFY, new Privilege().getUser(request));
             }
 
             if (weixinCfg.getBooleanProperty("isUse")) {
@@ -592,10 +600,144 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
             str = str.substring(0, str.length() - 1);
             str += "]";
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return str;
+    }
+
+    @Override
+    public JSONArray getComboTree(Department department, JSONArray arr) {
+        JSONObject json = new JSONObject();
+        json.put("id", department.getCode());
+        json.put("title", department.getName());
+        arr.add(json);
+
+        List<Department> children = departmentCache.getChildren(department.getCode());
+        if (children.size() >  0) {
+            JSONArray arrChild = new JSONArray();
+            json.put("subs", arrChild);
+            for (Department child : children) {
+                getComboTree(child, arrChild);
+            }
+        }
+        return arr;
+    }
+
+    /**
+     * 取得部门树
+     * @return
+     */
+    @Override
+    public List<Department> getDepartments(String parentCode) {
+        List<Department> list = new ArrayList<>();
+        Department department;
+        if (StrUtil.isEmpty(parentCode)) {
+            department = departmentCache.getDepartment(ConstUtil.DEPT_ROOT);
+        } else {
+            department = departmentCache.getDepartment(parentCode);
+            if (department == null) {
+                LogUtil.getLog(getClass()).error("父节点 " + parentCode + " 不存在");
+                return list;
+            }
+        }
+        List<Department> childrenList = departmentCache.getChildren(department.getCode());
+        if (childrenList.size() > 0) {
+            for (Department children : childrenList) {
+                List<Department> children1List = departmentCache.getChildren(children.getCode());
+                children.setChildren(findChildren(children1List));
+            }
+            department.setChildren(childrenList);
+        }
+        list.add(department);
+        return list;
+    }
+
+    // 不带有缓存
+    public List<Department> getDepartmentXXX() {
+        List<Department> list = new ArrayList<>();
+        Department department = departmentMapper.selectOne(new QueryWrapper<Department>().eq("parentCode","-1"));
+        QueryWrapper<Department> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("parentCode",department.getCode());
+        List<Department> childrenList = departmentMapper.selectList(queryWrapper);
+        if(childrenList.size()>0){
+            for(Department children:childrenList){
+                List<Department> children1List = departmentMapper.selectList(new QueryWrapper<Department>().eq("parentCode",children.getCode()));
+                children.setChildren(findChildren(children1List));
+            }
+            department.setChildren(childrenList);
+        }
+        list.add(department);
+        return list;
+    }
+
+    /**
+     * 递归查找子节点
+     *
+     * @param
+     * @return
+     */
+    @Override
+    public List<Department> findChildren(List<Department> treeList) {
+        List<Department> iList = new ArrayList<>();
+        for (Department it : treeList) {
+            List<Department> childrenList = departmentCache.getChildren(it.getCode());
+            if (childrenList.size() > 0) {
+                it.setChildren(findChildren(childrenList));
+            }
+            iList.add(it);
+        }
+        return iList;
+    }
+
+    // 不通过缓存获取
+    public List<Department> findChildrenXXX(List<Department> treeList) {
+        List<Department> iList = new ArrayList<>();
+        for (Department it : treeList) {
+            QueryWrapper<Department> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("parentCode",it.getCode());
+            List<Department> childrenList = departmentMapper.selectList(queryWrapper);
+            if (childrenList.size() > 0) {
+                it.setChildren(findChildren(childrenList));
+            }
+            iList.add(it);
+        }
+        return iList;
+    }
+
+    /**
+     * 取得单位树
+     * @return
+     */
+    @Override
+    public List<Department> getUnitTree() {
+        List<Department> list = new ArrayList<>();
+        Department department = departmentMapper.selectOne(new QueryWrapper<Department>().eq("parentCode", "-1"));
+        QueryWrapper<Department> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("parentCode", department.getCode()).eq("dept_type", ConstUtil.TYPE_UNIT);
+        queryWrapper.orderByAsc("orders");
+        List<Department> childrenList = departmentMapper.selectList(queryWrapper);
+        if (childrenList.size() > 0) {
+            for (Department children : childrenList) {
+                List<Department> children1List = departmentMapper.selectList(new QueryWrapper<Department>().eq("parentCode", children.getCode()).eq("dept_type", ConstUtil.TYPE_UNIT).orderByAsc("orders"));
+                children.setChildren(findChildrenUnit(children1List));
+            }
+            department.setChildren(childrenList);
+        }
+        list.add(department);
+        return list;
+    }
+
+    public List<Department> findChildrenUnit(List<Department> treeList) {
+        List<Department> iList = new ArrayList<>();
+        for (Department it : treeList) {
+            List<Department> childrenList = departmentMapper.selectList(new QueryWrapper<Department>().eq("parentCode",it.getCode()).eq("is_group", 1).orderByAsc("orders"));
+            if (childrenList.size() > 0) {
+                it.setChildren(findChildrenUnit(childrenList));
+            }
+            iList.add(it);
+        }
+        return iList;
     }
 
     /**
@@ -665,22 +807,18 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     }
 
     private List<String> getEachUnit(String parentCode, List<String> list) {
-        List<Department> children = getChildren(parentCode);
-        Iterator<Department> ri = children.iterator();
-        while (ri.hasNext()) {
-            Department childlf = ri.next();
+        List<Department> children = departmentCache.getChildren(parentCode);
+        for (Department childlf : children) {
             if (childlf.getDeptType() == ConstUtil.TYPE_UNIT) {
                 list.add(childlf.getCode());
             }
-            List<Department> childs = getChildren(childlf.getCode());
+            List<Department> childs = departmentCache.getChildren(childlf.getCode());
             if (!childs.isEmpty()) {
-                Iterator<Department> childri = childs.iterator();
-                while (childri.hasNext()) {
-                    Department child = childri.next();
+                for (Department child : childs) {
                     if (child.getDeptType() == ConstUtil.TYPE_UNIT) {
                         list.add(child.getCode());
                     }
-                    List<Department> ch = getChildren(child.getCode());
+                    List<Department> ch = departmentCache.getChildren(child.getCode());
                     if (!ch.isEmpty()) {
                         getEachUnit(child.getCode(), list);
                     }
@@ -717,8 +855,8 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     public StringBuffer getUnitAsOptions(StringBuffer outStr, Department department, int rootlayer) {
-        // 不是企业版，则返回空
-        if (!License.getInstance().isPlatform()) {
+        // 不是集团版，则返回空
+        if (!License.getInstance().isPlatformGroup()) {
             return new StringBuffer();
         }
 
@@ -733,6 +871,39 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
             getUnitAsOptions(outStr, childDept, rootlayer);
         }
         return outStr;
+    }
+
+    @Override
+    public List<JSONObject> getUnits(Department department, int rootlayer) {
+        List<JSONObject> list = new ArrayList<>();
+        JSONObject object = new JSONObject();
+        // 不是集团版，则返回空
+        if (!License.getInstance().isPlatformGroup()) {
+            return list;
+        }
+
+        int layer = department.getLayer();
+        String blank = "";
+        int d = layer - rootlayer;
+        for (int i = 0; i < d; i++) {
+            blank += "　";
+        }
+        if (department.getDeptType() == ConstUtil.TYPE_UNIT) {
+            object.put("value", department.getCode());
+            object.put("label", blank + "╋ " + department.getName());
+            object.put("department",department);
+            list.add(object);
+        }
+        List<Department> children = getChildren(department.getCode());
+        int size = children.size();
+        if (size > 0) {
+            for (Department childDept : children) {
+                List<JSONObject> childList = getUnits(childDept, rootlayer);
+                list.addAll(childList);
+            }
+        }
+
+        return list;
     }
 
     public String getUnitAsOption(Department department, int rootlayer) {
@@ -905,9 +1076,10 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         return re;
     }
 
+    @Override
     public Department getBrother(Department department, String direction) {
         QueryWrapper<Department> qw = new QueryWrapper<>();
-        if (direction.equals("down")) {
+        if ("down".equals(direction)) {
             qw.eq("parentCode", department.getParentCode())
                     .eq("orders", department.getOrders() + 1);
         } else {

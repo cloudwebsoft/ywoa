@@ -5,6 +5,8 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 
@@ -64,7 +66,7 @@ public class RegionMgr
       try {
         del(ids[i]);
       } catch (Exception e) {
-        e.printStackTrace();
+        LogUtil.getLog(getClass()).error(e);
       }
   }
 }

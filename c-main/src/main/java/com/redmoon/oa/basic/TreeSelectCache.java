@@ -1,16 +1,15 @@
 package com.redmoon.oa.basic;
 
-import org.apache.log4j.Logger;
 import cn.js.fan.cache.jcs.*;
 import cn.js.fan.web.Global;
 import cn.js.fan.resource.Constant;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class TreeSelectCache implements ICacheMgr {
     final String group = "TREE_SELECT_";
 
     static boolean isRegisted = false;
 
-    Logger logger = Logger.getLogger(TreeSelectCache.class.getName());
     RMCache rmCache = RMCache.getInstance();
 
     String connname = "";
@@ -18,7 +17,7 @@ public class TreeSelectCache implements ICacheMgr {
     public TreeSelectCache() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info(Constant.DB_NAME_NOT_FOUND);
+            LogUtil.getLog(getClass()).info(Constant.DB_NAME_NOT_FOUND);
         }
 
         regist();
@@ -61,7 +60,7 @@ public class TreeSelectCache implements ICacheMgr {
             rmCache.invalidateGroup(group);
             TreeSelectChildrenCache.removeAll();
         } catch (Exception e) {
-            logger.error("removeAllFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeAllFromCache: " + e.getMessage());
         }
     }
 
@@ -79,7 +78,7 @@ public class TreeSelectCache implements ICacheMgr {
             rmCache.remove(code, group);
             TreeSelectChildrenCache.remove(code);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -88,7 +87,7 @@ public class TreeSelectCache implements ICacheMgr {
         try {
             leaf = (TreeSelectDb) rmCache.getFromGroup(code, group);
         } catch (Exception e) {
-            logger.error("getTreeSelectDb1:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getTreeSelectDb1:" + e.getMessage());
         }
         if (leaf == null) {
             leaf = new TreeSelectDb(code);
@@ -96,7 +95,7 @@ public class TreeSelectCache implements ICacheMgr {
                 try {
                     rmCache.putInGroup(code, group, leaf);
                 } catch (Exception e) {
-                    logger.error("getTreeSelectDb2:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getTreeSelectDb2:" + e.getMessage());
                 }
             }
         } else {

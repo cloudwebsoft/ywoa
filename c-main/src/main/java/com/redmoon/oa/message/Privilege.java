@@ -13,12 +13,10 @@ import java.sql.*;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.db.*;
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class Privilege {
     String connname = Global.getDefaultDB();
-
-    Logger logger = Logger.getLogger(this.getClass().getName());
 
     public Privilege() {
     }
@@ -78,12 +76,9 @@ public class Privilege {
                 }
             }
         } catch (SQLException e) {
-            logger.error("canManage:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("canManage:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         return isvalid;

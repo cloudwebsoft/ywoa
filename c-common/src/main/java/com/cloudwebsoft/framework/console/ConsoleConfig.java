@@ -28,6 +28,6 @@ public class ConsoleConfig {
     }
 
     public void setDebug(boolean debug) {
-        this.debug = debug;
+        ConsoleConfig.debug = debug;
     }
 }

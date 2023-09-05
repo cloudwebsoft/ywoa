@@ -2,10 +2,7 @@ package com.cloudweb.oa.api;
 
 import cn.js.fan.util.ErrMsgException;
 import com.redmoon.oa.base.IFormDAO;
-import com.redmoon.oa.flow.FormDb;
-import com.redmoon.oa.flow.FormField;
-import com.redmoon.oa.flow.WorkflowActionDb;
-import com.redmoon.oa.flow.WorkflowDb;
+import com.redmoon.oa.flow.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Vector;
@@ -23,4 +20,8 @@ public interface IFlowRender {
     String rend(WorkflowDb wf, FormDb fd, WorkflowActionDb wfa, boolean isForFormEdit) throws ErrMsgException;
 
     String rendForNestCtl(HttpServletRequest request, String formCode, WorkflowActionDb wfa);
+
+    String rendScriptByAction(int actionId, boolean canWriteAll);
+
+    String reportScript(FormDb fd, FormDAO fdao);
 }

@@ -1,27 +1,25 @@
 package com.redmoon.oa.hr;
 
-import java.sql.SQLException;
-import java.util.*;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
+import cn.js.fan.db.ResultIterator;
+import cn.js.fan.db.ResultRecord;
+import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.api.IFormulaUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.visual.FormDAO;
 import com.redmoon.oa.visual.FormulaResult;
-import com.redmoon.oa.visual.FormulaUtil;
 import com.redmoon.oa.visual.func.CalculateFuncImpl;
-
-import cn.js.fan.db.ResultIterator;
-import cn.js.fan.db.ResultRecord;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.StrUtil;
-import org.apache.bcel.verifier.statics.DOUBLE_Upper;
 import org.apache.commons.lang.StringUtils;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import java.sql.SQLException;
+import java.util.*;
 
 public class SalaryMgr {
 	/**
@@ -30,7 +28,7 @@ public class SalaryMgr {
 	 * @return
 	 */
 	public static FormDAO getSubject(String subjectCode) {
-		String sql = "select id from form_table_salary_subject where code=" + StrUtil.sqlstr(subjectCode);
+		String sql = "select id from ft_salary_subject where code=" + StrUtil.sqlstr(subjectCode);
 		FormDAO fdao = new FormDAO();
 		try {
 			Iterator ir = fdao.list("salary_subject", sql).iterator();
@@ -38,8 +36,7 @@ public class SalaryMgr {
 				return (FormDAO)ir.next();
 			}			
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(SalaryMgr.class).error(e);
 		}
 
 		return null;
@@ -51,30 +48,27 @@ public class SalaryMgr {
 	 * @return
 	 */	
 	public static FormDAO getSubjectById(int subjectId) {
-		String sql = "select id from form_table_salary_subject where id=" + subjectId;
+		String sql = "select id from ft_salary_subject where id=" + subjectId;
 		FormDAO fdao = new FormDAO();
 		try {
 			Iterator ir = fdao.list("salary_subject", sql).iterator();
 			if (ir.hasNext()) {
 				return (FormDAO)ir.next();
-			}			
+			}
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(SalaryMgr.class).error(e);
 		}
-
 		return null;
-	}	
+	}
 	
 	public static Vector getSubjectOfBook(int bookId) {
 		// 根据顺序（因计算的需要）取得账套中的科目
-		String sqlSubject = "select s.id from form_table_salary_subject s, form_table_salary_bk_subject bs where bs.cws_id=" + bookId + " and s.id=bs.subject and s.status=1 order by s.orders";
+		String sqlSubject = "select s.id from ft_salary_subject s, ft_salary_bk_subject bs where bs.cws_id='" + bookId + "' and s.id=bs.subject and s.status=1 order by s.orders";
 		FormDAO fdao = new FormDAO();
 		try {
 			return fdao.list("salary_subject", sqlSubject);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(SalaryMgr.class).error(e);
 		}	
 		return null;
 	}
@@ -123,7 +117,7 @@ public class SalaryMgr {
 				}
 			} catch (SQLException e) {
 				// 有可能payroll表尚未生成，其中的字段还不存在
-				e.printStackTrace();
+				LogUtil.getLog(SalaryMgr.class).error(e);
 			}
 		}
 		// 函数型
@@ -209,7 +203,8 @@ public class SalaryMgr {
 			String formula = "#" + code + "(" + params + ")";
 
 			DebugUtil.i(SalaryMgr.class, "makeSingleSubjectForUser", formula);
-			FormulaResult fr = FormulaUtil.render(formula);
+			IFormulaUtil formulaUtil = SpringUtil.getBean(IFormulaUtil.class);
+			FormulaResult fr = formulaUtil.render(formula);
 			val = StrUtil.toDouble(fr.getValue(), 0);
 		}
 		// 计算型
@@ -302,7 +297,7 @@ public class SalaryMgr {
 			    if (!StrUtil.isDouble(el)) {
 					// 如果el不是字段，由可能出现了书写错误，也可能是其它的科目
 					FormDAO fdaoSubject = new FormDAO();
-					String sql = "select id from form_table_salary_subject where code=" + StrUtil.sqlstr(el);
+					String sql = "select id from ft_salary_subject where code=" + StrUtil.sqlstr(el);
 					Vector v = fdaoSubject.list("salary_subject", sql);
 					if (v.size()>0) {
 						fdaoSubject = (FormDAO)v.elementAt(0);
@@ -338,20 +333,16 @@ public class SalaryMgr {
         		return ret.doubleValue();
         	}
         	else {
-            	System.out.println(SalaryMgr.class + " eval: ret=null, equation=" + equation);
-            	return -1;
+				LogUtil.getLog(SalaryMgr.class).info(" eval: ret=null, equation=" + equation);
+				return -1;
         	}
         }
         catch (ScriptException ex) {
-        	System.out.println(SalaryMgr.class + " eval: equation=" + equation);
-        	ex.printStackTrace();
         	LogUtil.getLog(SalaryMgr.class).error(StrUtil.trace(ex));
         	throw new ErrMsgException(ex.getMessage());
         }		
         catch (ClassCastException e) {
-        	System.out.println(SalaryMgr.class + " eval: formula2=" + formula2);        	
-        	e.printStackTrace();
-        	LogUtil.getLog(SalaryMgr.class).error(StrUtil.trace(e));
+			LogUtil.getLog(SalaryMgr.class).error(e);
         	throw new ErrMsgException(e.getMessage());
         }
 	}

@@ -30,4 +30,6 @@ public interface IUserPrivService extends IService<UserPriv> {
     boolean isUserPrivValid(String userName, String priv);
 
     List<UserPriv> listByUserName(String userName);
+
+    boolean create(String userName, String priv);
 }

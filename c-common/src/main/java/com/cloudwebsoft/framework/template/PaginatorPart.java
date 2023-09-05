@@ -108,7 +108,6 @@ public class PaginatorPart implements ITemplate {
                     if (url==null)
                         buf.append(listPart.paginator.getCurPageBlock(page + "?", "p" + i)); // pre不能直接用i，因为页面中的元素name不能以数字开头
                     else {
-                        // System.out.println(getClass() + " " + listPart.paginator);
                         buf.append(listPart.paginator.getCurPageBlock(page + url, "p"+i));
                     }
                 }

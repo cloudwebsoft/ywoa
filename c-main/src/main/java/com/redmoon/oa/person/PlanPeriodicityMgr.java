@@ -8,21 +8,17 @@ import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.web.SkinUtil;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.redmoon.oa.db.SequenceManager;
 import java.util.*;
-import org.apache.log4j.Logger;
 import java.sql.SQLException;
-import java.sql.Time;
-
 
 public class PlanPeriodicityMgr {
     public PlanPeriodicityMgr() {
     }
-
-    Logger logger = Logger.getLogger(PlanPeriodicityMgr.class.getName());
-
+    
     public boolean create(HttpServletRequest request) throws ErrMsgException,
             ResKeyException {
         PlanPeriodicityDb ppd = new PlanPeriodicityDb();
@@ -86,7 +82,7 @@ public class PlanPeriodicityMgr {
             end = DateUtil.parse(endDate , "yyyy-MM-dd HH:mm:ss");
             //remind = DateUtil.parse(remindTime,"HH:mm:ss");
         } catch (Exception e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         }
 
         if (title.length()==0) {
@@ -106,7 +102,6 @@ public class PlanPeriodicityMgr {
         if (!errmsg.equals("")) {
             throw new ErrMsgException(errmsg);
         }
-        // System.out.println(getClass() + " userName=" + userName);
         re = ppd.create(new JdbcTemplate(), new Object[] {
             new Integer(id),
                     title,
@@ -174,7 +169,7 @@ public class PlanPeriodicityMgr {
             end = DateUtil.parse(endDate + " " + endTime, "yyyy-MM-dd HH:mm:ss");
            // remind = DateUtil.parse(remindTime,"HH:mm:ss");
         } catch (Exception e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         }
 
         if (title.length()==0) {
@@ -195,11 +190,6 @@ public class PlanPeriodicityMgr {
         if (!errmsg.equals("")) {
             throw new ErrMsgException(errmsg);
         }
-       // java.sql.Time rt = new java.sql.Time(remind.getTime());
-        //System.out.println(begin);
-        //System.out.println(end);
-        //System.out.println(remindTime);
-        //System.out.println(title);
         ppd = ppd.getPlanPeriodicityDb(id);
         ppd.set("title",title);
         ppd.set("begin_date",begin);

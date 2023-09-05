@@ -9,12 +9,13 @@
     pvg.auth(request);
     String skey = pvg.getSkey();
     String userName = pvg.getUserName();
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>通知公告</title>
+    <title>通知公告-添加</title>
     <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"/>
     <meta name="format-detection" content="telephone=no,email=no,adress=no">
     <link rel="stylesheet" href="../css/mui.css">
@@ -147,12 +148,24 @@
 
     <script type="text/javascript" src="../js/visual/module_list.js"></script>
     <script type="text/javascript">
-        if(!mui.os.plus) {
+        var isUniWebview = <%=isUniWebview%>;
+
+        if(!mui.os.plus || isUniWebview) {
             // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
             $('.mui-bar').remove();
         }
 
+        mui.init({
+            keyEventBind: {
+                backbutton: !isUniWebview //关闭back按键监听
+            }
+        });
+
         $(function () {
+            mui.init({
+                swipeBack: true //启用右滑关闭功能
+            });
+
             var data = formatDateTime(new Date);
             $('#mydate').val(data);
 

@@ -12,9 +12,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 
@@ -38,11 +35,8 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			if(smsBoundary != null){
 				remainingSms = smsBoundary[0];
 			}
-			System.out.print(result+"======");
-			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(QxtMasMobileMsgUtil.class).error(e);
 		}
 		/*
 		 * QxtMasMobileMsgUtil quMasMobileMsgUtil = new QxtMasMobileMsgUtil();
@@ -51,7 +45,7 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 		 * BASE64Encoder("123456"), 0, "张", "15052936215", 0, "");
 		 * 
 		 * } catch (Exception e) { // TODO Auto-generated catch block
-		 * e.printStackTrace(); }
+		 * LogUtil.getLog(getClass()).error(e); }
 		 */
 
 	}
@@ -127,8 +121,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			character = isEmpty(character) ? "GBK" : character;
 			String u = urlAddr
 					+ (method.equalsIgnoreCase("GET") ? params.toString() : "");
-			//System.out.println(u + " request method:" + method + " character=:"
-					//+ character + params.toString());
 
 			URL url = new URL(u);
 
@@ -154,8 +146,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			if (!method.equalsIgnoreCase("GET")) {
 				OutputStreamWriter out = new OutputStreamWriter(conn
 						.getOutputStream(), character);
-				// System.out.println("$$$$$="+out.getEncoding());
-
 				out.write(new String(params.toString().getBytes("GBK"),
 						character));
 				out.flush();
@@ -171,7 +161,7 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			}
 			return sb.toString();
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(QxtMasMobileMsgUtil.class).error(ex);
 		} finally {
 			conn.disconnect();
 		}
@@ -182,8 +172,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			throws Exception {
 		return new sun.misc.BASE64Encoder().encode(str.getBytes());
 	}
-
-	Logger logger = Logger.getLogger(RoyaMasMobileMsgUtil.class.getName());
 
 	public synchronized void increaseTailAddr() {
 	}
@@ -223,7 +211,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 		// int id = ssrd.getId();
 		// re = sendSMS(msgText, user.getMobile(), "1", ""+id, "vip", "9");
 		// if (re) {
-		// System.out.println(this.getClass().getName()+"调用的send（UserDb）方法");
 		String[] contexts = divContext(msgText);
 		for (int i = 0; i < contexts.length; i++) {
 			ssrd.setUserName(sender);
@@ -253,11 +240,8 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			map.put("password", BASE64Encoder(pwd));
 			String receveXml = sendUrlRequest(strURL, map, "get", "");
 			LogUtil.getLog(getClass()).info("receive======" + receveXml);
-			System.out.println("receive======"+receveXml);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).info("receveXml======" + e.getMessage());
+			LogUtil.getLog(getClass()).error(e);
 		}	
 		return 0;
 	}
@@ -275,11 +259,8 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			map.put("password", BASE64Encoder(pwd));
 			receveXml = sendUrlRequest(strURL, map, "get", "");
 			LogUtil.getLog(getClass()).info("receive======" + receveXml);
-			System.out.println("receive======"+receveXml);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).info("receveXml======" + e.getMessage());
+			LogUtil.getLog(getClass()).error(e);
 		}	
 		return receveXml;
 	}
@@ -299,7 +280,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 		SMSSendRecordDb ssrd = new SMSSendRecordDb();
 		// int id = ssrd.getId();
 		// re = sendSMS(msgText, mobile, "1", ""+id, "vip", "9");
-		// System.out.println(this.getClass().getName()+"调用的send（mobile）方法");
 		// 记录发送的短信
 		String[] contexts = divContext(msgText);
 		for (int i = 0; i < contexts.length; i++) {
@@ -334,7 +314,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 		UserDb user = new UserDb(userName);
 
 		String exNumber = StrUtil.PadString(user.getId() + "", '0', 4, true);
-		// System.out.println(exNumber);
 		// int id =
 		// Integer.parseInt(StrUtil.PadString(ssrd.getUserName(),'0',4,true));
 		return sendSMS(msg, mobile, "1", "" + id, "vip", exNumber);
@@ -359,11 +338,8 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 			map.put("content", StrUtil.UrlEncode(Signature + "" + content, "GB2312"));
 			String result = sendUrlRequest(strURL, map, "get", "");
 			LogUtil.getLog(getClass()).info("smsSend======" + result);
-			System.out.println("smsSend======"+result);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).info("smsresult======" + e.getMessage());
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return true;
 	}
@@ -379,7 +355,6 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 		// int id = ssrd.getId();
 		// re = sendSMS(msgText, user.getMobile(), "1", ""+id, "vip", "9");
 		// if (re){
-		// System.out.println(this.getClass().getName()+"调用的send（UserDb）方法");
 		String[] contexts = divContext(content);
 		for (int i = 0; i < contexts.length; i++) {
 			ssrd.setUserName(sender);
@@ -403,7 +378,7 @@ public class QxtMasMobileMsgUtil implements IMsgUtil {
 		SMSSendRecordDb ssrd = new SMSSendRecordDb();
 		// int id = ssrd.getId();
 		// re = sendSMS(msgText, mobile, "1", ""+id, "vip", "9");
-		// System.out.println(this.getClass().getName()+"调用的send（mobile）方法");
+		// LogUtil.getLog(getClass()).info(this.getClass().getName()+"调用的send（mobile）方法");
 		// 记录发送的短信
 		String[] contexts = divContext(content);
 		for (int i = 0; i < contexts.length; i++) {

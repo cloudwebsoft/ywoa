@@ -10,14 +10,19 @@ import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.mapper.UserMapper;
 import com.cloudweb.oa.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloudweb.oa.utils.Base64Util;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudweb.oa.vo.UserVO;
+import com.cloudwebsoft.framework.security.AesUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.sys.DebugUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.dozer.DozerBeanMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -91,6 +96,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Autowired
     UserCache userCache;
 
+    @Autowired
+    IFileService fileService;
+
+    @Autowired
+    IPostUserService postUserService;
+
     @Override
     public User getUser(String userName) {
         QueryWrapper<User> qw = new QueryWrapper<>();
@@ -118,9 +129,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     @Override
+    public User getUserByOpenId(String openId) {
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("open_id", openId);
+        return getOne(qw, false);
+    }
+
+    @Override
+    public User getUserByUin(String uin) {
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("uin", uin);
+        return getOne(qw, false);
+    }
+
+    @Override
+    public User getUserByUnionId(String openId) {
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("union_id", openId);
+        return getOne(qw, false);
+    }
+
+    @Override
     public User getUserByRealName(String realName) {
         QueryWrapper<User> qw = new QueryWrapper<>();
         qw.eq("realName", realName);
+        return getOne(qw, false);
+    }
+
+    @Override
+    public User getUserByLoginName(String loginName) {
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("login_name", loginName);
         return getOne(qw, false);
     }
 
@@ -146,8 +185,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         StringBuilder deptForSql = new StringBuilder();
         if (limitDeptArr != null) {
             for (String dept : limitDeptArr) {
-                if (!deptForSql.toString().equals("")) {
-                    deptForSql.append(",");
+                if (!"".equals(deptForSql.toString())) {
+                    deptForSql.append(",").append(StrUtil.sqlstr(dept));
+                } else {
+                    deptForSql.append(StrUtil.sqlstr(dept));
                 }
             }
         }
@@ -159,23 +200,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (limitDeptArr == null || includeRootDept) {
             // 如果是根部门的所有人员，要根据人员在查询出其所属的所有部门，以逗号隔开，拼成字符串(因为每个人所属的部门可能不止一个)
             if (includeRootDept) {
-                if ("".equals(deptCode) || ConstUtil.DEPT_ROOT.equals(deptCode)) {
-                    if (unitCode.equals(ConstUtil.DEPT_ROOT)) {
-                        sql = "select u.name,u.realName,u.gender from users u where u.isValid=1 order by u.orders desc,u.realName asc";
-                    } else {
-                        sql = "select u.name,u.realName,u.gender from users u where u.isValid=1 and u.unit_code=" + StrUtil.sqlstr(unitCode) + " order by u.orders desc,u.realName asc";
-                    }
+                if (unitCode.equals(ConstUtil.DEPT_ROOT)) {
+                    sql = "select u.name,u.realName,u.gender from users u where u.isValid=1 order by u.orders desc,u.realName asc";
                 } else {
-                    if (unitCode.equals(ConstUtil.DEPT_ROOT)) {
-                        sql = "select u.name,u.realName,u.gender from dept_user du, users u,department d where du.user_name=u.name and du.dept_code=d.code and u.isValid=1 and du.dept_code=" + StrUtil.sqlstr(deptCode) + " order by " + orderField + " desc,u.realName asc";
-                    } else {
-                        sql = "select u.name,u.realName,u.gender from dept_user du, users u,department d where du.user_name=u.name and du.dept_code=d.code and u.isValid=1 and u.unit_code=" + StrUtil.sqlstr(unitCode) + "  and du.dept_code=" + StrUtil.sqlstr(deptCode) + " order by " + orderField + " desc,u.realName asc";
-                    }
+                    sql = "select u.name,u.realName,u.gender from users u where u.isValid=1 and u.unit_code=" + StrUtil.sqlstr(unitCode) + " order by u.orders desc,u.realName asc";
                 }
             } else {
+                if (StringUtils.isEmpty(deptCode)) {
+                    return new ArrayList<>();
+                }
                 sql = "select u.name,u.realName,u.gender,d.name from dept_user du, users u,department d where du.user_name=u.name and du.dept_code=d.code and u.isValid=1 and du.dept_code=" + StrUtil.sqlstr(deptCode) + " order by " + orderField + " desc,du.dept_code asc, du.orders asc";
             }
-        } else if (limitDeptArr != null && (isIncludeChildren || deptCode.equals(ConstUtil.DEPT_ROOT))) {
+        } else if (isIncludeChildren || deptCode.equals(ConstUtil.DEPT_ROOT)) {
             if (unitCode.equals(ConstUtil.DEPT_ROOT)) {
                 sql = "select u.name,u.realName,u.gender,d.name from dept_user du, users u,department d where du.user_name=u.name and du.dept_code=d.code and u.isValid=1 and du.dept_code in (" + deptForSql + ") order by " + orderField + " desc,du.dept_code asc, du.orders asc";
             } else {
@@ -187,6 +223,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             return null;
         }
 
+        DebugUtil.d(this.getClass(), "sql", sql);
         return userMapper.listBySql(sql);
     }
 
@@ -276,7 +313,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             QueryWrapper<Group> qw = new QueryWrapper<>();
             qw.eq("code", groupCode);
             Group group = userGroupService.getOne(qw);
-            if (group.getIsDept()) {
+
+            // 20220313 用户组与部门及角色不再关联
+            if (false && group.getIsDept()) {
                 if (group.getIsIncludeSubDept() == 1) {
                     List<Department> list = new ArrayList<>();
                     departmentService.getAllChild(list, group.getDeptCode());
@@ -406,28 +445,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     public boolean create(UserVO userVO) throws IOException, ErrMsgException {
         User user = dozerBeanMapper.map(userVO, User.class);
 
+        user.setPwdRaw(encryptPwd(user.getPwdRaw()));
+
         // 保存附件
         MultipartFile file = userVO.getPhoto();
         if (file != null && !file.isEmpty()) {
-            String vpath = "public/users/"; // 放在public目录下方便手机端获取
+            String vpath = "public/users"; // 放在public目录下方便手机端获取
             String name = file.getOriginalFilename();
             String ext = StrUtil.getFileExt(name);
             String diskName = FileUpload.getRandName() + "." + ext;
-            String filePath = Global.getRealPath() + "/" + vpath + "/" + diskName;
-
-            user.setPhoto(vpath + diskName);
-
-            File f = new File(filePath);
-            if  (!f.exists()) {
-                f.mkdirs();
-            }
-            file.transferTo(f);
-        }
-        else {
+            user.setPhoto(vpath + "/" + diskName);
+            fileService.write(file, vpath, diskName);
+        } else {
             user.setPhoto("");
         }
 
-        user.setId((int) SequenceManager.nextID(SequenceManager.OA_USER));
+        if (user.getId() == null) {
+            user.setId((int) SequenceManager.nextID(SequenceManager.OA_USER));
+        }
+
+        // 以ID作为用户名
+        user.setName(String.valueOf(user.getId()));
+        // 赋值，以便于在导入用户时获得name值
+        userVO.setName(user.getName());
 
         Role role = roleService.getRole(ConstUtil.ROLE_MEMBER);
         user.setDiskSpaceAllowed(role.getDiskQuota());
@@ -437,7 +477,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             com.redmoon.oa.security.Config scfg = com.redmoon.oa.security.Config.getInstance();
             String pwdM55 = SecurityUtil.MD5(scfg.getInitPassword());
             user.setPwd(pwdM55);
-            user.setPwdRaw(scfg.getInitPassword());
+            user.setPwdRaw(encryptPwd(scfg.getInitPassword()));
         } catch (Exception e) {
             log.error(e.getMessage());
         }
@@ -449,36 +489,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             // 刷新用户的权限
             userAuthorityService.refreshUserAuthority(user.getName());
 
-            // 创建论坛中的用户
-            com.redmoon.forum.person.UserDb forumUser = new com.redmoon.forum.person.UserDb();
-            forumUser.setName(user.getName());
-            forumUser.setRegDate(new java.util.Date());
-            forumUser.setValid(true);
-            if (user.getBirthday() != null) {
-                forumUser.setBirthday(DateUtil.asDate(user.getBirthday()));
-            }
-            forumUser.setMarriage((user.getIsMarriaged()!=null)?(user.getIsMarriaged()?1:0):0);
-            forumUser.setMobile(user.getMobile());
-            forumUser.setPhone(user.getPhone());
-            forumUser.setState(user.getState());
-            forumUser.setCity(user.getCity());
-            forumUser.setAddress(user.getAddress());
-            forumUser.setPostCode(user.getPostCode());
-            forumUser.setIDCard(user.getIDCard());
-            forumUser.setRealPic(user.getPicture());
-            forumUser.setHobbies(user.getHobbies());
-            forumUser.setEmail(user.getEmail());
-            forumUser.setOicq(user.getQq());
-            forumUser.setTimeZone(Global.timeZone);
-            forumUser.setNick(user.getRealName());
-            if (user.getGender()==null || !user.getGender()) {
-                forumUser.setRealPic("face.gif");
-            }
-            else {
-                forumUser.setRealPic("face0.gif");
-            }
-            forumUser.create();
-
             // 安排部门
             String deptCode = userVO.getDeptCode();
             String newDeptCode = deptCode;
@@ -486,10 +496,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             if (deptCode!=null && !"".equals(deptCode)) {
                 // 多个部门处理
                 String[] deptCodes = deptCode.split(",");
-                if (deptCodes!=null) {
-                    newDeptCode = deptCodes[0];
-                }
-                for(String tempCode : deptCodes){
+                newDeptCode = deptCodes[0];
+                for(String tempCode : deptCodes) {
                     deptUserService.create(user.getName(), tempCode);
                 }
 
@@ -500,8 +508,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 user = getUser(user.getName());
                 user.setUnitCode(unitCode);
                 user.updateById();
-            }
-            else {
+            } else {
                 // 否则将该用户置于创建者所在的单位
                 Privilege privilege = new Privilege();
                 String unitCode = privilege.getUserUnitCode();
@@ -509,18 +516,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 user.setUnitCode(unitCode);
                 user.updateById();
             }
-            if (userVO.getAccount()!=null && !"".equals(userVO.getAccount())) {
+            if (userVO.getAccount() != null && !"".equals(userVO.getAccount())) {
                 // 创建工号
                 Account acc = new Account();
                 acc.setName(userVO.getAccount());
                 acc.setUserName(user.getName());
-                if (!deptCode.equals("")) {
+                if (!"".equals(deptCode)) {
                     String[] deptCodes = deptCode.split(",");
                     Department department = departmentService.getDepartment(deptCodes[0]);
                     String unitCode = departmentService.getUnitOfDept(department).getCode();
                     acc.setUnitCode(unitCode);
-                }
-                else {
+                } else {
                     Privilege pvg = new Privilege();
                     acc.setUnitCode(pvg.getUserUnitCode());
                 }
@@ -530,11 +536,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             userSetupService.create(user.getName());
             userSetupService.setMyleaders(user.getName(), userVO.getLeaderCode());
 
-            // 创建门户
-            oaPortalService.init(user.getName());
+            // 创建门户，20220108，不再单独为用户创建门户
+            // oaPortalService.init(user.getName());
 
             // 创建滑动菜单项
-            oaSlideMenuGroupService.init(user.getName());
+            //oaSlideMenuGroupService.init(user.getName());
 
             // 更新personbasic表
             userSetupService.onUserCreated(user, newDeptCode, SpringUtil.getUserName());
@@ -546,49 +552,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     @Transactional(rollbackFor={Exception.class, RuntimeException.class})
     public boolean update(UserVO userVO) throws IOException {
-        User oldUser = getUser(userVO.getName());
+        User oldUser = userCache.getUser(userVO.getName());
+        // User oldUser = getUser(userVO.getName());
         User user = dozerBeanMapper.map(userVO, User.class);
         // 如果没有修改密码，则置user的密码为原来的密码
-        if (userVO.getPassword().equals("")) {
+        if (StrUtil.isEmpty(userVO.getPassword())) {
             user.setPwd(oldUser.getPwd());
             user.setPwdRaw(oldUser.getPwdRaw());
+        } else {
+            user.setPwdRaw(encryptPwd(user.getPwdRaw()));
         }
+        user.setId(oldUser.getId());
 
         // 保存附件
         MultipartFile file = userVO.getPhoto();
         if (file != null && !file.isEmpty()) {
             // 如果上传了照片，则检查原来是否已有照片，如有则删除
-            File f = new File(Global.getAppPath() + user.getPhoto());
-            if (!user.getPhoto().equals("") && f.exists()) {
-                f.delete();
+            if (!"".equals(user.getPhoto())) {
+                fileService.del(user.getPhoto());
             }
 
-            String vpath = "public/users/"; // 放在public目录下方便手机端获取
+            String vpath = "public/users"; // 放在public目录下方便手机端获取
             String name = file.getOriginalFilename();
             String ext = StrUtil.getFileExt(name);
             String diskName = FileUpload.getRandName() + "." + ext;
-            String filePath = Global.getRealPath() + vpath + "/" + diskName;
-
-            user.setPhoto(vpath + diskName);
-
-            f = new File(filePath);
-            if  (!f.exists()) {
-                f.mkdirs();
-            }
-            file.transferTo(f);
-        }
-        else {
+            user.setPhoto(vpath + "/" + diskName);
+            fileService.write(file, vpath, diskName);
+        } else {
             user.setPhoto(oldUser.getPhoto());
         }
 
         boolean re = updateByUserName(user);
         if (re) {
-            // 保存论坛中的头像
-            com.redmoon.forum.person.UserDb ud = new com.redmoon.forum.person.UserDb();
-            ud = ud.getUser(user.getName());
-            ud.setRealPic(user.getPicture());
-            ud.save();
-
             // 置工号
             String account = userVO.getAccount();
             if (account!=null && !"".equals(account)) {
@@ -607,8 +602,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                         acc.setUnitCode(user.getUnitCode());
                         accountService.update(acc, new QueryWrapper<Account>().eq("name", accMine.getName()));
                     }
-                }
-                else {
+                } else {
                     // 如果用户原来已有工号，则置原有工号中对应的用户名为空
                     Account accMine = accountService.getAccountByUserName(user.getName());
                     if (accMine != null) {
@@ -627,16 +621,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
             // 置邮箱空间
             UserSetup userSetup = userSetupService.getUserSetup(user.getName());
-            Long msgSpaceAllowed = userVO.getMsgSpaceAllowed();
-            // 导入用户时，msgSpaceAllowed、getLeaderCode为null
-            if (msgSpaceAllowed!=null && msgSpaceAllowed!=-1) {
-                userSetup.setMsgSpaceAllowed(msgSpaceAllowed);
-                userSetupService.update(userSetup, new QueryWrapper<UserSetup>().eq("user_name", user.getName()));
+            if (userSetup != null) {
+                Long msgSpaceAllowed = userVO.getMsgSpaceAllowed();
+                // 导入用户时，msgSpaceAllowed、getLeaderCode为null
+                if (msgSpaceAllowed != null && msgSpaceAllowed != -1) {
+                    userSetup.setMsgSpaceAllowed(msgSpaceAllowed);
+                    userSetupService.update(userSetup, new QueryWrapper<UserSetup>().eq("user_name", user.getName()));
+                }
+                // 设置我的领导
+                if (userVO.getLeaderCode() != null && !userVO.getLeaderCode().equals(userSetup.getMyleaders())) {
+                    userSetup.setMyleaders(userVO.getLeaderCode());
+                    userSetupService.updateByUserName(userSetup);
+                }
             }
-            // 设置我的领导
-            if (userVO.getLeaderCode()!=null && !userVO.getLeaderCode().equals(userSetup.getMyleaders())) {
-                userSetup.setMyleaders(userVO.getLeaderCode());
-                userSetupService.updateByUserName(userSetup);
+            else {
+                log.warn("用户 " + userVO.getRealName() + " 的setup信息不存在");
             }
 
             // 取用户的部门，如果有多个，则以排在第一的为准
@@ -644,13 +643,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             String[] deptCodes = StrUtil.split(userVO.getDeptCode(), ",");
             if (deptCodes!=null) {
                 newDeptCode = deptCodes[0];
-            }
-
-            // 用户保存事件处理
-            if (oldUser.getIsValid()!=1 && user.getIsValid()==1) {
-                userSetupService.onUserCreated(user, newDeptCode, SpringUtil.getUserName());
-            } else {
-                userSetupService.onUserUpdated(user, newDeptCode, SpringUtil.getUserName());
             }
 
             // 删除部门中的用户,然后新增部门人员信息
@@ -661,13 +653,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             }
 
             // 置用户所在的单位
-            if (!userVO.getDeptCode().equals(sbDepts.toString())) {
-                QueryWrapper<DeptUser> qwDeptUser = new QueryWrapper<>();
-                qwDeptUser.eq("user_name", user.getName());
-                deptUserService.remove(qwDeptUser);
+            if (!StrUtil.isEmpty(userVO.getDeptCode()) && !userVO.getDeptCode().equals(sbDepts.toString())) {
+                deptUserService.delOfUser(user.getName());
 
                 int i = 0;
-                for(String tempCode : deptCodes){
+                for(String tempCode : deptCodes) {
                     deptUserService.create(user.getName(), tempCode);
                     if (i==0) {
                         Department department = departmentService.getDepartment(tempCode);
@@ -677,6 +667,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                     }
                     i++;
                 }
+            }
+
+            // 用户保存事件处理
+            if (oldUser.getIsValid()!=1 && user.getIsValid()==1) {
+                userSetupService.onUserCreated(user, newDeptCode, SpringUtil.getUserName());
+            } else {
+                userSetupService.onUserUpdated(user, newDeptCode, SpringUtil.getUserName());
             }
         }
         return re;
@@ -703,40 +700,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         user.setAddress(userVO.getAddress());
         user.setPostCode(userVO.getPostCode());
         user.setHobbies(userVO.getHobbies());
-        // Marriage birthday QQ Email MSN Phone mobile IDCard duty party resume Address postCode Hobbies
 
         // 保存附件
         MultipartFile file = userVO.getPhoto();
         if (file != null && !file.isEmpty()) {
-            // 如果上传了照片，则检查原来是否已有照片，如有则删除
-            File f = new File(Global.getAppPath() + user.getPhoto());
-            if (!user.getPhoto().equals("") && f.exists()) {
-                f.delete();
+            // 前端如果photo为null，会传new Blob()
+            if (!"blob".equals(file.getOriginalFilename())) {
+                // 如果上传了照片，则检查原来是否已有照片，如有则删除
+                if (!"".equals(user.getPhoto())) {
+                    fileService.del(user.getPhoto());
+                }
+
+                String vpath = "public/users"; // 放在public目录下方便手机端获取
+                String name = file.getOriginalFilename();
+                String ext = StrUtil.getFileExt(name);
+                String diskName = FileUpload.getRandName() + "." + ext;
+                user.setPhoto(vpath + "/" + diskName);
+                fileService.write(file, vpath, diskName);
             }
-
-            String vpath = "public/users/"; // 放在public目录下方便手机端获取
-            String name = file.getOriginalFilename();
-            String ext = StrUtil.getFileExt(name);
-            String diskName = FileUpload.getRandName() + "." + ext;
-            String filePath = Global.getRealPath() + vpath + "/" + diskName;
-
-            user.setPhoto(vpath + diskName);
-
-            f = new File(filePath);
-            if  (!f.exists()) {
-                f.mkdirs();
-            }
-            file.transferTo(f);
         }
 
         boolean re = updateByUserName(user);
         if (re) {
-            // 保存论坛中的头像
-            com.redmoon.forum.person.UserDb ud = new com.redmoon.forum.person.UserDb();
-            ud = ud.getUser(user.getName());
-            ud.setRealPic(user.getPicture());
-            ud.save();
-
             // 取用户的部门，如果有多个，则以排在第一的为准
             String newDeptCode = userVO.getDeptCode();
             String[] deptCodes = StrUtil.split(userVO.getDeptCode(), ",");
@@ -771,12 +756,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         for (String str : ary) {
             int userId = StrUtil.toInt(str);
             User user = getById(userId);
+            if (user == null) {
+                throw new ErrMsgException("用户id:" + userId + "不存在");
+            }
             String userName = user.getName();
-
-            // 删除论坛中的用户
-            com.redmoon.forum.person.UserDb ud = new com.redmoon.forum.person.UserDb();
-            ud = ud.getUser(user.getName());
-            re = ud.del();
 
             // 删除对接的spark、微信、钉钉信息
             userSetupService.onUserDeleted(user, SpringUtil.getUserName());
@@ -813,9 +796,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             // 删除用户的工号
             accountService.delOfUser(userName);
 
+            // 删除职位
+            postUserService.delByUserName(userName);
+
             re = user.deleteById();
 
             if (re) {
+                userCache.refreshDel(user.getName());
+
                 // 删除成功之后要更新表user_recently_selected，此表用来记录最近选择的用户
                 QueryWrapper<UserRecentlySelected> qwRecent = new QueryWrapper<>();
                 qwRecent.eq("userName", userName);
@@ -835,6 +823,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return userMapper.listBySql(sql);
     }
 
+    /**
+     * 通讯录列表
+     * @param what
+     * @return
+     */
+    @Override
+    public List<User> listForAddress(String what) {
+        String sql = "select * from users where name<>'system' and name<>'admin'";
+        if (!StrUtil.isEmpty(what)) {
+            sql += " and (realname like " + StrUtil.sqlstr("%" + what + "%") + " or mobile like " + StrUtil.sqlstr("%" + what + "%") + ")";
+        }
+        return listBySql(sql);
+    }
+
     @Override
     @Transactional(rollbackFor={Exception.class, RuntimeException.class})
     public boolean reEmploryment(int id, String operator) {
@@ -851,6 +853,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public List<User> listAll() {
         QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.ne("name", ConstUtil.USER_SYSTEM);
         qw.eq("isvalid", 1).orderByDesc("regDate");
         return list(qw);
     }
@@ -873,6 +876,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return r > 0;
     }
 
+    /**
+     * 对密码进行加密
+     * @param pwd
+     * @return
+     */
+    @Override
+    public String encryptPwd(String pwd) {
+        return Base64Util.encode(pwd);
+    }
+
+    @Override
+    public String aesEncryptPwdRaw(String pwdRaw) {
+        String pwdRawStr = Base64Util.decode(pwdRaw);
+        com.redmoon.oa.security.Config myconfig = com.redmoon.oa.security.Config.getInstance();
+        String pwdAesKey = myconfig.getProperty("pwdAesKey");
+        String pwdAesIV = myconfig.getProperty("pwdAesIV");
+        try {
+            return AesUtil.aesEncrypt(pwdRawStr, pwdAesKey, pwdAesIV);
+        } catch (Exception e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+        return "";
+    }
 
     /**
      * 修改密码
@@ -887,9 +913,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         try {
             user.setPwd(SecurityUtil.MD5(newPwd));
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
-        user.setPwdRaw(newPwd);
+        user.setPwdRaw(encryptPwd(newPwd));
         updateByUserName(user);
 
         // userSetupService.onUserUpdated中主要是同步至微信及钉钉，仅更改密码无需同步
@@ -937,7 +963,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public boolean isPersonNoUsedByOther(String userName, String personNo) {
         QueryWrapper<User> qw = new QueryWrapper<>();
-        qw.ne("name", userName)
+        qw.ne("login_name", userName)
                 .eq("person_no", personNo);
         User user = getOne(qw, false);
         return user != null;
@@ -992,7 +1018,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
             User user = new User();
             String userName = json.getString("name");
-            user.setName(userName);
+            // name在创建时会用自定义的id代替
+            // user.setName(userName);
+            user.setLoginName(userName);
             user.setRealName(json.getString("realName"));
             user.setMobile(json.getString("mobile"));
             user.setGender("女".equals(json.getString("gender")));
@@ -1057,10 +1085,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             UserVO userVO = dozerBeanMapper.map(user, UserVO.class);
             userVO.setAccount(json.getString("accountName"));
             userVO.setDeptCode(deptCodes);
-            User user2 = getUser(userName);
+            userVO.setIsPass(1);
+            User user2 = getUserByLoginName(userName);
             if (user2==null) {
                 re = create(userVO);
             } else {
+                userVO.setName(user2.getName());
+                userVO.setIsValid(1);
                 re = update(userVO);
             }
 
@@ -1079,7 +1110,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                         if (role == null) {
                             // 如果角色不存在，则创建
                             roleCode = RandomSecquenceCreator.getId(20);
-                            roleService.create(roleCode, rNames[n], 0, 0, -1, privilege.getUserUnitCode(), -1, 0, "");
+                            roleService.create(roleCode, rNames[n], 0, 0, -1, privilege.getUserUnitCode(), -1, 0, "", null);
                         }
                         else {
                             roleCode = role.getCode();
@@ -1089,7 +1120,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 }
 
                 IUserOfRoleService userOfRoleService = SpringUtil.getBean(IUserOfRoleService.class);
-                userOfRoleService.setRoleOfUser(userName, rCodes);
+                userOfRoleService.setRoleOfUser(userVO.getName(), rCodes);
             }
         }
         return re;

@@ -29,14 +29,19 @@ if (!myname.equals(privilege.getUser(request))) {
 
 String op = ParamUtil.get(request, "op");
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>流程绩效列表</title>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
 	<link rel="stylesheet" href="<%=request.getContextPath()%>/js/bootstrap/css/bootstrap.min.css"/>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexigrid/flexigrid.css"/>
+	<style>
+		.search-form input, select {
+			vertical-align: middle;
+		}
+	</style>
 	<script type="text/javascript" src="../inc/common.js"></script>
 	<script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
@@ -60,7 +65,7 @@ o("<%=currentMenu%>").className="current";
 <table id="searchTable" border="0" align="center">
   <tr>
     <td align="center"> 
-      <form name="formSearch" action="flow_performance_user_list_sum.jsp" method="get">
+      <form name="formSearch" class="search-form" action="flow_performance_user_list_sum.jsp" method="get">
         &nbsp;&nbsp;年度
         <select id="showyear" name="showyear" onchange="var y=this.options[this.selectedIndex].value; window.location.href='flow_performance_user_list_sum.jsp?deptCode=<%=deptCode%>&showyear=' + y;">
         <%for (int y2=cury-60; y2<=cury; y2++) {%>
@@ -174,8 +179,6 @@ o("<%=currentMenu%>").className="current";
 		int d = DateUtil.getDayCount(y, i);
 		cal.set(y,i,1,0,0,0);
 		cal2.set(y,i,d,23,59,59);
-		// System.out.println(getClass() + " cal=" + DateUtil.format(cal, "yyyy-MM-dd HH:mm:ss"));
-		// System.out.println(getClass() + " cal=" + DateUtil.format(cal2, "yyyy-MM-dd HH:mm:ss"));
 		ResultIterator ri = jt.executeQuery(sql, new Object[]{user_name, cal.getTime(), cal2.getTime()});
 		double perf = 0.0;
 		if (ri.hasNext()) {

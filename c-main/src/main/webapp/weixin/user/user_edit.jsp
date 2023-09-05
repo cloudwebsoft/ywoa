@@ -18,7 +18,7 @@
     String mobile = user.getMobile();
     String birthday = DateUtil.format(user.getBirthday(), "yyyy-MM-dd");
     int gender = user.getGender();
-    String weixin = user.getWeixin();
+    String weixin = StrUtil.getNullStr(user.getWeixin());
     String qq = user.getQQ();
     String address = user.getAddress();
 %>
@@ -84,7 +84,7 @@
 				<%
                     if (!"".equals(user.getPhoto())) {
                 %>
-             	<img class="photo" src="<%=request.getContextPath()%>/img_show.jsp?path=<%=user.getPhoto() %>"/>
+             	<img class="photo" src="<%=request.getContextPath()%>/showImg.do?path=<%=user.getPhoto() %>"/>
 				  <%
                   } else {
                       if (user.getGender() == 0) {

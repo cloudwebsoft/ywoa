@@ -3,7 +3,6 @@
 				 cn.js.fan.db.*,
 				 cn.js.fan.util.*,
 				 cn.js.fan.web.*,
-				 com.redmoon.forum.*,
 				 org.jdom.*,
 				 org.jdom.input.*,
 				 org.jdom.output.*,
@@ -14,6 +13,12 @@
 %>
 <%@page import="com.cloudwebsoft.framework.db.JdbcTemplate"%>
 <%@page import="com.redmoon.oa.ui.SkinMgr"%>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
+<%@ page import="org.xml.sax.InputSource" %>
+<%@ page import="com.cloudweb.oa.utils.ProxoolUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.base.IConfigUtil" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%
 String oadb="", user="", pwd="", ip="", port="", database="", url="", maximum_connection_count="", odbcName = "", path="";
 
@@ -24,15 +29,10 @@ String className = "";
 String msg = "";
 
 try {
-	String cfgpath = application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml";
-	cfgpath = URLDecoder.decode(cfgpath);
-	XMLProperties properties = new XMLProperties(cfgpath);
-	SAXBuilder sb = new SAXBuilder();
-	FileInputStream fin = new FileInputStream(cfgpath);
-	Document doc = sb.build(fin);
-	Element root = doc.getRootElement();
-	fin.close();
+	ProxoolUtil proxoolUtil = SpringUtil.getBean(ProxoolUtil.class);
+	Document doc = proxoolUtil.getDoc();
 
+	Element root = doc.getRootElement();
 	Element el = null;
 	List list = root.getChildren("proxool");
 	Iterator ir = list.iterator();
@@ -46,7 +46,7 @@ try {
 			className = el.getText();
 			el = e.getChild("maximum-connection-count");
 			maximum_connection_count = el.getText();
-			
+
 			el = e.getChild("driver-properties");
 			Iterator irEl = el.getChildren("property").iterator();
 			while (irEl.hasNext()) {
@@ -60,7 +60,7 @@ try {
 					pwd = attrVal;
 				}
 			}
-			
+
 			if (url.startsWith("jdbc:odbc:driver")) {
 				oadb = "access";
 				int p = url.indexOf("{");
@@ -86,7 +86,7 @@ try {
 				p = url.indexOf(";", q);
 				port = url.substring(q+1, p);
 				p = url.lastIndexOf("=");
-				database = url.substring(p+1);      		
+				database = url.substring(p+1);
 			}
 			else if (url.startsWith("jdbc:sqlserver")) {
 				oadb = "mssql_n";
@@ -96,7 +96,7 @@ try {
 				p = url.indexOf(";", q);
 				port = url.substring(q+1, p);
 				p = url.lastIndexOf("=");
-				database = url.substring(p+1);  	            		
+				database = url.substring(p+1);
 			}
 			else if (url.startsWith("jdbc:mysql")) {
 				oadb = "mysql";
@@ -104,9 +104,9 @@ try {
 				int q = url.indexOf(":", p);
 				ip = url.substring(p, q);
 				p = url.indexOf("/", q);
-				port = url.substring(q+1, p);	    
+				port = url.substring(q+1, p);
 				q = url.indexOf("?");
-				database = url.substring(p+1, q);        		
+				database = url.substring(p+1, q);
 			}
 			else if (url.startsWith("jdbc:postgresql")) {
 				oadb = "postgresql";
@@ -115,15 +115,13 @@ try {
 				ip = url.substring(p, q);
 				p = url.indexOf("/", q);
 				port = url.substring(q+1, p);
-				database = url.substring(p + 1);	            		
-			}            	
+				database = url.substring(p + 1);
+			}
 			break;
 		}
 	}
-} catch (org.jdom.JDOMException e) {
-	e.printStackTrace();
-} catch (java.io.IOException e) {
-	e.printStackTrace();
+} finally {
+
 }
 
 if (op.equals("setup")) {
@@ -178,16 +176,12 @@ if (op.equals("setup")) {
 	JSONObject json = new JSONObject();
 	if (isValid) {
         try {
-	        URL cfgURL = getClass().getResource("/config_sys.xml");
-    	    String cfgpath = cfgURL.getFile();
-        	cfgpath = URLDecoder.decode(cfgpath);
-        	XMLProperties properties = new XMLProperties(cfgpath);
-        	SAXBuilder sb = new SAXBuilder();
-            FileInputStream fin = new FileInputStream(cfgpath);
-            Document doc = sb.build(fin);
-            Element root = doc.getRootElement();
-            fin.close();
+			IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+			String xml = configUtil.getXml("config_sys");
+			SAXBuilder sb = new SAXBuilder();
+			Document doc = sb.build(new InputSource(new StringReader(xml)));
 
+            Element root = doc.getRootElement();
         	Element which = root.getChild("DataBase");
         	// 先删后加
 	        List list = which.getChildren("db");
@@ -228,33 +222,17 @@ if (op.equals("setup")) {
 
 			which.addContent(edb);
 
-        	String indent = "    ";
-        	boolean newLines = true;
-        	Format format = Format.getPrettyFormat();
-        	format.setIndent(indent);
-        	format.setEncoding("utf-8");
-
-	        XMLOutputter outp = new XMLOutputter(format);
-           	FileOutputStream fout = new FileOutputStream(cfgpath);
-           	outp.output(doc, fout);
-           	fout.close();
-
-        } catch (org.jdom.JDOMException e) {
-            e.printStackTrace();
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
+			configUtil.putXml("config_sys", doc);
+        } catch (JDOMException | IOException e) {
+			LogUtil.getLog(getClass()).error(e);
         }
 
-        try {
-    	    String cfgpath = application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml";
-        	cfgpath = URLDecoder.decode(cfgpath);
-        	XMLProperties properties = new XMLProperties(cfgpath);
-        	SAXBuilder sb = new SAXBuilder();
-            FileInputStream fin = new FileInputStream(cfgpath);
-            Document doc = sb.build(fin);
+		try {
+			ProxoolUtil proxoolUtil = SpringUtil.getBean(ProxoolUtil.class);
+			Document doc = proxoolUtil.getDoc();
+
             Element root = doc.getRootElement();
-            fin.close();
-            
+
         	// 先删后加
 	        List list = root.getChildren();
 	        Iterator ir = list.iterator();
@@ -301,30 +279,15 @@ if (op.equals("setup")) {
 
 			root.addContent(edb);
 
-        	String indent = "    ";
-        	boolean newLines = true;
-        	Format format = Format.getPrettyFormat();
-        	format.setIndent(indent);
-        	format.setEncoding("iso-8859-1");
-
-	        XMLOutputter outp = new XMLOutputter(format);
-           	FileOutputStream fout = new FileOutputStream(cfgpath);
-           	outp.output(doc, fout);
-           	fout.close();
+			proxoolUtil.write();
            	
 			Global.getInstance().init();
-		
-			String realPath = application.getRealPath("/");
-			if (realPath.lastIndexOf("/")!=realPath.length()-1) {
-				realPath += "/";
-			}
-			org.logicalcobwebs.proxool.ProxoolFacade.removeAllConnectionPools(5000); // 
-			org.logicalcobwebs.proxool.configuration.JAXPConfigurator.configure(realPath + "WEB-INF/proxool.xml", false);          	
-        } catch (org.jdom.JDOMException e) {
-            e.printStackTrace();
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }
+
+			org.logicalcobwebs.proxool.ProxoolFacade.removeAllConnectionPools(5000);
+			org.logicalcobwebs.proxool.configuration.JAXPConfigurator.configure(proxoolUtil.getCfgPath(), false);
+		} finally {
+
+		}
 		json.put("ret", "1");
 		json.put("msg", "连接成功！");
 	}
@@ -336,8 +299,8 @@ if (op.equals("setup")) {
 	return;
 }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>数据库连接驱动-添加</title>

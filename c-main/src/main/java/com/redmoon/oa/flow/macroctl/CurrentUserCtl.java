@@ -6,6 +6,7 @@ import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormField;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
@@ -29,13 +30,21 @@ public class CurrentUserCtl extends AbstractMacroCtl {
     public CurrentUserCtl() {
     }
 
+    @Override
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
         // 取得用户名
         String userName = privilege.getUser(request);
         if (ff.getValue()!=null && !"".equals(ff.getValue())) {
         	userName = ff.getValue();
+        }
+        String style = "";
+        if (!"".equals(ff.getCssWidth())) {
+            style = "style='width:" + ff.getCssWidth() + "'";
+        }
+        else {
+            style = "style='width:150px'";
         }
         UserDb ud = new UserDb();
         ud = ud.getUserDb(userName);
@@ -43,7 +52,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
         if (!"".equals(ff.getCssWidth())) {
         	sb.append(" style='width:" + ff.getCssWidth() + "' ");
         }
-        sb.append(" readonly size=15>");
+        sb.append(" readonly size=15 " + style + "/>");
         sb.append("<input name='" + ff.getName() + "' value='" + ud.getName() + "' type='hidden'>");
 
         if (ff.isEditable()) {
@@ -52,7 +61,13 @@ public class CurrentUserCtl extends AbstractMacroCtl {
                 try {
                     JSONObject json = new JSONObject(desc);
                     sb.append("<script>\n");
-                    sb.append("$(function() {\n");
+                    sb.append("function currentUserMap_" + ff.getName() + "() {\n");
+                    if (json.has("gender")) {
+                        String fieldName = json.getString("gender");
+                        if (!"".equals(fieldName)) {
+                            sb.append(setUserInfo(fieldName, String.valueOf(ud.getGender())));
+                        }
+                    }
                     if (json.has("mobile")) {
                         String fieldName = json.getString("mobile");
                         if (!"".equals(fieldName)) {
@@ -83,10 +98,14 @@ public class CurrentUserCtl extends AbstractMacroCtl {
                             sb.append(setUserInfo(fieldName, DateUtil.format(ud.getBirthday(), "yyyy-MM-dd")));
                         }
                     }
+                    sb.append("}\n");
+                    // 需延迟，因为需在setCtlValue后调用
+                    sb.append("$(function() {\n");
+                    sb.append( "  setTimeout('currentUserMap_" + ff.getName() + "()', 500);\n");
                     sb.append("})\n");
                     sb.append("</script>\n");
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -114,6 +133,16 @@ public class CurrentUserCtl extends AbstractMacroCtl {
                 ud = ud.getUserDb(userName);
 
                 JSONObject json = new JSONObject(desc);
+                if (json.has("gender")) {
+                    String fieldName = json.getString("gender");
+                    if (!"".equals(fieldName)) {
+                        JSONObject jo = new JSONObject();
+                        jo.put("value", ud.getMobile());
+                        jo.put("field", fieldName);
+                        jo.put("type", "gender");
+                        arr.put(jo);
+                    }
+                }
                 if (json.has("mobile")) {
                     String fieldName = json.getString("mobile");
                     if (!"".equals(fieldName)) {
@@ -165,7 +194,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
                     }
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         return arr.toString();
@@ -173,11 +202,12 @@ public class CurrentUserCtl extends AbstractMacroCtl {
 
     public String setUserInfo(String fieldName, String value) {
         StringBuffer sb = new StringBuffer();
-        sb.append("if (o('" + fieldName + "')) {\n");
-        sb.append(" o('" + fieldName + "').value='" + value + "';\n");
+        // sb.append("console.log('" + fieldName + "', findObj('" + fieldName + "'));\n");
+        sb.append("if (fo('" + fieldName + "')) {\n");
+        sb.append(" fo('" + fieldName + "').value='" + value + "';\n");
         sb.append("}\n");
-        sb.append("if (o('" + fieldName + "_show')) {\n");
-        sb.append(" o('" + fieldName + "_show').innerHTML = '" + value + "';\n");
+        sb.append("if (fo('" + fieldName + "_show')) {\n");
+        sb.append(" fo('" + fieldName + "_show').innerHTML = '" + value + "';\n");
         sb.append("}\n");
         return sb.toString();
     }
@@ -185,8 +215,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
     @Override
     public String getHideCtlScript(FormField ff, String formElementId) {
     	String str = super.getHideCtlScript(ff, formElementId);
-    	
-        str += "\r\nif(o('" + ff.getName() + "_realname" + "')!=null){HideCtl('" + ff.getName() + "_realname" + "', '" +
+        str += "\r\nif(fo('" + ff.getName() + "_realname" + "')!=null){HideCtl('" + ff.getName() + "_realname" + "', '" +
         	ff.getType() +
         	"', '" + ff.getMacroType() + "');}\n";
         return str; 
@@ -196,6 +225,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
      * 获取用来保存宏控件toHtml后的值的表单中的HTML元素中保存的值，生成用以禁用控件的脚本
      * @return String
      */
+    @Override
     public String getDisableCtlScript(FormField ff, String formElementId) {
         // 参数ff来自于数据库，当控件被禁用时，可以根据数据库的值来置被禁用的控件的显示值及需要保存的隐藏type=hidden的值
         // 数据库中没有数据时，当前用户的值将被置为空，否则将被显示为用户的真实姓名，由此实现当前用户宏控件当被禁用时，不会被解析为当前用户
@@ -204,8 +234,9 @@ public class CurrentUserCtl extends AbstractMacroCtl {
         if (ff.getValue()!=null && !ff.getValue().equals("")) {
             UserDb ud = new UserDb();
             ud = ud.getUserDb(ff.getValue());
-            if (ud.isLoaded())
+            if (ud.isLoaded()) {
                 realName = ud.getRealName();
+            }
         }
 
         String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
@@ -230,7 +261,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
         ffNew.setFieldType(ff.getFieldType());
 
         // 如果是当前用户宏控件，则检查如果没有赋值就赋予其当前用户名称
-        if (StrUtil.getNullStr(ff.getValue()).equals("")) {
+        if ("".equals(StrUtil.getNullStr(ff.getValue()))) {
             Privilege privilege = new Privilege();
             // UserDb ud = new UserDb();
             // ud = ud.getUserDb(privilege.getUser(request));
@@ -238,9 +269,8 @@ public class CurrentUserCtl extends AbstractMacroCtl {
             ffNew.setValue(privilege.getUser(request));
         }
 
-        // System.out.println(getClass() + " getOuterHTMLOfElementsWithRAWValueAndHTMLValue ffNew=" + ffNew.getValue());
-        return super.getOuterHTMLOfElementsWithRAWValueAndHTMLValue(request,
-                ffNew);
+        // LogUtil.getLog(getClass()).info(getClass() + " getOuterHTMLOfElementsWithRAWValueAndHTMLValue ffNew=" + ffNew.getValue());
+        return super.getOuterHTMLOfElementsWithRAWValueAndHTMLValue(request, ffNew);
     }
 
     /**
@@ -251,17 +281,17 @@ public class CurrentUserCtl extends AbstractMacroCtl {
     @Override
     public String getReplaceCtlWithValueScript(FormField ff) {
         String v = "";
-        if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
+        if (!"".equals(StrUtil.getNullStr(ff.getValue()))) {
             UserDb ud = new UserDb();
             ud = ud.getUserDb(ff.getValue());
             v = ud.getRealName();
         }
 
         // return "ReplaceCtlWithValue('" + ff.getName() +"', '" + ff.getType() + "','" + realName + "');\n";
-        String str = "if (o('" + ff.getName() + "_realname')) o('" + ff.getName() + "_realname').parentNode.removeChild(o('" + ff.getName() + "_realname'));\n";
+        String str = "if (findObj('" + ff.getName() + "_realname')) findObj('" + ff.getName() + "_realname').parentNode.removeChild(findObj('" + ff.getName() + "_realname'));\n";
 		str += "var val='" + v + "';\n";
         if (!"".equals(v)) {
-			str += "val=\"<a href='javascript:;' onclick=\\\"addTab('" + v + "', '" + Global.getRootPath() + "/user_info.jsp?userName=" + StrUtil.UrlEncode(ff.getValue()) + "')\\\">" + v + "</a>\";\n";
+            // str += "val=\"<a href='javascript:;' onclick=\\\"addTab('" + v + "', '" + Global.getRootPath() + "/user_info.jsp?userName=" + StrUtil.UrlEncode(ff.getValue()) + "')\\\">" + v + "</a>\";\n";
 		}
         str += "ReplaceCtlWithValue('" + ff.getName() +"', '" + ff.getType() + "', val);\n";
         return str;
@@ -277,7 +307,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
     @Override
     public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
         String realName = fieldValue;
-        if (fieldValue!=null && !fieldValue.equals("")) {
+        if (fieldValue!=null && !"".equals(fieldValue)) {
             UserDb ud = new UserDb();
             ud = ud.getUserDb(fieldValue);
             if (ud.isLoaded()) {
@@ -296,7 +326,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
     public String getControlValue(HttpServletRequest httpServletRequest,
                                   FormField formField) {
         String name = "";
-        if (!StrUtil.getNullStr(formField.getValue()).equals("")) {
+        if (!"".equals(StrUtil.getNullStr(formField.getValue()))) {
             UserDb ud = new UserDb();
             ud = ud.getUserDb(formField.getValue());
             name = ud.getName();
@@ -313,7 +343,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
     public String getControlText(HttpServletRequest httpServletRequest,
                                  FormField formField) {
        String realName = "";
-       if (!StrUtil.getNullStr(formField.getValue()).equals("")) {
+       if (!"".equals(StrUtil.getNullStr(formField.getValue()))) {
            UserDb ud = new UserDb();
            ud = ud.getUserDb(formField.getValue());
            realName = ud.getRealName();
@@ -327,8 +357,8 @@ public class CurrentUserCtl extends AbstractMacroCtl {
        return realName;
     }
 
-    public String getControlText(String userName,
-                                 FormField formField) {
+    @Override
+    public String getControlText(String userName, FormField formField) {
        String realName = "";
        if (!StrUtil.getNullStr(formField.getValue()).equals("")) {
            UserDb ud = new UserDb();
@@ -344,6 +374,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
        return realName;
     }
 
+    @Override
     public String getControlValue(String userName, FormField ff) {
         String name = "";
         if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
@@ -362,6 +393,7 @@ public class CurrentUserCtl extends AbstractMacroCtl {
         return name;
     }
 
+    @Override
     public String getControlOptions(String userName, FormField ff) {
         return "";
     }

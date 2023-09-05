@@ -1,14 +1,13 @@
 package com.redmoon.oa.fileark;
 
-import org.apache.log4j.Logger;
 import java.util.Iterator;
 import javax.servlet.jsp.tagext.*;
 import java.util.Vector;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class DocListTag extends TagSupport {
     int[] ids = null;
-    Logger logger = Logger.getLogger(DocListTag.class.getName());
     String dirCode,query="",action;
     int start=0, end=0;
     DocBlockIterator ir;
@@ -58,7 +57,7 @@ public class DocListTag extends TagSupport {
             }
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return SKIP_BODY;
     }

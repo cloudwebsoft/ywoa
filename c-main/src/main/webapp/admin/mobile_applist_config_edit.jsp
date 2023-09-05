@@ -20,6 +20,7 @@
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <style>
         .icon-box {
+            margin-left: 10px;
             margin-bottom: 10px;
         }
         .icon {
@@ -89,7 +90,7 @@
 </table>
 <br>
 <form id="form1" name="form1" method="post">
-    <table class="tabStyle_1 percent60" cellSpacing=0 cellPadding=0 width="98%">
+    <table class="tabStyle_1 percent80" cellSpacing=0 cellPadding=0 width="98%">
         <tbody>
         <tr>
             <td class=tabStyle_1_title colSpan=4>修改应用</td>
@@ -102,6 +103,9 @@
                 <input id="type_flow" type="radio" name="type" value="<%=MobileAppIconConfigDb.TYPE_FLOW%>" onclick="changeType(this);"/>流程项
                 <input id="type_module" type="radio" name="type" value="<%=MobileAppIconConfigDb.TYPE_MODULE%>" onclick="changeType(this);"/>模块项
                 <input id="type_link" type="radio" name="type" value="<%=MobileAppIconConfigDb.TYPE_LINK%>" onclick="changeType(this);"/>链接项
+                <span style="display: none">
+                    <input id="type_front" type="radio" name="type" value="<%=MobileAppIconConfigDb.TYPE_FRONT%>" onclick="changeType(this);"/>前端项
+                </span>
                 &nbsp;&nbsp;&nbsp;<font color="#FF0000">*</font></td>
         </tr>
         <tr id="select_tr">
@@ -161,7 +165,7 @@
                 &nbsp;&nbsp;<font color="#FF0000">*</font>
             </td>
         </tr>
-        <tr>
+        <tr style="display: none">
             <td align="right">矢量型图标</td>
             <td align="left">&nbsp;
                 <div id="iconBox" class="icon-box">
@@ -226,7 +230,7 @@
             document.getElementById("type_module_selected").style.display = "none";
             $('#link_tr').hide();
         }
-        else if (type.id == "type_link") {
+        else if (type.id == "type_link" || type.id == "type_front") {
             document.getElementById("type_menu_selected").style.display = "";
             document.getElementById("type_flow_selected").style.display = "";
             document.getElementById("type_module_selected").style.display = "none";
@@ -275,7 +279,7 @@
                 return false;
             }
         }
-        else if (type.id == "type_link") {
+        else if (type.id == "type_link" || type.id == "type_front") {
             if ($('#link').val() == "") {
                 jAlert("链接不能为空", "提示");
                 return false;
@@ -298,6 +302,7 @@
     $(document).ready(function () {
         var type = <%=type%>;
         $('#type_module_selected').select2();
+        $('#type_module_selected').select2('val', ['<%=code%>']);
         setRadioValue("isMobileStart", <%=isMobileStart%>);
 
         if (type == 1) {
@@ -306,6 +311,7 @@
             document.getElementById("type_flow").disabled = true;
             document.getElementById("type_module").disabled = true;
             document.getElementById("type_link").disabled = true;
+            document.getElementById("type_front").disabled = true;
             document.getElementById("type_flow_selected").style.display = "none";
             document.getElementById("type_menu_selected").value = "<%=code%>";
             // document.getElementById("type_menu_selected").disabled=true;
@@ -323,6 +329,7 @@
             document.getElementById("type_menu").disabled = true;
             document.getElementById("type_module").disabled = true;
             document.getElementById("type_link").disabled = true;
+            document.getElementById("type_front").disabled = true;
             document.getElementById("type_menu_selected").style.display = "none";
             document.getElementById("type_flow_selected").style.display = "";
             document.getElementById("type_flow_selected").value = "<%=code%>";
@@ -343,6 +350,7 @@
             document.getElementById("type_menu").disabled = true;
             document.getElementById("type_module").disabled = true;
             document.getElementById("type_link").disabled = true;
+            document.getElementById("type_front").disabled = true;
             document.getElementById("type_menu_selected").style.display = "none";
             document.getElementById("type_flow_selected").style.display = "none";
             document.getElementById("type_module_selected").style.display = "";
@@ -353,6 +361,21 @@
         }
         else if (type == 4) {
             document.getElementById("type_link").checked = true;
+            document.getElementById("type_front").disabled = true;
+            document.getElementById("type_module").disabled = true;
+            document.getElementById("type_flow").disabled = true;
+            document.getElementById("type_menu").disabled = true;
+            document.getElementById("type_menu_selected").style.display = "none";
+            document.getElementById("type_flow_selected").style.display = "none";
+            document.getElementById("type_module_selected").style.display = "";
+            // document.getElementById("type_module_selected").disabled=true;
+            document.getElementById("link").value = "<%=code%>";
+            document.getElementById("isMobileStart_tr").style.display = "";
+            $('#select_tr').hide();
+        }
+        else if (type == 5) {
+            document.getElementById("type_link").disabled = true;
+            document.getElementById("type_front").checked = true;
             document.getElementById("type_module").disabled = true;
             document.getElementById("type_flow").disabled = true;
             document.getElementById("type_menu").disabled = true;
@@ -367,7 +390,7 @@
 
         document.getElementById("name").value = "<%=name%>";
         document.getElementById("imgUrl").value = "<%=imgUrl%>";
-        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/<%=imgUrl%>'>";
+        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/static/<%=imgUrl%>'>";
     });
 
     $(function() {
@@ -407,6 +430,6 @@
 
     function selIcon(icon) {
         document.getElementById("imgUrl").value = "images/mobileAppIcons/" + icon;
-        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/images/mobileAppIcons/" + icon + "'>";
+        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/static/images/mobileAppIcons/" + icon + "'>";
     }
 </script>

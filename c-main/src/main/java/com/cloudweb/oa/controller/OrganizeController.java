@@ -6,7 +6,9 @@ import com.cloudweb.oa.entity.*;
 import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.service.*;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudweb.oa.vo.Result;
 import com.cloudweb.oa.vo.UserAuthorityVO;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.basic.SelectDb;
 import com.redmoon.oa.basic.SelectMgr;
@@ -15,18 +17,21 @@ import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptMgr;
 import com.redmoon.oa.dept.DeptView;
 import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.SkinMgr;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -95,34 +100,50 @@ public class OrganizeController {
     @Autowired
     private  IGroupPrivService groupPrivService;
 
+    @ApiOperation(value = "系统信息展示列表", notes = "系统信息展示列表", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "curDeptCode", value = "curDeptCode", dataType = "Integer"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/organize")
-    public String organize(@RequestParam(value = "curDeptCode", required = false) String curDeptCode, Model model) {
+    @ResponseBody
+    public Result<Object> organize(@RequestParam(value = "curDeptCode", required = false) String curDeptCode) {
+        JSONObject object = new JSONObject();
         String type = ParamUtil.get(request, "type");
-        model.addAttribute("type", type);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        model.addAttribute("curDeptCode", curDeptCode);
-        return "th/admin/organize/organize";
+        object.put("type", type);
+        object.put("curDeptCode", curDeptCode);
+
+        Config cfg = Config.getInstance();
+        object.put("isDeptCodeAuto", cfg.getBooleanProperty("isDeptCodeAuto"));
+        object.put("isPostUsed", cfg.get("isPostUsed"));
+        return new Result<>(object);
     }
 
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
-    @RequestMapping(value = "/organizeFrameList")
-    public String organizeFrameList(Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        return "th/admin/organize/organize_frame_list";
-    }
+//    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+//    @RequestMapping(value = "/organizeFrameList")
+//    public Result<Object> organizeFrameList(Model model) {
+//        object.put("skinPath", SkinMgr.getSkinPath(request, false));
+//        return "th/admin/organize/organize_frame_list";
+//    }
 
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
-    @RequestMapping(value = "/organizeFrameAdd")
-    public String organizeFrameAdd(String curDeptCode, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        model.addAttribute("curDeptCode", curDeptCode);
-        return "th/admin/organize/organize_frame_add";
-    }
+//    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+//    @RequestMapping(value = "/organizeFrameAdd")
+//    public Result<Object> organizeFrameAdd(String curDeptCode, Model model) {
+//        object.put("skinPath", SkinMgr.getSkinPath(request, false));
+//        object.put("curDeptCode", curDeptCode);
+//        return "th/admin/organize/organize_frame_add";
+//    }
 
+    @ApiOperation(value = "部门树", notes = "部门树", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "rootCode", value = "权限编码", dataType = "Integer"),
+            @ApiImplicitParam(name = "pageType", value = "pageType", dataType = "Integer"),
+            @ApiImplicitParam(name = "curDeptCode", value = "curDeptCode", dataType = "Integer"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/listDeptTree")
-    public String listDeptTree(@RequestParam(value = "rootCode", required = false) String rootCode,
+    @ResponseBody
+    public Result<Object> listDeptTree(@RequestParam(value = "rootCode", required = false) String rootCode,
                                @RequestParam(required = false, defaultValue = "list") String pageType,
                                @RequestParam(required = false) String curDeptCode, Model model) {
         if (rootCode == null) {
@@ -135,44 +156,48 @@ public class OrganizeController {
         DeptView dv = new DeptView(leaf);
         ArrayList<String> listHided = dv.getAllHided();
         String jsonData = dv.getJsonString(false, true);
+        JSONObject object = new JSONObject();
 
-        model.addAttribute("rootCode", rootCode);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        model.addAttribute("flag", "0");
+        object.put("rootCode", rootCode);
+        object.put("flag", "0");
 
-        model.addAttribute("pageType", pageType);
+        object.put("pageType", pageType);
 
-        model.addAttribute("listHided", StringUtils.join(listHided, ","));
-        model.addAttribute("jsonData", jsonData);
+        object.put("listHided", StringUtils.join(listHided, ","));
+        object.put("jsonData", jsonData);
 
         List<String> list = null;
         try {
             list = dv.getAllUnit();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
-        model.addAttribute("unitStr", StringUtils.join(list, ","));
+        object.put("unitStr", StringUtils.join(list, ","));
 
         if (null == curDeptCode) {
             curDeptCode = DeptDb.ROOTCODE;
         }
-        model.addAttribute("curDeptCode", curDeptCode);
+        object.put("curDeptCode", curDeptCode);
 
-        return "th/admin/organize/dept_tree";
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "添加用户", notes = "添加用户", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "curDeptCode", value = "部门编码", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/addUser")
-    public String addUser(@RequestParam(value = "curDeptCode", required = false) String curDeptCode, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-
+    @ResponseBody
+    public Result<Object> addUser(@RequestParam(value = "curDeptCode", required = false) String curDeptCode, Model model) {
+        HashMap hashMap = new HashMap();
         com.redmoon.weixin.Config weixinCfg = com.redmoon.weixin.Config.getInstance();
         com.redmoon.dingding.Config dingdingCfg = com.redmoon.dingding.Config.getInstance();
         boolean isMobileRequired = false;
         if (weixinCfg.getBooleanProperty("isUse") || dingdingCfg.isUseDingDing()) {
             isMobileRequired = true;
         }
-        model.addAttribute("isMobileRequired", isMobileRequired);
+        hashMap.put("isMobileRequired", isMobileRequired);
 
         String defaultPwd = "", defaultPwdDesc = "";
         com.redmoon.oa.security.Config scfg = com.redmoon.oa.security.Config.getInstance();
@@ -180,8 +205,8 @@ public class OrganizeController {
             defaultPwd = scfg.getInitPassword();
             defaultPwdDesc = "默认密码：" + scfg.getInitPassword();
         // }
-        model.addAttribute("defaultPwd", defaultPwd);
-        model.addAttribute("defaultPwdDesc", defaultPwdDesc);
+        hashMap.put("defaultPwd", defaultPwd);
+        hashMap.put("defaultPwdDesc", defaultPwdDesc);
 
         String curDeptName = "";
         if (curDeptCode != null) {
@@ -194,50 +219,37 @@ public class OrganizeController {
         } else {
             curDeptCode = "";
         }
-        model.addAttribute("curDeptCode", curDeptCode);
-        model.addAttribute("curDeptName", curDeptName);
+        hashMap.put("curDeptCode", curDeptCode);
+        hashMap.put("curDeptName", curDeptName);
 
-        String userTypeOpts = "";
         SelectMgr sm = new SelectMgr();
         SelectDb sd = sm.getSelect("user_type");
-        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
-        Iterator irType = vType.iterator();
-        while (irType.hasNext()) {
-            SelectOptionDb sod = (SelectOptionDb) irType.next();
-            String selected = "";
-            if (sod.isDefault()) {
-                selected = "selected";
-            }
-            String clr = "";
-            if (!sod.getColor().equals("")) {
-                clr = " style='color:" + sod.getColor() + "' ";
-            }
-            userTypeOpts += "<option value='" + sod.getValue() + "' " + selected + clr + ">" + sod.getName() + "</option>";
-        }
-        model.addAttribute("userTypeOpts", userTypeOpts);
+
+        hashMap.put("userTypeOpts", sd);
 
         String pn = "";
         Config cfg = Config.getInstance();
         if (cfg.getBooleanProperty("personNoAutoCreate")) {
             pn = userService.getNextPersonNo();
         }
-        model.addAttribute("nextPersonNo", pn);
+        hashMap.put("nextPersonNo", pn);
 
-        return "th/admin/organize/user_add";
+        return new Result<>(hashMap);
     }
 
+    @ApiOperation(value = "用户列表", notes = "用户列表", httpMethod = "GET")
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/listUser", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String listUser(Model model) {
-        String skinPath = SkinMgr.getSkinPath(request, false);
-        model.addAttribute("skinPath", skinPath);
+    @ResponseBody
+    public Result<Object> listUser() {
+        JSONObject object = new JSONObject();
 
         String searchType = ParamUtil.get(request, "searchType"); // realName-姓名、userName-帐户、account-工号、mobile-手机、Email
         if ("".equals(searchType)) {
             searchType = "realName";
         }
 
-        model.addAttribute("searchType", searchType);
+        object.put("searchType", searchType);
 
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
         boolean isBindMobile = cfg.getBooleanProperty("is_bind_mobile");
@@ -261,20 +273,20 @@ public class OrganizeController {
         }
         String deptCode = ParamUtil.get(request, "deptCode");
 
-        model.addAttribute("op", op);
-        model.addAttribute("type", type);
-        model.addAttribute("curPage", curPage);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("content", content);
-        model.addAttribute("condition", condition);
-        model.addAttribute("isValid", isValid);
-        model.addAttribute("orderBy", orderBy);
-        model.addAttribute("sort", sort);
-        model.addAttribute("deptCode", deptCode);
+        object.put("op", op);
+        object.put("type", type);
+        object.put("curPage", curPage);
+        object.put("pageSize", pageSize);
+        object.put("content", content);
+        object.put("condition", condition);
+        object.put("isValid", isValid);
+        object.put("orderBy", orderBy);
+        object.put("sort", sort);
+        object.put("deptCode", deptCode);
 
         com.redmoon.oa.sso.Config ssocfg = new com.redmoon.oa.sso.Config();
         boolean isLarkUsed = cfg.getBooleanProperty("isLarkUsed") && ssocfg.getBooleanProperty("isUse");
-        model.addAttribute("isLarkUsed", isLarkUsed);
+        object.put("isLarkUsed", isLarkUsed);
 
         com.redmoon.weixin.Config weixinCfg = com.redmoon.weixin.Config.getInstance();
         boolean isUseWx = weixinCfg.getBooleanProperty("isUse");
@@ -283,66 +295,147 @@ public class OrganizeController {
         boolean isUseDingDing = dingdingCfg.getBooleanProperty("isUse");
         boolean isSyncDingDingToOa = dingdingCfg.getBooleanProperty("isSyncDingDingToOA");
 
-        model.addAttribute("isUseWx", isUseWx);
-        model.addAttribute("isSyncWxToOA", isSyncWxToOa);
-        model.addAttribute("isUseDingDing", isUseDingDing);
-        model.addAttribute("isSyncDingDingToOA", isSyncDingDingToOa);
+        object.put("isUseWx", isUseWx);
+        object.put("isSyncWxToOA", isSyncWxToOa);
+        object.put("isUseDingDing", isUseDingDing);
+        object.put("isSyncDingDingToOA", isSyncDingDingToOa);
 
         Privilege pvg = new Privilege();
         String unitCode = pvg.getUserUnitCode(request);
-        model.addAttribute("unitCode", unitCode);
+        object.put("unitCode", unitCode);
 
         com.redmoon.oa.Config oacfg = new com.redmoon.oa.Config();
         boolean canDelUser = oacfg.getBooleanProperty("canDelUser");
-        model.addAttribute("canDelUser", canDelUser);
+        object.put("canDelUser", canDelUser);
 
         boolean isUseAccount = cfg.getBooleanProperty("isUseAccount");
-        StringBuffer colProps = new StringBuffer();
-        if (showByDeptSort && !"".equals(deptCode) && !ConstUtil.DEPT_ROOT.equals(deptCode)) {
-            colProps.append("{display: '序号', name : 'deptOrder', width : 50, sortable : true, align: 'center', hide: false, process:editCol}");
-            colProps.append(",{display: '帐号', name : 'name', width : 100, sortable : true, align: 'center', hide: false}");
-        } else {
-            colProps.append("{display: '帐号', name : 'name', width : 100, sortable : true, align: 'center', hide: false}");
-        }
-        colProps.append(",{display: '姓名', name : 'realName', width : 100, sortable : true, align: 'center', hide: false}");
-        colProps.append(",{display: '性别', name : 'sex', width : 50, sortable : true, align: 'center', hide: false}");
-        if (isUseAccount) {
-            colProps.append(",{display: '工号', name : 'account', width : 80, sortable : true, align: 'center', hide: false}");
-        }
-        colProps.append(",{display: '所属部门', name : 'deptNames', width : 180, sortable : true, align: 'center', hide: false}");
-        colProps.append(",{display: '角色', name : 'roleName', width : 150, sortable : true, align: 'center', hide: false}");
-        colProps.append(",{display: '手机号', name : 'mobile', width : 100, sortable : true, align: 'center', hide: false}");
-        colProps.append(",{display: '状态', name : 'status', width : 50, sortable : true, align: 'center', hide: false}");
-        if (isBindMobile) {
-            colProps.append(",{display: '手机绑定', name : 'isBindMobile', width : 100, sortable : true, align: 'center', hide: false}");
-        }
-        colProps.append(",{display: '操作', name : 'op', width : 80, sortable : false, align: 'center', hide: false}");
-        model.addAttribute("colProps", colProps);
-        model.addAttribute("isBindMobile", isBindMobile);
 
-        return "th/admin/organize/user_list";
+        com.alibaba.fastjson.JSONArray ary = new com.alibaba.fastjson.JSONArray();
+        com.alibaba.fastjson.JSONObject jsonChk = new com.alibaba.fastjson.JSONObject();
+        jsonChk.put("type", "checkbox");
+        jsonChk.put("align", "center");
+        jsonChk.put("fixed", "left");
+        ary.add(jsonChk);
+
+        if (showByDeptSort && !"".equals(deptCode) && !ConstUtil.DEPT_ROOT.equals(deptCode)) {
+            com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", "序号");
+            json.put("field", "deptOrder");
+            json.put("width", 60);
+            json.put("sort", false);
+            json.put("align", "center");
+            ary.add(json);
+        }
+
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "帐号");
+        json.put("field", "name");
+        json.put("width", 100);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "姓名");
+        json.put("field", "realName");
+        json.put("width", 100);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "性别");
+        json.put("field", "sex");
+        json.put("width", 60);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "姓名");
+        json.put("field", "realName");
+        json.put("width", 100);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+
+        if (isUseAccount) {
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", "工号");
+            json.put("field", "account");
+            json.put("width", 80);
+            json.put("sort", false);
+            json.put("align", "center");
+            ary.add(json);
+        }
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "所属部门");
+        json.put("field", "deptNames");
+        json.put("width", 180);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "角色");
+        json.put("field", "roleName");
+        json.put("width", 150);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "手机号");
+        json.put("field", "mobile");
+        json.put("width", 130);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "状态");
+        json.put("field", "status");
+        json.put("width", 60);
+        json.put("sort", false);
+        json.put("align", "center");
+        ary.add(json);
+
+        if (isBindMobile) {
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", "手机绑定");
+            json.put("field", "isBindMobile");
+            json.put("width", 100);
+            json.put("sort", false);
+            json.put("align", "center");
+            ary.add(json);
+        }
+        json = new com.alibaba.fastjson.JSONObject();
+        json.put("title", "操作");
+        json.put("field", "colOperate");
+        json.put("width", 80);
+        json.put("sort", false);
+        json.put("align", "center");
+        json.put("fixed", "right");
+        ary.add(json);
+
+        object.put("list", ary);
+        object.put("isBindMobile", isBindMobile);
+
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "修改用户", notes = "修改用户", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userName", value = "用户名", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/editUser")
-    public String editUser(@RequestParam(value = "userName", required = true) String userName, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-
+    @ResponseBody
+    public Result<Object> editUser(@RequestParam(value = "userName", required = true) String userName) {
+        HashMap map = new HashMap();
+        Result<Object> result = new Result<>();
         User user = userService.getUser(userName);
-        model.addAttribute("user", user);
-
-        String selectDeptCode = ParamUtil.get(request, "selectDeptCode");
-        model.addAttribute("selectDeptCode", selectDeptCode);
-
-        StringBuffer sbDeptCode = new StringBuffer();
-        StringBuffer sbDeptName = new StringBuffer();
+        map.put("user", user);
         List<Department> list = departmentService.getDeptsOfUser(userName);
-        for (Department department : list) {
-            StrUtil.concat(sbDeptCode, ",", department.getCode());
-            StrUtil.concat(sbDeptName, ",", department.getName());
-        }
-        model.addAttribute("deptCode", sbDeptCode.toString());
-        model.addAttribute("deptName", sbDeptName.toString());
+
+        map.put("list", list);
 
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
         boolean isUseAccount = cfg.getBooleanProperty("isUseAccount");
@@ -353,8 +446,8 @@ public class OrganizeController {
                 accountName = account.getName();
             }
         }
-        model.addAttribute("isUseAccount", isUseAccount);
-        model.addAttribute("account", accountName);
+        map.put("isUseAccount", isUseAccount);
+        map.put("account", accountName);
 
         boolean isMobileNotEmpty = false;
         com.redmoon.weixin.Config weixinCfg = com.redmoon.weixin.Config.getInstance();
@@ -362,26 +455,10 @@ public class OrganizeController {
         if (weixinCfg.getBooleanProperty("isUse") || dingdingCfg.isUseDingDing()) {
             isMobileNotEmpty = true;
         }
-        model.addAttribute("isMobileNotEmpty", isMobileNotEmpty);
-
-        StringBuffer typeOpts = new StringBuffer();
+        map.put("isMobileNotEmpty", isMobileNotEmpty);
         SelectMgr sm = new SelectMgr();
         SelectDb sd = sm.getSelect("user_type");
-        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
-        Iterator irType = vType.iterator();
-        while (irType.hasNext()) {
-            SelectOptionDb sod = (SelectOptionDb) irType.next();
-            String selected = "";
-            if (sod.isDefault()) {
-                selected = "selected";
-            }
-            String clr = "";
-            if (!sod.getColor().equals("")) {
-                clr = " style='color:" + sod.getColor() + "' ";
-            }
-            typeOpts.append("<option value='" + sod.getValue() + "'" + selected + clr + ">" + sod.getName() + "</option>");
-        }
-        model.addAttribute("userTypeOpts", typeOpts);
+        map.put("userTypeOpts", sd);
 
         long msgSpaceAllowed = 0;
         String leaders = "";
@@ -401,11 +478,12 @@ public class OrganizeController {
             }
             msgSpaceAllowed = userSetup.getMsgSpaceAllowed();
         }
-        model.addAttribute("leaders", leaders);
-        model.addAttribute("leaderNames", leaderNames);
-        model.addAttribute("msgSpaceAllowed", msgSpaceAllowed);
+        map.put("leaders", leaders);
+        map.put("leaderNames", leaderNames);
+        map.put("msgSpaceAllowed", msgSpaceAllowed);
 
-        return "th/admin/organize/user_edit";
+        result.setData(map);
+        return result;
     }
 
     /**
@@ -441,12 +519,15 @@ public class OrganizeController {
     })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/userPriv")
-    public String userPriv(String userName, Integer userId, Model model) throws ValidateException {
+    @ResponseBody
+    public Result<Object> userPriv(String userName, Integer userId) throws ValidateException {
         if (userName==null && userId==null) {
             throw new ValidateException("用户名或用户ID不能为空");
         }
 
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+        JSONObject object = new JSONObject();
+
+        HashMap hashMap = new HashMap<>();
 
         User user;
         if (userName!=null) {
@@ -455,12 +536,12 @@ public class OrganizeController {
         else {
             user = userService.getById(userId);
         }
-        model.addAttribute("userName", user.getName());
-        model.addAttribute("realName", user.getRealName());
-        model.addAttribute("isMeAdmin", new Privilege().isUserPrivValid(request, Privilege.ADMIN));
+        hashMap.put("userName", user.getName());
+        hashMap.put("realName", user.getRealName());
+        hashMap.put("isMeAdmin", new Privilege().isUserPrivValid(request, Privilege.ADMIN));
 
-        List<Role> roleList = roleService.getRolesOfUser(user.getName(), true);
-        List<Group> groupList = userGroupService.getGroupsOfUser(user.getName(), true);
+        List<Role> roleList = roleService.getAllRolesOfUser(user.getName(), false);
+        List<Group> groupList = userGroupService.getGroupsOfUser(user.getName(), false);
 
         Map<String, List<Menu>> map = new HashMap<>();
         List<Menu> menuList = menuService.getChildren(ConstUtil.MENU_ROOT);
@@ -530,9 +611,9 @@ public class OrganizeController {
             authorityVOList.add(userAuthorityVO);
         }
 
-        model.addAttribute("authorityVOList", authorityVOList);
+        hashMap.put("list", authorityVOList);
 
-        return "th/admin/organize/user_priv";
+        return new Result<>(hashMap);
     }
 
     @ApiOperation(value = "进入用户角色管理界面", notes = "进入用户角色管理界面", httpMethod = "GET")
@@ -541,12 +622,13 @@ public class OrganizeController {
     })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/userSetRole")
-    public String userSetRole(String userName, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+    @ResponseBody
+    public Result<Object> userSetRole(String userName) {
+        HashMap map = new HashMap();
 
         User user = userService.getUser(userName);
-        model.addAttribute("userName", user.getName());
-        model.addAttribute("realName", user.getRealName());
+        map.put("userName", user.getName());
+        map.put("realName", user.getRealName());
 
         StringBuffer roleCodes = new StringBuffer();
         StringBuffer descs = new StringBuffer();
@@ -558,12 +640,12 @@ public class OrganizeController {
             StrUtil.concat(descs, ",", roleService.getRole(roleCode).getDescription());
         }
 
-        model.addAttribute("roleCodes", roleCodes.toString());
-        model.addAttribute("descs", descs);
+        map.put("roleCodes", roleCodes.toString());
+        map.put("descs", descs);
 
         Privilege pvg = new Privilege();
         String unitCode = pvg.getUserUnitCode(request);
-        model.addAttribute("unitCode", unitCode);
+        map.put("unitCode", unitCode);
 
         StringBuffer sbGroupRoleDesc = new StringBuffer();
         // 取得用户所有的组
@@ -571,26 +653,36 @@ public class OrganizeController {
         for (UserOfGroup userOfGroup : ugList) {
             // 取得组信息
             Group group = userGroupService.getGroup(userOfGroup.getGroupCode());
-            List<GroupOfRole> grList = userGroupOfRoleService.listByGroupCode(group.getCode());
-            for (GroupOfRole groupOfRole : grList) {
-                // 取得组所属的角色
-                Role role = roleService.getRole(groupOfRole.getRoleCode());
-                StrUtil.concat(sbGroupRoleDesc, ",", group.getDescription() + ":" + role.getDescription());
+            if (group == null) {
+                DebugUtil.w(getClass(), "userSetRole", "用户: " + userName + " 所属的组 " + userOfGroup.getGroupCode() + " 已不存在");
+            }
+            else {
+                List<GroupOfRole> grList = userGroupOfRoleService.listByGroupCode(group.getCode());
+                for (GroupOfRole groupOfRole : grList) {
+                    // 取得组所属的角色
+                    Role role = roleService.getRole(groupOfRole.getRoleCode());
+                    StrUtil.concat(sbGroupRoleDesc, ",", group.getDescription() + ":" + role.getDescription());
+                }
             }
         }
-        model.addAttribute("groupRoleDesc", sbGroupRoleDesc);
+        map.put("groupRoleDesc", sbGroupRoleDesc);
 
-        return "th/admin/organize/user_set_role";
+        return new Result<>(map);
     }
 
+    @ApiOperation(value = "用户部门", notes = "用户部门", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userName", value = "用户名", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/userAdminDept")
-    public String userAdminDept(String userName, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+    @ResponseBody
+    public Result<Object> userAdminDept(String userName, Model model) {
+        HashMap hashMap = new HashMap();
 
         User user = userService.getUser(userName);
-        model.addAttribute("userName", userName);
-        model.addAttribute("realName", user.getRealName());
+        hashMap.put("userName", userName);
+        hashMap.put("realName", user.getRealName());
 
         StringBuffer sbDepts = new StringBuffer();
         StringBuffer sbDeptNames = new StringBuffer();
@@ -600,8 +692,8 @@ public class OrganizeController {
             StrUtil.concat(sbDepts, ",", department.getCode());
             StrUtil.concat(sbDeptNames, ",", department.getName());
         }
-        model.addAttribute("depts", sbDepts.toString());
-        model.addAttribute("deptNames", sbDeptNames.toString());
+        hashMap.put("depts", sbDepts.toString());
+        hashMap.put("deptNames", sbDeptNames.toString());
 
         Map map = new LinkedHashMap();
 
@@ -639,9 +731,9 @@ public class OrganizeController {
             }
             map.put(role.getDescription(), str);
         }
-        model.addAttribute("adminDeptMap", map);
+        hashMap.put("adminDeptMap", map);
 
-        return "th/admin/organize/user_admin_dept";
+        return new Result<>(hashMap);
     }
 
 

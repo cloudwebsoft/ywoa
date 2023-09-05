@@ -10,7 +10,6 @@ import cn.js.fan.db.*;
 import cn.js.fan.security.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
 
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
@@ -38,12 +37,11 @@ import java.util.Iterator;
 
 public class Directory {
     String connname = "";
-    Logger logger = Logger.getLogger(Directory.class.getName());
 
     public Directory() {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
     }
 
     public boolean AddChild(HttpServletRequest request) throws
@@ -217,7 +215,6 @@ public class Directory {
             Leaf lfch = (Leaf)ir.next();
             // 重置孩子节点的排列顺序
             lfch.setOrders(orders);
-            // System.out.println(getClass() + " leaf name=" + lfch.getName() + " orders=" + orders);
 
             lfch.update();
             orders ++;
@@ -233,7 +230,7 @@ public class Directory {
                 layer = 2;
             else {
                 while (!parentCode.equals(lf.getRootCode())) {
-                    // System.out.println(getClass() + "leaf parentCode=" + parentCode);
+                    // LogUtil.getLog(getClass()).info(getClass() + "leaf parentCode=" + parentCode);
                     Leaf parentLeaf = getLeaf(parentCode);
                     if (parentLeaf == null || !parentLeaf.isLoaded())
                         break;
@@ -250,7 +247,7 @@ public class Directory {
 
     // 修复根结点为leaf的树
     public void repairTree(Leaf leaf) throws Exception {
-        // System.out.println(getClass() + "leaf name=" + leaf.getName());
+        // LogUtil.getLog(getClass()).info(getClass() + "leaf name=" + leaf.getName());
         repairLeaf(leaf);
         Directory dir = new Directory();
         Vector children = dir.getChildren(leaf.getCode());

@@ -54,17 +54,20 @@ public class DeptDb extends ObjectDb implements Serializable {
     public static final String ROOTCODE = "root";
 
     public DeptDb() {
+        isInitFromConfigDB = false;
         init();
     }
 
     public DeptDb(String code) {
         this.code = code;
+        isInitFromConfigDB = false;
         init();
         load();
     }
 
     public DeptDb(int id) {
         this.id = id;
+        isInitFromConfigDB = false;
         init();
         loadById();
     }
@@ -151,7 +154,7 @@ public class DeptDb extends ObjectDb implements Serializable {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("listResult:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listResult:" + e.getMessage());
             throw new ErrMsgException("Db error.");
         } finally {
             conn.close();
@@ -277,7 +280,7 @@ public class DeptDb extends ObjectDb implements Serializable {
      * @return ResultIterator
      * @throws ErrMsgException
      */
-    public Vector getAllChild(Vector vt, DeptDb dd) throws ErrMsgException {
+    public Vector<DeptDb> getAllChild(Vector<DeptDb> vt, DeptDb dd) throws ErrMsgException {
         IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
         List<Department> list = new ArrayList<>();
         departmentService.getAllChild(list, dd.getCode());
@@ -318,7 +321,8 @@ public class DeptDb extends ObjectDb implements Serializable {
     }
 
     public DeptDb getDeptDb(String code) {
-        this.code = code;
+        // 注意不能赋值给code，否则会替代原来的code，造成混乱
+        // this.code = code;
         com.cloudweb.oa.cache.DepartmentCache departmentCache = SpringUtil.getBean(com.cloudweb.oa.cache.DepartmentCache.class);
         Department user = departmentCache.getDepartment(code);
         return getFromDepartment(user, new DeptDb());

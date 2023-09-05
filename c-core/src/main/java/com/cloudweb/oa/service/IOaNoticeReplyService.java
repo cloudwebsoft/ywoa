@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public interface IOaNoticeReplyService extends IService<OaNoticeReply> {
 
-    List<OaNoticeReply> getReplyReadOrNot(long noticeId, boolean isReaded);
+    List<OaNoticeReply> getReplyReadOrNot(long noticeId, int isReaded);
 
     List<OaNoticeReply> getReplyHasContent(long noticeId);
 

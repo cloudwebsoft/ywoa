@@ -89,14 +89,10 @@
     String pageUrl = "fwebedit_new.jsp";
 
     //swfUpload文件上传
-    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-    String file_netdisk = cfg.get("file_netdisk");
+    com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
     HashMap<String, String> explorerFileType = new HashMap<String, String>();
-    explorerFileType = UtilTools.uploadFileTypeByExplorer("filearkFileExt");
     String file_size_limit = cfg.get("file_size_limit");
     int file_upload_limit = cfg.getInt("file_upload_limit");
-    String upload_file_types = explorerFileType.get("ie_upload_file_types");
-    String fixfox_upload_file_types = explorerFileType.get("fixfox_upload_file_types");
 
     com.redmoon.oa.robot.Config robotCfg = com.redmoon.oa.robot.Config.getInstance();
     boolean isRobotOpen = robotCfg.getBooleanProperty("isRobotOpen");
@@ -276,7 +272,6 @@
     <script src="../js/jquery.form.js"></script>
     <script src="../js/jquery.xmlext.js"></script>
     <script type="text/javascript" src="../js/flexigrid.js"></script>
-
     <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
     <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
     <script type="text/javascript" src="../js/jquery.toaster.js"></script>
@@ -365,7 +360,7 @@
 
     // 如果dir_code为空，则需检查权限
     LeafPriv lp = new LeafPriv();
-    if (dir_code.equals("") && examine1 != Document.EXAMINE_DRAFT) {
+    if ("".equals(dir_code) && examine1 != Document.EXAMINE_DRAFT) {
         lp.setDirCode(Leaf.ROOTCODE);
         // 如果是管理员或者文章根目录节点上有审核的权限，则允许查看全部的文章列表
         if (privilege.isUserPrivValid(request, "admin") || lp.canUserExamine(privilege.getUser(request))) {
@@ -724,6 +719,11 @@
             querystr += "&checkbox_gif=" + StrUtil.UrlEncode(checkbox_gif) + "&checkbox_zip=" + StrUtil.UrlEncode(checkbox_zip) + "&checkbox_pdf=" + StrUtil.UrlEncode(checkbox_pdf);
             querystr += "&checkbox_doc=" + StrUtil.UrlEncode(checkbox_doc) + "&checkbox_xlsx=" + StrUtil.UrlEncode(checkbox_xlsx) + "&checkbox_txt=" + StrUtil.UrlEncode(checkbox_txt);
 
+            boolean canExamine = false;
+            if (examine1!=Document.EXAMINE_DRAFT) {
+                canExamine = lp.canUserExamine(privilege.getUser(request));
+            }
+
             Document doc = new Document();
             DocPriv dp = new DocPriv();
             while (ri.hasNext()) {
@@ -737,8 +737,16 @@
                 String docTitle = doc.getTitle();
 
                 // 判断是否有浏览文件的权限
-                if (!dp.canUserSee(request, docId)) {
-                    continue;
+                // 如果不是草稿箱
+                if (examine1 != Document.EXAMINE_DRAFT) {
+                    // 如果不是作者
+                    if (!uName.equals(doc.getAuthor())) {
+                        if (!canExamine) {
+                            if (!dp.canUserSee(request, rr.getInt("id"))) {
+                                continue;
+                            }
+                        }
+                    }
                 }
 
                 boolean canDownload = isDraftBox || (lp.canUserDownLoad(privilege.getUser(request)) && dp.canUserDownload(privilege.getUser(request), docId));
@@ -850,7 +858,7 @@
                 }
                 else {
                 %>
-                <a target="_blank" title="ID：<%=docId%>" href="fileark_ntko_show.jsp?pageNum=1&docId=<%=rr.getInt("id")%>&attachId=<%=am.getId()%>"><%=docTitle%></a>
+                <a target="_blank" title="ID：<%=docId%>" href="doc_show.jsp?pageNum=1&docId=<%=rr.getInt("id")%>&attachId=<%=am.getId()%>"><%=docTitle%></a>
                 <%
                         }
                     }
@@ -922,7 +930,7 @@
                         out.print(DateUtil.format(d, "yy-MM-dd HH:mm"));
                     }
 
-                    int ex = rr.getInt("examine");
+                    int ex = rr.getInt("examined");
                 %>
             </td>
             <td id="tdExamine<%=rr.getInt("id")%>" examine="<%=ex%>" align="center">
@@ -985,8 +993,6 @@
     <input id="uploadUrl" type="hidden" value="uploadBatch.do?jsessionid=<%=session.getId()%>?userName=<%=StrUtil.UrlEncode(userName1) %>&dirCode=<%=StrUtil.UrlEncode(dir_code) %>"/>
     <input type="hidden" value="<%=file_size_limit %>" id="fileSizeLimit"/>
     <input type="hidden" value="<%=file_upload_limit %>" id="fileUploadLimit"/>
-    <input type="hidden" value="<%=upload_file_types %>" id="uploadFileType"/>
-    <input type="hidden" value="<%=fixfox_upload_file_types %>" id="FixfoxUploadFileType"/>
     <input type="hidden" value="<%=dir_code %>" id="dirCode"/>
     <input type="hidden" id="cooperateId" value=""/>
 </form>
@@ -1275,7 +1281,7 @@
             success: function (data, status) {
                 data = $.parseJSON(data);
                 if (data.ret == 2) {
-                    window.open("../zip_getfile.jsp?ids=" + ids);
+                    window.open("zipFile.do?ids=" + ids);
                 } else if (data.ret == 0) {
                     $.toaster({
                         "priority": "info",
@@ -1284,7 +1290,7 @@
                 } else {
                     jConfirm(data.msg + '\n您确定要打包下载么？', '提示', function (r) {
                         if (r) {
-                            window.open("../zip_getfile.jsp?ids=" + ids);
+                            window.open("zipFile.do?ids=" + ids);
                         }
                     });
                 }
@@ -1559,7 +1565,6 @@
     }
 
     var idsSelected = "";
-
     function action(com, grid) {
         if (com == '添加') {
             window.location.href = '../<%=pageUrl%>?op=add&dir_code=<%=StrUtil.UrlEncode(dir_code)%>&dir_name=<%=StrUtil.UrlEncode(dir_name, "utf-8")%>&kind=<%=StrUtil.UrlEncode(kind)%>';
@@ -1886,14 +1891,7 @@
 
     //编辑文件
     function editdoc(doc_id, file_id) {
-        <%if (cfg.get("isUseNTKO").equals("true")) {%>
         openWin("fileark_ntko_edit.jsp?docId=" + doc_id + "&attachId=" + file_id + "&isRevise=0", 1024, 768);
-        <%}else{%>
-        rmofficeTable.style.display = "";
-        addform.redmoonoffice.AddField("doc_id", doc_id);
-        addform.redmoonoffice.AddField("file_id", file_id);
-        addform.redmoonoffice.Open("<%=Global.getFullRootPath(request)%>/fileark/getfile.jsp?docId=" + doc_id + "&attachId=" + file_id);
-        <%}%>
     }
 
     // 下载文件
@@ -2153,18 +2151,22 @@
     $(function() {
         // 必须要通过jQuery绑定click，如果直接通过onclick事件addTab，则左侧树形菜单中的链接在addTab后将无法点击
         $("a[linkType='doc']").click(function(e) {
+            e.preventDefault();
             addTab($(this).attr('doc-title'), '<%=request.getContextPath()%>/doc_show.jsp?id=' + $(this).data('id'));
         })
 
         $("a[linkType='priv']").click(function(e) {
+            e.preventDefault();
             addTabPriv($(this).data('id'), $(this).attr('title'), $(this).attr('dirCode'), $(this).attr('dirName'));
         })
 
         $("a[linkType='log']").click(function(e) {
+            e.preventDefault();
             addTabLog($(this).data('id'), $(this).attr('title'));
         })
 
         $("a[linkType='view']").click(function(e) {
+            e.preventDefault();
             addTab($(this).attr('doc-title'), $(this).attr('viewPage'));
         })
     })

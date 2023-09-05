@@ -1,0 +1,7 @@
+/document/*
+/public/app/*
+/mobile/*
+/modular/*
+/mini/*
+/i/*
+/admin/*

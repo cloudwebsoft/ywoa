@@ -1,8 +1,7 @@
 package com.redmoon.oa.flow;
 
-import org.quartz.Job;
-import org.quartz.JobExecutionException;
-import org.quartz.JobExecutionContext;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.db.ResultIterator;
 import java.sql.*;
@@ -11,6 +10,7 @@ import cn.js.fan.util.StrUtil;
 import java.util.Iterator;
 import cn.js.fan.util.*;
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * <p>Title: </p>
@@ -24,11 +24,17 @@ import com.cloudwebsoft.framework.util.LogUtil;
  * @author not attributable
  * @version 1.0
  */
-public class WorkflowDelayedDeliverJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class WorkflowDelayedDeliverJob extends QuartzJobBean {
     public WorkflowDelayedDeliverJob() {
     }
 
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         String sql = "select id from flow_action where status=" + WorkflowActionDb.STATE_DELAYED +
                      " and date_delayed<=?";
@@ -45,7 +51,6 @@ public class WorkflowDelayedDeliverJob implements Job {
                 wf = wf.getWorkflowDb(nextwa.getFlowId());
 
                 String[] users = StrUtil.split(nextwa.getUserName(), ",");
-                // System.out.println(getClass() + " nextwa.getUserName()=" + nextwa.getUserName());
                 LogUtil.getLog(getClass()).info("nextwa.getUserName()=" + nextwa.getUserName());
 
                 nextwa.setStatus(WorkflowActionDb.STATE_DOING);
@@ -68,7 +73,6 @@ public class WorkflowDelayedDeliverJob implements Job {
                     // 通知用户办理
                     int len = users.length;
                     for (int n = 0; n < len; n++) {
-                        // System.out.println(getClass() + " users[" + n + "]=" + users[n]);
                         LogUtil.getLog(getClass()).info("users[" + n + "]=" + users[n]);
                         if (users[n]==null || "".equals(users[n])) {
                             continue;
@@ -88,7 +92,7 @@ public class WorkflowDelayedDeliverJob implements Job {
                 }
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
             LogUtil.getLog(getClass()).error(StrUtil.trace(ex));
         }
 

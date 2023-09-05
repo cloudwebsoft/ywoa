@@ -11,21 +11,19 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.*;
 import cn.js.fan.web.SkinUtil;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.entity.UserSetup;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.*;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.person.*;
 import com.redmoon.oa.pvg.*;
 
-import net.sf.json.*;
-
-import org.apache.log4j.*;
-
 public class DeptView {
-    Logger logger = Logger.getLogger(DeptView.class.getName());
     DeptDb rootLeaf;
     Vector UprightLineNodes = new Vector(); //用于显示竖线
     Privilege privilege = new Privilege();
@@ -93,7 +91,6 @@ public class DeptView {
 
         if (!isLastChild) {
             DeptDb brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -102,15 +99,12 @@ public class DeptView {
                 int count = r.size();
                 if (count>0) { // =0的也计入的话会在树底端的结点产生多余竖线
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -128,7 +122,6 @@ public class DeptView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -214,8 +207,7 @@ public class DeptView {
             out.print("<option " + cls + " value='" + code + "'>" + blank + "╋ " + name + "</option>");
         }
         else {
-            out.print("<option " + cls + " value=\"" + code + "\">" + blank + "├『" + name +
-                      "』</option>");
+            out.print("<option " + cls + " value=\"" + code + "\">" + blank + "├ " + name + "</option>");
         }
     }
 
@@ -228,17 +220,16 @@ public class DeptView {
         String code = leaf.getCode();
         String name = leaf.getName();
         int layer = leaf.getLayer();
-        String blank = "";
+        StringBuilder blank = new StringBuilder();
         int d = layer-rootlayer;
         for (int i=0; i<d; i++) {
-            blank += "　";
+            blank.append("　");
         }
         if (leaf.getChildCount()>0) {
             outStr += "<option value='" + code + "'>" + blank + "╋ " + name + "</option>";
         }
         else {
-            outStr += "<option value=\"" + code + "\">" + blank + "├『" + name +
-                      "』</option>";
+            outStr += "<option value=\"" + code + "\">" + blank + "├ " + name + "</option>";
         }
         return outStr;
     }
@@ -263,8 +254,7 @@ public class DeptView {
             outStr += "<option value='" + code + "'>" + blank + "╋ " + name + "</option>";
         }
         else {
-            outStr += "<option value=\"" + code + "\">" + blank + "├『" + name +
-                      "』</option>";
+            outStr += "<option value=\"" + code + "\">" + blank + "├ " + name + "</option>";
         }
         return outStr;
     }
@@ -272,17 +262,16 @@ public class DeptView {
     // 显示根结点为leaf的树
     public void ShowDeptAsOptions(JspWriter out, DeptDb leaf, int rootlayer) throws Exception {
         ShowDeptAsOption(out, leaf, rootlayer);
-        DeptMgr dm = new DeptMgr();
-        Vector children = dm.getChildren(leaf.getCode());
+        /*DeptMgr dm = new DeptMgr();
+        Vector children = dm.getChildren(leaf.getCode());*/
+        DeptChildrenCache deptChildrenCache = new DeptChildrenCache(leaf.getCode());
+        Vector<DeptDb> children = deptChildrenCache.getDirList();
         int size = children.size();
         if (size == 0) {
             return;
         }
 
-        int i = 0;
-        Iterator ri = children.iterator();
-        while (ri.hasNext()) {
-            DeptDb childlf = (DeptDb) ri.next();
+        for (DeptDb childlf : children) {
             ShowDeptAsOptions(out, childlf, rootlayer);
         }
     }
@@ -301,8 +290,8 @@ public class DeptView {
         	outStr.append(getDeptAsOption(leaf, rootlayer));
         }
         
-        DeptMgr dm = new DeptMgr();
-        Vector children = dm.getChildren(leaf.getCode());
+        DeptChildrenCache deptChildrenCache = new DeptChildrenCache(leaf.getCode());
+        Vector children = deptChildrenCache.getDirList();
         int size = children.size();
         if (size == 0) {
             return outStr;
@@ -315,6 +304,30 @@ public class DeptView {
             	continue;
             }
             getDeptAsOptions(outStr, childlf, rootlayer, true);
+        }
+        return outStr;
+    }
+
+    public StringBuffer getDeptAsOptionsOnlyUnit(StringBuffer outStr, DeptDb leaf, int rootlayer) throws ErrMsgException {
+        if (DeptDb.TYPE_UNIT == leaf.getType()) {
+            outStr.append(getDeptAsOption(leaf, rootlayer));
+        }
+
+        DeptMgr dm = new DeptMgr();
+        Vector children = dm.getChildren(leaf.getCode());
+        int size = children.size();
+        if (size == 0) {
+            return outStr;
+        }
+
+        Iterator ri = children.iterator();
+        while (ri.hasNext()) {
+            DeptDb childlf = (DeptDb) ri.next();
+            if (childlf.isHide()) {
+                continue;
+            }
+
+            getDeptAsOptionsOnlyUnit(outStr, childlf, rootlayer);
         }
         return outStr;
     }
@@ -333,26 +346,25 @@ public class DeptView {
         	outStr.append(getDeptAsOption(leaf, rootlayer));
         }
         if(isOnlyChildren){
-        	// 如果是仅仅显示子孩子,遍历自己孩子即可
-        	DeptMgr dm = new DeptMgr();
-            Vector children = dm.getChildren(leaf.getCode());
+        	// 如果是仅仅显示子节点,遍历自己孩子即可
+            DeptChildrenCache deptChildrenCache = new DeptChildrenCache(leaf.getCode());
+            Vector<DeptDb> children = deptChildrenCache.getDirList();
             int size = children.size();
             if (size == 0) {
                 return outStr;
             }
 
-            Iterator ri = children.iterator();
-            while (ri.hasNext()) {
-                DeptDb childlf = (DeptDb) ri.next();
+            for (DeptDb childlf : children) {
                 if (childlf.isHide()) {
-                	continue;
+                    continue;
                 }
                 outStr.append(getDeptNameAsOptionValue(childlf, childlf.getLayer()));
             }
         	return outStr;
         }
-        DeptMgr dm = new DeptMgr();
-        Vector children = dm.getChildren(leaf.getCode());
+
+        DeptChildrenCache deptChildrenCache = new DeptChildrenCache(leaf.getCode());
+        Vector<DeptDb> children = deptChildrenCache.getDirList();
         int size = children.size();
         if (size == 0) {
             return outStr;
@@ -417,8 +429,7 @@ public class DeptView {
             outStr += "<option " + cls + " value='" + val + "'>" + blank + "╋ " + name + "</option>";
         }
         else {        	
-            outStr += "<option " + cls + " value=\"" + val + "\">" + blank + "├『" + name +
-                      "』</option>";
+            outStr += "<option " + cls + " value=\"" + val + "\">" + blank + "├ " + name + "</option>";
         }
         return outStr;
     }    
@@ -432,8 +443,8 @@ public class DeptView {
      * @throws ErrMsgException
      */
     public StringBuffer getUnitAsOptions(StringBuffer outStr, DeptDb leaf, int rootlayer) throws ErrMsgException {
-    	// 不是企业版，则返回空
-        if (!License.getInstance().isPlatform()) {
+    	// 不是集团版，则返回空
+        if (!License.getInstance().isPlatformGroup()) {
             return new StringBuffer();
         }
     	
@@ -500,8 +511,8 @@ public class DeptView {
         	outStr.append(getDeptAsOption(leaf, rootlayer));
         }
         if(isOnlyChildren){
-        	DeptMgr dm = new DeptMgr();
-            Vector children = dm.getChildren(leaf.getCode());
+            DeptChildrenCache deptChildrenCache = new DeptChildrenCache(leaf.getCode());
+            Vector<DeptDb> children = deptChildrenCache.getDirList();
             int size = children.size();
             if (size == 0) {
                 return outStr;
@@ -518,8 +529,9 @@ public class DeptView {
             }
         	return outStr;
         }
-        DeptMgr dm = new DeptMgr();
-        Vector children = dm.getChildren(leaf.getCode());
+
+        DeptChildrenCache deptChildrenCache = new DeptChildrenCache(leaf.getCode());
+        Vector<DeptDb> children = deptChildrenCache.getDirList();
         int size = children.size();
         if (size == 0) {
             return outStr;
@@ -607,7 +619,6 @@ public class DeptView {
 
         if (!isLastChild) {
             DeptDb brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -616,15 +627,12 @@ public class DeptView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -642,7 +650,6 @@ public class DeptView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -1001,7 +1008,6 @@ public class DeptView {
 
         if (!isLastChild) {
             DeptDb brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -1010,15 +1016,12 @@ public class DeptView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -1036,7 +1039,6 @@ public class DeptView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -1469,7 +1471,6 @@ public class DeptView {
 
         if (!isLastChild) {
             DeptDb brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -1478,15 +1479,12 @@ public class DeptView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -1504,7 +1502,6 @@ public class DeptView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -1734,7 +1731,6 @@ public class DeptView {
         String description = leaf.getDescription();
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = leaf.getCode();
 
@@ -2014,7 +2010,7 @@ public class DeptView {
             str = str.substring(0, str.length() - 1);
             str += "]";
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
     	return str;
@@ -2342,7 +2338,7 @@ public class DeptView {
                 list.add(rr.getString(1));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 		return list;
 	}	

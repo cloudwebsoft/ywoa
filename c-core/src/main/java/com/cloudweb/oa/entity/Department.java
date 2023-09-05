@@ -1,9 +1,16 @@
 package com.cloudweb.oa.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+
 import java.time.LocalDateTime;
+
 import com.baomidou.mybatisplus.annotation.TableField;
+
 import java.io.Serializable;
+import java.util.List;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -13,7 +20,7 @@ import javax.validation.constraints.NotEmpty;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author fgf
@@ -53,17 +60,20 @@ public class Department extends Model<Department> {
 
     private Integer layer;
 
+    @TableId(value = "id", type = IdType.INPUT)
     private Integer id;
 
     private Integer isShow;
 
-    @Length(min=0, max=45, message="{dept.shortName.tooLong}")
+    @Length(min = 0, max = 45, message = "{dept.shortName.tooLong}")
     private String shortName;
 
     private Integer isGroup;
 
     private Integer isHide;
 
+    @TableField(exist = false)
+    private List<Department> children;
 
     @Override
     protected Serializable pkVal() {

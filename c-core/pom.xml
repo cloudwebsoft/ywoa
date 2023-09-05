@@ -8,6 +8,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <packaging>jar</packaging>
 
     <artifactId>c-core</artifactId>
 
@@ -20,16 +21,18 @@
     </dependencies>
 
     <build>
-        <outputDirectory>${project.basedir}/../target/embed/WEB-INF/classes</outputDirectory>
+        <outputDirectory>${project.basedir}/../out/embed/WEB-INF/classes</outputDirectory>
 
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
                 <includes>
-                    <include>**/*.xml</include>
+                    <include>**/**</include>
+                    <!--<include>**/*.xml</include>
                     <include>**/*.properties</include>
                     <include>**/*.yml</include>
                     <include>**/*.html</include>
+                    <include>**/*.dat</include>-->
                 </includes>
             </resource>
             <resource>
@@ -46,5 +49,32 @@
                 <directory>${project.basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <compilerArguments>
+                        -Xlint:unchecked
+                        <verbose/>
+                        <!--加载手工添加的jar包-->
+                        <bootclasspath>${java.home}/lib/rt.jar;${java.home}/lib/jce.jar;${java.home}/lib/jsse.jar;${java.home}/lib/ext/sunjce_provider.jar</bootclasspath>
+                        <extdirs>${project.basedir}/../c-main/src/main/webapp/WEB-INF/lib</extdirs>
+                    </compilerArguments>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>1.4.2.RELEASE</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

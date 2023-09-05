@@ -8,9 +8,16 @@
 <%@ page import = "com.redmoon.oa.dept.*"%>
 <%@ page import="com.redmoon.oa.kernel.License" %>
 <%@ page import="org.apache.http.client.utils.URIBuilder" %>
+<%@ page import="com.cloudweb.oa.api.ICloudUtil" %>
+<%@ page import="com.cloudwebsoft.framework.util.IPUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%
     String rootpath = request.getContextPath();
     String code = ParamUtil.get(request, "code");
+
+    ICloudUtil cloudUtil = SpringUtil.getBean(ICloudUtil.class);
+    String userSecret = cloudUtil.getUserSecret();
+    String ip = IPUtil.getRemoteAddr(request);
 %>
 <!DOCTYPE html>
 <html>
@@ -20,6 +27,19 @@
     <title>编辑表单</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
     <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
+    <style>
+        input[readonly] {
+            background-color: #ddd;
+        }
+
+        select[readonly] {
+            background-color: #ddd;
+        }
+
+        textarea[readonly] {
+            background-color: #ddd;
+        }
+    </style>
     <script src="../inc/common.js"></script>
     <script src="<%=request.getContextPath()%>/js/jquery-1.9.1.min.js"></script>
     <script src="<%=request.getContextPath()%>/js/jquery-migrate-1.2.1.min.js"></script>
@@ -44,8 +64,8 @@
         }
 
         function myFormEdit_onsubmit() {
-            if ($('#flowTypeCode').val()=="") {
-                jAlert("请选择流程类型！","提示");
+            if ($('#isFlow').prop('checked') && $('#flowTypeCode').val()=="-1") {
+                jAlert("请选择流程类型", "提示");
                 return false;
             }
 
@@ -180,7 +200,7 @@
             }
         }
         catch (ErrMsgException e) {
-            out.print(StrUtil.jAlert_Redirect(e.getMessage(), "提示", "form_edit.jsp?code=" + StrUtil.UrlEncode(code)));
+            out.print(StrUtil.jAlert_Redirect(StrUtil.toHtml(e.getMessage()), "提示", "form_edit.jsp?code=" + StrUtil.UrlEncode(code)));
         }
         return;
     }
@@ -202,7 +222,7 @@
                 <input type="hidden" id="ieVersion" name="ieVersion" />
             </td>
         </tr>
-        <tr>
+        <tr style="display: <%=License.getInstance().isPlatformSrc()?"":"none"%>">
             <td >历史记录</td>
             <td >
                 <input type="checkbox" id="isLog" name="isLog" value="1" <%=fd.isLog()?"checked":""%> />
@@ -271,7 +291,8 @@
         </tr>
         <tr id="trFlowType" style="<%=fd.isFlow()?"":"display:none"%>">
             <td >流程类型</td>
-            <td ><select id="flowTypeCode" name="flowTypeCode" onchange="if(this.options[this.selectedIndex].value=='root'){jAlert(this.options[this.selectedIndex].text+' 不能被选择！','提示'); return false;}">
+            <td >
+                <select id="flowTypeCode" name="flowTypeCode" onchange="if(this.options[this.selectedIndex].value=='root'){jAlert(this.options[this.selectedIndex].text+' 不能被选择！','提示'); this.value='-1'; return false;}">
                 <option value="-1">无</option>
                 <!---1表示非流程所用的表单-->
                 <%
@@ -311,9 +332,12 @@
                             if (dd.getType()==DeptDb.TYPE_UNIT) {
                                 cls = " class='unit' ";
                                 val = dd.getCode();
+		              %>
+		              <option <%=cls%> value="<%=val%>">&nbsp;&nbsp;&nbsp;&nbsp;<%=dd.getName()%></option>
+		              <%
                             }
                     %>
-                    <option <%=cls%> value="<%=val%>">&nbsp;&nbsp;&nbsp;&nbsp;<%=dd.getName()%></option>
+                    <!--
                     <%
                         Iterator ir2 = dd.getChildren().iterator();
                         while (ir2.hasNext()) {
@@ -335,7 +359,6 @@
                                 val3 = dd3.getCode();
                             }
                     %>
-                    <!--
                             <option <%=cls3%> value="<%=val3%>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%=dd3.getName()%></option>
                               <%
                               Iterator ir4 = dd3.getChildren().iterator();
@@ -362,11 +385,11 @@
                                       <%}
                               }
                               %>
-                           -->
                     <%
                                 }
-                            }
-                        }
+                            }%>
+			    -->
+                        <%}
                     %>
                 </select>
                 <script>
@@ -386,16 +409,8 @@
                 <!-- 判断是否为新表单，若是则打开新设计器 -->
                 <%
                     String cnt = fd.getContent();
-                    if (cnt.toLowerCase().indexOf("cwsplugins") > 0){
                 %>
                 <input class="btn btn-default" type="button" value="设计" onclick="openFormDesigner()"/>
-                <%
-                }else{
-                %>
-                <input class="btn btn-default" type="button" value="设计" onclick="openFormWin()"/>
-                <%
-                    }
-                %>
                 &nbsp;&nbsp;
                 <input class="btn btn-default" type="submit" name="next" value="确定" />
                 &nbsp;&nbsp;
@@ -423,7 +438,7 @@
                     }
                 });
             </script>
-            <div id="divContent" name="divContent">
+            <div id="divContent" name="divContent" style="margin-top: 10px">
                 <%
                     out.print(cnt);
                 %>
@@ -490,9 +505,6 @@
 <script>
     function getFieldsOnSubmit() {
         var re = true;
-        <%
-        if (isServerConnectWithCloud) {
-        %>
         $.ajax({
             async: false,
             type: "post",
@@ -523,26 +535,6 @@
                 alert(XMLHttpRequest.responseText);
             }
         });
-        <%
-        }else {
-        %>
-        var we = o("webedit");
-        we.PostScript = "<%=path%>/public/module/parseForm.do";
-        loadDataToWebeditCtrl(o("myFormEdit"), o("webedit"));
-        we.AddField("content", getFormContent());
-        we.AddField("cwsVersion", "<%=cfg.get("version")%>");
-        we.UploadToCloud();
-
-        var data = $.parseJSON(we.ReturnMessage);
-        if (data.ret=="1") {
-            $('#fieldsAry').val(JSON.stringify(data.fields));
-        }
-        else {
-            re = false;
-        }
-        <%
-        }
-        %>
         return re;
     }
 

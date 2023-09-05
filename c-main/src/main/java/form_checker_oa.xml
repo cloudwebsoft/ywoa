@@ -102,7 +102,7 @@
 	
     <form code="oa_document_robot_create" res="res.com.redmoon.oa.fileark.robot.RobotDb" onErrorExit="false">
 			<rules>
-				<rule>int, 			id, 				id,					auto_inc=com.redmoon.forum.SequenceMgr$26</rule>
+				<rule>int, 			id, 				id,					auto_inc=com.redmoon.oa.db.SequenceManager$98</rule>
 				<rule>String, 		name,				#name,				not,		min&gt;0, max&lt;250</rule>
 				<rule>int, 			gather_count,		#gather_count,		1</rule>
 				<rule>String, 		charset, 			#charset,			gbk</rule>

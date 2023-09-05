@@ -77,7 +77,7 @@
             // 创建新文档
             // TANGER_OCX.CreateNew("Word.Document");
 
-            var url = "<%=Global.getFullRootPath(request)%>/fileark/getfile.jsp?docId=<%=docId%>&attachId=<%=attachId%>";
+            var url = "<%=Global.getFullRootPath(request)%>/fileark/getFile.do?docId=<%=docId%>&attachId=<%=attachId%>";
 
             if (<%=att.getExt().equals("xls") || att.getExt().equals("xlsx")%>) {
                 TANGER_OCX.OpenFromURL(url, false, "excel.sheet");

@@ -5,9 +5,13 @@ public class AppErrorResponseEntity {
     private String message;
     private Object data;
     private boolean more;
+    private int ret;
+    private String msg;
 
     public AppErrorResponseEntity(int code, String message, Object data) {
         this.code = code;
+        this.ret = code;
+        this.msg = message;
         this.message = message;
         this.data = data;
     }
@@ -61,6 +65,22 @@ public class AppErrorResponseEntity {
         return new AppErrorResponseEntity(status.getCode(), status.getStandardMessage(), null);
     }
 
+    public int getRet() {
+        return ret;
+    }
+
+    public void setRet(int ret) {
+        this.ret = ret;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
     // HttpStatus类里面都有
     public enum Status {
         /**
@@ -72,7 +92,8 @@ public class AppErrorResponseEntity {
         INTERNAL_SERVER_ERROR(500, "Unknown Internal Error"),
         NOT_VALID_PARAM(40005, "Not valid Params"),
         NOT_SUPPORTED_OPERATION(40006, "Operation not supported"),
-        NOT_LOGIN(50000, "Not Login");
+        NOT_LOGIN(50000, "Not Login"),
+        PROTECT(-1000, "XSS CSRF or SQL Inj");
 
         private int code;
         private String standardMessage;

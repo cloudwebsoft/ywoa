@@ -36,7 +36,7 @@ public class FormViewDb extends QObjectDb {
 
 	public Vector list(String formCode, String op, String name) {
 		String sql = "select id from " + getTable().getName() + " where form_code=" + StrUtil.sqlstr(formCode);
-		if (op.equals("search")) {
+		if ("search".equals(op)) {
 			if (!"".equals(name)) {
 				sql += " and name like " + StrUtil.sqlstr("%" + name + "%");
 			}

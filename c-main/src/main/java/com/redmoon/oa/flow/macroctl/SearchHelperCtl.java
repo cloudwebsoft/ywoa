@@ -27,21 +27,13 @@ public class SearchHelperCtl extends AbstractMacroCtl {
            super();
     }
 
+    @Override
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
        String defaultValue = ff.getDefaultValue();
        String str = "";
        String titleField = defaultValue;
 
-       //request.setAttribute("workflowParams", new WorkflowParams(request, wfm.getFileUpload()));
-       //FileUpload fl  = wfm.getFileUpload();
-      // Enumeration en = fl.getFields();
-       //while(en.hasMoreElements()){
-      //     System.out.println(en.nextElement());
-      // }
-
        //String workflowParams = request.getAttribute("workflowParams").toString();
-       //System.out.println(workflowParams);
-       //System.out.println(sum_value+"111");
        str = "<textarea id='" + ff.getName() + "' name='" + ff.getName() + "' style='display:none' title='查询内容' ></textarea>";
        return str;
    }
@@ -71,12 +63,10 @@ public class SearchHelperCtl extends AbstractMacroCtl {
          while(en.hasMoreElements()){
              String key = (String) en.nextElement();
              if(key.equals(ff.getName())||key.equals("cws_textarea_"+ff.getName())){
-                // System.out.println("ff.getName():"+ff.getName());
                  continue;
              }
              try {
                  value = fu.getFieldValue(key);
-                 //System.out.println("value:"+value);
              } catch (ClassCastException e) {
                  String[] array = fu.getFieldValues(key);
                  for (int i = 0; i < array.length; i++) {
@@ -88,7 +78,6 @@ public class SearchHelperCtl extends AbstractMacroCtl {
                  }
              }
              if(value==null){
-                //System.out.println(en.nextElement()+"##########");
                 continue;
              }
                  if (allValue.equals("")) {
@@ -97,7 +86,6 @@ public class SearchHelperCtl extends AbstractMacroCtl {
                      allValue += "," + value;
                  }
              }
-             //System.out.println(allValue);
          return allValue;
      }
 

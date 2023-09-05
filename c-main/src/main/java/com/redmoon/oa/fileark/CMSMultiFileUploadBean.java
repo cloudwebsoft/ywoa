@@ -103,7 +103,7 @@ public class CMSMultiFileUploadBean extends FileUpload {
     }
 
     /**
-     * 如果未离附件，则先分离附件，然后写其它HTMLCODE中的文件
+     * 如果未分离附件，则先分离附件，然后写其它HTMLCODE中的文件
      * @param isRandName boolean
      */
     @Override

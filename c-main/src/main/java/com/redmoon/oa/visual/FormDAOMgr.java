@@ -1,8 +1,8 @@
 package com.redmoon.oa.visual;
 
-import SuperDog.DogStatus;
 import bsh.EvalError;
 import bsh.Interpreter;
+import bsh.TargetError;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.DateUtil;
@@ -11,10 +11,13 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import com.cloudweb.oa.api.ISQLCtl;
+import com.cloudweb.oa.permission.ModuleTreePermission;
 import com.cloudweb.oa.security.FormSecurityUtil;
+import com.cloudweb.oa.service.IVisualModuleTreePrivService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.vo.Result;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.security.ProtectSQLInjectException;
 import com.cloudwebsoft.framework.security.ProtectXSSException;
@@ -30,9 +33,9 @@ import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.pvg.RoleDb;
+import com.redmoon.oa.shell.BSHShell;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
-import com.redmoon.oa.superCheck.CheckSuperKey;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.LocalUtil;
 import com.redmoon.oa.util.BeanShellUtil;
@@ -100,39 +103,16 @@ public class FormDAOMgr {
     }
 
     public FormDAOMgr(FormDb fd) {
-        checkSuper();
         this.formCode = fd.getCode();
         this.fd = fd;
         fu = new FileUpload();
     }
 
     public FormDAOMgr(String formCode) {
-        checkSuper();
         this.formCode = formCode;
         fd = new FormDb();
         fd = fd.getFormDb(formCode);
         fu = new FileUpload();
-    }
-
-    /**
-     * 校验超级狗
-     */
-    private void checkSuper() {
-        //校验超级狗
-        CheckSuperKey csdk = CheckSuperKey.getInstance();
-        com.redmoon.oa.Config oacfg = new com.redmoon.oa.Config();
-        try {
-            int status = csdk.checkKey();
-            //验证失败
-            if (status != DogStatus.DOG_STATUS_OK) {
-                oacfg.put("systemIsOpen", "false");
-                oacfg.put("systemStatus", "请使用正版授权系统");
-            }
-        } catch (Exception e) {
-            oacfg.put("systemIsOpen", "false");
-            oacfg.put("systemStatus", "请使用正版授权系统");
-            e.printStackTrace();
-        }
     }
 
     public boolean doUpload(ServletContext application, HttpServletRequest request) throws ErrMsgException {
@@ -151,8 +131,7 @@ public class FormDAOMgr {
                 throw new ErrMsgException(fu.getErrMessage());
             }
         } catch (IOException e) {
-            LogUtil.getLog(getClass()).error("doUpload:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(e.getMessage());
         }
 
@@ -161,7 +140,7 @@ public class FormDAOMgr {
         try {
             FormSecurityUtil.filter(formCode, fu);
         } catch (ProtectXSSException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             Privilege pvg = new Privilege();
             param = e.getParam();
             value = e.getValue();
@@ -184,7 +163,7 @@ public class FormDAOMgr {
     public static String getFieldValue(String fieldName, FileUpload fu) {
         String val = "";
         try {
-            val = StrUtil.getNullStr(fu.getFieldValue(fieldName, false));
+            val = StrUtil.getNullStr(fu.getFieldValue(fieldName, true));
         } catch (ClassCastException e) {
             // 使表单域选择宏控件支持多选的时候，这里得到的应是数组，将其拼装成,号分隔的字符串
             String[] ary = fu.getFieldValues(fieldName);
@@ -236,7 +215,12 @@ public class FormDAOMgr {
                         ff.setValue(val);
                     }
                 } else {
-                    ff.setValue(getFieldValue(ff.getName(), fu));
+                    if (FormField.FORMAT_THOUSANDTH.equals(ff.getFormat())) {
+                        ff.setValue(getFieldValue(ff.getName(), fu).replaceAll(",", ""));
+                    }
+                    else {
+                        ff.setValue(getFieldValue(ff.getName(), fu));
+                    }
                 }
             }
         }
@@ -321,6 +305,9 @@ public class FormDAOMgr {
      */
     public boolean create(ServletContext application, HttpServletRequest request, Vector<FormField> fields, String moduleCode) throws ErrMsgException {
         long actionId = StrUtil.toInt(StrUtil.getNullStr((String) request.getAttribute("actionId")), -1);
+        if (actionId == -1) {
+            actionId = ParamUtil.getLong(request, "actionId", -1);
+        }
         String userName = new Privilege().getUser(request);
 
         String pageType = (String) request.getAttribute("pageType");
@@ -330,6 +317,7 @@ public class FormDAOMgr {
         String parentPageType = ParamUtil.get(request, "parentPageType");
 
         String parentFormCode = getParentFormCode(request);
+        boolean isFlow = false;
 
         ModulePrivDb mpd = new ModulePrivDb(moduleCode);
         if (actionId == -1 || actionId == 0) {
@@ -349,7 +337,7 @@ public class FormDAOMgr {
                                 }
                                 fields.addElement((FormField)ff.clone());
                             } catch (CloneNotSupportedException e) {
-                                e.printStackTrace();
+                                LogUtil.getLog(getClass()).error(e);
                             }
                         }
                     }
@@ -375,8 +363,8 @@ public class FormDAOMgr {
             wfa = wfa.getWorkflowActionDb((int) actionId);
             String fieldWrite = StrUtil.getNullString(wfa.getFieldWrite()).trim();
 
+            isFlow = true;
             String[] fds = fieldWrite.split(",");
-            int len = fds.length;
 
             MacroCtlMgr mm = new MacroCtlMgr();
             int nestLen = "nest.".length();
@@ -454,50 +442,39 @@ public class FormDAOMgr {
                         throw new ErrMsgException(StrUtil.getNullStr(msg));
                     }
                 } catch (ScriptException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
             }*/
 
-            // 验证校验规则
+            // 校验验证规则
             ModuleUtil.doCheckSetup(request, userName, fdao, fu);
 
             // 执行验证脚本
             String script = vsd.getScript("validate");
             if (script != null && !"".equals(script)) {
-                Interpreter bsh = new Interpreter();
-                try {
-                    StringBuffer sb = new StringBuffer();
+                BSHShell bs = new BSHShell();
+                Privilege pvg = new Privilege();
+                bs.set("userName", pvg.getUser(request));
+                bs.set("action", "create");
+                bs.set("fdao", fdao);
+                bs.set("request", request);
+                bs.set("fileUpload", fu);
+                bs.eval(script);
 
-                    BeanShellUtil.setFieldsValue(fdao, sb);
-
-                    // 赋值用户
-                    sb.append("userName=\"" + privilege.getUser(request) + "\";");
-                    bsh.eval(BeanShellUtil.escape(sb.toString()));
-
-                    bsh.set("action", "create");
-                    bsh.set("fdao", fdao);
-                    bsh.set("request", request);
-                    bsh.set("fileUpload", fu);
-
-                    bsh.eval(script);
-                    Object obj = bsh.get("ret");
-                    if (obj != null) {
-                        boolean ret = (Boolean) obj;
-                        if (!ret) {
-                            String errMsg = (String) bsh.get("errMsg");
-                            if (errMsg != null) {
-                                throw new ErrMsgException("验证非法：" + errMsg);
-                            } else {
-                                throw new ErrMsgException("验证非法，但errMsg为空！");
-                            }
+                Object obj = bs.get("ret");
+                if (obj != null) {
+                    boolean ret = (Boolean) obj;
+                    if (!ret) {
+                        String errMsg = (String) bs.get("errMsg");
+                        if (errMsg != null) {
+                            throw new ErrMsgException("提示：" + errMsg);
+                        } else {
+                            throw new ErrMsgException("验证非法，但errMsg为空！");
                         }
-                    } else {
-                        // 需要判断action进行检测，因为delete事件中可能要验证，而当创建验证时，该情况下脚本中未写ret值
-                        // throw new ErrMsgException("该节点脚本中未配置ret=...");
                     }
-                } catch (EvalError e) {
-                    e.printStackTrace();
-                    throw new ErrMsgException("验证脚本出错");
+                } else {
+                    // 需要判断action进行检测，因为delete事件中可能要验证，而当创建验证时，该情况下脚本中未写ret值
+                    // throw new ErrMsgException("该节点脚本中未配置ret=...");
                 }
             }
         }
@@ -516,19 +493,42 @@ public class FormDAOMgr {
 
         // 置用于关联模块的cws_id的值
         String cwsId = StrUtil.getNullStr(fu.getFieldValue("cws_id"));
+        cwsId = StrUtil.emptyTo(cwsId, FormDAO.TEMP_CWS_ID);
         fdao.setCwsId(cwsId);
 
         // 置父模块编码，仅当前表单为嵌套表格或关联的子表时
         fdao.setCwsParentForm(parentFormCode);
 
-        // 流程中添加嵌套表格2记录，nest_sheet_add_relate.jsp，表单中上传了cwsStatus，且为STATUS_NOT状态
-        int cwsStatus = StrUtil.toInt(fu.getFieldValue("cwsStatus"), com.redmoon.oa.flow.FormDAO.STATUS_DONE);
+        int cwsStatus = com.redmoon.oa.flow.FormDAO.STATUS_DONE;
+        if (isFlow) {
+            cwsStatus = com.redmoon.oa.flow.FormDAO.STATUS_NOT;
+        }/* else {
+            // 20221012 注释，因为只要在流程中，通过isFlow判断即可确定cwsStatus
+            // 流程中添加嵌套表格2记录，nest_sheet_add_relate.jsp，表单中上传了cwsStatus，且为STATUS_NOT状态
+            cwsStatus = StrUtil.toInt(fu.getFieldValue("cwsStatus"), com.redmoon.oa.flow.FormDAO.STATUS_DONE);
+        }*/
         fdao.setCwsStatus(cwsStatus);
 
         int flowId = StrUtil.toInt(fu.getFieldValue("flowId"), com.redmoon.oa.visual.FormDAO.NONEFLOWID);
-        // 如果是来自于手机端
-        if ("flow".equals(pageType)) {
+        // 如果是来自于手机端流程中的嵌套表，20220901检查pageType，在nest_sheet_add_edit.jsp的mui.nest_sheet.js中当添加时为add（而非flowId），当修改时为空，所以需通过request直接取flowId
+        // if ("flow".equals(pageType)) {
+        if (flowId == FormDAO.NONEFLOWID) {
             flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
+        }
+        if (flowId == com.redmoon.oa.visual.FormDAO.NONEFLOWID) {
+            // 如果是嵌套表格添加页，且不在流程中添加，则取其父记录的flowId，以使得在模块中添加嵌套表格记录后仍能够与流程相关联
+            if (ConstUtil.PAGE_TYPE_ADD_RELATE.equals(pageType)) {
+                long parentId = ParamUtil.getLong(request, "parentId", -1);
+                if (parentId != -1) {
+                    FormDb fdParent = new FormDb();
+                    fdParent = fdParent.getFormDb(parentFormCode);
+                    FormDAO fdaoParent = new FormDAO();
+                    fdaoParent = fdaoParent.getFormDAO(parentId, fdParent);
+                    if (fdaoParent.isLoaded()) {
+                        flowId = fdaoParent.getFlowId();
+                    }
+                }
+            }
         }
         fdao.setFlowId(flowId);
 
@@ -547,7 +547,7 @@ public class FormDAOMgr {
                 try {
                     re = ifv.onCreate(request, fdao);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -565,7 +565,7 @@ public class FormDAOMgr {
                     FormDb fdRelate = new FormDb();
                     fdRelate = fdRelate.getFormDb(mrd.getString("relate_code"));
                     FormDAO fdaoRelate = new FormDAO(fdRelate);
-                    fdaoRelate.setCwsId(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")));
+                    fdaoRelate.setCwsId(StrUtil.emptyTo(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")), com.redmoon.oa.visual.FormDAO.TEMP_CWS_ID));
                     fdaoRelate.createEmptyForm();
                 } else {
                     FormDb fdRelate = new FormDb();
@@ -588,14 +588,14 @@ public class FormDAOMgr {
                             if (fdaoRelate == null || !fdaoRelate.isLoaded()) {
                                 continue;
                             }
-                            fdaoRelate.setCwsId(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")));
+                            fdaoRelate.setCwsId(StrUtil.emptyTo(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")), com.redmoon.oa.visual.FormDAO.TEMP_CWS_ID));
                             fdaoRelate.save();
 
                             if (ifv != null) {
                                 try {
                                     re = ifv.onCreate(request, fdaoRelate);
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    LogUtil.getLog(getClass()).error(e);
                                 }
                             }
                         }
@@ -630,7 +630,7 @@ public class FormDAOMgr {
 
                         // 当主表单保存时，如果id存在，则说明是通过手机端保存
                         // 根据在module_add_edit.jsp中生成的id=RandomSecquenceCreator.getId(20)，更新嵌套表中的cws_id为主表单记录的实际ID，并置其flowTypeCode为主表单的flowTypeCode
-                        String sql = "select id from form_table_" + relateFormCode + " where cws_id=" + idTemp;
+                        String sql = "select id from ft_" + relateFormCode + " where cws_id='" + idTemp + "'";
                         for (FormDAO formDAO : fdaoRelate.list(relateFormCode, sql)) {
                             formDAO.setCwsId(String.valueOf(visualObjId));
                             formDAO.setFlowTypeCode(fdao.getFlowTypeCode());
@@ -639,7 +639,7 @@ public class FormDAOMgr {
                                 try {
                                     re = ifv.onCreate(request, formDAO);
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    LogUtil.getLog(getClass()).error(e);
                                 }
                             }
                         }
@@ -691,7 +691,7 @@ public class FormDAOMgr {
                             if (isRelateToMainForm) {
                                 FormDAOMgr fdmMain = new FormDAOMgr(mainFormCode);
                                 String relateId = fdmMain.getRelateFieldValue(mainFormId, mrd.getString("relate_code"));
-                                fdao.setCwsId(relateId);
+                                fdao.setCwsId(StrUtil.emptyTo(relateId, com.redmoon.oa.visual.FormDAO.TEMP_CWS_ID));
                                 fdao.save();
                             }
                         }
@@ -704,41 +704,19 @@ public class FormDAOMgr {
             // 添加事件脚本处理
             String script = vsd.getScript("create");
             if (script != null) {
-                Interpreter bsh = new Interpreter();
-                try {
-                    StringBuffer sb = new StringBuffer();
-
-                    BeanShellUtil.setFieldsValue(fdao, sb);
-
-                    // 赋值当前用户
-                    sb.append("userName=\"" + privilege.getUser(request)
-                            + "\";");
-                    // 这样的方法，会使得fdao被解释为字符串，即使强制类型转换都不行
-                    // sb.append("fdao=\"" + fdao + "\";");
-
-                    bsh.set("fdao", fdao);
-                    bsh.set("request", request);
-                    bsh.set("fileUpload", fu);
-
-                    bsh.eval(BeanShellUtil.escape(sb.toString()));
-
-                    bsh.eval(script);
-                    Object obj = bsh.get("ret");
-                    if (obj != null) {
-                        boolean ret = (Boolean) obj;
-                        if (!ret) {
-                            String errMsg = (String) bsh.get("errMsg");
-                            LogUtil.getLog(getClass()).error(
-                                    "create bsh errMsg=" + errMsg);
-                        }
-                    }
-                } catch (EvalError e) {
-                    DebugUtil.i(getClass(), "create 添加事件出错", fdao.getFormDb().getName() + " " + fdao.getFormCode());
-                    DebugUtil.i(getClass(), "create 添加事件出错", StrUtil.trace(e));
-                    throw new ErrMsgException("添加事件出错");
-                }
+                BSHShell bs = new BSHShell();
+                StringBuffer sb = new StringBuffer();
+                BeanShellUtil.setFieldsValue(fdao, sb);
+                // 赋值当前用户
+                sb.append("userName=\"" + privilege.getUser(request) + "\";");
+                // 这样的方法，会使得fdao被解释为字符串，即使强制类型转换都不行
+                // sb.append("fdao=\"" + fdao + "\";");
+                bs.set("fdao", fdao);
+                bs.set("request", request);
+                bs.set("fileUpload", fu);
+                bs.eval(BeanShellUtil.escape(sb.toString()));
+                bs.eval(script);
             }
-
         }
         return re;
     }
@@ -809,10 +787,10 @@ public class FormDAOMgr {
                 }
             } catch (JDOMException e) {
                 LogUtil.getLog(getClass()).error("parse msgProp field jdom error");
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } catch (IOException e) {
                 LogUtil.getLog(getClass()).error("parse msgProp field io error");
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -974,7 +952,7 @@ public class FormDAOMgr {
                     try {
                         imu.send(ud, title, MessageDb.SENDER_SYSTEM);
                     } catch (ErrMsgException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
             }
@@ -984,7 +962,7 @@ public class FormDAOMgr {
                 try {
                     md.sendSysMsg(ud.getName(), title, content, "");
                 } catch (ErrMsgException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -1084,7 +1062,7 @@ public class FormDAOMgr {
                         if (!ret) {
                             String errMsg = (String) bsh.get("errMsg");
                             if (errMsg != null)
-                                throw new ErrMsgException("验证非法：" + errMsg);
+                                throw new ErrMsgException("提示：" + errMsg);
                             else {
                                 throw new ErrMsgException("验证非法，但errMsg为空！");
                             }
@@ -1095,7 +1073,7 @@ public class FormDAOMgr {
                     }
                 } catch (EvalError e) {
                     // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -1107,7 +1085,7 @@ public class FormDAOMgr {
 
             // 置用于关联模块的cws_id的值
             String cwsId = StrUtil.getNullStr(fu.getFieldValue("cws_id"));
-            fdao.setCwsId(cwsId);
+            fdao.setCwsId(StrUtil.emptyTo(cwsId, FormDAO.TEMP_CWS_ID));
 
             // 流程中添加嵌套表格2记录，nest_sheet_add_relate.jsp，表单中上传了cwsStatus，且为STATUS_NOT状态
             int cwsStatus = StrUtil.toInt(fu.getFieldValue("cwsStatus"), com.redmoon.oa.flow.FormDAO.STATUS_DONE);
@@ -1128,7 +1106,7 @@ public class FormDAOMgr {
                     try {
                         re = ifv.onCreate(request, fdao);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
 
@@ -1145,7 +1123,7 @@ public class FormDAOMgr {
                         FormDb fdRelate = new FormDb();
                         fdRelate = fdRelate.getFormDb(mrd.getString("relate_code"));
                         FormDAO fdaoRelate = new FormDAO(fdRelate);
-                        fdaoRelate.setCwsId(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")));
+                        fdaoRelate.setCwsId(StrUtil.emptyTo(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")), FormDAO.CWS_ID_NONE));
                         fdaoRelate.createEmptyForm();
                     } else {
                         FormDb fdRelate = new FormDb();
@@ -1162,14 +1140,14 @@ public class FormDAOMgr {
                                 if (fdaoRelate == null || !fdaoRelate.isLoaded()) {
                                     continue;
                                 }
-                                fdaoRelate.setCwsId(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")));
+                                fdaoRelate.setCwsId(StrUtil.emptyTo(getRelateFieldValue(fdao.getId(), mrd.getString("relate_code")), com.redmoon.oa.visual.FormDAO.TEMP_CWS_ID));
                                 fdaoRelate.save();
 
                                 if (ifv != null) {
                                     try {
                                         re = ifv.onCreate(request, fdaoRelate);
                                     } catch (Exception e) {
-                                        e.printStackTrace();
+                                        LogUtil.getLog(getClass()).error(e);
                                     }
                                 }
                             }
@@ -1206,7 +1184,7 @@ public class FormDAOMgr {
                             }
                         }
                     } catch (EvalError e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
 
@@ -1218,7 +1196,7 @@ public class FormDAOMgr {
 
     public FormDAO getFormDAO(long visualObjId) {
         FormDAO fdao = new FormDAO();
-        return fdao.getFormDAO(visualObjId, fd);
+        return fdao.getFormDAOByCache(visualObjId, fd);
     }
 
     public boolean update(ServletContext application, HttpServletRequest request, ModuleSetupDb msd) throws ErrMsgException {
@@ -1268,10 +1246,10 @@ public class FormDAOMgr {
         String userName = privilege.getUser(request);
         long actionId = StrUtil.toInt(StrUtil.getNullStr((String) request.getAttribute("actionId")), -1);
 
-        visualObjId = StrUtil.toInt(fu.getFieldValue("id"), -1);
+        visualObjId = StrUtil.toLong(fu.getFieldValue("id"), -1);
         if (visualObjId == -1) {
             // 20170227 手机端的明细表中编辑时可能未传过来
-            visualObjId = ParamUtil.getInt(request, "id", -1);
+            visualObjId = ParamUtil.getLong(request, "id", -1);
             if (visualObjId == -1) {
                 throw new ErrMsgException("缺少ID！");
             }
@@ -1294,7 +1272,7 @@ public class FormDAOMgr {
                     FormField ff = (FormField) field.clone();
                     fieldsForCheck.addElement(ff);
                 } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -1375,8 +1353,19 @@ public class FormDAOMgr {
                 }
             }
 
-            // 对表单中的可写表单域（且不隐藏的）进行有效性验证
+            // 对表单中的可写表单域（且不隐藏的）进行有效性验证，必填、大小范围的验证
             com.redmoon.oa.flow.FormDAOMgr.validateFields(request, fu, fieldsForCheck, fdao, false);
+
+            // 20220130本想把getFieldsByForm从方法的头部移至此处，因为在flow.FormDAOMgr.validateFields中，嵌套表格2的有效性检查中时，
+            // 如果存在记录，则会赋予该嵌套表格字段值cws，但是不成功，因为validateFields可能会通不过，故此处重新通过fu取嵌套表格2的值
+            // fields = getFieldsByForm(application, request, fields);
+            for (FormField ff : fields) {
+                if (ff.getType().equals(FormField.TYPE_MACRO)) {
+                    if ("nest_sheet".equals(ff.getMacroType())) {
+                        ff.setValue(fu.getFieldValue(ff.getName()));
+                    }
+                }
+            }
 
             // 通过检查接口对fields中的值进行有效性判断
             if (ifv != null) {
@@ -1403,16 +1392,16 @@ public class FormDAOMgr {
                         throw new ErrMsgException(StrUtil.getNullStr(msg));
                     }
                 } catch (ScriptException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
             }*/
 
-            // 验证校验规则
+            // 校验验证规则
             ModuleUtil.doCheckSetup(request, userName, fdao, fu);
 
             // 执行验证脚本
             String script = vsd.getScript("validate");
-            if (script != null && !script.equals("")) {
+            if (script != null && !"".equals(script)) {
                 Interpreter bsh = new Interpreter();
                 try {
                     StringBuffer sb = new StringBuffer();
@@ -1435,7 +1424,7 @@ public class FormDAOMgr {
                         if (!ret) {
                             String errMsg = (String) bsh.get("errMsg");
                             if (errMsg != null) {
-                                throw new ErrMsgException("验证非法：" + errMsg);
+                                throw new ErrMsgException("提示：" + errMsg);
                             } else {
                                 throw new ErrMsgException("验证非法，但errMsg为空！");
                             }
@@ -1444,15 +1433,22 @@ public class FormDAOMgr {
                         // throw new ErrMsgException("该节点脚本中未配置ret=...");
                     }
                 } catch (EvalError e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                     throw new ErrMsgException(e.getMessage());
                 }
             }
         }
 
+        // boolean isMobile = WorkflowUtil.isMobile(request);
         // 置fdao中的辅助字段为原值，以免在事件中处理，再次被保存时值会发生变化（如：亮灯字段为只读状态时，传值至服务器为空，相当于disabled）
         for (FormField ff : fields) {
             if (ff.isHelper()) {
+                ff.setValue(fdao.getFieldValue(ff.getName()));
+            }
+            // 手机端需置隐藏字段的值，以免在提交后，变为空，而PC端字段仅仅是隐藏了，提交后仍然可以获取到值
+            // 因在PC端的chrome测试手机端时,isMobile为false，故注释掉，这样也可以使PC端与手机端隐藏字段的处理统一起来
+            // if (isMobile && ff.getHide() != FormField.HIDE_NONE) {
+            if (ff.getHide() != FormField.HIDE_NONE) {
                 ff.setValue(fdao.getFieldValue(ff.getName()));
             }
         }
@@ -1465,8 +1461,6 @@ public class FormDAOMgr {
                 ff.setValue(String.valueOf(FuncUtil.render(ff, ff.getDefaultValueRaw(), fdao)));
             }
         }
-
-        fdao.setCreator(userName);
 
         re = fdao.save(request, fu);
         if (re) {
@@ -1533,35 +1527,19 @@ public class FormDAOMgr {
             String script = vsd.getScript("save");
             LogUtil.getLog(getClass()).info("update bsh formCode=" + formCode + " script=" + script);
             if (script != null) {
-                Interpreter bsh = new Interpreter();
-                try {
-                    StringBuffer sb = new StringBuffer();
-                    BeanShellUtil.setFieldsValue(fdao, sb);
+                BSHShell bs = new BSHShell();
+                StringBuffer sb = new StringBuffer();
+                BeanShellUtil.setFieldsValue(fdao, sb);
+                // 赋值当前用户
+                sb.append("userName=\"" + privilege.getUser(request) + "\";");
+                bs.set(ConstUtil.SCENE, ConstUtil.SCENE_MODULE_SAVE);
+                bs.set("fdaoOld", fdaoOld);
+                bs.set("fdao", fdao);
+                bs.set("request", request);
+                bs.set("fileUpload", fu);
 
-                    // 赋值当前用户
-                    sb.append("userName=\"" + privilege.getUser(request)
-                            + "\";");
-
-                    bsh.set("fdaoOld", fdaoOld);
-                    bsh.set("fdao", fdao);
-                    bsh.set("request", request);
-                    bsh.set("fileUpload", fu);
-
-                    bsh.eval(BeanShellUtil.escape(sb.toString()));
-
-                    bsh.eval(script);
-                    Object obj = bsh.get("ret");
-                    if (obj != null) {
-                        boolean ret = (Boolean) obj;
-                        if (!ret) {
-                            String errMsg = (String) bsh.get("errMsg");
-                            LogUtil.getLog(getClass()).error("update bsh errMsg=" + errMsg);
-                        }
-                    }
-                } catch (EvalError e) {
-                    e.printStackTrace();
-                    throw new ErrMsgException(e.getMessage());
-                }
+                bs.eval(BeanShellUtil.escape(sb.toString()));
+                bs.eval(script);
             }
         }
         return re;
@@ -1576,8 +1554,7 @@ public class FormDAOMgr {
         ModulePrivDb mpd = new ModulePrivDb(moduleCode);
         String userName = privilege.getUser(request);
         // 不检查，以免未配置权限时，嵌套表在流程中被删除时判断为权限非法，降低使用难度 2015-1-5
-        // 如果是嵌套表，则根本配置是否需要检查权限来处理2015-1-16
-        // isNestSheetCheckPrivilege已经不知道什么时候在config_oa.xml被删除了，所以下面的权限判断的代码已经无用了
+        // 如果是嵌套表，则根据配置是否需要检查权限来处理2015-1-16
         if (isNestSheet) {
             com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
             boolean isNestSheetCheckPrivilege = cfg.getBooleanProperty("isNestSheetCheckPrivilege");
@@ -1586,11 +1563,25 @@ public class FormDAOMgr {
                     throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
                 }
             }
-        } else if (!mpd.canUserDel(userName) && !mpd.canUserManage(userName)) {
-            throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
+        } else {
+            boolean isTreeView = ParamUtil.getBoolean(request, "isTreeView", false);
+            if (isTreeView) {
+                String nodeCode = ParamUtil.get(request, "treeNodeCode");
+                ModuleTreePermission moduleTreePermission = SpringUtil.getBean(ModuleTreePermission.class);
+                if (!moduleTreePermission.canSee(SpringUtil.getUserName(), nodeCode)) {
+                    throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
+                }
+            }
+            else if (!mpd.canUserDel(userName) && !mpd.canUserManage(userName)) {
+                throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
+            }
         }
 
-        String ids = ParamUtil.get(request, "id");
+        String ids = ParamUtil.get(request, "ids");
+        if ("".equals(ids)) {
+            // 手机端删除时，传过来的是id
+            ids = ParamUtil.get(request, "id");
+        }
         String[] aryIds = StrUtil.split(ids, ",");
         if (aryIds == null) {
             throw new ErrMsgException("缺少标识！");
@@ -1607,25 +1598,29 @@ public class FormDAOMgr {
         Config cfg = new Config();
         IModuleChecker imc = cfg.getIModuleChecker(formCode);
 
-        int len = aryIds.length;
         boolean re = true;
         for (String aryId : aryIds) {
-            visualObjId = StrUtil.toInt(aryId);
+            visualObjId = StrUtil.toLong(aryId);
 
             // 检查数据权限
             if (!ModulePrivMgr.canAccessData(request, moduleSetupDb, visualObjId)) {
                 throw new ErrMsgException(i18nUtil.get("info_access_data_fail"));
             }
+            // 删除校验
+            validateDel(request, visualObjId, vsd, imc, userName);
+        }
 
+        for (String aryId : aryIds) {
+            visualObjId = StrUtil.toLong(aryId);
             re = del(request, vsd, imc, userName);
         }
         return re;
     }
 
-    public boolean delRelate(HttpServletRequest request, ModuleSetupDb moduleSetupDb) throws ErrMsgException {
-        String moduleCode = moduleSetupDb.getString("code");
+    public boolean delRelate(HttpServletRequest request, ModuleSetupDb msdRelated) throws ErrMsgException {
+        String moduleCodeRelated = msdRelated.getString("code");
         Privilege privilege = new Privilege();
-        ModulePrivDb mpd = new ModulePrivDb(moduleCode);
+        ModulePrivDb mpd = new ModulePrivDb(moduleCodeRelated);
         String userName = privilege.getUser(request);
         // 不检查，以免未配置权限时，嵌套表在流程中被删除时判断为权限非法，降低使用难度 2015-1-5
         // 如果是嵌套表，则根本配置是否需要检查权限来处理2015-1-16
@@ -1644,13 +1639,13 @@ public class FormDAOMgr {
 
         // vsd用于取出验证脚本
         ModuleSetupDb vsd = new ModuleSetupDb();
-        vsd = vsd.getModuleSetupDbOrInit(formCode);
+        vsd = vsd.getModuleSetupDbOrInit(msdRelated.getString("form_code"));
 
         Config cfg = new Config();
-        IModuleChecker imc = cfg.getIModuleChecker(formCode);
+        IModuleChecker imc = cfg.getIModuleChecker(msdRelated.getString("form_code"));
 
         // 检查数据权限，判断用户是否可以存取此条数据
-        String parentModuleCode = ParamUtil.get(request, "parentModuleCode");
+        String parentModuleCode = ParamUtil.get(request, "moduleCode");
         if ("".equals(parentModuleCode)) {
             throw new ErrMsgException("缺少父模块编码！");
         }
@@ -1672,7 +1667,7 @@ public class FormDAOMgr {
         else {
             if (!isSubTagRelated) {
                 com.redmoon.oa.visual.FormDAOMgr fdm = new com.redmoon.oa.visual.FormDAOMgr(parentFormCode);
-                relateFieldValue = fdm.getRelateFieldValue(parentId, moduleCode);
+                relateFieldValue = fdm.getRelateFieldValue(parentId, moduleCodeRelated);
                 if (relateFieldValue==null) {
                     // 如果取得的为null，则说明可能未设置两个模块相关联，但是为了能够使简单选项卡能链接至关联模块，此处应允许不关联
                     relateFieldValue = SQLBuilder.IS_NOT_RELATED;
@@ -1680,26 +1675,29 @@ public class FormDAOMgr {
             }
         }
 
-        int len = aryIds.length;
         boolean re = true;
         for (String aryId : aryIds) {
-            visualObjId = StrUtil.toInt(aryId);
+            visualObjId = StrUtil.toLong(aryId);
 
             // 检查数据权限
-            if (!ModulePrivMgr.canAccessDataRelated(request, moduleSetupDb, relateFieldValue, visualObjId)) {
+            if (!ModulePrivMgr.canAccessDataRelated(request, msdRelated, relateFieldValue, visualObjId)) {
                 throw new ErrMsgException(i18nUtil.get("info_access_data_fail"));
-
             }
 
+            validateDel(request, visualObjId, vsd, imc, userName);
+        }
+
+        for (String aryId : aryIds) {
+            visualObjId = StrUtil.toLong(aryId);
             re = del(request, vsd, imc, userName);
         }
         return re;
     }
 
-    public boolean del(HttpServletRequest request, ModuleSetupDb vsd, IModuleChecker imc, String userName) throws ErrMsgException {
+    public boolean validateDel(HttpServletRequest request, long id, ModuleSetupDb vsd, IModuleChecker imc, String userName) throws ErrMsgException {
         boolean re = true;
         FormDAO fdao = getFormDAO(visualObjId);
-        if (!fdao.isLoaded()) {
+        if (fdao==null || !fdao.isLoaded()) {
             throw new ErrMsgException("该记录已不存在！");
         }
         if (imc != null) {
@@ -1734,7 +1732,7 @@ public class FormDAOMgr {
                     if (!ret) {
                         String errMsg = (String) bsh.get("errMsg");
                         if (errMsg != null) {
-                            throw new ErrMsgException("验证非法：" + errMsg);
+                            throw new ErrMsgException("提示：" + errMsg);
                         } else {
                             throw new ErrMsgException("验证非法，但errMsg为空！");
                         }
@@ -1743,11 +1741,19 @@ public class FormDAOMgr {
                     // throw new ErrMsgException("该节点脚本中未配置ret=...");
                 }
             } catch (EvalError e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
+        return re;
+    }
 
-        re = fdao.del();
+    public boolean del(HttpServletRequest request, ModuleSetupDb vsd, IModuleChecker imc, String userName) throws ErrMsgException {
+        FormDAO fdao = getFormDAO(visualObjId);
+        if (fdao == null) {
+            LogUtil.getLog(getClass()).error("记录: " + visualObjId + " 已不存在");
+            return false;
+        }
+        boolean re = fdao.del();
         if (re) {
             // 如果需要记录历史
             if (fd.isLog()) {
@@ -1761,7 +1767,7 @@ public class FormDAOMgr {
             // 发送消息
             sendRemindMsg(request, vsd, fdao, "del");
 
-            script = vsd.getScript("del");
+            String script = vsd.getScript("del");
             if (script != null) {
                 Interpreter bsh = new Interpreter();
                 try {
@@ -1788,7 +1794,7 @@ public class FormDAOMgr {
                         }
                     }
                 } catch (EvalError e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -1804,7 +1810,7 @@ public class FormDAOMgr {
         //    throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
         // }
 
-        String ids = ParamUtil.get(request, "id");
+        String ids = ParamUtil.get(request, "ids");
         String[] aryIds = StrUtil.split(ids, ",");
         if (aryIds == null) {
             throw new ErrMsgException("缺少标识！");
@@ -1868,7 +1874,7 @@ public class FormDAOMgr {
             fieldValue = fdao.getFieldValue(fieldName);
         }
 
-        // 如果沒有多重映射，即隻有一道映射，則允許顯示多條記錄，以逗號分隔
+        // 如果没有多重映射，即只有单重映射，则允许显示多条记录，以逗号分隔
         if (ary.length == 5 && !"cws_log_id".equals(ary[3])) {
             String formCode = "";
             String showFieldName = "";
@@ -1887,7 +1893,6 @@ public class FormDAOMgr {
                 formCode = ary[i];
                 fieldName = ary[i + 1];
                 showFieldName = ary[i + 2];
-                // System.out.println(FormDAOMgr.class + "  i=" + i + " fieldValue=" + fieldValue + " formCode=" + formCode + " fieldName=" + fieldName + " showFieldName=" + showFieldName);
                 // cws_id=null:nr fieldName=cws_id fieldValue=null showFieldName=nr
 
                 FormDAOMgr fdaom = new FormDAOMgr(formCode);
@@ -1933,82 +1938,49 @@ public class FormDAOMgr {
                 }
             }
 
-            if (isForExport) {
+            // if (isForExport) {
                 // 当导出时，如果有相同的键值对，如来源于活动的新增项目，多个项目可能对应同一个活动，如果导出时前一记录已取出活动名，则后一记录不用再读取数据库，以加快速度
                 String strIds = (String) request.getAttribute(fd.getCode() + "_ids_" + fieldName + "_" + fieldValue);
                 if (strIds != null) {
                     ids.append(strIds);
                     isGetIdsFromDb = false;
                 }
-            }
+            // }
 
             if (isGetIdsFromDb) {
                 String orderBy = "asc";
                 if (msd!=null) {
                     orderBy = msd.getInt("other_multi_order")==1 ? "asc" : "desc";
                 }
-                String sql = "select id from " + fd.getTableNameByForm() +
-                        " where " + fieldName + "=? order by id " + orderBy; // 20200506 由desc改为asc
+                String sql = "select id from " + fd.getTableNameByForm() + " where " + fieldName + "=? order by id " + orderBy; // 20200506 由desc改为asc
+                DebugUtil.i(FormDAOMgr.class, "getFieldValueOfOtherMulti", sql + " fieldName=" + fieldName);
                 if ("id".equals(fieldName)) {
                     long myId = StrUtil.toLong(fieldValue, -65536);
                     if (myId == -65536) {
                         return null;
                     }
-                    objs[0] = new Long(myId);
-                    JdbcTemplate jt = new JdbcTemplate();
-                    ResultIterator ri = jt.executeQuery(sql, objs);
-                    while (ri.hasNext()) {
-                        ResultRecord rr = (ResultRecord) ri.next();
-                        id = rr.getLong(1);
-                        StrUtil.concat(ids, ",", String.valueOf(id));
-                    }
+                    objs[0] = myId;
                 } else if ("cws_id".equals(fieldName)) {
-                    objs[0] = new String(fieldValue);
-                    JdbcTemplate jt = new JdbcTemplate();
-                    ResultIterator ri = jt.executeQuery(sql, objs);
-                    while (ri.hasNext()) {
-                        ResultRecord rr = (ResultRecord) ri.next();
-                        id = rr.getLong(1);
-                        StrUtil.concat(ids, ",", String.valueOf(id));
-                    }
+                    objs[0] = fieldValue;
                 } else if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR ||
                         ff.getFieldType() == FormField.FIELD_TYPE_TEXT) {
                     objs[0] = fieldValue;
-                    JdbcTemplate jt = new JdbcTemplate();
-                    ResultIterator ri = jt.executeQuery(sql, objs);
-                    while (ri.hasNext()) {
-                        ResultRecord rr = (ResultRecord) ri.next();
-                        id = rr.getLong(1);
-                        StrUtil.concat(ids, ",", String.valueOf(id));
-                    }
                 } else if (ff.getFieldType() == FormField.FIELD_TYPE_DATE) {
                     objs[0] = DateUtil.parse(fieldValue, "yyyy-MM-dd");
-                    JdbcTemplate jt = new JdbcTemplate();
-                    ResultIterator ri = jt.executeQuery(sql, objs);
-                    while (ri.hasNext()) {
-                        ResultRecord rr = (ResultRecord) ri.next();
-                        id = rr.getLong(1);
-                        StrUtil.concat(ids, ",", String.valueOf(id));
-                    }
                 } else if (ff.getFieldType() == FormField.FIELD_TYPE_DATETIME) {
                     objs[0] = DateUtil.parse(fieldValue, "yyyy-MM-dd HH:mm:ss");
-                    JdbcTemplate jt = new JdbcTemplate();
-                    ResultIterator ri = jt.executeQuery(sql, objs);
-                    while (ri.hasNext()) {
-                        ResultRecord rr = (ResultRecord) ri.next();
-                        id = rr.getLong(1);
-                        StrUtil.concat(ids, ",", String.valueOf(id));
-                    }
                 } else {
-                    sql = "select id from " + fd.getTableNameByForm() + " where " + fieldName + "=" + fieldValue;
-                    JdbcTemplate jt = new JdbcTemplate();
-                    ResultIterator ri = jt.executeQuery(sql);
-                    while (ri.hasNext()) {
-                        ResultRecord rr = (ResultRecord) ri.next();
-                        id = rr.getLong(1);
-                        StrUtil.concat(ids, "，", String.valueOf(id));
-                    }
+                    // sql = "select id from " + fd.getTableNameByForm() + " where " + fieldName + "=" + fieldValue;
+                    objs[0] = fieldValue;
                 }
+                JdbcTemplate jt = new JdbcTemplate();
+                ResultIterator ri = jt.executeQuery(sql, objs);
+                while (ri.hasNext()) {
+                    ResultRecord rr = ri.next();
+                    id = rr.getLong(1);
+                    StrUtil.concat(ids, ",", String.valueOf(id));
+                }
+
                 if (ids.length()>0) {
                     request.setAttribute(fd.getCode() + "_ids_" + fieldName + "_" + fieldValue, ids.toString());
                 }
@@ -2020,6 +1992,7 @@ public class FormDAOMgr {
             return null;
         }
 
+        // 分隔符
         String otherMultiWs = ",";
         if (msd!=null) {
             otherMultiWs = StrUtil.getNullStr(msd.getString("other_multi_ws"));
@@ -2034,17 +2007,17 @@ public class FormDAOMgr {
         for (String strId : ary) {
             id = StrUtil.toLong(strId);
 
-            if (isForExport) {
+            // if (isForExport) {
+            // 不通过getFormDAOByCache从redis获取，加快速度
                 fdao = (FormDAO) request.getAttribute("FormDAO_" + id + "_" + fd.getCode());
                 if (fdao == null) {
                     fdao = new FormDAO();
-                    fdao = fdao.getFormDAO(id, fd);
-                } else {
+                    fdao = fdao.getFormDAOByCache(id, fd);
                     request.setAttribute("FormDAO_" + id + "_" + fd.getCode(), fdao);
                 }
-            } else {
-                fdao = fdao.getFormDAO(id, fd);
-            }
+            // } else {
+            //     fdao = fdao.getFormDAOByCache(id, fd);
+            // }
             String val;
             if (!"id".equalsIgnoreCase(showFieldName)) {
                 FormField ff = fdao.getFormField(showFieldName);
@@ -2107,19 +2080,19 @@ public class FormDAOMgr {
                 if (myId == -65536) {
                     return null;
                 }
-                objs[0] = new Long(myId);
+                objs[0] = myId;
                 JdbcTemplate jt = new JdbcTemplate();
                 ResultIterator ri = jt.executeQuery(sql, objs);
                 if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     id = rr.getLong(1);
                 }
             } else if ("cws_id".equals(fieldName)) {
-                objs[0] = new String(fieldValue);
+                objs[0] = fieldValue;
                 JdbcTemplate jt = new JdbcTemplate();
                 ResultIterator ri = jt.executeQuery(sql, objs);
                 if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     id = rr.getLong(1);
                 }
             } else if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR ||
@@ -2128,7 +2101,7 @@ public class FormDAOMgr {
                 JdbcTemplate jt = new JdbcTemplate();
                 ResultIterator ri = jt.executeQuery(sql, objs);
                 if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     id = rr.getInt(1);
                 }
             } else if (ff.getFieldType() == FormField.FIELD_TYPE_DATE) {
@@ -2136,7 +2109,7 @@ public class FormDAOMgr {
                 JdbcTemplate jt = new JdbcTemplate();
                 ResultIterator ri = jt.executeQuery(sql, objs);
                 if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     id = rr.getInt(1);
                 }
             } else if (ff.getFieldType() == FormField.FIELD_TYPE_DATETIME) {
@@ -2144,7 +2117,7 @@ public class FormDAOMgr {
                 JdbcTemplate jt = new JdbcTemplate();
                 ResultIterator ri = jt.executeQuery(sql, objs);
                 if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     id = rr.getInt(1);
                 }
             } else {
@@ -2153,7 +2126,7 @@ public class FormDAOMgr {
                 JdbcTemplate jt = new JdbcTemplate();
                 ResultIterator ri = jt.executeQuery(sql);
                 if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     id = rr.getInt(1);
                 }
             }
@@ -2182,7 +2155,7 @@ public class FormDAOMgr {
             FormDAO formDAO = new FormDAO();
             fdao = formDAO.getFormDAO(id, fd);
         } else {
-            // 当搜索被删除的记录时，此时从form_table_***_log中查找记录
+            // 当搜索被删除的记录时，此时从ft_***_log中查找记录
             fdao = fdaoLog.getFormDAOLog(id);
         }
 
@@ -2207,9 +2180,9 @@ public class FormDAOMgr {
             if (mrd.getString("relate_code").equals(moduleCodeRelated)) {
                 String field = mrd.getString("relate_field");
                 if ("id".equals(field)) {
-                    relateFieldValue = "" + fdaoParent.getId();
+                    relateFieldValue = String.valueOf(fdaoParent.getId());
                 } else if ("cws_id".equals(field)) {
-                    relateFieldValue = "" + fdaoParent.getCwsId();
+                    relateFieldValue = fdaoParent.getCwsId();
                 } else {
                     relateFieldValue = fdaoParent.getFieldValue(field);
                 }

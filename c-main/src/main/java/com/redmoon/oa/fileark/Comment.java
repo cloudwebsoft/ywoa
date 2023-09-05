@@ -1,6 +1,5 @@
 package com.redmoon.oa.fileark;
 
-import org.apache.log4j.Logger;
 import cn.js.fan.db.Conn;
 import cn.js.fan.db.ListResult;
 import cn.js.fan.db.SQLFilter;
@@ -12,6 +11,8 @@ import java.sql.ResultSet;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.sql.Timestamp;
 import java.util.Vector;
 
@@ -21,7 +22,6 @@ public class Comment implements java.io.Serializable {
     String add_date;
 
     String connname = "";
-    transient Logger logger = Logger.getLogger(Comment.class.getName());
 
     private static final String INSERT =
             "INSERT into cms_comment (nick, link, content, ip, doc_id, add_date) VALUES (?,?,?,?,?,?)";
@@ -33,19 +33,18 @@ public class Comment implements java.io.Serializable {
     public Comment() {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("Directory:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名为空！");
     }
 
     public Comment(int id) {
         this.id = id;
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("Directory:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名为空！");
         load(id);
     }
 
     public void renew() {
-        logger = Logger.getLogger(Comment.class.getName());
     }
 
     public boolean insert(int doc_id, String nick, String link, String content, String ip) {
@@ -62,7 +61,7 @@ public class Comment implements java.io.Serializable {
             re = conn.executePreUpdate()==1?true:false;
         }
         catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -120,11 +119,13 @@ public class Comment implements java.io.Serializable {
             }
         }
         catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         finally {
             if (rs!=null) {
-                try { rs.close(); } catch (SQLException e) {e.printStackTrace();}
+                try { rs.close(); } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn!=null) {
@@ -143,7 +144,7 @@ public class Comment implements java.io.Serializable {
         }
         catch (SQLException e) {
             re = false;
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -171,7 +172,6 @@ public class Comment implements java.io.Serializable {
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 total = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -211,7 +211,7 @@ public class Comment implements java.io.Serializable {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listResult:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error("listResult:" + StrUtil.trace(e));
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {

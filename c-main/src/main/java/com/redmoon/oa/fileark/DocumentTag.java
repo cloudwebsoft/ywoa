@@ -1,17 +1,15 @@
 package com.redmoon.oa.fileark;
 
-import javax.servlet.jsp.tagext.*;
-import cn.js.fan.db.ResultRecord;
-import org.apache.log4j.Logger;
-import cn.js.fan.db.ResultIterator;
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+
+import javax.servlet.jsp.tagext.BodyContent;
+import javax.servlet.jsp.tagext.BodyTagSupport;
 
 public class DocumentTag extends BodyTagSupport {
     int id = -1;
     String dirCode = "";
-
-    Logger logger = Logger.getLogger(DocumentTag.class.getName());
 
     public DocumentTag() {
     }
@@ -56,7 +54,7 @@ public class DocumentTag extends BodyTagSupport {
             } else
                 pageContext.getOut().print("文件不存在！");
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return EVAL_PAGE;
     }

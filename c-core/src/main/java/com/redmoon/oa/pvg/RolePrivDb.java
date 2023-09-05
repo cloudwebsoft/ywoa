@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -78,7 +79,7 @@ public class RolePrivDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("isRolePrivStartWith:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isRolePrivStartWith:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -102,8 +103,7 @@ public class RolePrivDb extends ObjectDb {
 				rc.refreshList();
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
     }
 
@@ -128,7 +128,7 @@ public class RolePrivDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -151,7 +151,7 @@ public class RolePrivDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -192,7 +192,7 @@ public class RolePrivDb extends ObjectDb {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -224,7 +224,7 @@ public class RolePrivDb extends ObjectDb {
             primaryKey.setKeyValue("priv", priv);
             uc.refreshSave(primaryKey);
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
             throw new ErrMsgException(e.getMessage());
         } finally {
             if (conn != null) {

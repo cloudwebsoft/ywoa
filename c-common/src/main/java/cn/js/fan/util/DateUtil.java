@@ -1,5 +1,7 @@
 package cn.js.fan.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -59,7 +61,7 @@ public class DateUtil {
 		if (d == null) {
 			return "";
 		}
-		// System.out.println("d=" + d + " format1=" + format1 + " format2=" +
+		// LogUtil.getLog(getClass()).info("d=" + d + " format1=" + format1 + " format2=" +
 		// format2 + " locale=" + locale + " timezone=" + timeZone);
 		DateFormat df = DateFormat
 				.getDateTimeInstance(format1, format2, locale);
@@ -177,8 +179,7 @@ public class DateUtil {
 		try {
 			d = new java.util.Date(Long.parseLong(timeMillis.trim()));
 		} catch (Exception e) {
-			// System.out.println("parse:" + e.getMessage());
-			// e.printStackTrace();
+			LogUtil.getLog(DateUtil.class).error(e.getMessage());
 		}
 		return d;
 	}
@@ -204,7 +205,6 @@ public class DateUtil {
 				} catch (Exception ex) {
 				}
 			}
-			// System.out.println("DateUtil.java parse:" + e.getMessage());
 		}
 		return d;
 	}
@@ -278,6 +278,13 @@ public class DateUtil {
 		return cal;
 	}
 
+	/**
+	 * 加上天数
+
+	 * @param d
+	 * @param day
+	 * @return
+	 */
 	public static Date addDate(java.util.Date d, int day) {
 		if (d == null)
 			return null;
@@ -379,7 +386,6 @@ public class DateUtil {
 			return -1;
 		}
 		long r = c1.getTime() - c2.getTime();
-		// System.out.println("compare r=" + r);
 		if (r > 0) {
 			return 1;
 		} else if (r == 0) {
@@ -475,7 +481,7 @@ public class DateUtil {
 		try {
 			return (int)(df.parse(df.format(d1)).getTime()-df.parse(df.format(d2)).getTime()) / (24 * 60 * 60 * 1000);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			LogUtil.getLog(DateUtil.class).error(e);
 		}
 		return -65536;
 	}
@@ -558,7 +564,6 @@ public class DateUtil {
 		if (h < 0) {
 			h += 24;
 		}
-		// System.out.println("DateUtil.java diffDay=" + diffDay);
 		int[] r = { diffDay, h, m, s };
 		return r;
 	}

@@ -1,0 +1,21 @@
+#数据字典 - 表格
+ft_data_dict_table
+ft_data_dict_column(数据字字典 - 列)
+ft_formula(函数)
+ft_salary_tax(税率设置)
+ft_salary_subject(工资科目)
+ft_personbasic(人事信息，因为桌面图表、卡片项的设置需用到)
+ft_config_card(桌面卡片)
+ft_config_chart(图表设置)
+ft_ys(预算,用于DEMO演示折线图)
+visual_attach
+visual_module_export_template
+visual_module_import_template
+#包含
+&_log_read
+#以_log结尾，注意优先级顺序，$优先级最高 !优先级次之 ^优先级最低
+$_log
+#不以ft_开头
+!ft_
+#以ft_zs_开头
+#^ft_zs_

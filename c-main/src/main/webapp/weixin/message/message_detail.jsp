@@ -6,7 +6,7 @@
     String path = request.getContextPath();
     String basePath = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + path + "/";
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -41,13 +41,11 @@
 
         .detail {
             color: #000;
-
         }
 
         .hide_li {
             display: none;
         }
-
     </style>
 </head>
 <body>
@@ -62,7 +60,7 @@
                 <span class="mui-h5">发件人:</span>
                 <span class="mui-pull-right mui-h5 detail" type="0">详情</span>
             </li>
-            <li class="mui-table-view-cell inbox_li hide_li">
+            <li class="mui-table-view-cell inbox_li" style="display: none">
                 <span class="mui-h5">收件人:</span>
             </li>
             <li class="mui-table-view-cell link_li hide_li">
@@ -86,8 +84,10 @@
 <%
     long id = ParamUtil.getInt(request, "id", 0);
     String skey = ParamUtil.get(request, "skey");
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <script>
+    var isUniWebview = <%=isUniWebview%>;
     // 当不用于HBuilderX手机端
     if(!mui.os.plus) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
@@ -110,6 +110,10 @@
                     plus.runtime.setBadgeNumber(unReadCount);
                     plus.storage.setItem('$state', JSON.stringify(state));
                 }
+            }
+
+            if (isUniWebview) {
+                $('.mui-bar').remove();
             }
         });
     }
@@ -146,9 +150,18 @@
                     jQuery(".link_li .action-name").html(n.name);
                     jQuery(".link_li").show();
                     // 调用prompt()，安卓打开新的activity，以便于后退
-                    var url = "../notice/notice_detail.jsp?id=" + n.noticeId + "&skey=<%=skey%>";
+                    var url;
                     if (browser() == "android" || mui.os.plus) {
                         url = "weixin/notice/notice_detail.jsp?id=" + n.noticeId + "&skey=<%=skey%>";
+                    }
+                    else {
+                        if (mui.os.ios) {
+                            url = "../../weixin/notice/notice_detail.jsp?id=" + n.noticeId + "&skey=<%=skey%>";
+                        }
+                        else {
+                            // PC端
+                            url = "weixin/notice/notice_detail.jsp?id=" + n.noticeId + "&skey=<%=skey%>";
+                        }
                     }
                     jQuery(".link_li .action-bar").attr("url", url);
                 } else if ("flow" in data) {
@@ -165,18 +178,29 @@
                     if (browser() == "android" || mui.os.plus) {
                         url = "weixin/" + url;
                     } else {
-                        url = "../" + url;
+                        if (mui.os.ios) {
+                            if(mui.os.plus) {
+                                url = "../../weixin/" + url;
+                            }
+                            else {
+                                url = "weixin/" + url;
+                            }
+                        }
+                        else {
+                            // PC端
+                            url = "weixin/" + url;
+                        }
                     }
                     jQuery(".link_li .action-bar").attr("url", url);
                 }
-                if ("receiver" in data) {
+                else if ("receiver" in data) {
                     var receiver = data.receiver;
                     var receiver_arr = receiver.split(',');
                     $.each(receiver_arr, function (index, item) {
                         jQuery(".inbox_li").append('<span class="mui-badge-success">' + item + '</span>');
                     });
                 }
-                if (("cs" in data)) {
+                else if ("cs" in data) {
                     var cs = data.cs;
                     var cs_arr = cs.split(',');
                     var cs_li = ' <li class="mui-table-view-cell copy_to_li hide_li">'
@@ -187,7 +211,7 @@
                         jQuery(".copy_to_li").append('<span class="mui-badge-success">' + item + '</span>');
                     });
                 }
-                if (("ms" in data)) {
+                else if ("ms" in data) {
                     var ms = data.ms;
                     var ms_arr = ms.split(',');
                     var ms_li = ' <li class="mui-table-view-cell blind_copy_li hide_li">'
@@ -198,6 +222,10 @@
                         jQuery(".blind_copy_li").append('<span class="mui-badge-success">' + item + '</span>');
                     });
                 }
+                else {
+                    // 隐藏详情按钮
+                    jQuery('.detail').hide();
+                }
                 if (("title" in data) && ("createdate" in data)) {
                     var $li_desc = ' <li class="mui-table-view-cell">';
                     $li_desc += '<h5 class="h_title">' + title + '</h5>';
@@ -206,8 +234,8 @@
                     jQuery("ul").append($li_desc);
                 }
             }, "json");
-
         }
+
         $(".mui-table-view-cell").on("tap", '.detail', function () {
             var type = jQuery(this).attr("type");
             if (type == 0) {

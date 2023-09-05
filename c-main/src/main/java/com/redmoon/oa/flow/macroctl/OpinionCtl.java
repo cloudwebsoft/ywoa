@@ -12,7 +12,8 @@ import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysUtil;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -58,12 +59,15 @@ public class OpinionCtl extends AbstractMacroCtl {
 	public OpinionCtl() {
 	}
 
+	@Override
 	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
+		SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
 		if (request.getAttribute("isOpinionJS") == null) {
-			sb.append("<link type=\"text/css\" rel=\"stylesheet\" href=\""
+/*			sb.append("<link type=\"text/css\" rel=\"stylesheet\" href=\""
 					+ request.getContextPath()
-					+ "/flow/macro/macro_opinion_ctl.css\" />");
+					+ "/flow/macro/macro_opinion_ctl.css\" />");*/
+			sb.append("<link type=\"text/css\" rel=\"stylesheet\" href=\"" + sysUtil.getPublicPath() + "/resource/css/macro_opinion_ctl.css\" />");
 			request.setAttribute("isOpinionJS", "y");
 		}
 
@@ -95,12 +99,17 @@ public class OpinionCtl extends AbstractMacroCtl {
 				}
 			}
 		}
-		
-		sb.append("<div><textarea class='opinionTextarea' id='" + ff.getName()
+
+		sb.append("<div><textarea id='" + ff.getName()
 				+ "' name='" + ff.getName() + "' rows=8 cols=80 title='意见框'");
         if (!"".equals(ff.getCssWidth())) {
         	sb.append(" style='width:" + ff.getCssWidth() + "' ");
-        }		
+        }
+		if (ff.isReadonly()) {
+			sb.append(" readonly class='opinionTextarea readonly' ");
+		} else {
+			sb.append(" class='opinionTextarea' ");
+		}
 		sb.append(">" + cnt + "</textarea>");
 
 		StampPriv sp = new StampPriv();
@@ -112,13 +121,10 @@ public class OpinionCtl extends AbstractMacroCtl {
 						+ ff.getName()
 						+ "_btn' onmouseover=\"tipPhrase('"
 						+ ff.getName()
-						+ "', this)\"><img src=\""
-						+ request.getContextPath()
-						+ "/images/@flowico_13.png\" width=\"23\" height=\"23\" align=\"absmiddle\" title=\"常用语句\" />&nbsp;&nbsp;</span>");
+						+ "', this)\"><img src=\"" + sysUtil.getPublicPath() + "/resource/images/@flowico_13.png\" width=\"23\" height=\"23\" align=\"absmiddle\" title=\"常用语句\" />&nbsp;&nbsp;</span>");
 
 		if (sd != null) {
-			sb.append("<span class='opinionUser'><img src='"
-					+ request.getContextPath()+ "/img_show.jsp?path=" + sd.getImageUrl(request)
+			sb.append("<span class='opinionUser'><img src='" + sd.getImageUrl()
 					+ "' /></span><span class='opinionTime'>"
 					+ DateUtil.format(new java.util.Date(), "yyyy-MM-dd HH:mm")
 					+ "</span>");
@@ -155,8 +161,8 @@ public class OpinionCtl extends AbstractMacroCtl {
 	 */
 	public String getDisableCtlScript(FormField ff, String formElementId) {
 		
-		String str = "if (o('" + ff.getName()
-				+ "_sign')) o('" + ff.getName()
+		String str = "if (fo('" + ff.getName()
+				+ "_sign')) fo('" + ff.getName()
 				+ "_sign').style.display = 'none';\r\n";
 		str += "DisableCtl('" + ff.getName() + "', '" + ff.getType()
 				+ "','', '');\n";
@@ -171,7 +177,7 @@ public class OpinionCtl extends AbstractMacroCtl {
 	 * @return String
 	 */
 	public String getReplaceCtlWithValueScript(FormField ff) {
-		String str = "try{o('" + ff.getName()
+		String str = "try{fo('" + ff.getName()
 				+ "_sign').style.display = 'none';}catch(e){}\r\n";
 		str += "ReplaceCtlWithValue('" + ff.getName() + "', '" + ff.getType()
 				+ "','');\n";
@@ -285,7 +291,7 @@ public class OpinionCtl extends AbstractMacroCtl {
 	public String converToHtml(HttpServletRequest request, FormField ff,
 			String fieldValue) {
 		if (fieldValue != null && !fieldValue.equals("")) {
-			return rendForMobile(fieldValue, "web");
+			return rendForMobile(fieldValue, "list");
 		} else {
 			return "";
 		}
@@ -314,13 +320,15 @@ public class OpinionCtl extends AbstractMacroCtl {
 				case ORDER_TIME_DESC:
 					for (int i = size - 1; i >= 0; i--) {
 						Element e = (Element) v.get(i);
-						if (type != null && !type.equals("")) {
-							if (type.equals("web")) {
+						if (type != null && !"".equals(type)) {
+							if ("web".equals(type)) {
 								sb.append(pareseElement(request, e));
-							} else if (type.equals("mobile")) {
-								JSONObject opinion = pareseElementToJSON(
-										request, e);
-
+							}
+							else if ("list".equals(type)) {
+								sb.append(pareseElementForList(request, e));
+							}
+							else if ("mobile".equals(type)) {
+								JSONObject opinion = pareseElementToJSON(request, e);
 								if (jsonArray == null) {
 									jsonArray = new JSONArray();
 								}
@@ -332,13 +340,11 @@ public class OpinionCtl extends AbstractMacroCtl {
 				case ORDER_TIME_ASC:
 					for (int i = 0; i < size; i++) {
 						Element e = (Element) v.get(i);
-						if (type != null && !type.equals("")) {
-							if (type.equals("web")) {
+						if (type != null && !"".equals(type)) {
+							if ("web".equals(type)) {
 								sb.append(pareseElement(request, e));
-							} else if (type.equals("mobile")) {
-								JSONObject opinion = pareseElementToJSON(
-										request, e);
-
+							} else if ("mobile".equals(type)) {
+								JSONObject opinion = pareseElementToJSON(request, e);
 								if (jsonArray == null) {
 									jsonArray = new JSONArray();
 								}
@@ -354,25 +360,24 @@ public class OpinionCtl extends AbstractMacroCtl {
 					sb = new StringBuilder(jsonArray.toString());
 				}
 			}
-		} catch (IOException ex) {
-			// ex.printStackTrace();
-		} catch (JDOMException ex) {
-			// ex.printStackTrace();
+		} catch (IOException | JDOMException ex) {
+			// LogUtil.getLog(getClass()).error(ex);
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return sb.toString();
 	}
 
+	@Override
 	public String getControlText(String userName, FormField ff) {
-		if (ff.getValue() != null && !ff.getValue().equals("")) {
+		if (ff.getValue() != null && !"".equals(ff.getValue())) {
 			return rendForMobile(ff.getValue(), "mobile");
 		} else {
 			return "";
 		}
 	}
 
+	@Override
 	public String getControlValue(String userName, FormField ff) {
 		String cnt = "";
 		StampPriv sp = new StampPriv();
@@ -399,13 +404,13 @@ public class OpinionCtl extends AbstractMacroCtl {
 				opinion.put("existStamp", false);
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(OpinionCtl.class).error(
+			LogUtil.getLog(getClass()).error(
 					"JSONeException==" + e.getMessage());
 		}
 		return opinion.toString();
 	}
 
+	@Override
 	public String getControlOptions(String userName, FormField ff) {
 		return "";
 	}
@@ -425,10 +430,14 @@ public class OpinionCtl extends AbstractMacroCtl {
 		user = user.getUserDb(mad.getUserName());
 
 		opinion = StrUtil.getNullStr(opinion);
+		// 来自于表单域选择宏控件的映射
+		if (opinion.startsWith("<?xml ")) {
+			return opinion;
+		}
 
 		// 如果原来意见为空或者意见为默认值
-		if (content.equals("") || isDefaultValue) {
-			if (opinion.equals("")) {
+		if ("".equals(content) || isDefaultValue) {
+			if ("".equals(opinion)) {
 				if (isEditable) {
 					String val = "<?xml version=\"1.0\" encoding=\"utf-8\"?><myactions><myaction id=\""
 							+ myActionId
@@ -443,10 +452,8 @@ public class OpinionCtl extends AbstractMacroCtl {
 							+ "</time></myaction></myactions>";
 					return val;
 				} else {
-					String val = "<?xml version=\"1.0\" encoding=\"utf-8\"?><myactions></myactions>";
-					return val;
+					return "<?xml version=\"1.0\" encoding=\"utf-8\"?><myactions></myactions>";
 				}
-
 			} else {
 				String val = "<?xml version=\"1.0\" encoding=\"utf-8\"?><myactions><myaction id=\""
 						+ myActionId
@@ -506,13 +513,13 @@ public class OpinionCtl extends AbstractMacroCtl {
 					xmlOut.output(doc, byteRsp);
 					content = byteRsp.toString("utf-8");
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LogUtil.getLog(getClass()).error(ex);
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 
 		return content;
@@ -534,7 +541,6 @@ public class OpinionCtl extends AbstractMacroCtl {
 	 * 组装意见，删除原来的意见，添加新意见
 	 * 
 	 * @param content
-	 * @param myActionId
 	 * @return
 	 */
 	public String makeOpinion(String content, String userName, String opinion,
@@ -611,13 +617,13 @@ public class OpinionCtl extends AbstractMacroCtl {
 					xmlOut.output(doc, byteRsp);
 					content = byteRsp.toString("utf-8");
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LogUtil.getLog(getClass()).error(ex);
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 
 		return content;
@@ -671,19 +677,16 @@ public class OpinionCtl extends AbstractMacroCtl {
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			System.out.println(getClass() + " content=" + content);
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 		return sb.toString();
 	}
 
 	/**
 	 * 取得节点上的属性
-	 * 
-	 * @param wpd
-	 * @param internalName
+	 *
 	 * @param property
 	 * @return
 	 */
@@ -714,9 +717,9 @@ public class OpinionCtl extends AbstractMacroCtl {
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 
 		return null;
@@ -737,28 +740,74 @@ public class OpinionCtl extends AbstractMacroCtl {
 			}
 			sb.append("<div class='opinionCnt'>"
 					+ temp.replaceAll("\r\n", "</br>")
-							.replaceAll("\n", "</br>") + "</div>");
+					.replaceAll("\n", "</br>") + "</div>");
 
 			StampPriv sp = new StampPriv();
 			StampDb sd = sp.getPersonalStamp(e.getChildText("userName"));
 
 			if (sd != null) {
 				sb.append("<div class='opinionUT'><span class='opinionUser'><img src='"
-								+ Global.getRootPath() + "/img_show.jsp?path=" + sd.getImageUrl(request)
-								+ "' /></span><span class='opinionTime'>"
-								+ DateUtil.format(DateUtil.parse(e
-										.getChildText("time"),
-										"yyyy-MM-dd HH:mm:ss"),
-										"yyyy-MM-dd HH:mm") + "</span></div>");
+						+ Global.getRootPath() + "/showImg.do?path=" + sd.getImageUrl()
+						+ "' /></span><span class='opinionTime'>"
+						+ DateUtil.format(DateUtil.parse(e
+								.getChildText("time"),
+						"yyyy-MM-dd HH:mm:ss"),
+						"yyyy-MM-dd HH:mm") + "</span></div>");
 			} else {
 				sb.append("<div class='opinionUT'><span class='opinionUser'>"
 						+ e.getChildText("realName")
 						+ "</span><span class='opinionTime'>"
 						+ DateUtil.format(DateUtil.parse(
-								e.getChildText("time"), "yyyy-MM-dd HH:mm:ss"),
-								"yyyy-MM-dd HH:mm") + "</span></div>");
+						e.getChildText("time"), "yyyy-MM-dd HH:mm:ss"),
+						"yyyy-MM-dd HH:mm") + "</span></div>");
 			}
 			sb.append("</div>");
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * 用于列表页展示
+	 * @param request
+	 * @param e
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
+	private String pareseElementForList(HttpServletRequest request, Element e)
+			throws UnsupportedEncodingException {
+		StringBuilder sb = new StringBuilder();
+		String cnt = e.getChildText("content").trim();
+		if (!"".equals(cnt)) {
+			/*sb.append("<div id='opinion" + e.getAttribute("id").getValue()
+					+ "' class='opinion'>");*/
+			String temp = "";
+			try {
+				temp = URLDecoder.decode(cnt, "utf-8");
+			} catch (Exception ex) {
+				temp = cnt;
+			}
+			/*sb.append("<div class='opinionCnt'>"
+					+ temp.replaceAll("\r\n", "</br>")
+							.replaceAll("\n", "</br>") + "</div>");*/
+
+			sb.append(temp + "\r\n");
+
+			StampPriv sp = new StampPriv();
+			StampDb sd = sp.getPersonalStamp(e.getChildText("userName"));
+
+			if (sd != null) {
+				SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+				sb.append("<img src='"
+								+ sysUtil.getRootPath() + "/showImg.do?path=" + sd.getImageUrl()
+								+ "' />    "
+								+ DateUtil.format(DateUtil.parse(e.getChildText("time"),
+										"yyyy-MM-dd HH:mm:ss"),
+										"yyyy-MM-dd HH:mm") + "\r\n");
+			} else {
+				sb.append(e.getChildText("realName") + "    " + DateUtil.format(DateUtil.parse(e.getChildText("time"), "yyyy-MM-dd HH:mm:ss"),
+								"yyyy-MM-dd HH:mm") + "\r\n");
+			}
+			/*sb.append("</div>");*/
 		}
 		return sb.toString();
 	}

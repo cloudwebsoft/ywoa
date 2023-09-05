@@ -15,6 +15,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>关联模块</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
     <script src="../inc/common.js"></script>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css"/>
     <script src="<%=request.getContextPath()%>/js/jquery-1.9.1.min.js"></script>
@@ -44,30 +45,6 @@
     String op = StrUtil.getNullString(request.getParameter("op"));
     String code = ParamUtil.get(request, "code");
 
-    if (op.equals("modify")) {
-        String relateCode = ParamUtil.get(request, "relateCode");
-        String order = ParamUtil.get(request, "order");
-        String field = ParamUtil.get(request, "field");
-        int type = ParamUtil.getInt(request, "type");
-        int cwsStatus = ParamUtil.getInt(request, "cwsStatus", com.redmoon.oa.flow.FormDAO.STATUS_NOT);
-
-        ModuleRelateDb mrd = new ModuleRelateDb();
-        mrd = mrd.getModuleRelateDb(formCode, relateCode);
-
-        int isOnTab = ParamUtil.getInt(request, "is_on_tab", 0);
-
-        String conds = ParamUtil.get(request, "conds");
-
-        boolean re = mrd.save(new JdbcTemplate(), new Object[]{field, new Integer(type), new Double(order), new Integer(cwsStatus), isOnTab, conds, formCode, relateCode});
-
-        if (re) {
-            out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "module_relate.jsp?formCode=" + formCode + "&code=" + code));
-        } else {
-            out.print(StrUtil.jAlert_Back("操作失败！", "提示"));
-        }
-        return;
-    }
-
     Iterator irFields = fd.getFields().iterator();
     String opts = "";
     while (irFields.hasNext()) {
@@ -82,15 +59,16 @@
 <div class="spacerH"></div>
 <table cellspacing="0" class="tabStyle_1 percent98" cellpadding="3" width="98%" align="center">
     <tr>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="4%">顺序</td>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="14%">从模块表单名称</td>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="14%">主模块关联字段</td>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="17%">关联方式</td>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="6%">顺序号</td>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="11%">状态</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="4%">序号</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="13%">从模块名称</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="12%">选项卡名称</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="14%" style="display: none">主模块关联字段</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="12%">关联方式</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="4%">顺序号</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="9%">状态</td>
         <td class="tabStyle_1_title" nowrap="nowrap" width="6%">选项卡</td>
-        <td class="tabStyle_1_title" nowrap="nowrap" width="11%">条件</td>
-        <td width="17%" nowrap="nowrap" class="tabStyle_1_title">操作</td>
+        <td class="tabStyle_1_title" nowrap="nowrap" width="7%" align="center">条件</td>
+        <td width="16%" nowrap="nowrap" class="tabStyle_1_title">操作</td>
     </tr>
     <%
         ModuleRelateDb mrd = new ModuleRelateDb();
@@ -119,7 +97,7 @@
         <tr id="tr<%=i%>" class="highlight">
             <td align="center"><%=i + 1%>
             </td>
-            <td title="表单编码：<%=moduleFormCode%>">
+            <td title="编码：<%=moduleFormCode%>">
                 <a href="javascript:;" onclick="addTab('<%=moduleName%>', '<%=request.getContextPath()%>/visual/module_field_list.jsp?code=<%=StrUtil.UrlEncode(moduleCode)%>&formCode=<%=StrUtil.UrlEncode(moduleFormCode)%>')"><%=moduleName%>
                 </a>
                 <input name="formCode" value="<%=formCode%>" type="hidden"/>
@@ -127,6 +105,9 @@
                 <input name="relateCode" value="<%=relateCode%>" type="hidden"/>
             </td>
             <td>
+                <input id="tabName" name="tabName" style="width:120px" title="如果为空则使用从模块名称" value="<%=StrUtil.getNullStr(mrd.getString("tab_name"))%>"/>
+            </td>
+            <td style="display: none">
                 <select id="field<%=i %>" name="field">
                     <option value="id">id</option>
                     <option value="cwsId">cwsId</option>
@@ -145,7 +126,7 @@
                     o('type<%=i%>').value = "<%=mrd.getInt("relate_type")%>";
                 </script>
             </td>
-            <td><input name="order" size="5" value="<%=mrd.getInt("relate_order")%>"/></td>
+            <td><input name="order" style="width:40px" value="<%=mrd.getInt("relate_order")%>"/></td>
             <td>
                 <select id="cwsStatus<%=i %>" name="cwsStatus">
                     <option value="-100">不限</option>
@@ -161,17 +142,16 @@
             <td align="center">
                 <input id="is_on_tab" name="is_on_tab" title="是否显示于选项卡" type="checkbox" value="1" <%=mrd.getInt("is_on_tab") == 1 ? "checked" : "1"%> />
             </td>
-            <td align="left">
-                <img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
-                <a href="javascript:;" onclick="openCondition(o('conds<%=i%>'), o('imgConds<%=i%>'))" title="当满足条件时，显示从模块">配置条件</a>
+            <td align="center">
+                <a href="javascript:;" onclick="openCondition(o('conds<%=i%>'), o('imgConds<%=i%>'))" title="当满足条件时，显示从模块"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
                 <span style="margin:10px">
-        <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%="".equals(conds)?"none":""%>" id="imgConds<%=i%>"/>
-        </span>
+                    <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:14px;height:14px;display:<%="".equals(conds)?"none":""%>" id="imgConds<%=i%>"/>
+                </span>
                 <textarea id="conds<%=i%>" name="conds" style="display:none"><%=conds%></textarea>
             </td>
-            <td align="center"><input class="btn" type="button" value="修改" onclick="modify('<%=i%>')"/>
+            <td align="center"><input class="btn btn-default" type="button" value="确定" onclick="modify('<%=i%>')"/>
                 &nbsp;&nbsp;
-                <input class="btn" type="button" onclick="del('<%=i%>', '<%=formCode%>', '<%=relateCode%>')" value="删除"/></td>
+                <input class="btn btn-default" type="button" onclick="del('<%=i%>', '<%=formCode%>', '<%=relateCode%>')" value="删除"/></td>
         </tr>
     </form>
     <%
@@ -181,8 +161,8 @@
 <form action="module_relate.jsp" method="post" name="formAdd" id="formAdd">
     <table cellspacing="0" class="tabStyle_1 percent98" cellpadding="3" width="98%" align="center" style="margin-top: 10px">
         <tr>
-            <td width="8%" align="right">请选择从模块</td>
-            <td width="14%">
+            <td width="8%" align="right">从模块</td>
+            <td width="17%">
                 <%
                     Vector v = msd.listUsed();
                     ir = v.iterator();
@@ -214,12 +194,15 @@
                     });
                 </script>
             </td>
-            <td width="78%">主模块字段
+            <td width="75%">
+                <span style="display:none;">
+                主模块字段
                 <select name="field">
-                    <option value="id">id</option>
+                    <option value="id" selected>id</option>
                     <option value="cwsId">cwsId</option>
                     <%=opts%>
                 </select>
+                </span>
                 关联方式
                 <select name="type">
                     <option value="<%=ModuleRelateDb.TYPE_MULTI%>">记录型(多个记录)</option>
@@ -244,13 +227,13 @@
                     <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:none" id="imgCondsAdd"/>
                 </span>
                 <textarea id="condsAdd" name="conds" style="display:none"></textarea>
-                <input id="btnAdd" class="btn" type="button" value="添加"/>
+                <input id="btnAdd" class="btn btn-default" type="button" value="添加"/>
             </td>
         </tr>
     </table>
 </form>
-<div class="text-center" style="margin: 0px auto; width: 98%">
-    注：&nbsp;所选从模块的字段cws_id等于本模块id字段&nbsp;
+<div class="text-center" style="margin: 10px auto; width: 98%">
+    注：&nbsp;所选从模块的字段cws_id默认等于本模块id字段&nbsp;，关联方式：表单型（单个记录）暂不支持
 </div>
 </body>
 <script>
@@ -386,32 +369,40 @@
     }
 
     function modify(index) {
-        jConfirm('您确定要删除么？', '提示', function (r) {
-            if (!r) {
-                return;
-            } else {
-                $.ajax({
-                    type: "post",
-                    url: "modifyRelateModule",
-                    data: $('#form' + index).serialize(),
-                    dataType: "html",
-                    beforeSend: function (XMLHttpRequest) {
-                        $('body').showLoading();
-                    },
-                    success: function (data, status) {
-                        data = $.parseJSON(data);
-                        $.toaster({priority: 'info', message: data.msg});
-                    },
-                    complete: function (XMLHttpRequest, status) {
-                        $('body').hideLoading();
-                    },
-                    error: function (XMLHttpRequest, textStatus) {
-                        // 请求出错处理
-                        jAlert(XMLHttpRequest.responseText, "提示");
-                    }
-                });
+        $.ajax({
+            type: "post",
+            url: "modifyRelateModule",
+            data: $('#form' + index).serialize(),
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                $.toaster({priority: 'info', message: data.msg});
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                jAlert(XMLHttpRequest.responseText, "提示");
             }
-        })
+        });
     }
+
+    $(function() {
+        $('input, select, textarea').each(function() {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            // ffb-input 为flexbox的样式
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') &&
+                $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file' && !$(this).hasClass('ffb-input')) {
+                $(this).addClass('form-control');
+                $(this).attr('autocomplete', 'off');
+            }
+        });
+    })
 </script>
 </html>

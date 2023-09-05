@@ -8,6 +8,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <packaging>jar</packaging>
 
     <artifactId>c-main</artifactId>
     <dependencies>
@@ -21,22 +22,182 @@
             <artifactId>c-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+
         <dependency>
             <groupId>com.redmoon</groupId>
-            <artifactId>c-bbs</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
+            <artifactId>c-secret</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/src/main/webapp/WEB-INF/lib/c-secret-0.0.1-SNAPSHOT-mix.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.redmoon</groupId>
+            <artifactId>c-smart</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/src/main/webapp/WEB-INF/lib/c-smart-0.0.1-SNAPSHOT-mix.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.redmoon</groupId>
+            <artifactId>c-mobile</artifactId>
+            <version>0.0.1</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/src/main/webapp/WEB-INF/lib/c-mobile-0.0.1-SNAPSHOT.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.redmoon</groupId>
+            <artifactId>je-analysis</artifactId>
+            <version>1.5.1</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/src/main/webapp/WEB-INF/lib/je-analysis-1.5.1.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.redmoon</groupId>
+            <artifactId>jofc2</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/src/main/webapp/WEB-INF/lib/jofc2-1.0-0.jar</systemPath>
+        </dependency>
+
+        <!--阿里钉钉-->
+        <dependency>
+            <groupId>com.laiwang.lippi</groupId>
+            <artifactId>lippi.oapi.encryt</artifactId>
+            <version>1.0.3-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/lippi-oapi-encrpt.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.dingtalk.open</groupId>
+            <artifactId>client-sdk.api</artifactId>
+            <version>1.0.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/client-sdk.api-1.0.2.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.dingtalk.open</groupId>
+            <artifactId>client-sdk.common</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/client-sdk.common-1.0.0-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.dingtalk.open</groupId>
+            <artifactId>client-sdk.core</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/client-sdk.core-1.0.0-SNAPSHOT.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.dingtalk.open</groupId>
+            <artifactId>taobao-sdk-java</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/taobao-sdk-java-auto_1479188381469-20200610.jar</systemPath>
+        </dependency>
+
+        <!--润乾报表4-->
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>report4</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/report4-1.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>dm_report</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/dm_report.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>gez</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/gez.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>gez_FlexDesigner</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/gez_FlexDesigner-1.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>gez_resMigrate</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/gez_resMigrate-1.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>gez_viewReport</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/gez_viewReport-1.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>webutil</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/webutil.jar</systemPath>
+        </dependency>
+        <!--润乾导出word-->
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>com.lowagie2</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/com.lowagie2-1.0.jar</systemPath>
+        </dependency>
+        <!--润乾导出Excel-->
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>poi2</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/poi2.jar</systemPath>
+        </dependency>
+        <!--润乾绘制线条，中国式表格左上角单元格的斜线，例：加班统计表-->
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>jai_codec</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/jai_codec.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.runquan</groupId>
+            <artifactId>jai_core</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/jai_core.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jbarcode</groupId>
+            <artifactId>jbarcode</artifactId>
+            <version>0.2.8</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/jbarcode-0.2.8.jar</systemPath>
         </dependency>
     </dependencies>
 
     <build>
-        <outputDirectory>${project.basedir}/../target/embed/WEB-INF/classes</outputDirectory>
+        <outputDirectory>${project.basedir}/../out/embed/WEB-INF/classes</outputDirectory>
 
         <resources>
-            <!-- build时将jsp文件拷贝到targetPath目录下-->
+            <!-- build时将webapp文件夹拷贝到targetPath目录下-->
             <resource>
                 <directory>src/main/webapp</directory>
-                <targetPath>${project.basedir}/../target/embed</targetPath>
+                <targetPath>${project.basedir}/../out/embed</targetPath>
                 <includes>
                     <include>**/*.*</include>
                 </includes>
@@ -58,7 +219,34 @@
                     <include>**/*.xml</include>
                     <include>**/*.ccf</include>
                     <include>**/*.properties</include>
+                    <include>**/*.txt</include>
                 </includes>
+            </resource>
+
+            <resource>
+                <directory>${project.basedir}/src/main/webapp/WEB-INF/lib</directory>
+                <targetPath>BOOT-INF/lib/</targetPath>
+                <includes>
+                    <include>**/*.jar</include>
+                </includes>
+            </resource>
+            <resource>
+                <!--必须加上${project.basedir}/，否则c-core、c-common生成的jar包也会带有BOOT-INF目录，并且会将各自模块下的resources目录下面的文件拷贝进去-->
+                <directory>${project.basedir}/src/main/resources</directory>
+                <targetPath>BOOT-INF/classes/</targetPath>
+            </resource>
+
+            <resource>
+                <directory>${basedir}/src/main/webapp</directory>
+                <!--注意必须要放在此目录下才能被访问到-->
+                <targetPath>META-INF/resources</targetPath>
+                <!--<includes>
+                    <include>**/**</include>
+                </includes>-->
+                <excludes>
+                    <!--排除掉WEB-INF目录-->
+                    <exclude>WEB-INF/lib/**</exclude>
+                </excludes>
             </resource>
         </resources>
         <testResources>
@@ -66,5 +254,52 @@
                 <directory>${project.basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <compilerArguments>
+                        -Xlint:unchecked
+                        <verbose/>
+                        <!--加载手工添加的jar包-->
+                        <bootclasspath>${java.home}/lib/rt.jar;${java.home}/lib/jce.jar;${java.home}/lib/jsse.jar</bootclasspath>
+                        <extdirs>${project.basedir}/../c-main/src/main/webapp/WEB-INF/lib</extdirs>
+                    </compilerArguments>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <!--配置运行插件plugins/site/site:spring-boot:run-->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>1.4.2.RELEASE</version>
+                <configuration>
+                    <mainClass>com.OaApplication</mainClass>
+                    <includeSystemScope>true</includeSystemScope>
+                    <classifier>exec</classifier>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <!--把依赖的所有包都打包生成的Jar包中，在 mvn package 执行之后，这个命令再次打包生成可执行的 jar-->
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--使编译，打包的时候跳过test-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

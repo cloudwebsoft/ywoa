@@ -2,7 +2,6 @@ package com.redmoon.oa.flow;
 
 import cn.js.fan.util.*;
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.Iterator;
 
@@ -25,7 +24,6 @@ import com.redmoon.oa.pvg.Privilege;
  * @version 1.0
  */
 public class FormQueryPrivilegeMgr {
-    Logger logger = Logger.getLogger(FormQueryPrivilegeMgr.class.getName());
 
     public FormQueryPrivilegeMgr() {
     }

@@ -10,6 +10,14 @@
 %>
 <%@ page import="com.redmoon.oa.pvg.Privilege" %>
 <%@ page import="cn.js.fan.web.Global" %>
+<%@ page import="com.cloudweb.oa.base.IConfigUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="cn.js.fan.util.PropertiesUtil" %>
+<%@ page import="org.springframework.core.io.Resource" %>
+<%@ page import="org.springframework.core.io.ClassPathResource" %>
+<%@ page import="java.io.InputStream" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
+<%@ page import="com.redmoon.oa.Config" %>
 <%
     License lic = License.getInstance();
 %>
@@ -49,22 +57,47 @@
         }
     }
 
-    XMLConfig cfg = new XMLConfig("config.xml", false, "gb2312");
+    String url;
+    String user;
+    String pwd;
+    int maximumConnectionCount;
 
-    URL confURL = getClass().getResource("/application.properties");
-    String xmlpath = confURL.getFile();
-    xmlpath = URLDecoder.decode(xmlpath);
-    FileInputStream fis = new FileInputStream(xmlpath);
-
-    // 须用load及save加utf-8参数的形式，否则会乱码
-    PropertiesConfiguration conf = new PropertiesConfiguration();
-    conf.load(fis, "utf-8");
-    fis.close();
-
-    String url = conf.getString("spring.datasource.url");
-    String user = conf.getString("spring.datasource.username");
-    String pwd = conf.getString("spring.datasource.password");
-    int maximumConnectionCount = StrUtil.toInt(conf.getString("spring.datasource.maxActive"), 200);
+    IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+    String cfgPath = configUtil.getFilePath();
+    LogUtil.getLog(getClass()).info("cfgPath=" + cfgPath);
+    // 先找外部配置文件，找不到，则用jar包内的
+    PropertiesUtil propertiesUtil = new PropertiesUtil(cfgPath + "/application.properties");
+    // 如果没有外部配置文件，则在jar包中找
+    if (propertiesUtil.getSafeProperties() == null) {
+        Resource resource = new ClassPathResource("application.properties");
+        InputStream is = resource.getInputStream();
+        LogUtil.getLog(getClass()).info("载入jar包中的application.properties");
+        propertiesUtil = new PropertiesUtil(is);
+        url = propertiesUtil.getValue("spring.datasource.url");
+        user = propertiesUtil.getValue("spring.datasource.username");
+        pwd = propertiesUtil.getValue("spring.datasource.password");
+        maximumConnectionCount = StrUtil.toInt(propertiesUtil.getValue("spring.datasource.maxActive"), 200);
+    } else {
+        // 如果有外部配置文件
+        url = propertiesUtil.getValue("spring.datasource.url");
+        // 如果从外部配置文件中取到
+        if (!StrUtil.isEmpty(url)) {
+            LogUtil.getLog(getClass()).info("载入" + cfgPath + "中的application.properties");
+            user = propertiesUtil.getValue("spring.datasource.username");
+            pwd = propertiesUtil.getValue("spring.datasource.password");
+            maximumConnectionCount = StrUtil.toInt(propertiesUtil.getValue("spring.datasource.maxActive"), 200);
+        } else {
+            // 如果从外部配置文件中未取到，则从class path中取
+            Resource resource = new ClassPathResource("application.properties");
+            InputStream is = resource.getInputStream();
+            LogUtil.getLog(getClass()).info("载入class path中的application.properties");
+            propertiesUtil = new PropertiesUtil(is);
+            url = propertiesUtil.getValue("spring.datasource.url");
+            user = propertiesUtil.getValue("spring.datasource.username");
+            pwd = propertiesUtil.getValue("spring.datasource.password");
+            maximumConnectionCount = StrUtil.toInt(propertiesUtil.getValue("spring.datasource.maxActive"), 200);
+        }
+    }
 
     int beginIndex = url.indexOf("//");
     String ip = url.substring(beginIndex + 2, url.indexOf(":", beginIndex));
@@ -76,7 +109,7 @@
     <tr>
         <td width="1%" valign="top"></td>
         <td width="99%" align="center" valign="top">
-            <div align="left"><b>欢迎您使用<%=lic.getCompany()%>系统<%=cfg.get("oa.version")%> MySQL版本</b></div>
+            <div align="left"><b>欢迎您使用<%=lic.getCompany()%>系统<%=Config.getInstance().get("oa.version")%> MySQL版本</b></div>
             <hr size="0">
             <form id="form1" action="?op=setup" method=post>
                 <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -91,7 +124,8 @@
                     </tr>
                     <tr>
                         <td height="24" align="right">配置文件路径：</td>
-                        <td><%=application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "classes" + File.separator + "application.properties"%>
+                        <td>
+                            <%=cfgPath + File.separator + "application.properties"%>
                             <br/>(在初始化前，请先将redmoonoa.sql导入mysql数据库)</td>
                     </tr>
                     <tr>
@@ -112,7 +146,7 @@
                     </tr>
                     <tr>
                         <td height="24" align="right"><span class="thead" style="PADDING-LEFT: 10px">数据库名：</span></td>
-                        <td><input name="database" value="<%=database%>"/></td>
+                        <td><input id="database" name="database" value="<%=database%>"/></td>
                     </tr>
                     <tr>
                         <td height="24" align="right">最大连接数：</td>
@@ -193,7 +227,9 @@
             async: false,
             type: "post",
             url: "../setup/checkPool",
-            data: {},
+            data: {
+                database: $('#database').val()
+            },
             dataType: "json",
             beforeSend: function (XMLHttpRequest) {
             },

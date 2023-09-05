@@ -21,26 +21,28 @@ public class UserMultiSelectWinCtl extends AbstractMacroCtl {
     public UserMultiSelectWinCtl() {
     }
 
+    @Override
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
         String str = "";
         String realName = "";
-        if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
+        if (!"".equals(StrUtil.getNullStr(ff.getValue()))) {
         	String[] ary = StrUtil.split(ff.getValue(), ",");
             UserDb user = new UserDb();
-        	for (int i=0; i<ary.length; i++) {
-                user = user.getUserDb(ary[i]);       
-                if ("".equals(realName))
-                	realName = user.getRealName();
-                else
-                	realName += "," + user.getRealName();
-        	}
+            for (String s : ary) {
+                user = user.getUserDb(s);
+                if ("".equals(realName)) {
+                    realName = user.getRealName();
+                } else {
+                    realName += "," + user.getRealName();
+                }
+            }
         }
 
         str += "<div class='user_group_box'>";
         str += "<input id='" + ff.getName() + "_realshow' name='" + ff.getName() + "_realshow" +
-                "' readonly style='float:left; width:" + ff.getCssWidth() + "' value='" + realName + "' />";
+                "' title=" + ff.getTitle() + " readonly style='float:left; width:" + ff.getCssWidth() + "' value='" + realName + "' />";
         str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' value='' type='hidden'>";
-        str += "<div id='" + ff.getName() + "_btn' class='user_group_btn' onclick='openWinUserMultiSelect(o(\"" + ff.getName() + "\"))'></div>";
+        str += "<div id='" + ff.getName() + "_btn' class='user_group_btn' onclick='openWinUserMultiSelect(findObj(\"" + ff.getName() + "\"))'></div>";
         str += "</div>";
         
         str += "<script>";
@@ -60,24 +62,26 @@ public class UserMultiSelectWinCtl extends AbstractMacroCtl {
      * @param fieldValue String
      * @return String
      */
+    @Override
     public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
         String v = StrUtil.getNullStr(fieldValue);
-        if (!v.equals("")) {
+        if (!"".equals(v)) {
             UserDb user = new UserDb();
         	String[] ary = StrUtil.split(v, ",");
         	String realNames = "";
-        	for (int i=0; i<ary.length; i++) {
-                user = user.getUserDb(ary[i]);       
-                if ("".equals(realNames))
-                	realNames = user.getRealName();
-                else
-                	realNames += "," + user.getRealName();
-        	}
-        	
+            for (String s : ary) {
+                user = user.getUserDb(s);
+                if ("".equals(realNames)) {
+                    realNames = user.getRealName();
+                } else {
+                    realNames += "," + user.getRealName();
+                }
+            }
             return realNames;
         }
-        else
+        else {
             return "";
+        }
     }
 
     /**
@@ -85,21 +89,21 @@ public class UserMultiSelectWinCtl extends AbstractMacroCtl {
      * @param ff FormField
      * @return String
      */
+    @Override
     public String getReplaceCtlWithValueScript(FormField ff) {
         String v = "";
-        if (ff.getValue() != null && !ff.getValue().equals("")) {
+        if (ff.getValue() != null && !"".equals(ff.getValue())) {
             // LogUtil.getLog(getClass()).info("StrUtil.toInt(v)=" + StrUtil.toInt(v));
-
             UserDb user = new UserDb();
-            
         	String[] ary = StrUtil.split(ff.getValue(), ",");
-        	for (int i=0; i<ary.length; i++) {
-                user = user.getUserDb(ary[i]);       
-                if ("".equals(v))
-                	v = user.getRealName();
-                else
-                	v += "," + user.getRealName();
-        	}            
+            for (String s : ary) {
+                user = user.getUserDb(s);
+                if ("".equals(v)) {
+                    v = user.getRealName();
+                } else {
+                    v += "," + user.getRealName();
+                }
+            }
         }
         String str = "$('#" + ff.getName() + "_btn').hide();\n";
         return str + "ReplaceCtlWithValue('" + ff.getName() + "_realshow', '" + ff.getType() + "','" + v + "');\n";
@@ -125,18 +129,20 @@ public class UserMultiSelectWinCtl extends AbstractMacroCtl {
          return str;
      }
 
+     @Override
      public String getDisableCtlScript(FormField ff, String formElementId) {
          String realName = "";
-         if (ff.getValue() != null && !ff.getValue().equals("")) {
+         if (ff.getValue() != null && !"".equals(ff.getValue())) {
          	String[] ary = StrUtil.split(ff.getValue(), ",");
             UserDb user = new UserDb();
-        	for (int i=0; i<ary.length; i++) {
-                user = user.getUserDb(ary[i]);       
-                if ("".equals(realName))
-                	realName = user.getRealName();
-                else
-                	realName += "," + user.getRealName();
-        	}             
+             for (String s : ary) {
+                 user = user.getUserDb(s);
+                 if ("".equals(realName)) {
+                     realName = user.getRealName();
+                 } else {
+                     realName += "," + user.getRealName();
+                 }
+             }
          }
 
          String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
@@ -147,15 +153,18 @@ public class UserMultiSelectWinCtl extends AbstractMacroCtl {
          return str;
      }
 
+    @Override
     public String getControlType() {
 	    return "userSelect";
 	}
 	
-	public String getControlValue(String userName, FormField ff) {
+	@Override
+    public String getControlValue(String userName, FormField ff) {
 		return StrUtil.getNullStr(ff.getValue());
 	}
 	
-	public String getControlText(String userName, FormField ff) {
+	@Override
+    public String getControlText(String userName, FormField ff) {
 		if (ff.getValue() == null || "".equals(ff.getValue())) {
 			return "";
 		} else {
@@ -163,15 +172,14 @@ public class UserMultiSelectWinCtl extends AbstractMacroCtl {
 			UserDb user = new UserDb();
 			String users = ff.getValue();
 			String[] ary = StrUtil.split(users, ",");
-			for (int i=0; i<ary.length; i++) {
-				user = user.getUserDb(ary[i]);
-				if ("".equals(str)) {
-					str = user.getRealName();
-				}
-				else {
-					str += "，" + user.getRealName();
-				}
-			}
+            for (String s : ary) {
+                user = user.getUserDb(s);
+                if ("".equals(str)) {
+                    str = user.getRealName();
+                } else {
+                    str += "，" + user.getRealName();
+                }
+            }
 			return str;
 		}
 	}

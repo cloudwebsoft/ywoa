@@ -15,6 +15,9 @@
 <%@ page import="org.json.JSONArray"%>
 <%
 String code = ParamUtil.get(request, "code"); // 模块编码
+if ("".equals(code)) {
+	return;
+}
 // String formCode = ParamUtil.get(request, "formCode");
 String resource = ParamUtil.get(request, "resource");//来源
 
@@ -53,35 +56,16 @@ String from = ParamUtil.get(request, "from");
 <div id="targetBox" class="shadow target_box" style="display:none">
 	<div class="target_list">
 <%
-String listField = StrUtil.getNullStr(vsd.getString("list_field"));
-String[] fields = StrUtil.split(listField, ",");
-String listFieldWidth = StrUtil.getNullStr(vsd.getString("list_field_width"));
-String[] fieldsWidth = StrUtil.split(listFieldWidth, ",");
-String listFieldOrder = StrUtil.getNullStr(vsd.getString("list_field_order"));
-String[] fieldOrder = StrUtil.split(listFieldOrder, ",");
-String listFieldLink = StrUtil.getNullStr(vsd.getString("list_field_link"));
-String[] fieldsLink = StrUtil.split(listFieldLink, ",");
-String listFieldShow = StrUtil.getNullStr(vsd.getString("list_field_show"));
-String[] fieldsShow = StrUtil.split(listFieldShow, ",");
-String listFieldTitle = StrUtil.getNullStr(vsd.getString("list_field_title"));
-String[] fieldsTitle = StrUtil.split(listFieldTitle, ",");
+String[] fields = vsd.getColAry(true, "list_field");
+String[] fieldsWidth = vsd.getColAry(true, "list_field_width");
+String[] fieldsLink = vsd.getColAry(true, "list_field_link");
+String[] fieldsShow = vsd.getColAry(true, "list_field_show");
+String[] fieldsTitle = vsd.getColAry(true, "list_field_title");
+String[] fieldsAlign = vsd.getColAry(true, "list_field_align");
 
 int len = 0;
 if (fields!=null) {
 	len = fields.length;
-}
-
-if (fieldsShow==null || fields.length != fieldsShow.length) {
-	fieldsShow = new String[len];
-	for (int i=0; i<len; i++) {
-		fieldsShow[i] = "1";
-	}
-}
-if (fieldsTitle==null || fields.length != fieldsTitle.length) {
-	fieldsTitle = new String[len];
-	for (int i=0; i<len; i++) {
-		fieldsTitle[i] = "#";
-	}
 }
 
 int i;
@@ -277,7 +261,6 @@ for (i=0; i<len; i++) {
 		continue;
 	}
 	
-	String fieldNameRaw = fieldName;
 	String title = "";
 	if (fieldName.equals("cws_creator")) {
 		title = "创建者";
@@ -309,8 +292,14 @@ for (i=0; i<len; i++) {
 	else if (fieldName.equals("flow_end_date")) {
 		title = "流程结束时间";
 	}
+ 	else if (fieldName.equals("cws_cur_handler")) {
+            title = "当前处理";
+        } 
 	else if (fieldName.equals("cws_id")) {
 		title = "关联ID";
+	}
+	else if ("cws_visited".equals(fieldName)) {
+		title = "是否已读";
 	}
 	else {
 		if (fieldName.startsWith("main:")) {
@@ -327,8 +316,9 @@ for (i=0; i<len; i++) {
 			}
 			else {
 				FormDb otherFormDb = fm.getFormDb(ary[2]);
-				if (ary.length>=5)
+				if (ary.length>=5) {
 					title = otherFormDb.getName() + "：" + otherFormDb.getFieldTitle(ary[4]);
+				}
 				
 				if (ary.length>=8) {
 					FormDb oFormDb = fm.getFormDb(ary[5]);
@@ -355,6 +345,7 @@ for (i=0; i<len; i++) {
 	json.put("show", fieldsShow[i].equals("1"));
 	json.put("title", fieldsTitle[i].equals("#") ? title : fieldsTitle[i]);
 	json.put("fieldTitle", fieldsTitle[i]);
+	json.put("fieldAlign", fieldsAlign[i]);
     jsonAry.put(json);
 }
 %>
@@ -396,14 +387,14 @@ function macGrid(gridName, moduleCols) {
 
 function moveEnd(col1, col2) {
 	// col2 被拖动的列, col2被拖动后替换的列
-	setCols();
+	setCols(0);
 }
 
 function resizeEnd(col) {
-	setCols();
+	setCols(0);
 }
 
-function setCols() {
+function setCols(isReload) {
 	$.ajax({
 		type: "post",
 		url: "<%=request.getContextPath()%>/visual/setCols",
@@ -422,10 +413,15 @@ function setCols() {
 			if (re==null)
 				re = data;
 			if (re.ret=="1") {
-               <%
-               if(resource != null && resource.equals("nest")){
-               }else{
-               }
+				<%
+                if(resource != null && resource.equals("nest")) {
+                }else{
+                %>
+				if (isReload != 0) {
+					window.location.reload();
+				}
+				<%
+               	}
 				%>
 				$.powerFloat.hide();
 			}		

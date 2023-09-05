@@ -8,7 +8,6 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
 import com.cloudweb.oa.utils.ConstUtil;
-import org.apache.log4j.*;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.redmoon.oa.person.UserDb;
@@ -34,12 +33,11 @@ import java.util.Iterator;
 
 public class DeptMgr {
     String connname = "";
-    Logger logger = Logger.getLogger(DeptMgr.class.getName());
 
     public DeptMgr() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Directory:默认数据库名不能为空");
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
     }
 
@@ -48,17 +46,14 @@ public class DeptMgr {
         return dd.getDeptDb(code);
     }
 
-    public Vector getChildren(String parentCode) throws ErrMsgException {
-        DeptDb dd;
+    public Vector<DeptDb> getChildren(String parentCode) throws ErrMsgException {
         if ("-1".equals(parentCode)) {
-            Vector v = new Vector();
+            Vector<DeptDb> v = new Vector<>();
             v.addElement(getDeptDb(ConstUtil.DEPT_ROOT));
             return v;
         }
-        else {
-            dd = getDeptDb(parentCode);
-        }
-        return dd.getChildren();
+        DeptChildrenCache deptChildrenCache = new DeptChildrenCache(parentCode);
+        return deptChildrenCache.getDirList();
     }
 
     /**

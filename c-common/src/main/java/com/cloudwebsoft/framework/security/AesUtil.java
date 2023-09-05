@@ -1,5 +1,6 @@
 package com.cloudwebsoft.framework.security;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import javax.crypto.Cipher;
@@ -73,7 +74,7 @@ public class AesUtil {
             //return java.util.Base64.getEncoder().encodeToString(encryptBytes);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(AesUtil.class).error(e);
             return "";
         }
     }
@@ -97,12 +98,10 @@ public class AesUtil {
 
     public static void main(String[] args) {
         String a1=aesEncrypt("123", "njTzcjsomecloudw", "njTzcjsomecloudw");
-        System.out.println(a1);
         try {
             String a2 = aesDecrypt(a1, "njTzcjsomecloudw", "njTzcjsomecloudw");
-            System.out.println(a2);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(AesUtil.class).error(e);
         }
 
     }

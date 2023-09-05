@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "个人信息",
+  "usingComponents": {
+    "u-upload": "/node-modules/uview-ui/components/u-upload/u-upload",
+    "u-button": "/node-modules/uview-ui/components/u-button/u-button"
+  }
+}

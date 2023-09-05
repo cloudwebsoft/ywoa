@@ -1,0 +1,121 @@
+@charset "UTF-8";
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* uni.scss */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+.userCenter.data-v-d596de08 {
+  height: 100%;
+  background-color: #f4f4f4;
+}
+.userCenter .top_bg.data-v-d596de08 {
+  width: 100%;
+  height: 120rpx;
+  background-color: #1c6ec4;
+  border-bottom-left-radius: 30rpx;
+  border-bottom-right-radius: 30rpx;
+}
+.userCenter .userHeader.data-v-d596de08 {
+  margin: 0 auto;
+  width: 96%;
+  height: 240rpx;
+  margin-top: -120rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+}
+.userCenter .userHeader .headSculpture.data-v-d596de08 {
+  padding: 0 40rpx;
+  width: 100%;
+  height: 136rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.userCenter .userHeader .headSculpture .leftHead.data-v-d596de08 {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.userCenter .userHeader .headSculpture .leftHead .headImg.data-v-d596de08 {
+  width: 136rpx;
+  height: 136rpx;
+  border: 1px solid #f3f5f8;
+  border-radius: 50%;
+  margin-right: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.userCenter .userHeader .headSculpture .leftHead .headImg .icons.data-v-d596de08 {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+}
+.userCenter .userHeader .headSculpture .leftHead .name.data-v-d596de08 {
+  width: 100%;
+  color: #000;
+  font-weight: 600;
+  font-size: 16px;
+}
+.userCenter .userHeader .headSculpture .leftHead .name .name_top.data-v-d596de08 {
+  width: 100%;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+}
+.userCenter .user_sections.data-v-d596de08 {
+  width: 96%;
+  margin: 0 auto;
+  margin-top: 20rpx;
+  padding: 0 40rpx;
+  background: #ffffff;
+}
+.userCenter .user_sections .user_infos_items.data-v-d596de08 {
+  height: 98rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+}
+.userCenter .user_sections .user_infos_items .left_items.data-v-d596de08 {
+  display: flex;
+  align-items: center;
+}
+.userCenter .user_sections .user_infos_items .left_items .left_img.data-v-d596de08 {
+  width: 24rpx;
+  height: 28rpx;
+  margin-right: 20rpx;
+}
+.userCenter .user_sections .user_infos_items .arrow_title.data-v-d596de08 {
+  margin-right: 20rpx;
+  color: #4ea779;
+}
+.userCenter .user_sections .arrow.data-v-d596de08 {
+  width: 14rpx;
+  height: 24rpx;
+}
+

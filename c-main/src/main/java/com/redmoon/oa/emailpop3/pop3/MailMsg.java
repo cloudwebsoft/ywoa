@@ -6,7 +6,7 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import java.io.*;
 import cn.js.fan.util.*;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -31,7 +31,6 @@ public class MailMsg {
     String ID = "";
     int dispnum = 0; // 正文、附件在邮件中的序号
     boolean HasAttachment = false;
-    Logger logger = Logger.getLogger(MailMsg.class.getName());
 
     public MailMsg() {
         attachs = new Vector();
@@ -77,7 +76,7 @@ public class MailMsg {
                 a = new Attachment(part, num);
             }
         } catch (Exception e) {
-            logger.error("getAttachment: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getAttachment: " + e.getMessage());
         }
         return a;
     }
@@ -96,12 +95,11 @@ public class MailMsg {
         // String code = subjectStr.substring(2, subjectStr.indexOf("?B?"));
         String code = "gb2312";
         subjectStr = subjectStr.substring(code.length() + 5, subjectStr.length() - 2);
-        // System.out.println("cn.js.fan.mail.MailMsg decodeSubject: subjectStr=" + subjectStr);
         sun.misc.BASE64Decoder decoder = new sun.misc.BASE64Decoder();
         try {
             subjectStr = new String(decoder.decodeBuffer(subjectStr), code);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(MailMsg.class).error(e);
             return subj;
         }
         return subjectStr;
@@ -157,9 +155,6 @@ public class MailMsg {
                 }
             }
 
-            // System.out.println(getClass() + " init isNeedDecode=" + isNeedDecode + " charset=" + charset + " contentType=" + message.getContentType() + " subject=" + Subject);
-            // System.out.println(getClass() + " subjectRAW=" + message.getSubject());
-
             Address[] addrs = message.getAllRecipients();
             if (addrs != null) {
                 Recipients = new String[addrs.length];
@@ -171,10 +166,7 @@ public class MailMsg {
             SentDate = message.getSentDate();
             Size = message.getSize();
 
-            //ID = ((MimeMessage)message).getMessageID();
-
             ID = "" + message.getMessageNumber();
-            //System.out.print("ID="+ID);
 
             // 取得附件
             Part messagePart = message;
@@ -194,7 +186,7 @@ public class MailMsg {
                 handlePart(messagePart, isdetail);
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
     }
 
@@ -260,8 +252,6 @@ public class MailMsg {
                     if (charset.endsWith("\""))
                         charset = charset.substring(0, charset.length() - 1);
 
-                    // System.out.println(getClass() + " contentType=" + contentType + " charset=" + charset);
-
                     InputStream is = part.getInputStream();
                     BufferedReader reader = new BufferedReader(new
                             InputStreamReader(is, charset));
@@ -271,8 +261,6 @@ public class MailMsg {
                         thisLine = reader.readLine();
                     }
                     is.close();
-
-                    // System.out.println(getClass() + " contentType=" + contentType + " charset=" + charset + " content=" + content);
 
                     if (contentType.startsWith("text/plain"))
                         content = StrUtil.toHtml(content);
@@ -295,7 +283,7 @@ public class MailMsg {
             }
             //saveFile(part.getFileName(), part.getInputStream());
         } else { // Should never happen
-            logger.error("Other: " + disposition);
+            LogUtil.getLog(getClass()).error("Other: " + disposition);
         }
     }
 
@@ -453,7 +441,7 @@ public class MailMsg {
             else
                 return false;
         } catch (Exception e) {
-            logger.error("isDraft:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isDraft:" + e.getMessage());
         }
         return false;
     }
@@ -465,7 +453,7 @@ public class MailMsg {
             else
                 return false;
         } catch (Exception e) {
-            logger.error("isDeleted:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isDeleted:" + e.getMessage());
         }
         return false;
     }
@@ -477,21 +465,8 @@ public class MailMsg {
                 return true;
             else
                 return false;
-            // Examine ALL system flags for this message
-            /*
-                   Flags flags = message.getFlags();
-                   Flags.Flag[] sf = flags.getSystemFlags();
-                   for (int i = 0; i < sf.length; i++) {
-              if (sf[i] == Flags.Flag.DELETED)
-                System.out.println("DELETED message");
-              else if (sf[i] == Flags.Flag.SEEN)
-                System.out.println("SEEN message");
-              else if (sf[i] == Flags.Flag.DRAFT)
-                System.out.println("DRAFT message");
-                   }
-             */
         } catch (Exception e) {
-            logger.error("isSeen:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isSeen:" + e.getMessage());
         }
         return false;
     }

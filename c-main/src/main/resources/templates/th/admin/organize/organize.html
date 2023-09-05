@@ -1,0 +1,258 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+      <title>组织架构</title>
+	  <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+	  <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}" />
+	  <link href="../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+	  <link href="../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+	  <link type="text/css" rel="stylesheet" href="../../skin/common/organize.css"/>
+      <script src="../../inc/common.js"></script>
+	  <script src="../../js/jquery-1.9.1.min.js"></script>
+	  <script src="../../js/jquery-migrate-1.2.1.min.js"></script>
+	  <script src="../../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+      <script src="../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+      <script src="../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+      <script type="text/javascript" src="../../js/jquery-showLoading/jquery.showLoading.js"></script>
+      <script type="text/javascript" src="../../js/jquery.toaster.organize.js"></script>
+      <script>
+          function setDeptCode(curDeptCode) {
+              $('#linkAdd').attr("href", "../../admin/organize/organize.do?type=add&curDeptCode=" + curDeptCode);
+          }
+      </script>
+  </head>
+  <body id="bg" style="overflow-x:hidden;overflow-y:hidden;">
+	<div id="tabs1">
+	     <ul>
+			 <li id="menu1"><a href="../../admin/organize/organize.do?type=list">人员资料</a></li>
+			 <li id="menu4" th:if="${isPostUsed}"><a href="../../admin/organize/organize.do?type=postList">职位</a></li>
+			 <li id="menu2"><a id="linkAdd" href="../../admin/organize/organize.do?type=add">添加人员</a></li>
+			 <li id="menu3"><a href="../../admin/organize/organize.do?type=import">导入人员</a></li>
+	     </ul>
+ 	</div>
+ 	<div id="dlg" style="display:none;width:300px;overflow:hidden;">
+ 		<table>
+			<tr th:if="${isDeptCodeAuto}">
+				<td>编码：</td>
+				<td><input type="text" name="deptCode" id="deptCode" /></td>
+			</tr>
+ 			<tr>
+ 				<td>名称：</td>
+ 				<td><input type="text" name="deptName" id="deptName" /></td>
+ 			</tr>
+ 			<tr>
+ 				<td>归属：</td>
+ 				<td><input type="text" id="parentDeptName" style="border-width:0px;" size="30" readOnly="true"/></td>
+ 			</tr>
+ 			<tr>
+ 				<td>隐藏：</td>
+ 				<td>
+                <select id="isHide" name="isHide">
+					<option value="0">否</option>
+					<option value="1">是</option>
+                </select>
+                </td>
+ 			</tr>
+ 			<tr style="display: none">
+ 				<td>是否班组：</td>
+	 				<td>
+		 				<select name="isGroup" id="isGroup">
+		 					<option value="0">否</option>
+		 					<option value="1">是</option>
+		 				</select>
+	 				</td>
+ 			</tr>
+ 			<tr>
+ 				<td>是否单位：</td>
+	 				<td>
+		 				<select name="dept_type" id="dept_type">
+		 					<option value="1">否</option>
+		 					<option value="0">是</option>
+		 				</select>
+	 				</td>
+ 			</tr>
+ 			<tr style="display: none">
+ 				<td>描述：</td>
+		 		<td><input type="text" name="deptDesc" id="deptDesc" /></td>
+ 			</tr>
+			<tr>
+				<td>简称：</td>
+				<td><input type="text" name="shortName" id="shortName" />(用于自动编号)</td>
+			</tr>
+ 		</table>
+ 	</div>
+	<div th:switch="${type}" th:remove="tag">
+		<iframe th:case="list" src="organizeFrameList.do" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
+		<iframe th:case="postList" src="postFrameList.do" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
+		<iframe th:case="add" th:src="'organizeFrameAdd.do?curDeptCode=' + ${curDeptCode}" id="orgFrame" name="orgFrame" width="100%" frameborder="no"></iframe>
+		<iframe th:case="*" src="userImport.do" id="orgFrame" name="orgFrame" width="100%"  frameborder="no"></iframe>
+	</div>
+  </body>
+  <script type="text/javascript" th:inline="javascript">
+  		function addDept(parent_code,parent_name,new_code) {
+			$('#deptCode').removeAttr("readonly");
+  			$("#deptName").val("");
+  			$("#parentDeptName").val(parent_name);
+  			$("#dept_type").val("1");
+  			$("#deptDesc").val("");
+  			jQuery("#dlg").dialog({
+			title: "新增部门",
+			modal: true,
+			// bgiframe:true,
+			buttons: {
+				"取消": function() {
+					$(this).dialog("close");
+				},
+				"确定": function() {
+					[# th:if="${isDeptCodeAuto}"]
+					new_code = $('#deptCode').val();
+					[/]
+					var new_name = $("#deptName").val();       //获取新增部门名称
+					var dept_type = $("#dept_type").val();
+					jQuery.ajax({
+						type: "post",
+						url: "../../department/create",
+						contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
+						data : {
+							name:new_name,
+							code:new_code,
+					 		parentCode:parent_code,
+					 		show:1,                      //是否显示  1：显示 0：不显示
+					 		deptType:dept_type,				 //1：部门   0:单位
+							isGroup:$('#isGroup').val(),
+							isHide:$('#isHide').val(),
+							description:$('#deptDesc').val(), // 部门描述, 用来做部门简写
+							shortName:$('#shortName').val()
+						},
+						dataType: "json",
+						beforeSend: function(XMLHttpRequest){
+							$('#bg').showLoading();
+						},
+						success: function(data, status){
+							if (data.ret==1){
+								jAlert("添加部门成功","提示");
+								window.frames[0].frames[0].addNewNode(new_code,new_name,dept_type);
+							} else {
+								jAlert(data.msg,"提示");
+							}
+						},
+						complete: function(XMLHttpRequest, status){
+							$('#bg').hideLoading();
+						},
+						error: function(XMLHttpRequest, textStatus){
+							// 请求出错处理
+							alert("error:" + XMLHttpRequest.responseText);
+						}
+					});
+					jQuery(this).dialog("close");
+				}
+			},
+			closeOnEscape: true,
+			draggable: true,
+			resizable:true,
+			width:300
+			});
+  		}
+
+		function modifyDept(code, name, parentName, parentCode, deptType, isGroup, isHide, description, shortName, layer, id) {                         //code:当前节点code   parent_name:归属部门名称   name:当前节点名称
+			$("#deptCode").val(code);
+			$('#deptCode').attr("readonly","readonly")
+  			$("#parentDeptName").val(parentName);
+			$("#deptName").val(name);
+			$("#dept_type").val(deptType);
+			$("#isGroup").val(isGroup ? 1 : 0);
+			$("#isHide").val(isHide ? 1 : 0);
+			$("#deptDesc").val(description);
+			$("#shortName").val(shortName);
+			jQuery("#dlg").dialog({
+				title: "修改部门",
+				modal: true,
+				// bgiframe:true,
+				buttons: {
+					"取消": function () {
+						$(this).dialog("close");
+					},
+					"确定": function () {
+						var newName = $("#deptName").val();       //获取新增部门名称
+						var deptType = $("#dept_type").val();
+						jQuery.ajax({
+							type: "post",
+							url: "../../department/save",
+							contentType: "application/json;charset=UTF-8",
+							data: JSON.stringify({
+								name: newName,
+								code: code,
+								parentCode: parentCode,
+								show: 1,                      //是否显示  1：显示 0：不显示
+								deptType: deptType,                      //1：部门   0:单位
+								isGroup: $('#isGroup').val(),
+								isHide: $('#isHide').val(),
+								description: $('#deptDesc').val(), // 部门描述, 用做部门简写
+								layer: layer,
+								id: id,
+								shortName: $('#shortName').val()
+							}),
+							dataType: "json",
+							beforeSend: function (XMLHttpRequest) {
+								$('#bg').showLoading();
+							},
+							success: function (data, status) {
+								if (data.ret == 1) {
+									//setToaster("修改部门成功");
+									//window.frames[0].document.getElementById("deptFrame").src="dept_tree.jsp?root_code=root&flag=1";
+									// window.location.reload();
+									jAlert("修改部门成功", "[(#{prompt})]");
+									window.frames[0].frames[0].modifyTitle(newName, deptType, code, $("#isHide").val() == 1);
+								} else {
+									jAlert(data.msg, "[(#{prompt})]");
+								}
+							},
+							complete: function (XMLHttpRequest, status) {
+								$('#bg').hideLoading();
+							},
+							error: function (XMLHttpRequest, textStatus) {
+								// 请求出错处理
+								alert("error:" + XMLHttpRequest.responseText);
+							}
+						});
+						jQuery(this).dialog("close");
+					}
+				},
+				closeOnEscape: true,
+				draggable: true,
+				resizable: true,
+				width: 300
+			});
+		}
+  		$(document).ready(function (){
+			[# th:switch="${type}"]
+				[# th:case="list"]
+				$("#menu1").attr("class","current");
+				[/]
+				[# th:case="add"]
+				$("#menu2").attr("class","current");
+				[/]
+				[# th:case="postList"]
+				$("#menu4").attr("class","current");
+				[/]
+				[# th:case="*"]
+				$("#menu3").attr("class","current");
+				[/]
+  			[/]
+			document.getElementById("orgFrame").height = document.documentElement.clientHeight - 40;
+  		})
+  		function setToaster(mess){
+  			$.toaster({priority : 'info', message : mess });
+  		}
+  		function showLoading(){
+  			$('#bg').showLoading();
+  		}
+  		function hiddenLoading(){
+  			$('#bg').hideLoading();
+  		}
+  		function page_refresh(){
+  			window.location.href = "../../admin/organize/organize.do?type=list";
+  		}
+  </script>
+</html>

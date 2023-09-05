@@ -47,9 +47,7 @@
 		
 		colProps = "[" + colProps + "]";
 	}
-	
-	// System.out.println(getClass() + " colProps=" + colProps);
-	
+
 	JSONArray jsons = new JSONArray(colProps);
 	
 	java.util.Date timePoint = aqd.getTimePoint();
@@ -59,8 +57,6 @@
 
    	FormSQLBuilder fsb = new FormSQLBuilder();
 	String sql = fsb.getSmartQuery(request, id);
-	
-	// System.out.println(getClass() + " sql=" + sql);
 
 	response.setContentType("application/vnd.ms-excel");
 	response.setHeader("Content-disposition","attachment; filename=" + StrUtil.GBToUnicode(aqd.getQueryName() + ".xls"));  
@@ -92,9 +88,7 @@
 		
 		for(int i=0; i<jsons.length();i++){
 			JSONObject json = jsons.getJSONObject(i);
-			
-			// System.out.println(getClass() + " name=" + json.getString("name") + " hide=" + json.get("hide").toString());
-			
+
 			if(json.get("hide").toString().equals("true")) {
 				continue;
 			}
@@ -169,7 +163,6 @@
 			label = new Label(col, k, flowCreateDate);
 			sheet.addCell(label);			
 			col ++;
-			// System.out.println(getClass() + " flowStatus=" + flowStatus);
 			label = new Label(col, k, flowStatus);
 			sheet.addCell(label);			
 			col ++;
@@ -199,9 +192,7 @@
 						}
 						else		
 							value = fdao.getFieldValue(fcode);
-						
-						// System.out.println(getClass() + " fcode=" + fcode + " " + ff.getTitle() + " value=" + value);
-						
+
 						label = new Label(col, k, value);
 						sheet.addCell(label);
 						
@@ -212,7 +203,6 @@
 					if (queryRelatedId!=-1) {
 						FormField ff = fdRelated.getFormField(fcode.substring("rel.".length()));
 						if (ff!=null) {
-							// System.out.println(getClass() + " fcode=" + fcode + " " + ff.getTitle() + " value=" + value);
 							flowDao = flowDao.getFormDAO((int)flowId, fdRelated);
 
 							label = new Label(col, k, flowDao.getFieldValue(ff.getName()));

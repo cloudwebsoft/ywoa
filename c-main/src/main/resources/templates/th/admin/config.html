@@ -1,0 +1,280 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>配置管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+
+        .con {
+            display:none;
+            padding: 5px 10px;
+        }
+        .nav-tab {
+            list-style:none;
+            height:40px;
+            overflow:hidden;
+            margin-bottom: 0px;
+        }
+        .nav-tab li {
+            float:left;
+            width:100px;
+            height:100px;
+            background:#eee;
+            color:#000;
+            text-align:center;
+            line-height:40px;
+            cursor: pointer;
+        }
+        .nav-con-on {
+            display:block;
+        }
+        .nav-tab li.act {
+            background:#ccc;
+            color:#000;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_config :: navConfig(1)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-12 col-lg-offset-0">
+            <ul class="nav-tab">
+                <li class="act" kind="">全部</li>
+                <li kind="flow">流程</li>
+                <li kind="fileark">文档</li>
+                <li kind="ui">界面</li>
+                <li kind="hr">人事</li>
+                <li kind="workplan">计划</li>
+                <li kind="mobile">手机端</li>
+                <li kind="system">系统</li>
+                <li kind="module">智能模块</li>
+                <li kind="other">其它</li>
+            </ul>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <form method="post" id="formSms" aciton='setSms.do' style="display: none" th:if="'' eq ${kind}">
+                        <tr class="highlight">
+                            <td>&nbsp;短信启用
+                            <td>
+                                <select id="isUsed" name="isUsed">
+                                    <option value="true">是</option>
+                                    <option value="false">否</option>
+                                </select>
+                            </td>
+                            <td align="center">
+                                <button id="btnSms" class="btn btn-default">修改</button>
+                            </td>
+                        </tr>
+                    </form>
+
+                    <form method="post" id="formSkin" action='setDefaultSkin.do' th:if="'' eq ${kind}">
+                        <tr class="highlight">
+                            <td>
+                                &nbsp;经典版默认皮肤
+                            </td>
+                            <td>
+                                <select id="defaultSkinCode" name="defaultSkinCode">
+                                    <th:block th:each="skin, statSkin : ${allSkin}" th:remove="tag">
+                                        <option th:value="${skin.code}">[[${skin.name}]]</option>
+                                    </th:block>
+                                </select>
+                            </td>
+                            <td align="center">
+                                <button id="btnSkin" class="btn btn-default" type="submit">修改</button>
+                            </td>
+                        </tr>
+                    </form>
+
+                    <th:block th:each="json, stat : ${jsonAry}">
+                        <form method="post" th:id="'form' + ${stat.index}" th:if="(${json[kind]} eq ${kind}) or ('' eq ${kind})" action='editConfig.do' onsubmit="return false">
+                            <tr th:id="'tr' + ${stat.index}" class="highlight">
+                                <td width='37%'>
+                                    <input type="hidden" th:id="'name' + ${stat.index}" name="name" th:value="${json[name]}"/>
+                                    &nbsp;[[${json[desc]}]]
+                                </td>
+                                <td width='45%'>
+                                    <th:block th:if="${json[name]} eq 'flowExpireUnit'">
+                                        <select name="value" width="10">
+                                            <option value="day">天</option>
+                                            <option value="hour">小时</option>
+                                        </select>
+                                        <script th:inline="javascript">
+                                            form[(${stat.index})].value.value = [[${json[value]}]];
+                                        </script>
+                                    </th:block>
+
+                                    <th:block th:if="${json[value]} eq 'true' or ${json[value]} eq 'false'">
+                                        <select name="value" width="10">
+                                            <option value="true">是</option>
+                                            <option value="false">否</option>
+                                        </select>
+                                        <script>
+                                            form[(${stat.index})].value.value = [[${json[value]}]];
+                                        </script>
+                                    </th:block>
+
+                                    <th:block th:switch="${json[type]} eq 'textarea'">
+                                        <textarea th:case="true" name="value" cols="50" rows="5">[[${json[value]}]]</textarea>
+                                        <th:block th:case="*">
+                                            <th:block th:switch="${json[optAry]} == null">
+                                                <th:block th:case="true" th:if="!(${json[value]} eq 'true' or ${json[value]} eq 'false')">
+                                                    <input type="text" th:value="${json[value]}" name="value" size="30"/>
+                                                </th:block>
+                                                <select th:case="*" th:id="'att' + ${stat.index}" name="value">
+                                                    <th:block th:each="opt, statOpt : ${json[optAry]}">
+                                                        <option th:value="${opt[value]}">[[${opt[name]}]]</option>
+                                                    </th:block>
+                                                </select>
+                                                <script th:inline="javascript">
+                                                    $(function () {
+                                                        $('#att[(${stat.index})]').val([[${json[value]}]]);
+                                                    })
+                                                </script>
+                                            </th:block>
+                                        </th:block>
+                                    </th:block>
+                                <td align=center>
+                                <button class="btn btn-default" th:onclick="submitForm('form' + [[${stat.index}]])">修改</button>
+                                <button class="btn btn-default" th:onclick="hideElement([[${stat.index}]])" title="隐藏配置项，如需显示，需编辑config.xml文件置该项的isDisplay属性为true">隐藏</button>
+                                </td>
+                            </tr>
+                        </form>
+                    </th:block>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    function hideElement(index) {
+        $.ajax({
+            type: "post",
+            url: "hideElement.do",
+            data: {
+                name: o("name" + index).value
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $("body").showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == 1) {
+                    $('#tr' + index).hide();
+                }
+                // jAlert(data.msg, "提示");
+                $.toaster({priority : 'info', message : data.msg });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $("body").hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    $(function () {
+        $("#isUsed").val('[[${isUseSMS}]]');
+
+        $('#defaultSkinCode').val([[${defaultSkinCode}]]);
+
+        $('#btnSms').click(function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "setSms.do",
+                data: {
+                    isUsed: o("isUsed").value
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+
+        $('#btnSkin').click(function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "setDefaultSkin.do",
+                data: {
+                    defaultSkinCode: $('#defaultSkinCode').val()
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    jAlert(data.msg, "提示");
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    });
+
+    function submitForm(formId) {
+        $.ajax({
+            type: "post",
+            url: "editConfig.do",
+            data: $('#' + formId).serialize(),
+            dataType: "json",
+            beforeSend: function(XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function(data, status){
+                jAlert(data.msg, "提示");
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(){
+                //请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+
+        window.event? window.event.cancelBubble = true : e.stopPropagation();
+    }
+
+    $(function() {
+        $(".nav-tab li").click(function() {
+            // jQuery(".nav-tab li").eq(jQuery(this).index()).addClass("act").siblings().removeClass('act');
+            // jQuery(".con").hide().eq(jQuery(this).index()).show();
+            var kind = $(this).attr('kind');
+            window.location.href = "config.do?kind=" + kind;
+        });
+
+        var kind = [[${kind}]];
+        $('li[kind=' + kind + ']').addClass("act").siblings().removeClass('act');
+    });
+</script>
+</html>

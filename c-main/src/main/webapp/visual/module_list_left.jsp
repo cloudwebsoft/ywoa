@@ -13,6 +13,10 @@
 <%@ page import="com.redmoon.oa.visual.*" %>
 <%@ page import="org.json.*" %>
 <%@ page import="com.cloudwebsoft.framework.db.JdbcTemplate" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
     if (!privilege.isUserPrivValid(request, "read")) {
@@ -87,25 +91,39 @@
     }
 
     String fieldName = ff.getName();
+    MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+    IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
+    String basicCode = basicSelectCtl.getCode(ff);
 
-    String basicCode = ff.getDefaultValueRaw();
-    if ("".equals(basicCode)) {
-        basicCode = ff.getDescription();
-    }
     TreeSelectDb tsd = new TreeSelectDb();
     tsd = tsd.getTreeSelectDb(basicCode);
 
     JSONObject json = new JSONObject();
     TreeSelectView tsv = new TreeSelectView(tsd);
     tsv.getBootstrapJson(request, tsd, json);
+
+    String rootLink = tsd.getLink(request);
+    if (rootLink.contains("?")) {
+        rootLink += "&isInFrame=true";
+    }
+    else {
+        rootLink += "?isInFrame=true";
+    }
+    rootLink = request.getContextPath() + "/" + rootLink;
 %>
 <div style="width:90%; margin:20px auto">
+    <div id="rootBox" style="cursor: pointer; margin-bottom: 10px">全部</div>
     <div id="treeView" class="test"></div>
 </div>
 </body>
 <script>
     var data = <%=json.getJSONArray("nodes")%>;
     $(function () {
+        $('#rootBox').click(function() {
+            var link = "<%=rootLink%>";
+            window.parent.document.getElementById("mainModuleFrame").contentWindow.location.href = link;
+        });
+
         $('#treeView').treeview({
             // color: "#428bca",
             // enableLinks: true,
@@ -120,7 +138,7 @@
                     } else {
                         link += "&";
                     }
-                    link += "<%=fieldName%>=" + encodeURI(node.code) + "&isInFrame=true";
+                    link += "<%=ConstUtil.PREFIX_REQ_PARAM%><%=fieldName%>=" + encodeURI(node.code) + "&isInFrame=true";
                     window.parent.document.getElementById("mainModuleFrame").contentWindow.location.href = link;
                 }
             }

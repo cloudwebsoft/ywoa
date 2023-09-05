@@ -1,6 +1,13 @@
 <%@page language="java" import="com.redmoon.oa.android.Privilege" pageEncoding="utf-8" %>
 <%@ page import="cn.js.fan.web.Global" %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<%@ page import="cn.js.fan.util.ParamUtil" %>
+<%
+    Privilege pvg = new Privilege();
+    pvg.auth(request);
+    String skey = pvg.getSkey();
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
+%>
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta charset="utf-8">
@@ -23,8 +30,18 @@
             top: 180px !important;
         }
 
-        .mui-icon-plus{
+        .mui-icon-plus {
             touch-action: none;
+        }
+
+        .btn-add-wrap {
+            position: fixed;
+            margin-bottom: 20px;
+            bottom: 0;
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            z-index: 10000;
         }
     </style>
 </head>
@@ -47,35 +64,48 @@
         </div>
     </div>
 </div>
+<div class="btn-add-wrap">
+    <button id="btnAdd" class="btn-add">添加</button>
+</div>
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 <script type="text/javascript" src="../js/mui.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.js"></script>
 <script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
 <script type="text/javascript" src="../js/mui.PullToRefresh.wx.js"></script>
 <script src="../js/jq_mydialog.js"></script>
-<script>
-    <%
-    Privilege pvg = new Privilege();
-    pvg.auth(request);
-    String skey = pvg.getSkey();
-    %>
 
+<jsp:include page="../inc/navbar.jsp">
+    <jsp:param name="skey" value="<%=skey%>"/>
+    <jsp:param name="isBarBtnAddShow" value="true"/>
+    <jsp:param name="barBtnAddUrl" value="notice_add.jsp"/>
+</jsp:include>
+<script>
+    var isUniWebview = <%=isUniWebview%>;
     var skey = '<%=skey%>';
     var params = {"skey": skey};
     // ios下url只能用<%=request.getContextPath()%>/public/notice/list，而android下可以用相对路径../../public/notice/list.do
-    var options = {"ajax_params": params, "url": "<%=request.getContextPath()%>/public/notice/list.do", "ajaxDatasType": "notices"};
+    var options = {
+        "ajax_params": params,
+        "url": "<%=request.getContextPath()%>/public/notice/list.do",
+        "ajaxDatasType": "notices",
+        "isUniWebview": isUniWebview
+    };
     var content = document.querySelector('.mui-content');
 
     // 用于HBuilderX手机端
-    if(mui.os.plus) {
+    if (mui.os.plus) {
         // 使搜索区域下方空白不致过大，因为搜索框中的input的margin-bottom为15px，而在原生手机端中则不会有此margin-bottom
         $('#pullrefresh').css('margin-top', '-15px');
-        document.addEventListener('plusready', function() {
+        document.addEventListener('plusready', function () {
             var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
             PullToRefrshListApi.loadListDate();
         });
-    }
-    else {
+
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
+    } else {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
 
@@ -108,24 +138,52 @@
         var elem = this;
         var li = elem.parentNode.parentNode;
         var id = li.getAttribute("id");
-        window.location.href = "notice_edit.jsp?id=" + id + "&skey=" + skey;
+        window.location.href = "notice_edit.jsp?id=" + id + "&skey=" + skey + "&isUniWebview=<%=isUniWebview%>";
     });
-</script>
 
-<jsp:include page="../inc/navbar.jsp">
-    <jsp:param name="skey" value="<%=skey%>" />
-    <jsp:param name="isBarBtnAddShow" value="true" />
-    <jsp:param name="barBtnAddUrl" value="notice_add.jsp" />
-</jsp:include>
+    jQuery(function() {
+        jQuery("#btnAdd").click(function() {
+            window.location.href = "notice_add.jsp?skey=<%=skey%>&isUniWebview=<%=isUniWebview%>";
+        })
+    })
 
-</body>
-<script>
+    // 在uniapp的webview中调用
+    function add() {
+        // 回退有问题，会回到九宫格
+        // window.location.href = "notice_add.jsp?skey=<%=skey%>&isUniWebview=<%=isUniWebview%>";
+        // 模拟点击回退仍有问题
+        // $("#btnAdd").trigger("click");
+
+        // pushState也会
+        // var state = {
+        //     title: document.title,
+        //     url: window.location.href
+        // };
+        // window.history.pushState(state, "title", "#");
+
+        // 如果用mui.openWindow，可能会引起webview混乱，退回时，直接回到了九宫格，偶尔会正常
+        // 但是用window.location.href的时候，也有问题，退回时是直接到了九宫格页面
+        /*mui.openWindow({
+            "url": "notice_add.jsp?skey=<%=skey%>&isUniWebview=<%=isUniWebview%>",
+            "id": "noticeAddWin",
+            "styles": {
+                // top: '80px'
+                top: '43px'
+            }
+        });*/
+    }
+
+    if (!isUniWebview) {
+        $('#btnAdd').hide();
+    }
+
     function callJS() {
         return {"btnAddShow": 1, "btnAddUrl": "weixin/notice/notice_add.jsp", "btnBackUrl": "main"};
     }
+
     var iosCallJS = '{ "btnAddShow":1, "btnAddUrl":"weixin/notice/notice_add.jsp", "btnBackUrl":"main" }';
 
-    if(mui.os.plus) {
+    if (mui.os.plus) {
         mui('.mui-bar').on("tap", '.mui-icon-plusempty', function (e) {
             e.preventDefault();
             // console.log('btnAddUrl:' + callJS().btnAddUrl);
@@ -137,4 +195,5 @@
         });
     }
 </script>
+</body>
 </html>

@@ -1,0 +1,433 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>控制面板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <link  type="text/css" th:href="@{${skinPath} + '/main.css'}" rel="stylesheet"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}" />
+</head>
+<body>
+<script>
+    function addClasses(obj) {
+        if ($(obj).hasClass('control_modular')) {
+            $(obj).removeClass('control_modular');
+            $(obj).addClass('selected');
+        }
+    }
+
+    function removeClasses(obj) {
+        if ($(obj).hasClass('selected')) {
+            $(obj).removeClass('selected');
+            $(obj).addClass('control_modular');
+        }
+    }
+</script>
+<div style='overflow:hidden;'>
+    <div class="control_layout_disk">
+        <span th:if="${isNetdiskUsed}">
+        <span th:inline="text"><img th:src="@{${skinPath} + '/icons/control_disk.png'}" width="16" height="16"/>磁盘空间 [[${diskSpaceAllowed}]]</span>
+        <span>已用<span class="disk_font" th:text="${diskSpaceUsed}"></span></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </span>
+        <span th:inline="text"><img th:src="@{${skinPath} + '/icons/control_mailbox.png'}" width="16" height="16"/>&nbsp;内部邮箱空间&nbsp;[[${msgSpaceAllowed}]]</span>
+        <span>已用&nbsp;<span class="disk_font" th:inline="text">[[${msgSpaceUsed}]]</span></span>
+    </div>
+    <div class="control_layout">
+        <div class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" th:onclick="addTab('个人信息', '[(${userInfoUrl})]')">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_1.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>个人信息</a></div>
+                <div class="subtitle">查看、修改个人信息</div>
+            </div>
+        </div>
+        <div class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onclick="mypasswd();">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_3.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>修改密码</a></div>
+                <div class="subtitle">修改个人密码</div>
+                <div id="mypasswd" style="display:none">
+                    <form id="form4" action="changePwd.do" method="post" name="memberform">
+                        <div style="display:none">
+                            <input type="text" name="userName" id="name" th:value="${user.name}"/>
+                        </div>
+                        <div class="dialog_margin">
+                            <span>输入旧密码&nbsp;&nbsp;</span>
+                            <input type="password" id="pwd3" name="pwd3" size=20 autocomplete="off"/>
+                        </div>
+                        <div class="dialog_margin">
+                            <span>输入新密码&nbsp;&nbsp;</span>
+                            <input type="password" id="pwd" name="pwd" autocomplete="off" size=20 onKeyUp="checkPwd(this.value)"/><br/>
+                            <span id="showmsg" style="color:red"></span>
+                        </div>
+                        <div>
+                            <span>确认新密码&nbsp;&nbsp;</span>
+                            <input type="password" id="pwd2" name="pwd2" autocomplete="off" size=20/>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div th:if="${!isSpecified}" class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onclick="topic();">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_4.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>界面设置</a></div>
+                <div class="subtitle">更换主题</div>
+                <div id="topic" style="display:none">
+                    <form id="form2" name="form2" method="post">
+                        <div>
+                            界面模式&nbsp;&nbsp;&nbsp;
+                            <select id="uiMode" name="uiMode">
+                                <option th:value="${UI_MODE_NONE}">请选择</option>
+                                <option th:value="${UI_MODE_PROFESSION}">经典型</option>
+                                <option th:value="${UI_MODE_FASHION}">时尚型</option>
+                                <option th:value="${UI_MODE_FLOWERINESS}">绚丽型</option>
+                                <option th:value="${UI_MODE_LTE}">轻简型</option>
+                            </select>
+                            <br/>
+                            菜单模式&nbsp;&nbsp;&nbsp;
+                            <select id="menuMode" name="menuMode">
+                                <option th:value="${MENU_MODE_NEW}">简洁</option>
+                                <option th:value="${MENU_MODE_NORMAL}">传统</option>
+                            </select>&nbsp;&nbsp;(仅用于经典型界面模式)
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onclick="individuality();">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_5.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>个性设置</a></div>
+                <div class="subtitle">个性化的设置</div>
+                <div id="individuality" style="display:none">
+                    <form id="form1" name="form1" method="post">
+                        <div class="dialog_margin">
+                            消息到来时是否弹出窗口&nbsp;
+                            <select name="isMsgWinPopup" id="isMsgWinPopup">
+                                <option value="1" selected="selected">是</option>
+                                <option value="0">否</option>
+                            </select>
+                        </div>
+                        <div class="dialog_margin">
+                            消息到来时是否声音提示&nbsp;
+                            <select name="isMessageSoundPlay" id="isMessageSoundPlay">
+                                <option value="1" selected="selected">是</option>
+                                <option value="0">否</option>
+                            </select>
+                        </div>
+                        <div class="dialog_margin" th:attr="style=${!isLarkUsed}?'display:none':''">
+                            讨论信息到来时是否闪动图标&nbsp;
+                            <select name="isChatIconShow" id="isChatIconShow">
+                                <option value="1" selected="selected">是</option>
+                                <option value="0">否</option>
+                            </select>
+                        </div>
+                        <div class="dialog_margin" th:attr="style=${!isLarkUsed}?'display:none':''">
+                            <td align="left">讨论信息到来时是否声音提示&nbsp;</td>
+                            <td><select name="isChatSoundPlay" id="isChatSoundPlay">
+                                <option value="1" selected="selected">是</option>
+                                <option value="0">否</option>
+                            </select>
+                        </div>
+                        <div class="dialog_margin" style="display:none">
+                            采用高级发布方式&nbsp;
+                            <td><select name="isWebedit" id="isWebedit" title="在文件柜及网盘中采用高级发布方式(使用WebEdit控件)">
+                                <option value="1">是</option>
+                                <option value="0" selected="selected">否</option>
+                            </select>
+                        </div>
+                        <div th:attr="style=${uiMode ne UI_MODE_FASHION} ? 'display:none':''">
+                            右侧边栏&nbsp;
+                            <select id="isShowSidebar" name="isShowSidebar">
+                                <option value="1">显示边栏</option>
+                                <option value="0">隐藏边栏</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onclick="changeLanguage();">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_langue.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>语言设置</a></div>
+                <div class="subtitle">修改语言设置</div>
+                <div id="myLanguage" style="display:none">
+                    <form id="form5" action="updateLang.do" method="post" name="form5">
+                        语言&nbsp;&nbsp;&nbsp;
+                        <select name="local" id="local" style="width:80px;">
+                        <option value="zh-CN" selected>中文</option>
+                        <option value="en-US">英文</option>
+                    </select>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div th:if="${isDisplaySlideMenu}" class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onclick="addTab('滑动菜单组', 'admin/slide_menu_group.jsp')">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_10.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>滑动菜单</a></div>
+                <div class="subtitle">编辑滑动菜单组</div>
+            </div>
+        </div>
+        <div th:if="${isIntegrateEmail}" class="control_modular" onMouseOver="addClasses(this)" onMouseOut="removeClasses(this)" onclick="mail();">
+            <div class="icon_box"><img th:src="@{${skinPath} + '/icons/control_7.png'}" width="49" height="47"/></div>
+            <div class="font_box">
+                <div class="title"><a>邮箱配置</a></div>
+                <div class="subtitle">邮箱用户名、密码修改</div>
+                <div id="mail" style="display:none">
+                    <form id="form3" name="form3" method="post">
+                        <div class="dialog_margin">
+                            邮箱用户名
+                            <input name="emailName" th:value="${userSetup.emailName}"/>
+                        </div>
+                        <div>
+                            邮箱密码&nbsp;&nbsp;&nbsp;
+                            <input name="emailPwd" th:value="${userSetup.emailPwd}"/>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="../inc/livevalidation_standalone.js"></script>
+<script th:src="@{/js/jquery-ui/jquery-ui-1.10.4.min.js}"></script>
+<script src="../js/jquery.bgiframe.js"></script>
+<script src="../js/jquery.form.js"></script>
+<script th:inline="javascript">
+    $(function() {
+        $('#form1 #isMsgWinPopup').val([[${userSetup.isMsgWinPopup} ? 1:0]]);
+        $('#form1 #isMessageSoundPlay').val([[${userSetup.isMessageSoundPlay} ? 1:0]]);
+        $('#form1 #isChatSoundPlay').val([[${userSetup.isChatSoundPlay} ? 1:0]]);
+        $('#form1 #isChatIconShow').val([[${userSetup.isChatIconShow} ? 1:0]]);
+        $('#form1 #isWebedit').val([[${userSetup.isWebedit}]]);
+        $('#isShowSidebar').val([[${userSetup.isShowSidebar}]]);
+        $("#local").val([[${userSetup.local}]]);
+        $("#uiMode").val([[${uiMode}]]);
+        $("#menuMode").val([[${menuMode}]]);
+    });
+
+    function checkPwd(pwdNew) {
+        $.ajax({
+            type: "post",
+            url: "checkPwd.do",
+            data: {
+                pwd: pwdNew
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                $("#showmsg").text(data.msg);
+            },
+            complete: function (XMLHttpRequest, status) {
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                jAlert(XMLHttpRequest.responseText, "提示");
+            }
+        });
+    }
+
+    function individuality() {
+        $("#individuality").dialog("open");
+    }
+
+    function topic() {
+        $("#topic").dialog("open");
+    }
+
+    function mail() {
+        $("#mail").dialog("open");
+    }
+
+    function mypasswd() {
+        $("#Password").val("");
+        $("#Password2").val("");
+        $("#Password3").val("");
+        $("#showmsg").text("");
+        $("#mypasswd").dialog({
+            title: "密码修改",
+            modal: true,
+            bgiframe: true,
+            closeText: "关闭",
+            buttons: {
+                "取消": function () {
+                    $(this).dialog("close");
+                },
+                "确定": function () {
+                    if ($("#pwd3").val() == "") {
+                        jAlert("旧密码不能为空", "提示");
+                        return;
+                    } else if ($("#pwd").val() == "") {
+                        jAlert("新密码不能为空", "提示");
+                        return;
+                    } else if ($("#pwd2").val() == "") {
+                        jAlert("确认密码不能为空", "提示");
+                        return;
+                    } else if ($("#pwd").val() != $("#pwd2").val()) {
+                        jAlert("密码与确认密码不一致", "提示");
+                        return;
+                    }
+                    jConfirm('您确定要修改密码么？', '提示', function (r) {
+                        if (!r) {
+                            return;
+                        } else {
+                            $.ajax({
+                                url: "changePwd.do",
+                                type: "post",
+                                dataType: "json",
+                                data: $('#form4').serialize(),
+                                beforeSend: function (XMLHttpRequest) {
+                                    $('body').showLoading();
+                                },
+                                success: function (data, status) {
+                                    $('body').hideLoading();
+                                    jAlert(data.msg, "提示");
+                                    if (data.ret == 1) {
+                                        $("#mypasswd").dialog("close");
+                                    }
+                                },
+                                error: function (XMLHttpRequest, textStatus) {
+                                    $('body').hideLoading();
+                                    jAlert("修改出错！", "提示");
+                                }
+                            });
+                        }
+                    })
+                }
+            },
+            closeOnEscape: true,
+            draggable: true,
+            resizable: true
+        });
+    }
+
+    function changeLanguage() {
+        $("#myLanguage").dialog({
+            title: "选择语言",
+            modal: true,
+            bgiframe: true,
+            closeText: "关闭",
+            buttons: {
+                "取消": function () {
+                    $(this).dialog("close");
+                },
+                "确定": function () {
+                    $.ajax({
+                        url: "changeLang",
+                        type: "post",
+                        dataType: "json",
+                        data: $('#form5').serialize(),
+                        beforeSend: function (XMLHttpRequest) {
+                            $('body').showLoading();
+                        },
+                        success: function (data, status) {
+                            $('body').hideLoading();
+                            if (data.ret == 1) {
+                                window.top.location.reload();
+                                $(this).dialog("close");
+                            }
+                        },
+                        error: function (XMLHttpRequest, textStatus) {
+                            $('body').hideLoading();
+                            jAlert("修改出错！", "提示");
+                        }
+                    });
+                }
+            },
+            closeOnEscape: true,
+            draggable: true,
+            resizable: true
+        });
+    }
+
+    $(function () {
+        $("#individuality").dialog({
+            autoOpen: false,
+            title: "个性设置",
+            closeText: "关闭",
+            modal: true,
+            buttons: {
+                "取消": function () {
+                    $(this).dialog("close");
+                },
+                "确定": function () {
+                    $.ajax({
+                        url: "setIndividuality.do",
+                        type: "post",
+                        data: $('#form1').serialize(),
+                        success: function (data, status) {
+                            jAlert("修改成功！", "提示");
+                        },
+                        error: function (XMLHttpRequest, textStatus) {
+                            jAlert("修改出错！", "提示");
+                        }
+                    });
+                    $(this).dialog("close");
+                }
+            }
+        });
+        $("#topic").dialog({
+            autoOpen: false,
+            modal: true,
+            title: "界面设置",
+            closeText: "关闭",
+            buttons: {
+                "取消": function () {
+                    $(this).dialog("close");
+                },
+                "确定": function () {
+                    $.ajax({
+                        url: "setStyleMode.do",
+                        type: "post",
+                        data: $('#form2').serialize(),
+                        dataType: "json",
+                        success: function (data, status) {
+                            if (data.ret==1) {
+                                if ($('#uiMode').val() != [(${UI_MODE_NONE})]) {
+                                    window.top.location.href = "../" + data.page;
+                                }
+                            }
+                            else {
+                                jAlert("操作失败！", "提示");
+                            }
+                        },
+                        error: function (XMLHttpRequest, textStatus) {
+                            jAlert("修改出错！", "提示");
+                        }
+                    });
+                }
+            }
+        });
+        $("#mail").dialog({
+            autoOpen: false,
+            modal: true,
+            title: "邮箱设置",
+            closeText: "关闭",
+            buttons: {
+                "取消": function () {
+                    $(this).dialog("close");
+                },
+                "确定": function () {
+                    $.ajax({
+                        url: "setEmail.do",
+                        type: "post",
+                        data: $('#form3').serialize(),
+                        success: function (data, status) {
+                            jAlert("修改成功！", "提示");
+                        },
+                        error: function (XMLHttpRequest, textStatus) {
+                            jAlert("修改出错！", "提示");
+                        }
+                    });
+                    $(this).dialog("close");
+                }
+            }
+        });
+    })
+</script>
+</html>

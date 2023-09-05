@@ -28,6 +28,11 @@
 
     <link type="text/css" rel="stylesheet" href="../js/appendGrid/jquery.appendGrid-1.5.1.css"/>
     <script type="text/javascript" src="../js/appendGrid/jquery.appendGrid-1.5.1.js"></script>
+
+    <link href="../js/select2/select2.css" rel="stylesheet"/>
+    <script src="../js/select2/select2.js"></script>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
 </head>
 <body>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
@@ -40,7 +45,7 @@
     String formCode = ParamUtil.get(request, "code");
     FormDb fd = new FormDb();
     fd = fd.getFormDb(formCode);
-    Vector v = fd.getFields();
+    Vector<FormField> v = fd.getFields();
 %>
 <%@ include file="form_edit_inc_menu_top.jsp" %>
 <script>
@@ -57,11 +62,47 @@
     </table>
     <input type="hidden" name="code" value="<%=formCode%>"/>
 </form>
-<div style="margin-bottom:10px; margin-top: 10px; margin-left: 80px">
+<div id="copyBox" style="margin-bottom:10px; margin-top: 10px; margin-left: 50px; display: none">
+    将字段
+    <select id="field1" name="field1">
+        <%
+            for (FormField ff : v) {
+        %>
+            <option value="<%=ff.getName()%>"><%=ff.getTitle()%></option>
+        <%
+            }
+        %>
+    </select>
+    复制至字段
+    <select id="field2" name="field2">
+        <%
+            for (FormField ff : v) {
+        %>
+        <option value="<%=ff.getName()%>"><%=ff.getTitle()%></option>
+        <%
+            }
+        %>
+    </select>
+    <input id="btnCopy" type="button" class="btn btn-default" value="复制" />
+    <script>
+        $(function() {
+            $('#field1').select2({
+                width: 200,
+            });
+            $('#field2').select2({
+                width: 200,
+            });
+        });
+    </script>
+</div>
+<div style="margin-bottom:10px; margin-top: 10px; margin-left: 50px">
     1、“显示于手机”仅适用于智能模块
 </div>
-<div style="margin-bottom:10px; margin-top: 10px; margin-left: 80px">
+<div style="margin-bottom:10px; margin-top: 10px; margin-left: 50px">
     2、“比较”功能已被“验证规则”替代
+</div>
+<div style="margin-bottom:10px; margin-top: 10px; margin-left: 50px">
+    2、“辅助”查询表示：如果在查询设置中被选择，则系统不会为此字段自动生成查询，需手动在过滤条件中组装该条件
 </div>
 <div id="btnBox" style="text-align:center; margin-top:10px">
     <button id="btnSubmit">确定</button>
@@ -69,6 +110,42 @@
 </body>
 <script>
     $(function () {
+        $('#btnCopy').click(function() {
+            if ($('#field1').val() == $('#field2').val()) {
+                layer.msg("请选择不同的字段！", {
+                    offset: '6px'
+                });
+                return;
+            }
+            layer.confirm('您确认要复制么？该操作不可逆，请谨慎操作！', {icon: 3, title: '提示'}, function (index) {
+                layer.close();
+                $.ajax({
+                    type: "post",
+                    url: "<%=request.getContextPath()%>/form/copyField.do",
+                    data: {
+                        formCode: "<%=formCode%>",
+                        sourceFieldName: $('#field1').val(),
+                        targetFieldName: $('#field2').val()
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            });
+        });
+
         // Initialize appendGrid
         $('#tblFields').appendGrid({
             // caption: '<%=fd.getName()%>字段',
@@ -167,7 +244,7 @@
                 {name: 'canNull', display: '允许空', type: 'select', ctrlOptions: {0: '否', 1: '是'}},
                 {name: 'fieldType', display: '字段类型', type: 'text', ctrlAttr: {maxlength: 100, readonly: 'true', disabled: true}, ctrlCss: {width: '100px', border: '0'}},
                 {name: 'ctlType', display: '控件类型', type: 'text', ctrlAttr: {maxlength: 10, readonly: 'true', disabled: true}, ctrlCss: {width: '180px', 'text-align': 'left', border: 0}, value: 0},
-                {name: 'canQuery', display: '参与查询', type: 'select', ctrlOptions: {0: '否', 1: '是'}, ctrlAttr: {maxlength: 10}, ctrlCss: {width: '50px', 'text-align': 'right'}, value: 0},
+                {name: 'canQuery', display: '参与查询', type: 'select', ctrlOptions: {0: '否', 1: '是', 2: '辅助'}, ctrlAttr: {maxlength: 10}, ctrlCss: {width: '50px', 'text-align': 'right'}, value: 0},
                 {name: 'isUnique', display: '唯一', type: 'select', ctrlOptions: {0: '否', 1: '全局唯一', 2: '嵌套唯一'}, ctrlAttr: {maxlength: 10, title: '字段值在表中是否唯一'}, ctrlCss: {width: '50px', 'text-align': 'right'}, value: 0},
                 {name: 'canList', display: '列表显示', type: 'select', ctrlOptions: {0: '否', 1: '是'}, ctrlAttr: {maxlength: 10, title: '用于查询设计器、消息或邮件中显示表单概要信息'}, ctrlCss: {width: '50px', 'text-align': 'right'}, value: 0},
                 {name: 'isMobileDisplay', display: '显示于手机', type: 'select', ctrlOptions: {0: '否', 1: '是'}, ctrlAttr: {maxlength: 10, title: '用于控制模块中的字段显示'}, ctrlCss: {width: '50px', 'text-align': 'right'}, value: 0},
@@ -204,7 +281,7 @@
                 json.put("canNull", ff.isCanNull()?1:0);
                 json.put("fieldType", ff.getFieldTypeDesc());
                 json.put("ctlType", FormField.getTypeDesc(ff.getType(), ff.getMacroType()));
-                json.put("canQuery", ff.isCanQuery()?1:0);
+                json.put("canQuery", ff.getQueryMode());
                 json.put("canList", ff.isCanList()?1:0);
 
                 if (ff.isUnique()) {
@@ -258,5 +335,17 @@
             });
         });
     });
+
+    function presskey(eventObject) {
+        if (event.ctrlKey && window.event.keyCode == 13) {
+            if (!$('#copyBox').is(':visible')) {
+                $('#copyBox').show();
+            } else {
+                $('#copyBox').hide();
+            }
+        }
+    }
+
+    document.onkeydown = presskey;
 </script>
 </html>

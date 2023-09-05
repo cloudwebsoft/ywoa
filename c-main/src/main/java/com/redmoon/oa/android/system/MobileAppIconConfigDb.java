@@ -9,6 +9,7 @@ public class MobileAppIconConfigDb extends QObjectDb {
 	public static final int TYPE_FLOW = 2;
 	public static final int TYPE_MODULE = 3;
 	public static final int TYPE_LINK = 4;
+	public static final int TYPE_FRONT = 5;
 
 	public static final int OA_NOTICE = 1;//通知
 	public static final int OA_FLOW = 2;//流程
@@ -17,7 +18,7 @@ public class MobileAppIconConfigDb extends QObjectDb {
 	public static final int OA_CRM = 5;//Crm
 	public static final int OA_INNER_MSG = 6;//内部邮件
 	public static final int OA_SYSTEM_MSG = 7;//系统邮件
-	public static final int OA_NETDISK = 8;//网络硬盘
+	// public static final int OA_NETDISK = 8;//网络硬盘
 	public static final int OA_SCHEDULE = 9;//日程安排
 	public static final int OA_FILECASE = 10;//文件柜
 	public static final int OA_LOACTION = 11;//定位签到

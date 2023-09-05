@@ -1,12 +1,13 @@
 package com.redmoon.oa.flow;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLDecoder;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
@@ -15,6 +16,8 @@ import cn.js.fan.util.StrUtil;
 import cn.js.fan.util.XMLProperties;
 
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class PaperConfig {
     // public: constructor to load driver and connect db
@@ -22,8 +25,6 @@ public class PaperConfig {
     private final String CONFIG_FILENAME = "config_paper.xml";
 
     private String cfgpath;
-
-    Logger logger;
 
     Document doc = null;
     Element root = null;
@@ -35,22 +36,36 @@ public class PaperConfig {
     }
 
     public void init() {
-        logger = Logger.getLogger(PaperConfig.class.getName());
         URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
         cfgpath = cfgURL.getFile();
         cfgpath = URLDecoder.decode(cfgpath);
-        properties = new XMLProperties(cfgpath);
+        // properties = new XMLProperties(cfgpath);
 
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+            properties = new XMLProperties(CONFIG_FILENAME, doc);
+
+            /*FileInputStream fin = new FileInputStream(cfgpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
+            fin.close();*/
         } catch (org.jdom.JDOMException e) {
             LogUtil.getLog(getClass()).error("init:" + e.getMessage());
         } catch (java.io.IOException e) {
             LogUtil.getLog(getClass()).error("init2:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 

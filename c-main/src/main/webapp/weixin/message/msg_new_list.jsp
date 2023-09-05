@@ -14,6 +14,7 @@
     }
     String skey = pvg.getSkey();
     String url = request.getContextPath() + "/public/message/listNewMsg.do";
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE HTML>
 <html>
@@ -69,8 +70,9 @@
 <script src="../js/jq_mydialog.js"></script>
 <script>
     var url = '<%=url%>';
+    var isUniWebview = <%=isUniWebview%>;
     var params = {"skey": "<%=skey%>"};
-    var options = {"ajax_params": params, "url": url, "ajaxDatasType": "messages"};
+    var options = {"ajax_params": params, "url": url, "ajaxDatasType": "messages", "isUniWebview": isUniWebview};
     var content = document.querySelector('.mui-content');
 
     if(mui.os.plus) {
@@ -80,6 +82,11 @@
             var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
             PullToRefrshListApi.loadListDate();
         });
+
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
     }
     else {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
@@ -99,6 +106,7 @@
 <jsp:include page="../inc/navbar.jsp">
     <jsp:param name="skey" value="<%=skey%>"/>
     <jsp:param name="tabId" value="msg"/>
+    <jsp:param name="isUniWebview" value="<%=isUniWebview%>"/>
 </jsp:include>
 </body>
 

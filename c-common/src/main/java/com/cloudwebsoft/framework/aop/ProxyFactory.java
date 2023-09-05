@@ -2,6 +2,7 @@ package com.cloudwebsoft.framework.aop;
 
 import java.util.Vector;
 import com.cloudwebsoft.framework.aop.base.Advisor;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -36,10 +37,10 @@ public class ProxyFactory {
         try {
             Class cls = Class.forName(className);
             obj = (Object) cls.newInstance();
-        } catch (ClassNotFoundException cnfe) {
-            System.out.println(ProxyFactory.class.getName() + " getClassInstance: ClassNotFoundException:" + cnfe.getMessage());
+        } catch (ClassNotFoundException e) {
+            LogUtil.getLog(getClass()).error(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return obj;
     }
@@ -51,8 +52,7 @@ public class ProxyFactory {
         if (obj != null) {
             proxy = binder.bind(obj);
         } else {
-            System.out.println(ProxyFactory.class.getName() + " getProxy: Can't get the proxyobj");
-            // throw
+            LogUtil.getLog(getClass()).error("getProxy: Can't get the proxyobj");
         }
         return proxy;
     }

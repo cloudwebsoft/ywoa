@@ -1,0 +1,98 @@
+.upfile-image-box {
+  display: inline-block;
+  width: 160px;
+  height: 130px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px dashed #ff0005;
+  background: #f8f8f8;
+  position: relative;
+  overflow: hidden;
+  margin: 10px;
+  cursor: pointer;
+}
+.upload-image-box-db {
+  border: 1px dashed #00cc00;
+}
+
+.upfile-cover {
+  position: absolute;
+  z-index: 1;
+  top: 0px;
+  width: 160px;
+  height: 30px;
+  background-color: rgba(0, 0, 0, 0.1);
+  display: none;
+  cursor: pointer;
+}
+
+.upfile-cover .btn-bar {
+  width: 100%;
+  height: 30px;
+  background-color: #eee;
+  opacity: 60%;
+}
+
+.upfile-cover .btn-bar .btn-del,
+.btn-cancel {
+  color: red;
+  padding: 1px 10px;
+  /*background-color: #faffbd;
+  border: 1px solid #faffbd;
+  border-radius: 3px;*/
+  font-size: 18px;
+  float: right;
+}
+
+.upfile-image-box:hover .upfile-cover {
+  display: block;
+}
+
+.upfile-image-box img {
+  width: 160px;
+  height: 130px;
+}
+
+.upfile-image {
+  cursor: pointer;
+}
+
+.upfile-file {
+  width: 160px;
+  height: 130px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.upfile-box {
+  display: inline-block;
+  width: 158px;
+  height: 130px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px dashed darkgray;
+  background: #f8f8f8;
+  position: relative;
+  overflow: hidden;
+  margin: 10px;
+}
+
+.upfile-box-tip {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.upfile-box-tip span {
+  font-size: 35px;
+}
+
+.upfile-ctrl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}

@@ -14,47 +14,20 @@
 <%@ page import="com.redmoon.oa.sms.*"%>
 <%@ page import="com.redmoon.oa.message.*"%>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <HEAD><TITLE>设置代理</TITLE>
 <META http-equiv=Content-Type content="text/html; charset=utf-8">
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <script type="text/javascript" src="../inc/common.js"></script>
-    <script src="../js/jquery-1.9.1.min.js"></script>
-    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+<script src="../js/jquery-1.9.1.min.js"></script>
+<script src="../js/jquery-migrate-1.2.1.min.js"></script>
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
 <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
-
 <script>
-function findObj(theObj, theDoc)
-{
-  var p, i, foundObj;
-  
-  if(!theDoc) theDoc = document;
-  if( (p = theObj.indexOf("?")) > 0 && parent.frames.length)
-  {
-    theDoc = parent.frames[theObj.substring(p+1)].document;
-    theObj = theObj.substring(0,p);
-  }
-  if(!(foundObj = theDoc[theObj]) && theDoc.all) foundObj = theDoc.all[theObj];
-  for (i=0; !foundObj && i < theDoc.forms.length; i++) 
-    foundObj = theDoc.forms[i][theObj];
-  for(i=0; !foundObj && theDoc.layers && i < theDoc.layers.length; i++) 
-    foundObj = findObj(theObj,theDoc.layers[i].document);
-  if(!foundObj && document.getElementById) foundObj = document.getElementById(theObj);
-  
-  return foundObj;
-}
-
-function SelectDateTime(objName) {
-	var dt = showModalDialog("../util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
-	if (dt!=null)
-		findObj(objName).value = dt;
-}
-
 var curProxy, curProxyUserRealName;
 function setPerson(deptCode, deptName, userName, userRealName)
 {
@@ -62,8 +35,8 @@ function setPerson(deptCode, deptName, userName, userRealName)
 	curProxyUserRealName.value = userRealName;
 }
 function delProxy(formObj){
-	findObj(formObj).action="?op=del";//
-	findObj(formObj).submit();
+	o(formObj).action="?op=del";//
+	o(formObj).submit();
 }
 </script>
 </HEAD>
@@ -389,7 +362,7 @@ if (com.redmoon.oa.sms.SMSFactory.isUseSMS()) {
         <tr>
           <td><lt:Label res="res.flow.Flow" key="agent"/>
           <input id="proxyUserRealName<%=i%>" name="proxyUserRealName" value="<%=proxyUserRealName%>" readonly>
-          <input class="btn" type="button" onClick="javascript:curProxy = o('proxy<%=i%>'); curProxyUserRealName = o('proxyUserRealName<%=i%>'); showModalDialog('../user_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')" value='<lt:Label res="res.flow.Flow" key="selectUser"/>' />&nbsp;&nbsp;
+          <input class="btn" type="button" onclick="curProxy = o('proxy<%=i%>'); curProxyUserRealName = o('proxyUserRealName<%=i%>'); openWin('../user_sel.jsp', 800, 600)" value='<lt:Label res="res.flow.Flow" key="selectUser"/>' />&nbsp;&nbsp;
           <input id="oldProxy" name="oldProxy" type=hidden value="<%=proxy%>">
           <input id="proxy<%=i%>" name="proxy" type=hidden value="<%=proxy%>">
           <input name="userName" type="hidden" value="<%=userName%>">
@@ -512,11 +485,7 @@ function openWinDepts(objId, objShowId) {
 	curObjShow = o(objShowId);
 	
 	var deptCode = curObj.value;
-	//var ret = showModalDialog('../admin/organize/organize_dept_sel.jsp?deptCode='+deptCode,window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')
 	openWin("../admin/organize/organize_dept_sel.jsp?deptCode="+deptCode, 450, 400, "yes");
-	//if (ret==null) {
-		//return;
-	//}
 	curObj.value = "";
 	curObjShow.value = "";
 	for (var i=0; i<ret.length; i++) {

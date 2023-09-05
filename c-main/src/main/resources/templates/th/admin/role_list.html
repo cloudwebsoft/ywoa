@@ -1,0 +1,305 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>角色管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link href="../js/bootstrap-switch/bootstrap-switch.css" rel="stylesheet">
+    <style>
+        .input-order {
+            border: 1px solid #ccc;
+            width: 40px;
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <form id="searchForm" name="searchForm" class="form-inline" method="get" style="margin: 20px 0px">
+        <div class="text-center">
+            单位
+            <select id="searchUnitCode" name="searchUnitCode" class="form-control">
+                <option value="">全部</option>
+                <th:block th:inline="text">
+                    [[${unitOpts}]]
+                </th:block>
+            </select>
+            类别
+            <select id="kind" name="kind" class="form-control">
+                <option value="">无</option>
+                [(${kindOpts})]
+            </select>
+            名称
+            <input type="hidden" name="op" value="search"/>
+            <input type="text" class="form-control" id="what" name="what" th:value="${what}"/>
+            <button id="btnSearch" class="btn btn-default">查询</button>
+        </div>
+    </form>
+    <div class="row">
+        <div class="col-lg-12 col-lg-offset-0">
+            <div class="table-responsive">
+                <div style="margin-bottom: 10px">
+                    <button id="btnAdd" class="btn btn-success">添加</button>
+                </div>
+                <table id="mainTable" cellspacing="0" class="table table-bordered table-hover" cellpadding="3" width="95%" align="center">
+                    <thead>
+                    <tr class="active">
+                        <td class="text-center" width="6%">排序号</td>
+                        <td class="text-center" width="8%">类别</td>
+                        <td class="text-center" width="15%">名称</td>
+                        <td class="text-center" width="9%">单位</td>
+                        <td class="text-center" width="15%">人员</td>
+                        <td class="text-center" width="10%" th:if="${isNetdiskUsed}">网盘配额</td>
+                        <td class="text-center" width="12%" style="display: none">内部邮箱配额</td>
+                        <td class="text-center" width="7%">系统</td>
+                        <td class="text-center" width="12%">启用</td>
+                        <td class="text-center" width="12%">操作</td>
+                    </tr>
+                    </thead>
+                    <tbody th:each="role, stat : ${roleVOList}">
+                    <tr th:id="'tr' + ${role.code}" th:attr="isSystem=${role.isSystem},code=${role.code}">
+                        <td align="center">
+                            <input th:id="'order' + ${role.code}" th:attr="code=${role.code}" name="order" class="input-order" th:value="${role.orders}"/>
+                        </td>
+                        <td>
+                            [[${role.kindName}]]
+                        </td>
+                        <td>
+                            <a href="javascript:;" th:onclick="addTab('[(${role.description})]', 'admin/editRole.do?tabIdOpener=' + getActiveTabId() + '&roleCode=' + [[${role.code}]])">[[${role.description}]]</a></td>
+                        <td th:inline="text">
+                            [[${role.unitName}]]
+                        </td>
+                        <td th:inline="text">
+                            [[${role.userRealNames}]]
+                        </td>
+                        <td th:if="${isNetdiskUsed}" th:inline="text"> [[${role.diskQuotaDesc}]]</td>
+                        <td th:text="${role.msgSpaceQuotaDesc}" style="display: none">1</td>
+                        <td align="center" th:text="${role.isSystem} ? '是' : '否'">是</td>
+                        <td align="center">
+                            <input th:if="${role.code ne 'member'}" type="checkbox" th:attr="code=${role.code}" name="switcher" class="switcher" th:checked="${role.status}">
+                        </td>
+                        <td align="center">
+                        <span>
+                            <a href="javascript:;" th:onclick="addTab('[(${role.description})]', 'admin/editRole.do?tabIdOpener=' + getActiveTabId() + '&roleCode=' + [[${role.code}]])">编辑</a>
+                        </span>
+                            <span th:if="${not (role.code eq 'member')}">
+                            <span th:if="${!role.isSystem or isAdmin}">
+                                &nbsp;&nbsp;<a href="javascript:;" th:onclick="del('[(${role.code})]')">删除</a>
+                            </span>
+                        </span>
+                            <span>
+                            &nbsp;&nbsp;<a href="javascript:;" title="复制角色，仅复制权限" th:onclick="copy('[(${role.code})]', '[(${role.description})]')" style="cursor:pointer">复制</a>
+                        </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../js/bootstrap-switch/bootstrap-switch.js"></script>
+<script th:inline="javascript">
+    function doQuery() {
+        $('#searchForm').submit();
+    }
+
+    // $.fn.bootstrapSwitch.defaults.onText = '开';
+    // $.fn.bootstrapSwitch.defaults.offText = '关';
+    $.fn.bootstrapSwitch.defaults.size = 'small';
+    $.fn.bootstrapSwitch.defaults.handleWidth = '20';
+
+    $(function () {
+        $(".switcher").bootstrapSwitch({
+            onText : "开",
+            offText : "关",
+            onColor : "success",
+            offColor : "warning",
+            onSwitchChange : function() {
+                var status = $(this).prop("checked");
+                var code = $(this).attr("code");
+                $.ajax({
+                    type: "post",
+                    url: "changeRoleStatus.do",
+                    data: {
+                        code: code,
+                        status: status
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('#mainTable').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        if (data.ret == "0") {
+                            jAlert(data.msg, "[(#{prompt})]");
+                        } else {
+                            $.toaster({
+                                "priority": "info",
+                                "message": data.msg
+                            });
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('#mainTable').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            }
+        });
+
+        $('#btnAdd').click(function () {
+            window.location.href = 'addRole.do';
+        });
+
+        $("#searchUnitCode").val([[${searchUnitCode}]]);
+        $('#kind').val([[${kind}]]);
+    });
+
+    function sortNumber(a, b) {
+        return b[1] - a[1];
+    }
+
+    // 排序
+    function sortTable() {
+        var ary = new Array();
+        $('#mainTable tr').each(function (i) {
+            if ($(this).attr("isSystem") && $(this).attr("isSystem") != "true") {
+                var code = $(this).attr("code");
+                var value = $(this).find("input").val();
+                ary[i] = new Array(code, value);
+            }
+        });
+
+        ary.sort(sortNumber);
+
+        var trCur = null;
+        for (i = 0; i < ary.length - 1; i++) {
+            if (ary[i]) {
+                if (trCur == null) {
+                    trCur = $('#tr' + ary[i][0]);
+                } else {
+                    var tr = $('#tr' + ary[i][0]);
+                    tr.insertAfter(trCur);
+                    trCur = tr;
+                }
+            }
+        }
+    }
+
+    $(function () {
+        $('.input-order').change(function () {
+            var trId = "tr" + $(this).attr("code");
+            $('#' + trId).fadeOut().fadeIn();
+
+            $.ajax({
+                type: "post",
+                url: "changeRoleOrder.do",
+                data: {
+                    code: $(this).attr("code"),
+                    order: $(this).val()
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#mainTable').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    if (data.ret == "0") {
+                        jAlert(data.msg, "[(#{prompt})]");
+                    } else {
+                        sortTable();
+                        $.toaster({
+                            "priority": "info",
+                            "message": data.msg
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#mainTable').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    });
+
+    function del(code) {
+        jConfirm('您确定要删除么？', '[(#{prompt})]', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "delRole.do",
+                data: {
+                    code: code
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    if (data.ret == "0") {
+                        jAlert(data.msg, "[(#{prompt})]");
+                    } else {
+                        $('#tr' + code).remove();
+                        $.toaster({
+                            "priority": "info",
+                            "message": data.msg
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    function copy(code, desc) {
+        jConfirm('您确定要复制"' + desc + '"么？', '[(#{prompt})]', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "copyRole.do",
+                data: {
+                    code: code
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret == "0") {
+                        jAlert(data.msg, "[(#{prompt})]");
+                    } else {
+                        jAlert(data.msg, "[(#{prompt})]", function () {
+                            window.location.reload();
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+</script>
+</body>
+</html>

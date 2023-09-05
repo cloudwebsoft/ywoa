@@ -3,8 +3,6 @@ package com.redmoon.oa.android.tools;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 

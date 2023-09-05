@@ -20,6 +20,7 @@
     boolean isBarBtnAddShow = ParamUtil.getBoolean(request, "isBarBtnAddShow", false);
     String barBtnAddUrl = ParamUtil.get(request, "barBtnAddUrl");
     boolean isBarBottomShow = ParamUtil.getBoolean(request, "isBarBottomShow", true);
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <nav id="barBottom" class="mui-bar mui-bar-tab" style="display: <%=isBarBottomShow?"block":"none"%>;">
     <a id="tabmsg" class="mui-tab-item" href="weixin/message/msg_new_list.jsp?skey=<%=skey%>">
@@ -76,6 +77,14 @@
             $('#barBottom').hide();
             return;
         }
+        <%
+        if (isUniWebview) {
+        %>
+            $('#barBottom').hide();
+            return;
+        <%
+        }
+        %>
 
         // ------------------处理底部-------------------------
         <%--<%if (!isBarBottomShow) {%>
@@ -98,6 +107,10 @@
         var isBarTopShow = true;
         // 如果是在微信中，显示底部，但不显示顶部
         if (r == -1) {
+            // isBarTopShow = false;
+        }
+        var url = '<%=request.getRequestURL()%>';
+        if (url.indexOf('app.jsp') != -1 || url.indexOf('msg_new_list.jsp') !=-1) {
             isBarTopShow = false;
         }
         if (isBarTopShow) {

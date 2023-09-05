@@ -4,7 +4,7 @@
 	 * 用于智能模块设计中
 	 *
 	 **/
-	String rootpath = request.getContextPath();
+	String rootPath = request.getContextPath();
 	response.setContentType("text/javascript;charset=utf-8");
 	// 防漏洞：1; mode=block 启用XSS保护，并在检查到XSS攻击时，停止渲染页面
 	response.setHeader("X-XSS-Protection", "1; mode=block");
@@ -130,7 +130,7 @@ function setCtlValue(ctlName, ctlType, ctlValue, nestFormCode) {
 	catch (e) {
 		// console.log(e.message);
 		if (_canLog()) {
-			console.log("Field: " + ctlName + " may not exist.");
+			console.log("Field: " + ctlName + " may not exist or maybe it's nest sheet.");
 		}
 	}
 }
@@ -168,13 +168,17 @@ function DisableCtl(name, ctlType, ctlValue, ctlValueRaw) {
 				if (v) {
 					obj.insertAdjacentHTML("AfterEnd", "<input type=hidden name='" + name + "' value='1'>");
 				 	//obj.outerHTML = "(是)";
-                    obj.outerHTML = "<img src='<%=rootpath%>/images/checkbox_y.gif' align='absMiddle'>";
+                    obj.outerHTML = "<img src='<%=rootPath%>/images/checkbox_y.gif' align='absMiddle'>";
 				}
 				else {
 					obj.insertAdjacentHTML("AfterEnd", "<input type=hidden name='" + name + "' value='0'>");
 					// obj.outerHTML = "(否)";
-                    obj.outerHTML = "<img src='<%=rootpath%>/images/checkbox_n.gif' align='absMiddle'>";                    
+                    obj.outerHTML = "<img src='<%=rootPath%>/images/checkbox_n.gif' align='absMiddle'>";                    
 				}                
+			}
+			else if (ctlType == "select") {
+				var text = $("[name='" + name + "'] option[value='" + ctlValue + "']").text();
+				obj.outerHTML = "<span id='" + name + "_show'>" + text + "</span><textarea style='display:none' name='" + name + "'>" + ctlValueRaw + "</textarea>";
 			}
             else if (ctlType=="radio") {
                  var radioboxs = document.getElementsByName(name);
@@ -228,9 +232,9 @@ function ReplaceCtlWithValue(name, ctlType, ctlValue) {
 			if (obj.name==name) {
 				if (ctlType=="checkbox") {
                 	if (obj.value==ctlValue)
-                    	obj.outerHTML = "<img src='<%=rootpath%>/images/checkbox_y.gif' align='absMiddle'>";
+                    	obj.outerHTML = "<img src='<%=rootPath%>/images/checkbox_y.gif' align='absMiddle'>";
                     else
-                    	obj.outerHTML = "<img src='<%=rootpath%>/images/checkbox_n.gif' align='absMiddle'>";
+                    	obj.outerHTML = "<img src='<%=rootPath%>/images/checkbox_n.gif' align='absMiddle'>";
 				}
                 else if (ctlType=="radio") {
                     var radioboxs = document.getElementsByName(name);
@@ -241,9 +245,9 @@ function ReplaceCtlWithValue(name, ctlType, ctlValue) {
                     	}
                         for (j=0; j < arr.length; j++) {
                             if (arr[j].value==ctlValue)
-                                arr[j].outerHTML = "<img src='<%=rootpath%>/images/radio_y.gif' align='absMiddle'>";
+                                arr[j].outerHTML = "<img src='<%=rootPath%>/images/radio_y.gif' align='absMiddle'>";
                             else
-                                arr[j].outerHTML = "<img src='<%=rootpath%>/images/radio_n.gif' align='absMiddle'>";
+                                arr[j].outerHTML = "<img src='<%=rootPath%>/images/radio_n.gif' align='absMiddle'>";
                         }
                     }
                 }
@@ -370,7 +374,7 @@ function SelectDate(ObjName, FormatDate) {
         PostAtt[0]= FormatDate;
         PostAtt[1]= findObj(ObjName);
     
-        GetDate = showModalDialog("<%=rootpath%>/util/calendar/calendar.htm", PostAtt ,"dialogWidth:286px;dialogHeight:221px;status:no;help:no;");
+        GetDate = showModalDialog("<%=rootPath%>/util/calendar/calendar.htm", PostAtt ,"dialogWidth:286px;dialogHeight:221px;status:no;help:no;");
     }
 }
 
@@ -402,7 +406,7 @@ function SetNewDate() {
         var dateObj = this;
         		
 		try {
-			$('#' + $(this).attr("id")).datetimepicker({
+			var dtOption = {
 				lang:'ch',
 				datepicker:true,
 				timepicker:false,
@@ -412,12 +416,44 @@ function SetNewDate() {
 			    		// 使livevalidation再次验证
 			       		$(dateObj).blur();
 			       	}
-			    },  				
+			    },
 				format:'Y-m-d'
-			});
+			}
+
+			if ($(this).attr('minv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('mint') == 'd') {
+					date.setDate(date.getDate()+1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.minDate = year+'-'+month+'-'+dates;
+			}
+
+			if ($(this).attr('maxv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('maxt') == 'x') {
+					date.setDate(date.getDate()-1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.maxDate = year+'-'+month+'-'+dates;
+			}
+
+			$('#' + $(this).attr("id")).datetimepicker(dtOption);
 		} catch (e){}
 	});
 	$("input[kind='DATE_TIME']").each(function() {
+    	if($(this).attr("readonly")==true || $(this).attr("readonly")=="readonly") {
+			return true;
+        }
+
 		var isNew = $(this).attr("isnewdatetimectl");
 		if (typeof(isNew) == 'undefined' || !isNew) {
 			var name = $(this).attr('name');
@@ -451,21 +487,51 @@ function SetNewDate() {
         var dateObj = this;
 		
 		try {
-			$('#' + $(this).attr("id")).datetimepicker({
+			var dtOption = {
 				lang:'ch',
 				datepicker:true,
 				timepicker:true,
 				format:'Y-m-d H:i:00',
 				validateOnBlur:false, // 解决IE8下需点击两次才能选到时间，且选择后livevalidation仍显示不能为空的问题
-			    onClose: function(dateText, inst) {
-			    	if (isIE8) {
-			    		// 使livevalidation再次验证
-			       		$(dateObj).blur();
-			       	}
-			    },				
+				onClose: function(dateText, inst) {
+					if (isIE8) {
+					// 使livevalidation再次验证
+					$(dateObj).blur();
+					}
+				},
+				formatDate:'Y-m-d',
 				step:10
-			});
-		} catch (e) {}
+			}
+
+			if ($(this).attr('minv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('mint') == 'd') {
+					date.setDate(date.getDate()+1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.minDate = year+'-'+month+'-'+dates;
+			}
+
+			if ($(this).attr('maxv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('maxt') == 'x') {
+					date.setDate(date.getDate()-1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.maxDate = year+'-'+month+'-'+dates;
+			}
+			$('#' + $(this).attr("id")).datetimepicker(dtOption);
+		} catch (e) {
+			console.log(e);
+		}
 	});
 	if (noName) {
 		$("img[onclick!='']").each(function() {
@@ -599,12 +665,12 @@ var timeObjName;
 function SelectDateTime(objName) {
 	timeObjName = objName;
 	if (isIE()) {
-        var dt = showModalDialog("<%=rootpath%>/util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
+        var dt = showModalDialog("<%=rootPath%>/util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
         if (dt!=null)
             findObj(objName + "_time").value = dt;
     }
     else {
-    	openWin("<%=rootpath%>/util/calendar/time.jsp", 266, 185);
+    	openWin("<%=rootPath%>/util/calendar/time.jsp", 266, 185);
     }
 }
 
@@ -667,5 +733,9 @@ function HideCtl(name, ctlType, macroType) {
 	}
 }
 
-includFile(getContextPath() + "/js/colorpicker/",['jquery.bigcolorpicker.css']);
-includFile(getContextPath() + "/js/colorpicker/",['jquery.bigcolorpicker.min.js']);
+// getContextPath不准确，系统有虚拟路径与没有虚拟路径时，得到的目录不一样
+// flow_dispose_js.jsp一般在二级目录下，故需加上../
+// includFile(getContextPath() + "/../js/colorpicker/",['jquery.bigcolorpicker.css']);
+// includFile(getContextPath() + "/../js/colorpicker/",['jquery.bigcolorpicker.min.js']);
+includFile("<%=rootPath%>/js/colorpicker/",['jquery.bigcolorpicker.css']);
+includFile("<%=rootPath%>/js/colorpicker/",['jquery.bigcolorpicker.min.js']);

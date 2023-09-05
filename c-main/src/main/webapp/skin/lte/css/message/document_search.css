@@ -77,9 +77,8 @@ position:absolute;
 z-index:1;
 top:39px;
 border:1px solid #eeeeee;
-width:300px;
+/*width:300px;*/
 background-color:#eeeeee;
-
 }
 .upload_sel{
 position:absolute;

@@ -9,6 +9,9 @@
 <%@ page import="org.json.JSONException" %>
 <%@ page import="org.json.JSONObject" %>
 <%@ page import="java.util.Vector" %>
+<%@ page import="com.cloudweb.oa.api.IWorkflowHelper" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%
 String flowTypeCode = ParamUtil.get(request, "flowTypeCode");
 if ("".equals(flowTypeCode)) {
@@ -23,6 +26,8 @@ String fieldText = "";
 MacroCtlMgr mm = new MacroCtlMgr();		
 
 if (fields!=null && !"".equals(fields)) {
+	// 老版迁移过来的系统中原有流程套用流程后，fields中会含有comma
+	fields = fields.replaceAll("comma", ",");
  	fieldAry = fields.split(",");
   	FormDb fd = new FormDb();
 	fd = fd.getFormDb(formCode);
@@ -53,7 +58,12 @@ if (fields!=null && !"".equals(fields)) {
 				}
 
 				FormDb nestFormDb = nestfd.getFormDb(nestFormCode);
-				vfd.addElement(nestFormDb);
+				if (nestFormDb.isLoaded()) {
+					vfd.addElement(nestFormDb);
+				}
+				else {
+					DebugUtil.e(getClass(), "表单：", nestFormCode + " 不存在");
+				}
 			}
 		}
 	}

@@ -9,9 +9,10 @@ import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.flow.MyActionDb;
 import com.redmoon.oa.flow.WorkflowActionDb;
 import com.redmoon.oa.flow.WorkflowDb;
+import com.redmoon.oa.person.UserDb;
 
 public interface IStrategy {
-    Vector selectUser(Vector userVector);
+    Vector<UserDb> selectUser(Vector<UserDb> userVector);
     
     boolean onActionFinished(HttpServletRequest request, WorkflowDb wf, MyActionDb mad);
 

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- the proxool configuration can be embedded within your own application's.
+Anything outside the "proxool" tag is ignored. -->
+<something-else-entirely>
+<!--    <proxool>
+        <alias>oa</alias>
+        <driver-url>jdbc:mysql://localhost:3311/redmoonoa?useUnicode=true&amp;characterEncoding=UTF-8&amp;zeroDateTimeBehavior=CONVERT_TO_NULL&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai</driver-url>
+        <driver-class>com.mysql.cj.jdbc.Driver</driver-class>
+        <driver-properties>
+            <property name="user" value="root" />
+            <property name="password" value="myoa888" />
+        </driver-properties>
+        <maximum-connection-count>200</maximum-connection-count>
+        <house-keeping-test-sql>select 1</house-keeping-test-sql>
+        <simultaneous-build-throttle>50</simultaneous-build-throttle>
+    </proxool>-->
+    <!--<proxool>
+        <alias>oa2005</alias>
+        <driver-url>jdbc:sqlserver://localhost:1455;DatabaseName=oa</driver-url>
+        <driver-class>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver-class>
+        <driver-properties>
+            <property name="user" value="sa" />
+            <property name="password" value="sa" />
+        </driver-properties>
+        <maximum-connection-count>50</maximum-connection-count>
+        <house-keeping-test-sql>select 1</house-keeping-test-sql>
+    </proxool>-->
+    <!--<proxool>
+        <alias>zjrj</alias>
+        <driver-url>jdbc:mysql://localhost:5506/openfire2?useUnicode=true&amp;characterEncoding=UTF-8&amp;zeroDateTimeBehavior=CONVERT_TO_NULL&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai</driver-url>
+        <driver-class>com.mysql.cj.jdbc.Driver</driver-class>
+        <driver-properties>
+            <property name="user" value="root" />
+            <property name="password" value="myoa888" />
+        </driver-properties>
+        <maximum-connection-count>50</maximum-connection-count>
+        <house-keeping-test-sql>select 1</house-keeping-test-sql>
+    </proxool>-->
+</something-else-entirely>
+

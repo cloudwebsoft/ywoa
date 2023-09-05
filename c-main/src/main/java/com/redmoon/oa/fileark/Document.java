@@ -32,7 +32,6 @@ import com.redmoon.oa.util.Excel2Html;
 import com.redmoon.oa.util.WeekMothUtil;
 import com.redmoon.oa.util.Word2Html;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.*;
 import org.htmlparser.*;
 import org.htmlparser.filters.*;
 import org.htmlparser.nodes.*;
@@ -111,26 +110,24 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     public static final int TYPE_DOC = 0;
     public static final int TYPE_VOTE = 1;
     public static final int TYPE_FILE = 2;
-
-    transient Logger logger = Logger.getLogger(Document.class.getName());
-
+    
     private static final String INSERT_DOCUMENT =
-            "INSERT into document (id, title, class1, type, voteoption, voteresult, nick, keywords, isrelateshow, can_comment, hit, template_id, parent_code, examine, isNew, author, flowTypeCode, color, isBold, expire_date,modifiedDate,createDate, doc_level, kind, flow_id, summary) VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            "INSERT into document (id, title, class1, type, voteoption, voteresult, nick, keywords, isrelateshow, can_comment, hit, template_id, parent_code, examined, isNew, author, flowTypeCode, color, isBold, expire_date,modifiedDate,createDate, doc_level, kind, flow_id, summary) VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     private static final String LOAD_DOCUMENT =
-            "SELECT title, class1, modifiedDate, can_comment,summary,ishome,type,voteOption,voteResult,examine,nick,keywords,isrelateshow,hit,template_id,page_count,parent_code,isNew,author,flowTypeCode,color,isBold,expire_date,orgAddr,createDate,doc_level,kind,flow_id FROM document WHERE id=?";
+            "SELECT title, class1, modifiedDate, can_comment,summary,ishome,type,voteOption,voteResult,examined,nick,keywords,isrelateshow,hit,template_id,page_count,parent_code,isNew,author,flowTypeCode,color,isBold,expire_date,orgAddr,createDate,doc_level,kind,flow_id FROM document WHERE id=?";
 
     private static final String DEL_DOCUMENT =
             "delete FROM document WHERE id=?";
     private static final String SAVE_DOCUMENT =
-            "UPDATE document SET title=?, can_comment=?, ishome=?, modifiedDate=?,examine=?,keywords=?,isrelateshow=?,template_id=?,class1=?,isNew=?,author=?,flowTypeCode=?,parent_code=?,color=?,isBold=?,expire_date=?,doc_level=?,kind=?,summary=?,createDate=? WHERE id=?";
+            "UPDATE document SET title=?, can_comment=?, ishome=?, modifiedDate=?,examined=?,keywords=?,isrelateshow=?,template_id=?,class1=?,isNew=?,author=?,flowTypeCode=?,parent_code=?,color=?,isBold=?,expire_date=?,doc_level=?,kind=?,summary=?,createDate=? WHERE id=?";
     private static final String SAVE_HIT =
             "UPDATE document SET hit=? WHERE id=?";
 
     public Document() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Document:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("Document:默认数据库名为空！");
         }
     }
 
@@ -143,16 +140,13 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     public Document(int id) {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Document:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("Document:默认数据库名为空！");
         }
         this.id = id;
         loadFromDB();
     }
 
     public void renew() {
-        if (logger == null) {
-            logger = Logger.getLogger(Document.class.getName());
-        }
     }
 
     /**
@@ -174,7 +168,6 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             create(code, title, content, 0, "", "", nick, leaf.getTemplateId(), nick);
             this.id = getFirstIDByCode(code);
             // 更改目录中的doc_id
-            //logger.info("id=" + id);
             leaf.setDocID(id);
             leaf.update();
         }
@@ -203,7 +196,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 }
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -222,7 +215,6 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     public Document getDocumentByDirCode(String dirCode) {
         Leaf leaf = new Leaf();
         leaf = leaf.getLeaf(dirCode);
-        //logger.info("dirCode=" + dirCode);
 
         if (leaf != null && leaf.isLoaded() &&
                 leaf.getType() == Leaf.TYPE_DOCUMENT) {
@@ -241,7 +233,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
      */
     public int getFirstIDByCode(String code) {
         String sql = "select id from document where class1=" +
-                StrUtil.sqlstr(code) + " and examine=" + Document.EXAMINE_PASS + " order by doc_level desc, createDate desc";
+                StrUtil.sqlstr(code) + " and examined=" + Document.EXAMINE_PASS + " order by doc_level desc, createDate desc";
         Conn conn = new Conn(connname);
         ResultSet rs = null;
         try {
@@ -251,7 +243,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 return rs.getInt(1);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -300,12 +292,14 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     public String getContent(int pageNum) {
         DocContent dc = new DocContent();
         dc = dc.getDocContent(id, pageNum);
-        if (dc != null)
+        if (dc != null) {
             return dc.getContent();
-        else
+        } else {
             return null;
+        }
     }
 
+    @Override
     public String getPageList(HttpServletRequest request, UserDesktopSetupDb uds) {
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
@@ -313,29 +307,35 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         return url + StrUtil.UrlEncode(uds.getModuleItem());
     }
 
+    @Override
     public String display(HttpServletRequest request, UserDesktopSetupDb uds) {
-        Privilege privilege = new Privilege();
         String dir_code = uds.getModuleItem();
         Leaf lf = new Leaf();
         lf = lf.getLeaf(dir_code);
         if (lf == null) {
             return "<div class='no_content'><img title='文件柜无内容' src='images/desktop/no_content.jpg'></div>";
         }
-        if (!dir_code.equals("")) {
+
+        Privilege pvg = new Privilege();
+        String userName = pvg.getUser(request);
+        boolean canExamine = false;
+        if (!"".equals(dir_code)) {
             LeafPriv lp = new LeafPriv(dir_code);
-            // if (!lp.canUserSee(privilege.getUser(request))) {
+            canExamine = lp.canUserExamine(userName);
             if (!lp.canUserSee(request)) {
                 return SkinUtil.LoadString(request, "pvg_invalid");
             }
         }
-        int count = uds.getCount();
+
+        DocPriv dp = new DocPriv();
+        int c = 0;
         String sql = "";
-        if (dir_code.equalsIgnoreCase("root")) {
-            sql = "select id from document where  examine=" + Document.EXAMINE_PASS + " order by modifiedDate desc";
+        if (dir_code.equalsIgnoreCase(Leaf.ROOTCODE)) {
+            sql = "select id from document where examined=" + Document.EXAMINE_PASS + " order by modifiedDate desc";
         } else {
-            sql = "select id from document where class1=" + StrUtil.sqlstr(dir_code) + " and examine=" + Document.EXAMINE_PASS + " order by modifiedDate desc";
+            sql = "select id from document where class1=" + StrUtil.sqlstr(dir_code) + " and examined=" + Document.EXAMINE_PASS + " order by modifiedDate desc";
         }
-        Iterator ir = list(sql, count).iterator();
+        Iterator ir = list(sql, 500).iterator();
         String str = "";
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
@@ -344,21 +344,37 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             str = "<table class='article_table'>";
             while (ir.hasNext()) {
                 Document doc = (Document) ir.next();
+
+                // 判断是否有浏览文件的权限
+                // 如果不是作者
+                if (!userName.equals(doc.getAuthor())) {
+                    if (!canExamine && !dp.canUserSee(request, doc.getId())) {
+                        continue;
+                    }
+                }
+                c++;
+                if (c >= uds.getCount()) {
+                    break;
+                }
+
                 String t = StrUtil.getLeft(doc.getTitle(), uds.getWordCount());
 
                 if (DateUtil.compare(new java.util.Date(), doc.getExpireDate()) == 2) {
                     str += "<tr><td class='article_content'><a href='" + url + "?id=" + doc.getID() + "'>";
-                    if (doc.isBold())
+                    if (doc.isBold()) {
                         str += "<B>";
+                    }
                     if (!doc.getColor().equals("")) {
                         str += "<font color='" + doc.getColor() + "'>";
                     }
 
                     str += StrUtil.toHtml(t);
-                    if (!doc.getColor().equals(""))
+                    if (!doc.getColor().equals("")) {
                         str += "</font>";
-                    if (doc.isBold())
+                    }
+                    if (doc.isBold()) {
                         str += "</B>";
+                    }
                     str += "</a></td><td class='article_time'>[" + DateUtil.format(doc.getModifiedDate(), "yyyy-MM-dd") + "]</td></tr>";
                 } else {
                     str += "<tr><td class='article_content'>";
@@ -451,12 +467,19 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         return str;
     }
 
+    /**
+     * 用于fileark_desktop.jsp，带选项卡
+     * @param request
+     * @param udsd
+     * @param dirCode
+     * @return
+     */
     public String getDesktopList(HttpServletRequest request, UserDesktopSetupDb udsd, String dirCode) {
         String sql = "";
-        if (dirCode.equalsIgnoreCase("root")) {
-            sql = "select id from document where examine=" + com.redmoon.oa.fileark.Document.EXAMINE_PASS + " order by doc_level desc, createDate desc";
+        if (Leaf.ROOTCODE.equalsIgnoreCase(dirCode)) {
+            sql = "select id from document where examined=" + com.redmoon.oa.fileark.Document.EXAMINE_PASS + " order by doc_level desc, createDate desc";
         } else {
-            sql = "select id from document where class1=" + StrUtil.sqlstr(dirCode) + " and examine=" + com.redmoon.oa.fileark.Document.EXAMINE_PASS + " order by doc_level desc, createDate desc";
+            sql = "select id from document where class1=" + StrUtil.sqlstr(dirCode) + " and examined=" + com.redmoon.oa.fileark.Document.EXAMINE_PASS + " order by doc_level desc, createDate desc";
         }
 
         Privilege pvg = new Privilege();
@@ -464,7 +487,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         DocLogDb dldb = new DocLogDb();
 
         Document doc = new Document();
-        Iterator ir = doc.list(sql, udsd.getCount()).iterator();
+        Iterator ir = doc.list(sql, 50).iterator();
         String str = "";
 
         DocPriv dp = new DocPriv();
@@ -474,6 +497,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
 
         // DesktopMgr dm = new DesktopMgr();
         // DesktopUnit du = dm.getDesktopUnit(udsd.getModuleCode());
+        int c = 0;
         String url = "doc_show.jsp";
         if (ir.hasNext()) {
             str = "<ul>";
@@ -481,8 +505,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 doc = (com.redmoon.oa.fileark.Document) ir.next();
 
                 // 判断是否有浏览文件的权限
-                if (!canExamine && !dp.canUserSee(request, doc.getId())) {
-                    continue;
+                // 如果不是作者
+                if (!userName.equals(doc.getAuthor())) {
+                    if (!canExamine && !dp.canUserSee(request, doc.getId())) {
+                        continue;
+                    }
                 }
 
                 String t = StrUtil.getLeft(doc.getTitle(), udsd.getWordCount());
@@ -517,35 +544,35 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                     String viewUrl = "fileark/fileark_ntko_show.jsp";
                     String fileIcon = doc.getFileIcon();
                     str += "<img src ='fileark/images/" + fileIcon + "' class='file-icon'/>&nbsp;";
-                    if (ext.equals("doc") || ext.equals("docx")) {
+                    if ("doc".equals(ext) || "docx".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
                             am = (com.redmoon.oa.fileark.Attachment) ait.next();
                         }
                         str += "<a href='" + viewUrl + "?docId=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
-                    } else if (ext.equals("xls") || ext.equals("xlsx")) {
+                    } else if ("xls".equals(ext) || "xlsx".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
                             am = (com.redmoon.oa.fileark.Attachment) ait.next();
                         }
                         str += "<a href='" + viewUrl + "?docId=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
-                    } else if (ext.equals("ppt") || ext.equals("pptx")) {
+                    } else if ("ppt".equals(ext) || "pptx".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
                             am = (com.redmoon.oa.fileark.Attachment) ait.next();
                         }
                         str += "<a href='" + viewUrl + "?docId=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
-                    } else if (ext.equals("wps") || ext.equals("wpt")) {
+                    } else if ("wps".equals(ext) || "wpt".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
                             am = (com.redmoon.oa.fileark.Attachment) ait.next();
                         }
                         str += "<a href='" + viewUrl + "?docId=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
-                    } else if (ext.equals("rar")) {
+                    } else if ("rar".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
@@ -553,7 +580,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                         }
                         str += "<a href='" + viewUrl + "?docId=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
                     }
-                    else if (ext.equals("zip")) {
+                    else if ("zip".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
@@ -561,7 +588,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                         }
                         str += "<a href='" + viewUrl + "?docId=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" +  StrUtil.toHtml(t) + "</a>";
                     }
-                    else if (ext.equals("pdf")) {
+                    else if ("pdf".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
@@ -569,14 +596,14 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                         }
                         str += "<a href='fileark/pdf_js/viewer.html?file=" + request.getContextPath() + "/" + am.getVisualPath() + "/" + am.getDiskName() + "' title='" + t +"'>" +
                                 StrUtil.toHtml(t) + "</a>";
-                    } else if (ext.equals("jpg") || ext.equals("png") || ext.equals("gif") || ext.equals("jpeg")) {
+                    } else if ("jpg".equals(ext) || "png".equals(ext) || "gif".equals(ext) || "jpeg".equals(ext)) {
                         Vector v = doc.getAttachments(1);
                         Iterator ait = v.iterator();
                         if (ait.hasNext()) {
                             am = (Attachment) ait.next();
                         }
                         str += "<a href='" + url + "?id=" + doc.getID() + "&pageNum=1&attachId=" + am.getId() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
-                    } else if (ext.equals("mp4") || ext.equals("avi")) {
+                    } else if ("mp4".equals(ext) || "avi".equals(ext)) {
                         str += "<a href='" + url + "?id=" + doc.getID() + "' title='" + t +"'>" + StrUtil.toHtml(t) + "</a>";
                     }
                     else {
@@ -587,6 +614,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                         str += "&nbsp;<img src='" + request.getContextPath() + "/images/icon_new.gif'/>";
                     }
                     str += "</span><span class='t-right'>[" + DateUtil.format(doc.getCreateDate(), "yyyy-MM-dd") + "]</span>";
+                }
+
+                c++;
+                if (c >= udsd.getCount()) {
+                    break;
                 }
             }
             str += "</ul>";
@@ -606,16 +638,16 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
 
         if (beginDate != null && endDate != null) {
             sql = "select id, class1 from document where createDate>=" + SQLFilter.getDateStr(bd, format) +
-                    " and createDate<=" + SQLFilter.getDateStr(ed, format) + " and examine=" +
+                    " and createDate<=" + SQLFilter.getDateStr(ed, format) + " and examined=" +
                     EXAMINE_PASS;
         } else if (beginDate == null && endDate != null) {
             sql = "select id, class1 from document where createDate<=" + SQLFilter.getDateStr(ed, format) +
-                    " and examine=" + EXAMINE_PASS;
+                    " and examined=" + EXAMINE_PASS;
         } else if (beginDate != null && endDate == null) {
             sql = "select id, class1 from document where createDate>=" + SQLFilter.getDateStr(bd, format) +
-                    " and examine=" + EXAMINE_PASS;
+                    " and examined=" + EXAMINE_PASS;
         } else {
-            sql = "select id, class1 from document where examine=" + EXAMINE_PASS;
+            sql = "select id, class1 from document where examined=" + EXAMINE_PASS;
         }
         /*try {
             Directory dir = new Directory();
@@ -630,7 +662,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 }
             }
         } catch (SQLException e) {
-            logger.error("index:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("index:" + e.getMessage());
             return false;
         } finally {
             if (conn != null) {
@@ -638,14 +670,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 conn = null;
             }
         }*/
-        boolean re = false;
-        re = indexer.indexSql(sql, isIncrement);
-        if (re) {
-            return true;
-        } else {
-            return false;
-        }
-
+        return indexer.indexSql(sql, isIncrement);
     }
 
     /**
@@ -674,7 +699,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 }
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -682,6 +707,57 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             }
         }
         return result;
+    }
+
+    public ListResult listResult(String sql, int curPage, int pageSize) throws ErrMsgException {
+        int total = 0;
+        ResultSet rs = null;
+        Vector result = new Vector();
+
+        ListResult lr = new ListResult();
+        lr.setTotal(total);
+        lr.setResult(result);
+
+        Conn conn = new Conn(connname);
+        try {
+            // 取得总记录条数
+            String countsql = SQLFilter.getCountSql(sql);
+            rs = conn.executeQuery(countsql);
+            if (rs != null && rs.next()) {
+                total = rs.getInt(1);
+            }
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
+
+            if (total != 0) {
+                conn.setMaxRows(curPage * pageSize); // 尽量减少内存的使用
+            }
+
+            rs = conn.executeQuery(sql);
+            if (rs == null) {
+                return lr;
+            } else {
+                rs.setFetchSize(pageSize);
+                int absoluteLocation = pageSize * (curPage - 1) + 1;
+                if (rs.absolute(absoluteLocation) == false) {
+                    return lr;
+                }
+                do {
+                    result.addElement(getDocument(rs.getInt(1)));
+                } while (rs.next());
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            throw new ErrMsgException("数据库出错！");
+        } finally {
+            conn.close();
+        }
+
+        lr.setResult(result);
+        lr.setTotal(total);
+        return lr;
     }
 
     public String RenderContent(HttpServletRequest request, int pageNum) {
@@ -725,37 +801,45 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         author = StrUtil.getNullString(mfu.getFieldValue("author"));
         title = StrUtil.getNullString(mfu.getFieldValue("title"));
         //logger.info("FilePath=" + FilePath);
-        String strCanComment = StrUtil.getNullStr(mfu.getFieldValue(
-                "canComment"));
-        if (strCanComment.equals(""))
+        String strCanComment = StrUtil.getNullStr(mfu.getFieldValue("canComment"));
+        if ("".equals(strCanComment)) {
             canComment = false;
-        else if (strCanComment.equals("1"))
+        } else if ("1".equals(strCanComment)) {
             canComment = true;
+        }
         String strIsHome = StrUtil.getNullString(mfu.getFieldValue("isHome"));
-        if (strIsHome.equals(""))
-            isHome = false;
-        else if (strIsHome.equals("false"))
-            isHome = false;
-        else if (strIsHome.equals("true"))
-            isHome = true;
-        else
-            isHome = false;
+        switch (strIsHome) {
+            case "":
+                isHome = false;
+                break;
+            case "false":
+                isHome = false;
+                break;
+            case "true":
+                isHome = true;
+                break;
+            default:
+                isHome = false;
+                break;
+        }
         String strexamine = mfu.getFieldValue("examine");
         int oldexamine = examine;
         examine = Integer.parseInt(strexamine);
         String strisnew = StrUtil.getNullStr(mfu.getFieldValue("isNew"));
-        if (StrUtil.isNumeric(strisnew))
+        if (StrUtil.isNumeric(strisnew)) {
             isNew = Integer.parseInt(strisnew);
-        else
+        } else {
             isNew = 0;
+        }
 
         keywords = StrUtil.getNullStr(mfu.getFieldValue("keywords"));
         String strisRelateShow = StrUtil.getNullStr(mfu.getFieldValue("isRelateShow"));
         int intisRelateShow = 0;
         if (StrUtil.isNumeric(strisRelateShow)) {
             intisRelateShow = Integer.parseInt(strisRelateShow);
-            if (intisRelateShow == 1)
+            if (intisRelateShow == 1) {
                 isRelateShow = true;
+            }
         }
 
         flowTypeCode = StrUtil.getNullString(mfu.getFieldValue("flowTypeCode"));
@@ -789,10 +873,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             pstmt.setString(13, parentCode);
             pstmt.setString(14, color);
             pstmt.setInt(15, bold ? 1 : 0);
-            if (expireDate == null)
+            if (expireDate == null) {
                 pstmt.setTimestamp(16, null);
-            else
+            } else {
                 pstmt.setTimestamp(16, new Timestamp(expireDate.getTime()));
+            }
             pstmt.setInt(17, level);
             pstmt.setString(18, kind);
             pstmt.setString(19, summary);
@@ -823,7 +908,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             dc = dc.getDocContent(id, 1);
             dc.saveWithoutFile(application, mfu);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -849,12 +934,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
                 conn.close();
-                conn = null;
             }
         }
         return true;
@@ -881,10 +965,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             pstmt.setString(13, parentCode);
             pstmt.setString(14, color);
             pstmt.setInt(15, bold ? 1 : 0);
-            if (expireDate == null)
+            if (expireDate == null) {
                 pstmt.setTimestamp(16, null);
-            else
+            } else {
                 pstmt.setTimestamp(16, new Timestamp(expireDate.getTime()));
+            }
             pstmt.setInt(17, level);
             pstmt.setString(18, kind);
             pstmt.setString(19, summary);
@@ -901,7 +986,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException(e.getMessage());
         } finally {
             if (conn != null) {
@@ -926,7 +1011,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -952,7 +1037,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 dcm.refreshUpdate(id);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -977,7 +1062,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 dcm.refreshUpdate(id);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1179,14 +1264,14 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 att.save();
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
                 rs = null;
             }
@@ -1340,10 +1425,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             pstmt.setString(16, flowTypeCode);
             pstmt.setString(17, color);
             pstmt.setInt(18, bold ? 1 : 0);
-            if (expireDate == null)
+            if (expireDate == null) {
                 pstmt.setTimestamp(19, null);
-            else
+            } else {
                 pstmt.setTimestamp(19, new Timestamp(expireDate.getTime()));
+            }
             java.util.Date d = new java.util.Date();
             pstmt.setTimestamp(20, new Timestamp(d.getTime()));
             pstmt.setTimestamp(21, new Timestamp(d.getTime()));
@@ -1422,7 +1508,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 att.save();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -1472,10 +1558,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             pstmt.setString(16, flowTypeCode);
             pstmt.setString(17, color);
             pstmt.setInt(18, bold ? 1 : 0);
-            if (expireDate == null)
+            if (expireDate == null) {
                 pstmt.setTimestamp(19, null);
-            else
+            } else {
                 pstmt.setTimestamp(19, new Timestamp(expireDate.getTime()));
+            }
             java.util.Date d = new java.util.Date();
             pstmt.setTimestamp(20, new Timestamp(d.getTime()));
             pstmt.setTimestamp(21, new Timestamp(d.getTime()));
@@ -1493,7 +1580,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshCreate(code_class1, lf.getParentCode());
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1571,7 +1658,13 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             pstmt.setInt(10, 1);
             pstmt.setInt(11, -1);
             pstmt.setString(12, parent_code);
-            pstmt.setInt(13, leaf.isExamine() ? EXAMINE_NOT : EXAMINE_PASS);
+            // 批量上传文件时，会根据权限设置examine为EXAMINE_PASS
+            if (examine == EXAMINE_PASS) {
+                pstmt.setInt(13, EXAMINE_PASS);
+            }
+            else {
+                pstmt.setInt(13, leaf.isExamine() ? EXAMINE_NOT : EXAMINE_PASS);
+            }
             pstmt.setInt(14, 0);
             pstmt.setString(15, author);
             pstmt.setString(16, "");
@@ -1598,7 +1691,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
 
 
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1608,18 +1701,20 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         return id;
     }
 
-
+    @Override
     public String get(String field) {
-        if (field.equals("title"))
-            return getTitle();
-        else if (field.equals("content"))
-            return getContent(1);
-        else if (field.equals("summary"))
-            return getSummary();
-        else if (field.equals("id"))
-            return "" + getID();
-        else
-            return "";
+        switch (field) {
+            case "title":
+                return getTitle();
+            case "content":
+                return getContent(1);
+            case "summary":
+                return getSummary();
+            case "id":
+                return "" + getID();
+            default:
+                return "";
+        }
     }
 
     public boolean del() throws ErrMsgException {
@@ -1673,14 +1768,14 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshDel(id, class1, parentCode);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
                 rs = null;
             }
@@ -1702,7 +1797,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                logger.error("文档 " + id + " 未找到.");
+                LogUtil.getLog(getClass()).error("文档 " + id + " 未找到.");
             } else {
                 this.title = rs.getString(1);
                 this.class1 = rs.getString(2);
@@ -1735,7 +1830,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 loaded = true; // 已初始化
             }
         } catch (SQLException e) {
-            logger.error("loadFromDB:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("loadFromDB:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1873,13 +1968,13 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             String sql = "update document set voteresult=" +
                     StrUtil.sqlstr(result)
                     + " where id=" + id;
-            logger.info(sql);
+            LogUtil.getLog(getClass()).info(sql);
             re = conn.executeUpdate(sql) == 1 ? true : false;
             // 更新缓存
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error("vote:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("vote:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -2074,7 +2169,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {
@@ -2101,7 +2196,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -2115,7 +2210,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     private int pageCount = 1;
     private String parentCode;
 
-    public Vector getAttachments(int pageNum) {
+    public Vector<Attachment> getAttachments(int pageNum) {
         DocContent dc = new DocContent();
         dc = dc.getDocContent(id, pageNum);
         if (dc == null) {
@@ -2135,7 +2230,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         return null;
     }
 
-    public Vector getTitleImages(int pageNum) {
+    public Vector<Attachment> getTitleImages(int pageNum) {
         DocContent dc = new DocContent();
         dc = dc.getDocContent(id, pageNum);
         if (dc == null) {
@@ -2161,7 +2256,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
         int idx1 = docContent.lastIndexOf('<');
         int idx2 = docContent.lastIndexOf('>');
         // 如果截取时，未取到 > ，则继续往前取，直到取到为止
-        // System.out.println("MsgUtil.java getAbstract: idx1=" + idx1 + " idx2=" + idx2);
+        // LogUtil.getLog(getClass()).info("MsgUtil.java getAbstract: idx1=" + idx1 + " idx2=" + idx2);
         if ((idx2 == -1 && idx1 >= 0) || (idx1 > idx2)) {
             String ct3 = content;
             int idx3 = ct3.indexOf('>', idx1);
@@ -2216,7 +2311,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                         if (ext.equals("gif") || ext.equals("png") ||
                                 ext.equals("jpg") || ext.equals("jpeg") ||
                                 ext.equals("bmp")) {
-                            // System.out.println("MsgUtil.java getAbstract:" + imagenode.toHtml() + " url=" + imagenode.getImageURL());
+                            // LogUtil.getLog(getClass()).info("MsgUtil.java getAbstract:" + imagenode.toHtml() + " url=" + imagenode.getImageURL());
                             if (imagenode.getImageURL().startsWith("http")) {
                                 ; // line = "<div align=center>" + imagenode.toHtml() + "</div>";
                             } else if (imagenode.getImageURL().startsWith("/")) {
@@ -2233,7 +2328,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                                             SkinUtil.LoadString(request,
                                                     "res.cn.js.fan.util.StrUtil",
                                                     "click_open_win") + " onload=\"javascript:if(this.width>screen.width*0.4) this.width=screen.width*0.4\"></a></div><BR>";
-                            // System.out.println(line);
+                            // LogUtil.getLog(getClass()).info(line);
                         }
                     }
                 }
@@ -2253,7 +2348,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
      * @throws ErrMsgException
      */
     public void clearDustbin() throws ErrMsgException {
-        String sql = "select id from document where examine=?";
+        String sql = "select id from document where examined=?";
         Conn conn = new Conn(connname);
         PreparedStatement pstmt = null;
         try {
@@ -2269,7 +2364,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                         doc.getParentCode());
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
             throw new ErrMsgException("Err db.");
         } finally {
             if (conn != null) {
@@ -2292,7 +2387,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id, class1, parentCode);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("Err db.");
         } finally {
             if (conn != null) {
@@ -2304,7 +2399,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     }
 
     public boolean UpdateExamine(int examine) throws ErrMsgException {
-        String sql = "update document set examine=? where id=?";
+        String sql = "update document set examined=? where id=?";
         Conn conn = new Conn(connname);
         PreparedStatement pstmt = null;
         try {
@@ -2316,7 +2411,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id, class1, parentCode);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("Err db.");
         } finally {
             if (conn != null) {
@@ -2395,7 +2490,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
      * @return
      */
     public static boolean createOfficeFilePreviewHTML(String previewfile) {
-        // 专业版不提供生成预鉴功能
+        // 专业版不提供生成预览功能
         // if (License.getInstance().getVersionType().equals(License.VERSION_PROFESSIONAL))
         // if (true)
         // 	return false;
@@ -2482,11 +2577,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             Variant f = new Variant(false);
             Dispatch.call(doc, "Close", f);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(Document.class).error(e);
         } catch (java.lang.UnsatisfiedLinkError e) {
-            e.printStackTrace();
+            LogUtil.getLog(Document.class).error(e);
         } catch (NoClassDefFoundError e) {
-            e.printStackTrace();
+            LogUtil.getLog(Document.class).error(e);
         } finally {
             if (app != null) {
                 app.invoke("Quit", new Variant[]{});
@@ -2514,17 +2609,17 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             Dispatch.call(excel, "Close", f);
             ComThread.Release();//关闭进程
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(Document.class).error(e);
         } catch (java.lang.UnsatisfiedLinkError e) {
-            e.printStackTrace();
+            LogUtil.getLog(Document.class).error(e);
         } catch (NoClassDefFoundError e) {
-            e.printStackTrace();
+            LogUtil.getLog(Document.class).error(e);
         } finally {
             if (app != null) {
                 try {
                     app.invoke("Quit", new Variant[]{});
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(Document.class).error(e);
                 }
             }
         }
@@ -2634,14 +2729,19 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 Document.fileDelete(excelFile);
             }
 
-            if ("xls".equals(fileType)) {
-                Excel2Html.xlsToHtml(filepath);
-            } else {
-                Excel2Html.xlsxToHtml(filepath);
+            try {
+                if ("xls".equals(fileType)) {
+                    Excel2Html.xlsToHtml(filepath);
+                } else {
+                    Excel2Html.xlsxToHtml(filepath);
+                }
+            }
+            catch (NullPointerException e) {
+                DebugUtil.e(Document.class, "poiFilePreview", "预览文件生成失败：" + filepath);
+                LogUtil.getLog(Document.class).error(e);
             }
         }
     }
-
 
     /**
      * 附件删除后，预览文件对应删除
@@ -2768,21 +2868,21 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                              String ext, String docSize, String parentCode, String dir_code, String kind, String op, String searchKind, String what, String keywords1,
                              String fromDate, String toDate, int examine, String title, String content, String author, String kind1, String modifyType, String orderBy, String sort
             ) {
-        String sql = "select distinct d.id,class1,title,isHome,examine,modifiedDate,color,isBold,expire_date,type,doc_level,createDate,keywords from document as d, doc_content as c ";
+        String sql = "select distinct d.id,class1,title,isHome,examined,modifiedDate,color,isBold,expire_date,type,doc_level,createDate,keywords from document d, doc_content c ";
 
         if (!checkbox_png.equals("") || !checkbox_ppt.equals("") || !checkbox_gif.equals("") || !checkbox_zip.equals("") || !checkbox_pdf.equals("") || !checkbox_doc.equals("") || !checkbox_xlsx.equals("") || !checkbox_txt.equals("") || (!ext.equals("多个用逗号分隔") && !ext.equals("")) || docSize.equals("2") || docSize.equals("3") || docSize.equals("4")) {
             if (examine1 != -1) {
-                sql += ",document_attach as a where a.doc_id = d.id and d.id=c.doc_id and d.examine=" + examine1;
+                sql += ",document_attach as a where a.doc_id = d.id and d.id=c.doc_id and d.examined=" + examine1;
             }
             else {
-                sql += ",document_attach as a where a.doc_id = d.id and d.id=c.doc_id and (d.examine>=" + Document.EXAMINE_NOT + " and d.examine<" + Document.EXAMINE_DUSTBIN + ")";
+                sql += ",document_attach as a where a.doc_id = d.id and d.id=c.doc_id and (d.examined>=" + Document.EXAMINE_NOT + " and d.examined<" + Document.EXAMINE_DUSTBIN + ")";
             }
         } else {
             if (examine1 != -1) {
-                sql += " where d.id=c.doc_id and d.examine=" + examine1;
+                sql += " where d.id=c.doc_id and d.examined=" + examine1;
             }
             else {
-                sql += " where d.id=c.doc_id and (d.examine>=" + Document.EXAMINE_NOT + " and d.examine<" + Document.EXAMINE_DUSTBIN + ")";
+                sql += " where d.id=c.doc_id and (d.examined>=" + Document.EXAMINE_NOT + " and d.examined<" + Document.EXAMINE_DUSTBIN + ")";
             }
         }
         if (examine1 != EXAMINE_DRAFT) {
@@ -2806,11 +2906,11 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
 
             if (!parentCode.equals("")) {
                 if (!plp.canUserModify(privilege.getUser(request))) {
-                    sql += " and examine=" + EXAMINE_PASS;
+                    sql += " and examined=" + EXAMINE_PASS;
                 }
             } else if (!dir_code.equals("")) {
                 if (!lp.canUserModify(privilege.getUser(request))) {
-                    sql += " and examine=" + EXAMINE_PASS;
+                    sql += " and examined=" + EXAMINE_PASS;
                 }
             }
             sql += ") or (author=" + StrUtil.sqlstr(uName) + "))";
@@ -2827,14 +2927,14 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             if (searchKind.equals("title")) {
                 sql += " and title like " + StrUtil.sqlstr("%" + what + "%");
             } else if (searchKind.equals("content")) {
-                //sql = "select distinct id, class1,title,isHome,examine,modifiedDate,color,isBold,expire_date,type,doc_level,createDate from document as d, doc_content as c where d.id=c.doc_id and d.examine<>" + Document.EXAMINE_DUSTBIN;
+                //sql = "select distinct id, class1,title,isHome,examined,modifiedDate,color,isBold,expire_date,type,doc_level,createDate from document as d, doc_content as c where d.id=c.doc_id and d.examined<>" + Document.EXAMINE_DUSTBIN;
                 sql += " and c.content like " + StrUtil.sqlstr("%" + what + "%");
             } else {
                 sql += " and keywords like " + StrUtil.sqlstr("%" + what + "%");
             }
 
             if (examine != -1) {
-                sql += " and examine=" + examine;
+                sql += " and examined=" + examine;
             }
 
             if (!title.equals("")) {
@@ -2894,7 +2994,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
                 try {
                     sql += " and modifiedDate >=" + StrUtil.sqlstr(sdf.format(sdf.parse(fromDate + " 00:00:00"))) + " and modifiedDate <=" + StrUtil.sqlstr(sdf.format(sdf.parse(toDate + " 23:59:59")));
                 } catch (ParseException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             if (!checkbox_png.equals("") || !checkbox_ppt.equals("") || !checkbox_gif.equals("") || !checkbox_zip.equals("") || !checkbox_pdf.equals("") || !checkbox_doc.equals("") || !checkbox_xlsx.equals("") || !checkbox_txt.equals("") || (!ext.equals("多个用逗号分隔") && !ext.equals(""))) {
@@ -2958,7 +3058,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
 
         // 默认排序
         if ("createDate".equals(orderBy) && "desc".equals(sort)) {
-            sql += " order by doc_level desc, examine asc, " + orderBy + " " + sort;
+            sql += " order by doc_level desc, examined asc, " + orderBy + " " + sort;
         }
         else {
             sql += " order by doc_level desc, " + orderBy + " " + sort;
@@ -2967,7 +3067,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
     }
 
     public String getListSqlOfDustbin(HttpServletRequest request, String dir_code, String op, String what, String kind) {
-        String sql = "select class1,title,id,isHome,examine,modifiedDate,color,isbold,expire_date,type,author from document where examine=" + Document.EXAMINE_DUSTBIN;
+        String sql = "select class1,title,id,isHome,examined,modifiedDate,color,isbold,expire_date,type,author from document where examined=" + Document.EXAMINE_DUSTBIN;
         if (op.equals("search")) {
             kind = ParamUtil.get(request, "kind");
             what = StrUtil.UnicodeToUTF8(StrUtil.getNullString(request.getParameter("what")));
@@ -2985,7 +3085,7 @@ public class Document implements java.io.Serializable, ITagSupport, IDesktopUnit
             }
         }
 
-        sql += " order by examine asc, isHome desc, modifiedDate desc";
+        sql += " order by examined asc, isHome desc, modifiedDate desc";
 
         return sql;
     }

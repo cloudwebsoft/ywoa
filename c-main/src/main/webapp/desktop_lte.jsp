@@ -1,23 +1,25 @@
-<%@ page contentType="text/html; charset=utf-8" language="java" import="java.sql.*" errorPage="" %>
-<%@ page import = "com.redmoon.forum.plugin.*" %>
-<%@ page import = "java.util.*" %>
-<%@ page import = "com.redmoon.oa.ui.*"%>
-<%@ page import = "com.redmoon.oa.ui.menu.*"%>
-<%@ page import = "com.redmoon.oa.dept.*"%>
-<%@ page import = "com.redmoon.oa.person.*"%>
-<%@ page import = "com.redmoon.oa.message.*"%>
-<%@ page import = "cn.js.fan.util.*"%>
-<%@ page import = "com.redmoon.oa.pvg.*" %>
-<%@ page import="com.redmoon.oa.notice.NoticeDb" %>
-<%@ page import="com.cloudweb.oa.service.impl.OaNoticeServiceImpl" %>
-<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
-<%@ page import="com.cloudweb.oa.service.IOaNoticeService" %>
-<%@ page import="com.cloudweb.oa.entity.OaNotice" %>
+<%@ page contentType="text/html; charset=utf-8" language="java" import="cn.js.fan.util.ParamUtil" errorPage="" %>
+<%@ page import = "cn.js.fan.util.StrUtil" %>
+<%@ page import = "com.cloudweb.oa.api.IDesktopCard"%>
+<%@ page import = "com.cloudweb.oa.entity.OaNotice"%>
+<%@ page import = "com.cloudweb.oa.module.desktop.DesktopCard"%>
+<%@ page import = "com.cloudweb.oa.module.desktop.DesktopCardFactory"%>
+<%@ page import = "com.cloudweb.oa.module.desktop.DesktopCardUtil"%>
+<%@ page import = "com.cloudweb.oa.service.IOaNoticeService"%>
+<%@ page import = "com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.redmoon.oa.person.UserDb" %>
+<%@ page import="com.redmoon.oa.person.UserDesktopSetupDb" %>
+<%@ page import="com.redmoon.oa.person.UserSet" %>
+<%@ page import="com.redmoon.oa.pvg.Privilege" %>
+<%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="org.apache.commons.lang3.StringUtils" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Vector" %>
 <%
     com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
-    String op = ParamUtil.get(request, "op");
     String skincode = UserSet.getSkin(request);
-    if (skincode==null || skincode.equals("")) {
+    if (skincode==null || "".equals(skincode)) {
         skincode = UserSet.defaultSkin;
     }
     SkinMgr skm = new SkinMgr();
@@ -49,6 +51,9 @@
     Iterator iItems = items.iterator();
     com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
     Long time = Long.parseLong(cfg.get("autoRefresh"));
+
+    UserDb user = new UserDb();
+    user = user.getUserDb(userName);
 %>
 <!DOCTYPE html>
 <html>
@@ -56,14 +61,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>桌面</title>
-    <link rel="shortcut icon" href="favicon.ico">
     <link href="<%=skinPath%>/css.css" rel="stylesheet" type="text/css" />
     <link href="lte/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
-    <link href="lte/css/font-awesome.css?v=4.4.0" rel="stylesheet">
     <link href="lte/css/animate.css" rel="stylesheet">
     <link href="lte/css/style.css?v=4.1.0" rel="stylesheet">
     <link href="lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
     <style>
+        .col-sm-4 {
+            padding-left: 10px;
+            padding-right: 5px;
+        }
+
         h5 i{
             margin-right: 10px;
         }
@@ -75,12 +83,12 @@
         #sortable {
             list-style-type: none;
             padding: 0;
-            margin: 0px auto;
+            margin: 0 auto;
             height: 140px;
         }
 
         #sortable li {
-            margin: 0px 3px 3px 0;
+            margin: 0 3px 3px 0;
             padding: 1px;
             float: left;
             width: 120px;
@@ -111,10 +119,11 @@
             white-space: nowrap;
             text-overflow: ellipsis;
             overflow: hidden;
+            text-align: right;
         }
         .portlet {
             width: 100%;
-            border: 0px;
+            border: 0;
         }
 
         .t-left {
@@ -232,6 +241,7 @@
     <script src="js/jquery-migrate-1.2.1.min.js"></script>
     <script src="lte/js/bootstrap.min.js?v=3.3.6"></script>
     <script src="lte/js/plugins/layer/layer.min.js"></script>
+    <script src="js/echarts/echarts.js"></script>
     <link type="text/css" rel="stylesheet" href="js/flexslider/flexslider.css" />
     <script type="text/javascript" src="js/flexslider/jquery.flexslider.js"></script>
     <script src="inc/ajax_getpage.jsp"></script>
@@ -247,21 +257,8 @@
 
             jQuery("#columns").on("click", ".drag_div .nav-tab li", function(e) {
                 var $li = jQuery(this);
-                addTab($li.text(), '<%=request.getContextPath()%>/fileark/document_list_m.jsp?dir_code=' + $li.attr('code'));
+                addTab($li.text(), '<%=request.getContextPath()%>/fileark/docListPage.do?dirCode=' + $li.attr('code'));
             });
-
-            /*// 轮播图片初始化
-            jQuery("div[id^='flexslider']").flexslider({
-                animation: "slide",
-                controlNav: true,
-                slideshow: true,
-                directionNav: true,
-                pauseOnAction: false,
-                // pauseOnHover: true,
-                slideshowSpeed: 5000,
-                start: function (slider) {
-                }
-            });*/
         });
 
         function loadDesktopUnit(url, divId, containDivId) {
@@ -300,52 +297,246 @@
             }, 20);
         }
     </script>
+    <link rel="stylesheet" href="js/layui/css/layui.css" media="all">
+    <script src="js/layui/layui.js" charset="utf-8"></script>
+    <script src="js/numscroll/numscroll.js" charset="utf-8"></script>
+    <style>
+        .layui-panel {
+            border-radius: 6px;
+            /*box-shadow: 0 1px 2px 0 rgb(0 0 0 / 20%);*/
+            transition: all 0.2s ease-in-out;
+        }
+        .panel-1 {
+            background-color: #578ebe;
+            border-radius: 6px;
+        }
+        .panel-2 {
+            background-color: #e35b5a;
+            border-radius: 6px;
+        }
+        .panel-3 {
+            background-color: #44b6ae;
+            border-radius: 6px;
+        }
+        .panel-4 {
+            background-color: #8775a7;
+            border-radius: 6px;
+        }
+        .panel-5 {
+            background-color: #4f5c65;
+            border-radius: 6px;
+        }
+        .panel-6 {
+            background-color: #14aae4;
+            border-radius: 6px;
+        }
+        .panel-7 {
+            background-color: #949FB1;
+            border-radius: 6px;
+        }
+        .panel-8 {
+            background-color: #f29503;
+        }
+
+        .panel-9 {
+            background-color: #ff934b;
+        }
+        .panel-10 {
+            background-color: #28c0c6;
+        }
+        .panel-11 {
+            background-color: #5bb705;
+        }
+        .panel-12 {
+            background-color: #ac6ae4;
+        }
+
+        .panel-item {
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            cursor: pointer;
+            height: 85px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            padding-left: 15px;
+            padding-top: 20px;
+        }
+
+        .panel-glow {
+            -moz-box-shadow: 0 0 5px #007ca6;
+            -webkit-box-shadow: 0 0 5px #007ca6;
+            box-shadow: 0px 0px 5px #007ca6;
+        }
+
+        .panel-item .m-top-none {
+            margin-top: 5px;
+        }
+
+        .panel-item h2 {
+            font-size: 28px;
+            font-family: inherit;
+            line-height: 1.1;
+            font-weight: 500;
+            padding-left: 70px;
+        }
+
+        .panel-item h2 .num-scroll {
+            font-size: 28px;
+            padding-left: 5px;
+        }
+
+        .panel-item h2 span {
+            font-size: 12px;
+            padding-left: 5px;
+        }
+
+        .panel-item h5 {
+            font-size: 14px;
+            font-family: inherit;
+            margin-top: 1px;
+            line-height: 1.1;
+            padding-left: 70px;
+        }
+        
+        .panel-item .stat-icon {
+            position: absolute;
+            top: 18px;
+            font-size: 50px;
+            opacity: .3;
+        }
+
+        .panel i.fa.stats-icon {
+            width: 50px;
+            padding: 20px;
+            font-size: 50px;
+            text-align: center;
+            color: #fff;
+            height: 50px;
+            border-radius: 10px;
+        }
+        .chart-title {
+/*            height: 32px;
+            text-align: left;
+            padding: 10px 0 0 20px;*/
+        }
+        .chart-title h5 {
+            font-weight: bold;
+            color: #606060;
+        }
+        .drag-h {
+            display: none;
+        }
+    </style>
 </head>
-<%
-    UserDb user = new UserDb();
-    user = user.getUserDb(userName);
-%>
 <body class="gray-bg">
-    <div class="row border-bottom white-bg dashboard-header">
-        <div class="col-sm-12" style="display: none;">
-            <blockquote class="text-warning" style="font-size:14px">您的登录时长为：<%=user.getOnlineTime()%>小时
-            </blockquote>
-            <hr>
-        </div>
-        <div class="col-sm-12">
-            <div>
-                <ul id="sortable">
-                    <%
-                        com.redmoon.oa.ui.menu.Leaf lfMenu = new com.redmoon.oa.ui.menu.Leaf();
-                        PortalMenuDb pmd = new PortalMenuDb();
-                        sql = pmd.getTable().getSql("listForPortal");
-                        Vector vt = pmd.list(sql, new Object[]{new Long(pd.getLong("id"))});
-                        int size = vt.size();
-                        boolean hasIcon = false;
-                        Iterator irMenu = vt.iterator();
-                        while (irMenu.hasNext()) {
-                            pmd = (PortalMenuDb) irMenu.next();
-                            lfMenu = lfMenu.getLeaf(pmd.getString("code"));
-                            if (lfMenu == null) {
-                                lfMenu = new com.redmoon.oa.ui.menu.Leaf();
-                                continue;
-                            }
-                            if (lfMenu.canUserSee(request)) {
-                                hasIcon = true;
-                    %>
-                    <li class="ui-state-default" style="cursor: pointer" menuId="<%=pmd.getLong("id")%>" orders="<%=pmd.getInt("orders")%>" title="<%=lfMenu.getName()%>" onclick="addTab('<%=lfMenu.getName()%>', '<%=request.getContextPath() + "/" + lfMenu.getLink(request)%>')">
-                        <img src="images/bigicons/<%=lfMenu.getBigIcon()%>"/>
-                        <div style="margin-top:5px"><%=lfMenu.getName()%></div>
-                    </li>
-                    <%
+<%
+    DesktopCardUtil desktopCardUtil = new DesktopCardUtil();
+    List<DesktopCard> cardList = desktopCardUtil.listByPortal(pd.getLong("id"));
+    if (cardList.size() > 0) {
+        String colCls;
+        if (cardList.size() % 6 == 0) {
+            colCls = "layui-col-md2";
+        }
+        else {
+            colCls = "layui-col-md3";
+        }
+%>
+<div style="padding: 20px 10px 0 15px;">
+    <div class="layui-row layui-col-space15">
+        <%
+            UserDb userDb = new UserDb();
+            userDb = userDb.getUserDb(userName);
+            boolean isAdmin = privilege.isUserPrivValid(request, Privilege.ADMIN);
+            int cardNo = 0;
+            for (DesktopCard desktopCard : cardList) {
+                IDesktopCard iDesktopCard = DesktopCardFactory.getIDesktopCard(desktopCard);
+                if (iDesktopCard == null) {
+                    out.print(desktopCard.getTitle() + " " + desktopCard.getCardType() + " 不存在");
+                    continue;
+                }
+                boolean canSeeCard = false;
+                String roles = desktopCard.getRoles();
+                if (isAdmin) {
+                    canSeeCard = true;
+                }
+                else {
+                    if (!StringUtils.isEmpty(roles)) {
+                        String[] arr = StrUtil.split(roles, ",");
+                        for (String roleCode : arr) {
+                            if (userDb.isUserOfRole(roleCode)) {
+                                canSeeCard = true;
+                                break;
                             }
                         }
-                    %>
-                </ul>
+                    }
+                    else {
+                        canSeeCard = true;
+                    }
+                }
+                if (!canSeeCard) {
+                    continue;
+                }
+                String onclick = "";
+                String cardStyle = "";
+                if (iDesktopCard.isLink()) {
+                    onclick = " onclick=\"addTab('" + iDesktopCard.getTitle() + "', '" + request.getContextPath() + "/" + iDesktopCard.getUrl() + "')\" ";
+                    cardStyle = "style='cursor:auto'";
+                }
+        %>
+            <div class="<%=colCls%>" <%=onclick%> <%=cardStyle%>>
+                <div class="layui-panel" style="background-color: <%=iDesktopCard.getBgColor()%>">
+                    <div class="panel-item">
+                        <div class="stat-icon">
+                            <i class="fa <%=iDesktopCard.getIcon()%>"></i>
+                        </div>
+                        <h2 class="m-top-none">
+                            <%
+                                int endVal = iDesktopCard.getEndVal(request);
+                                if (endVal >= 0) {
+                            %>
+                            <span id="panelNum<%=cardNo%>" class="num-scroll" data-startVal="<%=iDesktopCard.getStartVal()%>" data-endVal="<%=endVal%>" data-speed="4" data-decimals="0">0</span>
+                            <span><%=iDesktopCard.getUnit()%></span>
+                            <%
+                                }
+                            %>
+                        </h2>
+                        <h5><%=iDesktopCard.getTitle()%></h5>
+                    </div>
+                </div>
             </div>
-        </div>
+        <%
+                cardNo++;
+            }
+        %>
     </div>
+</div>
+<script>
+    $(function() {
+        $('.num-scroll').each(function(){
+            var id = $(this).attr('id');
+            var decimals = $(this).attr('data-decimals'),
+                startVal = $(this).attr('data-startVal'),
+                endVal = $(this).attr('data-endVal'),
+                duration = $(this).attr('data-speed');
+            new CountUp(id, startVal, endVal, decimals, duration, {
+                useEasing: true,//效果
+                separator: ''//数字分隔符
+            }).start();// target：目标元素id, startVal：你想要开始的值, endVal：你想要到达的值, decimals：小数位数，默认值为0, duration：动画持续时间为秒，默认值为2, options：选项的可选对象
+            isplay = false;
+        });
 
+        $('.layui-row').on('mouseover', '.layui-panel', function(e) {
+            $(this).addClass("panel-glow");
+        });
+        $('.layui-row').on('mouseout', '.layui-panel', function(e) {
+            $(this).removeClass("panel-glow");
+        });
+    });
+</script>
+<%
+    }
+%>
     <div class="wrapper wrapper-content" id="columns">
         <div class="row">
             <div class="col-sm-4" id="col_1">
@@ -395,7 +586,6 @@
                     }
                 }
                 %>
-                
             </div>
             <div class="col-sm-4" id="col_2">
                 <%
@@ -485,7 +675,7 @@
         int totalUnknown = 0;
         if (list.size() > 0) {
     %>
-    <!--滑动通知-->
+    <!--滑动的重要通知-->
     <div class="advbox" style="z-index:3">
         <div class="advpic">
             <a href="javascript:void(0);" class="closebtn" title="关闭"><img src="images/close.png" style="border:0"/></a>
@@ -587,14 +777,24 @@
                 var href = obj.parentNode.getAttribute("href");
                 if (href!=null && href.indexOf("javascript")!=0) {
                     var inText = isIE()? obj.parentNode.innerText : obj.parentNode.textContent;
-                    addTab(inText, href);
+                    if (href.indexOf('download') != -1) {
+                        window.open(href);
+                    }
+                    else {
+                        addTab(inText, href);
+                    }
                     return false;
                 }
             }
             if (obj.parentNode.parentNode) {
                 if (obj.parentNode.parentNode.tagName=="A") {
                     var inText = isIE()? obj.parentNode.parentNode.innerText : obj.parentNode.parentNode.textContent;
-                    addTab(inText, obj.parentNode.parentNode.getAttribute("href"));
+                    if (href.indexOf('download') != -1) {
+                        window.open(href);
+                    }
+                    else {
+                        addTab(inText, obj.parentNode.parentNode.getAttribute("href"));
+                    }
                     return false;
                 }
             }
@@ -609,14 +809,19 @@
             }else{
                 cls = obj.getAttribute("class");
             }
-            //var cls = obj.getAttribute("className");
+            // var cls = obj.getAttribute("className");
             // 跳过flexslider的左右滑动按钮
             if (cls!=null && cls.indexOf("flex")==0) {
                 return false;
             }
             if (href!=null && href.indexOf("javascript")!=0) {
                 var inText = isIE()? obj.innerText : obj.textContent;
-                addTab(inText, href);
+                if (href.indexOf('download') != -1) {
+                    window.open(href);
+                }
+                else {
+                    addTab(inText, href);
+                }
                 return false;
             }
         }
@@ -641,17 +846,5 @@
         //判断
         if(flag2 || flag1) return false;
     }
-
-    jQuery('#sortable').width('<%=size*123%>px');
-
-    $(function() {
-        <%
-        if (!hasIcon) {
-        %>
-        $('.dashboard-header').hide();
-        <%
-        }
-        %>
-    })
 </script>
 </html>

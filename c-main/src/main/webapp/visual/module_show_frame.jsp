@@ -63,6 +63,6 @@ fd = fd.getFormDb(formCode);
 <frameset id="frm" cols="250,*" framespacing="3" frameborder="1">
 	<noframes><body></body></noframes>
 	<frame src="module_show_left.jsp?id=<%=id %>&code=<%=StrUtil.UrlEncode(code)%>" id="leftModuleFrame" name="leftModuleFrame" marginwidth="0" marginheight="0" scrolling="auto" frameborder="1" />
-	<frame src="module_list.jsp?id=<%=id %>&isInFrame=true&code=<%=StrUtil.UrlEncode(code)%>" id="mainModuleFrame" name="mainModuleFrame" marginwidth="0" marginheight="0" scrolling="auto" frameborder="1" />
+	<frame src="moduleListPage.do?id=<%=id %>&isInFrame=true&code=<%=StrUtil.UrlEncode(code)%>" id="mainModuleFrame" name="mainModuleFrame" marginwidth="0" marginheight="0" scrolling="auto" frameborder="1" />
 </frameset>
 </html>

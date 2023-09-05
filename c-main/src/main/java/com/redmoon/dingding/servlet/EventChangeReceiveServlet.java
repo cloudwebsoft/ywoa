@@ -1,6 +1,7 @@
 package com.redmoon.dingding.servlet;
 
 import com.alibaba.fastjson.JSONObject;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.dingtalk.oapi.lib.aes.DingTalkEncryptException;
 import com.dingtalk.oapi.lib.aes.DingTalkEncryptor;
 import com.redmoon.dingding.Config;
@@ -83,8 +84,7 @@ public class EventChangeReceiveServlet extends HttpServlet {
         try {
             jsonMap = dingTalkEncryptor.getEncryptedMap("success", timeStampLong, nonce);
         } catch (DingTalkEncryptException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         JSONObject json = new JSONObject();
         json.putAll(jsonMap);

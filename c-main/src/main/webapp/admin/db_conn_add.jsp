@@ -3,7 +3,6 @@
 				 cn.js.fan.db.*,
 				 cn.js.fan.util.*,
 				 cn.js.fan.web.*,
-				 com.redmoon.forum.*,
 				 org.jdom.*,
 				 org.jdom.input.*,
 				 org.jdom.output.*,
@@ -14,6 +13,11 @@
 %>
 <%@page import="com.cloudwebsoft.framework.db.JdbcTemplate"%>
 <%@page import="com.redmoon.oa.ui.SkinMgr"%>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
+<%@ page import="org.xml.sax.InputSource" %>
+<%@ page import="com.cloudweb.oa.base.IConfigUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.utils.ProxoolUtil" %>
 <%
 String oadb="", user="root", pwd="", ip="", port="3309", database="", url="", maximum_connection_count="50", odbcName = "", path="";
 
@@ -74,16 +78,12 @@ if (op.equals("setup")) {
 	JSONObject json = new JSONObject();
 	if (isValid) {
         try {
-	        URL cfgURL = getClass().getResource("/config_sys.xml");
-    	    String cfgpath = cfgURL.getFile();
-        	cfgpath = URLDecoder.decode(cfgpath);
-        	XMLProperties properties = new XMLProperties(cfgpath);
+			IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+			String xml = configUtil.getXml("config_sys");
         	SAXBuilder sb = new SAXBuilder();
-            FileInputStream fin = new FileInputStream(cfgpath);
-            Document doc = sb.build(fin);
-            Element root = doc.getRootElement();
-            fin.close();
+			Document doc = sb.build(new InputSource(new StringReader(xml)));
 
+            Element root = doc.getRootElement();
         	Element which = root.getChild("DataBase");
 			Element edb = new Element("db");
 
@@ -113,94 +113,57 @@ if (op.equals("setup")) {
 
 			which.addContent(edb);
 
-        	String indent = "    ";
-        	boolean newLines = true;
-        	Format format = Format.getPrettyFormat();
-        	format.setIndent(indent);
-        	format.setEncoding("utf-8");
-
-	        XMLOutputter outp = new XMLOutputter(format);
-           	FileOutputStream fout = new FileOutputStream(cfgpath);
-           	outp.output(doc, fout);
-           	fout.close();
-
-        } catch (org.jdom.JDOMException e) {
-            e.printStackTrace();
-        } catch (java.io.IOException e) {
+			configUtil.putXml("config_sys", doc);
+        } catch (JDOMException | IOException e) {
             e.printStackTrace();
         }
 
-        try {
-			// cfg = new XMLConfig(application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml", true, "iso-8859-1");
-	        // URL cfgURL = getClass().getResource("/config_sys.xml");
-    	    String cfgpath = application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml";
-        	cfgpath = URLDecoder.decode(cfgpath);
-        	XMLProperties properties = new XMLProperties(cfgpath);
-        	SAXBuilder sb = new SAXBuilder();
-            FileInputStream fin = new FileInputStream(cfgpath);
-            Document doc = sb.build(fin);
-            Element root = doc.getRootElement();
-            fin.close();
+		ProxoolUtil proxoolUtil = SpringUtil.getBean(ProxoolUtil.class);
+		Document doc = proxoolUtil.getDoc();
 
-			Element edb = new Element("proxool");
+		Element root = doc.getRootElement();
+		Element edb = new Element("proxool");
 
-			Element e = new Element("alias");
-			e.addContent(name);
-			edb.addContent(e);
+		Element e = new Element("alias");
+		e.addContent(name);
+		edb.addContent(e);
 
-			e = new Element("driver-url");
-			e.addContent(url);
-			edb.addContent(e);
+		e = new Element("driver-url");
+		e.addContent(url);
+		edb.addContent(e);
 
-			e = new Element("driver-class");
-			e.addContent(className);
-			edb.addContent(e);
+		e = new Element("driver-class");
+		e.addContent(className);
+		edb.addContent(e);
 
-			e = new Element("driver-properties");
-			Element el = new Element("property");
-			el.setAttribute("name", "user");
-			el.setAttribute("value", user);
-			e.addContent(el);
-			el = new Element("property");
-			el.setAttribute("name", "password");
-			el.setAttribute("value", pwd);
-			e.addContent(el);
-			edb.addContent(e);
+		e = new Element("driver-properties");
+		Element el = new Element("property");
+		el.setAttribute("name", "user");
+		el.setAttribute("value", user);
+		e.addContent(el);
+		el = new Element("property");
+		el.setAttribute("name", "password");
+		el.setAttribute("value", pwd);
+		e.addContent(el);
+		edb.addContent(e);
 
-			e = new Element("maximum-connection-count");
-			e.addContent(String.valueOf(max_conn));
-			edb.addContent(e);
+		e = new Element("maximum-connection-count");
+		e.addContent(String.valueOf(max_conn));
+		edb.addContent(e);
 
-			e = new Element("house-keeping-test-sql");
-			e.addContent("select 1");
-			edb.addContent(e);
+		e = new Element("house-keeping-test-sql");
+		e.addContent("select 1");
+		edb.addContent(e);
 
-			root.addContent(edb);
+		root.addContent(edb);
 
-        	String indent = "    ";
-        	boolean newLines = true;
-        	Format format = Format.getPrettyFormat();
-        	format.setIndent(indent);
-        	format.setEncoding("iso-8859-1");
+		proxoolUtil.write();
 
-	        XMLOutputter outp = new XMLOutputter(format);
-           	FileOutputStream fout = new FileOutputStream(cfgpath);
-           	outp.output(doc, fout);
-           	fout.close();
-           	
-			Global.getInstance().init();
-		
-			String realPath = application.getRealPath("/");
-			if (realPath.lastIndexOf("/")!=realPath.length()-1) {
-				realPath += "/";
-			}
-			org.logicalcobwebs.proxool.ProxoolFacade.removeAllConnectionPools(5000); // 
-			org.logicalcobwebs.proxool.configuration.JAXPConfigurator.configure(realPath + "WEB-INF/proxool.xml", false);          	
-        } catch (org.jdom.JDOMException e) {
-            e.printStackTrace();
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }
+		Global.getInstance().init();
+
+		org.logicalcobwebs.proxool.ProxoolFacade.removeAllConnectionPools(5000); //
+		org.logicalcobwebs.proxool.configuration.JAXPConfigurator.configure(proxoolUtil.getCfgPath(), false);
+
 		json.put("ret", "1");
 		json.put("msg", "连接成功！");
 	}
@@ -212,8 +175,8 @@ if (op.equals("setup")) {
 	return;
 }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>数据库连接驱动-添加</title>

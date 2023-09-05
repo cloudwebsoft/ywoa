@@ -8,12 +8,13 @@
 <%@ page import="com.redmoon.oa.visual.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.*"%>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>智能模块设计 - 导入设置</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
 <script src="../inc/common.js"></script>
 <script src="../inc/livevalidation_standalone.js"></script>
 
@@ -299,9 +300,9 @@ o("menu9").className="current";
     <tr>
       <td colspan="3">&nbsp;
         <div id="customContainer" class="custom_container"></div>
-        <div style="margin:0 auto; width:98%;">
+        <div style="margin:5px auto; width:98%;">
         预览列表（拖动可以调整列宽和位置）
-        <input type="button" id="trigger" src="targetBox" name="selBtn" title="选择列" class="grey_btn_55" value="选择列" />
+        <input type="button" id="trigger" src="targetBox" name="selBtn" title="选择列" class="btn btn-default" value="选择列" />
         </div>    
         <div id="viewBox" class="" style="margin:0 auto; width:98%">
             <div class="view grid expGrid"></div>
@@ -395,7 +396,7 @@ o("menu9").className="current";
 		}
 	}
 %>
-	<span><input type="button" class="btn" value="关闭" onclick="cancel()" /></span>
+	<span><input type="button" class="btn btn-default" value="关闭" onclick="cancel()" /></span>
     </div>
 </div>
 <%
@@ -564,6 +565,11 @@ $(function() {
 });
 
 function edit() {
+	if (!LiveValidation.massValidate(tname.formObj.fields)) {
+		jAlert("请检查表单中的内容填写是否正常！","提示");
+		return;
+	}
+
 	var data = $('#form1').serialize();
 	data += "&cols=" + encodeURI(JSON.stringify(gd.config.cols));
 	$.ajax({
@@ -603,7 +609,21 @@ function setRoles(roles, descs) {
 	var objDesc = o("roleDescs");	
 	objCode.value = roles;
 	objDesc.value = descs;
-}    
+}
+
+$(function() {
+	$('input, select, textarea').each(function() {
+		if (!$('body').hasClass('form-inline')) {
+			$('body').addClass('form-inline');
+		}
+		// ffb-input 为flexbox的样式
+		if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') &&
+				$(this).attr('type') != 'hidden' && $(this).attr('type') != 'file' && !$(this).hasClass('ffb-input')) {
+			$(this).addClass('form-control');
+			$(this).attr('autocomplete', 'off');
+		}
+	});
+})
 </script>
 <br/>
 </body>

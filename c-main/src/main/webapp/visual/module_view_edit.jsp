@@ -12,7 +12,8 @@
 <%@ page import="org.json.JSONException"%>
 <%@ page import="org.json.JSONObject"%>
 <%@ page import="java.util.HashMap"%>
-<%@ page import="java.util.Iterator" %><%@ page import="java.util.Vector"%>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.Vector"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 if (!privilege.isUserPrivValid(request, "admin.flow")) {
@@ -26,6 +27,7 @@ if (!privilege.isUserPrivValid(request, "admin.flow")) {
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>管理模块选项卡</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
     <script src="../inc/common.js"></script>
     <script src="../inc/map.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
@@ -67,10 +69,11 @@ o("menu4").className="current";
 <table cellspacing="0" class="tabStyle_1 percent80" cellpadding="3" width="95%" align="center">
   <tr>
     <td class="tabStyle_1_title" nowrap="nowrap" width="7%">序号</td>
-    <td class="tabStyle_1_title" nowrap="nowrap" width="19%">选项卡名称</td>
-    <td class="tabStyle_1_title" nowrap="nowrap" width="41%">链接</td>
-    <td class="tabStyle_1_title" nowrap="nowrap" width="12%">顺序</td>
-    <td width="21%" nowrap="nowrap" class="tabStyle_1_title">操作</td>
+    <td class="tabStyle_1_title" nowrap="nowrap" width="12%">选项卡名称</td>
+    <td class="tabStyle_1_title" nowrap="nowrap" width="36%">链接</td>
+      <td class="tabStyle_1_title" nowrap="nowrap" width="12%">顺序</td>
+      <td class="tabStyle_1_title" nowrap="nowrap" width="12%">显示条件</td>
+    <td nowrap="nowrap" class="tabStyle_1_title">操作</td>
   </tr>
 <%
 String sub_nav_tag_name = StrUtil.getNullStr(vsd.getString("sub_nav_tag_name"));
@@ -88,6 +91,7 @@ if (sub_tags!=null) {
 }
 for (int i=0; i<len; i++) {
     String tagName = sub_tags[i];
+    // DebugUtil.i(getClass(), "sub_tagUrls[" + i + "]", sub_tagUrls[i]);
 %>
     <form action="module_view_edit.jsp" method="post" name="formSubTag<%=i%>" id="formSubTag<%=i%>">
         <tr id="tr<%=i%>" class="highlight">
@@ -99,8 +103,9 @@ for (int i=0; i<len; i++) {
                 <input name="formCode" value="<%=formCode%>" type="hidden"/>
                 <input name="tagName" value="<%=tagName%>" type="hidden"/>
             </td>
-            <td>
+            <td style="line-height: 2">
                 <%
+                    String conds = "";
                     if (sub_tagUrls[i].startsWith("{")) {
                         try {
                             JSONObject json = new JSONObject(sub_tagUrls[i]);
@@ -117,7 +122,7 @@ for (int i=0; i<len; i++) {
                                             Iterator ir = json.keys();
                                             while (ir.hasNext()) {
                                                 String key = (String) ir.next();
-                                                if (key.equals("queryId")) {
+                                                if ("queryId".equals(key)) {
                                                     continue;
                                                 } else {
                                                     FormField ff = fdQuery.getFormField(json.getString(key));
@@ -188,12 +193,12 @@ for (int i=0; i<len; i++) {
                         Iterator ir = json.keys();
                         while (ir.hasNext()) {
                             String key = (String) ir.next();
-                            if (key.equals("queryId")) {
+                            if ("queryId".equals(key)) {
                                 continue;
                             } else {
                                 FormField ff = fdQuery.getFormField(json.getString(key));
                                 if (ff != null) {
-                                    if (queryFieldDesc.equals("")) {
+                                    if ("".equals(queryFieldDesc)) {
                                         queryFieldDesc = ff.getTitle();
                                     } else {
                                         queryFieldDesc += "，" + ff.getTitle();
@@ -216,71 +221,105 @@ for (int i=0; i<len; i++) {
                 <%
                     String fieldSource = json.getString("fieldSource");
                     String fieldRelated = json.getString("fieldRelated");
+                    StringBuilder sourceSb = new StringBuilder();
+                    StringBuilder relateSb = new StringBuilder();
+                    FormDb fdRelated = new FormDb();
 
                     ModuleSetupDb msdRelated = new ModuleSetupDb();
                     msdRelated = msdRelated.getModuleSetupDb(json.getString("formRelated"));
+                    if (msdRelated != null) {
+                        fdRelated = fdRelated.getFormDb(msdRelated.getString("form_code"));
+                        out.print("<a href='javascript:;' onclick=\"addTab('" + msdRelated.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + fdRelated.getCode() + "&code=" + msdRelated.getString("code") + "')\">" + msdRelated.getString("name") + "</a>");
 
-                    FormDb fdRelated = new FormDb();
-                    fdRelated = fdRelated.getFormDb(msdRelated.getString("form_code"));
-                    out.print("<a href='javascript:;' onclick=\"addTab('" + msdRelated.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + fdRelated.getCode() + "&code=" + msdRelated.getString("code") + "')\">" + msdRelated.getString("name") + "</a>");
-
-                    String ffTitle = "";
-                    if ("id".equalsIgnoreCase(fieldSource)) {
-                        ffTitle = "ID";
-                    } else {
-                        FormField ff = fd.getFormField(fieldSource);
-                        if (ff != null) {
-                            ffTitle = ff.getTitle();
+                        String ffTitle = "";
+                        if ("id".equalsIgnoreCase(fieldSource)) {
+                            ffTitle = "ID";
                         } else {
-                            ffTitle = fieldSource + "不存在！";
-                        }
-                    }
-                    String ffRelatedTitle = "";
-                    if ("cws_id".equals(fieldRelated)) {
-                        ffRelatedTitle = "cws_id";
-                    } else {
-                        if ("".equals(fieldRelated)) {
-                            ffRelatedTitle = "无";
-                        } else {
-                            FormField ffRelated = fdRelated.getFormField(fieldRelated);
-                            if (ffRelated != null) {
-                                ffRelatedTitle = ffRelated.getTitle();
+                            FormField ff = fd.getFormField(fieldSource);
+                            if (ff != null) {
+                                ffTitle = ff.getTitle();
                             } else {
-                                ffRelatedTitle = fieldRelated + "不存在";
+                                ffTitle = fieldSource + "不存在！";
+                            }
+                        }
+
+                        sourceSb.append("<option value='id'>ID</option>");
+                        for (FormField formField : fd.getFields()) {
+                            sourceSb.append("<option value='" + formField.getName() + "'>" + formField.getTitle() + "</option>");
+                        }
+
+                        for (FormField formField : fdRelated.getFields()) {
+                            relateSb.append("<option value='" + formField.getName() + "'>" + formField.getTitle() + "</option>");
+                        }
+                        relateSb.append("<option value='id'>ID</option>");
+                        relateSb.append("<option value='cws_id'>cws_id(关联主模块ID)</option>");
+
+                        String ffRelatedTitle = "";
+                        if ("cws_id".equals(fieldRelated)) {
+                            ffRelatedTitle = "cws_id";
+                        } else {
+                            if ("".equals(fieldRelated)) {
+                                ffRelatedTitle = "无";
+                            } else {
+                                FormField ffRelated = fdRelated.getFormField(fieldRelated);
+                                if (ffRelated != null) {
+                                    ffRelatedTitle = ffRelated.getTitle();
+                                } else {
+                                    ffRelatedTitle = fieldRelated + "不存在";
+                                }
                             }
                         }
                     }
                 %>
-                ，<%=ffTitle%>=<%=ffRelatedTitle%>
+                <br/><%--<%=ffTitle%>=<%=ffRelatedTitle%>--%>
+                <select id="fieldSource<%=i%>" name="fieldSource">
+                    <%=sourceSb.toString()%>
+                </select>
+                =
+                <select id="fieldRelated<%=i%>" name="fieldRelated">
+                    <%=relateSb.toString()%>
+                </select>
+                <script>
+                    $(function() {
+                        $('#fieldSource<%=i%>').val('<%=fieldSource%>');
+                        $('#fieldSource<%=i%>').select2();
+                        $('#fieldRelated<%=i%>').val('<%=fieldRelated%>');
+                        $('#fieldRelated<%=i%>').select2();
+                    });
+                </script>
                 <%
-                    if (json.has("fieldOtherRelated")) {
-                        FormField ff = fdRelated.getFormField(json.getString("fieldOtherRelated"));
+                    if (json.has("fieldOtherRelated") && !StrUtil.isEmpty(json.getString("fieldOtherRelatedVal"))) {
+                        FormField ff = null;
+                        if (fdRelated.isLoaded()) {
+                            ff = fdRelated.getFormField(json.getString("fieldOtherRelated"));
+                        }
                         if (ff != null) {
                 %>
-                ，<%=ff.getTitle()%>=<%=json.getString("fieldOtherRelatedVal")%>
+                <br/><%=ff.getTitle()%>=<%=json.getString("fieldOtherRelatedVal")%>
                 <%
-                } else {
+                        } else {
                 %>
-                ，<%=json.getString("fieldOtherRelated")%>不存在
+                <br/><%=json.getString("fieldOtherRelated")%>不存在
                 <%
                         }
                     }
                     if (json.has("cwsStatus")) {
                 %>
                 ，状态：
+                <select id="cwsStatus<%=i%>" name="cwsStatus">
+                    <option value="-100">不限</option>
+                    <option value="<%=com.redmoon.oa.flow.FormDAO.STATUS_DONE%>">流程已结束</option>
+                    <option value="<%=com.redmoon.oa.flow.FormDAO.STATUS_NOT%>">流程未走完</option>
+                    <option value="<%=com.redmoon.oa.flow.FormDAO.STATUS_REFUSED%>">流程被拒绝</option>
+                    <option value="<%=com.redmoon.oa.flow.FormDAO.STATUS_DISCARD%>">流程被放弃</option>
+                </select>
                 <%
                         int cwsStatus = StrUtil.toInt(json.getString("cwsStatus"), -100);
-                        if (cwsStatus == -100) {
-                            out.print("不限");
-                        } else if (cwsStatus == com.redmoon.oa.flow.FormDAO.STATUS_DONE) {
-                            out.print("流程已结束");
-                        } else if (cwsStatus == com.redmoon.oa.flow.FormDAO.STATUS_NOT) {
-                            out.print("流程未走完");
-                        } else if (cwsStatus == com.redmoon.oa.flow.FormDAO.STATUS_REFUSED) {
-                            out.print("流程被拒绝");
-                        } else if (cwsStatus == com.redmoon.oa.flow.FormDAO.STATUS_DISCARD) {
-                            out.print("流程被放弃");
-                        }
+                %>
+                <script>
+                    $('#cwsStatus<%=i%>').val('<%=cwsStatus%>');
+                </script>
+                <%
                     }
                     if (json.has("viewList")) {
                 %>
@@ -295,8 +334,12 @@ for (int i=0; i<len; i++) {
                             out.print("默认");
                         }
                     }
+                }
+
+                if (json.has("conds")) {
+                    conds = json.getString("conds");
+                }
                 %>
-                <%} %>
                 <input name="tagUrl" type="hidden" value='<%=sub_tagUrls[i]%>'/>
                 <%
                     } catch (JSONException e) {
@@ -308,9 +351,16 @@ for (int i=0; i<len; i++) {
             </td>
             <td><input name="tagOrder" size="5" value="<%=sub_tagOrders[i]%>"/></td>
             <td align="center">
-                <input class="btn" type="button" value="修改" onclick="modifySubTag('<%=i%>')"/>
+                <a href="javascript:;" onclick="openCondition(o('conds<%=i%>'), o('imgConds<%=i%>'))" title="当满足条件时，显示从模块"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+                <span style="margin:10px">
+                    <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:14px;height:14px;display:<%="".equals(conds)?"none":""%>" id="imgConds<%=i%>"/>
+                </span>
+                <textarea id="conds<%=i%>" name="conds" style="display:none"><%=conds%></textarea>
+            </td>
+            <td align="center">
+                <input class="btn btn-default" type="button" value="修改" onclick="modifySubTag('<%=i%>')"/>
                 &nbsp;&nbsp;
-                <input class="btn" name="button2" type="button" onclick="delSubTag('<%=i%>', '<%=tagName%>')" value="删除"/>
+                <input class="btn btn-default" name="button2" type="button" onclick="delSubTag('<%=i%>', '<%=tagName%>')" value="删除"/>
             </td>
         </tr>
     </form>
@@ -318,7 +368,7 @@ for (int i=0; i<len; i++) {
     }
     %>
 </table>
-<form action="module_view_edit.jsp" method="post" name="formSubTagModuleRelate" id="formSubTagModuleRelate">
+<form action="module_view_edit.jsp" method="post" name="formSubTagModuleRelate" id="formSubTagModuleRelate" style="margin: 10px 0">
 <table class="tabStyle_1 percent80" width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>
     <td class="tabStyle_1_title" colspan="2" align="center">模块链接选项卡</td>
@@ -404,8 +454,9 @@ for (int i=0; i<len; i++) {
 			var rsp = response.responseText.trim();
 			var rspOrig = rsp;
 			$("#fieldRelated").empty();
-			
-			rsp += "<option value='cws_id'>cws_id(关联主模块ID)</option>";
+
+            rsp += "<option value='id'>ID</option>";
+            rsp += "<option value='cws_id'>cws_id(关联主模块ID)</option>";
 			rsp += "<option value=''>无</option>";
 			$("#fieldRelated").append(rsp);
 			
@@ -435,9 +486,10 @@ for (int i=0; i<len; i++) {
     <td>
     <select id="viewList" name="viewList" title="如果选择看板，则需在模块中配置相关参数">
       <option value="<%=ModuleSetupDb.VIEW_DEFAULT%>" selected>默认</option>
-		<option value="<%=ModuleSetupDb.VIEW_LIST_GANTT%>">任务看板</option>
+		<%--<option value="<%=ModuleSetupDb.VIEW_LIST_GANTT%>">任务看板</option>--%>
 		<option value="<%=ModuleSetupDb.VIEW_LIST_CALENDAR%>">日历看板</option>
     </select>
+        （暂不支持）
     </td>
   </tr>
   <tr>
@@ -467,11 +519,23 @@ for (int i=0; i<len; i++) {
       </script>  
     </td>
   </tr>
-  <tr>
-    <td colspan="2" align="center"><span style="PADDING-LEFT: 10px">
-      <input id="btnTabModuleRelate" class="btn btn-default" type="button" value="确定" />
+    <tr>
+        <td align="center">
+            显示条件
+        </td>
+        <td><a href="javascript:;" onclick="openCondition(o('conds'), o('imgConds'))" title="当满足条件时，显示选项卡"><img
+                src="../admin/images/combination.png" style="margin-bottom:-5px;"/></a>
+            <span style="margin:10px">
+                    <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:14px;height:14px;display:none"
+                         id="imgConds"/>
+                </span>
+            <textarea id="conds" name="conds" style="display:none"></textarea></td>
+    </tr>
+    <tr>
+        <td colspan="2" align="center"><span style="PADDING-LEFT: 10px">
+      <input id="btnTabModuleRelate" class="btn btn-default" type="button" value="确定"/>
     </span>
-	</td>
+        </td>
     </tr>
 </table>
 </form>
@@ -512,16 +576,16 @@ for (int i=0; i<len; i++) {
         </tr>
         <tr>
             <td colspan="2" align="center">
-                  <input id="btnSimpleTag" class="btn" type="button" value="确定" title="$formCode及$cwsId将会被自动替换为表单编码及记录的ID"/>
+                  <input id="btnSimpleTag" class="btn btn-default" type="button" value="确定" title="$formCode及$cwsId将会被自动替换为表单编码及记录的ID"/>
             </td>
         </tr>
     </table>
 </form>
 
-<form action="module_view_edit.jsp" method="post" name="formSubTagQuery" id="formSubTagQuery">
+<form action="module_view_edit.jsp" method="post" name="formSubTagQuery" id="formSubTagQuery" style="margin: 10px 0">
     <table class="tabStyle_1 percent80" width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
         <tr>
-            <td class="tabStyle_1_title" colspan="2" align="center">添加查询关联选项卡</td>
+            <td class="tabStyle_1_title" colspan="2" align="center">添加查询关联选项卡（暂不支持）</td>
         </tr>
         <tr>
             <td align="center">名称</td>
@@ -591,7 +655,7 @@ for (int i=0; i<len; i++) {
             </td>
         </tr>
         <tr>
-            <td colspan="2" align="center"><input class="btn" type="button" value="确定" onClick="createTab()"/></td>
+            <td colspan="2" align="center"><input class="btn btn-default" type="button" value="确定" onClick="createTab()"/></td>
         </tr>
     </table>
 </form>
@@ -663,7 +727,7 @@ for (int i=0; i<len; i++) {
             </td>
         </tr>
         <tr>
-            <td colspan="2" align="center"><input class="btn" type="button" value="确定" onClick="createTabReport()"/></td>
+            <td colspan="2" align="center"><input class="btn btn-default" type="button" value="确定" onClick="createTabReport()"/></td>
         </tr>
     </table>
 </form>
@@ -809,11 +873,30 @@ for (int i=0; i<len; i++) {
         });
     });
 
+    // 对字符串中的引号进行编码，以免引起json解析问题
+    function encodeJSON(jsonString) {
+        jsonString = jsonString.replace(/=/gi, "%eq");
+        jsonString = jsonString.replace(/\{/gi, "%lb");
+        jsonString = jsonString.replace(/\}/gi, "%rb");
+        jsonString = jsonString.replace(/,/gi, "%co"); // 逗号
+        jsonString = jsonString.replace(/\"/gi, "%dq");
+        jsonString = jsonString.replace(/'/gi, "%sq");
+        jsonString = jsonString.replace(/\r\n/g, "%rn"); // 回车换行
+        jsonString = jsonString.replace(/\n/g, "%n");
+        return jsonString;
+    }
+
     function createTabModuleRelate() {
         var str = "\"fieldSource\":\"" + o("fieldSource").value + "\", \"formRelated\":\"" + o("relateCode").value + "\", \"fieldRelated\":\"" + o("fieldRelated").value + "\", \"cwsStatus\":\"" + o("cwsStatus").value + "\", \"viewList\":\"" + o("viewList").value + "\"";
         str += ",\"fieldOtherRelated\":\"" + o("fieldOtherRelated").value + "\"";
         str += ",\"fieldOtherRelatedVal\":\"" + o("fieldOtherRelatedVal").value + "\"";
         str = "{" + str + "}";
+
+        var json = $.parseJSON(str);
+        json["conds"] = o("conds").value;
+        str = JSON.stringify(json);
+        console.log('str', str);
+
         o("mTagUrl").value = str;
         if (!LiveValidation.massValidate(mTagName.formObj.fields)) {
             return;
@@ -1050,5 +1133,84 @@ for (int i=0; i<len; i++) {
             }
         });
     }
+
+    $(function() {
+        $('input, select, textarea').each(function() {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            // ffb-input 为flexbox的样式
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') &&
+                $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file' && !$(this).hasClass('ffb-input')) {
+                $(this).addClass('form-control');
+                $(this).attr('autocomplete', 'off');
+            }
+        });
+    })
+
+    var curCondsObj, curImgObj;
+
+    function openWin(url, width, height) {
+        var newwin = window.open(url, "fieldWin", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=" + width + ",height=" + height);
+        return newwin;
+    }
+
+    function openCondition(condsObj, imgObj) {
+        curCondsObj = condsObj;
+        curImgObj = imgObj
+
+        openWin("", 1024, 568);
+
+        var url = "module_combination_condition.jsp";
+        var tempForm = document.createElement("form");
+        tempForm.id = "tempForm1";
+        tempForm.method = "post";
+        tempForm.action = url;
+
+        var hideInput = document.createElement("input");
+        hideInput.type = "hidden";
+        hideInput.name = "condition";
+        hideInput.value = curCondsObj.value;
+        tempForm.appendChild(hideInput);
+
+        hideInput = document.createElement("input");
+        hideInput.type = "hidden";
+        hideInput.name = "fromValue";
+        hideInput.value = "";
+        tempForm.appendChild(hideInput);
+
+        hideInput = document.createElement("input");
+        hideInput.type = "hidden";
+        hideInput.name = "toValue";
+        hideInput.value = ""
+        tempForm.appendChild(hideInput);
+
+        hideInput = document.createElement("input");
+        hideInput.type = "hidden";
+        hideInput.name = "moduleCode";
+        hideInput.value = "<%=code %>";
+        tempForm.appendChild(hideInput);
+
+        hideInput = document.createElement("input");
+        hideInput.type = "hidden";
+        hideInput.name = "operate";
+        hideInput.value = "validate";
+        tempForm.appendChild(hideInput);
+
+        document.body.appendChild(tempForm);
+        tempForm.target = "fieldWin";
+        tempForm.submit();
+        document.body.removeChild(tempForm);
+    }
+
+    function setCondition(val) {
+        curCondsObj.value = val;
+        if (val == "") {
+            $(curImgObj).hide();
+        } else {
+            $(curImgObj).show();
+        }
+    }
+
 </script>
 </html>

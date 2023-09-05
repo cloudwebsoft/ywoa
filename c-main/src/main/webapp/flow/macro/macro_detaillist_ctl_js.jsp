@@ -15,6 +15,7 @@
 <%@ page import = "java.util.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%--
 - 功能描述：明细表
 - 访问规则：在宏控件中生成
@@ -60,7 +61,7 @@ if (!nestFieldName.equals("")) {
 	parentFd = parentFd.getFormDb(parentFormCode);
 	FormField nestField = parentFd.getFormField(nestFieldName);
 	if (nestField==null) {
-		System.out.println("父表单（" + parentFormCode + "）中的嵌套表字段：" + nestFieldName + " 不存在");
+		LogUtil.getLog(getClass()).warn("父表单（" + parentFormCode + "）中的嵌套表字段：" + nestFieldName + " 不存在");
 		return;
 	}
 	try {
@@ -221,7 +222,7 @@ function sel_<%=nestFieldName%>(parentId, isQuery) {
         openWin("<%=request.getContextPath()%>/flow/form_query_script_list_do.jsp?op=query&id=<%=queryId%>&mode=sel&parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=detaillist&parentId=" + parentId, 800, 600);
     }
     else {
-        openWin("<%=request.getContextPath()%>/visual/module_list_nest_sel.jsp?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=detaillist&parentId=" + parentId, 800, 600);
+        openWin("<%=request.getContextPath()%>/visual/moduleListNestSel.do?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=detaillist&parentId=" + parentId, 800, 600);
     }
 }
 
@@ -424,7 +425,7 @@ $(function () {
                 ,{ name: 'id', display: 'ID', type:'text', invisible: true}
             ]
             <%if (!"".equals(formCode)) { // 非直接打开页面测试时
-				String sql = "select id from " + fd.getTableNameByForm() + " where cws_id=" + StrUtil.sqlstr(String.valueOf(cwsId));
+				String sql = "select id from " + fd.getTableNameByForm() + " where cws_id=" + cwsId;
 				sql += " order by cws_order";
 				
 				// System.out.println(getClass() + " sql=" + sql);

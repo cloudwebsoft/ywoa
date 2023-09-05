@@ -270,7 +270,6 @@
                         len = btnNames.length;
                         for (int i = 0; i < len; i++) {
                             if (btnScripts[i].startsWith("{")) {
-                                // System.out.println(getClass() + " " + btnScripts[i]);
                                 Map<String, String> checkboxGroupMap = new HashMap<String, String>();
                                 JSONObject jsonBtn = new JSONObject(btnScripts[i]);
                                 if (((String) jsonBtn.get("btnType")).equals("queryFields")) {
@@ -780,7 +779,7 @@
         %>
         <td align="left">
             <%if (i == 0) {%>
-            <a href="module_show.jsp?parentId=<%=id%>&id=<%=id%>&code=<%=moduleCode%>&isShowNav=0" target="_blank">
+            <a href="moduleShowPage.do?parentId=<%=id%>&id=<%=id%>&code=<%=moduleCode%>&isShowNav=0" target="_blank">
                 <%
                     }
                     if (fieldName.startsWith("main:")) {

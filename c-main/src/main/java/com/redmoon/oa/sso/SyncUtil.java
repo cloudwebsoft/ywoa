@@ -19,6 +19,7 @@ import com.cloudweb.oa.entity.User;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.*;
@@ -64,7 +65,7 @@ public class SyncUtil {
                     0, 0, opUser);
             re = executeHttpRequest(xmlStr);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return re;
         }
         return re;
@@ -96,7 +97,7 @@ public class SyncUtil {
                     opType, desKey, user.getName(), user.getRealName(), user.getPwdRaw(), user.getEmail(), deptCode , opUser, user.getGender()?0:1, orders);
             re = executeHttpRequest(xmlStr);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return re;
         }
         return re;
@@ -116,7 +117,7 @@ public class SyncUtil {
             String xmlStr = xml.allDelete(SyncUtil.ALLDEL, desKey);
             re = executeHttpRequest(xmlStr);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return re;
         }
         return re;
@@ -141,8 +142,7 @@ public class SyncUtil {
                 if (result.equals("")) {
                 	return true;
                 }
-                // System.out.println(getClass() + "info===" + info);
-                // System.out.print(info);
+
                 StringReader read = new StringReader(result);
                 // 创建新的输入源SAX 解析器将使用 InputSource 对象来确定如何读取 XML 输入
                 InputSource source = new InputSource(read);
@@ -164,12 +164,12 @@ public class SyncUtil {
                         return true;
                     }
                     else {
-                        System.out.println("SyncUtil executeHttpRequest: OperCode=" + OperCode + " OperType=" + OperType + " status=" + status );
+                        LogUtil.getLog(getClass()).info("SyncUtil executeHttpRequest: OperCode=" + OperCode + " OperType=" + OperType + " status=" + status);
                     }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             post.releaseConnection();
         }

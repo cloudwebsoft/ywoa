@@ -3,6 +3,8 @@ package com.redmoon.oa.flow;
 import com.cloudwebsoft.framework.base.QObjectDb;
 import cn.js.fan.db.ListResult;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Iterator;
 
 /**
@@ -40,7 +42,7 @@ public class FormQueryReportDb extends QObjectDb {
                return fqrd;
             }
         } catch (ResKeyException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return null;
     }

@@ -3,6 +3,8 @@ package com.cloudweb.oa.config;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
+import com.cloudweb.oa.utils.SysProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +29,9 @@ import java.util.List;
 @EnableWebMvc
 @ComponentScan
 public class WebViewConfig implements WebMvcConfigurer {
+
+    @Autowired
+    SysProperties sysProperties;
 
 //    @Bean
 //    public HttpMessageConverter<String> responseBodyConverter() {
@@ -142,8 +147,13 @@ public class WebViewConfig implements WebMvcConfigurer {
         // 不能去掉注释，否则会找不到静态资源文件
         // 第一个方法设置访问路径前缀，第二个方法设置资源路径
         // registry.addResourceHandler("/**").addResourceLocations("/WEB-INF/static/");
-        // VUE前端映射
+        // 将/static/**访问，映射至classpath:/static/
         registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
+
+		// 映射用户头像目录及上传文件目录 
+        registry.addResourceHandler("/public/user/**").addResourceLocations("file:" + sysProperties.getUploadPath() + "public/user/");
+        registry.addResourceHandler("/upfile/**").addResourceLocations("file:" + sysProperties.getUploadPath() + "upfile/");
+        registry.addResourceHandler("/public/images/**").addResourceLocations("file:" + sysProperties.getUploadPath() + "public/images/");
     }
 
 /*    @Override

@@ -17,9 +17,7 @@ public class InitializeThread extends Thread {
 	/**
 	 * Creates a new CacheTimer object. The currentTime of Cache will be updated
 	 * at the specified update interval.
-	 * 
-	 * @param updateInterval
-	 *            the interval in milleseconds that updates should be done.
+	 *
 	 */
 	public InitializeThread() {
 		this.setDaemon(true);
@@ -29,9 +27,7 @@ public class InitializeThread extends Thread {
 
 	/**
 	 * 单态模式
-	 * 
-	 * @param updateInterval
-	 *            long
+	 *
 	 */
 	public static synchronized void initInstance() {
 		if (initializeThread == null) {
@@ -39,6 +35,7 @@ public class InitializeThread extends Thread {
 		}
 	}
 
+	@Override
 	public void run() {
 		// 如果工作日历未初始化，则初始化日历
 		int year = DateUtil.getYear(new Date());

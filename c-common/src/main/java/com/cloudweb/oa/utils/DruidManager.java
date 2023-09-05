@@ -88,7 +88,7 @@ public class DruidManager {
         try {
             properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties"));
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         dataSource.setDriverClassName(properties.getProperty("spring.datasource.driverClassName"));

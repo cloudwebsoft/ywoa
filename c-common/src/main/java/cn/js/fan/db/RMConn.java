@@ -4,7 +4,6 @@ import java.util.Vector;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import org.apache.log4j.Logger;
 import java.util.*;
 import java.sql.PreparedStatement;
 
@@ -41,7 +40,6 @@ public class RMConn {
     public int curPage = 1;
     public long total = 0; //由sql语句得到的总记录条数
 
-    Logger logger;
     HashMap mapIndex;
     String connname;
 
@@ -49,13 +47,11 @@ public class RMConn {
     public Conn pconn = null;
 
     public RMConn(String connname) {
-        logger = Logger.getLogger(RMConn.class.getName());
         mapIndex = new HashMap();
         this.connname = connname;
     }
 
     public RMConn(String connname, int curPage, int pageSize) {
-        logger = Logger.getLogger(RMConn.class.getName());
         mapIndex = new HashMap();
         this.curPage = curPage;
         this.pageSize = pageSize;
@@ -141,7 +137,6 @@ public class RMConn {
 
     /**
      * 取出全部信息置于result中
-     * @param sql String
      * @return Vector
      */
     public ResultIterator executePreQuery() throws SQLException {
@@ -233,14 +228,12 @@ public class RMConn {
                 ResultSetMetaData rm = rs.getMetaData();
                 colCount = rm.getColumnCount();
                 for (int i = 1; i <= colCount; i++) {
-                    //System.out.println(rm.getColumnName(i));
                     mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
                 }
 
                 rs.setFetchSize(pageSize);
 
                 int absoluteLocation = pageSize * (curPage - 1) + 1;
-                //System.out.println("绝对定位于: " + absoluteLocation);
                 if (rs.absolute(absoluteLocation) == false) {
                     return null;
                 }

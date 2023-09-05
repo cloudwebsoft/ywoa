@@ -62,11 +62,11 @@ public class PrivilegeServiceImpl extends ServiceImpl<PrivilegeMapper, Privilege
 
     public String getSqlList() {
         License license = License.getInstance();
-        String sql = "select priv,description,isSystem,layer from privilege";
+        String sql = "select priv,description,isSystem,layer,orders from privilege";
         if (license.isGov()) {
-            sql = "select priv,description,isSystem,layer from privilege where kind=" + ConstUtil.PRIV_KIND_DEFAULT + " or kind=" + ConstUtil.PRIV_KIND_GOV;
+            sql = "select priv,description,isSystem,layer,orders from privilege where kind=" + ConstUtil.PRIV_KIND_DEFAULT + " or kind=" + ConstUtil.PRIV_KIND_GOV;
         } else if (license.isGov()) {
-            sql = "select priv,description,isSystem,layer from privilege where kind=" + ConstUtil.PRIV_KIND_DEFAULT + " or kind=" + ConstUtil.PRIV_KIND_COM;
+            sql = "select priv,description,isSystem,layer,orders from privilege where kind=" + ConstUtil.PRIV_KIND_DEFAULT + " or kind=" + ConstUtil.PRIV_KIND_COM;
         }
 
         sql += " order by orders asc";
@@ -117,6 +117,73 @@ public class PrivilegeServiceImpl extends ServiceImpl<PrivilegeMapper, Privilege
                 throw new ValidateException(desc + " 只能填写一级或二级，不能都填写！");
             }
             String priv = ParamUtil.get(request, "tblPrivs_priv_" + uniqueIndexes[i]);
+            int layer = 1;
+            if ("".equals(desc)) {
+                desc = desc2;
+                layer = 2;
+            }
+
+            Privilege privilege = new Privilege();
+            privilege.setDescription(desc);
+            privilege.setOrders(i + 1);
+            privilege.setLayer(layer);
+            privilege.setPriv(priv);
+
+            re = updateByPriv(privilege);
+        }
+
+        if (re) {
+            if (privsToDel.length() > 0) {
+                Iterator irToDel = privToDelV.iterator();
+                while (irToDel.hasNext()) {
+                    String privDel = (String) irToDel.next();
+                    del(privDel);
+                }
+            }
+        }
+        return re;
+    }
+
+
+    @Override
+    @Transactional(rollbackFor={Exception.class, RuntimeException.class})
+    public boolean setPrivsList(HttpServletRequest request, String newRowOrder, String oldPrivs) throws ValidateException {
+        String[] uniqueIndexes = null;
+        if (newRowOrder == null) {
+            uniqueIndexes = new String[0];
+        } else {
+            uniqueIndexes = newRowOrder.split(",");
+        }
+
+        boolean re = false;
+
+        // 找出被删除的项
+        StringBuffer privsToDel = new StringBuffer();
+        Vector privToDelV = new Vector();
+        String[] ary = StrUtil.split(oldPrivs, ",");
+        for (int k = 0; k < ary.length; k++) {
+            String oldPriv = ary[k];
+            boolean isFound = false;
+            for (int i = 0; i < uniqueIndexes.length; i++) {
+                String priv = ParamUtil.get(request, "new_rivs_" + uniqueIndexes[i]);
+                if (oldPriv.equals(priv)) {
+                    isFound = true;
+                    break;
+                }
+            }
+            if (!isFound) {
+                privToDelV.addElement(oldPriv);
+                StrUtil.concat(privsToDel, ",", StrUtil.sqlstr(oldPriv));
+            }
+        }
+
+        for (int i = 0; i < uniqueIndexes.length; i++) {
+            String desc = ParamUtil.get(request, "new_rivs_desc_" + uniqueIndexes[i]);
+            String desc2 = ParamUtil.get(request, "new_rivs_desc2_" + uniqueIndexes[i]);
+            if (!"".equals(desc) && !"".equals(desc2)) {
+                throw new ValidateException(desc + " 只能填写一级或二级，不能都填写！");
+            }
+            String priv = ParamUtil.get(request, "new_rivs_" + uniqueIndexes[i]);
             int layer = 1;
             if ("".equals(desc)) {
                 desc = desc2;

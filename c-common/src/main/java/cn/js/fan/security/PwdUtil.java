@@ -1,5 +1,7 @@
 package cn.js.fan.security;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 /**
  * 检测密码强度
  */
@@ -202,7 +204,7 @@ public class PwdUtil {
             }
             catch (NumberFormatException e) {
                 // 超长的数字会引起异常
-                e.printStackTrace();
+                LogUtil.getLog(PwdUtil.class).error(e);
             }
         }
 

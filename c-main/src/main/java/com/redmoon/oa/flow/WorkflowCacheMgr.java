@@ -1,15 +1,14 @@
 package com.redmoon.oa.flow;
 
 import cn.js.fan.cache.jcs.AbstractRMCacheMgr;
-import org.apache.log4j.Logger;
 import cn.js.fan.db.Conn;
-import java.util.Vector;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import cn.js.fan.db.SQLFilter;
 import cn.js.fan.security.SecurityUtil;
-import cn.js.fan.util.StrUtil;
-import java.sql.PreparedStatement;
+import com.cloudwebsoft.framework.util.LogUtil;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Vector;
 
 public class WorkflowCacheMgr extends AbstractRMCacheMgr {
     public static final int FLOW_BLOCK_SIZE = 100;
@@ -23,7 +22,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
     }
 
     public void initLogger() {
-        logger = Logger.getLogger(WorkflowCacheMgr.class.getName());
+
     }
 
     public void initCachePrix() {
@@ -33,12 +32,12 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
     public WorkflowDb getWorkflow(int id) {
         WorkflowDb wf = (WorkflowDb) rmCache.get(cachePrix + id);
         if (wf == null) {
-            //logger.info( "getWorkflow: id=" + id);
+            //LogUtil.getLog(getClass()).info( "getWorkflow: id=" + id);
             wf = new WorkflowDb(id);
             try {
                 rmCache.put(cachePrix + id, wf);
             } catch (Exception e) {
-                logger.error("getWorkflow:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getWorkflow:" + e.getMessage());
             }
             return wf;
         } else {
@@ -50,7 +49,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
         try {
             rmCache.remove(cachePrix + id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -73,7 +72,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
             rmCache.invalidateGroup(FLOW_GROUP_KEY);
             rmCache.invalidateGroup(FLOW_COUNT_KEY);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -97,7 +96,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
             longArray = (long[]) rmCache.getFromGroup(key,
                     groupKey);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         //If already in cache, return the block.
         if (longArray != null) {
@@ -126,7 +125,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
                 // Set the maxium number of rows to end at the end of this block.
                 conn.setMaxRows(FLOW_BLOCK_SIZE * (blockID + 1));
                 rs = conn.executeQuery(query);
-                //logger.info("query=" + query);
+                //LogUtil.getLog(getClass()).info("query=" + query);
                 // Grab THREAD_BLOCK_ROWS rows at a time.
                 conn.setFetchSize(FLOW_BLOCK_SIZE);
                 // Many JDBC drivers don't implement scrollable cursors the real
@@ -143,7 +142,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
                     count++;
                 }
             } catch (SQLException sqle) {
-                logger.error(sqle.getMessage());
+                LogUtil.getLog(getClass()).error(sqle.getMessage());
             } finally {
                 if (rs != null) {
                     try {
@@ -165,7 +164,7 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
             try {
                 rmCache.putInGroup(key, groupKey, docs);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             /**
              * The actual block may be smaller than THREAD_BLOCK_SIZE. If that's
@@ -191,13 +190,14 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
     public int getWorkflowCount(String sql) {
         //根据sql语句得出计算总数的sql查询语句
         String query = SQLFilter.getCountSql(sql);
-        if (!SecurityUtil.isValidSql(query))
+        if (!SecurityUtil.isValidSql(query)) {
             return -1;
+        }
         Integer count = null;
         try {
             count = (Integer) rmCache.getFromGroup(query, FLOW_COUNT_KEY);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
 
         // If already in cache, return the count.
@@ -211,30 +211,26 @@ public class WorkflowCacheMgr extends AbstractRMCacheMgr {
             ResultSet rs = null;
             try {
                 rs = conn.executeQuery(query);
-                if (rs.next())
+                if (rs.next()) {
                     docCount = rs.getInt(1);
-            } catch (SQLException sqle) {
-                sqle.printStackTrace();
+                }
+            } catch (SQLException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (rs != null) {
                     try {
                         rs.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
-                    rs = null;
                 }
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
             // Add the thread count to cache
             try {
-                rmCache.putInGroup(query, FLOW_COUNT_KEY,
-                                   new Integer(docCount));
+                rmCache.putInGroup(query, FLOW_COUNT_KEY, docCount);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             return docCount;
         }

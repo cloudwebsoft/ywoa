@@ -1,6 +1,7 @@
 package com.redmoon.dingding.service.user;
 
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.Config;
 import com.redmoon.dingding.domain.BaseDdObj;
 import com.redmoon.dingding.domain.DdUser;
@@ -14,7 +15,6 @@ import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.sys.DebugUtil;
-import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,57 +34,57 @@ public class UserService extends BaseService {
             HttpHelper _http = new HttpHelper(URL_USER_GET + "userid=" + userId + "&");
             _user = _http.httpGet(DdUser.class);
         } catch (DdException e) {
-            Logger.getLogger(UserService.class).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return _user;
     }
 
     /**
-     * 免登錄方式获取用户id
+     * 免登录方式获取用户id
      *
      * @param code
      * @return
      */
     public UserDb getUserByAvoidLogin(String code) {
-        UserDb _user = null;
+        UserDb user = null;
         try {
-            HttpHelper _http = new HttpHelper("https://oapi.dingtalk.com/user/getuserinfo?code=" + code + "&");
-            UserInfoDto _userInfoDto = _http.httpGet(UserInfoDto.class);
-            if (_userInfoDto != null) {
-                String userId = _userInfoDto.userid;
-                Config _config = Config.getInstance();
-                int isUserIdUse = _config.isUserIdUse();
+            HttpHelper http = new HttpHelper("https://oapi.dingtalk.com/user/getuserinfo?code=" + code + "&");
+            UserInfoDto userInfoDto = http.httpGet(UserInfoDto.class);
+            if (userInfoDto != null) {
+                DebugUtil.i(getClass(), "getUserByAvoidLogin", userInfoDto.toString());
+                String userId = userInfoDto.userid;
+                Config config = Config.getInstance();
+                int isUserIdUse = config.isUserIdUse();
                 switch (isUserIdUse) {
                     case Enum.emBindAcc.emUserName:
-                        _user = new UserDb(userId);
+                        user = new UserDb(userId);
                         break;
                     case Enum.emBindAcc.emEmail:
-                        DdUser _ddUser = getUser(userId); //获得ddUser详细对象
-                        if (_ddUser != null) {
-                            String _email = StrUtil.getNullStr(_ddUser.email);
-                            if (!_email.equals("")) {
-                                _user = new UserDb();
-                                _user = _user.getUserDbByEmail(_email);
+                        DdUser ddUser = getUser(userId); //获得ddUser详细对象
+                        if (ddUser != null) {
+                            String email = StrUtil.getNullStr(ddUser.email);
+                            if (!"".equals(email)) {
+                                user = new UserDb();
+                                user = user.getUserDbByEmail(email);
                             }
                         }
                         break;
                     case Enum.emBindAcc.emMobile:
-                        DdUser _ddUser2 = getUser(userId); //获得ddUser详细对象
-                        if (_ddUser2 != null) {
-                            String _mobile = _ddUser2.mobile;
-                            _user = new UserDb();
-                            _user = _user.getUserDbByMobile(_mobile);
+                        DdUser ddUser2 = getUser(userId); //获得ddUser详细对象
+                        if (ddUser2 != null) {
+                            String _mobile = ddUser2.mobile;
+                            user = new UserDb();
+                            user = user.getUserDbByMobile(_mobile);
                         }
-
                         break;
                     default:
                         break;
                 }
             }
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
-        return _user;
+        return user;
     }
 
     /**
@@ -100,7 +100,7 @@ public class UserService extends BaseService {
             _http.httpGet(BaseDdObj.class);
             _flag = true;
         } catch (DdException e) {
-            Logger.getLogger(UserService.class).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return _flag;
     }
@@ -157,7 +157,7 @@ public class UserService extends BaseService {
             _http.httpPost(BaseDdObj.class, _ddUser);
             _flag = true;
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return _flag;
     }
@@ -224,7 +224,7 @@ public class UserService extends BaseService {
                 _list = ddUserDto.userlist;
             }
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return _list;
     }

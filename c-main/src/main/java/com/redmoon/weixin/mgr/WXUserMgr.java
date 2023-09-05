@@ -1,9 +1,14 @@
 package com.redmoon.weixin.mgr;
 
 import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.entity.User;
+import com.cloudweb.oa.service.IUserService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.account.AccountDb;
 import com.redmoon.oa.person.UserDb;
+import com.redmoon.oa.person.UserService;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.config.Constant;
 import com.redmoon.weixin.util.HttpUtil;
@@ -119,15 +124,11 @@ public class WXUserMgr extends WXBaseMgr {
 		 * 取腾讯微信服务器的IP地址段，以便于配置防火墙，仅允许这些地址访问OA服务器
 		String urlIp = "https://qyapi.weixin.qq.com/cgi-bin/getcallbackip?access_token="+accessToken;
 		String ipStr= HttpUtil.MethodGet(urlIp);
-        System.out.println("ipStr = " + ipStr);
         */
 		// String accessToken = getToken(config.getProperty("secret"));
 
-		// JdbcTemplate jt = new JdbcTemplate();
 		String url = Constant.USER_BY_CODE + accessToken + "&code=" + code;
-		// System.out.println("url = " + url);
 		String userInfo = HttpUtil.MethodGet(url);
-		// System.out.println("userInfo = " + userInfo);
 		try {
 			JSONObject obj = new JSONObject(userInfo);
 
@@ -140,16 +141,13 @@ public class WXUserMgr extends WXBaseMgr {
 					String userTicket = obj.getString("user_ticket");
 					JSONObject js = new JSONObject();
 					js.put("user_ticket",userTicket);
-					// System.out.println("js.toString() = " + js.toString());
 					String serverName = Config.getInstance().getProperty("serverName");
 					String url1 = "https://" + serverName + "/cgi-bin/user/getuserdetail?access_token=" + accessToken;//根据user_ticket获取成员信息
 					String userInfoAll = HttpUtil.MethodPost(url1,js.toString());
 
-					// System.out.println("userInfoAll = " + userInfoAll);
 					JSONObject obj1 = new JSONObject(userInfoAll);
 					if (!obj1.isNull("email")){
 						String email = obj1.getString("email");
-						// System.out.println("email = " + email);
 						userDb = userDb.getUserDbByEmail(email);
 						String userId = obj.getString("UserId");			
 						// 记录微信帐号，以免微信帐号改变
@@ -175,7 +173,6 @@ public class WXUserMgr extends WXBaseMgr {
 					}
 				}
 			} else if (isUserIdUseAccount){
-                // System.out.println("使用工号登录");
 				// 使用工号登录
 				if (!obj.isNull("UserId")) {
 					String userId = obj.getString("UserId");
@@ -189,12 +186,10 @@ public class WXUserMgr extends WXBaseMgr {
 					String userTicket = obj.getString("user_ticket");
 					JSONObject js = new JSONObject();
 					js.put("user_ticket",userTicket);
-					// System.out.println("js.toString() = " + js.toString());
 					String serverName = Config.getInstance().getProperty("serverName");
 					String url1 = "https://" + serverName + "/cgi-bin/user/getuserdetail?access_token=" + accessToken;//根据user_ticket获取成员信息
 					String userInfoAll = HttpUtil.MethodPost(url1,js.toString());
 
-					// System.out.println("userInfoAll = " + userInfoAll);
 					JSONObject obj1 = new JSONObject(userInfoAll);
 					if (!obj1.isNull("mobile")) {
 						String mobile = obj1.getString("mobile");
@@ -232,17 +227,13 @@ public class WXUserMgr extends WXBaseMgr {
 			}
 			/*if (!obj.isNull("UserId")) {
 				String userId = obj.getString("UserId");
-				System.out.println("userId = " + userId);
 				userDb = new UserDb();
 				Config config = Config.getInstance();
 				boolean isUserIdUseEmail = config.isUserIdUseEmail();
 				if (isUserIdUseEmail) {
-					System.out.println("使用邮箱登录");
-					userDb = userDb.getUserDbByEmail(userId);					
+					userDb = userDb.getUserDbByEmail(userId);
 				}
 				else {
-					System.out.println("使用账号登录");
-
 					userDb = userDb.getUserDb(userId);
 				}
 			}*/
@@ -337,12 +328,10 @@ public class WXUserMgr extends WXBaseMgr {
 						String userTicket = obj.getString("user_ticket");
 						JSONObject js = new JSONObject();
 						js.put("user_ticket",userTicket);
-						// System.out.println("js.toString() = " + js.toString());
 						String serverName = Config.getInstance().getProperty("serverName");
 						String url1 = "https://" + serverName + "/cgi-bin/user/getuserdetail?access_token=" + accessToken;//根据user_ticket获取成员信息
 						String userInfoAll = HttpUtil.MethodPost(url1,js.toString());
 
-						// System.out.println("userInfoAll = " + userInfoAll);
 						JSONObject obj1 = new JSONObject(userInfoAll);
 						if (!obj1.isNull("mobile")) {
 							String mobile = obj1.getString("mobile");
@@ -364,7 +353,7 @@ public class WXUserMgr extends WXBaseMgr {
 							String mobile = obj1.getString("mobile");
 							userDb = userDb.getUserDbByMobile(mobile);
 							// 记录微信帐号，以免微信帐号改变
-							if (!userDb.getMobile().equals(userId)) {
+							if (userDb!=null && !userDb.getMobile().equals(userId)) {
 								userDb.setWeixin(userId);
 								userDb.save();
 							}
@@ -375,16 +364,19 @@ public class WXUserMgr extends WXBaseMgr {
 				//账号登录
 				if (!obj.isNull("UserId")){
 					String userId = obj.getString("UserId");
-					userDb = userDb.getUserDb(userId);
+					IUserService userService = SpringUtil.getBean(IUserService.class);
+					User user = userService.getUserByLoginName(userId);
+					if (user != null) {
+						userDb.getFromUser(user, userDb);
+					} else {
+						DebugUtil.i(getClass(), "getUserByCode", "用户: " + userId + "不存在");
+					}
 				}
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			LogUtil.getLog(WXUserMgr.class).error(StrUtil.trace(e));
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} 
 		return userDb;
-
 	}	
 
 }

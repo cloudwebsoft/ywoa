@@ -12,6 +12,7 @@ import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.ui.menu.Leaf;
@@ -123,17 +124,16 @@ public class FavoriteMgr {
     	 boolean re = false;
     	 try {
     		 re = ufd.save(new JdbcTemplate(), new Object[] {
-                 item,new Integer(ufd.getInt("orders")), ufd.get("target"), title,icon,new Integer(id)
+                 item, ufd.getInt("orders"), ufd.get("target"), title,icon, id
              });
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return false;
     }
+
     /**
      * 初始化用户快速入口内容
-     * @param customName
      * @return
      */
     public boolean initQuickMenu4User(String userName) {
@@ -175,7 +175,7 @@ public class FavoriteMgr {
 			re = jt.executeUpdate(sql)==1;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     	
 		return re;

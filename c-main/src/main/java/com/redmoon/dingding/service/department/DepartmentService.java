@@ -1,6 +1,7 @@
 package com.redmoon.dingding.service.department;
 
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.domain.BaseDdObj;
 import com.redmoon.dingding.domain.CreateResDto;
 import com.redmoon.dingding.domain.DdDepartment;
@@ -12,7 +13,6 @@ import com.redmoon.dingding.service.user.UserService;
 import com.redmoon.dingding.util.DdException;
 import com.redmoon.dingding.util.HttpHelper;
 import com.redmoon.oa.dept.DeptDb;
-import org.apache.log4j.Logger;
 
 import java.util.List;
 
@@ -31,7 +31,8 @@ public class DepartmentService extends BaseService {
                 depts = deptDto.department;
             }
         } catch (DdException e) {
-            Logger.getLogger(UserService.class).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return depts;
     }
@@ -49,7 +50,8 @@ public class DepartmentService extends BaseService {
             http.httpGet(BaseDdObj.class);
             flag = true;
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
+            throw new ErrMsgException(e.getMessage());
         }
         return flag;
     }
@@ -62,7 +64,7 @@ public class DepartmentService extends BaseService {
      * @return
      */
     public int addDept(String name, Integer parentId, int order) {
-        int _id = -1;
+        int id = -1;
         DdDepartment dd = new DdDepartment();
         dd.name = name;
         dd.parentid = parentId;
@@ -73,12 +75,13 @@ public class DepartmentService extends BaseService {
         try {
             CreateResDto dto = http.httpPost(CreateResDto.class, dd);
             if (dto != null) {
-                _id = dto.id;
+                id = dto.id;
             }
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
+            throw new ErrMsgException(e.getMessage());
         }
-        return _id;
+        return id;
     }
 
     /**
@@ -93,7 +96,7 @@ public class DepartmentService extends BaseService {
         try {
             dd = http.httpGet(DdDeptDetailDto.class);
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return dd;
     }
@@ -128,7 +131,7 @@ public class DepartmentService extends BaseService {
                     res = _dto.id;
                 }
             } catch (DdException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         return res;

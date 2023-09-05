@@ -9,10 +9,9 @@
 <%@ page import="org.jdom.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import = "com.redmoon.oa.person.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <title>资源回收</title>
 <%@ include file="../inc/nocache.jsp" %>
@@ -34,7 +33,7 @@ function getSelUserRealNames() {
 }
 
 function openWinUsers() {
-	showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')
+	openWin('../user_multi_sel.jsp', 800, 600);
 }
 
 function openWin(url,width,height)
@@ -87,33 +86,7 @@ if (!privilege.isUserPrivValid(request,priv)) {
 }
 
 String op = ParamUtil.get(request, "op");
-if (op.equals("renew")) {
-	String sql = "select name from users";
-	JdbcTemplate jt = new JdbcTemplate();
-	ResultIterator ri = jt.executeQuery(sql);
-	UserMgr um = new UserMgr();
-	UserDb user;
-	while (ri.hasNext()) {
-		ResultRecord rr = (ResultRecord)ri.next();
-		String userName = rr.getString(1);
-		user = um.getUserDb(userName);
-		sql = "select a.id from netdisk_document_attach a, netdisk_document d, netdisk_directory t where d.class1=t.code and t.root_code=" + StrUtil.sqlstr(userName) + " and d.id=a.doc_id";
-		ResultIterator ri2 = jt.executeQuery(sql);
-		com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-		int count = 0;
-		while (ri2.hasNext()) {
-			ResultRecord rr2 = (ResultRecord)ri2.next();
-			int id = rr2.getInt(1);
-			att = att.getAttachment(id);
-			count += att.getSize();
-		}
-		user.setDiskSpaceUsed(count);
-		user.save();
-	}
-	out.print(StrUtil.jAlert_Redirect("操作成功！","提示", "reclaim.jsp"));
-	return;	
-}
-else if (op.equals("renewMsg")) {
+if (op.equals("renewMsg")) {
 	UserSetupDb usd = new UserSetupDb();
 	String sql = "select name from users";
 	JdbcTemplate jt = new JdbcTemplate();
@@ -152,119 +125,58 @@ else if (op.equals("clear")) {
 	}
 	
 	String beginDate = ParamUtil.get(request, "beginDate");
-	if (beginDate.equals("")) {
+	if ("".equals(beginDate)) {
 		out.print(StrUtil.jAlert_Back("请填写开始日期！","提示"));
 		return;
 	}
 	String endDate = ParamUtil.get(request, "endDate");
 	String sql = "";
-	for (int i=0; i<users.length; i++) {
-		String userName = users[i];
-		for (int j=0; j<modules.length; j++) {
-			String module = modules[j];
-			if (module.equals("netdisk")) {
-				sql = "select a.id from netdisk_document_attach a, netdisk_document d, netdisk_directory t where d.class1=t.code and t.root_code=" + StrUtil.sqlstr(userName) + " and d.id=a.doc_id";
-				if (endDate.equals("")) {
-					sql += " and uploadDate<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
-				}
-				else {
-					sql += " and uploadDate>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and uploadDate<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
-				}
-				JdbcTemplate jt = new JdbcTemplate();
-				ResultIterator ri = jt.executeQuery(sql);
-				com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-				while (ri.hasNext()) {
-					ResultRecord rr = (ResultRecord)ri.next();
-					int attId = rr.getInt(1);
-					att = att.getAttachment(attId);
-					att.del();
-				}
-			}
-			else if (module.equals("fileark")) {
-				sql = "select id from oa_idiofileark where user_name=" + StrUtil.sqlstr(userName);
-				if (endDate.equals("")) {
-					sql += " and add_date<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
-				}
-				else {
-					sql += " and add_date>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and add_date<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
-				}
-				JdbcTemplate jt = new JdbcTemplate();
-				ResultIterator ri = jt.executeQuery(sql);
-				com.redmoon.oa.idiofileark.IdiofilearkDb idf = new com.redmoon.oa.idiofileark.IdiofilearkDb();
-				while (ri.hasNext()) {
-					ResultRecord rr = (ResultRecord)ri.next();
-					int id = rr.getInt(1);
-					idf = idf.getIdiofilearkDb(id);
-					idf.del();
-				}
-			}
-			else if (module.equals("plan")) {
+	for (String userName : users) {
+		for (String module : modules) {
+			if ("plan".equals(module)) {
 				sql = "select id from user_plan where userName=" + StrUtil.sqlstr(userName);
-				if (endDate.equals("")) {
+				if ("".equals(endDate)) {
 					sql += " and myDate<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
-				}
-				else {
+				} else {
 					sql += " and myDate>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and myDate<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
 				}
 				JdbcTemplate jt = new JdbcTemplate();
 				ResultIterator ri = jt.executeQuery(sql);
-				com.redmoon.oa.person.PlanDb pd = new com.redmoon.oa.person.PlanDb();
+				PlanDb pd = new PlanDb();
 				while (ri.hasNext()) {
-					ResultRecord rr = (ResultRecord)ri.next();
+					ResultRecord rr = ri.next();
 					int id = rr.getInt(1);
 					pd = pd.getPlanDb(id);
 					pd.del();
-				}			
-			}
-			else if (module.equals("mywork")) {
-				sql = "select id from work_log where userName=" + StrUtil.sqlstr(userName);
-				if (endDate.equals("")) {
-					sql += " and myDate<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
 				}
-				else {
-					sql += " and myDate>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and myDate<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
-				}
-				JdbcTemplate jt = new JdbcTemplate();
-				ResultIterator ri = jt.executeQuery(sql);
-				com.redmoon.oa.worklog.WorkLogDb wld = new com.redmoon.oa.worklog.WorkLogDb();
-				while (ri.hasNext()) {
-					ResultRecord rr = (ResultRecord)ri.next();
-					int id = rr.getInt(1);
-					wld = wld.getWorkLogDb(id);
-					wld.del();
-				}			
-			}
-			else if (module.equals("message")) {
+			} else if ("message".equals(module)) {
 				sql = "select id from oa_message where receiver=" + StrUtil.sqlstr(userName);
 				if (endDate.equals("")) {
 					sql += " and send_time<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
-				}
-				else {
+				} else {
 					sql += " and send_time>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and send_time<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
 				}
 				JdbcTemplate jt = new JdbcTemplate();
 				ResultIterator ri = jt.executeQuery(sql);
 				com.redmoon.oa.message.MessageDb md = new com.redmoon.oa.message.MessageDb();
 				while (ri.hasNext()) {
-					ResultRecord rr = (ResultRecord)ri.next();
+					ResultRecord rr = (ResultRecord) ri.next();
 					int id = rr.getInt(1);
-					md = (com.redmoon.oa.message.MessageDb)md.getMessageDb(id);
+					md = (com.redmoon.oa.message.MessageDb) md.getMessageDb(id);
 					md.del();
-				}		
-			}
-			else if (module.equals("address")) {
+				}
+			} else if ("address".equals(module)) {
 				sql = "select id from address where username=" + StrUtil.sqlstr(userName);
 				if (endDate.equals("")) {
 					sql += " and adddate<=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
-				}
-				else {
+				} else {
 					sql += " and adddate>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd") + " and adddate<=" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
 				}
 				JdbcTemplate jt = new JdbcTemplate();
 				ResultIterator ri = jt.executeQuery(sql);
 				com.redmoon.oa.address.AddressDb addr = new com.redmoon.oa.address.AddressDb();
 				while (ri.hasNext()) {
-					ResultRecord rr = (ResultRecord)ri.next();
+					ResultRecord rr = (ResultRecord) ri.next();
 					int id = rr.getInt(1);
 					addr = addr.getAddressDb(id);
 					addr.del();
@@ -296,15 +208,14 @@ if (realPath.indexOf(":")==1) {
     <td align="center">
 <%
 String version = System.getProperty("java.version");
-if (version.indexOf("1.5")!=-1 || version.indexOf("1.4")!=-1) {
+if (version.contains("1.5") || version.contains("1.4")) {
 	out.print("请安装JDK1.6以上版本！");
 }
 %>
         <div id="pieChart" style="padding-top:15px"></div>    </td>
   </tr>
   <tr>
-    <td align="center"><input class="btn" type="button" onclick="hideView();jConfirm('您确定要重新计算么？该操作可能将耗费较长时间！','提示',function(r){if(!r){$('#pieChart').show();return;}else{window.location.href='reclaim.jsp?op=renew'}}) " value="重新计算用户网盘空间" />
-    &nbsp;&nbsp;
+    <td align="center">
     <input class="btn" type="button" onclick="hideView();jConfirm('您确定要重新计算么？该操作可能将耗费较长时间！','提示',function(r){if(!r){$('#pieChart').show();return;}else{window.location.href='reclaim.jsp?op=renewMsg'}}) " value="重新计算用户邮箱空间" /></td>
   </tr>
 </table>
@@ -327,10 +238,8 @@ if (version.indexOf("1.5")!=-1 || version.indexOf("1.4")!=-1) {
   <tr>
     <td align="center">模块</td>
     <td align="left">
-	<input name="module" type="checkbox" value="netdisk" />网盘&nbsp;&nbsp;
 	<input name="module" type="checkbox" value="fileark" />个人文件柜&nbsp;&nbsp;
 	<input name="module" type="checkbox" value="plan" />日程安排&nbsp;&nbsp;
-	<input name="module" type="checkbox" value="mywork" />工作报告&nbsp;&nbsp;
 	<input name="module" type="checkbox" value="message" />内部消息&nbsp;&nbsp;
 	<input name="module" type="checkbox" value="address" />通讯录
 	</td>

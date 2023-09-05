@@ -83,18 +83,15 @@ public class MsgConsumer implements javax.jms.MessageListener {
                 TextMessage txtMsg = (TextMessage) message;
                 String msg = txtMsg.getText();
                 int length = msg.length();
-                System.out.println("[moduleLog] Received: '" + msg+ "' (length " + length + ")");
+                LogUtil.getLog(getClass()).info("[moduleLog] Received: '" + msg+ "' (length " + length + ")");
             }
-        } catch (JMSException e) {
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
-        }
-        finally {
+        } catch (JMSException | ErrMsgException e) {
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
             try {
                 message.acknowledge();
             } catch (JMSException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
     }

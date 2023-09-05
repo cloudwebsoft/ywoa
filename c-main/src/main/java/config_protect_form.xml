@@ -4,4 +4,8 @@
 		<formCode>form_archive</formCode>
 		<fields>content</fields>
 	</rule>
+	<rule type="1">
+		<formCode>formula</formCode>
+		<fields>content</fields>
+	</rule>
 </config>

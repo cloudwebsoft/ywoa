@@ -1,0 +1,408 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>单选框</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" >
+    <meta name="generator" content="www.leipi.org" />
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="leipi.style.css">
+    <script type="text/javascript" src="../../../../inc/common.js"></script>
+    <script type="text/javascript" src="../dialogs/internal.js"></script>
+    <script type="text/javascript">
+function createElement(type, name)
+{     
+    var element = null;     
+    try {        
+        element = document.createElement('<'+type+' name="'+name+'">');     
+    } catch (e) {}   
+    if(element==null) {     
+        element = document.createElement(type);     
+        element.name = name;     
+    } 
+    return element;     
+}
+
+
+//checkboxs
+function isIE()
+{
+    if(window.attachEvent){   
+        return true;
+    }
+    return false;
+}
+//moveRow在IE支持而在火狐里不支持！以下是扩展火狐下的moveRow
+if (!isIE()) {
+    function getTRNode(nowTR, sibling) {
+        while (nowTR = nowTR[sibling]) if (nowTR.tagName == 'TR') break;
+        return nowTR;
+    }
+    if (typeof Element != 'undefined') {
+        Element.prototype.moveRow = function(sourceRowIndex, targetRowIndex) //执行扩展操作
+        {
+            if (!/^(table|tbody|tfoot|thead)$/i.test(this.tagName) || sourceRowIndex === targetRowIndex) return false;
+            var pNode = this;
+            if (this.tagName == 'TABLE') pNode = this.getElementsByTagName('tbody')[0]; //firefox会自动加上tbody标签，所以需要取tbody，直接table.insertBefore会error
+            var sourceRow = pNode.rows[sourceRowIndex],
+            targetRow = pNode.rows[targetRowIndex];
+            if (sourceRow == null || targetRow == null) return false;
+            var targetRowNextRow = sourceRowIndex > targetRowIndex ? false: getTRNode(targetRow, 'nextSibling');
+            if (targetRowNextRow === false) pNode.insertBefore(sourceRow, targetRow); //后面行移动到前面，直接insertBefore即可
+            else { //移动到当前行的后面位置，则需要判断要移动到的行的后面是否还有行，有则insertBefore，否则appendChild
+                if (targetRowNextRow == null) pNode.appendChild(sourceRow);
+                else pNode.insertBefore(sourceRow, targetRowNextRow);
+            }
+        }
+    }
+}
+
+/*删除tr*/
+function fnDeleteRow(obj)
+{
+    var oTable = document.getElementById("options_table");
+    while(obj.tagName !='TR')
+    {
+        obj = obj.parentNode;
+    }
+    oTable.deleteRow(obj.rowIndex);
+}
+/*上移*/
+function fnMoveUp(obj)
+{
+    var oTable = document.getElementById("options_table");
+    while(obj.tagName !='TR')
+    {
+        obj = obj.parentNode;
+    }
+    var minRowIndex = 1;
+    var curRowIndex = obj.rowIndex;
+    if(curRowIndex-1>=minRowIndex)
+    {
+        oTable.moveRow(curRowIndex,curRowIndex-1); 
+    }
+    
+}
+/*下移*/
+function fnMoveDown(obj)
+{
+    var oTable = document.getElementById("options_table");
+    while(obj.tagName !='TR')
+    {
+        obj = obj.parentNode;
+    }
+    var maxRowIndex = oTable.rows.length;
+    var curRowIndex = obj.rowIndex;
+    if(curRowIndex+1<maxRowIndex)
+    {
+        oTable.moveRow(curRowIndex,curRowIndex+1); 
+    }
+}
+
+/*生成tr*/
+function fnAddComboTr(gName,obj)
+{
+    var oTable = document.getElementById('options_table');
+    var new_tr_node= oTable.insertRow(oTable.rows.length);
+    var new_td_node0 = new_tr_node.insertCell(0),new_td_node1 = new_tr_node.insertCell(1),new_td_node2 = new_tr_node.insertCell(2);
+
+    var sChecked = '';
+    if(obj.checked) sChecked = 'checked="checked"';
+    if(!obj.name) obj.name = '';
+    if(!obj.value) obj.value = '';
+    new_td_node0.innerHTML = '<td><input type="radio" '+sChecked+' name="'+gName+'"></td>';
+    new_td_node1.innerHTML = '<td><input type="text" value="'+obj.value+'" name="'+gName+'" placeholder="选项值"></td>';
+    new_td_node2.innerHTML ='<td><div class="btn-group"><a title="上移" class="btn btn-small btn-info" href="javascript:void(0);" onclick="fnMoveUp(this)"><i class="icon-white icon-arrow-up"></i></a><a title="下移" class="btn btn-small btn-info" href="javascript:void(0);" onclick="fnMoveDown(this)"><i class="icon-white icon-arrow-down"></i></a><a title="删除" class="btn btn-small btn-default" href="javascript:void(0);" onclick="fnDeleteRow(this)"><i class="icon-ban-circle"></i></a></div></td>';
+    return true;
+}
+function fnAdd() {
+    var dName = $G('hidname').value;
+    if(!dName) dName = 'leipiNewField';
+    fnAddComboTr(dName,{
+        "checked":false,
+        "name":'leipiNewField',
+        "value":''
+    });
+}
+/*组合checkbox*/
+function fnParseOptions(gName, gTitle, gChecked, gType, gCanNull)
+{
+    var oTable = document.getElementById('options_table');
+    var nTr = oTable.getElementsByTagName('tr'),trLength = nTr.length,html="";
+    for(var i=0;i<trLength;i++)
+    {
+        var inputs = nTr[i].getElementsByTagName('input');
+
+        if(inputs.length>0)
+        {
+            var desc = inputs[1].value.trim();
+            // 将值“无”转为空
+            if (inputs[1].value=='无') {
+                inputs[1].value = "";
+            }
+            // 如果值为空，则置其描述为“无”
+            if(!inputs[1].value) {
+                desc = "无"
+            }
+            var sChecked = '';
+            // if(inputs[0].checked) sChecked = 'checked="checked"'; // 使用chedked时，在切换为源码状态再切换回后，checked属性会消失
+            if(inputs[0].checked) sChecked = 'checked=""';
+
+            var gReadOnlyType = $G('readOnlyType').value;
+            if ($G('isReadOnly').checked) {
+                html += '<input name="'+gName+'" title="' + gTitle + '" readonly="readonly" readOnlyType="' + gReadOnlyType + '" onfocus="this.defaultIndex=getRadioValue(this.name);" onchange="setRadioValue(this.name, this.defaultIndex);" value="'+inputs[1].value.trim()+'" '+sChecked+' type="radio" fieldType="' + gType + '" canNull="' + gCanNull + '" />'+desc+'&nbsp;';
+            }
+            else {
+                html += '<input name="'+gName+'" title="' + gTitle + '" readOnlyType="' + gReadOnlyType + '" value="'+inputs[1].value.trim()+'" '+sChecked+' type="radio" fieldType="' + gType + '" canNull="' + gCanNull + '" />'+desc+'&nbsp;';
+            }
+            if(gChecked=='orgchecked1')//竖排
+                html+='<br/>';
+        }
+    }
+    //alert(html);
+    return html;
+}
+    </script>
+</head>
+<body>
+<div class="content">
+    <input id="hidname" type="hidden"/>
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th><span>控件字段&nbsp;<span class="label label-important">*</span></span></th>
+            <th><span>控件名称&nbsp;<span class="label label-important">*</span></span></th>
+        </tr>
+        <tr>
+            <td><input id="orgname" placeholder="必填项" type="text"/></td>
+            <td>
+        <span style="display:none">
+        <span>排列方式</span>
+            <label class="radio" title="选项一 选项二"><input id="orgchecked0" checked="checked" name="checked" type="radio"> 横排 </label>
+        <label class="radio" title="选项一&#10;选项二"><input id="orgchecked1" name="checked" type="radio"> 竖排 </label>
+        </span>
+                <input type="text" id="orgtitle" placeholder="必填项"></td>
+        </tr>
+        <tr class="table table-bordered table-striped table-hover">
+            <th><span>数据类型</span></th>
+            <th><span>必填项 </span></th>
+        </tr>
+        <tr class="table table-bordered table-striped table-hover">
+            <td><select name="orgtype" id="orgtype">
+                <option value="0">字符串型</option>
+                <option value="1">文本型</option>
+                <option value="2">整型</option>
+                <option value="3">长整型</option>
+                <option value="4">布尔型</option>
+                <option value="5">浮点型</option>
+                <option value="6">双精度型</option>
+                <!--<option value="7">日期型</option>
+                <option value="8">日期时间型</option>
+                -->
+                <option value="9">价格型</option>
+            </select></td>
+            <td><input id="canNull" name="canNull" type="checkbox" value="0" checked/></td>
+        </tr>
+        <tr class="table table-bordered table-striped table-hover" style="display:none">
+            <th>必填项</th>
+            <th>&nbsp;</th>
+        </tr>
+        <tr class="table table-bordered table-striped table-hover" style="display:none">
+            <td><input type="text" id="orgvalue" placeholder="无则不填"></td>
+            <td>&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <table class="table table-hover table-condensed" id="options_table">
+                    <tr>
+                        <th>选中</th>
+                        <th>选项值</th>
+                        <th>操作</th>
+                    </tr>
+                    <!--tr>
+                        <td><input type="checkbox" checked="checked"></td>
+                        <td><input type="text" value="选项一"></td>
+                        <td>
+                            <div class="btn-group">
+                                <a title="上移" class="btn btn-small btn-info" href="#"><i class="icon-white icon-arrow-up"></i></a>
+                                <a title="下移" class="btn btn-small btn-info" href="#"><i class="icon-white icon-arrow-down"></i></a>
+                                <a title="删除" class="btn btn-small btn-default"><i class="icon-ban-circle"></i></a>
+                            </div>
+                        </td>
+                    </tr-->
+
+                </table>
+                <a title="添加选项" class="btn btn-primary" onclick="fnAdd();">添加选项</a>
+            </td>
+        </tr>
+        <tr>
+            <th><span>只读</span></th>
+            <th><span>只读类型</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1"/>
+            </td>
+            <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span>提示</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
+                <textarea id="tip" name="tip" style="width:250px; height:100px"></textarea>
+            </td>
+            <td>
+            </td>
+        </tr>
+    </table>
+</div>
+<script type="text/javascript">
+var oNode = null,thePlugins = 'radios';
+window.onload = function() {
+    if( UE.plugins[thePlugins].editdom ){
+        oNode = UE.plugins[thePlugins].editdom;
+        var gTitle=oNode.getAttribute('title').replace(/&quot;/g,"\"");
+        var gName=oNode.getAttribute('orgname').replace(/&quot;/g,"\"");
+        $G('orgname').value = gName;
+        $G('orgtitle').value = gTitle;
+        $G('hidname').value = gName;
+		
+		var gType=oNode.getAttribute('fieldType');
+		var gCanNull = oNode.getAttribute("canNull");
+		
+        var checked = oNode.getAttribute('orgchecked');
+        checked=='orgchecked1' ? $G('orgchecked1').checked = true : $G('orgchecked0').checked = true;
+
+        var inputTags = oNode.getElementsByTagName('input');
+        var length = inputTags.length;
+        var aInputs = [];
+        for(var i=0;i<length;i++)
+        {
+            //testEle.setAttribute("test","aaa"); // 自定义属性 设置  
+            //testEle.attributes["test"].nodeValue; // 获得 
+            if(inputTags[i].type =='radio')
+                fnAddComboTr(gName,inputTags[i]);
+        }
+        var gTip = oNode.getAttribute("tip");
+        if (gTip == null) {
+            gTip = '';
+        }
+        var gReadOnlyType = oNode.getAttribute("readOnlyType");
+        if (gReadOnlyType == null) {
+            gReadOnlyType = '';
+        }
+
+		$G('orgname').setAttribute("readonly", true);
+		if (gCanNull==0) {
+			$G('canNull').checked = true;
+		}
+		else {
+			$G('canNull').checked = false;
+		}
+		
+		$G('orgtype').value = gType;
+		$G('orgtype').disabled = true;
+
+        var isReadOnly = oNode.getAttribute("readonly");
+        if (isReadOnly != null) {
+            $G('isReadOnly').checked = true;
+        }
+        else {
+            $G('isReadOnly').checked = false;
+        }
+        $G('tip').value = gTip;
+        $G('readOnlyType').value = gReadOnlyType;
+    }
+};
+dialog.oncancel = function () {
+    if( UE.plugins[thePlugins].editdom ) {
+        delete UE.plugins[thePlugins].editdom;
+    }
+};
+dialog.onok = function () {
+    var gName=$G('orgname').value.replace(/\"/g,"&quot;");
+    if(gName==''){
+        alert('请输入控件字段');
+        return false;
+    }
+	var gTitle=$G('orgtitle').value.replace(/\"/g,"&quot;");
+    if(gTitle==''){
+        alert('请输入控件名称');
+        return false;
+    }
+
+	var gType=$G('orgtype').value;
+	var gCanNull = $G('canNull').checked?0:1;
+
+    var gChecked = 'orgchecked0';
+    if ($G('orgchecked1').checked) gChecked = 'orgchecked1';
+    var gTip = $G('tip').value;
+    var gReadOnlyType = $G('readOnlyType').value;
+
+    if( !oNode ) {
+        try {
+            var options = fnParseOptions(gName, gTitle, gChecked, gType, gCanNull);
+            if(!options)
+            {
+                alert('请添加选项');
+                return false;
+            }
+			
+            //{|- 使用边界，防止用户删除了span标签
+            var html = '<span cwsplugins="radios" title="'+gTitle+'" orgname="' + gName + '" fieldType="' + gType + '" canNull="' + gCanNull + '"';
+            if ($G('isReadOnly').checked) {
+                html += ' readonly="readonly"';
+            }
+            html += ' readOnlyType="' + gReadOnlyType + '"';
+            html += ' tip="' + gTip + '"';
+            html += '>';
+            html += options;
+            html += '</span>';
+            editor.execCommand('insertHtml',html);
+            return true ;
+        } catch ( e ) {
+            try {
+                editor.execCommand('error');
+            } catch ( e ) {
+                alert('控件异常！');
+            }
+            return false;
+        }
+    } else {
+        var gName=oNode.getAttribute('orgname').replace(/&quot;/g,"\"");
+        oNode.setAttribute('title',gTitle);
+        oNode.setAttribute('orgchecked',gChecked);
+		oNode.setAttribute("canNull", gCanNull);		
+        oNode.innerHTML = fnParseOptions(gName,gTitle,gChecked,gType,gCanNull);
+
+        if ($G('isReadOnly').checked) {
+            oNode.setAttribute("readonly", "readonly");
+        }
+        else {
+            oNode.removeAttribute("readonly");
+        }
+        oNode.setAttribute("tip", gTip);
+        oNode.setAttribute("readOnlyType", gReadOnlyType);
+
+        delete UE.plugins[thePlugins].editdom; 
+        return true;
+    }
+};
+</script>
+</body>
+</html>

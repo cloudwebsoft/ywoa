@@ -79,10 +79,6 @@ else if (op.equals("matchActionUsers")) {
 	wa2.setDirection(proxyJobCode2);
 	wa2.setStrategy("");
 	
-	// System.out.println(getClass() + " jobCode1=" + jobCode1 + " jobCode2=" + jobCode2);
-	// System.out.println(getClass() + " proxyUserRealName1-=" + proxyUserRealName1);
-	// System.out.println(getClass() + " proxyUserRealName2--=" + proxyUserRealName2);
-	
 	Iterator ir;
 	try {
 		WorkflowRouter workflowRouter = new WorkflowRouter();

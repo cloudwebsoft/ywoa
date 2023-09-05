@@ -56,7 +56,15 @@ public class UserPrivServiceImpl extends ServiceImpl<UserPrivMapper, UserPriv> i
         QueryWrapper<UserPriv> qw = new QueryWrapper<>();
         qw.eq("userName", userName);
         qw.eq("priv", priv);
-        return remove(qw);
+        boolean re = remove(qw);
+        if (re) {
+            // 刷新用户所拥有的权限
+            IUserAuthorityService userAuthorityService = SpringUtil.getBean(IUserAuthorityService.class);
+            userAuthorityService.refreshUserAuthority(userName);
+
+            userCache.refreshPrivs(userName);
+        }
+        return re;
     }
 
     @Override
@@ -101,6 +109,24 @@ public class UserPrivServiceImpl extends ServiceImpl<UserPrivMapper, UserPriv> i
         IUserAuthorityService userAuthorityService = SpringUtil.getBean(IUserAuthorityService.class);
         userAuthorityService.refreshUserAuthority(userName);
 
+        userCache.refreshPrivs(userName);
+
+        return re;
+    }
+
+    @Override
+    public boolean create(String userName, String priv) {
+        UserPriv userPriv = new UserPriv();
+        userPriv.setUsername(userName);
+        userPriv.setPriv(priv);
+        boolean re = userPriv.insert();
+        if (re) {
+            // 刷新用户所拥有的权限
+            IUserAuthorityService userAuthorityService = SpringUtil.getBean(IUserAuthorityService.class);
+            userAuthorityService.refreshUserAuthority(userName);
+
+            userCache.refreshPrivs(userName);
+        }
         return re;
     }
 
@@ -109,6 +135,10 @@ public class UserPrivServiceImpl extends ServiceImpl<UserPrivMapper, UserPriv> i
         QueryWrapper<UserPriv> qw = new QueryWrapper<>();
         qw.eq("userName", userName);
         userPrivMapper.delete(qw);
+
+        // 刷新用户所拥有的权限
+        IUserAuthorityService userAuthorityService = SpringUtil.getBean(IUserAuthorityService.class);
+        userAuthorityService.refreshUserAuthority(userName);
 
         userCache.refreshPrivs(userName);
     }

@@ -43,24 +43,21 @@
 %>
 <DIV id="tabs1">
     <ul>
-        <li id="menu1"><a href="<%=request.getContextPath()%>/flow_modify.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="transferProcess"/></span></a></li>
+        <li id="menu1"><a href="<%=request.getContextPath()%>/flowShowPage.do?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="transferProcess"/></span></a></li>
         <%if (!isFreeTop && (canUserSeeFlowChartTop || canUserSeeFlowImageTop || canUserSeeDesignerWhenDisposeTop.equals("true") || isFlowManagerTop)) {%>
-        <li id="menu2"><a href="<%=request.getContextPath()%>/flow_modify_show_designer.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="flowChart"/></span></a></li>
-        <%}%>
-        <!--
-        <li id="menu3"><a href="<%=request.getContextPath()%>/flow_modify_annex_add.jsp?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="addPostscript"/></span></a></li>
-        -->
-        <%
+        <li id="menu2"><a href="<%=request.getContextPath()%>/flowShowChartPage.do?flowId=<%=flowIdTop%>"><span><lt:Label res="res.flow.Flow" key="flowChart"/></span></a></li>
+        <%}
+
             if (pvgTop.isUserPrivValid(request, "admin") || isFlowManagerTop || wrTop.canUserModifyFlow(request, wfTop)) {
         %>
-        <li id="menu6"><a href="<%=request.getContextPath()%>/flow_modify1.jsp?flowId=<%=flowIdTop%>&visitKey=<%=visitKeyTop%>"><span><lt:Label res="res.flow.Flow" key="modifyTitle"/></span></a></li>
+        <li id="menu6"><a href="<%=request.getContextPath()%>/flowModifyTitlePage?flowId=<%=flowIdTop%>&visitKey=<%=visitKeyTop%>"><span><lt:Label res="res.flow.Flow" key="modifyTitle"/></span></a></li>
         <%
             }
 
             PaperDistributeDb pddTop = new PaperDistributeDb();
             int paperCountTop = pddTop.getCountOfWorkflow(flowIdTop);
             if (paperCountTop > 0) {
-                String disBtnName = cn.js.fan.web.SkinUtil.LoadStr(request, "res.flow.Flow", "notify"); // "流程分发";
+                String disBtnName = cn.js.fan.web.SkinUtil.LoadStr(request, "res.flow.Flow", "notify"); // "流程抄送";
                 String kindTop = com.redmoon.oa.kernel.License.getInstance().getKind();
                 if (kindTop.equalsIgnoreCase(com.redmoon.oa.kernel.License.KIND_COM)) {
                     disBtnName = "流程知会";

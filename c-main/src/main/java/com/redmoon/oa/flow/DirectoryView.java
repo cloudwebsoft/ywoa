@@ -6,10 +6,14 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import javax.servlet.jsp.JspWriter;
 import java.util.Iterator;
-import org.apache.log4j.Logger;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.cloudweb.oa.utils.SpringUtil;
 import javax.servlet.http.HttpServletRequest;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
@@ -20,7 +24,6 @@ import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.flow.WorkflowPredefineDb;
 
 public class DirectoryView {
-    Logger logger = Logger.getLogger(DirectoryView.class.getName());
     Leaf rootLeaf;
     Vector UprightLineNodes = new Vector(); //用于显示竖线
 
@@ -72,7 +75,7 @@ public class DirectoryView {
 
         if (!isLastChild) {
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -81,7 +84,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -89,7 +92,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -107,7 +110,7 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
+                        //LogUtil.getLog(getClass()).info("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -198,9 +201,9 @@ public class DirectoryView {
         String description = leaf.getDescription();
 
         if (!isLastChild) {
-            // System.out.println("get leaf brother" + leaf.getName());
+            // LogUtil.getLog(getClass()).info("get leaf brother" + leaf.getName());
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -209,7 +212,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) { // =0的也计入的话会在树底端的结点产生多余竖线
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -217,7 +220,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -235,7 +238,7 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
+                        //LogUtil.getLog(getClass()).info("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -292,7 +295,7 @@ public class DirectoryView {
                     StrUtil.UrlEncode(code, "utf-8") + "&name=" +
                     StrUtil.UrlEncode(name, "utf-8") + "&description=" +
                     StrUtil.UrlEncode(description, "utf-8") + "'>修改</a>&nbsp;");
-            if (leaf.getType() == leaf.TYPE_LIST || leaf.getType()==Leaf.TYPE_FREE) {
+            if (leaf.getType() == Leaf.TYPE_LIST || leaf.getType()==Leaf.TYPE_FREE) {
                 out.print(
                         "<a target=_parent href='flow_predefine_list.jsp?dirCode=" +
                         StrUtil.UrlEncode(code) + "'>预设流程</a>&nbsp;");
@@ -752,8 +755,9 @@ public class DirectoryView {
 		Directory dir = new Directory();
 		Vector children = dir.getChildren(leaf.getCode());
 		int size = children.size();
-		if (size == 0)
-			return;
+		if (size == 0) {
+            return;
+        }
 
 		if (!canUserSeeWhenInitFlow(request, leaf)) {
 			return;
@@ -999,7 +1003,7 @@ public class DirectoryView {
 
         if (!isLastChild) {
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -1008,7 +1012,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -1016,7 +1020,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -1035,7 +1039,7 @@ public class DirectoryView {
                     // node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
+                        //LogUtil.getLog(getClass()).info("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -1173,14 +1177,11 @@ public class DirectoryView {
         }
     }
     
-    public String getJsonString() throws Exception {
+    public String getJsonString() {
 		Leaf dir = new Leaf();
-		String str = "[";
-		// 从根开始
-		str = this.getJson(dir, "-1", str);
-		str = str.substring(0, str.length() - 1);
-		str += "]";
-		return str;
+		JSONArray ary = new JSONArray();
+        getJson(dir, "-1", ary);
+        return ary.toString();
 	}
 
 	/**
@@ -1188,52 +1189,160 @@ public class DirectoryView {
 	 * 
 	 * @param parentCode
 	 *            父节点parentCode
-	 * @return str
+	 * @return ary
 	 */
-	private String getJson(Leaf dir, String parentCode, String str)
-			throws Exception {
-		int i = 0;
-		int j = 0;
-		// 把顶层的查出来
-		Vector children = dir.getTreeChildren(parentCode);
-		int size = children.size();
-		Iterator ri = children.iterator();
-		while (ri.hasNext()) {
-			Leaf childlf = (Leaf) ri.next();
-			if (!childlf.getRootCode().equals(rootLeaf.getCode())) {
-				continue;
-			}
-			i++;
-			if ("-1".equals(parentCode)) {
-				str += "{id:\"" + childlf.getCode() + "\",parent:\"#\",text:\""
-						+ childlf.getName().replaceAll("\"", "\\\\\"") + "\",state:{opened:true}} ,";
-			} else {
-				str += "{id:\"" + childlf.getCode() + "\",parent:\""
-						+ childlf.getParentCode() + "\",text:\""
-						+ childlf.getName().replaceAll("\"", "\\\\\"") + "\" },";
-			}
-			Vector childs = dir.getTreeChildren(childlf.getCode());
-			// 如果有子节点
-			if (!childs.isEmpty()) {
-				// 遍历它的子节点
-				int size2 = childs.size();
-				Iterator childri = childs.iterator();
-				while (childri.hasNext()) {
-					j++;
-					Leaf child = (Leaf) childri.next();
-					str += "{id:\"" + child.getCode() + "\",parent:\""
-							+ child.getParentCode() + "\",text:\""
-							+ child.getName().replaceAll("\"", "\\\\\"") + "\" },";
-					// 还有子节点(递归调用)
-					Vector ch = dir.getTreeChildren(child.getCode());
-					if (!ch.isEmpty()) {
-						str = this.getJson(dir, child.getCode(), str);
-					}
-				}
-			}
-		}
-		return str;
-	}
+    private void getJson(Leaf lf, String parentCode, JSONArray ary) {
+        // 把顶层的查出来
+        Vector<Leaf> children = lf.getTreeChildren(parentCode);
+        for (Leaf childlf : children) {
+            if (!childlf.getRootCode().equals(rootLeaf.getCode())) {
+                continue;
+            }
+
+            if ("-1".equals(parentCode)) {
+                JSONObject json = new JSONObject();
+                json.put("id", childlf.getCode());
+                json.put("parent", "#");
+                json.put("text", childlf.getName().replaceAll("\"", "\\\\\""));
+                JSONObject jsonState = new JSONObject();
+                jsonState.put("opened", true);
+                json.put("state", jsonState);
+                ary.add(json);
+
+            } else {
+                JSONObject json = new JSONObject();
+                json.put("id", childlf.getCode());
+                json.put("parent", childlf.getParentCode());
+                json.put("text", childlf.getName().replaceAll("\"", "\\\\\""));
+                ary.add(json);
+            }
+            Vector<Leaf> childs = lf.getTreeChildren(childlf.getCode());
+            // 如果有子节点
+            if (!childs.isEmpty()) {
+                // 遍历它的子节点
+                for (Leaf child : childs) {
+                    JSONObject json = new JSONObject();
+                    json.put("id", child.getCode());
+                    json.put("parent", child.getParentCode());
+                    json.put("text", child.getName().replaceAll("\"", "\\\\\""));
+                    ary.add(json);
+
+                    // 还有子节点(递归调用)
+                    Vector<Leaf> ch = lf.getTreeChildren(child.getCode());
+                    if (!ch.isEmpty()) {
+                        getJson(lf, child.getCode(), ary);
+                    }
+                }
+            }
+        }
+    }
+
+    public void getTreeOpened(Leaf rootLeaf, JSONObject rootJson) {
+        JSONArray children = new JSONArray();
+        rootJson.put("children", children);
+        LeafChildrenCacheMgr leafChildrenCacheMgr = new LeafChildrenCacheMgr(rootLeaf.getCode());
+        Vector<Leaf> childs = leafChildrenCacheMgr.getDirList();
+        for (Leaf child : childs) {
+            if (!child.isOpen()) {
+                continue;
+            }
+            JSONObject jsonChild = new JSONObject();
+            jsonChild.put("code", child.getCode());
+            jsonChild.put("parentCode", child.getParentCode());
+            jsonChild.put("name", child.getName());
+            jsonChild.put("layer", child.getLayer());
+            jsonChild.put("icon", child.getIcon());
+            children.add(jsonChild);
+            getTreeOpened(child, jsonChild);
+        }
+    }
+
+    // 发起流程界面
+    public void getTree(Leaf rootLeaf, JSONObject rootJson, boolean isIcon) {
+        DirectoryView dv = new DirectoryView(rootLeaf);
+        if (rootLeaf.isOpen() && dv.canUserSeeWhenInitFlow(SpringUtil.getRequest(), rootLeaf)) {
+            JSONArray children = new JSONArray();
+            rootJson.put("children", children);
+            LeafChildrenCacheMgr leafChildrenCacheMgr = new LeafChildrenCacheMgr(rootLeaf.getCode());
+            Vector<Leaf> childs = leafChildrenCacheMgr.getDirList();
+            for (Leaf child : childs) {
+                if (child.isOpen() && dv.canUserSeeWhenInitFlow(SpringUtil.getRequest(), child)) {
+                    JSONObject jsonChild = new JSONObject();
+                    jsonChild.put("code", child.getCode());
+                    jsonChild.put("parentCode", child.getParentCode());
+                    jsonChild.put("name", child.getName());
+                    jsonChild.put("layer", child.getLayer());
+                    // 注释掉，以免icon在antdv的树中带有圆点符号，不能注释，因为发起流程的页面会用到
+                    if (isIcon) {
+                        jsonChild.put("icon", child.getIcon());
+                    }
+                    children.add(jsonChild);
+                    getTree(child, jsonChild, isIcon);
+                }
+            }
+        }
+    }
+
+    public void getTreeForQuery(Leaf rootLeaf, JSONObject rootJson, boolean isIcon) {
+        LeafPriv lp = new LeafPriv(rootLeaf.getCode());
+        String userName = SpringUtil.getUserName();
+
+        if (rootLeaf.isOpen()) {
+            JSONArray children = new JSONArray();
+            boolean canQuery = lp.canUserQuery(userName);
+            if (canQuery) {
+                rootJson.put("children", children);
+            }
+
+            LeafChildrenCacheMgr leafChildrenCacheMgr = new LeafChildrenCacheMgr(rootLeaf.getCode());
+            Vector<Leaf> childs = leafChildrenCacheMgr.getDirList();
+            for (Leaf child : childs) {
+                LeafPriv lpChild = new LeafPriv(child.getCode());
+                if (child.isOpen() && lpChild.canUserQuery(userName)) {
+                    // 只要有一个子节点能查询，则能够看到父节点
+                    if (!canQuery) {
+                        canQuery = true;
+                        rootJson.put("children", children);
+                    }
+                    JSONObject jsonChild = new JSONObject();
+                    jsonChild.put("code", child.getCode());
+                    jsonChild.put("parentCode", child.getParentCode());
+                    jsonChild.put("name", child.getName());
+                    jsonChild.put("layer", child.getLayer());
+                    // 注释掉，以免icon在antdv的树中带有圆点符号，不能注释，因为发起流程的页面会用到
+                    if (isIcon) {
+                        jsonChild.put("icon", child.getIcon());
+                    }
+                    children.add(jsonChild);
+                    getTreeWhenQuery(child, jsonChild, isIcon);
+                }
+            }
+        }
+    }
+
+    // 发起流程界面
+    public void getTreeWhenQuery(Leaf rootLeaf, JSONObject rootJson, boolean isIcon) {
+        JSONArray children = new JSONArray();
+        rootJson.put("children", children);
+        LeafChildrenCacheMgr leafChildrenCacheMgr = new LeafChildrenCacheMgr(rootLeaf.getCode());
+        Vector<Leaf> childs = leafChildrenCacheMgr.getDirList();
+        for (Leaf child : childs) {
+            LeafPriv lpChild = new LeafPriv(child.getCode());
+            if (child.isOpen() && lpChild.canUserQuery(SpringUtil.getUserName())) {
+                JSONObject jsonChild = new JSONObject();
+                jsonChild.put("code", child.getCode());
+                jsonChild.put("parentCode", child.getParentCode());
+                jsonChild.put("name", child.getName());
+                jsonChild.put("layer", child.getLayer());
+                // 注释掉，以免icon在antdv的树中带有圆点符号，不能注释，因为发起流程的页面会用到
+                if (isIcon) {
+                    jsonChild.put("icon", child.getIcon());
+                }
+                children.add(jsonChild);
+                getTree(child, jsonChild, isIcon);
+            }
+        }
+    }
 	
 	/**
 	 * 取得所有不启用的节点
@@ -1246,7 +1355,7 @@ public class DirectoryView {
 		JdbcTemplate jt = new JdbcTemplate();
 		ResultIterator ri = jt.executeQuery(sql);
 		while (ri.hasNext()) {
-			ResultRecord rr = (ResultRecord) ri.next();
+			ResultRecord rr = ri.next();
 			list.add(rr.getString(1));
 		}
 		return list;
@@ -1310,7 +1419,25 @@ public class DirectoryView {
 		}
 		str = str.substring(0, str.length() - 1);
 		str += "]";
-		// System.out.println(str);
+		// LogUtil.getLog(getClass()).info(str);
 		return str;
 	}
+
+    public void getTreeAll(Leaf rootLeaf, JSONObject rootJson) {
+        JSONArray children = new JSONArray();
+        rootJson.put("children", children);
+        LeafChildrenCacheMgr leafChildrenCacheMgr = new LeafChildrenCacheMgr(rootLeaf.getCode());
+        Vector<Leaf> childs = leafChildrenCacheMgr.getDirList();
+        for (Leaf child : childs) {
+            JSONObject jsonChild = new JSONObject();
+            jsonChild.put("code", child.getCode());
+            jsonChild.put("parentCode", child.getParentCode());
+            jsonChild.put("name", child.getName());
+            jsonChild.put("layer", child.getLayer());
+            jsonChild.put("icon", child.getIcon());
+            children.add(jsonChild);
+            getTreeAll(child, jsonChild);
+        }
+    }
+
 }

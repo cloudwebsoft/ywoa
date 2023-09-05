@@ -1,10 +1,9 @@
 package cn.js.fan.cache.jcs;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public abstract class AbstractRMCacheMgr implements ICacheMgr {
-    public Logger logger;
     public RMCache rmCache = RMCache.getInstance();
     public static boolean isRegisted = false;
     public String connname = "";
@@ -20,7 +19,7 @@ public abstract class AbstractRMCacheMgr implements ICacheMgr {
     public void init() {
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("AbstractRMCacheMgr:connname is empty.");
+            LogUtil.getLog(getClass()).info("AbstractRMCacheMgr:connname is empty.");
         }
         initLogger();
         initCachePrix();

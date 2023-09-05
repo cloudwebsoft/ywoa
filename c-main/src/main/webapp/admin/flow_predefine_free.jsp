@@ -9,40 +9,22 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.*" %>
 <%@ page import="org.json.*" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <title>自由流程设置</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <script src="../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
     <script>
-        function findObj(theObj, theDoc) {
-            var p, i, foundObj;
-
-            if (!theDoc) theDoc = document;
-            if ((p = theObj.indexOf("?")) > 0 && parent.frames.length) {
-                theDoc = parent.frames[theObj.substring(p + 1)].document;
-                theObj = theObj.substring(0, p);
-            }
-            if (!(foundObj = theDoc[theObj]) && theDoc.all) foundObj = theDoc.all[theObj];
-            for (i = 0; !foundObj && i < theDoc.forms.length; i++)
-                foundObj = theDoc.forms[i][theObj];
-            for (i = 0; !foundObj && theDoc.layers && i < theDoc.layers.length; i++)
-                foundObj = findObj(theObj, theDoc.layers[i].document);
-            if (!foundObj && document.getElementById) foundObj = document.getElementById(theObj);
-
-            return foundObj;
-        }
-
         function setRoleField(fieldWrite, fieldValue, fieldText) {
-            var f = findObj(fieldWrite);
-            var ft = findObj(fieldWrite + "_text");
+            var f = o(fieldWrite);
+            var ft = o(fieldWrite + "_text");
             f.value = fieldValue;
             ft.value = fieldText;
         }
@@ -52,12 +34,12 @@
         }
 
         function getRoleFieldValue(fieldWrite) {
-            var f = findObj(fieldWrite);
+            var f = o(fieldWrite);
             return f.value;
         }
 
         function getRoleFieldText(fieldWrite) {
-            var ft = findObj(fieldWrite + "_text");
+            var ft = o(fieldWrite + "_text");
             return ft.value;
         }
     </script>
@@ -111,6 +93,15 @@
 </script>
 <div class="spacerH"></div>
 <%
+    com.redmoon.oa.flow.Leaf flf = new com.redmoon.oa.flow.Leaf();
+    flf = flf.getLeaf(wfp.getTypeCode());
+    FormDb fd = new FormDb();
+    fd = fd.getFormDb(flf.getFormCode());
+    if (!fd.isLoaded()) {
+        out.print("表单: " + flf.getFormCode() + " 不存在");
+        return;
+    }
+
     String code;
     String desc;
     RoleDb roleDb = new RoleDb();
@@ -146,8 +137,10 @@
                     o("dirCode").value = "<%=wfp.getDirCode()%>";
                     o("examine").value = "<%=wfp.getExamine()%>";
                 </script>
+                <span style="display: none">
                 <input type="checkbox" id="isLight" name="isLight" value="1" <%=wfp.isLight() ? "checked" : ""%> />
                 简易流程(支持@用户)
+                </span>
                 <span id="spanIsRecall">
                 <input type="checkbox" id="isRecall" name="isRecall" value="1" <%=wfp.isRecall()?"checked":""%>>
                 能否撤回
@@ -194,11 +187,6 @@
         <%
             String[][] rolePrivs = wfp.getRolePrivsOfFree();
             int privLen = rolePrivs.length;
-
-            com.redmoon.oa.flow.Leaf flf = new com.redmoon.oa.flow.Leaf();
-            flf = flf.getLeaf(wfp.getTypeCode());
-            FormDb fd = new FormDb();
-            fd = fd.getFormDb(flf.getFormCode());
 
             while (ir.hasNext()) {
                 RoleDb rd = (RoleDb) ir.next();
@@ -256,7 +244,7 @@
 
                         int len = fieldAry.length;
                         for (int k = 0; k < len; k++) {
-                            if (fieldNames.equals("")) {
+                            if (StrUtil.isEmpty(fieldNames)) {
                                 if (fieldAry[k].startsWith("nest.")) {
                                     Iterator irvfd = vfd.iterator();
                                     while (irvfd.hasNext()) {

@@ -11,6 +11,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.web.Global;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 
 public class DocTemplateForm extends AbstractForm {
@@ -33,7 +34,7 @@ public class DocTemplateForm extends AbstractForm {
                 throw new ErrMsgException("ret=" + ret + " " + fileUpload.getErrMessage(request));
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
         }
         return fileUpload;
     }

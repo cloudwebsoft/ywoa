@@ -12,7 +12,6 @@ import cn.js.fan.web.*;
 import com.cloudwebsoft.framework.util.*;
 import jeasy.analysis.*;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -33,7 +32,6 @@ import org.apache.lucene.search.*;
  */
 public class Indexer {
     String indexStorageDir;
-    transient Logger logger = Logger.getLogger(Document.class.getName());
 
     public Indexer() {
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
@@ -104,7 +102,7 @@ public class Indexer {
             ResultSet rs = null;
             String connname = Global.getDefaultDB();
             if (connname.equals("")) {
-                logger.info("Document:默认数据库名为空！");
+                LogUtil.getLog(getClass()).info("Document:默认数据库名为空！");
             }
             Conn conn = new Conn(connname);
             try {
@@ -137,7 +135,7 @@ public class Indexer {
                     }
                 }
             } catch (SQLException e) {
-                logger.error("index:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("index:" + e.getMessage());
                 return false;
             } finally {
                 if (conn != null) {
@@ -155,6 +153,7 @@ public class Indexer {
     }
 
     public Analyzer getAnalyzer() {
+        // MMAnalyzer极易中文分词组件
         MMAnalyzer analyzer = new MMAnalyzer(2);
         return analyzer;
     }
@@ -168,8 +167,7 @@ public class Indexer {
             Query query = parser.parse(queryString);
             hits = is.search(query);
         } catch (Exception e) {
-            LogUtil.getLog(getClass()).error("seacher:" + e.getMessage());
-            System.out.print(e);
+            LogUtil.getLog(getClass()).error(e);
         }
         return hits;
     }

@@ -11,6 +11,7 @@ import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.base.QObjectDb;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 
 public class PaperNoDb extends QObjectDb {
@@ -40,8 +41,7 @@ public class PaperNoDb extends QObjectDb {
             try {
 				create(new JdbcTemplate(), new Object[]{new Integer(pnpd.getInt("id")), new Integer(0), new Integer(year)});
 			} catch (ResKeyException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 				return null;
 			}
             return this;
@@ -58,8 +58,7 @@ public class PaperNoDb extends QObjectDb {
 			try {
 				pnd.del();
 			} catch (ResKeyException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 	}

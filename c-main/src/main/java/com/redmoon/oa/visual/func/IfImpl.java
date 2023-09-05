@@ -7,6 +7,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.NumberUtil;
 import cn.js.fan.util.StrUtil;
@@ -31,6 +32,7 @@ import com.redmoon.oa.visual.FuncUtil;
  */
 public class IfImpl implements IFuncImpl {
 	
+	@Override
 	public String func(IFormDAO fdao, String[] func) throws ErrMsgException {
 		String[] params = StrUtil.split(func[1], ",");
 		if (params==null || params.length<3) {
@@ -51,10 +53,16 @@ public class IfImpl implements IFuncImpl {
 		// if (exp, a, b)
 		boolean re = evalBoolean(fdao, params[0]);
 		
-		CalculateFuncImpl cfi = new CalculateFuncImpl();		
-		String a = cfi.calculate(fdao, params[1], -1, true);
-		String b = cfi.calculate(fdao, params[2], -1, true);
-		
+		String a, b;
+		if (params.length == 3) {
+			a = params[1];
+			b = params[2];
+		}
+		else {
+			a = CalculateFuncImpl.calculate(fdao, params[1], -1, true);
+			b = CalculateFuncImpl.calculate(fdao, params[2], -1, true);
+		}
+
 		String r = "";
 		if (re) {
 			r = a;
@@ -62,7 +70,12 @@ public class IfImpl implements IFuncImpl {
 		else {
 			r = b;
 		}
-		
+
+		// 如果长度为3,则直接返回，因为a、b有可能为字符串
+		if (params.length == 3) {
+			return r;
+		}
+
 		Double ret = StrUtil.toDouble(r);
 		if (digit==-1) {
     		// digit=-1 表示不需要精度
@@ -123,11 +136,12 @@ public class IfImpl implements IFuncImpl {
 	 * @Description: 
 	 * @param fdao
 	 * @param formula
-	 * @param digit
-	 * @param isRoundTo5
 	 * @return
 	 */
-	public boolean evalBoolean(IFormDAO fdao, String formula) throws ErrMsgException {		
+	public boolean evalBoolean(IFormDAO fdao, String formula) throws ErrMsgException {
+		// 将now替换为毫秒
+		formula = formula.replaceAll("now", String.valueOf(System.currentTimeMillis()));
+
 		ArrayList<String> aryList = getSymbolsWithBracket(formula);
 	    Object[] ary = aryList.toArray();
 		for (int i=0; i<ary.length; i++) {
@@ -150,12 +164,20 @@ public class IfImpl implements IFuncImpl {
 			    		}
 			    		else {
 							String v = fdao.getFieldValue(el);
-							if (v=="")
+							if (ffSub.getType().equals(FormField.TYPE_DATE)) {
+								v = String.valueOf(DateUtil.parse(v, "yyyy-MM-dd").getTime());
+							}
+							else if (ffSub.getType().equals(FormField.TYPE_DATE_TIME)) {
+								v = String.valueOf(DateUtil.parse(v, "yyyy-MM-dd HH:mm:ss").getTime());
+							}
+
+							if ("".equals(v)) {
 								ary[i] = "0";
-							else if (!StrUtil.isDouble(v))
+							} else if (!StrUtil.isDouble(v)) {
 								ary[i] = "0";
-							else
+							} else {
 								ary[i] = "(" + v + ")";
+							}
 			    		}
 			    	}
 				}
@@ -174,13 +196,12 @@ public class IfImpl implements IFuncImpl {
         	return ret.booleanValue();
         }
         catch (ScriptException ex) {
-        	ex.printStackTrace();
+        	LogUtil.getLog(getClass()).error(ex);
         	LogUtil.getLog(getClass()).error(StrUtil.trace(ex));
         	throw new ErrMsgException(ex.getMessage());
         }		
         catch (ClassCastException e) {
-        	e.printStackTrace();
-        	LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
         	throw new ErrMsgException(e.getMessage());
         }
 	}	

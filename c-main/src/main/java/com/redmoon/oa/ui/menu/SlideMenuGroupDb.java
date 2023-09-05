@@ -37,7 +37,7 @@ public class SlideMenuGroupDb extends QObjectDb {
         try {
             ri = jt.executeQuery(sql, new Object[] {userName});
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         if (ri.hasNext()) {
             ResultRecord rr = (ResultRecord)ri.next();
@@ -60,7 +60,7 @@ public class SlideMenuGroupDb extends QObjectDb {
             try {
                 smgd.del();
             } catch (ResKeyException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
 
@@ -103,7 +103,7 @@ public class SlideMenuGroupDb extends QObjectDb {
             } catch (ResKeyException ex1) {
                 ex1.printStackTrace();
             } catch (SQLException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
 
             Iterator ir2 = smd.list(sql2, new Object[]{smgd.getLong("id")}).iterator();

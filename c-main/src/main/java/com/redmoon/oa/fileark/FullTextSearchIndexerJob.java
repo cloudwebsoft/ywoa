@@ -1,11 +1,12 @@
 package com.redmoon.oa.fileark;
 
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.JobDataMap;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
+
 import java.util.Date;
 import cn.js.fan.util.DateUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+
 import java.util.Vector;
 
 /**
@@ -20,7 +21,12 @@ import java.util.Vector;
  * @author not attributable
  * @version 1.0
  */
-public class FullTextSearchIndexerJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class FullTextSearchIndexerJob extends QuartzJobBean {
     public FullTextSearchIndexerJob() {
     }
 
@@ -29,9 +35,9 @@ public class FullTextSearchIndexerJob implements Job {
      *
      * @param jobExecutionContext JobExecutionContext
      * @throws JobExecutionException
-     * @todo Implement this org.quartz.Job method
      */
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
 

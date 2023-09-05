@@ -1,9 +1,15 @@
 package com.cloudwebsoft.framework.base;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import cn.js.fan.util.XMLProperties;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
@@ -17,6 +23,8 @@ import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 /**
  *
@@ -57,17 +65,30 @@ public class QDBConfig {
             xmlPath = confURL.getFile();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
+                Resource resource = new ClassPathResource(fileName);
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
+                root = doc.getRootElement();
+
+                /*FileInputStream fin = new FileInputStream(xmlPath);
                 doc = sb.build(fin);
                 root = doc.getRootElement();
-                fin.close();
+                fin.close();*/
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
+            } catch (JDOMException | IOException e) {
                 LogUtil.getLog(this.getClass().getName()).error(e.getMessage());
-            } catch (java.io.IOException e) {
-                LogUtil.getLog(this.getClass().getName()).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(getClass()).error(e);
+                    }
+                }
             }
         }
     }
@@ -125,7 +146,7 @@ public class QDBConfig {
                         del = del.replaceAll("[\\t\\n\\r]", " ");	                        
                         
                         String connName = StrUtil.getNullStr(child.getChildText("connName"));
-                        if (connName.equals("")) {
+                        if ("".equals(connName)) {
                             connName = Global.getDefaultDB();
                         }
 
@@ -135,13 +156,14 @@ public class QDBConfig {
                             blockSize = Integer.parseInt(sBlockSize);
                         }
                         catch (Exception e) {
-                            System.out.println(this.getClass().getName() + " getQDBTable:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error(e);
                             blockSize = 100;
                         }
 
                         String formValidatorFile = StrUtil.getNullStr(child.getChildText("formValidatorFile"));
-                        if (formValidatorFile.equals(""))
+                        if ("".equals(formValidatorFile)) {
                             formValidatorFile = FORM_VALIDATOR_FILE;
+                        }
 
                         boolean objCachable = !StrUtil.getNullStr(child.getChildText("objCachable")).equals("false");
                         boolean listCachable = !StrUtil.getNullStr(child.getChildText("listCachable")).equals("false");
@@ -204,28 +226,30 @@ public class QDBConfig {
                                 Element e = (Element) irunit.next();
                                 String keyName = e.getChildTextTrim("name");
                                 String keyType = e.getChildTextTrim("type");
-                                if (keyType.equalsIgnoreCase("String"))
-                                    key.put(keyName,
-                                            new KeyUnit(PrimaryKey.TYPE_STRING, orders));
-                                else if (keyType.equals("int"))
+                                if ("String".equalsIgnoreCase(keyType)) {
+                                    key.put(keyName, new KeyUnit(PrimaryKey.TYPE_STRING, orders));
+                                } else if ("int".equals(keyType)) {
                                     key.put(keyName, new KeyUnit(PrimaryKey.TYPE_INT, orders));
-                                else if (keyType.equals("long"))
+                                } else if ("long".equals(keyType)) {
                                     key.put(keyName, new KeyUnit(PrimaryKey.TYPE_LONG, orders));
-                                else if (keyType.equals("Date"))
+                                } else if ("Date".equals(keyType)) {
                                     key.put(keyName, new KeyUnit(PrimaryKey.TYPE_DATE, orders));
-                                else
+                                } else {
                                     LogUtil.getLog(getClass()).info("getDBTable: 解析表" + name + "的主键时，type=" + keyType + " 未知!");
+                                }
                                 orders++;
                             }
                             dt.primaryKey = new PrimaryKey(key);
-                        } else
+                        } else {
                             LogUtil.getLog(getClass()).error("getDBTable: 解析表" + name + "的主键时，type=" + pkType + " 未知!");
+                        }
                         try {
-                            QCache.getInstance().putInGroup(objName, cacheGroup,
-                                               dt);
+                            QCache.getInstance().putInGroup(objName, cacheGroup, dt);
                         } catch (Exception e) {
                             LogUtil.getLog(getClass()).error("getDBTable:" + e.getMessage());
                         }
+
+                        break;
                     }
                 }
             }

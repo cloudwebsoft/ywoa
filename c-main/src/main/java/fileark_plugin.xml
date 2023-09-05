@@ -23,7 +23,7 @@
 		</skins>
 	</plugin>
  -->	
-	<plugin code="wiki">
+	<!--<plugin code="wiki">
 		<author></author>
 		<classUnit>cn.js.fan.module.cms.plugin.wiki.WikiUnit</classUnit>		
 		<version>1.0</version>
@@ -43,6 +43,6 @@
 				<path>skin/default</path>
 			</skin>
 		</skins>
-	</plugin>	
+	</plugin>	-->
 		
 </config>

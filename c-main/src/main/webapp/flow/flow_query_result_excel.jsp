@@ -2,6 +2,8 @@
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit"%>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr"%>
 <%@ page import="com.redmoon.oa.util.RequestUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 if (!privilege.isUserPrivValid(request, "read")) {
 	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
@@ -44,9 +46,11 @@ OutputStream os = response.getOutputStream();
 
 try {
 	// File file = new File(Global.getAppPath(request) + "flow/blank.xls");
-	File file = new File(Global.getRealPath() + "flow/blank.xls");
-
-	Workbook wb = Workbook.getWorkbook(file);
+	/*File file = new File(Global.getRealPath() + "flow/blank.xls");
+	Workbook wb = Workbook.getWorkbook(file);*/
+	ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+	InputStream inputStream = configUtil.getFile("templ/blank.xls");
+	Workbook wb = Workbook.getWorkbook(inputStream);
 
 	WorkbookSettings settings = new WorkbookSettings ();  
 	settings.setWriteAccess(null);  

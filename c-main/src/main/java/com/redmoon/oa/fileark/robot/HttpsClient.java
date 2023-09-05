@@ -1,5 +1,7 @@
 package com.redmoon.oa.fileark.robot;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,7 +89,7 @@ public class HttpsClient {
                 ret = bos.toString("utf-8");
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(HttpsClient.class).error(e);
         }
         return ret;
     }
@@ -110,7 +112,7 @@ public class HttpsClient {
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
             return httpRequest(link, method, data);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(HttpsClient.class).error(e);
         }
         return "";
     }

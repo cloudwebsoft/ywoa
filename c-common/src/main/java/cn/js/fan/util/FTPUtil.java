@@ -1,5 +1,7 @@
 package cn.js.fan.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 
 import java.io.FileInputStream;
@@ -38,15 +40,15 @@ public class FTPUtil {
                 message = ftp.getReplyString();
                 close();
             } else {
-                if (isPassiveMode)
+                if (isPassiveMode) {
                     ftp.enterLocalPassiveMode();
-                else
+                } else {
                     ftp.enterLocalActiveMode();
+                }
             }
         }
         catch (IOException e) {
-            message = "Connect error.";
-            System.out.println(getClass() + ": " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
         // ftp.changeWorkingDirectory(workDirectory);
@@ -62,15 +64,16 @@ public class FTPUtil {
     public boolean storeFile(String ftpPath, String filePath) throws IOException {
         ftp.changeWorkingDirectory("");
 
-        ftp.setFileType(ftp.BINARY_FILE_TYPE);
+        ftp.setFileType(FTP.BINARY_FILE_TYPE);
         // ftp.setFileType(ftp.ASCII_FILE_TYPE);
 
         String fileName;
-        if (ftpPath.equals(""))
+        if ("".equals(ftpPath)) {
             return false;
-        else {
-            if (ftpPath.startsWith("/"))
+        } else {
+            if (ftpPath.startsWith("/")) {
                 ftpPath = ftpPath.substring(1);
+            }
             String[] paths = ftpPath.split("/");
             int len = paths.length;
             fileName = paths[len-1];
@@ -79,13 +82,11 @@ public class FTPUtil {
                 if (ftp.getReplyCode()!=250) {
                     ftp.makeDirectory(paths[i]);
                     ftp.changeWorkingDirectory(paths[i]);
-                    // System.out.println(getClass() + " replyString=" + ftp.getReplyString());
                 }
             }
         }
         FileInputStream is = new FileInputStream(filePath);
         boolean re = ftp.storeFile(fileName, is); // new BufferedInputStream(is));
-        // System.out.println(getClass() + " re=" + re + " replyCode=" + ftp.getReplyString());
         is.close();
         message = ftp.getReplyString();
         return ftp.getReplyCode()==226;
@@ -101,7 +102,7 @@ public class FTPUtil {
                 ftp.disconnect();
             }
             catch (IOException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             ftp = null;
         }
@@ -118,7 +119,7 @@ public class FTPUtil {
             re = ftp.dele(path);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -136,7 +137,6 @@ public class FTPUtil {
 
     public void test() throws Exception {
         if (!connect("127.0.0.1", 21, "cws", "1", true)) {
-            // System.out.println("连接失败");
             return;
         }
         //如果是中文名必需进行字符集转换
@@ -144,40 +144,37 @@ public class FTPUtil {
         //  "gb2312"), "iso-8859-1")); //在服务器创建目录
 
         // ftp.changeWorkingDirectory("/123");
-        System.out.println(getClass() + " replyString=" + ftp.getReplyString());
 
-       // storeFile("/111/222/5.rar", "c:/5.rar");
-        System.out.println(getClass() + " upfile replyString=" + ftp.getReplyString());
+        // storeFile("/111/222/5.rar", "c:/5.rar");
 
         del("/111/222/2.jpg");
-        System.out.println(getClass() + " replyString1=" + ftp.getReplyString());
 
 /*
-        // System.out.println("ftp.systemName=" + ftp.getSystemName());
+        // LogUtil.getLog(getClass()).info("ftp.systemName=" + ftp.getSystemName());
         FTPFile[] ftpFiles = ftp.listFiles();
         if (ftpFiles != null) {
             for (int i = 0; i < ftpFiles.length; i++) {
-                System.out.println("ftp file name=" + StrUtil.Unicode2GB(ftpFiles[i].getName()));
-                // System.out.println(ftpFiles[i].isFile());
+                LogUtil.getLog(getClass()).info("ftp file name=" + StrUtil.Unicode2GB(ftpFiles[i].getName()));
+                // LogUtil.getLog(getClass()).info(ftpFiles[i].isFile());
                 if (ftpFiles[i].isFile()) {
                     FTPFile ftpf = new FTPFile();
-                    System.out.println("EXECUTE_PERMISSION=" +
+                    LogUtil.getLog(getClass()).info("EXECUTE_PERMISSION=" +
                                        ftpf.hasPermission(FTPFile.GROUP_ACCESS,
                             FTPFile.EXECUTE_PERMISSION));
-                    System.out.println("READ_PERMISSION=" +
+                    LogUtil.getLog(getClass()).info("READ_PERMISSION=" +
                                        ftpf.hasPermission(FTPFile.USER_ACCESS,
                             FTPFile.READ_PERMISSION));
-                    System.out.println("EXECUTE_PERMISSION=" +
+                    LogUtil.getLog(getClass()).info("EXECUTE_PERMISSION=" +
                                        ftpf.hasPermission(FTPFile.USER_ACCESS,
                             FTPFile.EXECUTE_PERMISSION));
-                    System.out.println("WRITE_PERMISSION=" +
+                    LogUtil.getLog(getClass()).info("WRITE_PERMISSION=" +
                                        ftpf.hasPermission(FTPFile.USER_ACCESS,
                             FTPFile.WRITE_PERMISSION));
-                    System.out.println("READ_PERMISSION=" +
+                    LogUtil.getLog(getClass()).info("READ_PERMISSION=" +
                                        ftpf.hasPermission(FTPFile.WORLD_ACCESS,
                             FTPFile.READ_PERMISSION));
                 }
-                //System.out.println(ftpFiles[i].getUser());
+                //LogUtil.getLog(getClass()).info(ftpFiles[i].getUser());
             }
         }
  */
@@ -203,7 +200,7 @@ public class FTPUtil {
             FtpUtil ftpApache1 = new FtpUtil();
             ftpApache1.test();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 */

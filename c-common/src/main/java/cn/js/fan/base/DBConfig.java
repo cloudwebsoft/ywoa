@@ -1,13 +1,18 @@
 package cn.js.fan.base;
 
-import java.io.FileInputStream;
+import java.io.*;
 import java.net.URL;
+
+import cn.js.fan.util.XMLProperties;
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
-import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.List;
 import java.util.Iterator;
 import cn.js.fan.cache.jcs.RMCache;
@@ -18,6 +23,9 @@ import cn.js.fan.base.ObjectCache;
 import org.jdom.output.Format;
 import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.xml.sax.InputSource;
 
 /**
  *
@@ -35,39 +43,38 @@ import cn.js.fan.util.StrUtil;
 public class DBConfig {
     RMCache rmCache;
     final String group = "DBConfig";
-
-    static Logger logger;
-    public final String FILENAME = "configDB.xml";
-
+    
     public static Document doc = null;
     public static Element root = null;
-    public static String xmlPath;
     public static boolean isInited = false;
-    public static URL confURL;
+
+    private static final String CONFIG_FILENAME = "configDB.xml";
 
     public DBConfig() {
         rmCache = RMCache.getInstance();
-
-        logger = Logger.getLogger(this.getClass().getName());
-        confURL = getClass().getResource("/" + FILENAME);
     }
 
     public static void init() {
         if (!isInited) {
-            xmlPath = confURL.getFile();
-            xmlPath = URLDecoder.decode(xmlPath);
-
-            SAXBuilder sb = new SAXBuilder();
+            InputStream inputStream = null;
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
+                Resource resource = new ClassPathResource(CONFIG_FILENAME);
+                inputStream = resource.getInputStream();
+                SAXBuilder sb = new SAXBuilder();
+                doc = sb.build(inputStream);
                 root = doc.getRootElement();
-                fin.close();
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(DBConfig.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(DBConfig.class ).error(e);
+                    }
+                }
             }
         }
     }
@@ -82,7 +89,7 @@ public class DBConfig {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -97,7 +104,7 @@ public class DBConfig {
             dt = (DBTable)rmCache.getFromGroup(objectName, group);
         }
         catch (Exception e) {
-            logger.error("getDBTable1:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDBTable1:" + e.getMessage());
         }
         if (dt==null) {
             init();
@@ -108,7 +115,7 @@ public class DBConfig {
                 while (ir.hasNext()) {
                     Element child = (Element) ir.next();
                     String objName = child.getAttributeValue("objName");
-                    // logger.info("objName=" + objName + " objectName=" + objectName);
+                    // LogUtil.getLog(getClass()).info("objName=" + objName + " objectName=" + objectName);
                     if (objName.equals(objectName)) {
                         String name = child.getAttributeValue("name");
                         String create = child.getChildText("create");
@@ -125,7 +132,7 @@ public class DBConfig {
                         try {
                             oc = (ObjectCache) Class.forName(objCache).newInstance();
                         } catch (Exception e) {
-                            logger.error("getDBTable:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getDBTable:" + e.getMessage());
                         }
 
                         dt = new DBTable(name, objName);
@@ -167,28 +174,36 @@ public class DBConfig {
                                 Element e = (Element) irunit.next();
                                 String keyName = e.getChildTextTrim("name");
                                 String keyType = e.getChildTextTrim("type");
-                                if (keyType.equals("String"))
-                                    key.put(keyName,
-                                            new KeyUnit(PrimaryKey.TYPE_STRING, orders));
-                                else if (keyType.equals("int"))
-                                    key.put(keyName, new KeyUnit(PrimaryKey.TYPE_INT, orders));
-                                else if (keyType.equals("long"))
-                                    key.put(keyName, new KeyUnit(PrimaryKey.TYPE_LONG, orders));
-                                else if (keyType.equals("Date"))
-                                    key.put(keyName, new KeyUnit(PrimaryKey.TYPE_DATE, orders));
-                                else
-                                    logger.error("getDBTable: 解析表" + name + "的主键时，type=" + keyType + " 未知!");
+                                switch (keyType) {
+                                    case "String":
+                                        key.put(keyName,
+                                                new KeyUnit(PrimaryKey.TYPE_STRING, orders));
+                                        break;
+                                    case "int":
+                                        key.put(keyName, new KeyUnit(PrimaryKey.TYPE_INT, orders));
+                                        break;
+                                    case "long":
+                                        key.put(keyName, new KeyUnit(PrimaryKey.TYPE_LONG, orders));
+                                        break;
+                                    case "Date":
+                                        key.put(keyName, new KeyUnit(PrimaryKey.TYPE_DATE, orders));
+                                        break;
+                                    default:
+                                        LogUtil.getLog(getClass()).error("getDBTable: 解析表" + name + "的主键时，type=" + keyType + " 未知!");
+                                        break;
+                                }
                                 orders ++;
                             }
                             dt.primaryKey = new PrimaryKey(key);
-                        } else
-                            logger.info("getDBTable: 解析表" + name + "的主键时，type=" + pkType + " 未知!");
+                        } else {
+                            LogUtil.getLog(getClass()).info("getDBTable: 解析表" + name + "的主键时，type=" + pkType + " 未知!");
+                        }
 
                         try {
                             rmCache.putInGroup(objName, group,
                                                dt);
                         } catch (Exception e) {
-                            logger.error("getDBTable:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getDBTable:" + e.getMessage());
                         }
                         return dt;
                     }
@@ -200,23 +215,6 @@ public class DBConfig {
         }
         return dt;
     }
-
-    public void writemodify() {
-        String indent = "    ";
-        boolean newLines = true;
-        Format format = Format.getPrettyFormat();
-        format.setIndent(indent);
-        format.setEncoding("utf-8");
-
-        // XMLOutputter outp = new XMLOutputter(indent, newLines, "utf-8");
-        XMLOutputter outp = new XMLOutputter(format);
-        try {
-            FileOutputStream fout = new FileOutputStream(xmlPath);
-            outp.output(doc, fout);
-            fout.close();
-        } catch (java.io.IOException e) {}
-    }
-
 }
 
 

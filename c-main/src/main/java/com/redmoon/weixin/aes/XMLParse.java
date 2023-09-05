@@ -13,6 +13,7 @@ import java.io.StringReader;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -48,7 +49,7 @@ class XMLParse {
 			result[2] = nodelist2.item(0).getTextContent();
 			return result;
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(XMLParse.class).error(e);
 			throw new AesException(AesException.ParseXmlError);
 		}
 	}

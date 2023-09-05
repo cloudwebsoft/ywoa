@@ -1,0 +1,16 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title th:inline="text">提示</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<BR><BR>
+<table class="infoMsgTable" width="80%" height="30" border="0" align="center" cellpadding="0" cellspacing="0" style="border:1px #93BFDF solid; border-collapse:collapse">
+    <tr>
+        <td align="center" style="background-color:#C8E1FF"><span style="color: #000000;font-weight: bold;"><div class="infoMsg" th:text="${msg}"></div></span></td>
+    </tr>
+</table>
+</body>
+</html>

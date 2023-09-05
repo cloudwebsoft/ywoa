@@ -94,8 +94,7 @@ public class PlanController {
 			json.put("msg", "操作成功！");
 			json.put("result", result);						
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return json.toString();				
@@ -148,12 +147,8 @@ public class PlanController {
 			}
 			result.put("notepapers", ary);
 			json.put("result", result);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (JSONException | ErrMsgException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return json.toString();
 	}
@@ -176,16 +171,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -211,16 +203,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -265,7 +254,6 @@ public class PlanController {
 		java.util.Date d = null;
 		java.util.Date end = null;
 		try {
-			System.out.println(getClass() + " " + beginDate);
 			d = DateUtil.parse(beginDate, "yyyy-MM-dd HH:mm");
 			end = DateUtil.parse(endDate, "yyyy-MM-dd HH:mm");
 		} catch (Exception e) {
@@ -281,8 +269,7 @@ public class PlanController {
 				json.put("ret", 0);
 				json.put("msg", errmsg);				
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			return json.toString();			
 		}
@@ -290,8 +277,6 @@ public class PlanController {
 		String skey = ParamUtil.get(request, "skey");
 		Privilege privilege = new Privilege();
 		String userName = privilege.getUserName(skey);
-		
-		// System.out.println("skey=" + skey + " userName=" + userName);
 
 		PlanDb pd = new PlanDb();
 		pd = pd.getLastNotepaper(userName);
@@ -312,7 +297,7 @@ public class PlanController {
 		pd.setUserName(userName);
 		pd.setNotepaper(isNotepaper);
 		pd.setMaker(userName);
-		if (isRemind == true) {
+		if (isRemind) {
 			pd.setRemind(isRemind);
 			java.util.Date dt = DateUtil.addMinuteDate(d, -before);
 			pd.setRemindDate(dt);
@@ -335,12 +320,8 @@ public class PlanController {
 				json.put("ret", 0);
 				json.put("msg", "操作失败！");				
 			}
-		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (ErrMsgException | JSONException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return json.toString();				
 	}    	
@@ -357,11 +338,13 @@ public class PlanController {
 		boolean isRemind = false;
 
 		title = request.getParameter("title");
-		if (title.equals(""))
+		if (title.equals("")) {
 			errmsg += "标题不能为空！\n";
+		}
 		content = request.getParameter("content");
-		if (content.equals(""))
+		if (content.equals("")) {
 			errmsg += "内容不能为空！\n";
+		}
 		beginDate = ParamUtil.get(request, "beginDate");
 		endDate = ParamUtil.get(request, "endDate");
 
@@ -382,14 +365,14 @@ public class PlanController {
 		java.util.Date d = null;
 		java.util.Date end = null;
 		try {
-			System.out.println(getClass() + " " + beginDate);
 			d = DateUtil.parse(beginDate, "yyyy-MM-dd HH:mm");
 			end = DateUtil.parse(endDate, "yyyy-MM-dd HH:mm");
 		} catch (Exception e) {
 			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
 		}
-		if (d == null || end == null)
+		if (d == null || end == null) {
 			errmsg += "日期未填写或格式错误！\n";
+		}
 		
 		JSONObject json = new JSONObject();	
 		
@@ -398,8 +381,7 @@ public class PlanController {
 				json.put("ret", 0);
 				json.put("msg", errmsg);				
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			return json.toString();			
 		}
@@ -413,7 +395,7 @@ public class PlanController {
 		pd.setMyDate(d);
 		pd.setEndDate(end);
 		pd.setUserName(userName);
-		if (isRemind == true) {
+		if (isRemind) {
 			pd.setRemind(isRemind);
 			java.util.Date dt = DateUtil.addMinuteDate(d, -before);
 			pd.setRemindDate(dt);
@@ -434,12 +416,8 @@ public class PlanController {
 				json.put("ret", 0);
 				json.put("msg", "操作失败！");				
 			}
-		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (ErrMsgException | JSONException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return json.toString();				
 	}    	
@@ -461,16 +439,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -489,16 +464,13 @@ public class PlanController {
 			json.put("ret", 1);
 			json.put("msg", "操作成功！");
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -528,16 +500,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -579,16 +548,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -646,16 +612,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -687,16 +650,13 @@ public class PlanController {
 				json.put("msg", "操作失败！");				
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", 0);
 				json.put("msg", e.getMessage());				
 			} catch (JSONException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}

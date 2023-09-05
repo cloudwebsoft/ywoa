@@ -24,6 +24,18 @@ response.setHeader("X-xss-protection", "0;mode=block");
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
 	<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
 	<style>
+		input[readonly] {
+			background-color: #ddd;
+		}
+
+		select[readonly] {
+			background-color: #ddd;
+		}
+
+		textarea[readonly] {
+			background-color: #ddd;
+		}
+
 		.nest-link {
 			margin: 5px 0px;
 		}
@@ -60,6 +72,16 @@ response.setHeader("X-xss-protection", "0;mode=block");
 			-moz-opacity: 0.8;
 			opacity: .80;
 			filter: alpha(opacity=80);
+		}
+
+		.module-field-select {
+			font-weight: bold;
+		}
+		.nest-sheet-source {
+			font-weight: bold;
+		}
+		.nest-sheet-dest {
+			font-weight: bold;
 		}
 	</style>
 	<%@ include file="../inc/nocache.jsp" %>
@@ -219,26 +241,37 @@ while (ir.hasNext()) {
 
 				if ("nest_table".equals(ff.getMacroType()) || "nest_sheet".equals(ff.getMacroType())) {
 					String defaultVal = StrUtil.decodeJSON(ff.getDescription());
-					JSONObject jsonObj = new JSONObject(defaultVal);
-					String nestModuleCode = jsonObj.getString("destForm");
-					String sourceModuleCode = jsonObj.getString("sourceForm");
+					JSONObject jsonObj = null;
+					try {
+						jsonObj = new JSONObject(defaultVal);
+						String nestModuleCode = jsonObj.getString("destForm");
+						String sourceModuleCode = jsonObj.getString("sourceForm");
 
-					ModuleSetupDb nestMsd = new ModuleSetupDb();
-					nestMsd = nestMsd.getModuleSetupDb(nestModuleCode);
-					StringBuilder sb = new StringBuilder();
-					sb.append("<div class='nest-link'><a href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + nestMsd.getString("form_code") + "&code=" + nestModuleCode + "')\">嵌套模块</a>：");
-					sb.append("<a href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + nestMsd.getString("form_code") + "')\">" + nestMsd.getString("name") + "</a>");
-					sb.append("</div>");
-					out.print(sb);
-
-					if (!"".equals(sourceModuleCode)) {
-						ModuleSetupDb sourceMsd = new ModuleSetupDb();
-						sourceMsd = sourceMsd.getModuleSetupDb(sourceModuleCode);
-						sb = new StringBuilder();
-						sb.append("<div class='nest-link'><a href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + sourceMsd.getString("form_code") + "&code=" + sourceModuleCode + "')\">来源模块</a>：");
-						sb.append("<a href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + sourceMsd.getString("form_code") + "')\">" + sourceMsd.getString("name") + "</a>");
+						ModuleSetupDb nestMsd = new ModuleSetupDb();
+						nestMsd = nestMsd.getModuleSetupDb(nestModuleCode);
+						StringBuilder sb = new StringBuilder();
+						if (nestMsd != null) {
+							sb.append("<div class='nest-link'><a href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + nestMsd.getString("form_code") + "&code=" + nestModuleCode + "')\">嵌套模块</a>：");
+							sb.append("<a class='nest-sheet-dest' href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + nestMsd.getString("form_code") + "')\">" + nestMsd.getString("name") + "</a>");
+						}
 						sb.append("</div>");
 						out.print(sb);
+
+						if (!"".equals(sourceModuleCode)) {
+							ModuleSetupDb sourceMsd = new ModuleSetupDb();
+							sourceMsd = sourceMsd.getModuleSetupDb(sourceModuleCode);
+							sb = new StringBuilder();
+							if (sourceMsd != null) {
+								sb.append("<div class='nest-link'><a href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + sourceMsd.getString("form_code") + "&code=" + sourceModuleCode + "')\">来源模块</a>：");
+								sb.append("<a class='nest-sheet-source' href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + sourceMsd.getString("form_code") + "')\">" + sourceMsd.getString("name") + "</a>");
+								sb.append("</div>");
+								out.print(sb);
+							} else {
+								out.print("来源：" + sourceModuleCode + " 不存在");
+							}
+						}
+					} catch (JSONException e) {
+						e.printStackTrace();
 					}
 				}
 				else if ("module_field_select".equals(ff.getMacroType())) {
@@ -256,11 +289,16 @@ while (ir.hasNext()) {
 						String moduleCode = json.getString("sourceFormCode");
 						ModuleSetupDb msd = new ModuleSetupDb();
 						msd = msd.getModuleSetupDb(moduleCode);
-						StringBuilder sb = new StringBuilder();
-						sb.append("<div class=nest-link><a href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + msd.getString("form_code") + "&code=" + moduleCode + "')\">来源模块</a>：");
-						sb.append("<a href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + msd.getString("form_code") + "')\">" + msd.getString("name") + "</a>");
-						sb.append("</div>");
-						out.print(sb);
+						if (msd != null) {
+							StringBuilder sb = new StringBuilder();
+							sb.append("<div class=nest-link><a href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + msd.getString("form_code") + "&code=" + moduleCode + "')\">来源模块</a>：");
+							sb.append("<a class='module-field-select' href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + msd.getString("form_code") + "')\">" + msd.getString("name") + "</a>");
+							sb.append("</div>");
+							out.print(sb);
+						}
+						else {
+							out.print("源表单" + moduleCode + "不存在");
+						}
 					}
 					catch (JSONException e) {
 						e.printStackTrace();
@@ -365,26 +403,37 @@ while (ir.hasNext()) {
 
 					if ("nest_table".equals(ff.getMacroType()) || "nest_sheet".equals(ff.getMacroType())) {
 						String defaultVal = StrUtil.decodeJSON(ff.getDescription());
-						JSONObject jsonObj = new JSONObject(defaultVal);
-						String nestModuleCode = jsonObj.getString("destForm");
-						String sourceModuleCode = jsonObj.getString("sourceForm");
+						JSONObject jsonObj = null;
+						try {
+							jsonObj = new JSONObject(defaultVal);
+							String nestModuleCode = jsonObj.getString("destForm");
+							String sourceModuleCode = jsonObj.getString("sourceForm");
 
-						ModuleSetupDb nestMsd = new ModuleSetupDb();
-						nestMsd = nestMsd.getModuleSetupDb(nestModuleCode);
-						StringBuilder sb = new StringBuilder();
-						sb.append("<div class='nest-link'><a href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + nestMsd.getString("form_code") + "&code=" + nestModuleCode + "')\">嵌套模块</a>：");
-						sb.append("<a href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + nestMsd.getString("form_code") + "')\">" + nestMsd.getString("name") + "</a>");
-						sb.append("</div>");
-						out.print(sb);
-
-						if (!"".equals(sourceModuleCode)) {
-							ModuleSetupDb sourceMsd = new ModuleSetupDb();
-							sourceMsd = sourceMsd.getModuleSetupDb(sourceModuleCode);
-							sb = new StringBuilder();
-							sb.append("<div class=nest-link><a href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + sourceMsd.getString("form_code") + "&code=" + sourceModuleCode + "')\">来源模块</a>：");
-							sb.append("<a href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + sourceMsd.getString("form_code") + "')\">" + sourceMsd.getString("name") + "</a>");
-							sb.append("</div>");
+							ModuleSetupDb nestMsd = new ModuleSetupDb();
+							nestMsd = nestMsd.getModuleSetupDb(nestModuleCode);
+							StringBuilder sb = new StringBuilder();
+							if (nestMsd != null) {
+								sb.append("<div class='nest-link'><a href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + nestMsd.getString("form_code") + "&code=" + nestModuleCode + "')\">嵌套模块</a>：");
+								sb.append("<a class='nest-sheet-dest' href='javascript:;' onclick=\"addTab('" + nestMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + nestMsd.getString("form_code") + "')\">" + nestMsd.getString("name") + "</a>");
+								sb.append("</div>");
+							}
 							out.print(sb);
+
+							if (!"".equals(sourceModuleCode)) {
+								ModuleSetupDb sourceMsd = new ModuleSetupDb();
+								sourceMsd = sourceMsd.getModuleSetupDb(sourceModuleCode);
+								if (sourceMsd != null) {
+									sb = new StringBuilder();
+									sb.append("<div class=nest-link><a href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + sourceMsd.getString("form_code") + "&code=" + sourceModuleCode + "')\">来源模块</a>：");
+									sb.append("<a class='nest-sheet-source' href='javascript:;' onclick=\"addTab('" + sourceMsd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + sourceMsd.getString("form_code") + "')\">" + sourceMsd.getString("name") + "</a>");
+									sb.append("</div>");
+									out.print(sb);
+								} else {
+									out.print("来源：" + sourceModuleCode + " 不存在");
+								}
+							}
+						} catch (JSONException e) {
+							e.printStackTrace();
 						}
 					}
 					else if ("module_field_select".equals(ff.getMacroType())) {
@@ -402,11 +451,16 @@ while (ir.hasNext()) {
 							String moduleCode = json.getString("sourceFormCode");
 							ModuleSetupDb msd = new ModuleSetupDb();
 							msd = msd.getModuleSetupDb(moduleCode);
-							StringBuilder sb = new StringBuilder();
-							sb.append("<div class=nest-link><a href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + msd.getString("form_code") + "&code=" + moduleCode + "')\">来源模块</a>：");
-							sb.append("<a href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + msd.getString("form_code") + "')\">" + msd.getString("name") + "</a>");
-							sb.append("</div>");
-							out.print(sb);
+							if (msd != null) {
+								StringBuilder sb = new StringBuilder();
+								sb.append("<div class=nest-link><a href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/visual/module_field_list.jsp?formCode=" + msd.getString("form_code") + "&code=" + moduleCode + "')\">来源模块</a>：");
+								sb.append("<a class='module-field-select' href='javascript:;' onclick=\"addTab('" + msd.getString("name") + "', '" + request.getContextPath() + "/admin/form_edit.jsp?code=" + msd.getString("form_code") + "')\">" + msd.getString("name") + "</a>");
+								sb.append("</div>");
+								out.print(sb);
+							}
+							else {
+								out.print("源表单" + moduleCode + "不存在");
+							}
 						}
 						catch (JSONException e) {
 							e.printStackTrace();
@@ -509,6 +563,7 @@ $(function() {
 		%>
 		jConfirm("您确定要添加下列字段：<%=sbAdded%> \r\n 删除下列字段：<%=sbDeleted%> ？", "提示", function (r) {
 			if (r) {
+				$('#submitBtn').attr('disabled', true);
 				$('#myFormEdit').submit();
 			}
 		});
@@ -518,6 +573,7 @@ $(function() {
 		%>
 		jConfirm("您确定要删除下列字段：<%=sbDeleted%> ？", "提示", function (r) {
 			if (r) {
+				$('#submitBtn').attr('disabled', true);
 				$('#myFormEdit').submit();
 			}
 		});
@@ -527,6 +583,7 @@ $(function() {
 		%>
 		jConfirm("您确定要添加下列字段：<%=sbAdded%> ？", "提示", function (r) {
 			if (r) {
+				$('#submitBtn').attr('disabled', true);
 				$('#myFormEdit').submit();
 			}
 		});
@@ -536,6 +593,7 @@ $(function() {
 		%>
 		jConfirm("您确定要修改么？", "提示", function (r) {
 			if (r) {
+				$('#submitBtn').attr('disabled', true);
 				$('#myFormEdit').submit();
 			}
 		});

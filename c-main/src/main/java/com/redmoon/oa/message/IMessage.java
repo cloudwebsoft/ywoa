@@ -41,7 +41,7 @@ public interface IMessage {
 
     int getId();
 
-    Vector getAttachments();
+    Vector<Attachment> getAttachments();
 
     int getBox();
 
@@ -85,7 +85,7 @@ public interface IMessage {
 
     void setReaded(boolean readed);
 
-    void setAttachments(Vector attachments);
+    void setAttachments(Vector<Attachment> attachments);
 
     void setBox(int box);
 

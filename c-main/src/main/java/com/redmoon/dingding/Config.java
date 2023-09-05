@@ -3,27 +3,29 @@ package com.redmoon.dingding;
 
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.util.XMLProperties;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
-import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.xml.sax.InputSource;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.List;
 
 public class Config {
-    // public: constructor to load driver and connect db
+
     private XMLProperties properties;
     private final String CONFIG_FILENAME = "config_dingding.xml";
-
-    private String cfgpath;
-
-    Logger logger;
 
     Document doc = null;
     Element root = null;
@@ -36,24 +38,17 @@ public class Config {
 
     @SuppressWarnings("deprecation")
 	public void init() {
-        logger = Logger.getLogger(Config.class.getName());
-        URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
-        cfgpath = cfgURL.getFile();
-        cfgpath = URLDecoder.decode(cfgpath);
-        properties = new XMLProperties(cfgpath);
-
-        SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
-            doc = sb.build(fin);
+            ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+            String xml = configUtil.getXml(CONFIG_FILENAME);
+
+            SAXBuilder sb = new SAXBuilder();
+            doc = sb.build(new InputSource(new StringReader(xml)));
             root = doc.getRootElement();
-            fin.close();
-        } catch (JDOMException e) {
-            LogUtil.getLog(getClass()).error("init:" + e.getMessage());
-        } catch (IOException e) {
+            properties = new XMLProperties(CONFIG_FILENAME, doc, true);
+        } catch (JDOMException | IOException e) {
             LogUtil.getLog(getClass()).error("init:" + e.getMessage());
         }
-
     }
 
     public Element getRoot() {
@@ -82,8 +77,9 @@ public class Config {
         String p = getProperty(name);
         if (StrUtil.isNumeric(p)) {
             return Integer.parseInt(p);
-        } else
+        } else {
             return -65536;
+        }
     }
 
     public boolean getBooleanProperty(String name) {

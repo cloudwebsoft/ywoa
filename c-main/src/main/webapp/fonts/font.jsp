@@ -1,6 +1,6 @@
+<%@ page contentType="text/html; charset=utf-8" %>
 <%@ page import="cn.js.fan.web.SkinUtil" %>
 <%@ page import="cn.js.fan.util.ParamUtil" %>
-<%@ page contentType="text/html; charset=utf-8" %>
 <%
     String kind = ParamUtil.get(request, "kind");
     if ("".equals(kind)) {

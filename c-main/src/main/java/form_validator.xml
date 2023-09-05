@@ -29,37 +29,6 @@
 		<desc>用于入职申请流程开始后将入职申请表中picture字段的值复制到人员基本信息表中</desc>
 		<date>2013-08</date>
 	</form>-->
-	
-	<form code="lydj">
-		<author>tbl</author>
-		<className>com.redmoon.oa.officeequip.validator.OfficeLyFormValidator</className>
-		<desc>用于办公用品领用流程开始后将办公用品领用表单中的值复制到办公用品领用登记表中</desc>
-		<date>2015-05</date>
-	</form>
-		<form code="rkdj">
-		<author>tbl</author>
-		<className>com.redmoon.oa.officeequip.validator.OfficeAddFormValidator</className>
-		<desc>用于办公用品入库流程开始后将办公用品入库表单中的值复制到办公用品入库表中</desc>
-		<date>2015-05</date>
-	</form>
-		<form code="jcdj">
-		<author>tbl</author>
-		<className>com.redmoon.oa.officeequip.validator.OfficeJcFormValidator</className>
-		<desc>用于办公用品借出流程开始后将办公用品借出表单中的值复制到办公用品借出表中</desc>
-		<date>2015-05</date>
-	</form>
-		<form code="ghwpex">
-		<author>tbl</author>
-		<className>com.redmoon.oa.officeequip.validator.OfficeGhFormValidator</className>
-		<desc>用于办公用品归还流程开始后将办公用品归还表单中的值复制到办公用品归还表中</desc>
-		<date>2015-05</date>
-	</form>
-		<form code="bgyppd">
-		<author>tbl</author>
-		<className>com.redmoon.oa.officeequip.validator.OfficePdFormValidator</className>
-		<desc>用于办公用品库存盘点流程开始后将盘点表单中的值复制到盘点表中</desc>
-		<date>2015-05</date>
-	</form>
 
 	<form code="tzgg">
 		<author>wm</author>

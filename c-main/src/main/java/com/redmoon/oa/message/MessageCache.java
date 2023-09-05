@@ -3,6 +3,7 @@ package com.redmoon.oa.message;
 import cn.js.fan.base.ObjectCache;
 import cn.js.fan.db.Conn;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,7 +30,7 @@ public class MessageCache extends ObjectCache {
         try {
 			rmCache.remove(prefix + receiver, group);
 		} catch (Exception e) {
-			logger.error("refreshNewCountOfReceiver: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("refreshNewCountOfReceiver: " + e.getMessage());
 		}
     }
 }

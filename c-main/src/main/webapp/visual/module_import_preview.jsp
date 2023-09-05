@@ -262,7 +262,7 @@
                             } else {
                                 // 加上所关联的主模块的字段
                                 mrd = mrd.getModuleRelateDb(formCode, tabAry[m]
-                                        .substring("form_table_".length()));
+                                        .substring("ft_".length()));
                                 sql += " and " + tabAry[m] + ".cws_id="
                                         + FormDb.getTableName(formCode) + "." + mrd.getString("relate_field");
                             }
@@ -401,7 +401,7 @@
     <%
         }
     %>
-    <div style="text-align:center">
+    <div style="text-align:center; margin: 10px">
         <textarea id="importRecords" name="importRecords" style="display: none;"><%=rowAry.toString()%></textarea>
         <%
             if (!hasErr) {

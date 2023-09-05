@@ -1,5 +1,8 @@
 package cn.js.fan.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.apache.commons.codec.binary.Base64;
+
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
@@ -119,10 +122,11 @@ public class ImageUtil {
 
         double dHeight = ((double)thumbWidth)/w * h;
         int height = (int)dHeight;
-        if (w>thumbWidth)
-            image = getScaleImage(image, thumbWidth, height);
-        else
-            image = getScaleImage(image, w, h);
+        if (w>thumbWidth) {
+			image = getScaleImage(image, thumbWidth, height);
+		} else {
+			image = getScaleImage(image, w, h);
+		}
         String name = output.getName();
         String format = name.substring(name.lastIndexOf('.')+1).toLowerCase();
         return ImageIO.write(image, format, output);
@@ -151,7 +155,6 @@ public class ImageUtil {
 					StringBuffer sb = new StringBuffer();
 					sb.append(src.getParent()).append("\\").append(fileName)
 							.append("_data").append(i).append(ext);
-					System.out.println(sb.toString());
 					File file2 = new File(sb.toString());
 					// 创建写文件的输出流
 					OutputStream out = new FileOutputStream(file2);
@@ -173,12 +176,12 @@ public class ImageUtil {
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				LogUtil.getLog(ImageUtil.class).error(e);
 			} finally {
 				try {
 					in.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					LogUtil.getLog(ImageUtil.class).error(e);
 				}
 			}
 		}
@@ -195,7 +198,6 @@ public class ImageUtil {
 			StringBuffer sb = new StringBuffer();
 			sb.append(file.getParent()).append("\\").append(fileName).append(
 					endName);
-			System.out.println(sb.toString());
 			try {
 				// 读取小文件的输入流
 				InputStream in = new FileInputStream(file);
@@ -210,10 +212,9 @@ public class ImageUtil {
 				out.close();
 				in.close();
 			} catch (Exception e) {
-				e.printStackTrace();
+				LogUtil.getLog(ImageUtil.class).error(e);
 			}
 		}
-		System.out.println("文件合并完成！");
 	}
 	
 	public static BufferedImage readImage(String imgUrl) {
@@ -227,9 +228,9 @@ public class ImageUtil {
             	img = toBufferedImage(new File(imgUrl));
             }
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         }
 
         return img;
@@ -257,9 +258,9 @@ public class ImageUtil {
             GraphicsConfiguration gc = gs.getDefaultConfiguration();
             bimage = gc.createCompatibleImage(width, height, transparency);
         } catch (HeadlessException e) {
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         }
 
         if (bimage == null) {
@@ -292,7 +293,7 @@ public class ImageUtil {
             ImageIO.write(newImage, "JPEG", new File(fileName + suffix + "." + ext));
         } catch (IOException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         }  
         */
     	PixelGrabber pg = new PixelGrabber(newImage, 0, 0, -1, -1, true);
@@ -306,10 +307,10 @@ public class ImageUtil {
             ImageIO.write(bi, "JPEG", new File(fileName + suffix + "." + ext));
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(ImageUtil.class).error(e);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(ImageUtil.class).error(e);
 		}
              
         return newImage;
@@ -319,7 +320,7 @@ public class ImageUtil {
 /*      try {
             ImageUtil.splitFile("d:\\hysht.jpg", 10);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         }*/
     	String imgUrl = "d:\\test\\hysht.jpg";
     	
@@ -364,6 +365,23 @@ public class ImageUtil {
     	    	ImageUtil.cat(x, y, blockW, blockH, img, fileName, suffix, ext);
     		}
     	}
-    }	
+    }
+
+	// 参数imgFile：图片完整路径
+	public static String getImgBase64Str(String imgFile) {
+		// 将图片文件转化为字节数组字符串，并对其进行Base64编码处理
+		InputStream in = null;
+		byte[] data = null;
+		// 读取图片字节数组
+		try {
+			in = new FileInputStream(imgFile);
+			data = new byte[in.available()];
+			in.read(data);
+			in.close();
+		} catch (IOException e) {
+			LogUtil.getLog(ImageUtil.class).error(e);
+		}
+		return Base64.encodeBase64String(data);
+	}
 }
 

@@ -2,18 +2,14 @@ package com.cloudwebsoft.framework.template.plugin;
 
 import java.io.Serializable;
 import com.cloudwebsoft.framework.template.ITemplate;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class PluginUnit implements Serializable {
-    transient Logger logger = Logger.getLogger(this.getClass().getName());
 
     public PluginUnit() {
     }
 
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(this.getClass().getName());
-        }
     }
 
     public PluginUnit(String code) {
@@ -49,7 +45,7 @@ public class PluginUnit implements Serializable {
         try {
             ipu = (ITemplate) Class.forName(classUnit).newInstance();
         } catch (Exception e) {
-            logger.error("getITemplate:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getITemplate:" + e.getMessage());
         }
         return ipu;
     }

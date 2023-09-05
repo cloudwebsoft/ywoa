@@ -1,21 +1,29 @@
 package com.redmoon.oa.basic;
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-
-import javax.servlet.http.HttpServletRequest;
-
+import cn.js.fan.base.ObjectDb;
+import cn.js.fan.db.*;
+import cn.js.fan.security.SecurityUtil;
+import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
-import com.redmoon.oa.person.UserSetupDb;
+import com.redmoon.oa.flow.DirectoryView;
+import com.redmoon.oa.flow.Leaf;
 import com.redmoon.oa.pvg.Privilege;
-import com.redmoon.oa.ui.menu.PresetLeaf;
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.visual.ModulePrivDb;
 
-import cn.js.fan.base.*;
-import cn.js.fan.db.*;
-import cn.js.fan.security.*;
-import cn.js.fan.util.*;
+import javax.servlet.http.HttpServletRequest;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Vector;
+
+import static com.cloudweb.oa.utils.SpringUtil.getServletContext;
 
 public class TreeSelectDb extends ObjectDb implements Serializable {
 	
@@ -32,9 +40,20 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 
     private boolean open = true;
     private boolean contextMenu = true;
-    
+
+    public static final String PRE_CODE_LINK = "link";
     public static final String PRE_CODE_FLOW = "flow";
     public static final String PRE_CODE_MODULE = "module";
+
+    public String getMetaData() {
+        return metaData;
+    }
+
+    public void setMetaData(String metaData) {
+        this.metaData = metaData;
+    }
+
+    private String metaData;
 
     public String getLink() {
 		return link;
@@ -78,12 +97,12 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
         int child_count = 0, orders = 1;
         String parent_code = "-1";
 
-        String insertsql = "insert into oa_tree_select (code,name,parentCode,description,orders,rootCode,childCount,layer, link, pre_code, form_code) values (";
+        String insertsql = "insert into oa_tree_select (code,name,parentCode,description,orders,rootCode,childCount,layer, link, pre_code, form_code, meta_data) values (";
         insertsql += StrUtil.sqlstr(rootCode) + "," + StrUtil.sqlstr(rootName) +
                 "," + StrUtil.sqlstr(parent_code) +
                 "," + StrUtil.sqlstr(description) + "," +
                 orders + "," + StrUtil.sqlstr(rootCode) + "," +
-                child_count + ",1, " + StrUtil.sqlstr(link) + "," + StrUtil.sqlstr(preCode) + "," + StrUtil.sqlstr(formCode) + ")";
+                child_count + ",1, " + StrUtil.sqlstr(link) + "," + StrUtil.sqlstr(preCode) + "," + StrUtil.sqlstr(formCode) + "," + StrUtil.sqlstr(metaData) + ")";
 
         int r = 0;
         JdbcTemplate jt = new JdbcTemplate();
@@ -107,7 +126,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 
     @Override
 	public void setQuerySave() {
-        this.QUERY_SAVE = "update oa_tree_select set name=?,description=?,type=?,orders=?,childCount=?,layer=?, link=?, pre_code=?, form_code=?,is_open=?,is_context_menu=? where code=?";
+        this.QUERY_SAVE = "update oa_tree_select set name=?,description=?,type=?,orders=?,childCount=?,layer=?, link=?, pre_code=?, form_code=?,is_open=?,is_context_menu=?,meta_data=? where code=?";
     }
 
     @Override
@@ -117,7 +136,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 
     @Override
 	public void setQueryLoad() {
-        this.QUERY_LOAD = "select code,name,description,parentCode,rootCode,orders,layer,childCount,addDate,type, link, pre_code, form_code,is_open,is_context_menu from oa_tree_select where code=?";
+        this.QUERY_LOAD = "select code,name,description,parentCode,rootCode,orders,layer,childCount,addDate,type, link, pre_code, form_code,is_open,is_context_menu,meta_data from oa_tree_select where code=?";
     }
 
     @Override
@@ -144,15 +163,13 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                 formCode = StrUtil.getNullStr(rs.getString(13));
                 open = rs.getInt(14) == 1;
                 contextMenu = rs.getInt(15) == 1;
+                metaData = StrUtil.getNullStr(rs.getString(16));
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -234,11 +251,11 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
         return loaded;
     }
 
-    public Vector getChildren() {
-        Vector v = new Vector();
+    public Vector<TreeSelectDb> getChildren() {
+        Vector<TreeSelectDb> v = new Vector<>();
         String sql = "select code from oa_tree_select where parentCode=? order by orders";
         Conn conn = new Conn(connname);
-        ResultSet rs = null;
+        ResultSet rs;
         try {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, code);
@@ -246,17 +263,13 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
             if (rs != null) {
                 while (rs.next()) {
                     String c = rs.getString(1);
-                    //logger.info("child=" + c);
                     v.addElement(getTreeSelectDb(c));
                 }
             }
         } catch (SQLException e) {
-            logger.error("getChildren:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getChildren:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return v;
     }
@@ -266,15 +279,13 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
      * @return ResultIterator
      * @throws ErrMsgException
      */
-    public Vector getAllChild(Vector vt, TreeSelectDb leaf) throws ErrMsgException {
-        Vector children = leaf.getChildren();
+    public Vector<TreeSelectDb> getAllChild(Vector<TreeSelectDb> vt, TreeSelectDb leaf) throws ErrMsgException {
+        Vector<TreeSelectDb> children = leaf.getChildren();
         if (children.isEmpty()) {
             return children;
         }
         vt.addAll(children);
-        Iterator ir = children.iterator();
-        while (ir.hasNext()) {
-        	TreeSelectDb lf = (TreeSelectDb) ir.next();
+        for (TreeSelectDb lf : children) {
             getAllChild(vt, lf);
         }
         return vt;
@@ -300,14 +311,13 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
             ps.setInt(4, orders);
             ps.setInt(5, childCount);
             ps.setInt(6, layer);
-            
             ps.setString(7, link);
             ps.setString(8, preCode);
             ps.setString(9, formCode);
             ps.setInt(10, open?1:0);
             ps.setInt(11, contextMenu?1:0);
-            
-            ps.setString(12, code);
+            ps.setString(12, metaData);
+            ps.setString(13, code);
 
             r = conn.executePreUpdate();
             try {
@@ -317,17 +327,13 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                     dcm.refreshSave(code, parentCode);
                 }
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -351,7 +357,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                      ",type=" + type +
                      ",parentCode=" + StrUtil.sqlstr(newParentCode) + ",orders=" + neworders +
                      ",layer=" + (parentLayer+1) + ",is_open=" + (open?1:0) + ",is_context_menu=" + (contextMenu?1:0) +
-                     ",link=" + StrUtil.sqlstr(link) + ", pre_code=" + StrUtil.sqlstr(preCode) + ", form_code=" + StrUtil.sqlstr(formCode) +
+                     ",link=" + StrUtil.sqlstr(link) + ", pre_code=" + StrUtil.sqlstr(preCode) + ", form_code=" + StrUtil.sqlstr(formCode) + ", meta_data=" + StrUtil.sqlstr(metaData) +
                      " where code=" + StrUtil.sqlstr(code);
 
         String oldParentCode = parentCode;
@@ -385,16 +391,14 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                     }
 
                     // 更新其所有子结点的layer
-                    Vector vt = new Vector();
+                    Vector<TreeSelectDb> vt = new Vector<>();
                     getAllChild(vt, this);
                     // int childcount = vt.size();
-                    Iterator ir = vt.iterator();
-                    while (ir.hasNext()) {
-                        TreeSelectDb childlf = (TreeSelectDb)ir.next();
+                    for (TreeSelectDb childlf : vt) {
                         int layer = parentLayer + 1 + 1;
                         String pcode = childlf.getParentCode();
                         while (!pcode.equals(code)) {
-                            layer ++;
+                            layer++;
                             TreeSelectDb lfp = getTreeSelectDb(pcode);
                             pcode = lfp.getParentCode();
                         }
@@ -402,7 +406,6 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                         childlf.setLayer(layer);
                         childlf.save();
                     }
-
 
                     // 将其原来的父结点的孩子数-1
                     TreeSelectDb oldParentLeaf = getTreeSelectDb(oldParentCode);
@@ -414,16 +417,16 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                     newParentLeaf.setChildCount(newParentLeaf.getChildCount() + 1);
                     newParentLeaf.save();
 
-                    logger.info("save: newParentLeaf.childcount=" + newParentLeaf.getChildCount() + " oldParentLeaf.childcount=" + oldParentLeaf.getChildCount() + " oldparentCode=" + oldParentCode + " newParentCode=" + newParentCode + " neworders=" + neworders);
+                    LogUtil.getLog(getClass()).info("save: newParentLeaf.childcount=" + newParentLeaf.getChildCount() + " oldParentLeaf.childcount=" + oldParentLeaf.getChildCount() + " oldparentCode=" + oldParentCode + " newParentCode=" + newParentCode + " neworders=" + neworders);
 
                 }
             } catch (Exception e) {
-                logger.error("save1: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("save1: " + e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("save2: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("save2: " + e.getMessage());
         }
-        boolean re = r == 1 ? true : false;
+        boolean re = r == 1;
         if (re) {
             dcm.removeFromCache(code);
         }
@@ -449,7 +452,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                 ",type=" + type +
                 ",parentCode=" + StrUtil.sqlstr(newParentCode) + ",orders=" + newOrder +
                 ",layer=" + (parentLayer + 1) + ",is_open=" + (open ? 1 : 0) + ",is_context_menu=" + (contextMenu?1:0) +
-                ",link=" + StrUtil.sqlstr(link) + ", pre_code=" + StrUtil.sqlstr(preCode) + ", form_code=" + StrUtil.sqlstr(formCode) +
+                ",link=" + StrUtil.sqlstr(link) + ", pre_code=" + StrUtil.sqlstr(preCode) + ", form_code=" + StrUtil.sqlstr(formCode) + ", meta_data=" + StrUtil.sqlstr(metaData) +
                 " where code=" + StrUtil.sqlstr(code);
 
         String oldParentCode = parentCode;
@@ -483,16 +486,14 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                     }
 
                     // 更新其所有子结点的layer
-                    Vector vt = new Vector();
+                    Vector<TreeSelectDb> vt = new Vector<>();
                     getAllChild(vt, this);
                     // int childcount = vt.size();
-                    Iterator ir = vt.iterator();
-                    while (ir.hasNext()) {
-                        TreeSelectDb childlf = (TreeSelectDb)ir.next();
+                    for (TreeSelectDb childlf : vt) {
                         int layer = parentLayer + 1 + 1;
                         String pcode = childlf.getParentCode();
                         while (!pcode.equals(code)) {
-                            layer ++;
+                            layer++;
                             TreeSelectDb lfp = getTreeSelectDb(pcode);
                             pcode = lfp.getParentCode();
                         }
@@ -501,7 +502,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                         childlf.save();
                     }
                     
-                 // 更新当前父结点中，位于本leaf之后的orders
+                    // 更新当前父结点中，位于本leaf之后的orders
                     sql = "select code from oa_tree_select where parentCode=" + StrUtil.sqlstr(newParentCode) +
                           " and orders>=" + newOrder;
                     ri = conn.executeQuery(sql);
@@ -511,7 +512,6 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                         dd.setOrders(dd.getOrders() + 1);
                         dd.save();
                     }
-
 
                     // 将其原来的父结点的孩子数-1
                     TreeSelectDb oldParentLeaf = getTreeSelectDb(oldParentCode);
@@ -523,16 +523,16 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                     newParentLeaf.setChildCount(newParentLeaf.getChildCount() + 1);
                     newParentLeaf.save();
 
-                    logger.info("save: newParentLeaf.childcount=" + newParentLeaf.getChildCount() + " oldParentLeaf.childcount=" + oldParentLeaf.getChildCount() + " oldparentCode=" + oldParentCode + " newParentCode=" + newParentCode + " neworders=" + newOrder);
+                    LogUtil.getLog(getClass()).info("save: newParentLeaf.childcount=" + newParentLeaf.getChildCount() + " oldParentLeaf.childcount=" + oldParentLeaf.getChildCount() + " oldparentCode=" + oldParentCode + " newParentCode=" + newParentCode + " neworders=" + newOrder);
 
                 }
             } catch (Exception e) {
-                logger.error("save1: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("save1: " + e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("save2: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("save2: " + e.getMessage());
         }
-        boolean re = r == 1 ? true : false;
+        boolean re = r == 1;
         if (re) {
             dcm.removeFromCache(code);
         }
@@ -546,7 +546,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 
         String updatesql = "";
 
-        String insertsql = "insert into oa_tree_select (code,name,parentCode,description,orders,rootCode,childCount,layer,type,addDate,link,pre_code,form_code,is_open,is_context_menu) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        String insertsql = "insert into oa_tree_select (code,name,parentCode,description,orders,rootCode,childCount,layer,type,addDate,link,pre_code,form_code,is_open,is_context_menu,meta_data) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         if (!SecurityUtil.isValidSql(insertsql)) {
             throw new ErrMsgException("请勿输入非法字符如;号等！");
@@ -572,23 +572,18 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
             ps.setString(13, childleaf.getFormCode());
             ps.setInt(14, open?1:0);
             ps.setInt(15, contextMenu?1:0);
+            ps.setString(16, childleaf.getMetaData());
             conn.executePreUpdate();
-            if (ps!=null) {
-                ps.close();
-                ps = null;
-            }
+
+            ps.close();
             conn.executeUpdate(updatesql);
             TreeSelectCache dcm = new TreeSelectCache();
             dcm.refreshAddChild(code);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("请检查编码是否有重复！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         return true;
@@ -615,8 +610,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 	        	return getTreeSelectDb(rr.getString(1));
 	        }			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 
     	return null;
@@ -627,7 +621,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
         String sql = "delete from oa_tree_select where code=" + StrUtil.sqlstr(leaf.getCode());
         RMConn rmconn = new RMConn(connname);
         try {
-            re = rmconn.executeUpdate(sql) == 1 ? true : false;
+            re = rmconn.executeUpdate(sql) == 1;
             sql = "update oa_tree_select set orders=orders-1 where parentCode=" + StrUtil.sqlstr(leaf.getParentCode()) + " and orders>" + leaf.getOrders();
             rmconn.executeUpdate(sql);
             sql = "update oa_tree_select set childCount=childCount-1 where code=" + StrUtil.sqlstr(leaf.getParentCode());
@@ -635,7 +629,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
             TreeSelectCache dcm = new TreeSelectCache();
             dcm.refreshDel(leaf.getCode(), leaf.getParentCode());
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         finally {
@@ -647,9 +641,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 
     public synchronized void del(TreeSelectDb leaf) {
         delsingle(leaf);
-        Iterator children = leaf.getChildren().iterator();
-        while (children.hasNext()) {
-            TreeSelectDb lf = (TreeSelectDb) children.next();
+        for (TreeSelectDb lf : leaf.getChildren()) {
             del(lf);
         }
     }
@@ -665,7 +657,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
         RMConn rmconn = new RMConn(connname);
         TreeSelectDb bleaf = null;
         try {
-            if (direction.equals("down")) {
+            if ("down".equals(direction)) {
                 sql = "select code from oa_tree_select where parentCode=" +
                       StrUtil.sqlstr(parentCode) +
                       " and orders=" + (orders + 1);
@@ -681,7 +673,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                 bleaf = getTreeSelectDb(rr.getString(1));
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return bleaf;
     }
@@ -702,7 +694,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
             Conn conn = new Conn(connname);
             try {
                 conn.beginTrans();
-                if (direction.equals("down")) {
+                if ("down".equals(direction)) {
                     sql = "update oa_tree_select set orders=orders+1" +
                           " where code=" + StrUtil.sqlstr(code);
                     conn.executeUpdate(sql);
@@ -711,7 +703,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                     conn.executeUpdate(sql);
                 }
 
-                if (direction.equals("up")) {
+                if ("up".equals(direction)) {
                     sql = "update oa_tree_select set orders=orders-1" +
                           " where code=" + StrUtil.sqlstr(code);
                     conn.executeUpdate(sql);
@@ -722,15 +714,12 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
                 conn.commit();
                 TreeSelectCache dcm = new TreeSelectCache();
                 dcm.refreshMove(code, bleaf.getCode());
-            } catch (Exception e) {
+            } catch (SQLException e) {
                 conn.rollback();
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
                 return false;
             } finally {
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
         }
 
@@ -809,15 +798,15 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
 	 * @return
 	 */
     public String getLink(HttpServletRequest request) {
-        if (preCode.equals(PRE_CODE_MODULE)) {
+        if (PRE_CODE_MODULE.equals(preCode)) {
             // ModulePrivDb mpd = new ModulePrivDb();
-            return "visual/module_list.jsp?code=" + StrUtil.UrlEncode(formCode);
+            return "visual/moduleListPage.do?code=" + StrUtil.UrlEncode(formCode);
         }
-        else if (preCode.equals(PRE_CODE_FLOW)) {
+        else if (PRE_CODE_FLOW.equals(preCode)) {
         	return "flow_initiate1.jsp?op=" + StrUtil.UrlEncode(formCode);
         }
         else {
-        	if (link.indexOf("$")!=-1) {
+        	if (link.contains("$")) {
                 Privilege pvg = new Privilege();
         		/*UserSetupDb usd = new UserSetupDb();
         		usd = usd.getUserSetupDb(pvg.getUser(request));*/
@@ -825,7 +814,7 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
         		try {
 					lk = lk.replaceFirst("\\$userName", java.net.URLEncoder.encode(pvg.getUser(request),"GBK"));
 				} catch (UnsupportedEncodingException e) {
-					e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
 				}
         		return lk;
         	}
@@ -833,6 +822,49 @@ public class TreeSelectDb extends ObjectDb implements Serializable {
             // 链接需替换路径变量$u
             return link.replaceFirst("\\$u", request.getContextPath());
         }
+    }
+
+    public JSONObject getLinkJson(HttpServletRequest request) {
+        JSONObject json = new JSONObject();
+        if (PRE_CODE_MODULE.equals(preCode)) {
+            ModulePrivDb mpd = new ModulePrivDb(formCode);
+            json.put("isShow", mpd.canUserSee(SpringUtil.getUserName()));
+            json.put("type", PRE_CODE_MODULE);
+            json.put("moduleCode", formCode);
+        }
+        else if (PRE_CODE_FLOW.equals(preCode)) {
+            Leaf lf = new Leaf();
+            lf = lf.getLeaf(formCode);
+            if (lf == null) {
+                DebugUtil.e(getClass(), "getLinkJson", "流程: " + formCode + "不存在");
+                json.put("isShow", false);
+            }
+            else {
+                DirectoryView dv = new DirectoryView(lf);
+                json.put("isShow", dv.canUserSeeWhenInitFlow(request, lf));
+                json.put("type", PRE_CODE_FLOW);
+                json.put("flowTypeCode", formCode);
+            }
+        }
+        else {
+            String lk = link;
+            if (lk.contains("$")) {
+                Privilege pvg = new Privilege();
+        		/*UserSetupDb usd = new UserSetupDb();
+        		usd = usd.getUserSetupDb(pvg.getUser(request));*/
+                try {
+                    lk = lk.replaceFirst("\\$userName", java.net.URLEncoder.encode(pvg.getUser(request),"GBK"));
+                } catch (UnsupportedEncodingException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
+            // 链接需替换路径变量$u
+            // lk = lk.replaceFirst("\\$u", request.getContextPath());
+            json.put("isShow", true);
+            json.put("type", PRE_CODE_LINK);
+            json.put("link", lk);
+        }
+        return json;
     }
 
     public boolean isOpen() {

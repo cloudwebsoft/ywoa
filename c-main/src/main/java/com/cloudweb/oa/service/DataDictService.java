@@ -8,6 +8,7 @@ import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.basic.SelectDb;
 import com.redmoon.oa.basic.SelectMgr;
 import com.redmoon.oa.basic.SelectOptionDb;
@@ -81,8 +82,8 @@ public class DataDictService {
         FormDb fd = null;
         SelectMgr sm = new SelectMgr();
 
-        if (tableName.toLowerCase().startsWith("form_table_")) {
-            formCode = tableName.substring("form_table_".length());
+        if (tableName.toLowerCase().startsWith("ft_")) {
+            formCode = tableName.substring("ft_".length());
             if (formCode.endsWith("_log")) {
                 formCode = formCode.substring(0, formCode.length() - "_log".length());
                 isLog = true;
@@ -105,11 +106,11 @@ public class DataDictService {
             DatabaseMetaData dmd = connection.getCon().getMetaData();
 
             // 检查表是否存在
-            String sql = "select id,title from form_table_data_dict_table where name=?";
+            String sql = "select id,title from ft_data_dict_table where name=?";
             ResultIterator ri = jt.executeQuery(sql, new Object[]{tableName});
             // 如果表存在，则同步
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
+                ResultRecord rr = ri.next();
                 long tableId = rr.getLong(1);
                 String tableTitleOld = rr.getString(2);
                 // 如果与原有的表名不同，则更新表名
@@ -121,15 +122,15 @@ public class DataDictService {
                 }
 
                 Map<String, ResultRecord> map = new HashMap<String, ResultRecord>();
-                sql = "select name,title from form_table_data_dict_column where cws_id=" + tableId;
+                sql = "select name,title from ft_data_dict_column where cws_id='" + tableId + "'";
                 ResultIterator riCol = jt.executeQuery(sql);
                 while (riCol.hasNext()) {
-                    ResultRecord rrCol = (ResultRecord)riCol.next();
+                    ResultRecord rrCol = riCol.next();
                     map.put(rrCol.getString(1).toLowerCase(), rrCol);
                 }
 
                 FormDAO fdao = new FormDAO(fdCol);
-                ResultSet rs = dmd.getColumns(null, null, tableName, null);
+                ResultSet rs = dmd.getColumns(connection.getCon().getCatalog(), connection.getCon().getSchema(), tableName, null);
                 while (rs.next()) {
                     String columnName = rs.getObject(4).toString().toLowerCase();
                     String def = StrUtil.getNullStr(rs.getString("COLUMN_DEF")); // 默认值
@@ -215,8 +216,8 @@ public class DataDictService {
                     }
                     else {
                         // 已存在则同步
-                        sql = "update form_table_data_dict_column set title=?,def=?,data_type=?,len=?,nullable=?,is_autoincrement=?,remarks=? where name=? and cws_id=?";
-                        re = jt.executeUpdate(sql, new Object[]{title, def, type, columnSize, nullable, isAutoincrement, remarks, columnName, tableId})==1;
+                        sql = "update ft_data_dict_column set title=?,def=?,data_type=?,len=?,nullable=?,is_autoincrement=?,remarks=? where name=? and cws_id=?";
+                        re = jt.executeUpdate(sql, new Object[]{title, def, type, columnSize, nullable, isAutoincrement, remarks, columnName, String.valueOf(tableId)})==1;
                         map.remove(columnName); // 删除掉已处理的记录，剩余的就是待删除的字段
                     }
                 }
@@ -225,8 +226,8 @@ public class DataDictService {
                 // 从数据字典中删除已被删的字段
                 Set<String> ks = map.keySet();
                 for (String colName : ks) {
-                    sql = "delete from form_table_data_dict_column where name=? and cws_id=?";
-                    re = jt.executeUpdate(sql, new Object[]{colName, tableId}) == 1;
+                    sql = "delete from ft_data_dict_column where name=? and cws_id=?";
+                    re = jt.executeUpdate(sql, new Object[]{colName, String.valueOf(tableId)}) == 1;
                 }
 
                 re = true;
@@ -243,7 +244,7 @@ public class DataDictService {
                 long tableId = fdao.getId();
 
                 fdao = new FormDAO(fdCol);
-                ResultSet rs = dmd.getColumns(null, null, tableName, null);
+                ResultSet rs = dmd.getColumns(connection.getCon().getCatalog(), connection.getCon().getSchema(), tableName, null);
                 while (rs.next()) {
                     String columnName = rs.getObject(4).toString().toLowerCase();
                     String def = StrUtil.getNullStr(rs.getString("COLUMN_DEF")); // 默认值
@@ -319,7 +320,7 @@ public class DataDictService {
                 re = true;
             }
         } catch (SQLException | ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             jt.close();
             connection.close();
@@ -335,7 +336,7 @@ public class DataDictService {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }

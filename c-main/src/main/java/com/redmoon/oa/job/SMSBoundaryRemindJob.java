@@ -1,10 +1,8 @@
 package com.redmoon.oa.job;
 
 import com.redmoon.oa.sms.*;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.JobDataMap;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 import com.cloudwebsoft.framework.util.LogUtil;
 import cn.js.fan.util.StrUtil;
 import java.util.Date;
@@ -16,6 +14,7 @@ import com.redmoon.oa.person.UserDb;
 import java.util.Vector;
 import java.util.Iterator;
 import cn.js.fan.util.ResKeyException;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * <p>Title: </p>
@@ -29,7 +28,12 @@ import cn.js.fan.util.ResKeyException;
  * @author not attributable
  * @version 1.0
  */
-public class SMSBoundaryRemindJob implements Job{
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class SMSBoundaryRemindJob extends QuartzJobBean {
     public SMSBoundaryRemindJob() {
     }
 
@@ -76,7 +80,6 @@ public class SMSBoundaryRemindJob implements Job{
                 return ;
             }
         }else if(boundary==Config.SMS_BOUNDARY_MONTH){//短信月配额
-            System.out.println(getClass()+":::::::"+boundary);
             if(srdMgr.isRemind(Config.SMS_BOUNDARY_MONTH)){
                 //已经提醒过
                 return ;
@@ -119,13 +122,13 @@ public class SMSBoundaryRemindJob implements Job{
         }
     }
 
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         try {
             remind();
         } catch (Exception e) {
-            e.printStackTrace();
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         }
     }

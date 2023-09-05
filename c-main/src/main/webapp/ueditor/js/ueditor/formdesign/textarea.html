@@ -1,8 +1,8 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
-    <title>文本框</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>文本框</title>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
     <meta name="generator" content="www.leipi.org"/>
     <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
@@ -84,7 +84,11 @@
         </tr>
         <tr>
             <td>
-                宽 <input id="orgwidth" type="text" value="300" class="input-small span1" placeholder="auto"/> px
+                宽 <input id="orgwidth" type="text" value="300" class="input-small span1" placeholder="auto"/>
+                <select id="unit" style="width:60px">
+                    <option value="px" selected>px</option>
+                    <option value="%">%</option>
+                </select>
                 &nbsp;&nbsp;
                 高 <input id="orgheight" type="text" value="80" class="input-small span1" placeholder="auto"/> px
             </td>
@@ -92,14 +96,31 @@
         </tr>
         <tr>
             <th><span>只读</span></th>
-            <th><span>提示</span></th>
+            <th><span>只读类型</span></th>
         </tr>
         <tr>
             <td>
                 <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1"/>
             </td>
             <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span>提示</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
                 <textarea id="tip" name="tip" style="width:250px; height:100px"></textarea>
+            </td>
+            <td>
             </td>
         </tr>
         <tr>
@@ -117,6 +138,13 @@
             oNode = UE.plugins[thePlugins].editdom;
             var gName = oNode.getAttribute('name').replace(/&quot;/g, "\"");
             var gValue = oNode.getAttribute('value').replace(/&quot;/g, "\""), gTitle = oNode.getAttribute('title').replace(/&quot;/g, "\""), gFontSize = oNode.getAttribute('orgfontsize'), gWidth = oNode.getAttribute('orgwidth'), gHeight = oNode.getAttribute('orgheight'), gRich = oNode.getAttribute('orgrich');
+            var gUnit = 'px';
+            if (gWidth.endsWith('%')) {
+                gUnit = '%';
+                gWidth = gWidth.substring(0, gWidth.length - 1);
+            } else if (gWidth.endsWith('px')) {
+                gWidth = gWidth.substring(0, gWidth.length - 2);
+            }
 
             gValue = gValue == null ? '' : gValue;
             gTitle = gTitle == null ? '' : gTitle;
@@ -140,6 +168,7 @@
             }
             $G('orgfontsize').value = gFontSize;
             $G('orgwidth').value = gWidth;
+            $G('unit').value = gUnit;
             $G('orgheight').value = gHeight;
             $G('orgtype').value = gType;
             $G('orgname').setAttribute("readonly", true);
@@ -157,6 +186,12 @@
             } else {
                 $G('isReadOnly').checked = false;
             }
+
+            var gReadOnlyType = oNode.getAttribute("readOnlyType");
+            if (gReadOnlyType == null) {
+                gReadOnlyType = '';
+            }
+            $G('readOnlyType').value = gReadOnlyType;
 
             if (gMinT) {
                 $G('minT').value = gMinT;
@@ -185,6 +220,7 @@
         }
 
         var gValue = $G('orgvalue').value.replace(/\"/g, "&quot;"), gFontSize = $G('orgfontsize').value, gWidth = $G('orgwidth').value, gHeight = $G('orgheight').value;
+        var gUnit = $G('unit').value;
 
         var gType = $G('orgtype').value;
         var gCanNull = $G('canNull').checked ? 0 : 1;
@@ -193,6 +229,7 @@
         var gMaxT = $G('maxT').value;
         var gMaxV = $G('maxV').value;
         var gTip = $G('tip').value;
+        var gReadOnlyType = $G('readOnlyType').value;
 
         if (!oNode) {
             try {
@@ -212,7 +249,7 @@
                     html += ' orgfontsize = ""';
                 }
                 if (gWidth != '') {
-                    html += ' orgwidth = "' + gWidth + '"';
+                    html += ' orgwidth = "' + gWidth + gUnit + '"';
                 } else {
                     html += ' orgwidth = ""';
                 }
@@ -227,7 +264,7 @@
                     html += 'font-size:' + gFontSize + 'px;';
                 }
                 if (gWidth != '') {
-                    html += 'width:' + gWidth + 'px;';
+                    html += 'width:' + gWidth + gUnit + ';';
                 }
                 if (gHeight != '') {
                     html += 'height:' + gHeight + 'px;';
@@ -248,6 +285,7 @@
                 if ($G('isReadOnly').checked) {
                     html += ' readonly="readonly" ';
                 }
+                html += ' readOnlyType="' + gReadOnlyType + '" ';
 
                 html += ' tip="' + gTip + '"';
 
@@ -280,9 +318,10 @@
                 oNode.setAttribute('orgfontsize', '');
             }
             if (gWidth != '') {
-                oNode.style.width = gWidth + 'px';
-                oNode.setAttribute('orgwidth', gWidth);
+                oNode.style.width = gWidth + gUnit;
+                oNode.setAttribute('orgwidth', gWidth + gUnit);
             } else {
+                oNode.style.width = '';
                 oNode.setAttribute('orgwidth', '');
             }
             if (gHeight != '') {
@@ -309,6 +348,7 @@
             } else {
                 oNode.removeAttribute("readonly");
             }
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
             oNode.setAttribute("tip", gTip);
             delete UE.plugins[thePlugins].editdom;
         }

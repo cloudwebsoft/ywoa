@@ -61,8 +61,7 @@ public class MailHelper {
     		    try {
 					from = decodeText(from);
 				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
 				}
                 
             }
@@ -166,7 +165,6 @@ public class MailHelper {
         String subject = "";
         try {
             subject = StrUtil.getNullStr(mimeMessage.getSubject());
-            // System.out.println(getClass() + " subject=" +  subject);
 
             /*
             编码类似=?GB2312?B?u/nS8svjt6jIw7j20NS7r0ZMQVNItPPP1Mnxzf4=?= 需重新解码
@@ -192,7 +190,6 @@ public class MailHelper {
                 subject = MimeUtility.decodeText(subject);
             else {
                 String charset = getCharset(mimeMessage);
-                // System.out.println(getClass() + " charset=" + charset);
 
                 // 很多邮件不规范，会出现需要转码的问题，所以先尝试转码，然后判断是否需要转码
                 String subject2 = new String(subject.getBytes("ISO-8859-1"),
@@ -209,8 +206,6 @@ public class MailHelper {
         catch (java.io.UnsupportedEncodingException e) {
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         }
-        // System.out.println(getClass() + " subject2=" +  subject);
-
         return subject;
     }
 
@@ -254,7 +249,6 @@ public class MailHelper {
      */
     public String getBodyText() {
         String charset = getCharset(mimeMessage);
-        // System.out.println(getClass() + " charset=" + charset);
         String text = bodyText.toString();
         // 很多邮件不规范，会出现需要转码的问题，所以先尝试转码，然后判断是否需要转码
         String text2 = "";
@@ -280,12 +274,10 @@ public class MailHelper {
     public void getMailContent(Part part) {
         try {
             String contenttype = part.getContentType();
-            // System.out.println(getClass() + " contenttype=" + contenttype);
             int nameindex = contenttype.indexOf("name");
             boolean conname = false;
             if (nameindex != -1)
                 conname = true;
-            // System.out.println(getClass() + " CONTENTTYPE: " + contenttype + " conname=" + conname);
             if (part.isMimeType("text/plain") && !conname) {
                 if (bodyText.toString().equals("")) {
 
@@ -307,9 +299,6 @@ public class MailHelper {
             } else if (part.isMimeType("message/rfc822")) {
                 getMailContent((Part) part.getContent());
             }
-
-            // System.out.println(getClass() + " getContent end");
-
         }
         catch (MessagingException e) {
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));

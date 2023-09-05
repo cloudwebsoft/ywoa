@@ -12,8 +12,6 @@ import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
-import cn.js.fan.web.Global;
 /**
  * <p>Title: </p>
  * <p>Description: </p>
@@ -23,7 +21,6 @@ import cn.js.fan.web.Global;
  * @version 1.0
  */
 public class PersonGroupTypeMgr {
-  Logger logger = Logger.getLogger( PersonGroupTypeMgr.class.getName() );
 
   public PersonGroupTypeMgr() {
 

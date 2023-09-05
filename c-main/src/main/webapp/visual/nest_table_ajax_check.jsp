@@ -14,7 +14,6 @@ if (op.equals("check")) {
 	ParamChecker pck = new ParamChecker(request);
 	FormDb fd = new FormDb();
 	fd = fd.getFormDb(formCode);
-	// System.out.println(getClass() + " fieldName=" + fieldName);
 	FormField ff = fd.getFormField(fieldName);
 	try {
 		// LogUtil.getLog(getClass()).info("ruleStr=" + ruleStr);
@@ -25,9 +24,7 @@ if (op.equals("check")) {
 		out.print(json);
 		return;
 	}
-	
-	// System.out.println(getClass() + " pck.getMsgs().size()=" + pck.getMsgs().size());
-				
+
 	if (pck.getMsgs().size()!=0) {
 		json.put("ret", "0");
 		json.put("msg", pck.getMessage(false));

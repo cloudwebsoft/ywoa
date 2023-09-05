@@ -1,16 +1,16 @@
 <%@ page contentType="text/html; charset=utf-8" language="java" errorPage="" %>
-<%@ page import="com.cloudwebsoft.framework.db.*" %>
-<%@ page import="cn.js.fan.db.*" %>
-<%@ page import="cn.js.fan.util.*" %>
-<%@ page import="org.json.*" %>
-<%@ page import="com.redmoon.oa.sms.*" %>
-<%@ page import="com.redmoon.oa.flow.*" %>
-<%@ page import="com.redmoon.oa.flow.macroctl.*" %>
-<%@ page import="com.redmoon.oa.pvg.*" %>
-<%@ page import="java.util.regex.*" %>
-<%@ page import="org.json.*" %>
+<%@ page import="cn.js.fan.util.ParamUtil" %>
+<%@ page import="cn.js.fan.util.StrUtil" %>
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
+<%@ page import="com.redmoon.oa.flow.FormDb" %>
+<%@ page import="com.redmoon.oa.flow.FormField" %>
+<%@ page import="org.json.JSONException" %>
+<%@ page import="org.json.JSONObject" %>
 <%
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Content-Security-Policy", "default-src 'self' http: https:; script-src 'self'; frame-ancestors 'self'");
+    response.setContentType("text/javascript;charset=utf-8");
+
     int flowId = ParamUtil.getInt(request, "flowId", -1);
     long id = ParamUtil.getLong(request, "id", -1);
     String fieldName = ParamUtil.get(request, "fieldName");
@@ -169,7 +169,7 @@ function onFormulaCtlRelateFieldChange_<%=fieldName%>() {
 			    }
 		    }
             else {
-                jAlert(data.msg, "提示");
+                mui.alert(data.msg);
             }
 	    },
 	    complete: function(XMLHttpRequest, status){

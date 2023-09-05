@@ -12,8 +12,7 @@ public class FormatJSON {
 		String fotmatStr = FormatJSON.format(jsonStr);
 //		fotmatStr = fotmatStr.replaceAll("\n", "<br/>");
 //		fotmatStr = fotmatStr.replaceAll("\t", "    ");
-		System.out.println(fotmatStr);
-	} 
+	}
 	
 	/**
 	 * 得到格式化json数据  退格用\t 换行用\r

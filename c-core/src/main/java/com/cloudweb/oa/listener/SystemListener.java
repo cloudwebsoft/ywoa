@@ -1,14 +1,17 @@
 package com.cloudweb.oa.listener;
 
+import cn.js.fan.util.PropertiesUtil;
+import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.base.IConfigUtil;
 import com.cloudweb.oa.utils.CommonConstUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.broker.BrokerPlugin;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.security.AuthenticationUser;
 import org.apache.activemq.security.SimpleAuthenticationPlugin;
-import org.apache.activemq.store.kahadb.KahaDBStore;
-import org.apache.activemq.xbean.BrokerFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +28,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 /**
@@ -45,25 +49,66 @@ public class SystemListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         try {
-            // log.info("应用启动......");
+            log.info("SystemListener contextInitialized...");
 
-            Config config = Config.getInstance();
+            boolean isServerOpen = false;
+            IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+            String cfgPath = configUtil.getFilePath();
+            // 先找外部配置文件，找不到，则用jar包内的
+            PropertiesUtil propertiesUtil = new PropertiesUtil(cfgPath + "/application.properties");
+            // 如果没有外部配置文件，则在jar包中找
+            if (propertiesUtil.getSafeProperties() == null) {
+                Resource resource = new ClassPathResource("application.properties");
+                InputStream is = resource.getInputStream();
+                log.info("SystemListener: 载入jar包中的application.properties");
+                propertiesUtil = new PropertiesUtil(is);
+                String val = propertiesUtil.getValue("activemq.isServerOpen");
+                isServerOpen = Boolean.parseBoolean(val);
+            }
+            else {
+                // 如果有外部配置文件
+                String val = propertiesUtil.getValue("activemq.isServerOpen");
+                // 如果从外部配置文件中取到
+                if (!StrUtil.isEmpty(val)) {
+                    isServerOpen = Boolean.parseBoolean(val);
+                }
+                else {
+                    // 如果从外部配置文件中未取到，则从class path中取
+                    Resource resource = new ClassPathResource("application.properties");
+                    InputStream is = resource.getInputStream();
+                    log.info("SystemListener: 载入class path中的application.properties");
+                    propertiesUtil = new PropertiesUtil(is);
+                    val = propertiesUtil.getValue("activemq.isServerOpen");
+                    isServerOpen = Boolean.parseBoolean(val);
+                }
+            }
+            log.info("activemq.isServerOpen: " + isServerOpen);
+            if (!isServerOpen) {
+                return;
+            }
+
+            /*Config config = Config.getInstance();
             boolean mqIsServerOpen = config.getBooleanProperty("mqIsServerOpen");
             if (!mqIsServerOpen) {
                 return;
-            }
+            }*/
 
             log.info("启动 ActiveMQ");
             // 关闭jmx
             System.setProperty("org.apache.activemq.broker.jmx.createConnector", "false");
 
-            String mpServer = config.get("mqServer");
+            /*String mpServer = config.get("mqServer");
             int mqPort = config.getInt("mqPort");
             String mpUser = config.get("mqUser");
-            String mpPwd = config.get("mqPwd");
+            String mpPwd = config.get("mqPwd");*/
+
+            String server = propertiesUtil.getValue("activemq.server");
+            String port = propertiesUtil.getValue("activemq.port");
+            String user = propertiesUtil.getValue("activemq.user");
+            String pwd = propertiesUtil.getValue("activemq.pwd");
 
             // 设置 ActiveMQ 消息服务器用于被客户端连接的 url 地址,实际开发中，地址应该在配置文件中可配置，不要写死
-            String serviceURL = "tcp://" + mpServer + ":" + mqPort;
+            String serviceURL = "tcp://" + server + ":" + port;
             // BrokerService 表示 ActiveMQ 服务，每一个 BrokerService 表示一个消息服务器实例
             // 如果想启动多个，只需要 start 多个不同端口的 BrokerService 即可
 
@@ -78,7 +123,7 @@ public class SystemListener implements ServletContextListener {
             // 注意：这里内嵌启动后，默认是没有提供 8161 端口的 web 管理界面的，照样能做消息中间件使用
 
             SimpleAuthenticationPlugin sap = new SimpleAuthenticationPlugin();
-            AuthenticationUser au = new AuthenticationUser(mpUser, mpPwd, "users");
+            AuthenticationUser au = new AuthenticationUser(user, pwd, "users");
             ArrayList list = new ArrayList();
             list.add(au);
             sap.setUsers(list); // 用户验证
@@ -114,7 +159,7 @@ public class SystemListener implements ServletContextListener {
             log.info("启动内嵌 ActiveMQ 服务器完成......");
         } catch (Exception e) {
             log.error("启动内嵌 ActiveMQ 服务器失败...");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -127,7 +172,7 @@ public class SystemListener implements ServletContextListener {
             brokerService.stop();
         } catch (Exception e) {
             log.error("停止内嵌 ActiveMQ 服务器失败...");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         log.info("关闭内嵌 ActiveMQ 服务器成功......");
     }

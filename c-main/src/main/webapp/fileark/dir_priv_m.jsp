@@ -9,7 +9,6 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.alibaba.fastjson.JSONArray" %>
 <%@ page import="com.alibaba.fastjson.JSONObject" %>
-<%@ taglib uri="/WEB-INF/tlds/HelpDocTag.tld" prefix="help" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <jsp:useBean id="leafPriv" scope="page" class="com.redmoon.oa.fileark.LeafPriv"/>
 <%
@@ -27,8 +26,8 @@
         isAll = "y";
     }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!doctype html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>管理目录权限</title>
@@ -103,7 +102,6 @@
         <td align="right">
             <input class="btn" type="button" onclick="copyPriv()" value="复制" title="复制权限"/>
             <input class="btn" type="button" onclick="openWin('../admin/dept_role_group_sel.jsp', 800, 600)" value="选择" title="选择角色、部门、用户组或人员"/>
-            <%--<help:HelpDocTag id="915" type="content" size="200"></help:HelpDocTag>--%>
             <%
                 com.alibaba.fastjson.JSONArray arr = new JSONArray();
                 DeptMgr deptMgr = new DeptMgr();
@@ -189,8 +187,8 @@
             }
         %>
       </span></td>
-        <td class="tabStyle_1_title" noWrap width="53%">权限</td>
-        <td width="14%" nowrap class="tabStyle_1_title">操作</td>
+        <td class="tabStyle_1_title" noWrap width="45%">权限</td>
+        <td width="22%" nowrap class="tabStyle_1_title">操作</td>
     </tr>
         <%
 int i = 0;
@@ -269,6 +267,7 @@ while (ir.hasNext()) {
                 修改
                 <input name="downLoad" title="下载附件" type=checkbox <%=lp.getDownLoad() == 1 ? "checked" : ""%> value="1" onclick="checkPrivModify('tr<%=i%>')"/>
                 下载附件
+                <br/>
                 <input name="exportWord" title="查看word" type=checkbox <%=lp.getExportWord() == 1 ? "checked" : ""%> value="1" onclick="checkPrivModify('tr<%=i%>')"/>
                 查看word
                 <input name="exportPdf" title="查看pdf" type=checkbox <%=lp.getExportPdf() == 1 ? "checked" : ""%> value="1" onclick="checkPrivModify('tr<%=i%>')"/>

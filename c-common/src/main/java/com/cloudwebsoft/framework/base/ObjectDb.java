@@ -1,11 +1,12 @@
 package com.cloudwebsoft.framework.base;
 
-import org.apache.log4j.Logger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Vector;
 import java.util.Iterator;
 import java.util.HashMap;
+
+import com.alibaba.fastjson.annotation.JSONField;
 import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.util.ErrMsgException;
@@ -16,23 +17,38 @@ import cn.js.fan.web.Global;
 import cn.js.fan.resource.Constant;
 import cn.js.fan.db.KeyUnit;
 import cn.js.fan.db.SQLFilter;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public abstract class ObjectDb implements IObjectDb {
     public static final PrimaryKey[] EMPTY_BLOCK = new PrimaryKey[0];
 
+    @JSONField(serialize = false)
     public String connname = "";
-    public transient Logger logger = null;
+
+    @JSONField(serialize = false)
     public String QUERY_LOAD;
+    @JSONField(serialize = false)
     public String QUERY_DEL;
+    @JSONField(serialize = false)
     public String QUERY_SAVE;
+    @JSONField(serialize = false)
     public String QUERY_CREATE;
+    @JSONField(serialize = false)
     public String QUERY_LIST;
 
+    @JSONField(serialize = false)
     public boolean isInitFromConfigDB = true;
 
+    @JSONField(serialize = false)
     protected String tableName = "";
 
+    @JSONField(serialize = false)
     public PrimaryKey primaryKey;
+
+    /**
+     * 注意要忽略序列化，否则会导致stackoverlow，如：return new Result<>(DocTemplateDb.list())
+     */
+    @JSONField(serialize = false)
     public ObjectCache objectCache;
 
     public ObjectDb() {
@@ -40,10 +56,9 @@ public abstract class ObjectDb implements IObjectDb {
     }
 
     public void init() {
-        logger = Logger.getLogger(this.getClass().getName());
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info(Constant.DB_NAME_NOT_FOUND);
+            LogUtil.getLog(getClass()).info(Constant.DB_NAME_NOT_FOUND);
         }
 
         initDB();
@@ -56,9 +71,6 @@ public abstract class ObjectDb implements IObjectDb {
      * @return Logger
      */
     public void renew() {
-        if (logger == null) {
-            logger = Logger.getLogger(this.getClass().getName());
-        }
         if (objectCache != null) {
             objectCache.renew();
         }
@@ -75,7 +87,7 @@ public abstract class ObjectDb implements IObjectDb {
         DBConfig dc = new DBConfig();
         DBTable dt = dc.getDBTable(this.getClass().getName());
         if (dt == null) {
-            logger.info(this +" cann't find table defination in config file.");
+            LogUtil.getLog(getClass()).info(this +" cann't find table defination in config file.");
             return;
         }
         this.tableName = dt.getName();
@@ -109,7 +121,7 @@ public abstract class ObjectDb implements IObjectDb {
                 docCount = rs.getInt(1);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (rs != null) {
                 try {
@@ -127,7 +139,6 @@ public abstract class ObjectDb implements IObjectDb {
 
     /**
      *
-     * @param sql String
      * @param startIndex int
      * @return Object[] 存放的是对应于主键的值
      */
@@ -156,8 +167,8 @@ public abstract class ObjectDb implements IObjectDb {
         // 可能取得的infoBlock中的元素的顺序号小于endIndex
         Object[] blockValues = getObjectBlock(query, groupKey, startIndex);
         // for (int i=0; i<blockValues.length; i++)
-        //     logger.info("getObjects i=" + i + " " + blockValues[i]);
-        // System.out.println(getClass() + " getObjects:" + groupKey + " blockValues.length=" + blockValues.length);
+        //     LogUtil.getLog(getClass()).info("getObjects i=" + i + " " + blockValues[i]);
+        // LogUtil.getLog(getClass()).info(getClass() + " getObjects:" + groupKey + " blockValues.length=" + blockValues.length);
         return new ObjectBlockIterator(this, blockValues, query, groupKey,
                                        startIndex, endIndex);
     }
@@ -198,7 +209,6 @@ public abstract class ObjectDb implements IObjectDb {
 
     /**
      * 从数据库中取得对象
-     * @param objKey Object
      * @return Object
      */
     abstract public IObjectDb getObjectRaw(PrimaryKey pk);
@@ -289,7 +299,7 @@ public abstract class ObjectDb implements IObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -390,7 +400,7 @@ public abstract class ObjectDb implements IObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -495,7 +505,7 @@ public abstract class ObjectDb implements IObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("listResult:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listResult:" + e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
@@ -515,5 +525,6 @@ public abstract class ObjectDb implements IObjectDb {
         return lr;
     }
 
+    @JSONField(serialize = false)
     private int blockSize = 100;
 }

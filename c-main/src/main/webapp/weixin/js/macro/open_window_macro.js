@@ -12,8 +12,8 @@ function nestSheetJump(title, url, nest_sheet, nestFormCode) {
     window.parent.nestSheetJumpPage(title, url, nest_sheet);
 }
 
-function doneChooseUser(names,realNames,isAt, isFree, internalName){
-	window.parent.closeChooseUser(names,realNames,isAt, isFree, internalName);
+function doneChooseUser(names,realNames,isAt, isFree, internalName, isCondition, workflowActionIdStr){
+	window.parent.closeChooseUser(names,realNames,isAt, isFree, internalName, isCondition, workflowActionIdStr);
 	window.parent.closeIframe();
 }
 function doneSelectUserWin(code,names,realNames){
@@ -26,6 +26,10 @@ function doneLocation(code,lat,lon,address){
 }
 function doneWritePad(code, val) {
     window.parent.closeWritePad(code, val);
+    window.parent.closeIframe();
+}
+function doneSelectUserWinForPlus(userNames,realNames,plusType,plusMode,myActionId) {
+    window.parent.doneSelectUserWinForPlus(userNames,realNames,plusType,plusMode,myActionId);
     window.parent.closeIframe();
 }
 

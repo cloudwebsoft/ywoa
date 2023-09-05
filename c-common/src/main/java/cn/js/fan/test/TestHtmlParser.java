@@ -32,25 +32,14 @@ public class TestHtmlParser {
         // String content = readTextFile(aFile, "GBK");
         String content = "大家好！<a href='ddd.jsp'>GOOD！</a><img src='http://www.cloudwe";
         // test1(content);
-        // System.out.println("====================================");
         test2(content);
-        //System.out.println("====================================");
-        //test3(content);
-        //System.out.println("====================================");
-        //test4(content);
-        // System.out.println("====================================");
-        //test5(aFile);
-        //System.out.println("====================================");
-        //访问外部资源,相对慢
-        //test5("http://www.jscud.com");
-        //System.out.println("====================================");
 
         String str = "<TABLE style=\"TABLE-LAYOUT: fixed; WORD-BREAK: break-all\" height=\"100%\" cellSpacing=0 cellPadding=0 width=\"99%\" border=0>";
         str += "<TBODY>\r\n";
         str += "<TR height=20>";
         str += "<TD colSpan=3><A name=#14198></A><A href=\"http://bbs.huizhou.gov.cn/userinfo.jsp?username=3851\"><IMG alt=都市广场的个人资料 src=\"http://bbs.huizhou.gov.cn/forum/images/profile.gif\" align=absMiddle border=0></A>&nbsp;&nbsp;&nbsp;<A click=\"hopenWin('../message/send.jsp?receiver=%E9%83%BD%E5%B8%82%E5%B9%BF%E5%9C%BA',320,260)\" href=\"http://bbs.huizhou.gov.cn/forum/t-0-13831-7.html#\">";
 
-        System.out.println(StrUtil.fillHtmlTag(str));
+        // LogUtil.getLog(getClass()).info(StrUtil.fillHtmlTag(str));
     }
 
     /**
@@ -66,7 +55,6 @@ public class TestHtmlParser {
         HtmlPage visitor = new HtmlPage(myParser);
         myParser.visitAllNodesWith(visitor);
         String textInPage = visitor.getTitle();
-        System.out.println(textInPage);
     }
 
     /**
@@ -78,7 +66,6 @@ public class TestHtmlParser {
         HtmlPage visitor = new HtmlPage(myParser);
         myParser.visitAllNodesWith(visitor);
         String textInPage = visitor.getTitle();
-        System.out.println(textInPage);
     }
 
     /**
@@ -94,7 +81,6 @@ public class TestHtmlParser {
         TextExtractingVisitor visitor = new TextExtractingVisitor();
         myParser.visitAllNodesWith(visitor);
         String textInPage = visitor.getExtractedText();
-        System.out.println(textInPage);
     }
 
     /**
@@ -140,7 +126,6 @@ public class TestHtmlParser {
             }
             if (isTrimEmpty(line))
                 continue;
-            System.out.println(line);
         }
     }
 
@@ -162,7 +147,6 @@ public class TestHtmlParser {
             String line = textnode.toPlainTextString().trim();
             if (line.equals(""))
                 continue;
-            System.out.println(line);
         }
     }
 

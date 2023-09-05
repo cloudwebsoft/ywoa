@@ -1,5 +1,6 @@
 package com.redmoon.oa.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.cloudwebsoft.framework.util.OSUtil;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.DocumentException;
@@ -37,7 +38,7 @@ public class AsianFontProvider extends XMLWorkerFontProvider {
         try {
             bf = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
         } catch (Exception e) {
-            e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
         }
         Font font = new Font(bf, size, style, color);
         font.setColor(color);*/
@@ -63,9 +64,9 @@ public class AsianFontProvider extends XMLWorkerFontProvider {
             // 安装以后，还是会报此错，是否需重启Windows ？
             // bf = BaseFont.createFont(prefixFont + "STXIHEI.TTF", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
         } catch (DocumentException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         Font font = new Font(bf, size, style, color);
 

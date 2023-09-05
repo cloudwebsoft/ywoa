@@ -7,7 +7,7 @@ import com.cloudweb.oa.entity.Role;
 import com.cloudweb.oa.entity.UserSetup;
 import com.cloudweb.oa.entity.User;
 import com.cloudweb.oa.mapper.UserSetupMapper;
-import com.cloudweb.oa.module.PersonBasicService;
+import com.cloudweb.oa.visual.PersonBasicService;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.service.IRoleService;
 import com.cloudweb.oa.service.IUserSetupService;
@@ -75,8 +75,14 @@ public class UserSetupServiceImpl extends ServiceImpl<UserSetupMapper, UserSetup
         int messageUserMaxCount = cfg.getInt("message_user_max_count");
 
         Role role = roleService.getRole(ConstUtil.ROLE_MEMBER);
-        long diskSpaceAllowed = role.getMsgSpaceQuota();
+        long diskSpaceAllowed = role.getDiskQuota();
         long msgSpaceAllowed = role.getMsgSpaceQuota();
+        if (diskSpaceAllowed == -1) {
+            diskSpaceAllowed = 0;
+        }
+        if (msgSpaceAllowed == -1) {
+            msgSpaceAllowed = 0;
+        }
 
         UserSetup userSetup = new UserSetup();
         userSetup.setUserName(userName);
@@ -207,6 +213,7 @@ public class UserSetupServiceImpl extends ServiceImpl<UserSetupMapper, UserSetup
 
     /**
      * 取得用户头像
+     * 注意此方法不能返回空值，否则在lte/index.html中经th:src="@{'/' + ${portrait}}显示时，会致访问 oa/，导致session丢失，点击菜单上任何链接，均进入了登录页
      * @param user
      * @return
      */
@@ -214,15 +221,30 @@ public class UserSetupServiceImpl extends ServiceImpl<UserSetupMapper, UserSetup
     public String getPortrait(User user) {
         String str = "";
         if (user.getPhoto()!=null && !"".equals(user.getPhoto())) {
-            str = "img_show.jsp?path=" + user.getPhoto();
+            str = "showImg.do?path=" + user.getPhoto();
         } else {
             if (!user.getGender()) {
-                str += "images/man.png";
+                str += "showImgInJar.do?path=static/images/man.png";
             } else {
-                str += "images/woman.png";
+                str += "showImgInJar.do?path=static/images/woman.png";
             }
         }
         return str;
+    }
+
+    /**
+     * 取得用户头像，用于前端
+     * @param user
+     * @return
+     */
+    @Override
+    public String getPortraitForFront(User user) {
+        if (user.getPhoto()!=null && !"".equals(user.getPhoto())) {
+            return user.getPhoto();
+        }
+        else {
+            return "";
+        }
     }
 
     /**
@@ -263,7 +285,7 @@ public class UserSetupServiceImpl extends ServiceImpl<UserSetupMapper, UserSetup
         // 如果wallpaper以#号开头，则表示为用户自己上传的壁纸
         UserSetup userSetup = getUserSetup(userName);
         String wallpaper = userSetup.getWallpaper();
-        if (wallpaper.equals("")) {
+        if ("".equals(wallpaper)) {
             return "images/wallpaper/default.jpg";
         } else if (wallpaper.startsWith("#")) {
             WallpaperDb wd = new WallpaperDb();

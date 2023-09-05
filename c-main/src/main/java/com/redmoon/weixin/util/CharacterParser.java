@@ -32,8 +32,6 @@ public class CharacterParser {
 		return this.getSelling(this.getResource());
 	}
 
-
 	public static void main(String[] args) {
-		System.out.println(CharacterParser.getInstance().getSelling("敏"));
 	}
 }

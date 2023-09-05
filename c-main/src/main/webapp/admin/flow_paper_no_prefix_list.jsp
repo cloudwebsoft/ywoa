@@ -7,9 +7,8 @@
 <%@ page import="com.redmoon.oa.dept.*"%>
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.person.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <title>公文文号管理</title>
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
@@ -146,7 +145,7 @@ String querystr = "action=" + action + "&what=" + StrUtil.UrlEncode(what);
       <td width="25%">名称</td>
 	  <td width="37%">部门</td>
 	  <td width="20%">单位</td>
-	  <td width="14%"><lt:Label key="op"/></td>
+	  <td width="14%">操作</td>
     </tr>
   </thead>
   <tbody>
@@ -205,7 +204,7 @@ while (ir.hasNext()) {
         &nbsp;&nbsp;
         <a href="javascript:form<%=id%>.submit()">编辑</a>
         &nbsp;&nbsp;
-        <a onClick="if (!confirm('<lt:Label key="confirm_del"/>')) return false" href="flow_paper_no_prefix_list.jsp?op=del&id=<%=id%>"><lt:Label key="op_del"/></a>
+        <a onClick="if (!confirm('您确定要删除么')) return false" href="flow_paper_no_prefix_list.jsp?op=del&id=<%=id%>">删除</a>
         &nbsp;&nbsp;
       <input name="id" value="<%=id%>" type="hidden">
       </td>
@@ -321,26 +320,25 @@ while (ir.hasNext()) {
 </table>
 </body>
 <script>
-
 var frmId;
 function openWinDepts(formId) {
 	frmId = formId;
-	var ret = showModalDialog('../dept_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')
-	if (ret==null)
-		return;
-	var frm = o("form" + formId);
-	frm.deptNames.value = "";
-	frm.depts.value = "";
-	for (var i=0; i<ret.length; i++) {
-		if (frm.depts.value=="") {
-			frm.depts.value = ret[i][0];
-			frm.deptNames.value = ret[i][1];
-		}
-		else {
-			frm.depts.value += "," + ret[i][0];
-			frm.deptNames.value += "," + ret[i][1];
-		}
-	}
+	openWin('../dept_multi_sel.jsp', 800, 600);
+}
+
+function setDepts(ret) {
+    var frm = o("form" + frmId);
+    frm.deptNames.value = "";
+    frm.depts.value = "";
+    for (var i = 0; i < ret.length; i++) {
+        if (frm.deptNames.value == "") {
+            frm.depts.value += ret[i][0];
+            frm.deptNames.value += ret[i][1];
+        } else {
+            frm.depts.value += "," + ret[i][0];
+            frm.deptNames.value += "," + ret[i][1];
+        }
+    }
 }
 
 function getDepts() {

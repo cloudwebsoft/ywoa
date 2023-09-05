@@ -10,6 +10,7 @@ import com.cloudweb.oa.security.AuthUtil;
 import com.cloudweb.oa.service.ILogService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
@@ -69,8 +70,7 @@ public class LogAspect {
                 // 方法执行完成后增加日志
                 addLog(joinPoint,res,time);
             }catch (Exception e){
-                log.error("LogAspect 操作失败：" + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
     }
@@ -172,7 +172,7 @@ public class LogAspect {
 
 //    @Before("log()")
 //    public void doBeforeAdvice(JoinPoint joinPoint){
-//        System.out.println("进入方法前执行.....");
+//        LogUtil.getLog(getClass()).info("进入方法前执行.....");
 //    }
 //
 //    *
@@ -181,7 +181,7 @@ public class LogAspect {
 //
 //    @AfterReturning(returning = "ret", pointcut = "log()")
 //    public void doAfterReturning(Object ret) {
-//        System.out.println("方法的返回值 : " + ret);
+//        LogUtil.getLog(getClass()).info("方法的返回值 : " + ret);
 //    }
 //
 //    *
@@ -189,7 +189,7 @@ public class LogAspect {
 //
 //    @AfterThrowing("log()")
 //    public void throwing(JoinPoint jp){
-//        System.out.println("方法异常时执行.....");
+//        LogUtil.getLog(getClass()).info("方法异常时执行.....");
 //    }
 //
 //
@@ -198,7 +198,7 @@ public class LogAspect {
 //
 //    @After("log()")
 //    public void after(JoinPoint jp){
-//        System.out.println("方法最后执行.....");
+//        LogUtil.getLog(getClass()).info("方法最后执行.....");
 //    }
 
 }

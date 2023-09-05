@@ -1,0 +1,4 @@
+interface lately {
+  name: '';
+  value: '';
+}

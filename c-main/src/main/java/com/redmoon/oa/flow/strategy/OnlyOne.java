@@ -59,7 +59,7 @@ public class OnlyOne implements IStrategy {
 	 */
 	@Override
 	public boolean isSelected() {
-		return false;
+		return true;
 	}		
 
 	@Override

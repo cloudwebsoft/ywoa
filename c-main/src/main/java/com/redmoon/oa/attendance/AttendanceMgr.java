@@ -12,6 +12,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.oacalendar.OACalendarDb;
 import com.redmoon.oa.person.UserDb;
@@ -196,8 +197,8 @@ public class AttendanceMgr {
      */
     public static int getLastPunchType(String userName, java.util.Date dt) {
         String workDateString = DateUtil.format(dt, "yyyy-MM-dd");
-        // 根据人员编号查询form_table_kaoqin_sign_time表中的考勤数据
-        String sql = "select sign_type from form_table_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName) +
+        // 根据人员编号查询ft_kaoqin_sign_time表中的考勤数据
+        String sql = "select sign_type from ft_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName) +
                 " and sign_time >= " + SQLFilter.getDateStr(workDateString + " 00:00:00", "yyyy-MM-dd HH:mm:ss") + " and sign_time <= " + SQLFilter.getDateStr(workDateString + " 23:59:59", "yyyy-MM-dd HH:mm:ss") + " order by sign_time desc";
         JdbcTemplate jt = new JdbcTemplate();
         ResultIterator ri;
@@ -208,8 +209,7 @@ public class AttendanceMgr {
                 return rr.getInt(1);
             }
         } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(AttendanceMgr.class).error(e);
         }
         return -1;
     }
@@ -222,8 +222,8 @@ public class AttendanceMgr {
      */
     public static Object[] getLastPunch(String userName, java.util.Date dt) {
         String workDateString = DateUtil.format(dt, "yyyy-MM-dd");
-        // 根据人员编号查询form_table_kaoqin_sign_time表中的考勤数据
-        String sql = "select sign_type,sign_time from form_table_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName) +
+        // 根据人员编号查询ft_kaoqin_sign_time表中的考勤数据
+        String sql = "select sign_type,sign_time from ft_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName) +
                 " and sign_time >= " + SQLFilter.getDateStr(workDateString + " 00:00:00", "yyyy-MM-dd HH:mm:ss") + " and sign_time <= " + SQLFilter.getDateStr(workDateString + " 23:59:59", "yyyy-MM-dd HH:mm:ss") + " order by sign_time desc";
         JdbcTemplate jt = new JdbcTemplate();
         ResultIterator ri;
@@ -237,8 +237,7 @@ public class AttendanceMgr {
                 return ary;
             }
         } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(AttendanceMgr.class).error(e);
         }
         return null;
     }
@@ -526,8 +525,8 @@ public class AttendanceMgr {
      */
     public static boolean isPunched(String userName, int type) {
         String workDateString = DateUtil.format(new Date(), "yyyy-MM-dd");
-        // 根据人员编号查询form_table_kaoqin_sign_time表中的考勤数据
-        String sql = "select sign_type from form_table_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName) +
+        // 根据人员编号查询ft_kaoqin_sign_time表中的考勤数据
+        String sql = "select sign_type from ft_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName) +
                 " and sign_type=" + type + " and sign_time >= " + SQLFilter.getDateStr(workDateString + " 00:00:00", "yyyy-MM-dd HH:mm:ss") + " and sign_time <= " + SQLFilter.getDateStr(workDateString + " 23:59:59", "yyyy-MM-dd HH:mm:ss") + " order by sign_time desc";
         JdbcTemplate jt = new JdbcTemplate();
         ResultIterator ri;
@@ -537,8 +536,7 @@ public class AttendanceMgr {
                 return true;
             }
         } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(AttendanceMgr.class).error(e);
         }
         return false;
     }
@@ -741,8 +739,7 @@ public class AttendanceMgr {
         try {
             cfgparser.parse("config.xml");
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         java.util.Properties props = cfgparser.getProps();
         int latevalue = Integer.parseInt(props.getProperty("latevalue"));    // 上班时间后多少分钟后算迟到
@@ -834,8 +831,7 @@ public class AttendanceMgr {
         try {
             cfgparser.parse("config.xml");
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(AttendanceMgr.class).error(e);
         }
         java.util.Properties props = cfgparser.getProps();
         int minsAheadOfWorkBegin = Integer.parseInt(props.getProperty("mins_ahead_of_workbegin"));//上班时间前多少分钟可以开始上班考勤

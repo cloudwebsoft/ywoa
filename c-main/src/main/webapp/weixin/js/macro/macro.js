@@ -8,6 +8,17 @@ var CODES_NAME = {
     "MACRO_SQL_CODES": "macroSqlCodes"
 }
 
+function o(s) {
+    var e = document.getElementById(s);
+    if (e != null)
+        return e;
+    e = document.getElementsByName(s);
+    if (e.length == 0)
+        return null;
+    else
+        return e[0];
+}
+
 function initCaptureFile() {
     var captureFile = document.getElementById("captureFile");
     if (captureFile != null) {
@@ -25,7 +36,7 @@ function initCaptureFile() {
                 var _size = file.size / 1024 > 1024 ? (~~(10 * file.size / 1024 / 1024)) / 10 + "MB" : ~~(file.size / 1024) + "KB";
 
                 // 如果是图像宏控件的操作，则删除原来拍的照片，防止重复上传，当为upload时，是点击了底部的“照片”按钮
-                if (captureFieldName!="upload") {
+                if (captureFieldName != "upload") {
                     $('li[attField=' + captureFieldName + ']').remove();
                 }
                 var jsonAry = [];
@@ -46,7 +57,7 @@ function initCaptureFile() {
                 }
                 blob_arr = jsonAry;
 
-                appendCon(_name, _size, captureFieldName);
+                // appendCon(_name, _size, captureFieldName);
                 imgResize(file, captureFieldName);
             });
         }
@@ -173,51 +184,84 @@ function imgResize(file, captureFieldName) {
         return;
     var fileReader = new FileReader();
     fileReader.onload = function () {
-        var IMG = new Image();
+        console.log('imgResize onload');
         var base64Str = this.result;
-        IMG.src = base64Str;
-        IMG.onload = function () {
-            var w = this.naturalWidth, h = this.naturalHeight, resizeW = 0, resizeH = 0;
-            if (w > maxSize.width || h > maxSize.height) {
-                var multiple = Math.max(w / maxSize.width, h / maxSize.height);
-                resizeW = w / multiple;
-                resizeH = h / multiple;
-                var canvas = document.createElement('canvas'),
-                    ctx = canvas.getContext('2d');
-                if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-                    canvas.width = resizeH;
-                    canvas.height = resizeW;
+        if (/\/(?:jpeg|png|gif|jpg)/i.test(file.type)) {
+            var IMG = new Image();
+            IMG.src = base64Str;
+            IMG.onload = function () {
+                var w = this.naturalWidth, h = this.naturalHeight, resizeW = 0, resizeH = 0;
+                if (w > maxSize.width || h > maxSize.height) {
+                    var multiple = Math.max(w / maxSize.width, h / maxSize.height);
+                    resizeW = w / multiple;
+                    resizeH = h / multiple;
+                    var canvas = document.createElement('canvas'),
+                        ctx = canvas.getContext('2d');
+                    if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+                        console.log('imgResize ios');
+                        canvas.width = resizeW;
+                        canvas.height = resizeH;
 
-                    var orient = getPhotoOrientation(IMG);
-                    switch(orient){
-                        case 6://需要顺时针（向左）90度旋转
-                            rotateImg(IMG,'left',canvas);
-                            break;
-                        case 8://需要逆时针（向右）90度旋转
-                            rotateImg(IMG,'right',canvas);
-                            break;
-                        case 3://需要180度旋转
-                            rotateImg(IMG,'right',canvas);//转两次
-                            rotateImg(IMG,'right',canvas);
-                            break;
-                        default:
-                            ctx.drawImage(IMG, 0, 0, resizeW, resizeH);
+                        var orient = getPhotoOrientation(IMG);
+                        switch(orient){
+                            case 6://需要顺时针（向左）90度旋转
+                                rotateImg(IMG,'left',canvas);
+                                break;
+                            case 8://需要逆时针（向右）90度旋转
+                                rotateImg(IMG,'right',canvas);
+                                break;
+                            case 3://需要180度旋转
+                                rotateImg(IMG,'right',canvas);//转两次
+                                rotateImg(IMG,'right',canvas);
+                                break;
+                            default:
+                                ctx.drawImage(IMG, 0, 0, resizeW, resizeH);
+                        }
+                    } else {
+                        console.log('imgResize android');
+                        canvas.width = resizeW;
+                        canvas.height = resizeH;
+                        ctx.drawImage(IMG, 0, 0, resizeW, resizeH);
                     }
-
-                } else {
-                    canvas.width = resizeW;
-                    canvas.height = resizeH;
-                    ctx.drawImage(IMG, 0, 0, resizeW, resizeH);
+                    base64Str = canvas.toDataURL('image/jpeg', maxSize.level);
                 }
-                base64Str = canvas.toDataURL('image/jpeg', maxSize.level);
+
+                var imgBox = '<li class="img-box" fId="0" field="' + captureFieldName + '"><img class="img-box-img" src="' + base64Str + '"/>';
+                imgBox += '<span class="btn-del-img"><img class="att_del" isImgBox="true" src="' + getContextPath() + '/images/btn_del.png"></span></li>';
+                $(".img-area").append(imgBox);
+
+                var blob = convertBlob(window.atob(base64Str.split(',')[1]));
+                var blobObj = {"fname": file.name, "blob": blob, "field": captureFieldName};
+                blob_arr.push(blobObj);
+                // console.info(blob_arr);
             }
+        } else {
+            console.log('imgResize captureFieldName', captureFieldName);
+            var imgBox = '<li class="img-box" fId="0" field="' + captureFieldName + '" style="padding:5px">' + file.name;
+            imgBox += '<span class="btn-del-img"><img class="att_del" isImgBox="true" src="' + getContextPath() + '/images/btn_del.png"></span></li>';
+            $(".img-area").append(imgBox);
+
             var blob = convertBlob(window.atob(base64Str.split(',')[1]));
             var blobObj = {"fname": file.name, "blob": blob, "field": captureFieldName};
             blob_arr.push(blobObj);
-            // console.info(blob_arr);
         }
     };
     fileReader.readAsDataURL(file);
+}
+
+function getContextPath() {
+    var strFullPath = document.location.href;
+    var strPath = document.location.pathname;
+    var pos = strFullPath.indexOf(strPath);
+    var prePath = strFullPath.substring(0, pos);
+    var postPath = strPath.substring(0, strPath.substr(1).indexOf('/') + 1);
+    // 有的服务器上会在路径中带上weixin，如contextPath为：http://****.com/weixin
+    var contextPath = prePath + postPath;
+    var	p = contextPath.indexOf("/weixin");
+    if (p!=-1) {
+        contextPath = contextPath.substring(0, p);
+    }
+    return contextPath;
 }
 
 function getBlob(buffer, format) {
@@ -325,7 +369,6 @@ function macroSqlInit(flowId, skey, arr, formCode) {
                         }
                         var urlParams = "?pageType=flow&flowId=" + flowId + "&skey=" + skey + "&fieldName=" + _code + "&formCode=" + formCode;
                         onSQLCtlRelateFieldChange(urlParams, data_param);
-
                     });
                 }
             }
@@ -340,7 +383,7 @@ function onSQLCtlRelateFieldChange(urlParams, data) {
         type: "post",
         data: data,
         dataType: "json",
-        url: "../../public/android/macro_sql_ctl.jsp" + urlParams,
+        url: "../../public/android/getSqlCtlOnChange" + urlParams,
         beforeSend: function (XMLHttpRequest) {
             jQuery.myloading();
         },
@@ -355,11 +398,18 @@ function onSQLCtlRelateFieldChange(urlParams, data) {
                 var _code = _fieldItem.code;
                 var _type = _fieldItem.type;
                 var _calCodes = $("#" + _code).data(CODES_NAME.CALCULATOR_CODES);
+                var val = $('#' + _code).val();
+                var readonly = $('#' + _code).attr("readonly");
                 $("#" + _code).remove();
                 var divContent = "";
                 if (_type == "select") {
                     var options = _fieldItem.options;
-                    divContent += "<select name='" + _code + "' id='" + _code + "'>"
+                    divContent += "<select name='" + _code + "' id='" + _code + "'";
+                    if (readonly != null) {
+                        divContent += " readonly='readonly' style='background-color:#eeeeee;' onfocus='this.defaultIndex=this.selectedIndex;' onchange='this.selectedIndex=this.defaultIndex;'";
+                    }
+                    divContent += " >";
+
                     $.each(options, function (s_index, s_item) {
                         var o_text = '';
                         var o_val = '';
@@ -380,25 +430,23 @@ function onSQLCtlRelateFieldChange(urlParams, data) {
                         divContent += '<option value="' + o_val + '"' + selected + '' + disabled + '>' + o_text + '</option>'
                     })
                     divContent += "</select>"
-
+                    $("#row_" + _code).append(divContent);
+                    $('#' + _code).val(val);
                 } else {
-                    var clear_class = _fieldItem.editable == "true" ? "mui-input-clear" : "";
-                    var readonly = _fieldItem.editable == "true" ? "" : "readonly";
+                    var clear_class = readonly == null ? "mui-input-clear" : "";
+                    var readonly = readonly == null  ? "" : "readonly";
                     var value = _fieldItem.value;
-                    divContent += '	<input type="text" readonly="readonly"  name="' + _code + '" id="' + _code + '" value="' + value + '" class="' + clear_class + '" ' + readonly + ' />';
+                    divContent += '	<input type="text" name="' + _code + '" id="' + _code + '" value="' + value + '" class="' + clear_class + '" ' + readonly + ' />';
+                    $("#row_" + _code).append(divContent);
                 }
-                $("#row_" + _code).append(divContent);
                 //计算控件
                 if (_calCodes != undefined) {
                     $("#" + _code).data(CODES_NAME.CALCULATOR_CODES, _calCodes);
                     reInitCalculator(_calCodes);
                 }
-
             }
-
         },
         error: function () {
-
         }
     });
 }
@@ -610,7 +658,7 @@ function doCalculate(jqueryObj) {
 function changeTwoDecimal_f(floatvar, digit) {
     var f_x = parseFloat(floatvar);
     if (isNaN(f_x)) {
-        alert('function:changeTwoDecimal->parameter error');
+        console.warn('function:changeTwoDecimal_f->parameter error');
         return false;
     }
     var s_x = f_x.toString();
@@ -756,6 +804,63 @@ function onlowerchange(event, obj, srcObj) {
     }
 }
 
+function onUserSelectWinChange(formCode) {
+    $("input[macroCode='macro_user_select_win']").each(function() {
+        console.log('onUserSelectWinChange', this);
+        var $obj = $(this);
+        var desc = $obj.attr('desc');
+        var json = $.parseJSON(desc);
+        console.log('onUserSelectWinChange json', json);
+        var deptField = '';
+        if (json != null) {
+            if (json.deptField) {
+                deptField = json.deptField;
+            }
+        }
+        var oldVal = $obj.val();
+
+        setInterval(function () {
+            if (oldVal != $obj.val()) {
+                $.ajax({
+                    type:"get",
+                    url: getContextPath() + "/flow/macro/macro_user_select_win_ctl_js.jsp",
+                    data: {
+                        "op": "getRealName",
+                        "fieldName": $obj.attr('name'),
+                        "userName": $obj.val(),
+                        "formCode": formCode
+                    },
+                    success:function(data,status){
+                        data = $.parseJSON(data);
+                        console.log('onUserSelectWinChange', data);
+                        if ($("#" + obj.name + "_realshow")[0]!= null) {
+                            $("#" + obj.name + "_realshow").val(data.realName);
+                        }
+
+                        var name = $(obj).attr('name');
+
+                        if (deptField!="") {
+                            if (o(deptField)!=null) {
+                                o(deptField).value = data.deptCode;
+                            }
+                            else {
+                                console.warn('对应的部门字段：' + deptField + '不存在！');
+                            }
+                        }
+
+                        var json = data.data;
+                        for(var key in json) {
+                            $(o(key)).val(json[key]);
+                        }
+                    }
+                });
+
+                oldVal = $obj.val();
+            }
+        }, 500);
+    });
+}
+
 // 身份证变化时验证并取出生日
 function onIdCardChange() {
     $("input[idCardBirthField]").each(function () {
@@ -793,9 +898,25 @@ function openBaiduMap(obj) {
     var val = $(obj).data("val");
 
     var url = "../macro/baidu_map_location.jsp?code=" + code + "&val=" + val;
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "位置");
+    pop.build();
+    pop.show();
+}
+
+// 表单域选择宏控件，查看详情
+function openModuleShow(obj, skey, isTab) {
+    var moduleCode = $(obj).data("sourceformcode");
+    var val = $(obj).data("val");
+    if (!isTab) {
+        isTab = false;
+    }
+
+    var url = "../visual/module_detail.jsp?moduleCode=" + moduleCode + "&id=" + val + "&isTab=" + isTab + "&skey=" + skey;
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
+    pop.setContent("contentUrl", url);
+    pop.setContent("title", "查看");
     pop.build();
     pop.show();
 }
@@ -831,17 +952,17 @@ function openNestSheet(obj, skey) {
     }
     var jsonStr = _parentFields == "" ? "" : JSON.stringify(json);
     var url = "../macro/nest_sheet_select.jsp?pageType=" + _pageType + "&parentModuleCode=" + _parentModuleCode + "&cwsId=" + _cwsId + "&skey=" + skey + "&code=" + _codes + "&flowId=" + _flowId + "&actionId=" + _actionId + "&dFormCode=" + _destForm + "&sFormCode=" + _sourceForm + "&isEditable=" + _editable + "&parentFields=" + encodeURI(jsonStr) + "&isWx=1";
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "列表");
     pop.build();
     pop.show();
 }
 
-// 选择用户
-function openChooseUser(chooseUsers, isAt, isFree, internalName) {
-    var url = "../flow/flow_choose_user.jsp?chooseUsers=" + encodeURI(chooseUsers) + "&isAt=" + isAt + "&isFree=" + isFree + "&isMulti=true&internalName=" + internalName;
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+// 自选用户
+function openChooseUser(chooseUsers, isAt, isFree, internalName, isCondition, workflowActionIdStr) {
+    var url = "../flow/flow_choose_user.jsp?chooseUsers=" + encodeURI(chooseUsers) + "&isAt=" + isAt + "&isFree=" + isFree + "&isMulti=true&internalName=" + internalName + "&isCondition=" + isCondition + "&workflowActionIdStr=" + workflowActionIdStr;
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
     pop.build();
@@ -850,9 +971,26 @@ function openChooseUser(chooseUsers, isAt, isFree, internalName) {
 
 function selectUserWin(obj, isMulti) {
     var code = $(obj).attr("code");
-
     var url = "../flow/flow_choose_user.jsp?code=" + code + "&isMulti=" + isMulti;
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
+    pop.setContent("contentUrl", url);
+    pop.setContent("title", "请选择");
+    pop.build();
+    pop.show();
+}
+
+function selectUserWinForPlus(plusType, plusMode, myActionId) {
+    console.log('selectUserWinForPlus plusType', plusType, 'plusMode', plusMode, 'myActionId', myActionId);
+    if (plusType == undefined) {
+        mui.toast('请选择加签类型')
+        return;
+    }
+    if (plusType!=2 && plusMode == undefined) {
+        mui.toast('请选择审批方式')
+        return;
+    }
+    var url = "../flow/flow_choose_user.jsp?isMulti=true&isPlus=true&plusType=" + plusType + "&plusMode=" + plusMode + "&myActionId=" + myActionId;
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
     pop.build();
@@ -864,6 +1002,14 @@ function doneSelectUserWin(code, names, realNames) {
     var _names = names.join(",");
     $("#" + code).val(_names);
     $("#" + code + "_realshow").val(_realNames);
+}
+
+function doneSelectUserWinForPlus(userNames, realNames, plusType, plusMode, myActionId) {
+    var skey = jQuery("#skey").val();
+    console.log('userNames', userNames, 'plusType', plusType, 'plusMode', plusMode, 'skey', skey, 'myActionId', myActionId);
+    var _realNames = realNames.join(",");
+    var _names = userNames.join(",");
+    window.flow.onSelUserForPlus(_names, realNames, plusType, plusMode, myActionId);
 }
 
 function openWritePadWin(obj) {
@@ -899,7 +1045,7 @@ function closeLocation(code, lat, lon, address) {
     }
 }
 
-function closeChooseUser(names, realNames, isAt, isFree, internalName) {
+function closeChooseUser(names, realNames, isAt, isFree, internalName, isCondition, workflowActionIdStr) {
     if (isAt) {
         var _freeDiv = jQuery("#free_flow_form");
         $(".free_next_user_ck").remove();
@@ -922,7 +1068,11 @@ function closeChooseUser(names, realNames, isAt, isFree, internalName) {
   		}
   		var _rNames = realNames.join(",");
   		$(".userDiv").append("<span  class='at_user_realnames'>"+ realNames.join(",")+"</span>");
-  	}    
+  	}
+  	else if (isCondition) {
+  	    // 当条件中有自选用户时
+        window.flow.onSelUserForCondition(names, internalName, workflowActionIdStr);
+    }
     else {
         var $btnChoose = jQuery("button[internalName='" + internalName + "']");
         var _name = $btnChoose.attr("name");
@@ -943,7 +1093,7 @@ function closeChooseUser(names, realNames, isAt, isFree, internalName) {
 function openSignIn(obj, skey) {
     var code = $(obj).attr("id");
     var url = "../macro/macro_ctl_sign_win.jsp?skey=" + skey + "&code=" + code;
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
     pop.build();
@@ -959,7 +1109,7 @@ function closeSignIn(code, realName) {
 function openSignInImg(obj, skey) {
     var code = $(obj).data("code");
     var url = "../macro/macro_ctl_sign_img_win.jsp?skey=" + skey + "&code=" + code;
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
     pop.build();
@@ -969,7 +1119,7 @@ function openSignInImg(obj, skey) {
 function closeSignInImg(code, stampId, link) {
     $('#' + code).val(stampId);
     $('#stampImg_' + code).html('');
-    $('#stampImg_' + code).html('<img style="width:160px" src="../../public/img_show.jsp?path=' + link + '"/>');
+    $('#stampImg_' + code).html('<img style="width:160px" src="../../public/showImg.do?path=' + link + '"/>');
     pop.close();
 }
 
@@ -991,20 +1141,19 @@ function openModuleField(obj, skey) {
         }
         jsonStr = JSON.stringify(json); // stringify后字符串会带有多余的双引号
     }
-    var url = "../macro/module_field_select.jsp?skey=" + skey + "&desc=" + encodeURI(desc) + "&openerFieldName=" + openerFieldName + "&parentFields=" + encodeURI(jsonStr) + "&isWx=1";
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    var url = "../macro/module_field_select.jsp?skey=" + skey + "&openerFieldName=" + openerFieldName + "&parentFields=" + encodeURI(jsonStr) + "&isWx=1&desc=" + encodeURI(desc);
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
     pop.build();
     pop.show();
-
 }
 
 function openDeptWin(obj) {
     var $obj = $(obj);
     var _code = $obj.attr("code");
     var url = "../macro/macro_dept_win.jsp?formCode=" + _code;
-    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 300, height: 500});
+    pop = new Popup({contentType: 1, isReloadOnClose: false, width: 340, height: 500});
     pop.setContent("contentUrl", url);
     pop.setContent("title", "请选择");
     pop.build();
@@ -1016,11 +1165,9 @@ function selectNode(formCode, code, name) {
 
     $("#" + formCode + "_realshow").val(name);
     $("#" + formCode).val(code);
-
-
 }
 
-// 关闭弹出框
+// 关闭弹出窗口
 function closeIframe() {
     pop.close();
 }
@@ -1032,12 +1179,10 @@ function nestSheetJumpPage(title, url, nest_sheet) {
     pop.setContent("title", title);
     pop.build();
     pop.show();
-
 }
 
 // 表单映射域宏控件
 function doneField(parentFieldMaps, byValue, showValue, openerFieldName) {
-
     $("#" + openerFieldName + "_realshow").val(showValue);
     $("#" + openerFieldName).val(byValue);
     if (parentFieldMaps != "") {
@@ -1047,11 +1192,14 @@ function doneField(parentFieldMaps, byValue, showValue, openerFieldName) {
             var _text = item.text;
             var _name = item.name;
             $("#" + _name).val(_value);
-            //计算控件 \
+            if ($('#' + _name + '_realshow')[0]) {
+                $('#' + _name + '_realshow').val(_text);
+            }
+            // 计算控件
             var _calCodes = $("#" + _name).data(CODES_NAME.CALCULATOR_CODES);
             reInitCalculator(_calCodes);
             var _macroSqlCodes = $("#" + _name).data(CODES_NAME.MACRO_SQL_CODES);
-            //sql控件
+            // sql控件
             if (_macroSqlCodes != undefined) {
                 //console.info(mSql_arr);
                 $.each(mSql_arr, function (index, item) {
@@ -1068,7 +1216,7 @@ function doneField(parentFieldMaps, byValue, showValue, openerFieldName) {
                             }
                         }
                         var urlParams = "?pageType=flow&flowId=" + FLOW_ID + "&skey=" + skey + "&fieldName=" + _code;
-                        //console.info(urlParams);
+                        // console.info(urlParams);
                         onSQLCtlRelateFieldChange(urlParams, data);
                     }
                 });
@@ -1187,14 +1335,107 @@ function formatDate(date) {
 //计算控件回调
 function calByNestSheet(nest_sheet, nestFormCode) {
     if (nest_sheet != null) {
+        console.log('calByNestSheet nest_sheet', nest_sheet);
         if (typeof (nest_sheet) == 'object') {
-            for (var o in nest_sheet) {
+            /*for (var o in nest_sheet) {
                 var $ctl = $("input[formula*='nest." + o + "'][formCode='" + nestFormCode + "']");
                 $ctl.val(nest_sheet[o]);
                 var _calCodes = $ctl.data(CODES_NAME.CALCULATOR_CODES);
                 // 置其它相关的计算控件
                 reInitCalculator(_calCodes);
             }
+            */
+            // 20220730 将o由原来的sum(nest.je)中的je改为计算控件的字段名
+            var keys = '';
+            for (var o in nest_sheet) {
+                if (keys.indexOf(',' + o + ',') != -1) {
+                    // 跳过已正常取得的字段，因为可能在sum时两个嵌套表中都含有同名的字段，而其中一个是有formCode属性的
+                    continue;
+                }
+                console.log('keys', keys);
+                var $ctl = $("input[name='" + o + "'][formCode='" + nestFormCode + "']");
+                if (!$ctl[0]) {
+                    // 向下兼容会带来问题，如果在sum时两个嵌套表中都含有同名的字段，会导致出现问题，故需带有formCode属性的计算控件字段记住
+                    // 向下兼容，旧版的sum型计算控件中没有formCode
+                    $ctl = $("input[name='" + o + "']");
+                } else {
+                    if (keys == '') {
+                        keys = ',' + o + ',';
+                    } else {
+                        keys += o + ',';
+                    }
+                }
+                $ctl.val(nest_sheet[o]);
+
+                var _calCodes = $ctl.data(CODES_NAME.CALCULATOR_CODES);
+                // 置其它相关的计算控件
+                reInitCalculator(_calCodes);
+            }
         }
     }
+}
+
+function bindFuncFieldRelateChangeEvent(formCode, targetFieldName, fieldNames) {
+    var ary = fieldNames.split(",");
+    var len = ary.length;
+    for (var i=0; i < len; i++) {
+        var field = ary[i];
+        if (field=="") {
+            continue;
+        }
+        if (o(field)) {
+            var oldValue = o(field).value;
+            checkFuncRelateOnchange(formCode, targetFieldName, fieldNames, field, oldValue);
+        }
+        else {
+            if (isIE11) {
+                console.log(field + " is not exist");
+            }
+        }
+    }
+
+    // 初始化值
+    doFuncFieldRelateOnChange(formCode, targetFieldName, fieldNames);
+}
+
+function checkFuncRelateOnchange(formCode, targetFieldName, fieldNames, field, oldValue) {
+    setInterval(function(){
+        if (oldValue != o(field).value) {
+            oldValue = o(field).value;
+            doFuncFieldRelateOnChange(formCode, targetFieldName, fieldNames);
+        }
+    },500);
+}
+
+function doFuncFieldRelateOnChange(formCode, targetFieldName, fieldNames) {
+    var ary = fieldNames.split(",");
+    var len = ary.length;
+    var data = "formCode=" + formCode + "&fieldName=" + targetFieldName;
+    for (var i=0; i < len; i++) {
+        var field = ary[i];
+        if (field=="") {
+            continue;
+        }
+        data += "&" + field + "=" + o(field).value;
+    }
+
+    data += "&fieldNames=" + fieldNames;
+
+    $.ajax({
+        type: "post",
+        url: "../../visual/getFuncVal.do",
+        data: data,
+        dataType: "html",
+        beforeSend: function(XMLHttpRequest){
+        },
+        complete: function(XMLHttpRequest, status){
+        },
+        success: function(data, status){
+            var ret = $.parseJSON(data);
+            o(targetFieldName).value = ret.val;
+        },
+        error: function() {
+            jAlert(XMLHttpRequest.responseText, '提示');
+        }
+    });
 }

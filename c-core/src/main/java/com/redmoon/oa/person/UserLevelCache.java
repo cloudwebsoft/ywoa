@@ -1,6 +1,8 @@
 package com.redmoon.oa.person;
 
 import cn.js.fan.base.ObjectCache;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Vector;
 
 /**
@@ -26,18 +28,19 @@ public class UserLevelCache extends ObjectCache {
         super(uld);
     }
 
-    public Vector getAllLevel() {
-        Vector v = null;
+    public Vector<UserLevelDb> getAllLevel() {
+        Vector<UserLevelDb> v = null;
         try {
             v = (Vector) rmCache.getFromGroup(ALLLEVEL, group);
-            if (v != null)
+            if (v != null) {
                 return v;
+            }
             UserLevelDb uld = new UserLevelDb();
             v = uld.list();
             rmCache.putInGroup(ALLLEVEL, group, v);
         }
         catch (Exception e) {
-            logger.error("getAllLevel:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getAllLevel:" + e.getMessage());
         }
         return v;
     }

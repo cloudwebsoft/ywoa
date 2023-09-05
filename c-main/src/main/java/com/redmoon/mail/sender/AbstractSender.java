@@ -36,6 +36,7 @@ public abstract class AbstractSender implements MailSender {
 		return null;
 	}
 
+	@Override
 	public void sendHtmlMail(MailSenderInfo mailInfo) throws AddressException,
 			MessagingException {
 
@@ -67,6 +68,7 @@ public abstract class AbstractSender implements MailSender {
 
 	}
 
+	@Override
 	public void sendTextMail(MailSenderInfo mailInfo) throws AddressException,
 			MessagingException {
 		Message msg = populateCommonInfo(mailInfo);

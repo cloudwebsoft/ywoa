@@ -2,9 +2,11 @@ package com.redmoon.dingding.util;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.domain.BaseDdObj;
 import com.redmoon.dingding.enums.Enum;
 import com.redmoon.dingding.service.auth.AuthService;
+import com.redmoon.oa.sys.DebugUtil;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -49,10 +51,11 @@ public class HttpHelper {
 
     public <T extends BaseDdObj> T httpGet(Class<? extends BaseDdObj> classz) throws DdException {
         String resultStr = httpGet();
-        if (resultStr != null && !resultStr.equals(""))
+        if (resultStr != null && !resultStr.equals("")) {
             return (T) onResult(JSONObject.parseObject(resultStr, classz));
-        else
+        } else {
             return null;
+        }
     }
 
     /**
@@ -65,11 +68,14 @@ public class HttpHelper {
      * @throws DdException
      */
     public <T extends BaseDdObj> T httpPost(Class<? extends BaseDdObj> classz, Object data) throws DdException {
+        DebugUtil.i(getClass(), "httpPost url=" + url + " data", data.toString());
         String resultStr = httpPost(data);
-        if (resultStr != null && !resultStr.equals(""))
+        DebugUtil.i(getClass(), "httpPost resultStr", resultStr);
+        if (resultStr != null && !"".equals(resultStr)) {
             return (T) onResult(JSONObject.parseObject(resultStr, classz));
-        else
+        } else {
             return null;
+        }
     }
 
     public String httpGet() throws DdException {
@@ -91,12 +97,12 @@ public class HttpHelper {
 
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (response != null) try {
                 response.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -126,13 +132,15 @@ public class HttpHelper {
                 return resultStr;
             }
         } catch (IOException e) {
-            System.out.println("request url=" + url + ", exception, msg=" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("url:" + url);
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (response != null) try {
-                response.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
             }
         }
         return null;
@@ -162,10 +170,12 @@ public class HttpHelper {
         } catch (IOException e) {
             callBack.doError(Enum.emErrorCode.emErrorUrlConnect, "请求异常");
         } finally {
-            if (response != null) try {
-                response.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
             }
         }
     }

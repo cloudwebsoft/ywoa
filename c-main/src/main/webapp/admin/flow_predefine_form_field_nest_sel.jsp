@@ -56,10 +56,12 @@ if (formView!=WorkflowActionDb.VIEW_DEFAULT) {
 Iterator ir = v.iterator();
 String options = "";
 String fields = ParamUtil.get(request, "fields");
+// 老版迁移过来的系统中原有流程套用流程后，fields中会含有comma
+fields = fields.replaceAll("comma", ",");
 
 String[] fds = fields.split(",");
 int len = fds.length;
-if (fields.equals("")) {
+if ("".equals(fields)) {
 	len = 0; // 当为空时，split所得的数组长度为1
 }
 String[] fdsText = new String[len];
@@ -74,8 +76,9 @@ while (ir.hasNext()) {
 			fdsText[i] = ff.getTitle();
 		}
 	}
-	if (!isFinded)
+	if (!isFinded) {
 		options += "<option value='" + ff.getName() + "'>" + ff.getTitle() + "</option>";
+	}
 }
 
 MacroCtlMgr mm = new MacroCtlMgr();		
@@ -146,7 +149,10 @@ while (ir.hasNext()) {
 
 String selOptions = "";
 for (int i=0; i<len; i++) {
-	selOptions += "<option value='" + fds[i] + "'>" + fdsText[i] + "</option>";
+	// 如果为null，则字段已被删除
+	if (fdsText[i] != null) {
+		selOptions += "<option value='" + fds[i] + "'>" + fdsText[i] + "</option>";
+	}
 }
 %>
 <script language="JavaScript">

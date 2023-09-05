@@ -33,13 +33,12 @@ public class ShiftScheduleMgr {
     
     public Vector listShift() {
     	Vector v = new Vector();
-    	String sql = "select id from form_table_shift order by id desc";
+    	String sql = "select id from ft_shift order by id desc";
     	FormDAO fdao = new FormDAO();
     	try {
 			v = fdao.list("shift", sql);
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return v;
     }
@@ -64,7 +63,7 @@ public class ShiftScheduleMgr {
 			FormDAO fdao = new FormDAO();
 			try {
 				long defaultId = -1;
-				String sql = "select id from form_table_shift_schedule";
+				String sql = "select id from ft_shift_schedule";
 				Iterator ir = fdao.list("shift_schedule", sql).iterator();
 				while (ir.hasNext()) {
 					fdao = (FormDAO)ir.next();
@@ -95,8 +94,7 @@ public class ShiftScheduleMgr {
                     return defaultId;
 				}
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(ShiftScheduleMgr.class).error(e);
 			}
         }
 		
@@ -186,7 +184,7 @@ public class ShiftScheduleMgr {
 	 */
 	public static FormDAO getShiftAdjust(String userName, java.util.Date dt) {
 		String strDate = DateUtil.format(dt, "yyyy-MM-dd");
-		String sql = "select id from form_table_shift_adjust where user_name=" + StrUtil.sqlstr(userName) + " and mydate=" + SQLFilter.getDateStr(strDate, "yyyy-MM-dd");
+		String sql = "select id from ft_shift_adjust where user_name=" + StrUtil.sqlstr(userName) + " and mydate=" + SQLFilter.getDateStr(strDate, "yyyy-MM-dd");
 		String formCode = "shift_adjust";
 		FormDb fd = new FormDb();
 		fd = fd.getFormDb(formCode);
@@ -205,7 +203,7 @@ public class ShiftScheduleMgr {
 			}
 		}
 		catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(ShiftScheduleMgr.class).error(e);
 		}
 		return null;
 	}

@@ -4,6 +4,7 @@ import cn.js.fan.db.ResultIterator;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.pvg.Privilege;
 
@@ -25,7 +26,9 @@ public class ModulePrivMgr {
             return true;
         }
 
-        String filter = msd.getString("filter");
+        /*
+        @TASK 20230517 街道或国企删除项目报数据范围权限错误，故先注释掉
+        String filter = msd.getFilter(pvg.getUser(request));
         if (null==filter || "".equals(filter)) {
             return true;
         }
@@ -54,9 +57,11 @@ public class ModulePrivMgr {
                 return true;
             }
         } catch (ErrMsgException | SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(ModulePrivMgr.class).error(e);
         }
         return false;
+        */
+        return true;
     }
 
     /**
@@ -96,7 +101,7 @@ public class ModulePrivMgr {
                 return true;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(ModulePrivMgr.class).error(e);
         }
         return false;
     }

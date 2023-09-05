@@ -9,10 +9,11 @@
 		<strenthLevelMin desc="最低密码强度" options="0|低,1|中,2|强,3|很强,4|非常强">0</strenthLevelMin>
 		<isForceChangeWhenWeak desc="当弱口令时是否强制更改密码">true</isForceChangeWhenWeak>
 	</password>
-	<isDefendBruteforceCracking desc="是否防暴力破解,30秒内登录最大出错次数为3，否则将延时60秒登录">false</isDefendBruteforceCracking>
+	<isDefendBruteforceCracking desc="是否防暴力破解,30秒内登录最大出错次数为3，否则将延时60秒登录">true</isDefendBruteforceCracking>
 	<isRememberUserName desc="是否记住用户名">true</isRememberUserName>
 	<isRememberPwdDisplay desc="是否记住密码选项是否可见">true</isRememberPwdDisplay>
 	<isLoginAuto desc="是否可以自动登录">true</isLoginAuto>
+	<frameAllowFrom desc="框架页允许的地址，多个则以空格隔开">http://localhost:8085 http://localhost:8086</frameAllowFrom>
 	<isAccessUpfileNeedLogin desc="访问upfile目录是否需登录">false</isAccessUpfileNeedLogin>
 	<isPwdCanReset desc="是否可通过邮箱重置密码，如开启，则强制用户在登录后完善邮箱信息" options="0|否,1|是">0</isPwdCanReset>
 	<pwdName desc="登录密码输入框的name">wdmm</pwdName>

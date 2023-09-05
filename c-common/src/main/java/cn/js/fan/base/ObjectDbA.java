@@ -1,17 +1,16 @@
 package cn.js.fan.base;
 
 import java.util.Vector;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 import cn.js.fan.db.ListResult;
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.Serializable;
 
 public abstract class ObjectDbA implements Serializable {
     public String connname = "";
-    public transient Logger logger = null;
     public String QUERY_LIST;
     public String QUERY_LOAD;
     public String QUERY_DEL;
@@ -23,10 +22,9 @@ public abstract class ObjectDbA implements Serializable {
     }
 
     public void init() {
-        logger = Logger.getLogger(this.getClass().getName());
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("默认数据库名不能为空");
         setQueryAdd();
         setQuerySave();
         setQueryDel();

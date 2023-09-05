@@ -199,9 +199,7 @@ if (op.equals("")) {
 		
 		jobject.put("page", curpage);
 		jobject.put("total", total);
-		
-		// System.out.println(getClass() + " curpage=" + curpage + " total=" + total + " pagesize=" + pagesize);
-		
+
 		WorkflowDb wf = new WorkflowDb();
         MacroCtlUnit mu = null;
         MacroCtlMgr mm = new MacroCtlMgr();
@@ -242,8 +240,7 @@ if (op.equals("")) {
 				ffir = pfdao.getFields().iterator();
 				while (ffir.hasNext()) {
 					FormField ff = (FormField)ffir.next();
-					// System.out.println(getClass() + " flowId=" + flowId + " ff.getName=" + ff.getName() + " :" + pfdao.getFieldValue(ff.getName()));
-					
+
 					if (ff.getType().equals(FormField.TYPE_MACRO)) {
 						mu = mm.getMacroCtlUnit(ff.getMacroType());
 						String macroCode = mu.getCode();
@@ -280,9 +277,9 @@ if (op.equals("")) {
 				flowStatus = wf.getStatusDesc();
 			}
 			
-			jo.put("flowId", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + flowId + "')\">" + flowId + "</a>");
+			jo.put("flowId", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + flowId + "')\">" + flowId + "</a>");
 			jo.put("flowBeginDate", flowCreateDate);
-			jo.put("flowTitle", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + flowId + "')\">" + flowTitle + "</a>");
+			jo.put("flowTitle", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + flowId + "')\">" + flowTitle + "</a>");
 			jo.put("flowStarter", flowStarter);
 			jo.put("flowStatus", flowStatus);
 			
@@ -290,7 +287,7 @@ if (op.equals("")) {
 			FormDb fd = new FormDb();
 			fd = fd.getFormDb(formCode);
 			String formName = fd.getName();
-			jo.put(QueryScriptUtil.CWS_OP, "<a href=\"javascript:;\" onclick=\"addTab('" + formName + "', '" + request.getContextPath() + "/visual/module_show.jsp?parentId=" + mid + "&id=" + mid + "&code=" + formCode + "')\">查看</a>");
+			jo.put(QueryScriptUtil.CWS_OP, "<a href=\"javascript:;\" onclick=\"addTab('" + formName + "', '" + request.getContextPath() + "/visual/moduleShowPage.do?parentId=" + mid + "&id=" + mid + "&code=" + formCode + "')\">查看</a>");
 
 			rows.put(jo);
 		}
@@ -323,9 +320,7 @@ if (op.equals("")) {
 				// rows.put(jo);
 			}
 		}
-		
-		// System.out.println(getClass() + " jobject=" + jobject);
-		
+
 		out.print(jobject);
 }
 else if (op.equals("modifyColProps")) {

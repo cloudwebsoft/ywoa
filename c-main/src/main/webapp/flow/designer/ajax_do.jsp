@@ -1,4 +1,6 @@
-<%@ page contentType="text/html; charset=utf-8"%><%@ page import = "java.util.*"%><%@ page import = "com.redmoon.oa.ui.*"%><%@ page import = "cn.js.fan.util.*"%><%@ page import = "cn.js.fan.web.*"%><%@ page import = "com.redmoon.oa.flow.*"%><jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
+<%@ page contentType="text/html; charset=utf-8"%><%@ page import = "java.util.*"%><%@ page import = "com.redmoon.oa.ui.*"%><%@ page import = "cn.js.fan.util.*"%><%@ page import = "cn.js.fan.web.*"%><%@ page import = "com.redmoon.oa.flow.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
+<jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 	if (!privilege.isUserPrivValid(request, "admin.flow.query")) {
 		// out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "pvg_invalid")));
 		// return;
@@ -19,8 +21,6 @@
 		String data = "{\"re\":\"" + re + "\", \"name\":\"" + queryName + "\", \"id\":\"" + aqd.getId() + "\"}";
 		data = "[" + data + "]";
 		out.print(data);
-		
-		// System.out.println(getClass() + " " + data);
 	}
     else if (op.equals("modifyConditionFieldCode")) {
 		boolean re = false;
@@ -30,7 +30,7 @@
 			re = aqm.modifyConditionFieldCode(request);
 		}
 		catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			msg = e.getMessage();
 		}
 		response.setContentType("text/plain"); 
@@ -85,8 +85,6 @@
 						str += ",\"" + calcFieldCodes[i] + "\":\"" + calcFuncs[i] + "\"";
 				}
 				str = "{" + str + "}";
-				
-				System.out.println(getClass() + " str=" + str);
 			}
 			*/
 			
@@ -94,9 +92,6 @@
 		}
 		response.setContentType("text/plain"); 
 		String data = "{\"re\":\"" + re + "\", \"msg\":\"" + msg + "\"}";
-		
-		// System.out.println(getClass() + " data=" + data + " id=" + id + " formCode=" + formCode);
-		
 		out.print(data);
 	}
 	else if (op.equals("del")) {
@@ -111,11 +106,6 @@
 		}
 		response.setContentType("text/plain"); 
 		String data = "{\"re\":\"" + re + "\", \"msg\":\"" + msg + "\"}";
-		
-		// System.out.println(getClass() + " " + data);
-		
 		out.print(data);
-
-	}	
-	
+	}
 %>

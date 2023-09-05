@@ -101,12 +101,10 @@ if (!mode.equals("moduleTag")) {
 String isSystem = ParamUtil.get(request, "isSystem");
 
 JSONObject jsonTabSetup = null;
-// System.out.println(getClass() + " formCode=" + formCode);
 %>
 <form style="margin:0px; padding:0px" id="formConditionFieldCode" name="formConditionFieldCode" method="post" action="<%=request.getContextPath()%>/flow/designer/ajax_do.jsp?op=modifyConditionFieldCode">
   <%
 	String conditionFieldCodeStr = ParamUtil.get(request, "fieldsSelected");
-	// System.out.println(getClass() + " conditionFieldCodeStr=" + conditionFieldCodeStr);
     String[] conditionFieldCodeArr = StrUtil.split(conditionFieldCodeStr, ",");
 	int fieldsLen = 0;
 	if (conditionFieldCodeArr!=null)
@@ -121,7 +119,6 @@ JSONObject jsonTabSetup = null;
 		String tagName = ParamUtil.get(request, "tagName");
 		String moduleFormCode = ParamUtil.get(request, "moduleFormCode");
 
-		// System.out.println(getClass() + " moduleFormCode=" + moduleFormCode + " tagName=" + tagName);
 		// 取得选项卡中的条件字段映射关系
 		String tagUrl = ModuleUtil.getModuleSubTagUrl(moduleFormCode, tagName);
 		if (tagUrl.equals("")) {
@@ -173,9 +170,7 @@ JSONObject jsonTabSetup = null;
 		String fieldCode = fieldName;
 		
 		FormField ff = fd.getFormField(fieldName);
-		   
-		// System.out.println(getClass() + " fieldName=" + fieldName + " type=" + ff.getType() + " conditionFieldCodeArr[" + j + "]=" + conditionFieldCodeArr[j]);
-		
+
 		sql = "select id from form_query_condition where query_id=" + queryId + " and condition_field_code=" + StrUtil.sqlstr(conditionFieldCodeArr[j]) + " order by id";
 		
 		MacroCtlUnit mu = null;
@@ -291,11 +286,9 @@ JSONObject jsonTabSetup = null;
 <%         }
 		   // 处理下拉菜单字段
 		   else if(ff.getType().equals(FormField.TYPE_SELECT) || macroCode.equals("macro_flow_select")){
-		   	   // System.out.println(getClass() + " sql=" + sql);
 			   Vector vt1 = fqcd.list(sql);
 			   if(ff.getType().equals(FormField.TYPE_SELECT)) {
 				   	options = FormParser.getOptionsOfSelect(fd, ff);
-					// System.out.println(getClass() + " options=" + options);
 			   }
 			   else {
 				    // 基础数据控件

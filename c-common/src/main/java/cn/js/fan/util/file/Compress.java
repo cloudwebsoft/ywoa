@@ -42,14 +42,13 @@ public class Compress {
       FileInputStream in = new FileInputStream(d);
       ZipEntry entry = new ZipEntry(StrUtil.UTF8ToUnicode(dir));//dir);//中文转换有问题
       out.putNextEntry(entry);
-      while ( (bytes_read = in.read(buffer)) != -1)
-        out.write(buffer, 0, bytes_read);
-      //System.out.println("file:" + d.getPath());
+      while ( (bytes_read = in.read(buffer)) != -1) {
+          out.write(buffer, 0, bytes_read);
+      }
       in.close();
       return;
     }
 
-    //System.out.println("directory:" + d.getPath());
     String[] entries = d.list();
     String path = d.getPath();
     for (int i = 0; i < entries.length; i++) {

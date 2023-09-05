@@ -1,28 +1,30 @@
 <%@ page contentType="text/html;charset=utf-8" %>
-<%@ page import="java.util.*" %>
-<%@ page import="cn.js.fan.util.*" %>
-<%@ page import="com.redmoon.oa.fileark.*" %>
-<%@ page import="org.json.*" %>
-<%@ page import="cn.js.fan.web.*" %>
-<%@ page import="com.cloudwebsoft.framework.db.*" %>
-<%@ page import="com.redmoon.oa.util.*" %>
-<%@ page import="com.redmoon.oa.basic.*" %>
-<%@ page import="com.redmoon.oa.pvg.*" %>
-<%@ page import="com.redmoon.oa.person.*" %>
-<%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="cn.js.fan.util.ParamUtil" %>
+<%@ page import="cn.js.fan.util.StrUtil" %>
 <%@ page import="com.redmoon.oa.flow.*" %>
-<%@ page import="com.redmoon.oa.visual.*" %>
-<%@ page import="com.redmoon.oa.flow.macroctl.*" %>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
+<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
 <%@ page import="org.json.JSONObject" %>
-<%@ page import="org.json.JSONArray" %>
-<%@ page import="com.redmoon.oa.flow.Leaf" %>
-<%@ page import="com.redmoon.oa.flow.LeafPriv" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<%@ page import="java.util.Iterator" %>
+<!DOCTYPE html>
+<html>
 <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>流程查询条件设置</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        .form-box {
+            width: 100%;
+            height: 400px;
+            margin: 0px 0px 10px 0px;
+            padding-left: 10px;
+            border: 1px solid #eeeeee;
+            overflow-x: auto;
+            overflow-y: auto;
+            float: left;
+        }
+    </style>
     <script src="../inc/common.js"></script>
     <script src="../inc/livevalidation_standalone.js"></script>
     <script src="<%=request.getContextPath()%>/js/jquery-1.9.1.min.js"></script>
@@ -38,18 +40,10 @@
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexbox/flexbox.css"/>
     <script type="text/javascript" src="../js/jquery.flexbox.js"></script>
-    <style>
-        .form-box {
-            width: 100%;
-            height: 400px;
-            margin: 0px 0px 10px 0px;
-            padding-left: 10px;
-            border: 1px solid #eeeeee;
-            overflow-x: auto;
-            overflow-y: auto;
-            float: left;
-        }
-    </style>
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
 </head>
 <body>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -83,50 +77,6 @@
         return;
     }
 
-    if (op.equals("setCond")) {
-        boolean re = false;
-/*        try {
-            re = mvm.modifyBtn(request, code);
-        } catch (ErrMsgException e) {
-            out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-            return;
-        }*/
-
-        int isToolbar = ParamUtil.getInt(request, "isToolbar", 0);
-
-        String[] queryFields = ParamUtil.getParameters(request, "queryFields");
-        if (queryFields==null) {
-            throw new ErrMsgException("请选择条件！");
-        }
-        JSONObject json = new JSONObject();
-        try {
-            // 因为json是无序的，所以需要用fields记录条件字段的顺序
-            String fields = "";
-            for (int i=0; i<queryFields.length; i++) {
-                String token = ParamUtil.get(request, queryFields[i] + "_cond");
-                json.put(queryFields[i], token);
-                if (fields.equals(""))
-                    fields = queryFields[i];
-                else
-                    fields += "," + queryFields[i];
-            }
-            json.put("fields", fields);
-            json.put("isToolbar", isToolbar);
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        lf.setCondProps(json.toString());
-        re = lf.update();
-        if (re) {
-            out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "flow_field_conds.jsp?typeCode=" + typeCode + "&formCode=" + formCode));
-        } else {
-            out.print(StrUtil.jAlert_Back("操作失败！", "提示"));
-        }
-        return;
-    }
-
     MacroCtlMgr mm = new MacroCtlMgr();
     JSONObject json;
     if (!"".equals(lf.getCondProps())) {
@@ -145,7 +95,7 @@
     </tbody>
 </table>
 <div class="spacerH"></div>
-<form action="flow_field_conds.jsp?op=setCond" method="post" name="formCond" id="formCond">
+<form action="flow_field_conds.jsp" method="post" name="formCond" id="formCond">
     <table cellspacing="0" class="tabStyle_1 percent60" cellpadding="3" width="95%" align="center">
         <tr>
             <td align="center" class="tabStyle_1_title"><%=fd.getName()%></td>
@@ -233,13 +183,46 @@
         </tr>
         <tr>
             <td align="center">
-                <input class="btn btn-default" type="submit" value="确定"/>
+                <input class="btn btn-default btn-ok" type="button" value="确定"/>
                 <input name="typeCode" value="<%=typeCode%>" type="hidden"/>
             </td>
         </tr>
     </table>
 </form>
 <script>
+    $(function() {
+        $('.btn-ok').click(function(e) {
+            e.preventDefault();
+            setConds();
+        });
+    })
+
+    function setConds() {
+        $.ajax({
+            type: "post",
+            url: "setConds.do",
+            contentType:"application/x-www-form-urlencoded; charset=UTF-8",
+            data: $('#formCond').serialize(),
+            dataType: "html",
+            beforeSend: function(XMLHttpRequest){
+                $('body').showLoading();
+            },
+            success: function(data, status){
+                data = $.parseJSON(data);
+                layer.msg(data.msg, {
+                    offset: '6px'
+                })
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(XMLHttpRequest, textStatus){
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
     <%
     if (json.has("fields")) {
         String queryFields = json.getString("fields");

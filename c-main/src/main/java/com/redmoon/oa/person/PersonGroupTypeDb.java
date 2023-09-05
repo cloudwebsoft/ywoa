@@ -108,7 +108,7 @@ public class PersonGroupTypeDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -151,7 +151,7 @@ public class PersonGroupTypeDb extends ObjectDb {
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn!=null) {
                 conn.close();

@@ -140,8 +140,8 @@ public class DetailListCtl extends AbstractMacroCtl {
 			JSONObject json = new JSONObject(defaultVal);
 			nestFormCode = json.getString("destForm");
 		} catch (JSONException e) {
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).info(nestFormCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + ff.getDefaultValueRaw());
+            LogUtil.getLog(getClass()).info(nestFormCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + ff.getDefaultValueRaw());
+            LogUtil.getLog(getClass()).error(e);
 		}
 	
 		String pageType = StrUtil.getNullStr((String) request.getAttribute("pageType"));
@@ -242,7 +242,7 @@ public class DetailListCtl extends AbstractMacroCtl {
 			JSONObject json = new JSONObject(defaultVal);
 			formCode = json.getString("destForm");
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			LogUtil.getLog(getClass()).info("createForNestCtl:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + macroField.getDefaultValueRaw());
 		}
 		
@@ -422,9 +422,8 @@ public class DetailListCtl extends AbstractMacroCtl {
 			JSONObject json = new JSONObject(defaultVal);
 			formCode = json.getString("destForm");
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
 			LogUtil.getLog(getClass()).info("saveForNestCtl:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + macroField.getDefaultValueRaw());
+            LogUtil.getLog(getClass()).error(e);
 		}
 		
         ModuleSetupDb msd = new ModuleSetupDb();
@@ -455,11 +454,12 @@ public class DetailListCtl extends AbstractMacroCtl {
 	               break;
         		}
             }
-            if (isBlankRow)
+            if (isBlankRow) {
                 map.put("" + i, "" + i);
+            }
         }
         
-        long fdaoId = StrUtil.toLong(cwsId);
+        long fdaoId = StrUtil.toLong(cwsId, -1);
 
         // 在flow.FormDAOMgr的update方法中，置了request的属性action
         WorkflowActionDb action = (WorkflowActionDb)request.getAttribute("action");
@@ -586,8 +586,9 @@ public class DetailListCtl extends AbstractMacroCtl {
                         }
                     }
                 }
-                else
+                else {
                     isCheck = true;
+                }
 
                 if (isCheck) {
                     try {
@@ -601,8 +602,9 @@ public class DetailListCtl extends AbstractMacroCtl {
             }
         }
         
-        if (pck.getMsgs().size()!=0)
+        if (pck.getMsgs().size()!=0) {
             throw new ErrMsgException(pck.getMessage(false));
+        }
 
 		String fds = "";
 		String str = "";
@@ -656,8 +658,9 @@ public class DetailListCtl extends AbstractMacroCtl {
             // 检查是否有新增项
             for (i = 0; i < uniqueIndexes.length; i++) {
                 // 跳过空行
-                if (map.get("" + i)!=null)
+                if (map.get("" + i)!=null) {
                     continue;
+                }
                 // 如果是新增的行
                 if (newIds[i]==-1) {
                     PreparedStatement ps = conn.prepareStatement(sql);
@@ -844,8 +847,6 @@ public class DetailListCtl extends AbstractMacroCtl {
 			JSONObject json = new JSONObject(defaultVal);
 			formCode = json.getString("destForm");
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
 			LogUtil.getLog(getClass()).info("saveForNestCtl:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + macroField.getDefaultValueRaw());
 		}
 		
@@ -865,8 +866,9 @@ public class DetailListCtl extends AbstractMacroCtl {
                 if (!fdao.isLoaded()) {
                     continue;
                 }
-                if (fdao.del())
+                if (fdao.del()) {
                     r++;
+                }
             }
         }
         catch (SQLException e) {
@@ -880,7 +882,7 @@ public class DetailListCtl extends AbstractMacroCtl {
             ErrMsgException {
         FileUpload fileUpload = doUpload(application, request);
         String upFile = writeExcel(fileUpload);
-        if (!upFile.equals("")) {
+        if (!"".equals(upFile)) {
             String excelFile = Global.getRealPath() + upFile;
             String formCode = fileUpload.getFieldValue("formCode");
             JSONArray jsonAry = read(excelFile, formCode);
@@ -927,12 +929,11 @@ public class DetailListCtl extends AbstractMacroCtl {
                 vpath = "upfile/" + fi.getExt() + "/" + year + "/" + month + "/";
                 String filepath = Global.getRealPath() + vpath;
                 fu.setSavePath(filepath);
-                // 使用随机名称写入磁盘
+                // 临时使用随机名称写入磁盘
                 fu.writeFile(true);
 
                 //File f = new File(vpath + fi.getDiskName());
                 //f.delete();
-                //System.out.println("FleUpMgr " + fi.getName() + " " + fi.getFieldName() + " " + fi.getDiskName());
                 return vpath + fi.getDiskName();
             }
         }
@@ -955,13 +956,12 @@ public class DetailListCtl extends AbstractMacroCtl {
             // String listField = StrUtil.getNullStr(msd.getString("list_field"));
             String[] fieldCodes = msd.getColAry(false, "list_field");
 
-            // System.out.println(getClass() + " " + formCode + " listField=" + listField);
-
             FormDb fd = new FormDb();
             fd = fd.getFormDb(formCode);
 
-            if (rsColumns > fieldCodes.length)
+            if (rsColumns > fieldCodes.length) {
                 rsColumns = fieldCodes.length;
+            }
 
             // 从第二行开始
             for (int i = 1; i < rsRows; i++) {
@@ -973,8 +973,9 @@ public class DetailListCtl extends AbstractMacroCtl {
                         String c = cc.getContents();
                         if (fd.getFormField(fieldCodes[j]).getFieldType()==FormField.FIELD_TYPE_DATE) {
                             java.util.Date d = DateUtil.parse(c, "dd/MM/yyyy");
-                            if (d!=null)
+                            if (d!=null) {
                                 c = DateUtil.format(DateUtil.parse(c, "dd/MM/yyyy"), "yyyy-MM-dd");
+                            }
                         }
                         cell.put(fieldCodes[j], c);
                     } catch (JSONException ex1) {
@@ -983,7 +984,7 @@ public class DetailListCtl extends AbstractMacroCtl {
                 rows.put(cell);
             }
         } catch (BiffException | IOException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return rows;
 
@@ -1011,8 +1012,8 @@ public class DetailListCtl extends AbstractMacroCtl {
             JSONObject json = new JSONObject(defaultVal);
             formCode = json.getString("destForm");
         } catch (JSONException e) {
-            e.printStackTrace();
             LogUtil.getLog(getClass()).info("saveForNestCtl:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + ff.getDefaultValueRaw());
+            LogUtil.getLog(getClass()).error(e);
         }
 
         ModuleSetupDb msd = new ModuleSetupDb();

@@ -7,7 +7,6 @@
 <%@ page import="cn.js.fan.util.*" %>
 <%@ page import="cn.js.fan.web.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 if (!privilege.isUserLogin(request)) {
@@ -387,9 +386,9 @@ border=0>
             <td width="34%" align=right nowrap>>>&nbsp;<%=root_name%>&nbsp;&nbsp;<a href="dir_top_ajax.jsp?op=repair&root_code=<%=root_code%>">修复</a>
             <!-- &nbsp;<a href='javascript:;' onclick="addTab('类别', '<%=request.getContextPath()%>/fileark/dir_kind_list.jsp?dirCode=<%=Leaf.ROOTCODE%>')">类别</a> -->
             &nbsp;<a target="_parent" href="document_list_m.jsp">文件</a>
-            &nbsp;<a href="dir_priv_m.jsp?dirCode=<%=StrUtil.UrlEncode(root_code)%>" target="_parent"><lt:Label res="res.label.cms.dir" key="pvg"/></a>
-            &nbsp;<a target=dirbottomFrame href="dir_bottom.jsp?parent_code=<%=StrUtil.UrlEncode(root_code, "utf-8")%>&parent_name=<%=StrUtil.UrlEncode(root_name, "utf-8")%>&op=AddChild"><lt:Label res="res.label.cms.dir" key="add_content"/></a>
-            &nbsp;<a target="dirbottomFrame" href="dir_bottom.jsp?op=modify&code=<%=StrUtil.UrlEncode(root_code, "utf-8")%>&name=<%=StrUtil.UrlEncode(root_name,"utf-8")%>&description=<%=StrUtil.UrlEncode(root_description,"utf-8")%>"><lt:Label res="res.label.cms.dir" key="modify"/></a>&nbsp; 
+            &nbsp;<a href="dir_priv_m.jsp?dirCode=<%=StrUtil.UrlEncode(root_code)%>" target="_parent">权限</a>
+            &nbsp;<a target=dirbottomFrame href="dir_bottom.jsp?parent_code=<%=StrUtil.UrlEncode(root_code, "utf-8")%>&parent_name=<%=StrUtil.UrlEncode(root_name, "utf-8")%>&op=AddChild">添车</a>
+            &nbsp;<a target="dirbottomFrame" href="dir_bottom.jsp?op=modify&code=<%=StrUtil.UrlEncode(root_code, "utf-8")%>&name=<%=StrUtil.UrlEncode(root_name,"utf-8")%>&description=<%=StrUtil.UrlEncode(root_description,"utf-8")%>">修改</a>&nbsp;
 			<!--<a target=_self href="#" onClick="if (window.confirm('您确定要删除<%=root_name%>吗?')) window.location.href='dir_top_ajax?op=del&delcode=<%=root_code%>'">删除</a>-->
 			  </td>
             </tr>

@@ -11,13 +11,11 @@
 <%@ page import="java.util.Iterator" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="strutil" scope="page" class="cn.js.fan.util.StrUtil"/>
 <!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=8"/>
     <meta HTTP-EQUIV="pragma" CONTENT="no-cache"/>
     <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate"/>
     <meta HTTP-EQUIV="expires" CONTENT="Wed, 26 Feb 1997 08:21:57 GMT"/>
@@ -104,7 +102,7 @@
 
     Privilege pvg = new Privilege();
     String parent_code = ParamUtil.get(request, "parent_code");
-//String root_code = ParamUtil.get(request, "root_code");
+    //String root_code = ParamUtil.get(request, "root_code");
     if (parent_code.equals("")) {
         parent_code = root_code;
     }
@@ -245,6 +243,8 @@
                                                             }
                                                             $('#isOpen').val(data.isOpen?1:0);
                                                             $('#isContextMenu').val(data.isContextMenu?1:0);
+                                                            $('#description').val(data.description);
+                                                            $('#metaData').val(data.metaData);
 
                                                             // console.log(data);
                                                             onChangePreCode();
@@ -374,7 +374,7 @@
         </tbody>
     </table>
 </div>
-<div id="quipbottom" style="width: 100%;position:absolute; bottom:0; left:0;">
+<div id="quipbottom" style="width: 100%; position:absolute; bottom:0; left:0; z-index: 100; background-color: white">
     <table cellspacing="0" cellpadding="0" width="100%">
         <tbody>
         <tr>
@@ -413,7 +413,7 @@
             </tr>
             <tr>
             <td align="left">
-                <lt:Label res="res.label.forum.admin.menu_bottom" key="link"/>
+                链接
                 <input id="link" name="link" value=""/>
             </td>
         </tr>
@@ -422,7 +422,7 @@
                     类型
                     <select id="preCode" name="preCode" onchange="onChangePreCode()">
                         <option value="">
-                            <lt:Label res="res.label.forum.admin.menu_bottom" key="none"/>
+                            无
                         </option>
                         <option value="<%=TreeSelectDb.PRE_CODE_FLOW %>">流程</option>
                         <option value="<%=TreeSelectDb.PRE_CODE_MODULE %>">模块</option>
@@ -468,13 +468,25 @@
                     <input id="parentCode" name="parentCode" type="hidden" value=""/>
                     <input id="flag" name="flag" type="hidden" value=""/>
                     <span id="parentName"></span>
-                    &nbsp;&nbsp;<a href="javascript:;" onclick="window.open('../officeequip/officeequip_sel.jsp?root_code=<%=root_code %>','_blank','toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=640,height=480')">选择</a>
+                    &nbsp;&nbsp;<a href="javascript:;" onclick="window.open('basic_tree_sel.jsp?root_code=<%=root_code %>','_blank','toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=640,height=480')">选择</a>
                     </span>
                 </td>
             </tr>
             <tr>
+                <td align="left" colspan="2">
+                    描述
+                    <input id="description" name="description"/>
+                </td>
+            </tr>
+            <tr>
+                <td align="left" colspan="2">
+                    数据
+                    <input id="metaData" name="metaData"/>
+                </td>
+            </tr>
+            <tr>
                 <td align="center" colspan="2">
-                    <input type="button" class="btn" onclick="mysubmit()" value="确定"/>&nbsp;&nbsp;&nbsp;<input type="button" class="btn" onclick="myreset()" value="重置"/>
+                    <input type="button" class="btn" onclick="mysubmit()" value="确定"/>&nbsp;&nbsp;&nbsp;<input type="button" class="btn" title="隐藏面板" onclick="hideBottom()" value="隐藏"/>
                 </td>
             </tr>
         </table>
@@ -541,8 +553,8 @@
         });
     }
 
-    function myreset() {
-        document.getElementById("name").value = "";
+    function hideBottom() {
+        $('#quipbottom').hide();
     }
 
     function onChangePreCode() {

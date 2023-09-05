@@ -1,20 +1,16 @@
 <%@ page contentType="text/html;charset=utf-8" %>
-<%@ page import="cn.js.fan.db.*"%>
-<%@ page import="cn.js.fan.web.*"%>
-<%@ page import="cn.js.fan.db.Paginator"%>
-<%@ page import="cn.js.fan.util.*"%>
-<%@ page import="java.util.*"%>
-<%@ page import="java.sql.*"%>
-<%@ page import="cn.js.fan.security.*"%>
-<%@ page import="com.redmoon.oa.util.*"%>
-<%@ page import="com.cloudwebsoft.framework.db.JdbcTemplate" %>
-<%@ page import="com.cloudwebsoft.framework.db.DataSource" %>
-<%@ page import="org.apache.ibatis.annotations.Param" %>
-<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
-<%@ page import="com.redmoon.oa.flow.FormDb" %>
-<%@ page import="com.cloudwebsoft.framework.db.Connection" %>
+<%@ page import="cn.js.fan.db.ResultIterator"%>
+<%@ page import="cn.js.fan.db.ResultRecord"%>
+<%@ page import="cn.js.fan.util.ParamUtil"%>
+<%@ page import="cn.js.fan.web.DBInfo"%>
+<%@ page import="com.alibaba.fastjson.JSONObject"%>
+<%@ page import="com.cloudwebsoft.framework.db.Connection"%>
+<%@ page import="com.cloudwebsoft.framework.db.JdbcTemplate"%>
+<%@ page import="com.redmoon.oa.flow.FormDb"%>
 <%@ page import="com.redmoon.oa.flow.FormMgr" %>
-<%@ page import="com.alibaba.fastjson.JSONObject" %>
+<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.Vector" %>
 <%
 	/**
 	 * 表单同步工具，同步表单中的字段
@@ -30,7 +26,7 @@
 		JdbcTemplate jt = new JdbcTemplate(new Connection(dbSource));
 		ResultIterator ri = jt.executeQuery(sqlNew, new Object[]{formCode});
 		if (ri.hasNext()) {
-			ResultRecord rr = (ResultRecord)ri.next();
+			ResultRecord rr = ri.next();
 
 			FormDb ftd = new FormDb();
 			ftd = ftd.getFormDb(formCode);
@@ -140,7 +136,7 @@
 		while (ri.hasNext()) {
 			ResultRecord rr = (ResultRecord)ri.next();
 			String codeNew = "", nameNew = "", name="";
-			boolean isFound = true;
+			boolean isFound = false;
 			codeNew = rr.getString(1);
 			nameNew = rr.getString(2);
 			ir = v.iterator();
@@ -164,10 +160,10 @@
 			%>
 		</td>
 		<td>
-			<button class="btn btn-default" onclick="sync('<%=fd.getCode()%>', '<%=nameNew%>')">同步</button>
 			<%
 				if (isFound) {
 			%>
+			<button class="btn btn-default" onclick="sync('<%=fd.getCode()%>', '<%=nameNew%>')">同步</button>
 			<button class="btn btn-default" onclick="window.open('upgrade_module_by_db.jsp?dbSource=<%=dbSource%>&formCode=<%=fd.getCode()%>')">模块</button>
 			<%
 				}

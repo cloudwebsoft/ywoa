@@ -42,4 +42,8 @@ public class RoleVO {
     private boolean checked;
 
     private String kindName;
+
+    boolean status;
+
+    int userCount = 0;
 }

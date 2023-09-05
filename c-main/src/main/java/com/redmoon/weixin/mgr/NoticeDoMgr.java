@@ -5,12 +5,10 @@ import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.notice.NoticeDb;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
-import javax.servlet.http.HttpServletRequest;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -21,7 +19,7 @@ import java.util.Vector;
  */
 public class NoticeDoMgr {
 	private final int PAGE_SIZE = 10;
-	public JSONObject noticeList(String userId,int curPage,boolean isNoticeAll,boolean isNoticeMgr){
+	public JSONObject noticeList(String userId, int curPage, boolean isNoticeAll, boolean isNoticeMgr){
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("res",0);
 		StringBuilder sqlSb = new StringBuilder();
@@ -60,11 +58,7 @@ public class NoticeDoMgr {
 			jsonObj.put("res", -1);
 			LogUtil.getLog(NoticeDoMgr.class).error(e.getMessage());
 		}
-		System.out.println(jsonObj.toString());
-        
-		
 		return jsonObj;
-		
 	}
 
 }

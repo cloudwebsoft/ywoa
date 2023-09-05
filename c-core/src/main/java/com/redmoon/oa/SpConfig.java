@@ -12,16 +12,21 @@ package com.redmoon.oa;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLDecoder;
 
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Attribute;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class SpConfig {
     // public: constructor to load driver and connect db
@@ -31,7 +36,6 @@ public class SpConfig {
     Document doc = null;
     Element root = null;
     String deskey = "bluewind";//DES密钥长度为64bit，1个字母为八位，需8个字母，不能超过8个，否则会出错
-    Logger logger = Logger.getLogger(SpConfig.class.getName());
 
     @SuppressWarnings("deprecation")
     public SpConfig() {
@@ -39,14 +43,28 @@ public class SpConfig {
         xmlpath = confURL.getFile();
         xmlpath = URLDecoder.decode(xmlpath);
 
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(xmlpath);
+            Resource resource = new ClassPathResource(configxml);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+
+            /*FileInputStream fin = new FileInputStream(xmlpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-        } catch (java.io.IOException e) {
+            fin.close();*/
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -56,14 +74,15 @@ public class SpConfig {
 
     public String getDescription(String name) {
         Element which = root.getChild("sp").getChild(name);
-        // System.out.println("name=" + name + " which=" + which);
-        if (which == null)
+        if (which == null) {
             return null;
+        }
         Attribute att = which.getAttribute("desc");
-        if (att != null)
+        if (att != null) {
             return att.getValue();
-        else
+        } else {
             return "";
+        }
     }
 
     public String get(String name) {
@@ -81,7 +100,7 @@ public class SpConfig {
         try {
             r = Integer.parseInt(which.getText());
         } catch (Exception e) {
-            logger.error("getInt:" + e.getMessage());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("getInt:" + e.getMessage());
         }
         return r;
     }

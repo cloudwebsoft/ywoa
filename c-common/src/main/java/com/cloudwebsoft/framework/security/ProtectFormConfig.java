@@ -2,15 +2,15 @@ package com.cloudwebsoft.framework.security;
 
 import cn.js.fan.cache.jcs.RMCache;
 import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.Element;
-import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -30,7 +30,6 @@ public class ProtectFormConfig {
     private final String group = "CONFIG_PRORECT_FORM";
     private final String ALLUNIT = "ALLUNIT";
 
-    private static Logger logger;
     private final String FILENAME = "config_protect_form.xml";
 
     private static Document doc = null;
@@ -41,7 +40,6 @@ public class ProtectFormConfig {
 
     public ProtectFormConfig() {
         rmCache = RMCache.getInstance();
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -52,21 +50,12 @@ public class ProtectFormConfig {
             try {
                 xmlPath = URLDecoder.decode(xmlPath, "utf-8");
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                LogUtil.getLog(ProtectFormConfig.class).error(e);
             }
 
-            SAXBuilder sb = new SAXBuilder();
-            try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
-                root = doc.getRootElement();
-                fin.close();
-                isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
-            }
+            IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+            doc = configUtil.getDocument("config_protect_form.xml");
+            root = doc.getRootElement();
         }
     }
 
@@ -80,7 +69,7 @@ public class ProtectFormConfig {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -93,10 +82,10 @@ public class ProtectFormConfig {
         try {
             v = (Vector<ProtectFormUnit>) rmCache.getFromGroup(ALLUNIT, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
-            v = new Vector<ProtectFormUnit>();
+            v = new Vector<>();
             init();
             List list = root.getChildren();
             if (list != null) {
@@ -119,7 +108,7 @@ public class ProtectFormConfig {
                     rmCache.putInGroup(ALLUNIT, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllDeskTopUnit:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllDeskTopUnit:" + e.getMessage());
                 }
             }
         }

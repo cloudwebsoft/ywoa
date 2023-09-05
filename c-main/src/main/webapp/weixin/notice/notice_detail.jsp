@@ -20,6 +20,7 @@
     long noticeId = ParamUtil.getLong(request, "id", 0);
     NoticeDb nd = new NoticeDb();
     nd = nd.getNoticeDb(noticeId);
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE HTML>
 <html>
@@ -198,10 +199,17 @@
 <script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
 <script type="text/javascript" src="../js/jq_mydialog.js"></script>
 <script>
+    var isUniWebview = <%=isUniWebview%>;
     if(!mui.os.plus) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
     }
+    else {
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
+    }
+
     (function ($) {
         $.init({
             swipeBack: true //启用右滑关闭功能
@@ -266,7 +274,7 @@
         var openPhotoSwipe = function () {
             var pswpElement = document.querySelectorAll('.pswp')[0];
             var items = [{
-                src: "<%=request.getContextPath()%>/public/img_show.jsp?path=" + encodeURI(path),
+                src: "<%=request.getContextPath()%>/public/showImg.do?path=" + encodeURI(path),
                 w: 964,
                 h: 1024
             }

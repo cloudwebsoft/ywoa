@@ -23,57 +23,65 @@ import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
 
 /**
- * 文号框
+ * 文号框，在描述中填写文号头、年份的字段名，以逗号分隔
  * @author lenovo
  *
  */
 public class PaperNoCtl extends AbstractMacroCtl {
 	
+	@Override
 	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-		StringBuffer str = new StringBuffer();
+		StringBuilder str = new StringBuilder();
 		String flowId = (String) request.getAttribute("cwsId");
 		
 		String desc = StrUtil.getNullStr(ff.getDescription());
+
+		String style = "";
+		if (!"".equals(ff.getCssWidth())) {
+			style = "style='width:" + ff.getCssWidth() + "'";
+		}
+		else {
+			style = "style='width:150px'";
+		}
 		
-		str.append("<input id='" + ff.getName() + "' name='" + ff.getName()
-				+ "' size=10 />");
+		str.append("<input id='" + ff.getName() + "' name='" + ff.getName() + "' " + style + " size=10 />");
 
 		if (request.getAttribute("isPaperNoJS") == null) {
-			str.append("<script src='" + request.getContextPath()
-					+ "/flow/macro/macro_paperno_ctl_js.jsp?flowId=" + flowId
-					+ "&fieldName=" + ff.getName() + "&desc=" + StrUtil.UrlEncode(desc) + "'></script>");
+			str.append("<script>ajaxGetJS(\"/flow/macro/macro_paperno_ctl_js.jsp?flowId=" + flowId
+					+ "&fieldName=" + ff.getName() + "&desc=" + StrUtil.UrlEncode(desc) + "\", {})</script>");
 			request.setAttribute("isPaperNoJS", "y");
 		}
 		return str.toString();
 	}
 	
+	@Override
 	public String getSetCtlValueScript(HttpServletRequest request,
-			IFormDAO IFormDao, FormField ff, String formElementId) {
+									   IFormDAO IFormDao, FormField ff, String formElementId) {
 		if (ff.getValue() == null) {
 			return "";
 		}
-		else if (ff.getValue().equals(ff.getDefaultValue())) // 如果等于原来的SQL语句
+		else if (ff.getValue().equals(ff.getDefaultValue())) {
 			return "";
-		else {
+		} else {
 			return super.getSetCtlValueScript(request, IFormDao, ff,
 					formElementId);
 		}
 	}
 	
+	@Override
 	public String getDisableCtlScript(FormField ff, String formElementId) {
 		// 参数ff来自于数据库，当控件被禁用时，可以根据数据库的值来置被禁用的控件的显示值及需要保存的隐藏type=hidden的值
 		// 数据库中没有数据时，当前用户的值将被置为空，否则将被显示为用户的真实姓名，由此实现当前用户宏控件当被禁用时，不会被解析为当前用户
 		// 且如果已被置为某个用户，则保持其值不变
 		String v = ff.getValue();
-		if (ff.getValue() != null && !ff.getValue().equals("")) {
+		if (ff.getValue() != null && !"".equals(ff.getValue())) {
 			if (ff.getValue().equals(ff.getDefaultValueRaw())) {
 				v = "";
 			}
 		}
 
-		String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType()
+		return "DisableCtl('" + ff.getName() + "', '" + ff.getType()
 				+ "','" + v + "','" + ff.getValue() + "');\n";
-		return str;
 	}	
 	
 	/**
@@ -81,9 +89,10 @@ public class PaperNoCtl extends AbstractMacroCtl {
      * @param ff FormField
      * @return String
      */
-    public String getReplaceCtlWithValueScript(FormField ff) {
+    @Override
+	public String getReplaceCtlWithValueScript(FormField ff) {
 		String v = ff.getValue();
-		if (ff.getValue() != null && !ff.getValue().equals("")) {
+		if (ff.getValue() != null && !"".equals(ff.getValue())) {
 			if (ff.getValue().equals(ff.getDefaultValueRaw())) {
 				v = "";
 			}
@@ -92,9 +101,9 @@ public class PaperNoCtl extends AbstractMacroCtl {
      }	
 	
     /**
-     * 在com.redmoon.oa.flow.FormDAO.save时先进行有效性验证
+     * 有效性验证
      * @param request
-     * @param formField
+     * @param fdao
      */    	
     @Override
     public boolean validate(HttpServletRequest request, IFormDAO fdao, FormField ff, FileUpload fu) throws ErrMsgException {
@@ -102,8 +111,9 @@ public class PaperNoCtl extends AbstractMacroCtl {
     	String tableName = fd.getTableNameByForm();
     	int flowId = StrUtil.toInt(fu.getFieldValue("flowId"), 0);
     	String val = StrUtil.getNullStr(fu.getFieldValue(ff.getName()));
-    	if (val.equals("") || val.equals(ff.getDefaultValueRaw()))
-    		return true;
+    	if ("".equals(val) || val.equals(ff.getDefaultValueRaw())) {
+			return true;
+		}
     	
 		String desc = StrUtil.getNullStr(ff.getDescription());
 		String[] ary = StrUtil.split(desc, ",");
@@ -123,8 +133,7 @@ public class PaperNoCtl extends AbstractMacroCtl {
 	    		throw new ErrMsgException("存在重复文号！");
 	    	}			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
    		return true;
     }
@@ -138,12 +147,13 @@ public class PaperNoCtl extends AbstractMacroCtl {
 		String desc = StrUtil.getNullStr(ff.getDescription());
 		String[] ary = StrUtil.split(desc, ",");
 		int len = 0;
-		if (ary!=null)
+		if (ary!=null) {
 			len = ary.length;
+		}
 		if (len>0) {
 			String whtVal = fu.getFieldValue(ary[0]); // wht
 			
-			if (whtVal==null || whtVal.equals("")) {
+			if (whtVal==null || "".equals(whtVal)) {
 				// 为null有可能是因为流程表单中字段为不可写，没有值的情况
 				return ff.getValue();
 			}			
@@ -169,18 +179,16 @@ public class PaperNoCtl extends AbstractMacroCtl {
 				try {
 					pnpd.save();
 				} catch (ResKeyException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 				*/
 			}
 			else {
-				pnpd.set("cur_num", new Integer(num));
+				pnpd.set("cur_num", num);
 				try {
 					pnpd.save();
 				} catch (ResKeyException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 			}
 		}
@@ -188,32 +196,40 @@ public class PaperNoCtl extends AbstractMacroCtl {
         return StrUtil.getNullStr(val);
     }
     
-    public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
-		if (fieldValue==null || fieldValue.equals(ff.getDefaultValue())) // 如果等于原来的SQL语句
+    @Override
+	public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
+		if (fieldValue==null || fieldValue.equals(ff.getDefaultValue())) {
 			return "";
-		else
+		} else {
 			return StrUtil.getNullStr(fieldValue);
+		}
     }    
 
+	@Override
 	public String getControlValue(String userName, FormField ff) {
-		if (ff.getValue()==null || ff.getValue().equals(ff.getDefaultValue())) // 如果等于原来的SQL语句
+		if (ff.getValue()==null || ff.getValue().equals(ff.getDefaultValue())) {
 			return "";
-		else
+		} else {
 			return StrUtil.getNullStr(ff.getValue());
+		}
 	}
 
+	@Override
 	public String getControlText(String userName, FormField ff) {
-		if (ff.getValue()== null || ff.getValue().equals(ff.getDefaultValue())) // 如果等于原来的SQL语句
+		if (ff.getValue()== null || ff.getValue().equals(ff.getDefaultValue()))	{
 			return "";
-		else		
+		} else {
 			return StrUtil.getNullStr(ff.getValue());
+		}
 	}
 
+	@Override
 	public String getControlType() {
 		return "text";
 	}
 	
-    public String getControlOptions(String userName, FormField ff) {
+    @Override
+	public String getControlOptions(String userName, FormField ff) {
     	return "";
     }	
 

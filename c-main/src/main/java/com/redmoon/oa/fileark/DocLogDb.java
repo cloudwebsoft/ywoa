@@ -19,6 +19,7 @@ import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -130,7 +131,7 @@ public class DocLogDb extends ObjectDb {
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -155,8 +156,7 @@ public class DocLogDb extends ObjectDb {
         try {
 			jt.executeUpdate(sql, new Object[]{new Long(id)});
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			return false;
 		}
         
@@ -210,7 +210,7 @@ public class DocLogDb extends ObjectDb {
                 primaryKey.setValue(new Long(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn!=null) {
                 conn.close();
@@ -233,7 +233,8 @@ public class DocLogDb extends ObjectDb {
          return re;
     }
 
-	@SuppressWarnings("unchecked")
+	@Override
+    @SuppressWarnings("unchecked")
 	public ListResult listResult(String listsql, int curPage, int pageSize)
 			throws ErrMsgException {
 		int total = 0;
@@ -279,7 +280,7 @@ public class DocLogDb extends ObjectDb {
 				} while (rs.next());
 			}
 		} catch (SQLException e) {//捕获SQLException
-			logger.error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 			throw new ErrMsgException("数据库出错！");
 		} finally {
 			if (conn != null) {
@@ -323,7 +324,7 @@ public class DocLogDb extends ObjectDb {
 				return false;
 			}
 		} catch (SQLException e) {
-			logger.error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 		} finally {
 			jt.close();
 		}

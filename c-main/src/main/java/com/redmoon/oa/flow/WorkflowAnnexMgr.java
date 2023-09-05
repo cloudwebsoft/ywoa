@@ -4,12 +4,12 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -69,8 +69,6 @@ public class WorkflowAnnexMgr {
         String formCode = "flow_annex_create";
         ParamConfig pc = new ParamConfig(wad.getTable().
                                          getFormValidatorFile());
-        // System.out.println(getClass() + " validateFile=" + wad.getTable().
-        //                                 getFormValidatorFile());
       
         ParamChecker pck = new ParamChecker(request, fu);
         try {
@@ -215,7 +213,7 @@ public class WorkflowAnnexMgr {
 					jObj.put("progress", progress);
 					jArr.put(jObj);
 				} catch (JSONException e) {
-					Logger.getLogger(getClass()).error(e.getMessage());
+                    LogUtil.getLog(getClass()).error(e.getMessage());
 				}
 			}
 		}
@@ -231,7 +229,7 @@ public class WorkflowAnnexMgr {
 				flag = true;
 			}
 		} catch (SQLException e) {
-			Logger.getLogger(getClass()).error(e.getMessage());
+             LogUtil.getLog(getClass()).error(e.getMessage());
 		}return flag;
 	}
 }

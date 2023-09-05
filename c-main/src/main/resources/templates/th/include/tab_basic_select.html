@@ -1,0 +1,14 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<div id="tabs1" th:fragment="navConfig(item)">
+    <ul>
+        <li id="menu1" th:attr="class=${item} eq 1 ? 'current':''"><a th:href="@{/admin/basic_select_list.jsp}"><span>基础数据</span></a></li>
+        <li th:if="${canAdd}" id="menu2" th:attr="class=${item} eq 2 ? 'current':''"><a th:href="@{'/admin/basic_select_add.jsp?kind=' + ${kind}}"><span>增加</span></a></li>
+        <li th:if="${isAdmin}" id="menu3" th:attr="class=${item} eq 3 ? 'current':''"><a th:href="@{'/basicdata/basicSelectKindListPage.do?kind=' + ${kind}}"><span>类型</span></a></li>
+    </ul>
+</div>
+</body>
+</html>

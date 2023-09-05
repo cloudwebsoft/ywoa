@@ -4,23 +4,29 @@ import java.util.Calendar;
 import java.util.Iterator;
 
 import cn.js.fan.util.DateUtil;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import com.cloudwebsoft.framework.util.LogUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 
 import cn.js.fan.db.SQLFilter;
 import cn.js.fan.security.ThreeDesUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
-public class SendEmailJob implements Job{
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class SendEmailJob extends QuartzJobBean {
 
-	
 	public SendEmailJob(){
 		super();
 	}
 	
-	public void execute(JobExecutionContext arg0) throws JobExecutionException {
+	@Override
+	public void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
 		String errinfo = "";
 		com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
 		
@@ -104,7 +110,7 @@ public class SendEmailJob implements Job{
 	        try {
 				sendMail.send();
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			
 			mailMsgDb = (MailMsgDb)mailMsgDb.getObjectDb(new Integer(id));

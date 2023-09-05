@@ -33,6 +33,7 @@ function Map() {
 		}
 		return bln;
 	}
+	// 注意返回的是json，如果需取其值，需用get(key).value
 	this.get = function(_key) {
 		try {
 			for (i = 0; i < this.elements.length; i++) {
@@ -43,6 +44,7 @@ function Map() {
 		} catch (e) {
 			return null;
 		}
+		return null;
 	}
 	this.getElements = function() {
 		return this.elements;

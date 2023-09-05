@@ -11,7 +11,8 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.jcs.access.exception.CacheException;
+import io.swagger.annotations.Api;
+import org.apache.commons.jcs3.access.exception.CacheException;
 
 import cn.js.fan.cache.jcs.RMCache;
 import cn.js.fan.db.ResultIterator;
@@ -32,6 +33,7 @@ import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.pvg.Privilege;
 
+@Api(tags = "工作日历")
 public class OACalendarDb extends QObjectDb {
 	public static int DATE_TYPE_WORK = 0; // 工作日
 	public static int OAWORK_WORK = 0;  //oa_work_date工作日
@@ -39,7 +41,7 @@ public class OACalendarDb extends QObjectDb {
 	public static int DATE_TYPE_SAT_SUN = 1; // 周六、日
 	public static int DATE_TYPE_HOLIDAY = 2; // 假日
 	public static int DATE_TYPE_WORK_DATE_ID = 0; // 假日
-	
+
 
 	public OACalendarDb() {
 		super();
@@ -53,7 +55,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 取得相应年份的所有假日（有可能含周六、周日，因为在设置时有可能将周六、周日设为了假日）
-	 * 
+	 *
 	 * @param beginYear
 	 * @param endYear
 	 * @return
@@ -77,7 +79,6 @@ public class OACalendarDb extends QObjectDb {
 		OACalendarDb cdb = new OACalendarDb();
         cdb = (OACalendarDb)cdb.getQObjectDb(d);
         if (cdb==null) {
-			System.out.println(OACalendarDb.class.getName() + " isWorkday: 工作日历未初始化");
 			LogUtil.getLog(OACalendarDb.class).error("isWorkday: 工作日历未初始化");
         	return false;
 		}
@@ -88,7 +89,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 取得星期六是工作日的日期，用于计划甘特图
-	 * 
+	 *
 	 * @param beginYear
 	 * @param endYear
 	 * @return
@@ -109,7 +110,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 取得星期天是工作日的日期，用于计划甘特图
-	 * 
+	 *
 	 * @param beginYear
 	 * @param endYear
 	 * @return
@@ -129,7 +130,7 @@ public class OACalendarDb extends QObjectDb {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param year
 	 * @param month
 	 *            从0开始
@@ -171,7 +172,7 @@ public class OACalendarDb extends QObjectDb {
 	}
 	/**
 	 * 显示日历
-	 * 
+	 *
 	 * @param year
 	 * @param month
 	 * @return
@@ -199,8 +200,7 @@ public class OACalendarDb extends QObjectDb {
 		try {
 			RMCache.getInstance().clear();
 		} catch (CacheException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		for (int i = 0; i < monthlyCalendar.length; i++) {
 			html.append("<tr>");
@@ -215,9 +215,9 @@ public class OACalendarDb extends QObjectDb {
 							"yyyy-MM-dd");
 					OACalendarDb oacdb = new OACalendarDb();
 					oacdb = (OACalendarDb) oacdb.getQObjectDb(currentDate);
-					
-					SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd"); 
-					String oa_date =sdf.format(currentDate); 
+
+					SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd");
+					String oa_date =sdf.format(currentDate);
 					String newDeptCode = searchParentCode(unitCode,deptCode,deptType,year);
 					String sql = "select * from oa_calendar where dept_user_code = "+ StrUtil.sqlstr(newDeptCode) +" and unit_code = " + StrUtil.sqlstr(unitCode)+" and oa_date = "+ StrUtil.sqlstr(oa_date);
 					JdbcTemplate jt = new JdbcTemplate();
@@ -251,9 +251,9 @@ public class OACalendarDb extends QObjectDb {
 							work_time_end_e = rr.getString("work_time_end_e");
 						}
 					} catch (SQLException e) {
-						e.printStackTrace();
+						LogUtil.getLog(getClass()).error(e);
 					}
-					
+
 					if (oacdb != null) {
 						if (dateType == DATE_TYPE_SAT_SUN) {
 							html
@@ -399,7 +399,7 @@ public class OACalendarDb extends QObjectDb {
 									work_time_begin_c
 									+ "','"
 									+ work_time_end_c
-									+ "','" 
+									+ "','"
 									+ work_time_begin_d
 									+ "','"
 									+ work_time_end_d
@@ -423,10 +423,10 @@ public class OACalendarDb extends QObjectDb {
 		html.append("</table>");
 		return html.toString();
 	}
-	
+
 	/**
 	 * 显示日历
-	 * 
+	 *
 	 * @param year
 	 * @param month
 	 * @return
@@ -667,7 +667,7 @@ public class OACalendarDb extends QObjectDb {
 		}
 		return false;
 	}
-	
+
 	//日历排序，用于清除空白日期，按照顺序排列
 	public ArrayList dateOrder(String beginA, String endA, String beginB, String endB, String beginC, String endC, String beginD, String endD, String beginE, String endE) throws ErrMsgException{
 		if(beginA.equals("") && !endA.equals("")){
@@ -700,7 +700,7 @@ public class OACalendarDb extends QObjectDb {
 		if(!beginE.equals("") && endE.equals("")){
 			throw new ErrMsgException("填写时间必须对称");
 		}
-		
+
 		ArrayList<String> al = new ArrayList<String>();   //非空的时间加入al
 		if(!beginA.equals("")){
 			al.add(beginA);
@@ -737,7 +737,7 @@ public class OACalendarDb extends QObjectDb {
 		}
 		return al;
 	}
-	
+
 	//添加日历规则
 	public boolean addRule(HttpServletRequest request) throws ErrMsgException{
 		boolean re = false;
@@ -764,7 +764,7 @@ public class OACalendarDb extends QObjectDb {
 		} catch (ErrMsgException e1) {
 			throw new ErrMsgException(e1.getMessage());
 		}
-		
+
 		//根据整合过以后的数据，按照顺序重新获得日期的顺序
 		work_time_begin_a = (String)al.get(0);
 		work_time_end_a = (String)al.get(1);
@@ -776,7 +776,7 @@ public class OACalendarDb extends QObjectDb {
 		work_time_end_d = (String)al.get(7);
 		work_time_begin_e = (String)al.get(8);
 		work_time_end_e = (String)al.get(9);
-		
+
 		int dateType = ParamUtil.getInt(request, "dateType",0);
 		int userType = ParamUtil.getInt(request, "userType",0);
 		//String userCode = ParamUtil.get(request, "userCode");
@@ -818,7 +818,7 @@ public class OACalendarDb extends QObjectDb {
 					sql = "select oa_date from oa_calendar where oa_date>="+ StrUtil.sqlstr(startTime)+" and oa_date<="+ StrUtil.sqlstr(endTime) +" and dept_user_code ="+ StrUtil.sqlstr(deptCode) +" and unit_code="+StrUtil.sqlstr(unitCode) +" and week_day in ("+week+") ";
 				}
 				OACalendarDb oacdb = new OACalendarDb();
-				
+
 				//Iterator i = oacdb.list(sql, new Object[] { beginDate, endDate ,week}).iterator();
 				Vector v = oacdb.list(sql);
 				Iterator i = v.iterator();
@@ -843,7 +843,7 @@ public class OACalendarDb extends QObjectDb {
 						+",dept_user_type="+userType
 						+ newWorkId
 						+" where oa_date ="+ StrUtil.sqlstr(oaDate)+" and unit_code ="+StrUtil.sqlstr(unitCode)+" and dept_user_code ="+ StrUtil.sqlstr(deptCode)+"";
-						
+
 						re = jt.executeUpdate(sql)>=1 ? true : false;
 						//oacdb.del();
 						/*re = oaCalendarDb.save(new JdbcTemplate(), new Object[]{0,unitCode,work_time_begin_a,work_time_end_a,
@@ -865,7 +865,7 @@ public class OACalendarDb extends QObjectDb {
 				int year = Integer.parseInt(startTime.substring(0,4));
 				String parentUnitCode = searchParentCode(unitCode,deptCode,userType,year);
 				initCalendar(year,parentUnitCode,deptCode,unitCode,userType);
-				
+
 				//更改修改的数据
 				if(week.equals("")){
 					sql = "select oa_date from oa_calendar where oa_date>="+ StrUtil.sqlstr(startTime)+" and oa_date<="+ StrUtil.sqlstr(endTime) +" and dept_user_code ="+ StrUtil.sqlstr(deptCode) +" and unit_code="+StrUtil.sqlstr(unitCode);
@@ -873,7 +873,7 @@ public class OACalendarDb extends QObjectDb {
 					sql = "select oa_date from oa_calendar where oa_date>="+ StrUtil.sqlstr(startTime)+" and oa_date<="+ StrUtil.sqlstr(endTime) +" and dept_user_code ="+ StrUtil.sqlstr(deptCode) +" and unit_code="+StrUtil.sqlstr(unitCode) +" and week_day in ("+week+") ";
 				}
 				OACalendarDb oacdb = new OACalendarDb();
-				
+
 				//Iterator i = oacdb.list(sql, new Object[] { beginDate, endDate ,week}).iterator();
 				Vector v = oacdb.list(sql);
 				Iterator i = v.iterator();
@@ -899,8 +899,8 @@ public class OACalendarDb extends QObjectDb {
 						+ newWorkId
 						+" where oa_date ="+ StrUtil.sqlstr(oaDate)+" and unit_code ="+StrUtil.sqlstr(unitCode)+" and dept_user_code ="+ StrUtil.sqlstr(deptCode)+"";
 						re = jt.executeUpdate(sql)>=1 ? true : false;
-						
-						
+
+
 					} catch (Exception e) {
 						LogUtil.getLog(getClass()).error(
 								"addRule:" + StrUtil.trace(e));
@@ -908,15 +908,15 @@ public class OACalendarDb extends QObjectDb {
 				}
 				//数据修改成功后，添加oa_word_id新数据
 				if(flagId != -2){
-					addOaWordId(flagId,newId,week,dateType,startTime,endTime,unitCode,deptCode,userType); 
+					addOaWordId(flagId,newId,week,dateType,startTime,endTime,unitCode,deptCode,userType);
 				}
 			}
 		}catch(Exception e){
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return re;
 	}
-	
+
 	//删除该组日历规则
 	public boolean delCalendar(HttpServletRequest request){
 		boolean re = false;
@@ -928,11 +928,11 @@ public class OACalendarDb extends QObjectDb {
 		try {
 			re = jt.executeUpdate(sql) >= 0 ? true : false;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return re;
 	}
-	
+
 	//判断是否需要添加新的workId 如果需要则添加
 	public int isNeedAddWorkId (int workId ,String week,int dateType){
 		int flag = -1;
@@ -957,7 +957,7 @@ public class OACalendarDb extends QObjectDb {
 					int weekDay4 = rr.getInt("thu");
 					int weekDay5 = rr.getInt("fri");
 					int weekDay6 = rr.getInt("sat");
-					int weekDay7 = rr.getInt("sun"); 
+					int weekDay7 = rr.getInt("sun");
 					if(dateType==0){  //如果是选择工作日
 						if(weekDay1==0){
 							str = "2,";
@@ -1010,13 +1010,13 @@ public class OACalendarDb extends QObjectDb {
 					}
 				}
 			} catch (SQLException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			workId--;
 		}
 		return flag;
 	}
-	
+
 	//list页面需要通过选择时间来判断周几是否打勾
 	public String findDate(String beginTime ,String endTime,String unitCode,String deptCode,int deptType,int year){
 		JdbcTemplate jt = new JdbcTemplate();
@@ -1051,11 +1051,11 @@ public class OACalendarDb extends QObjectDb {
 				return str;
 			}
 		}catch(SQLException e){
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return str;
 	}
-	
+
 	//数据修改成功后，添加oa_word_id新数据
 	public void addOaWordId(int flagId ,int newWorkId, String week,int dateType, String startDate, String endDate, String unitCode, String deptCode, int deptType) throws SQLException{
 		JdbcTemplate jt = new JdbcTemplate();
@@ -1085,12 +1085,12 @@ public class OACalendarDb extends QObjectDb {
 					for(int s = 0 ; s<workDay.length ; s++){
 						int theDay = Integer.parseInt(workDay[s]);
 						if(theDay==1) {weekDay7 = OAWORK_HOLIDAY;}  //周日
-						if(theDay==2) {weekDay1 = OAWORK_HOLIDAY;} 
-						if(theDay==3) {weekDay2 = OAWORK_HOLIDAY;} 
-						if(theDay==4) {weekDay3 = OAWORK_HOLIDAY;} 
-						if(theDay==5) {weekDay4 = OAWORK_HOLIDAY;} 
-						if(theDay==6) {weekDay5 = OAWORK_HOLIDAY;} 
-						if(theDay==7) {weekDay6 = OAWORK_HOLIDAY;} 
+						if(theDay==2) {weekDay1 = OAWORK_HOLIDAY;}
+						if(theDay==3) {weekDay2 = OAWORK_HOLIDAY;}
+						if(theDay==4) {weekDay3 = OAWORK_HOLIDAY;}
+						if(theDay==5) {weekDay4 = OAWORK_HOLIDAY;}
+						if(theDay==6) {weekDay5 = OAWORK_HOLIDAY;}
+						if(theDay==7) {weekDay6 = OAWORK_HOLIDAY;}
 					}
 				}
 			}else{
@@ -1113,21 +1113,21 @@ public class OACalendarDb extends QObjectDb {
 					for(int s = 0 ; s<workDay.length ; s++){
 						int theDay = Integer.parseInt(workDay[s]);
 						if(theDay==1) {weekDay7 = OAWORK_WORK;}  //周日
-						if(theDay==2) {weekDay1 = OAWORK_WORK;} 
-						if(theDay==3) {weekDay2 = OAWORK_WORK;} 
-						if(theDay==4) {weekDay3 = OAWORK_WORK;} 
-						if(theDay==5) {weekDay4 = OAWORK_WORK;} 
-						if(theDay==6) {weekDay5 = OAWORK_WORK;} 
-						if(theDay==7) {weekDay6 = OAWORK_WORK;} 
+						if(theDay==2) {weekDay1 = OAWORK_WORK;}
+						if(theDay==3) {weekDay2 = OAWORK_WORK;}
+						if(theDay==4) {weekDay3 = OAWORK_WORK;}
+						if(theDay==5) {weekDay4 = OAWORK_WORK;}
+						if(theDay==6) {weekDay5 = OAWORK_WORK;}
+						if(theDay==7) {weekDay6 = OAWORK_WORK;}
 					}
 				}
 			}
-			
+
 			if(newWorkId != 0){
 				sql = "update oa_work_date set mon="+weekDay1+",tue= "+weekDay2+",wed="+weekDay3+",thu="+weekDay4+",fri="+weekDay5+",sat="+weekDay6+",sun="+weekDay7+" where id="+newWorkId;
 				jt.executeUpdate(sql);
 			}
-			
+
 			//判断是否是新ID还是旧有的ID
 			if(newWorkId == 0){
 				newWorkId = flagId;
@@ -1142,12 +1142,12 @@ public class OACalendarDb extends QObjectDb {
 				else if(i==5){weekDay = weekDay4;}
 				else if(i==6){weekDay = weekDay5;}
 				else if(i==7){weekDay = weekDay6;}
-				
+
 				sql = "update oa_calendar set date_type="+weekDay+",work_date_id="+newWorkId+" where oa_date>="+StrUtil.sqlstr(startDate)+" and oa_date<="+StrUtil.sqlstr(endDate)+" and week_day = "+i+" and unit_code="+StrUtil.sqlstr(unitCode)+" and dept_user_code="+StrUtil.sqlstr(deptCode)+" and dept_user_type="+deptType;
 				jt.executeUpdate(sql);
 			}
 	}
-	
+
 	//循环查找父类CODE
 	public String searchParentCode(String unitCode,String deptCode,int deptType,int year){
 		String parentDeptCode = "";
@@ -1179,7 +1179,7 @@ public class OACalendarDb extends QObjectDb {
 			return parentDeptCode;
 		}
 	}
-	
+
 	public boolean initCalendar(int year) {
 		License lic = License.getInstance();
 		if (lic.canUseSolution(License.SOLUTION_HR)) {
@@ -1308,13 +1308,14 @@ public class OACalendarDb extends QObjectDb {
 						}
 					} catch (ResKeyException e) {
 						LogUtil.getLog(getClass()).error("initCalendar2:" + StrUtil.trace(e));
+						return false;
 					}
 				}
 			}
 			return true;
 		}
 	}
-	
+
 	//新页面初始化
 	public boolean initCalendarNew(int year) {
 		boolean re = false;
@@ -1335,7 +1336,7 @@ public class OACalendarDb extends QObjectDb {
 						"initCalendarNew:" + StrUtil.trace(e));
 			}
 		}
-		
+
 		String oldBeginDate = (year-1) + "-01-01";
 		String oldEndDate = year + "-01-01";
 		JdbcTemplate jt = new JdbcTemplate();
@@ -1362,7 +1363,7 @@ public class OACalendarDb extends QObjectDb {
 				alUsers.add(userCode);
 			}
 			*/
-			
+
 			//部门初始化
 			for(int s = 0 ; s<alDept.size() ; s++){
 				String theCode = alDept.get(s);
@@ -1401,8 +1402,8 @@ public class OACalendarDb extends QObjectDb {
 						}
 					}
 				}
-				
-				
+
+
 				int workDeptId = 0;
 				//找出当前code用的最多的workId
 				sql = "select count(work_date_id),work_date_id from oa_calendar where dept_user_code="+ StrUtil.sqlstr(theCode)+" and oa_date >="+StrUtil.sqlstr(oldBeginDate) +" and oa_date <"+StrUtil.sqlstr(oldEndDate)+" group by work_date_id order by count(work_date_id) desc;";
@@ -1439,7 +1440,7 @@ public class OACalendarDb extends QObjectDb {
 					endE = rr.getString("work_time_end_e");
 					//deptType = rr.getInt("dept_user_type");
 				}
-				
+
 				//第一次赋值-- 时间和workId
 				sql = "update oa_calendar set work_time_begin_a="+StrUtil.sqlstr(beginA)+", work_time_end_a="+StrUtil.sqlstr(endA)
 				+", work_time_begin_b="+StrUtil.sqlstr(beginB)
@@ -1453,7 +1454,7 @@ public class OACalendarDb extends QObjectDb {
 				+", date_type=0"
 				+", work_date_id = "+workDeptId + " where unit_code='root' and dept_user_code="+StrUtil.sqlstr(theCode)+" and oa_date >="+StrUtil.sqlstr(strBeginDate) +" and oa_date <"+StrUtil.sqlstr(strEndDate);
 				re = jt.executeUpdate(sql) >=1 ? true : false;
-				
+
 				//第二次赋值 -- date_type
 				sql = "select * from oa_work_date where id ="+workDeptId;
 				ri = jt.executeQuery(sql);
@@ -1483,10 +1484,10 @@ public class OACalendarDb extends QObjectDb {
 					}
 					week = week.substring(0,week.length()-1);
 				}
-				
+
 				sql = "update oa_calendar set date_type=1,work_time_begin_a='',work_time_end_a='',work_time_begin_b='',work_time_end_b='',work_time_begin_c='',work_time_end_c='',work_time_begin_d='',work_time_end_d='',work_time_begin_e='',work_time_end_e='' where week_day in ("+week+") and unit_code='root' and dept_user_code="+StrUtil.sqlstr(theCode)+" and oa_date >="+StrUtil.sqlstr(strBeginDate) +" and oa_date <"+StrUtil.sqlstr(strEndDate);
 				re = jt.executeUpdate(sql) >=1 ? true : false;
-					
+
 			}
 		} catch (SQLException e1) {
 			e1.printStackTrace();
@@ -1528,57 +1529,50 @@ public class OACalendarDb extends QObjectDb {
 		return true;
 	}
 
-	public boolean modifyDates(HttpServletRequest request)
-			throws ErrMsgException {
+	public boolean modifyDates(HttpServletRequest request) throws ErrMsgException {
 		String strBeginDate = ParamUtil.get(request, "modifyBeginDate");
 		String strEndDate = ParamUtil.get(request, "modifyEndDate");
 		String contains = ParamUtil.get(request, "contains");
 		//获取页面设置是否包含周六周日
 		boolean containSat = false;
 		boolean containSun = false;
-		if (contains != null && contains.length() > 0)
-		{
-			if (contains.contains("containSat"))
-			{
+		if (contains != null && contains.length() > 0) {
+			if (contains.contains("containSat")) {
 				containSat = true;
 			}
-			if (contains.contains("containSun"))
-			{
+			if (contains.contains("containSun")) {
 				containSun = true;
 			}
 		}
-		if (strBeginDate.equals("") && strEndDate.equals(""))
+		if (strBeginDate.equals("") && strEndDate.equals("")) {
 			throw new ErrMsgException("请输入开始和结束时间");
+		}
 		Date beginDate = DateUtil.parse(strBeginDate, "yyyy-MM-dd");
 		Date endDate = DateUtil.parse(strEndDate, "yyyy-MM-dd");
 		String sql = "select oa_date from oa_calendar where oa_date>=? and oa_date<=?";
-		int type = ParamUtil.getInt(request, "type");
+		int type = ParamUtil.getInt(request, "type", 1);
 		if (type == 2) {
 			sql += " and date_type=" + DATE_TYPE_WORK;
 		}
 		OACalendarDb oacdb = new OACalendarDb();
 		List<String> list = new ArrayList<String>();
-		Iterator i = oacdb.list(sql, new Object[] { beginDate, endDate })
-				.iterator();
-		while (i.hasNext()) {
-			oacdb = (OACalendarDb) i.next();
+		for (Object o : oacdb.list(sql, new Object[]{beginDate, endDate})) {
+			oacdb = (OACalendarDb) o;
 			list.add(oacdb.getString("oa_date"));
 			try {
 				oacdb.del();
-			} catch (Exception e) {
+			} catch (ResKeyException e) {
+				throw new ErrMsgException(e.getMessage(request));
 			}
 		}
 		int dateType = 0;
 
-		String workTimeBeginA = ParamUtil
-				.get(request, "work_time_begin_a");
+		String workTimeBeginA = ParamUtil.get(request, "work_time_begin_a");
 		String workTimeEndA = ParamUtil.get(request, "work_time_end_a");
-		String workTimeBeginB = ParamUtil
-				.get(request, "work_time_begin_b");
+		String workTimeBeginB = ParamUtil.get(request, "work_time_begin_b");
 		String workTimeEndB = ParamUtil.get(request, "work_time_end_b");
 		// 20091105
-		String workTimeBeginC = ParamUtil
-				.get(request, "work_time_begin_c");
+		String workTimeBeginC = ParamUtil.get(request, "work_time_begin_c");
 		String workTimeEndC = ParamUtil.get(request, "work_time_end_c");
 		String workTimeBeginD = ParamUtil.get(request, "work_time_begin_d");
 		String workTimeEndD = ParamUtil.get(request, "work_time_end_d");
@@ -1588,87 +1582,69 @@ public class OACalendarDb extends QObjectDb {
 		Calendar endDateCalendar = Calendar.getInstance();
 		beginDateCalendar.setTime(DateUtil.parse(strBeginDate, "yyyy-MM-dd"));
 		endDateCalendar.setTime(DateUtil.parse(strEndDate, "yyyy-MM-dd"));
-		for (int month = beginDateCalendar.get(Calendar.MONTH); month <= endDateCalendar
-				.get(Calendar.MONTH); month++) {
-			int minDate = month == beginDateCalendar.get(Calendar.MONTH) ? beginDateCalendar
-					.get(Calendar.DATE)
-					: 1;
-			int maxDate = month == endDateCalendar.get(Calendar.MONTH) ? endDateCalendar
-					.get(Calendar.DATE)
-					: DateUtil.getDayCount(endDateCalendar.get(Calendar.YEAR),
-							month);
+		for (int month = beginDateCalendar.get(Calendar.MONTH); month <= endDateCalendar.get(Calendar.MONTH); month++) {
+			int minDate = month == beginDateCalendar.get(Calendar.MONTH) ? beginDateCalendar.get(Calendar.DATE) : 1;
+			int maxDate = month == endDateCalendar.get(Calendar.MONTH) ? endDateCalendar.get(Calendar.DATE)
+					: DateUtil.getDayCount(endDateCalendar.get(Calendar.YEAR), month);
 			for (int date = minDate; date <= maxDate; date++) {
 				dateType = ParamUtil.getInt(request, "date_type", 0);
 				OACalendarDb oaCalendarDb = new OACalendarDb();
-				String strOADate = endDateCalendar.get(Calendar.YEAR) + "-"
-						+ (month + 1) + "-" + date;
-				if (type != 2)
-				{
+				String strOADate = endDateCalendar.get(Calendar.YEAR) + "-" + (month + 1) + "-" + date;
+				if (type != 2) {
 					//判断是否包含周六周日 不包含则判断插入时间是否为周六周日，是则记为休息日
 					Calendar cal = Calendar.getInstance();
-					if(!containSat)
-					{
+					if (!containSat) {
 						Date now = DateUtil.parse(strOADate, "yyyy-MM-dd");
-			            cal.setTime(now);          
-			            int w=cal.get(java.util.Calendar.DAY_OF_WEEK)-1;
-			            if (w == 6)//周六为休息日
-			            {
-			            	dateType = DATE_TYPE_SAT_SUN;
-			            }
-	
+						cal.setTime(now);
+						int w = cal.get(java.util.Calendar.DAY_OF_WEEK) - 1;
+						if (w == 6)//周六为休息日
+						{
+							dateType = DATE_TYPE_SAT_SUN;
+						}
+
 					}
-					if (!containSun)
-					{
+					if (!containSun) {
 						Date now = DateUtil.parse(strOADate, "yyyy-MM-dd");
-			            cal.setTime(now);          
-			            int w=cal.get(java.util.Calendar.DAY_OF_WEEK)-1;
-			            if (w == 0)
-			            {
-			            	dateType = DATE_TYPE_SAT_SUN;
-			            }
+						cal.setTime(now);
+						int w = cal.get(java.util.Calendar.DAY_OF_WEEK) - 1;
+						if (w == 0) {
+							dateType = DATE_TYPE_SAT_SUN;
+						}
 					}
-				}
-				else//判断是否为工作日，若是则进行操作，否则跳出本次循环
-				{
+				} else {
+					//判断是否为工作日，若是则进行操作，否则跳出本次循环
 					boolean flag = false;
 					String strOaDate = DateUtil.format(DateUtil.parse(strOADate, "yyyy-MM-dd"), "yyyy-MM-dd");
-					for(String dataStr : list)
-					{
-						 if(strOaDate.equals(dataStr))
-						 {
-							 flag = true;
-							 break;
-						 }
+					for (String dataStr : list) {
+						if (strOaDate.equals(dataStr)) {
+							flag = true;
+							break;
+						}
 					}
-		           if (!flag)
-		           {
-		        	   continue;
-		           }
-		            
+					if (!flag) {
+						continue;
+					}
 				}
 				// java.util.Date d =
 				// DateUtil.getDate(endDateCalendar.get(Calendar.YEAR), month,
 				// date);
-				int weekDay = getDayOfWeek(endDateCalendar.get(Calendar.YEAR),
-						month, date);
+				int weekDay = getDayOfWeek(endDateCalendar.get(Calendar.YEAR), month, date);
 				String unitCode = new Privilege().getUserUnitCode(request);
 				try {
 					// 20091105
 					oaCalendarDb.create(new JdbcTemplate(),
-							new Object[] { strOADate,unitCode, new Integer(dateType),
+							new Object[]{strOADate, unitCode, dateType,
 									workTimeBeginA, workTimeEndA,
 									workTimeBeginB, workTimeEndB,
 									workTimeBeginC, workTimeEndC,
-									new Integer(weekDay),
+									weekDay,
 									workTimeBeginD, workTimeEndD,
 									workTimeBeginE, workTimeEndE,
 									1,
-									new Integer(
-											DATE_TYPE_WORK_DATE_ID),
-									DeptDb.ROOTCODE, 1  });
+									DATE_TYPE_WORK_DATE_ID,
+									DeptDb.ROOTCODE, 1});
 				} catch (ResKeyException e) {
-					LogUtil.getLog(getClass()).error(
-							"modifyDates:" + StrUtil.trace(e));
+					LogUtil.getLog(getClass()).error("modifyDates:" + StrUtil.trace(e));
 				}
 			}
 		}
@@ -1677,7 +1653,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 取得当fromDate与toDate在同一天时的工作时间（小时）
-	 * 
+	 *
 	 * @param fromDate
 	 *            Date
 	 * @param toDate
@@ -1949,7 +1925,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 计算fromDate至toDate之间的工作小时
-	 * 
+	 *
 	 * @param fromDate
 	 *            Date
 	 * @param toDate
@@ -2011,7 +1987,7 @@ public class OACalendarDb extends QObjectDb {
 	/**
 	 * 从数据库中计算fromDate至toDate之间的工作日期，在算法中包含了结束日，但不包含开始日
 	 * fromDate与toDate间隔时间长的时候，用此方法
-	 * 
+	 *
 	 * @param fromDate
 	 *            Date
 	 * @param toDate
@@ -2049,7 +2025,7 @@ public class OACalendarDb extends QObjectDb {
 	/**
 	 * 计算fromDate至toDate之间的工作日期，在算法中包含了结束日，但不包含开始日，通过遍历获取
 	 * fromDate与toDate间隔时间短的时候，用此方法 *
-	 * 
+	 *
 	 * @param fromDate
 	 *            Date
 	 * @param toDate
@@ -2104,7 +2080,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 计算当前时间加上工作小时
-	 * 
+	 *
 	 * @param hour
 	 * @return
 	 */
@@ -2384,14 +2360,14 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 计算当前时间加上工作日
-	 * 
+	 *
 	 * @param day
 	 * @return
 	 */
 	public static Date addWorkDay(int day) {
 		return addWorkDay(new Date(), day);
 	}
-	
+
 	/**
 	 * @Description: 计算某天加上工作日
 	 * @param date
@@ -2437,7 +2413,7 @@ public class OACalendarDb extends QObjectDb {
 
 	/**
 	 * 时间加上带小数点的小时，小数点后在相加的时候换算为分钟
-	 * 
+	 *
 	 * @param dt
 	 * @param expireHour
 	 * @return
@@ -2451,8 +2427,9 @@ public class OACalendarDb extends QObjectDb {
 		}
 
 		java.util.Date d = DateUtil.addHourDate(dt, h);
-		if (m != 0)
+		if (m != 0) {
 			d = DateUtil.addMinuteDate(d, m);
+		}
 		return d;
 	}
 }

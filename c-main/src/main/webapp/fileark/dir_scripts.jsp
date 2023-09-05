@@ -7,7 +7,6 @@
 <%@ page import="com.redmoon.oa.fileark.*" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.*"%>
-<%@ taglib uri="/WEB-INF/tlds/HelpDocTag.tld" prefix="help" %>
 <%
 String op = ParamUtil.get(request, "op");
 String dirCode = ParamUtil.get(request, "dirCode");

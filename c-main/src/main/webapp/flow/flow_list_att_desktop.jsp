@@ -87,7 +87,7 @@ while (ir.hasNext()) {
 		Attachment am = (Attachment) ir2.next();
 		%>
     <li>
-	<a href="flow_getfile.jsp?attachId=<%=am.getId()%>&amp;flowId=<%=wfd.getId()%>" target="_blank"><%=am.getName()%>&nbsp;[<%=DateUtil.format(wfd.getEndDate(), "yy-MM-dd HH:mm:ss")%>]</a>
+	<a href="flow/download.do?attachId=<%=am.getId()%>&amp;flowId=<%=wfd.getId()%>" target="_blank"><%=am.getName()%>&nbsp;[<%=DateUtil.format(wfd.getEndDate(), "yy-MM-dd HH:mm:ss")%>]</a>
     </li>		
 <%
 	}

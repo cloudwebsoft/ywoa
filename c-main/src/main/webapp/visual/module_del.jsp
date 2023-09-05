@@ -27,7 +27,7 @@ String op = ParamUtil.get(request, "op");
 String privurl = ParamUtil.get(request, "privurl");
 String CPages = ParamUtil.get(request, "CPages");
 if (privurl.equals("")) {
-	privurl = "module_list.jsp?formCode=" + formCode + "&CPages=" + CPages;
+	privurl = "moduleListPage.do?formCode=" + formCode + "&CPages=" + CPages;
 }
 
 FormMgr fm = new FormMgr();

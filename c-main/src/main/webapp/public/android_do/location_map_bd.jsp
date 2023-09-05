@@ -14,7 +14,7 @@ html{height:100%}
 body{height:100%;margin:0px;padding:0px}
 #container{height:100%}
 </style>
-<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=3dd31b657f333528cc8b581937fd066a"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
 <script type="text/javascript" src="../../inc/common.js"></script>
 <script src="../../js/jquery-1.9.1.min.js"></script>
 <script src="../../js/jquery-migrate-1.2.1.min.js"></script>

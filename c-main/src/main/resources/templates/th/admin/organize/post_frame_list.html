@@ -1,0 +1,13 @@
+﻿<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>添加用户</title>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<frameset id="allFrame" rows="" cols="21%,*" border="0">
+	  <noframes>你需要 Internet Explorer 版本 3.0 或更高版本才能查看框架!</noframes>
+	  <frame th:src="@{'listDeptTree.do?rootCode=root&flag=0&pageType=postList&curDeptCode=' + ${curDeptCode}}" id="deptFrame" name="deptFrame">
+  	  <frame th:src="@{'postListPage.do?curDeptCode=' + ${curDeptCode}}" id="userFrame" name="userFrame">
+</frameset>
+</html>

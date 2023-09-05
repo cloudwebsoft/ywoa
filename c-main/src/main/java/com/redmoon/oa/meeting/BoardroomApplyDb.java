@@ -44,7 +44,7 @@ public class BoardroomApplyDb extends ObjectDb {
     }
 
     public void initDB() {
-        this.tableName = "form_table_hysqd";
+        this.tableName = "ft_hysqd";
         primaryKey = new PrimaryKey("id", PrimaryKey.TYPE_INT);
         objectCache = new BoardroomApplyCache(this);
 
@@ -102,7 +102,7 @@ public class BoardroomApplyDb extends ObjectDb {
                         this.end_date = ts;
                     }
                 } catch (SQLException e) {
-                    logger.error("load1:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("load1:" + e.getMessage());
                 }
                 this.chrs = StrUtil.getNullStr(rs.getString("chrs"));
                 this.spyjian = StrUtil.getNullStr(rs.getString("spyjian"));
@@ -112,13 +112,14 @@ public class BoardroomApplyDb extends ObjectDb {
 
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {
@@ -132,6 +133,7 @@ public class BoardroomApplyDb extends ObjectDb {
         return false;
     }
 
+    @Override
     public ListResult listResult(String listsql, int curPage, int pageSize) throws
             ErrMsgException {
         int total = 0;
@@ -172,13 +174,15 @@ public class BoardroomApplyDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {
@@ -195,7 +199,7 @@ public class BoardroomApplyDb extends ObjectDb {
 	public boolean isRoomInUse(int id, String startDate, String endDate) throws ErrMsgException{
 		FormDAO fdao = new FormDAO();
 		// 此前的会议申请结束时间晚于当前申请的开始时间且此前的会议申请开始时间早于当前申请的结束时间,且审批状态为,未审批,已通过,正在使用
-		String sql = "select id from form_table_hysqd where hyshi="
+		String sql = "select id from ft_hysqd where hyshi="
 				+ StrUtil.sqlstr("" + id) + " and end_date>"
 				+ SQLFilter.getDateStr(startDate, "yyyy-MM-dd HH:mm:ss")
 				+ " and start_date<"

@@ -1,6 +1,12 @@
 package cn.js.fan.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Description: ip操作类
@@ -50,9 +56,9 @@ public class IpUtil {
 				return true;
 			}
 		} catch (MalformedURLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(IpUtil.class).error(e);
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			LogUtil.getLog(IpUtil.class).error(e);
 		}
 		return false;
 	}
@@ -78,5 +84,115 @@ public class IpUtil {
 			return -1L;
 		}
 		return a * 256 * 256 * 256 + b * 256 * 256 + c * 256 + d;
+	}
+
+	/**
+	 * 取得IP地址所在的位置
+	 * @param ip
+	 * @return
+	 */
+	public static String getLocation(String ip) {
+		/*
+			JSONObject json = CustomerMgr.IpHttpClient("http://int.dpool.sina.com.cn/iplookup/iplookup.php?format=js&ip=" + ip);
+
+			if (json.getInt("ret") == 1) {
+				if(json.getString("province").equals(json.getString("city"))){
+					area = json.getString("province")+ "市";
+				}else{
+				   area = json.getString("province")+ "省" +json.getString("city");
+				}
+			}else{
+				area = "无法查找省市";
+			}
+			*/
+
+		// 2017-7-6 fgf 新浪自18-06-23已停用，换淘宝
+		// {"code":0,"data":{"ip":"114.222.121.22","country":"中国","area":"","region":"江苏","city":"南京","county":"XX","isp":"电信","country_id":"CN","area_id":"","region_id":"320000","city_id":"320100","county_id":"xx","isp_id":"100017"}}
+			/*String url = "http://ip.taobao.com/service/getIpInfo2.php?ip=" + ip;
+			JSONObject json = CustomerMgr.IpHttpClient(url);
+			if (json.has("data")) {
+				JSONObject data = (JSONObject)json.get("data");
+				area = data.getString("region") + "省" + data.getString("city") + "市";
+			}
+			else {
+				area = "无法查找省市";
+			}*/
+
+		String area = "";
+		// 百度定位
+		String url = "http://api.map.baidu.com/location/ip?ak=czNBWnMXYBFd7u2vCcUbaOKlNRPOoOsD&ip=" + ip;
+		JSONObject json = IpHttpClient(url);
+		if (json.has("content")) {
+			// JSONObject jobj = (JSONObject) ((JSONObject) json.get("content")).get("address_detail");
+			try {
+				area = (String) ((JSONObject) json.get("content")).get("address");
+			} catch (JSONException e) {
+				LogUtil.getLog(IpUtil.class).error(e);
+			}
+		} else {
+			area = "未找到省市";
+		}
+		return area;
+	}
+
+	public static JSONObject IpHttpClient(String url1) {
+		JSONObject jobj = null;
+		HttpURLConnection connection = null;
+		BufferedReader reader = null;
+		try {
+			URL url = new URL(url1);
+			connection = (HttpURLConnection) url.openConnection();
+			connection.setDoOutput(true);
+			connection.setDoInput(true);
+			connection.setRequestMethod("POST");
+			connection.setUseCaches(false);
+			connection.setInstanceFollowRedirects(true);
+			connection.setRequestProperty("Content-Type", "text/html");
+			connection.connect();
+			DataOutputStream out = new DataOutputStream(connection.getOutputStream());
+			out.flush();
+			out.close();
+
+			reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+			String lines;
+			StringBuilder sb = new StringBuilder("");
+			while ((lines = reader.readLine()) != null) {
+				lines = new String(lines.getBytes());
+				sb.append(lines);
+			}
+			try {
+				String js = sb.toString().trim();
+				int s1 = js.indexOf("{");
+				int s2 = js.lastIndexOf('}');
+				if (s1 != -1 && s2 != -1) {
+					js = js.substring(s1, s2 + 1);
+					jobj = new JSONObject(js);
+				}else{
+					jobj = new JSONObject();
+					jobj.put("ret", 0);
+				}
+			} catch (JSONException e) {
+				LogUtil.getLog(IpUtil.class).error(e);
+			}
+		} catch (MalformedURLException e) {
+			LogUtil.getLog(IpUtil.class).error(e);
+		} catch (ProtocolException e) {
+			LogUtil.getLog(IpUtil.class).error(e);
+		} catch (UnsupportedEncodingException e) {
+			LogUtil.getLog(IpUtil.class).error(e);
+		} catch (IOException e) {
+			LogUtil.getLog(IpUtil.class).error(e);
+		}
+		finally {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				LogUtil.getLog(IpUtil.class).error(e);
+			}
+			// 断开连接
+			connection.disconnect();
+		}
+
+		return jobj;
 	}
 }

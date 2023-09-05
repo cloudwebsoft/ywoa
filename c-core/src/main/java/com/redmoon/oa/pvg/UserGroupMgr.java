@@ -11,13 +11,10 @@ import java.util.List;
 import com.cloudweb.oa.entity.Group;
 import com.cloudweb.oa.service.IGroupService;
 import com.cloudweb.oa.utils.SpringUtil;
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
 import cn.js.fan.util.StrUtil;
-import org.eclipse.birt.report.model.api.simpleapi.IGroup;
 
 public class UserGroupMgr {
-    Logger logger = Logger.getLogger(UserGroupMgr.class.getName());
 
     public UserGroupMgr() {
     }

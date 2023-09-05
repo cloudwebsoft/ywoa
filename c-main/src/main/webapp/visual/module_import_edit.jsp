@@ -14,6 +14,10 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.visual.*"%>
 <%@ page import="org.json.*"%>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -183,12 +187,18 @@ if (!"".equals(strJson)) {
 SelectMgr sm = new SelectMgr();
 MacroCtlMgr mm = new MacroCtlMgr();
 ir = fd.getFields().iterator();
+MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
 while (ir.hasNext()) {
 	FormField ff = (FormField)ir.next();
 	if (ff.getType().equals(FormField.TYPE_MACRO)) {
 		MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-		if (mu!=null && mu.getCode().equals("macro_flow_select")) {
-			SelectDb sd = sm.getSelect(ff.getDefaultValueRaw());
+		if (mu!=null && "macro_flow_select".equals(mu.getCode())) {
+            String basicCode = basicSelectCtl.getCode(ff);
+			SelectDb sd = sm.getSelect(basicCode);
+			if (sd.getType() == SelectDb.TYPE_TREE) {
+			    continue;
+            }
 			boolean isClean = false;
 			JSONObject json = null;
 			if (ary!=null) {
@@ -258,21 +268,26 @@ while (ir.hasNext()) {
 <input id="formCode" name="formCode" type="hidden" value="<%=formCode %>" />
 <input id="id" name="id" type="hidden" value="<%=id%>" />
 <input id="colCount" name="colCount" type="hidden" value="<%=len%>" />
-<div style="text-align:center">
-	<input type="button" value="确定" onclick="submitForm()" />
+<div style="text-align:center; margin-top: 10px">
+	<input type="button" class="btn btn-default btn-ok" value="确定" />
 </div>
 </form>
 <br />
 </body>
 <script language="javascript">
-var name = new LiveValidation('name');
-name.add( Validate.Presence );
-name.add(Validate.Length, { minimum: 1, maximum: 45 } );
+var myName = new LiveValidation('name');
+myName.add( Validate.Presence );
+myName.add( Validate.Length, { minimum: 1, maximum: 45 } );
 
-var lv_formCode = new LiveValidation('formCode');
+$(function() {
+	$('.btn-ok').click(function(e) {
+		e.preventDefault();
+		submitForm();
+	});
+});
 
 function submitForm() {
-	if (!LiveValidation.massValidate(lv_formCode.formObj.fields)) {
+	if (!LiveValidation.massValidate(myName.formObj.fields)) {
 		jAlert("请检查表单中的内容填写是否正常！", "提示");
 		return;
 	}	

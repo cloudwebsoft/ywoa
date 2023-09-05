@@ -1,0 +1,1 @@
+<view class="pageStyle data-v-d9524c52"><public-list vue-id="50f63be2-1" params="{{queryParam}}" listRecord="{{model}}" nativeTo="/application/moduleShow" nativeToEdit="/application/moduleAddEdit" data-ref="publicListShow" class="data-v-d9524c52 vue-ref" bind:__l="__l"></public-list></view>

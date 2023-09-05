@@ -1,18 +1,15 @@
 package com.redmoon.oa.flow;
 
-import java.util.Iterator;
-import java.util.Vector;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
-
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.pvg.Privilege;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import java.util.Vector;
 
 public class DocTemplateMgr {
     public DocTemplateMgr() {
@@ -21,31 +18,29 @@ public class DocTemplateMgr {
     /**
      * 判断模板对用户是否可见
      * @param request
-     * @param templateId
+     * @param dtd
      * @return
      */
     public boolean canUserSee(HttpServletRequest request, DocTemplateDb dtd) {
     	// DocTemplateDb dtd = getDocTemplateDb(templateId);
     	String depts = dtd.getDepts();
-    	if (depts.equals(""))
-    		return true;
+    	if ("".equals(depts)) {
+            return true;
+        }
     	DeptUserDb dud = new DeptUserDb();
     	Privilege pvg = new Privilege();
     	if (pvg.isUserPrivValid(request, "admin")) {
     		return true;
     	}
-    	Vector v = dud.getDeptsOfUser(pvg.getUser(request));
+    	Vector<DeptDb> v = dud.getDeptsOfUser(pvg.getUser(request));
     	String[] ary = StrUtil.split(depts, ",");
-    	for (int i=0; i<ary.length; i++) {
-    		String dept = ary[i];
-    		Iterator ir = v.iterator();
-    		while (ir.hasNext()) {
-    			DeptDb dd = (DeptDb)ir.next();
-    			if (dept.equals(dd.getCode())) {
-    				return true;
-    			}
-    		}
-    	}
+        for (String dept : ary) {
+            for (DeptDb dd : v) {
+                if (dept.equals(dd.getCode())) {
+                    return true;
+                }
+            }
+        }
     	return false;
     }
 
@@ -59,8 +54,7 @@ public class DocTemplateMgr {
         ld.setSort(lf.getSort());
         ld.setDepts(lf.getDepts());
         ld.setUnitCode(lf.getUnitCode());
-        boolean re = ld.create(lf.fileUpload);
-        return re;
+        return ld.create(lf.fileUpload);
     }
 
     public boolean del(ServletContext application, HttpServletRequest request) throws ErrMsgException {
@@ -82,8 +76,7 @@ public class DocTemplateMgr {
         ld.setSort(lf.getSort());
         ld.setDepts(lf.getDepts());
 
-        boolean re = ld.save(lf.getFileUpload());
-        return re;
+        return ld.save(lf.getFileUpload());
     }
 
     /**
@@ -102,8 +95,7 @@ public class DocTemplateMgr {
         // ld.setTitle(lf.getTitle());
         ld.setSort(lf.getSort());
 
-        boolean re = ld.save(lf.getFileUpload());
-        return re;
+        return ld.save(lf.getFileUpload());
     }
 
     public DocTemplateDb getDocTemplateDb(int id) {

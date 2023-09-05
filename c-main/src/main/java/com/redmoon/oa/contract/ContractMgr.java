@@ -4,11 +4,12 @@ import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class ContractMgr {
 	public boolean createContract(int flowId){
-		String sqlinsert = "insert into form_table_sales_contract(flowId,contact_no,contact_name,contact_desc,contact_item,contact_content,demo,customer,cws_creator,saler,contract_type,begindate,enddate,linkman,toname,create_date,seller_name,unit_code,pay,cws_status,amount) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-		String sqlget = "select * from form_table_sales_contract_new where flowId=?";
+		String sqlinsert = "insert into ft_sales_contract(flowId,contact_no,contact_name,contact_desc,contact_item,contact_content,demo,customer,cws_creator,saler,contract_type,begindate,enddate,linkman,toname,create_date,seller_name,unit_code,pay,cws_status,amount) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		String sqlget = "select * from ft_sales_contract_new where flowId=?";
 		JdbcTemplate jt = new JdbcTemplate();
 		JdbcTemplate jt1 = new JdbcTemplate();
 		ResultIterator ri = null;
@@ -43,14 +44,13 @@ public class ContractMgr {
 						cwsStatus,amount})>0?true:false;
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return false;
 	}
 	
 	public int getFlowId(long id){
-		String sqlget = "select flowId from form_table_sales_contract where id=?";
+		String sqlget = "select flowId from ft_sales_contract where id=?";
 		JdbcTemplate jt = new JdbcTemplate();
 		ResultIterator ri = null;
 		ResultRecord rd = null;
@@ -62,8 +62,7 @@ public class ContractMgr {
 				flowId = rd.getInt(1);
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return flowId;
 	}

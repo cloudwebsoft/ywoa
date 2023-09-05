@@ -7,6 +7,7 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.hr.SignMgr;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,13 +53,11 @@ public class ShiftController {
         String creator = pvg.getUser(request);
         String unitCode = pvg.getUserUnitCode(request);
 
-        // System.out.println(getClass() + " " + data);
         String[] ary = StrUtil.split(data, ";");
         if (ary == null) {
             re = true;
         } else {
             for (String str : ary) {
-                // System.out.println(getClass() + " str=" + str);
                 String[] aryShift = StrUtil.split(str, ":");
                 String userName = aryShift[0];
 
@@ -88,8 +87,7 @@ public class ShiftController {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -106,7 +104,7 @@ public class ShiftController {
      * @Description:
      */
     public boolean adjustShift(String userName, String strDate, long shift, String creator, String unitCode) {
-        String sql = "select id from form_table_shift_adjust where user_name=" + StrUtil.sqlstr(userName) + " and mydate=" + SQLFilter.getDateStr(strDate, "yyyy-MM-dd");
+        String sql = "select id from ft_shift_adjust where user_name=" + StrUtil.sqlstr(userName) + " and mydate=" + SQLFilter.getDateStr(strDate, "yyyy-MM-dd");
         String formCode = "shift_adjust";
         FormDb fd = new FormDb();
         fd = fd.getFormDb(formCode);
@@ -142,7 +140,7 @@ public class ShiftController {
                 }
             }
         } catch (ErrMsgException | SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return false;
         }
         return true;
@@ -170,8 +168,7 @@ public class ShiftController {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -202,7 +199,7 @@ public class ShiftController {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -231,7 +228,7 @@ public class ShiftController {
                 fdao.save();
             } catch (ErrMsgException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
                 return json.toString();
@@ -245,8 +242,7 @@ public class ShiftController {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -278,8 +274,7 @@ public class ShiftController {
             json.put("ret", 1);
             json.put("msg", "操作成功！");
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();

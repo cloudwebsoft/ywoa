@@ -42,6 +42,7 @@
 		String pageType = ParamUtil.get(request, "pageType");
         String path = ParamUtil.get(request, "path");
 		%>
+
         function refreshNestTableCtl<%=nestFieldName%>(newIds) {
             var path = '<%=path %>';
             path = (path.indexOf("?")!=-1)? path += "&"+new Date().getTime() : path += "?"+new Date().getTime()
@@ -53,7 +54,41 @@
                 strNewIds = newIds;
             }
 
-            $.ajax({
+            var ajaxData = {
+                newIds: strNewIds
+            };
+            ajaxPost(path, ajaxData).then((data) => {
+                console.log('data', data);
+                $('#toolbar_' + fieldName).remove();
+                $nestTableParent = $("#nestTable_" + fieldName).parent();
+                $("#nestTable_" + fieldName).remove();
+
+                // 清除原来的cws_span_***、cws_textarea_***
+                <%--$("[id^='cws_span_']").remove();
+                $("[id^='cws_textarea_']").remove();--%>
+
+                <%
+                    if (isTab==0) {
+                %>
+                // $("#nestTable_"+fieldName).html(data);
+                $nestTableParent.append(data);
+                <%
+                    } else {
+                %>
+                // 流程中选项卡式显示方式
+                $("#tabs-<%=nestFormCode %>").html(data);
+                <%
+                    }
+                %>
+
+                initEventOfNestTable('nestTable_<%=nestFieldName%>');
+                callCalculateOnloadNestTable('nestTable_<%=nestFieldName%>');
+                try {
+                    onNestTableRefresh_<%=nestFieldName%>();
+                } catch (e) {};
+            });
+
+            <%--$.ajax({
                 type: "post",
                 url: path,
                 data : {
@@ -65,8 +100,8 @@
                     $("#nestTable_" + fieldName).remove();
 
                     // 清除原来的cws_span_***、cws_textarea_***
-                    <%--$("[id^='cws_span_']").remove();
-                    $("[id^='cws_textarea_']").remove();--%>
+                    &lt;%&ndash;$("[id^='cws_span_']").remove();
+                    $("[id^='cws_textarea_']").remove();&ndash;%&gt;
 
                     <%
                         if (isTab==0) {
@@ -92,7 +127,7 @@
                     // 请求出错处理
                     alert(XMLHttpRequest.responseText);
                 }
-            });
+            });--%>
         }
 		<%
 		boolean isAutoSel = false;
@@ -153,7 +188,11 @@
 				if(isAutoSel) {	// 如果是自动嵌套拉单，每隔两秒执行检查是否改刷新表格
 					var fields = '<%=mainFormFieldNames%>';
 					var fieldNames = fields.split(",");
-					var oldValueArr = getFormValue(fieldNames);
+
+					var fieldObj = findObj(fieldNames[0]);
+					var formObj = $(fieldObj).closest('form')[0];
+
+					var oldValueArr = getFormValue(fieldNames, formObj);
 					var ajaxData = {
 						'flowId':'<%=flowId%>',
 						'parentFormCode':'<%=parentFormCode%>',
@@ -161,18 +200,20 @@
 						'nestFieldName':'<%=nestFieldName%>',
 						'isFirst':true
 					};
-					for (var i in fieldNames) {
-						ajaxData[fieldNames[i]] = oldValueArr[i];
-					}
+                    if (oldValueArr != null) {
+                        for (var i in fieldNames) {
+                            ajaxData[fieldNames[i]] = oldValueArr[i];
+                        }
+                    }
 
 					<%
 					// 如果是模块编辑，则不需要自动拉单，否则将只显示拉单结果，而无法显示原来的数据
 					if (!"edit".equals(pageType)) {
 					%>
-					ajaxPost('<%=request.getContextPath()%>/nestsheetctl/autoSel.do',ajaxData,function(da){
-						da = $.parseJSON(da);
-						if(da.ret == '1') {
-							var newIds = da.newIds;
+                    ajaxPost('/nestsheetctl/autoSel.do', ajaxData).then((data) => {
+                        console.log('data', data);
+						if(data.ret == '1') {
+							var newIds = data.newIds;
 							if (newIds==null) {
 								newIds = "";
 							}
@@ -193,91 +234,71 @@
 							    }
                             %>
 						}
-					},false);
+                    }
 					<%
 					}
                     %>
 
 					if (fields!='') { // 配置了条件,没有配置条件则不处理
-						window.setInterval(function(){ // 5秒进行自动检测一次
+                            var sint = window.setInterval(function(){ // 5秒进行自动检测一次
 							// 从新获取获取的条件的值，如果变化了，
-							var newValueArr = getFormValue(fieldNames);
-							if(JSON.stringify(oldValueArr) != JSON.stringify(newValueArr)) {
-								oldValueArr = getFormValue(fieldNames);
-								var ajaxData = {
-									'flowId':'<%=flowId%>',
-									'parentFormCode':'<%=parentFormCode%>',
-									'parentId':'<%=mainId%>',
-									'nestFieldName':'<%=nestFieldName%>',
-									'isFirst':false
-								};
-								for (var i in fieldNames) {
-									ajaxData[fieldNames[i]] = newValueArr[i];
-								}
-								ajaxPost('<%=request.getContextPath()%>/nestsheetctl/autoSel.do',ajaxData,function(da){
-									da = $.parseJSON(da);
-									if(da.ret == '1'){
-										var newIds = da.newIds;
-										if (newIds==null) {
-											newIds = "";
-										}
-                                        // 需用setTimeout，以免此js与loadNestCtl未完成时无refreshNestTableCtl方法带来冲突
-                                        setTimeout("refreshNestTableCtl<%=nestFieldName%>(" + newIds + ")", 1);
+							var newValueArr = getFormValue(fieldNames, formObj);
+                            if (newValueArr != null) {
+                                if(JSON.stringify(oldValueArr) != JSON.stringify(newValueArr)) {
+                                    oldValueArr = newValueArr;
+                                    var ajaxData = {
+                                        'flowId':'<%=flowId%>',
+                                        'parentFormCode':'<%=parentFormCode%>',
+                                        'parentId':'<%=mainId%>',
+                                        'nestFieldName':'<%=nestFieldName%>',
+                                        'isFirst':false
+                                    };
+                                    for (var i in fieldNames) {
+                                        ajaxData[fieldNames[i]] = newValueArr[i];
+                                    }
 
-										<%if (flowId == com.redmoon.oa.visual.FormDAO.NONEFLOWID) {%>
-										if (newIds!="") {
-											var idsAry = newIds.split(",");
-											for (x in idsAry) {
-												addTempCwsId("<%=nestFormCode%>", idsAry[x]);
-											}
-										}
-										<%}%>
-									}
-								},false);
-							}
+                                    ajaxPost('/nestsheetctl/autoSel.do', ajaxData).then((data) => {
+                                        console.log('data', data);
+                                        if(data.ret == '1'){
+                                            var newIds = data.newIds;
+                                            if (newIds==null) {
+                                                newIds = "";
+                                            }
+                                            // 需用setTimeout，以免此js与loadNestCtl未完成时无refreshNestTableCtl方法带来冲突
+                                            setTimeout("refreshNestTableCtl<%=nestFieldName%>(" + newIds + ")", 1);
+
+                                            <%if (flowId == com.redmoon.oa.visual.FormDAO.NONEFLOWID) {%>
+                                            if (newIds!="") {
+                                                var idsAry = newIds.split(",");
+                                                for (x in idsAry) {
+                                                    addTempCwsId("<%=nestFormCode%>", idsAry[x]);
+                                                }
+                                            }
+                                            <%}%>
+                                        }
+                                    }
+                                }
+                            } else {
+                                window.clearInterval(sint);
+                            }
 						},200);
 					}
 				}
 			});
 
 			// 获取主表单中的值并拼接成sql的where字句
-			function getFormValue(fieldNames) {
+			function getFormValue(fieldNames, formObj) {
 				var arr = new Array();
-				for(var i = 0;i < fieldNames.length;i++) {
-					if (o(fieldNames[i])) {
-						arr[i] =  o(fieldNames[i]).value;
-					}
+				for (var i = 0;i < fieldNames.length;i++) {
+					var obj = findObjInFormObj(formObj, fieldNames[i]);
+                    if (obj) {
+						arr[i] = obj.value;
+					} else {
+                        console.warn('getFormValue 表单中未找到: ' + fieldNames[i]);
+                        return null;
+                    }
 				}
 				return arr;
-			}
-
-			// 公共方法用于调用ajax
-			function ajaxPost(path,parameter,func,asy){
-				$.ajax({
-					type: "post",
-					url: path,
-					data: parameter,
-					async:asy,
-					dataType: "html",
-					contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
-					beforeSend: function(XMLHttpRequest){
-						if(!asy){
-							$(document.body).showLoading();
-						}
-					},
-					success: function(data, status){
-						func(data);
-						if(!asy){
-							$(document.body).hideLoading();
-						}
-					},
-					error: function(XMLHttpRequest, textStatus){
-						if(!asy){
-							$(document.body).hideLoading();
-						}
-						alert(XMLHttpRequest.responseText);
-					}
-				});
 			}
 		<%
 		}
@@ -315,16 +336,21 @@ function callCalculateOnloadNestTable(nestTableId) {
                     var sumField = $(this);
                     var v = 0;
                     // 遍历嵌套表格，对匹配到的列求和
-                    var isFoundInNextTable = false;
+                    var isFoundInNestTable = false;
                     var $nestTable;
-                    if (formCode != null) {
+                    if (formCode != null && formCode != '') {
                         $nestTable = $("[id='" + nestTableId + "'][formCode='" + formCode + "']");
                     }
                     else {
                         $nestTable = $("[id='" + nestTableId + "']");
                     }
+
                     $nestTable.find("[name^='nest_field_" + field + "']").each(function() {
-                        isFoundInNextTable = true;
+                        // 去掉后缀为_realshow的控件
+                        if ($(this).attr('id') && $(this).attr('id').lastIndexOf('_realshow')!=-1) {
+                            return;
+                        }
+                        isFoundInNestTable = true;
                         var cellV = $(this).val();
                         if (cellV == "") {
                             return;
@@ -334,9 +360,9 @@ function callCalculateOnloadNestTable(nestTableId) {
                         }
                     });
 
-                    // console.log("nestTableId=" + nestTableId + " formula=" + formula + " field=" + field + " v=" + v + " isFoundInNextTable=" + isFoundInNextTable);
+                    // console.log("nestTableId=" + nestTableId + " formula=" + formula + " field=" + field + " v=" + v + " isFoundInNestTable=" + isFoundInNestTable);
                     // 如果在对应的嵌套表中找到了算式中相应的字段
-                    if (isFoundInNextTable) {
+                    if (isFoundInNestTable) {
                         try  {
                             if (isRoundTo5 != null && isRoundTo5 == 1){
                                 var digitNum = parseFloat(digit);
@@ -354,6 +380,10 @@ function callCalculateOnloadNestTable(nestTableId) {
                         }
                         catch (e) {}
                         sumField.val(v);
+                    }
+                    else {
+                        // 不能置为0，如果存在多个嵌套表格，有可能会把在其它嵌套表格中被算到的计算控件值给清0了
+                        // sumField.val(0);
                     }
                }
             }
@@ -417,6 +447,7 @@ function bindChangeEvent(nestTableId, $obj, field) {
 }
 
 function initNestTableCalculate(nestTableId) {
+    // console.log("nestTableId=" + nestTableId);
     // 绑定change事件
     initEventOfNestTable(nestTableId);
     // 执行计算
@@ -425,28 +456,32 @@ function initNestTableCalculate(nestTableId) {
 
 function initTr(nestFieldName, $tr, rowId, isAdd) {
     $tr.find("input[kind='DATE']").each(function() {
-        try {
-            $(this).datetimepicker({
-                lang: 'ch',
-                datepicker: true,
-                timepicker: false,
-                validateOnBlur: false,
-                format: 'Y-m-d'
-            });
-        } catch (e) {
+        if ($(this).attr('readonly')==null) {
+            try {
+                $(this).datetimepicker({
+                    lang: 'ch',
+                    datepicker: true,
+                    timepicker: false,
+                    validateOnBlur: false,
+                    format: 'Y-m-d'
+                });
+            } catch (e) {
+            }
         }
     });
 
     $tr.find("input[kind='DATE_TIME']").each(function() {
-        try {
-            $(this).datetimepicker({
-                lang: 'ch',
-                datepicker: true,
-                timepicker: false,
-                validateOnBlur: false,
-                format:'Y-m-d H:i:00'
-            });
-        } catch (e) {
+        if ($(this).attr('readonly')==null) {
+            try {
+                $(this).datetimepicker({
+                    lang: 'ch',
+                    datepicker: true,
+                    timepicker: true,
+                    validateOnBlur: false,
+                    format:'Y-m-d H:i:00'
+                });
+            } catch (e) {
+            }
         }
     });
 
@@ -454,11 +489,11 @@ function initTr(nestFieldName, $tr, rowId, isAdd) {
         // 将$nestTr中的控件的id、name值改为以nest_field_打头，以免与主表中的字段冲突
         $tr.find('input,select,textarea,span').each(function() {
             // 不改变行首的checkbox的name，并置其值为rowId，以便于在服务端根据rowId获取
-            if ($(this).attr("name") == "chk<%=nestFieldName%>") {
+            if ($(this).attr("name") == "chk" + nestFieldName) {
                 $(this).val(rowId);
                 return;
             }
-            if ($(this).attr("name") == "rowId<%=nestFieldName%>") {
+            if ($(this).attr("name") == "rowId" + nestFieldName) {
                 $(this).val(rowId);
                 return;
             }
@@ -583,6 +618,18 @@ function initTr(nestFieldName, $tr, rowId, isAdd) {
         }
     });
 
+    $tr.find('input').each(function () {
+        if ($(this).attr('kind') == 'DATE' || $(this).attr('kind') == 'DATE_TIME') {
+          $(this).attr('autocomplete', 'off');
+        }
+    });
+
+    // 替换按钮的样式
+    var btns = $tr[0].getElementsByTagName('button');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].className = 'ant-btn ant-btn-primary ant-btn-sm';
+    }
+
     initCalculatorFieldNameOfFormula($tr, rowId);
     initCalculatorInTr($tr);
 }
@@ -597,45 +644,19 @@ function initCalculatorFieldNameOfFormula($tr, rowId) {
                 // 对日期绑定事件
                 // 时间相减方法subdate(d1, d2)
                 var pat = /subdate\(([a-z0-9_-]+),([a-z0-9_-]+)\)/ig;
-                formula.replace(pat, function(p1, date1, date2){
+                formula = formula.replace(pat, function(p1, date1, date2){
                     var isSelect = false;
-                    var o = $("[name='" + date1 + "']")[0];
-                    if(o) {
-                        date1 = 'nest_field_' + date1 + '_' + rowId;
-                    }
-                    else {
-                        alert('字段' + date1 + '不存在');
-                    }
-
-                    o = $("[name='" + date2 + "']")[0];
-                    if(o) {
-                        date2 = 'nest_field_' + date2 + '_' + rowId;
-                    }
-                    else {
-                        alert('字段' + date2 + '不存在');
-                    }
+                    date1 = 'nest_field_' + date1 + '_' + rowId;
+                    date2 = 'nest_field_' + date2 + '_' + rowId;
                     return "subdate(" + date1 + "," + date2 + ")";
                 });
 
                 // 时间相加方法addDate(d1, d2)
                 var pat = /adddate\(([a-z0-9_-]+),([0-9-]+)\)/ig;
-                formula.replace(pat, function(p1, date1, date2){
+                formula = formula.replace(pat, function(p1, date1, date2){
                     var isSelect = false;
-                    var o = $("[name='" + date1 + "']")[0];
-                    if(o) {
-                        date1 = 'nest_field_' + date1 + '_' + rowId;
-                    }
-                    else {
-                        alert('字段' + date1 + '不存在');
-                    }
-
-                    o = $("[name='" + date2 + "']")[0];
-                    if(o) {
-                        date2 = 'nest_field_' + date2 + '_' + rowId;
-                    }
-                    else {
-                        alert('字段' + date2 + '不存在');
-                    }
+                    date1 = 'nest_field_' + date1 + '_' + rowId;
+                    date2 = 'nest_field_' + date2 + '_' + rowId;
                     return "adddate(" + date1 + "," + date2 + ")";
                 });
 

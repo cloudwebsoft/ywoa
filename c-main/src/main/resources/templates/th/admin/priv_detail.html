@@ -1,0 +1,234 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>管理权限 - 查看</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle!important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <textarea id="deptRoleGroup" name="deptRoleGroup" style="display: none">[[${allPriv}]]</textarea>
+            <div class="text-center" style="margin: 20px">权限 - [[${privilege.description}]]([[${privilege.priv}]])</div>
+            <div style="margin: 10px 0">
+                <button id="btnAdd" class="btn btn-success">添加</button>
+            </div>
+            <table class="table table-bordered table-hover" align="center">
+                <thead>
+                <tr class="active">
+                    <th width="25%" class="text-center">角色</th>
+                    <th width="60%" class="text-center">描述</th>
+                    <th class="text-center">操作</th>
+                </tr>
+                </thead>
+                <tbody th:each="role : ${roleList}">
+                <tr th:id="'tr_role_' + ${role.code}">
+                    <td th:text="${role.code}"></td>
+                    <td th:text="${role.description}"></td>
+                    <td align="center">
+                        <button class="btn btn-danger" th:onclick="delRolePriv([[${role.code}]], [[${privilege.priv}]])">删除</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br>
+            <table align="center" class="table table-bordered table-hover">
+                <thead>
+                <tr class="active">
+                    <th width="25%" class="text-center">用户</th>
+                    <th width="60%" class="text-center">部门</th>
+                    <th class="text-center">操作</th>
+                </tr>
+                </thead>
+                <tbody th:each="json : ${userArr}">
+                <tr th:id="'tr_user_' + ${json[userName]}">
+                    <td th:text="${json[realName]}"></td>
+                    <td th:text="${json[deptNames]}"></td>
+                    <td align="center">
+                        <button class="btn btn-danger" th:onclick="delUserPriv('[(${json[userName]})]', '[(${privilege.priv})]')">删除</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br>
+            <table class="table table-bordered table-hover" align="center">
+                <thead>
+                <tr class="active">
+                    <th width="25%" class="text-center">用户组</th>
+                    <th width="60%" class="text-center">描述</th>
+                    <th class="text-center">操作</th>
+                </tr>
+                </thead>
+                <tbody th:each="group : ${groupList}">
+                <tr th:id="'tr_group_' + ${group.code}">
+                    <td th:inline="text">[[${group.code}]]</td>
+                    <td th:text="${group.description}"></td>
+                    <td align="center">
+                        <button class="btn btn-danger" th:onclick="delGroupPriv([[${group.code}]], [[${privilege.priv}]])">删除</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    function delRolePriv(roleCode, priv) {
+        jConfirm('您确定要删除么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "delRolePriv.do",
+                data: {
+                    roleCode: roleCode,
+                    priv: priv
+                },
+                dataType: "json",
+                beforeSend: function(XMLHttpRequest){
+                    $('body').showLoading();
+                },
+                success: function(data, status) {
+                    if (data.ret==1) {
+                        $.toaster({priority : 'info', message : data.msg });
+                        $('#tr_role_' + roleCode).remove();
+                    }
+                    else {
+                        jAlert(data.msg, [[${[prompt]}]]);
+                    }
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function(XMLHttpRequest, textStatus){
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    function delUserPriv(userName, priv) {
+        jConfirm('您确定要删除么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "delUserPriv.do",
+                data: {
+                    userName: userName,
+                    priv: priv
+                },
+                dataType: "json",
+                beforeSend: function(XMLHttpRequest){
+                    $('body').showLoading();
+                },
+                success: function(data, status) {
+                    if (data.ret==1) {
+                        $.toaster({priority : 'info', message : data.msg });
+                        $('#tr_user_' + userName).remove();
+                    }
+                    else {
+                        jAlert(data.msg, [[${[prompt]}]]);
+                    }
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function(XMLHttpRequest, textStatus){
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    function delGroupPriv(groupCode, priv) {
+        jConfirm('您确定要删除么？', '提示', function (r) {
+            if (!r) {
+                return;
+            }
+            $.ajax({
+                type: "post",
+                url: "delGroupPriv.do",
+                data: {
+                    groupCode: groupCode,
+                    priv: priv
+                },
+                dataType: "json",
+                beforeSend: function(XMLHttpRequest){
+                    $('body').showLoading();
+                },
+                success: function(data, status) {
+                    if (data.ret==1) {
+                        $.toaster({priority : 'info', message : data.msg });
+                        $('#tr_group_' + groupCode).remove();
+                    }
+                    else {
+                        jAlert(data.msg, [[${[prompt]}]]);
+                    }
+                },
+                complete: function(XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function(XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    $(function() {
+        $('#btnAdd').click(function() {
+            openWin('dept_role_group_sel.jsp?isDept=false', 800, 600);
+        });
+    })
+
+    function getDeptRoleGroup() {
+        return $('#deptRoleGroup').val();
+    }
+
+    function setDeptRoleGroup(jsonArr) {
+        $('#deptRoleGroup').val(JSON.stringify(jsonArr));
+        $.ajax({
+            type: "post",
+            url: "setRoleGroupUser.do",
+            contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+            data: {
+                priv: [[${privilege.priv}]],
+                roleGroupUser: JSON.stringify(jsonArr),
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == 1) {
+                    jAlert(data.msg, "提示", function () {
+                        window.location.reload();
+                    });
+                } else {
+                    jAlert(data.msg, "提示");
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+</script>
+</html>

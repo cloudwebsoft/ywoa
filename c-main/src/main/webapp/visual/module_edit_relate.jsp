@@ -8,6 +8,7 @@
 <%@ page import="com.cloudweb.oa.utils.I18nUtil" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
+<%@ page import="com.redmoon.oa.security.SecurityUtil" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -198,7 +199,7 @@
                 %>
                <div id="attBox<%=am.getId()%>" style="margin: 10px 0px">
                    <img src="<%=Global.getRootPath()%>/images/attach.gif"/>
-                    &nbsp; <a target="_blank" href="<%=Global.getRootPath()%>/visual_getfile.jsp?attachId=<%=am.getId()%>"><%=am.getName()%></a>&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp; <a target="_blank" href="<%=Global.getRootPath()%>/visual/download.do?attachId=<%=am.getId()%>&visitKey=<%=SecurityUtil.makeVisitKey(am.getId())%>"><%=am.getName()%></a>&nbsp;&nbsp;&nbsp;&nbsp;
                     [<a href="javascript:;" onclick="delAttach(<%=am.getId()%>)" style="cursor:pointer">删除</a>]
                 </div>
                 <%
@@ -400,5 +401,16 @@
         var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
         parent.layer.close(index)
     }
+
+    $(function() {
+        $('input, select, textarea').each(function () {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+            }
+        });
+    });
 </script>
 </html>

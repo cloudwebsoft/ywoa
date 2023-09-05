@@ -26,7 +26,7 @@
     response.setHeader("X-Content-Type-Options", "nosniff");
 
     String pageType = ParamUtil.get(request, "pageType");
-    if ("moduleList".equals(pageType)) {
+    if ("moduleList".equals(pageType) || pageType.contains("show")) {
         response.setContentType("text/html;charset=utf-8");
         return;
     }
@@ -37,6 +37,7 @@
     String formCode = "qjsqd";
     FormValidatorConfig fvc = new FormValidatorConfig();
     LeaveFormValidator ifv = (LeaveFormValidator) fvc.getIFormValidatorOfForm(formCode);
+    String formName = ParamUtil.get(request, "cwsFormName");
 
     if (op.equals("getLeaveCount")) {
         response.setContentType("text/html;charset=utf-8");
@@ -64,7 +65,6 @@
             user = user.getUserDb(userName);
             String idCard = StrUtil.getNullStr(user.getIDCard());
 
-            // System.out.println(getClass() + " idCard=" + idCard);
             if (idCard.equals("")) {
                 // throw new ErrMsgException("用户" + userName + "，姓名为：" + user.getRealName() + "，其用户信息中的身份证未填写！");
                 json.put("ret", "0");
@@ -78,7 +78,7 @@
             // uad = uad.getUserInfoDb(userName);
             java.util.Date workDate = null;
             JdbcTemplate jt = new JdbcTemplate();
-            String sql = "select * from form_table_personbasic where user_name = ?";
+            String sql = "select * from ft_personbasic where user_name = ?";
             ResultIterator ri = jt.executeQuery(sql, new Object[]{userName});
             if (ri.hasNext()) {
                 ResultRecord rr = (ResultRecord) ri.next();
@@ -138,12 +138,12 @@
 %>
 
 $(document).ready(function() {
-    var jqlbObj = o("jqlb");
+    var jqlbObj = fo("jqlb");
     // 假期类别如果被选择了
     $(jqlbObj).change(function() {
-    	if (o("qjkssj").value=="") {
-            o("desc").innerHTML = "请填写开始日期！";
-            o("desc").style.margin="5px";
+    	if (fo("qjkssj").value=="") {
+            fo("desc").innerHTML = "请填写开始日期！";
+            fo("desc").style.margin="5px";
         }
         else {
             getDayCount($(this).val());
@@ -177,26 +177,56 @@ $(document).ready(function() {
     }
 	%>
 
-    var oldValue = o("qjkssj").value;
-    setInterval(function(){
-                    if (oldValue != o("qjkssj").value) {
-                        if (o("qjkssj").value!="") {
-                            if (jqlbObj.value=="") {
-                                o("desc").innerHTML = "请选择假期类别！";
-                                o("desc").style.margin="5px";
-                            }
-                            else {
-                                getDayCount(o("jqlb").value);
-                            }
-                        }
-
-                        oldValue = o("qjkssj").value;
+    var oldValue = fo("qjkssj").value;
+    var setInt = setInterval(function(){
+        var formName = '<%=formName%>';
+        if (o(formName) {
+            if (oldValue != fo("qjkssj").value) {
+                if (fo("qjkssj").value!="") {
+                    if (jqlbObj.value=="") {
+                        fo("desc").innerHTML = "请选择假期类别！";
+                        fo("desc").style.margin="5px";
                     }
-                },500);
+                    else {
+                        getDayCount(fo("jqlb").value);
+                    }
+                }
+
+                oldValue = fo("qjkssj").value;
+            }
+        }
+    },500);
+    getCurFormUtil().addInterval(setInt, '<%=formName%>');
 });
 
 function getDayCount(jqlb) {
-    $.ajax({
+    var ajaxData = {
+        op: "getLeaveCount",
+        leaveType: encodeURI(jqlb),
+        userName: encodeURI(o('applier').value),
+        qjkssj: o('qjkssj').value
+    }
+    ajaxPost('/flow/form_js/form_js_qjsqd.jsp', ajaxData).then((data) => {
+        console.log('data', data);
+        if (data.ret=="1") {
+            // myMsg(data.msg);
+            if (data.ret=="1") {
+            	if (<%=ifv.isCheckNJ()%> && jqlb=="年假") {
+	                o("desc").innerHTML = "年假总天数为：" + data.defaultCount + "天，本年度已请" + jqlb + "：" + data.leaveCount + "天，剩余：" + (parseFloat(data.defaultCount)-parseFloat(data.leaveCount)) + "天";
+                }
+                else {
+                	o("desc").innerHTML = "本年度已请" + jqlb + "：" + data.leaveCount + "天";
+                }
+                o("desc").style.margin="5px";
+            }
+            else {
+                myMsg(data.msg, 'error');
+            }
+        } else {
+            myMsg(data.msg, 'error');
+        }
+    });
+    <%--$.ajax({
         type: "post",
         url: "<%=request.getContextPath()%>/flow/form_js/form_js_qjsqd.jsp",
         data: {
@@ -230,5 +260,5 @@ function getDayCount(jqlb) {
             // 请求出错处理
             alert(XMLHttpRequest.responseText);
         }
-    });
+    });--%>
 }

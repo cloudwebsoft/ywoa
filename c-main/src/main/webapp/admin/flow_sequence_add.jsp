@@ -6,8 +6,8 @@
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.dept.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <title>工作流序列号管理</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -19,7 +19,6 @@
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
 </head>
 <body>
-<jsp:useBean id="docmanager" scope="page" class="com.redmoon.oa.fileark.DocumentMgr"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 String priv = "admin";
@@ -179,7 +178,7 @@ if(op.equals("modify")) {
 					前缀：
 					<input type="text" id="prefixValue" value='<%=strs[0]==null?"":strs[0]%>' oninput="resetTemplate()" onpropertychange="resetTemplate()">
 				</div>
-				<div>
+				<div title="每个部门单独编号">
 					<input type="checkbox" id="dept" onclick="resetTemplate()">&nbsp;部门
 				</div>
 				<div>

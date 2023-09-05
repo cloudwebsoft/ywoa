@@ -30,10 +30,6 @@
         QObjectMgr qom = new QObjectMgr();
         try {
             if (qom.save(request, ju, "scheduler_edit")) {
-                SchedulerManager sm = SchedulerManager.getInstance();
-                sm.shutdown(); // 结束调度
-                sm.startWhenIsShutdown(); // 重启调度
-                
                 json.put("ret", 1);
                 json.put("msg", "操作成功");
             }
@@ -52,8 +48,8 @@
     
     com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -103,7 +99,7 @@
 <form action="?op=edit" method="post" name="form1" id="form1" onsubmit="return form1_onsubmit()">
 <table width="98%" border="0" class="tabStyle_1 percent80">
     <tr>
-      <td align="left" class="tabStyle_1_title">调度流程</td>
+      <td align="left" class="tabStyle_1_title">调度脚本</td>
     </tr>
     <tr>
       <td align="left">
@@ -223,7 +219,7 @@ if (intervalType.equals("")) {
     <tr>
       <td align="center">
           <div id="editor"></div>
-          <textarea id="editorScript" style="display: none"><%=ju.getString("data_map")%></textarea>
+          <textarea id="editorScript" style="display: none"><%=StrUtil.getNullStr(ju.getString("data_map"))%></textarea>
       </td>
     </tr>
     <tr>

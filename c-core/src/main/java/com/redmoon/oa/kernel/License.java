@@ -1,6 +1,9 @@
 package com.redmoon.oa.kernel;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.util.Date;
 import java.util.HashMap;
@@ -9,9 +12,13 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import com.cloudweb.oa.service.IUserService;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 
 import cn.js.fan.util.DateUtil;
@@ -20,6 +27,8 @@ import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
 import com.redmoon.oa.person.UserDb;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 /**
  * <p>
@@ -43,38 +52,46 @@ import com.redmoon.oa.person.UserDb;
  */
 public class License {
 	static License license = null;
-	Element root; 
+	Element root;
+
 	private static Object initLock = new Object();
 
+	public static final String VERSION_STANDARD = "Standard";
+
 	/**
-	 * 标准版
+	 * 曾经作为标准版，改为企业版2023/2/14
 	 */
-	public static String VERSION_PLATFORM = "Platform";
+	public static final String VERSION_PLATFORM = "Platform";
 
 	/**
 	 * 平台版
 	 */
-	public static String VERSION_PLATFORM_SRC = "Platform_src";
+	public static final String VERSION_PLATFORM_SRC = "Platform_src";
 
 	/**
-	 * 开发版
+	 * 暂无用，原开发版，将来可作为旗舰版
 	 */
-	public static String VERSION_PLATFORM_SUPER = "Platform_super";
+	public static final String VERSION_PLATFORM_SUPER = "Platform_super";
+
+	/**
+	 * 集团版（同时也是开发版）
+	 */
+	public static final String VERSION_PLATFORM_GROUP= "Platform_group";
 
 	/**
 	 * 未注册时显示为试用版
 	 */
-	public static String TYPE_TRIAL = "trial";
+	public static final String TYPE_TRIAL = "trial";
 
 	/**
 	 * 注册后的版本
 	 */
-	public static String TYPE_COMMERICAL = "commercial";
+	public static final String TYPE_COMMERICAL = "commercial";
 
 	/**
 	 * 付费版，去掉logo、水印等，暂未投入使用
 	 */
-	public static String TYPE_BIZ = "biz";
+	public static final String TYPE_BIZ = "biz";
 
 	/**
 	 * VIP用户
@@ -85,12 +102,12 @@ public class License {
 	 * 源码级，4.0以后已弃用
 	 */
 	@Deprecated
-	public static String TYPE_SRC = "src";
+	public static final String TYPE_SRC = "src";
 
 	/**
 	 * OEM级 jfy 20150702
 	 */
-	public static String TYPE_OEM = "oem";
+	public static final String TYPE_OEM = "oem";
 
 	/**
 	 * 仅ActiveX版流程设计器
@@ -182,11 +199,18 @@ public class License {
 	private String id;
 
 	public License() {
+	}
 
+	public boolean isStandard() {
+		return versionType.equals(VERSION_STANDARD);
 	}
 
 	public boolean isPlatform() {
 		if (isPlatformSrc()) {
+			return true;
+		} else if (isPlatformGroup()) {
+			return true;
+		} else if (isPlatformSuper()) {
 			return true;
 		}
 		return versionType.equals(VERSION_PLATFORM);
@@ -198,19 +222,29 @@ public class License {
 		}*/
 		if (isPlatformSuper()) {
 			return true;
-		}
-		if (isSrc()) {
+		} else if (isPlatformGroup()) {
 			return true;
 		}
+		/*if (isSrc()) {
+			return true;
+		}*/
 		return versionType.equals(VERSION_PLATFORM_SRC);
 	}
 
 	public boolean isPlatformSuper() {
-		if (isSrc()) {
+		/*if (isSrc()) {
 			return true;
-		}
+		}*/
 		
 		return versionType.equals(VERSION_PLATFORM_SUPER);
+	}
+
+	public boolean isCloud() {
+		return category.equals(ConstUtil.CATEGORY_CLOUD);
+	}
+
+	public boolean isPlatformGroup() {
+		return versionType.equals(VERSION_PLATFORM_GROUP);
 	}
 
 	public boolean isGov() {
@@ -292,9 +326,6 @@ public class License {
 
 			root = doc.getRootElement();
 
-			// System.out.println("License userCount=" +
-			// root.getChild("userCount").getText());
-
 			setId(root.getChild("id").getText());
 
 			userCount = StrUtil.toInt(root.getChild("userCount").getText(), 20);
@@ -375,10 +406,13 @@ public class License {
 			if (root.getChild("isTrial") != null) {
 				trial = root.getChildText("isTrial").equals("true");
 			}
-		} catch (org.jdom.JDOMException e) {
-			System.out.println("init:" + e.getMessage());
-		} catch (java.io.IOException e) {
-			System.out.println("init:" + e.getMessage());
+
+			// 20220731
+			if (root.getChild("category")!=null) {
+				category = root.getChildText("category");
+			}
+		} catch (JDOMException | IOException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 
@@ -389,35 +423,38 @@ public class License {
 	 */
 	public boolean verify() {
 		try {
-			String filePath = Global.getAppPath() + "WEB-INF/";
-			java.io.ObjectInputStream in = new java.io.ObjectInputStream(
-					new java.io.FileInputStream(filePath + "publickey.dat"));
+			Resource resource = new ClassPathResource("publickey.dat");
+			InputStream inputStream = resource.getInputStream();
+
+			java.io.ObjectInputStream in = new java.io.ObjectInputStream(inputStream);
 			PublicKey pubkey = (PublicKey) in.readObject();
 			in.close();
-			in = new java.io.ObjectInputStream(new java.io.FileInputStream(
-					filePath + "license.dat"));
-			// 取得license.xml
-			String info = (String) in.readObject();
-			// 取得签名
-			byte[] signed = (byte[]) in.readObject();
-			in.close();
 
-			java.security.Signature signetcheck = java.security.Signature.getInstance("DSA");
-			signetcheck.initVerify(pubkey);
-			signetcheck.update(info.getBytes("UTF-8"));
-			if (signetcheck.verify(signed)) {
-				// System.out.println("info=" + info);
-				// System.out.println("签名正常");
-				toXML(info);
-				valid = true;
-			} else {
-				valid = false;
-				System.out.println("Cloud Web license is invalid. 请联系官方获取技术支持！");
+			ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+			inputStream = configUtil.getFile("license.dat");
+			if (inputStream != null) {
+				in = new java.io.ObjectInputStream(inputStream);
+				// 取得license.xml
+				String info = (String) in.readObject();
+				// 取得签名
+				byte[] signed = (byte[]) in.readObject();
+				in.close();
+
+				java.security.Signature signetcheck = java.security.Signature.getInstance("DSA");
+				signetcheck.initVerify(pubkey);
+				signetcheck.update(info.getBytes(StandardCharsets.UTF_8));
+				if (signetcheck.verify(signed)) {
+					toXML(info);
+					valid = true;
+				} else {
+					valid = false;
+					LogUtil.getLog(getClass()).error("Cloud Web license is invalid. 请联系官方获取技术支持！");
+				}
 			}
 		} catch (java.lang.Exception e) {
 			licenseStr = "（未找到许可证文件，您的配置可能不正确，请参考安装说明运行 "
 					+ Global.getFullRootPath() + "/setup/index.jsp）";
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return valid;
 	}
@@ -427,13 +464,13 @@ public class License {
 
 		String serverName = request.getServerName().toLowerCase();
 
-		if (serverName.equals("localhost") || serverName.equals("127.0.0.1")) {
+		if ("localhost".equals(serverName) || "127.0.0.1".equals(serverName)) {
 			return;
 		}
-		if (domain == null || domain.equals("")) {
+		if (domain == null || "".equals(domain)) {
 			throw new ErrMsgException("许可证域名:" + domain + " 非法!");
 		}
-		if (domain.equals("*")) {
+		if ("*".equals(domain)) {
 			return;
 		}
 		String[] ary = StrUtil.split(domain.toLowerCase(), ",");
@@ -637,11 +674,31 @@ public class License {
 		else if ("4.0".equals(version)) {
 			if (versionType.equals(VERSION_PLATFORM_SUPER)) {
 				re = true;
+			} else if (versionType.equals(VERSION_PLATFORM_SRC)) {
+				re = true;
+			} else if (versionType.equals(VERSION_PLATFORM_GROUP)) {
+				re = true;
+			} else if (versionType.equals(VERSION_PLATFORM)) {
+				re = true;
 			}
 		}
-		
-		// 如果version为其它，则根据类型是否为TYPE_SRC判断
-		// boolean re = type.equals(TYPE_SRC);
+
+		/*if (!re) {
+			licenseStr = "只有src版许可证才能导出解决方案！";
+		}*/
+		return re;
+	}
+
+	public boolean canExportSolution() {
+		boolean re =  isPlatformSrc();
+		if (!re) {
+			licenseStr = "只有src版许可证才能导出解决方案！";
+		}
+		return re;
+	}
+
+	public boolean canImportSolution() {
+		boolean re =  isPlatformSrc();
 		if (!re) {
 			licenseStr = "只有src版许可证才能导出解决方案！";
 		}
@@ -752,4 +809,14 @@ public class License {
 	public void setFlowDesigner(String flowDesigner) {
 		this.flowDesigner = flowDesigner;
 	}
+
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
+	}
+
+	private String category = ConstUtil.CATEGORY_CLOUD;
 }

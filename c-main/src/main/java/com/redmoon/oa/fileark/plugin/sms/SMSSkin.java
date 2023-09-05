@@ -1,11 +1,11 @@
 package com.redmoon.oa.fileark.plugin.sms;
 
-import org.apache.log4j.Logger;
 import cn.js.fan.web.SkinUtil;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.util.ResBundle;
 import cn.js.fan.base.ISkin;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.fileark.plugin.PluginMgr;
 import com.redmoon.oa.fileark.plugin.PluginUnit;
 
@@ -23,7 +23,6 @@ import com.redmoon.oa.fileark.plugin.PluginUnit;
  * @version 1.0
  */
 public class SMSSkin implements ISkin {
-    static Logger logger = Logger.getLogger(SMSSkin.class.getName());
     public static String resource = null;
     public static String code = SMSUnit.code;
 
@@ -63,7 +62,7 @@ public class SMSSkin implements ISkin {
                 str = rb.get(key);
             }
             catch (Exception e) {
-                logger.error("LoadString:" + key + " " + e.getMessage());
+                LogUtil.getLog(SMSSkin.class).error("LoadString:" + key + " " + e.getMessage());
             }
             return str;
         }

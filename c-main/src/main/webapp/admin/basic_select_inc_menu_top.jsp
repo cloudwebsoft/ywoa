@@ -14,7 +14,7 @@ SelectKindPriv skpTop = new SelectKindPriv();
     <li id="menu2"><a href="basic_select_add.jsp?kind=<%=kindTop%>"><span>增加</span></a></li>
     <%}%>
     <%if (pvgTop.isUserPrivValid(request, "admin")) { %>
-    <li id="menu3"><a href="basic_select_kind_list.jsp?kind=<%=kindTop%>"><span>类型</span></a></li>
+    <li id="menu3"><a href="../basicdata/basicSelectKindListPage.do?kind=<%=kindTop%>"><span>类型</span></a></li>
     <%} %>
   </ul>
 </div>

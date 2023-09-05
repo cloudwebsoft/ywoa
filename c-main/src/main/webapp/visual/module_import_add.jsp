@@ -6,12 +6,12 @@
 <%@ page import="com.redmoon.oa.visual.ModulePrivDb" %>
 <%@ page import="java.util.Iterator" %>
 <%@ page import="java.util.Vector" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>智能模块设计 - 导入设置</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <script src="../inc/common.js"></script>
 </head>
 <body>
@@ -64,10 +64,13 @@
             <td align="center">
                 <input title="选择文件" type="file" size="20" name="excel"/>
                 <input name="code" value="<%=code%>" type=hidden>
-                <input name="formCode" value="<%=formCode%>" type=hidden></td>
+                <input name="formCode" value="<%=formCode%>" type=hidden>
+            <input id="isBatch" name="isBatch" type="checkbox" checked value="1"/>批量
+		
+		</td>
         </tr>
         <tr align="center" class="row" style="BACKGROUND-COLOR: #ffffff">
-            <td style="PADDING-LEFT: 10px"><input type="submit" class="btn" value="确定"></td>
+            <td style="PADDING-LEFT: 10px"><input type="submit" class="btn btn-default" value="确定"></td>
         </tr>
         </tbody>
     </table>

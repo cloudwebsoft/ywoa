@@ -8,8 +8,8 @@
 <%@ page import="jofc2.model.elements.*"%>
 <%@ page import="jofc2.model.*"%>
 <%@page import="jofc2.OFCException"%>
-<%@page import="net.sf.json.JSONObject"%>
-<%@page import="net.sf.json.JSONArray"%>
+<%@page import="org.json.JSONObject"%>
+<%@page import="org.json.JSONArray"%>
 <%@ include file="../inc/nocache.jsp"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege" />
 <%

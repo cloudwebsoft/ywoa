@@ -1,7 +1,7 @@
 package com.redmoon.oa.flow;
 
 import cn.js.fan.cache.jcs.*;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class WorkflowActionCacheMgr extends AbstractRMCacheMgr {
     public WorkflowActionCacheMgr() {
@@ -9,7 +9,7 @@ public class WorkflowActionCacheMgr extends AbstractRMCacheMgr {
 
     @Override
     public void initLogger() {
-        logger = Logger.getLogger(WorkflowActionCacheMgr.class.getName());
+
     }
 
     @Override
@@ -24,7 +24,7 @@ public class WorkflowActionCacheMgr extends AbstractRMCacheMgr {
             try {
                 rmCache.put(cachePrix + id, wfa);
             } catch (Exception e) {
-                logger.error("getWorkflowActionDb:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getWorkflowActionDb:" + e.getMessage());
             }
             return wfa;
         } else {
@@ -39,7 +39,7 @@ public class WorkflowActionCacheMgr extends AbstractRMCacheMgr {
             try {
                 rmCache.put(cachePrix + id, wfa);
             } catch (Exception e) {
-                logger.error("getWorkflowActionDb:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getWorkflowActionDb:" + e.getMessage());
             }
             return wfa;
         } else {
@@ -51,7 +51,7 @@ public class WorkflowActionCacheMgr extends AbstractRMCacheMgr {
         try {
             rmCache.remove(cachePrix + id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 

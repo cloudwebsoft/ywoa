@@ -47,7 +47,7 @@
          <%
              if (!"".equals(user.getPhoto())) {
          %>
-             <img class="photo" src="<%=request.getContextPath()%>/img_show.jsp?path=<%=user.getPhoto() %>"
+             <img class="photo" src="<%=request.getContextPath()%>/showImg.do?path=<%=user.getPhoto() %>"
                   style="width:130px"/>
           <%
           } else {

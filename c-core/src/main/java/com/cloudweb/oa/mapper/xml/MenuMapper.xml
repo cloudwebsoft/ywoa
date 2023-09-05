@@ -35,10 +35,15 @@
         <result column="is_system" property="isSystem" />
         <result column="font_icon" property="fontIcon" />
         <result column="description" property="description" />
+        <result column="outer_link" property="outerLink" />
+        <result column="cachable" property="cachable" />
+        <result column="component" property="component" />
+        <result column="front" property="front" />
+        <result column="applicationCode" property="application_code" />
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        code, name, isHome, link, parent_code, root_code, orders, child_count, add_date, islocked, type, layer, pre_code, width, is_has_path, is_resource, target, pvg, icon, is_use, is_nav, form_code, can_repeat, big_icon, is_widget, widget_width, widget_height, kind, is_system, font_icon, description
+        code, name, isHome, link, parent_code, root_code, orders, child_count, add_date, islocked, type, layer, pre_code, width, is_has_path, is_resource, target, pvg, icon, is_use, is_nav, form_code, can_repeat, big_icon, is_widget, widget_width, widget_height, kind, is_system, font_icon, description, outer_link, cachable, component, front, application_code
     </sql>
 </mapper>

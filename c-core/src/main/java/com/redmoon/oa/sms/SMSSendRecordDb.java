@@ -7,6 +7,7 @@ import cn.js.fan.base.ObjectDb;
 import cn.js.fan.db.*;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 
@@ -87,7 +88,7 @@ public class SMSSendRecordDb extends ObjectDb {
                 ssrc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
         } finally {
             if (conn != null) {
@@ -117,7 +118,7 @@ public class SMSSendRecordDb extends ObjectDb {
              SMSSendRecordCache src = new SMSSendRecordCache(this);
              src.refreshDel(primaryKey);
          } catch (SQLException e) {
-             logger.error("del:" + e.getMessage());
+             LogUtil.getLog(getClass()).error("del:" + e.getMessage());
          } finally {
              if (conn != null) {
                  conn.close();
@@ -170,7 +171,7 @@ public class SMSSendRecordDb extends ObjectDb {
                  primaryKey.setValue(new Integer(id));
              }
          } catch (SQLException e) {
-             logger.error("load: " + e.getMessage());
+             LogUtil.getLog(getClass()).error("load: " + e.getMessage());
          } finally {
              if (rs != null) {
                  try {
@@ -216,7 +217,7 @@ public class SMSSendRecordDb extends ObjectDb {
              SMSSendRecordCache src = new SMSSendRecordCache(this);
              src.refreshSave(primaryKey);
          } catch (SQLException e) {
-             logger.error("save:" + e.getMessage());
+             LogUtil.getLog(getClass()).error("save:" + e.getMessage());
          } finally {
              if (conn != null) {
                  conn.close();
@@ -243,7 +244,7 @@ public class SMSSendRecordDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -296,7 +297,7 @@ public class SMSSendRecordDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {

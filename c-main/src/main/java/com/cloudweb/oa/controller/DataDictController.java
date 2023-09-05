@@ -9,8 +9,8 @@ import cn.js.fan.web.Global;
 import com.cloudweb.oa.service.DataDictService;
 import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormDb;
-import com.redmoon.oa.hr.SalaryMgr;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.util.TransmitData;
 import com.redmoon.oa.visual.FormDAO;
@@ -51,17 +51,17 @@ public class DataDictController {
                 json.put("ret", "-1");
                 json.put("msg", "值未更改！");
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             return json.toString();
         }
         boolean re = false;
         try {
-            String sql = "update form_table_data_dict_table set title=? where name=?";
+            String sql = "update ft_data_dict_table set title=? where name=?";
             JdbcTemplate jt = new JdbcTemplate();
             re = jt.executeUpdate(sql, new Object[]{update_value, tableName})==1;
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         try {
@@ -73,7 +73,7 @@ public class DataDictController {
                 json.put("msg", "操作失败，请先同步！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -94,23 +94,23 @@ public class DataDictController {
                 json.put("ret", "-1");
                 json.put("msg", "值未更改！");
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             return json.toString();
         }
         boolean re = false;
         try {
-            String sql = "select id from form_table_data_dict_table where name=?";
+            String sql = "select id from ft_data_dict_table where name=?";
             JdbcTemplate jt = new JdbcTemplate();
             ResultIterator ri = jt.executeQuery(sql, new Object[]{tableName});
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
+                ResultRecord rr = ri.next();
                 long tableId = rr.getLong(1);
-                sql = "update form_table_data_dict_column set title=? where name=? and cws_id=?";
-                re = jt.executeUpdate(sql, new Object[]{update_value, columnName, tableId})==1;
+                sql = "update ft_data_dict_column set title=? where name=? and cws_id=?";
+                re = jt.executeUpdate(sql, new Object[]{update_value, columnName, String.valueOf(tableId)})==1;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         try {
@@ -122,7 +122,7 @@ public class DataDictController {
                 json.put("msg", "操作失败，请先同步！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -166,7 +166,7 @@ public class DataDictController {
         } catch (Exception e) {
             json.put("ret", 0);
             json.put("msg", e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return json.toString();
         }
         finally {
@@ -174,7 +174,7 @@ public class DataDictController {
                 try {
                     rsTable.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             connection.close();

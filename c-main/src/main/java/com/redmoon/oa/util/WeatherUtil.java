@@ -8,6 +8,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.zip.GZIPInputStream;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,7 +52,7 @@ public class WeatherUtil {
 			bis.close();
 			reader.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(WeatherUtil.class).error(e);
 		}
 		return jsonString;
 	}
@@ -81,10 +82,9 @@ public class WeatherUtil {
 				}
 			}
 			catch (JSONException e) {
-				e.printStackTrace();
+				LogUtil.getLog(WeatherUtil.class).error(e);
 			}
 		}		
-		System.out.println(sb.toString());
 	}
 	
 	public static JSONObject get(String city) {
@@ -96,14 +96,11 @@ public class WeatherUtil {
 			String str = getJsonStringFromGZIP(connectionData.getInputStream());
 			return new JSONObject(str);
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(WeatherUtil.class).error(e);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(WeatherUtil.class).error(e);
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(WeatherUtil.class).error(e);
 		}
 		return null;
 	}

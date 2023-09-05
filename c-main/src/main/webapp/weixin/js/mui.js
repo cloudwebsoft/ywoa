@@ -549,6 +549,7 @@ var mui = (function(document, undefined) {
 		$.EVENT_MOVE = 'mousemove';
 		$.EVENT_END = 'mouseup';
 	}
+
 	$.EVENT_CANCEL = 'touchcancel';
 	$.EVENT_CLICK = 'click';
 
@@ -6825,7 +6826,7 @@ Function.prototype.bind = Function.prototype.bind || function(to) {
 			element.style.webkitTransform = 'translate(' + x + 'px,0)';
 		}
 	};
-
+	console.log('before addEventListener $.EVENT_START', $.EVENT_START);
 	window.addEventListener($.EVENT_START, function(event) {
 		if (cell) {
 			toggleActive(false);
@@ -6834,6 +6835,7 @@ Function.prototype.bind = Function.prototype.bind || function(to) {
 		isMoved = isOpened = openedActions = false;
 		var target = event.target;
 		var isDisabled = false;
+
 		for (; target && target !== document; target = target.parentNode) {
 			if (target.classList) {
 				var classList = target.classList;

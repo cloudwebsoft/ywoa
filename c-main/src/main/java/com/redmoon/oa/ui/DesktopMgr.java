@@ -1,13 +1,18 @@
 package com.redmoon.oa.ui;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -15,14 +20,15 @@ import cn.js.fan.cache.jcs.RMCache;
 import org.jdom.output.Format;
 import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class DesktopMgr {
     RMCache rmCache;
     final String group = "DESKTOP";
     final String ALLDESKTOP = "ALLDESKTOP";
 
-    static Logger logger;
-    public final String FILENAME = "config_desktop.xml";
+    public static final String FILENAME = "config_desktop.xml";
 
     public static Document doc = null;
     public static Element root = null;
@@ -33,7 +39,6 @@ public class DesktopMgr {
     public DesktopMgr() {
         rmCache = RMCache.getInstance();
 
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -42,17 +47,25 @@ public class DesktopMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
+                Resource resource = new ClassPathResource(FILENAME);
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
                 root = doc.getRootElement();
-                fin.close();
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(DesktopMgr.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(DesktopMgr.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -67,7 +80,7 @@ public class DesktopMgr {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -77,7 +90,7 @@ public class DesktopMgr {
             pu = (DesktopUnit)rmCache.getFromGroup(code, group);
         }
         catch (Exception e) {
-            logger.error("getDesktopUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDesktopUnit:" + e.getMessage());
         }
         if (pu==null) {
             init();
@@ -112,7 +125,7 @@ public class DesktopMgr {
                         try {
                             rmCache.putInGroup(code, group, pu);
                         } catch (Exception e) {
-                            logger.error("getDesktopUnit:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getDesktopUnit:" + e.getMessage());
                         }
                         return pu;
                     }
@@ -130,7 +143,7 @@ public class DesktopMgr {
         try {
             v = (Vector) rmCache.getFromGroup(ALLDESKTOP, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector();
@@ -147,7 +160,7 @@ public class DesktopMgr {
                     rmCache.putInGroup(ALLDESKTOP, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllDeskTopUnit:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllDeskTopUnit:" + e.getMessage());
                 }
             }
         }

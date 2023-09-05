@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudwebsoft.framework.db.*;
 import com.cloudwebsoft.framework.util.*;
 import com.redmoon.oa.db.*;
@@ -27,7 +28,17 @@ public class ModulePrivDb extends ObjectDb {
 	private int del = 0;
 	
 	private String fieldWrite;
-	private String fieldHide;
+    private String fieldHide;
+
+    public String getFieldExport() {
+        return fieldExport;
+    }
+
+    public void setFieldExport(String fieldExport) {
+        this.fieldExport = fieldExport;
+    }
+
+    private String fieldExport;
 
 	/**
 	 * 高级查询，默认不允许
@@ -39,6 +50,9 @@ public class ModulePrivDb extends ObjectDb {
 	 */
 	private int reActive = 0;
 	private int importXls;
+
+	private boolean filter = false;
+	private String filterCond = "";
 
     public int getExportWord() {
         return exportWord;
@@ -54,6 +68,10 @@ public class ModulePrivDb extends ObjectDb {
 	private int exportWord = 0;
 	
 	private int log = 0;
+
+	private int copy = 0;
+	private int zip = 0;
+	private int rollBack = 0;
 	
 	public int getImportXls() {
 		return importXls;
@@ -72,6 +90,26 @@ public class ModulePrivDb extends ObjectDb {
 	}
 
 	private int exportXls;
+
+    public int getExportXlsCol() {
+        return exportXlsCol;
+    }
+
+    public void setExportXlsCol(int exportXlsCol) {
+        this.exportXlsCol = exportXlsCol;
+    }
+
+    private int exportXlsCol;
+
+    public int getSetList() {
+        return setList;
+    }
+
+    public void setSetList(int setList) {
+        this.setList = setList;
+    }
+
+    private int setList;
 
 	public static final int TYPE_USERGROUP = 0;
     public static final int TYPE_USER = 1;
@@ -102,7 +140,23 @@ public class ModulePrivDb extends ObjectDb {
      * 数据维护权限，可以不受校验规则的限制
      */
     public static final int PRIV_DATA = 12;
-    
+    /**
+     * 压缩文件下载
+     */
+    public static final int PRIV_ZIP = 13;
+    /**
+     * 复制记录
+     */
+    public static final int PRIV_COPY = 14;
+    /**
+     * 回滚流程及表单记录
+     */
+    public static final int PRIV_ROLL_BACK = 15;
+
+    public static final int PRIV_EXPORT_XLS_COL = 16;
+
+    public static final int PRIV_SET_LIST = 17;
+
     public int getView() {
 		return view;
 	}
@@ -110,7 +164,6 @@ public class ModulePrivDb extends ObjectDb {
 	public void setView(int view) {
 		this.view = view;
 	}
-
 
     public ModulePrivDb(int id) {
         this.id = id;
@@ -137,12 +190,12 @@ public class ModulePrivDb extends ObjectDb {
         QUERY_LIST =
                 "select id from visual_module_priv where form_code=? order by priv_type desc, name";
         QUERY_LOAD =
-                "select form_code,name,priv_type,see,append,manage,modify,view,search,re_active,field_write,field_hide,import,export,del,log,export_word,data from visual_module_priv where id=?";
+                "select form_code,name,priv_type,priv_see,priv_append,priv_manage,priv_modify,priv_view,priv_search,priv_re_active,field_write,field_hide,priv_import,priv_export,priv_del,priv_log,priv_export_word,priv_data,is_filter,filter_cond,zip,copy,roll_back,priv_export_col,priv_set_list,field_export from visual_module_priv where id=?";
         QUERY_DEL = "delete from visual_module_priv where id=?";
         QUERY_SAVE =
-                "update visual_module_priv set see=?,append=?,manage=?,modify=?,view=?,search=?,re_active=?,field_write=?,field_hide=?,import=?,export=?,del=?,log=?,export_word=?,data=? where id=?";
+                "update visual_module_priv set priv_see=?,priv_append=?,priv_manage=?,priv_modify=?,priv_view=?,priv_search=?,priv_re_active=?,field_write=?,field_hide=?,priv_import=?,priv_export=?,priv_del=?,priv_log=?,priv_export_word=?,priv_data=?,is_filter=?,filter_cond=?,zip=?,copy=?,roll_back=?,priv_export_col=?,priv_set_list=?,field_export=? where id=?";
         QUERY_CREATE =
-                "insert into visual_module_priv (name,priv_type,see,append,manage,form_code,id,modify,view,search,re_active,field_write,field_hide,import,export,del,log,export_word,data) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "insert into visual_module_priv (name,priv_type,priv_see,priv_append,priv_manage,form_code,id,priv_modify,priv_view,priv_search,priv_re_active,field_write,field_hide,priv_import,priv_export,priv_del,priv_log,priv_export_word,priv_data) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     }
 
     @Override
@@ -173,10 +226,10 @@ public class ModulePrivDb extends ObjectDb {
      * @param formCode String
      * @return RoleDb
      */
-    public Vector getRolesOfModule(String formCode) {
+    public Vector<RoleDb> getRolesOfModule(String formCode) {
         ResultSet rs = null;
         Conn conn = new Conn(connname);
-        Vector result = new Vector();
+        Vector<RoleDb> result = new Vector<>();
         PreparedStatement ps = null;
         RoleMgr rm = new RoleMgr();
         try {
@@ -192,13 +245,11 @@ public class ModulePrivDb extends ObjectDb {
                     result.addElement(rm.getRoleDb(rs.getString(1)));
                 }
             }
-        } catch (Exception e) {
-            logger.error("getRolesOfModule: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("getRolesOfModule: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return result;
     }
@@ -243,17 +294,24 @@ public class ModulePrivDb extends ObjectDb {
                 log = rs.getInt(16);
                 exportWord = rs.getInt(17);
                 data = rs.getInt(18);
+                filter = rs.getInt(19) == 1;
+                filterCond = StrUtil.getNullStr(rs.getString(20));
+                zip = rs.getInt(21);
+                copy = rs.getInt(22);
+                rollBack = rs.getInt(23);
+                exportXlsCol = rs.getInt(24);
+                setList = rs.getInt(25);
+                fieldExport = StrUtil.getNullStr(rs.getString(26));
+
                 loaded = true;
 
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
             }
-        } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -313,29 +371,38 @@ public class ModulePrivDb extends ObjectDb {
             ps.setInt(12, del);
             ps.setInt(13, log);
             ps.setInt(14, exportWord);
-            ps.setInt(15, data);			
-            ps.setInt(16, id);
+            ps.setInt(15, data);
+            ps.setInt(16, filter ? 1 : 0);
+            ps.setString(17, filterCond);
+            ps.setInt(18, zip);
+            ps.setInt(19, copy);
+            ps.setInt(20, rollBack);
+            ps.setInt(21, exportXlsCol);
+            ps.setInt(22, setList);
+            ps.setString(23, fieldExport);
+            ps.setInt(24, id);
             r = conn.executePreUpdate();
 
             if (r==1) {
                 ModulePrivCache rc = new ModulePrivCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 rc.refreshSave(primaryKey);
 
                 rc.refreshPrivs(formCode);
              }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return r == 1;
     }
 
-    public Vector getModulePrivsOfModuleRaw(String formCode) {
+    public Vector<ModulePrivDb> getModulePrivsOfModuleRaw(String formCode) {
         String sql = "select id from visual_module_priv where form_code=" + StrUtil.sqlstr(formCode);
         return list(sql);
     }
 
-    public Vector getModulePrivsOfModule(String formCode) {
+    public Vector<ModulePrivDb> getModulePrivsOfModule(String formCode) {
         ModulePrivCache mpc = new ModulePrivCache(this);
         return mpc.getModulePrivsOfModule(formCode);
     }
@@ -351,21 +418,19 @@ public class ModulePrivDb extends ObjectDb {
     public boolean canUserDo(UserDb user, UserGroupDb[] groups, RoleDb[] roles, int privType) {
         // list该节点的所有拥有权限的用户
         long t = System.currentTimeMillis();
-        Vector v = getModulePrivsOfModule(formCode);
+        Vector<ModulePrivDb> v = getModulePrivsOfModule(formCode);
 
 //        long s = System.currentTimeMillis() - t;
 //        DebugUtil.i(getClass(), "canUserDo", getFormCode() + " " + getName() + " time:" + s + " ms");
 
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
+        for (ModulePrivDb lp : v) {
             // 遍历每个权限项
-            ModulePrivDb lp = (ModulePrivDb) ir.next();
-            if (lp.getType()==TYPE_ROLE) {
+            if (lp.getType() == TYPE_ROLE) {
                 // roles中含有MEMBER
                 // 判断该用户所属的角色是否有权限
                 for (RoleDb role : roles) {
                     if (role.getCode().equals(lp.getName())) {
-                        if (privType != PRIV_REACTIVE && lp.getManage() == 1) {
+                        if ((privType != PRIV_REACTIVE && privType !=PRIV_DATA ) && lp.getManage() == 1) {
                             return true;
                         }
                         if (privType == PRIV_SEE) {
@@ -400,7 +465,18 @@ public class ModulePrivDb extends ObjectDb {
                             if (lp.getExportXls() == 1) {
                                 return true;
                             }
-                        } else if (privType == PRIV_DEL) {
+                        }
+                        else if (privType == PRIV_EXPORT_XLS_COL) {
+                            if (lp.getExportXlsCol() == 1) {
+                                return true;
+                            }
+                        }
+                        else if (privType == PRIV_SET_LIST) {
+                            if (lp.getSetList() == 1) {
+                                return  true;
+                            }
+                        }
+                        else if (privType == PRIV_DEL) {
                             if (lp.getDel() == 1) {
                                 return true;
                             }
@@ -416,6 +492,18 @@ public class ModulePrivDb extends ObjectDb {
                             if (lp.getData() == 1) {
                                 return true;
                             }
+                        } else if (privType == PRIV_ZIP) {
+                            if (lp.getZip() == 1) {
+                                return true;
+                            }
+                        } else if (privType == PRIV_COPY) {
+                            if (lp.getCopy() == 1) {
+                                return true;
+                            }
+                        } else if (privType == PRIV_ROLL_BACK) {
+                            if (lp.getRollBack() == 1) {
+                                return true;
+                            }
                         }
                         break;
                     }
@@ -425,76 +513,88 @@ public class ModulePrivDb extends ObjectDb {
             else if (lp.getType() == ModulePrivDb.TYPE_USERGROUP) {
                 // 组为everyone
                 if (lp.getName().equals(UserGroupDb.EVERYONE)) {
-                	if (privType!=PRIV_REACTIVE && lp.getManage()==1) {
+                    if ((privType != PRIV_REACTIVE && privType !=PRIV_DATA) && lp.getManage() == 1) {
                         return true;
                     }
-                    if (privType==PRIV_APPEND) {
+                    if (privType == PRIV_APPEND) {
                         if (lp.getAppend() == 1) {
                             return true;
                         }
-                    }
-                    else if (privType==PRIV_SEE) {
-                        if (lp.getSee()==1) {
+                    } else if (privType == PRIV_SEE) {
+                        if (lp.getSee() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_MODIFY) {
+                        if (lp.getModify() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_VIEW) {
+                        if (lp.getView() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_SEARCH) {
+                        if (lp.getSearch() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_REACTIVE) {
+                        if (lp.getReActive() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_IMPORT) {
+                        if (lp.getImportXls() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_EXPORT) {
+                        if (lp.getExportXls() == 1) {
                             return true;
                         }
                     }
-                    else if (privType==PRIV_MODIFY) {
-                    	if (lp.getModify()==1) {
+                    else if (privType == PRIV_EXPORT_XLS_COL) {
+                        if (lp.getExportXlsCol() == 1) {
                             return true;
                         }
                     }
-                    else if (privType==PRIV_VIEW) {
-                    	if (lp.getView()==1) {
-                    	    return true;
+                    else if (privType == PRIV_SET_LIST) {
+                        if (lp.getSetList() == 1) {
+                            return  true;
                         }
                     }
-                    else if (privType==PRIV_SEARCH) {
-                    	if (lp.getSearch()==1) {
-                    	    return true;
+                    else if (privType == PRIV_DEL) {
+                        if (lp.getDel() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_REACTIVE) {
-                    	if (lp.getReActive()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_LOG) {
+                        if (lp.getLog() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_IMPORT) {
-                    	if (lp.getImportXls()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_EXPORT_WORD) {
+                        if (lp.getExportWord() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_EXPORT) {
-                    	if (lp.getExportXls()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_DATA) {
+                        if (lp.getData() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_DEL) {
-                    	if (lp.getDel()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_ZIP) {
+                        if (lp.getZip() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_LOG) {
-                    	if (lp.getLog()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_COPY) {
+                        if (lp.getCopy() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType == PRIV_EXPORT_WORD) {
-                        if (lp.getExportWord()==1) {
+                    } else if (privType == PRIV_ROLL_BACK) {
+                        if (lp.getRollBack() == 1) {
                             return true;
                         }
                     }
-                    else if (privType == PRIV_DATA) {
-                        if (lp.getData()==1) {
-                            return true;
-                        }
-                    }					
                 } else {
                     if (groups != null) {
                         int len = groups.length;
                         // 判断该用户所在的组是否有权限
                         for (UserGroupDb group : groups) {
                             if (group.getCode().equals(lp.getName())) {
-                                if (privType != PRIV_REACTIVE && lp.getManage() == 1) {
+                                if ((privType != PRIV_REACTIVE && privType !=PRIV_DATA) && lp.getManage() == 1) {
                                     return true;
                                 }
                                 if (privType == PRIV_APPEND) {
@@ -529,7 +629,18 @@ public class ModulePrivDb extends ObjectDb {
                                     if (lp.getExportXls() == 1) {
                                         return true;
                                     }
-                                } else if (privType == PRIV_DEL) {
+                                }
+                                else if (privType == PRIV_EXPORT_XLS_COL) {
+                                    if (lp.getExportXlsCol() == 1) {
+                                        return true;
+                                    }
+                                }
+                                else if (privType == PRIV_SET_LIST) {
+                                    if (lp.getSetList() == 1) {
+                                        return  true;
+                                    }
+                                }
+                                else if (privType == PRIV_DEL) {
                                     if (lp.getDel() == 1) {
                                         return true;
                                     }
@@ -545,78 +656,102 @@ public class ModulePrivDb extends ObjectDb {
                                     if (lp.getData() == 1) {
                                         return true;
                                     }
+                                } else if (privType == PRIV_ZIP) {
+                                    if (lp.getZip() == 1) {
+                                        return true;
+                                    }
+                                } else if (privType == PRIV_COPY) {
+                                    if (lp.getCopy() == 1) {
+                                        return true;
+                                    }
+                                } else if (privType == PRIV_ROLL_BACK) {
+                                    if (lp.getRollBack() == 1) {
+                                        return true;
+                                    }
                                 }
                                 break;
                             }
                         }
                     }
                 }
-            }
-            else if (lp.getType()==TYPE_USER) { //　个人用户
+            } else if (lp.getType() == TYPE_USER) { //　个人用户
                 if (lp.getName().equals(user.getName())) {
-                	if (privType!=PRIV_REACTIVE && lp.getManage()==1) {
+                    if ((privType != PRIV_REACTIVE && privType !=PRIV_DATA) && lp.getManage() == 1) {
                         return true;
                     }
-                	
+
                     if (privType == PRIV_APPEND) {
                         if (lp.getAppend() == 1) {
                             return true;
                         }
-                    }else if (privType == PRIV_SEE) {
+                    } else if (privType == PRIV_SEE) {
                         if (lp.getSee() == 1) {
                             return true;
                         }
-                    }
-                    else if (privType==PRIV_MODIFY) {
-                    	if (lp.getModify()==1) {
+                    } else if (privType == PRIV_MODIFY) {
+                        if (lp.getModify() == 1) {
                             return true;
                         }
-                    }      
-                    else if (privType==PRIV_VIEW) {
-                    	if (lp.getView()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_VIEW) {
+                        if (lp.getView() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_SEARCH) {
-                    	if (lp.getSearch()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_SEARCH) {
+                        if (lp.getSearch() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_REACTIVE) {
-                    	if (lp.getReActive()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_REACTIVE) {
+                        if (lp.getReActive() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_IMPORT) {
-                    	if (lp.getImportXls()==1) {
-                    	    return true;
+                    } else if (privType == PRIV_IMPORT) {
+                        if (lp.getImportXls() == 1) {
+                            return true;
                         }
-                    }
-                    else if (privType==PRIV_EXPORT) {
-                    	if (lp.getExportXls()==1) {
-                    	    return true;
-                        }
-                    }            
-                    else if (privType==PRIV_DEL) {
-                    	if (lp.getDel()==1) {
-                    	    return true;
-                        }
-                    }            
-                    else if (privType==PRIV_LOG) {
-                    	if (lp.getLog()==1) {
-                    	    return true;
-                        }
-                    }
-                    else if (privType == PRIV_EXPORT_WORD) {
-                        if (lp.getExportWord()==1) {
+                    } else if (privType == PRIV_EXPORT) {
+                        if (lp.getExportXls() == 1) {
                             return true;
                         }
                     }
-                    else if (privType == PRIV_DATA) {
-                        if (lp.getData()==1) {
+                    else if (privType == PRIV_EXPORT_XLS_COL) {
+                        if (lp.getExportXlsCol() == 1) {
                             return true;
                         }
-                    }					
+                    }
+                    else if (privType == PRIV_SET_LIST) {
+                        if (lp.getSetList() == 1) {
+                            return  true;
+                        }
+                    }
+                    else if (privType == PRIV_DEL) {
+                        if (lp.getDel() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_LOG) {
+                        if (lp.getLog() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_EXPORT_WORD) {
+                        if (lp.getExportWord() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_DATA) {
+                        if (lp.getData() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_ZIP) {
+                        if (lp.getZip() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_COPY) {
+                        if (lp.getCopy() == 1) {
+                            return true;
+                        }
+                    } else if (privType == PRIV_ROLL_BACK) {
+                        if (lp.getRollBack() == 1) {
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -641,7 +776,26 @@ public class ModulePrivDb extends ObjectDb {
 
         long s = System.currentTimeMillis() - t;
 
-        RoleDb[] roles = user.getRoles();
+        RoleDb[] roles = null;
+        com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+        if (cfg.getBooleanProperty("isRoleSwitchable")) {
+            // 取当前所切换的角色
+            String curRoleCode = Privilege.getCurRoleCode();
+            if (curRoleCode != null) {
+                RoleDb rd = new RoleDb();
+                rd = rd.getRoleDb(curRoleCode);
+                roles = new RoleDb[] { rd };
+            }
+            else {
+                roles = new RoleDb[]{};
+                if (!ConstUtil.USER_ADMIN.equals(username)) {
+                    DebugUtil.w(getClass(), "", username + "'s CurRoleCode is null.");
+                }
+            }
+        }
+        else {
+            roles = user.getRoles();
+        }
         // DebugUtil.i(getClass(), "canUserDo", getFormCode() + " 取用户角色 time:" + s + " ms");
 
         s = System.currentTimeMillis() - t;
@@ -650,19 +804,17 @@ public class ModulePrivDb extends ObjectDb {
         // DebugUtil.i(getClass(), "canUserDo", getFormCode() + " 取用户组 time:" + s + " ms");
 
         // 如果属于管理员组,则拥有全部权
-        // logger.info("groups[i].code=" + groups[i].getCode());
+        // LogUtil.getLog(getClass()).info("groups[i].code=" + groups[i].getCode());
         // for (int i = 0; i < groups.length; i++)
         //    if (groups[i].getCode().equals(groups[i].ADMINISTRATORS))
         //        return true;
 
-        // logger.info("dirCode=" + dirCode + " name=" + lf.getName() + " code=" + lf.getCode() + " parentCode=" + lf.getParentCode());
-
-        boolean re = canUserDo(user, groups, roles, privType);
+        // LogUtil.getLog(getClass()).info("dirCode=" + dirCode + " name=" + lf.getName() + " code=" + lf.getCode() + " parentCode=" + lf.getParentCode());
 
         /*s = System.currentTimeMillis() - t;
         DebugUtil.i(getClass(), "canUserDo", getFormCode() + " 判断权限 time2:" + s + " ms");*/
 
-        return re;
+        return canUserDo(user, groups, roles, privType);
     }
 
     public boolean canUserAppend(String username) {
@@ -680,6 +832,18 @@ public class ModulePrivDb extends ObjectDb {
     public boolean canUserData(String userName) {
         return canUserDo(userName, PRIV_DATA);
     }
+
+    public boolean canUserZip(String userName) {
+        return canUserDo(userName, PRIV_ZIP);
+    }
+
+    public boolean canUserCopy(String userName) {
+        return canUserDo(userName, PRIV_COPY);
+    }
+
+    public boolean canUserRollBack(String userName) {
+        return canUserDo(userName, PRIV_ROLL_BACK);
+    }
     
     public boolean canUserModify(String username) {
     	return canUserDo(username, PRIV_MODIFY);
@@ -695,6 +859,14 @@ public class ModulePrivDb extends ObjectDb {
     
     public boolean canUserExport(String userName) {
         return canUserDo(userName, PRIV_EXPORT);
+    }
+
+    public boolean canUserExportXlsCol(String userName) {
+        return canUserDo(userName, PRIV_EXPORT_XLS_COL);
+    }
+
+    public boolean canUserSetList(String userName) {
+        return canUserDo(userName, PRIV_SET_LIST);
     }
 
     public boolean canUserExportWord(String userName) {
@@ -748,23 +920,19 @@ public class ModulePrivDb extends ObjectDb {
             ps.setInt(17, log);
             ps.setInt(18, exportWord);
             ps.setInt(19, data);
-            r = conn.executePreUpdate() == 1 ? true : false;
+            r = conn.executePreUpdate() == 1;
 
             if (r) {
                 ModulePrivCache rc = new ModulePrivCache(this);
                 rc.refreshCreate();
-
                 rc.refreshPrivs(formCode);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("create:数据库操作出错！");
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return r;
     }
@@ -803,13 +971,11 @@ public class ModulePrivDb extends ObjectDb {
             ModulePrivCache rc = new ModulePrivCache(this);
             rc.refreshPrivs(leafCode);
         } catch (SQLException e) {
-            logger.error("setRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
     }
@@ -822,7 +988,7 @@ public class ModulePrivDb extends ObjectDb {
     }
 
     public ModulePrivDb getModulePrivDb(int id) {
-        return (ModulePrivDb)getObjectDb(new Integer(id));
+        return (ModulePrivDb)getObjectDb(id);
     }
 
     /**
@@ -854,16 +1020,16 @@ public class ModulePrivDb extends ObjectDb {
         try {
             PreparedStatement ps = rmconn.prepareStatement(QUERY_DEL);
             ps.setInt(1, id);
-            r = rmconn.executePreUpdate() == 1 ? true : false;
+            r = rmconn.executePreUpdate() == 1;
             if (r) {
                 ModulePrivCache rc = new ModulePrivCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 rc.refreshDel(primaryKey);
-
                 rc.refreshPrivs(formCode);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             return false;
         }
         return r;
@@ -893,10 +1059,10 @@ public class ModulePrivDb extends ObjectDb {
         this.manage = manage;
     }
 
-    public Vector listUserPriv(String userName) {
+    public Vector<ModulePrivDb> listUserPriv(String userName) {
         ResultSet rs = null;
         Conn conn = new Conn(connname);
-        Vector result = new Vector();
+        Vector<ModulePrivDb> result = new Vector<>();
         PreparedStatement ps = null;
         try {
             String sql = "select id from visual_module_priv where name=?";
@@ -911,13 +1077,11 @@ public class ModulePrivDb extends ObjectDb {
                     result.addElement(lp);
                 }
             }
-        } catch (Exception e) {
-            logger.error("listUserPriv: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("listUserPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return result;
     }
@@ -944,62 +1108,61 @@ public class ModulePrivDb extends ObjectDb {
         RoleDb[] roles = user.getRoles();
         
         // list该节点的所有拥有权限的用户
-        Vector v = getModulePrivsOfModule(formCode);
+        Vector<ModulePrivDb> v = getModulePrivsOfModule(formCode);
         if (v.size()==0) {
         	return "";
         }
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
+        for (ModulePrivDb lp : v) {
             // 遍历每个权限项
-            ModulePrivDb lp = (ModulePrivDb) ir.next();
-            if (lp.getType()==TYPE_ROLE) {
-                if (roles!=null) {
+            if (lp.getType() == TYPE_ROLE) {
+                if (roles != null) {
                     // 判断该用户所属的角色是否有权限
-                    int len = roles.length;
-                    for (int i = 0; i < len; i++) {
-                        if (roles[i].getCode().equals(lp.getName())) {
-                        	if ("write".equals(privType)) {
-                        		return lp.getFieldWrite();
-                        	}
-                        	else {
-                        		return lp.getFieldHide();
-                        	}
+                    for (RoleDb role : roles) {
+                        if (role.getCode().equals(lp.getName())) {
+                            if ("write".equals(privType)) {
+                                return lp.getFieldWrite();
+                            } else if ("export".equals(privType)) {
+                                return lp.getFieldExport();
+                            } else {
+                                return lp.getFieldHide();
+                            }
                         }
                     }
                 }
-            }            
-            else if (lp.getType()==TYPE_USER) { //　个人用户
+            } else if (lp.getType() == TYPE_USER) { //　个人用户
                 if (lp.getName().equals(user.getName())) {
-                	if ("write".equals(privType)) {
-                		return lp.getFieldWrite();
-                	}
-                	else {
-                		return lp.getFieldHide();
-                	}
+                    if ("write".equals(privType)) {
+                        return lp.getFieldWrite();
+                    } else if ("export".equals(privType)) {
+                        return lp.getFieldExport();
+                    } else {
+                        return lp.getFieldHide();
+                    }
                 }
-            }            
+            }
             //　权限项对应的是组用户
             else if (lp.getType() == ModulePrivDb.TYPE_USERGROUP) {
                 // 组为everyone
                 if (lp.getName().equals(UserGroupDb.EVERYONE)) {
-                	if ("write".equals(privType)) {
-                		return lp.getFieldWrite();
-                	}
-                	else {
-                		return lp.getFieldHide();
-                	}
+                    if ("write".equals(privType)) {
+                        return lp.getFieldWrite();
+                    } else if ("export".equals(privType)) {
+                        return lp.getFieldExport();
+                    } else {
+                        return lp.getFieldHide();
+                    }
                 } else {
                     if (groups != null) {
-                        int len = groups.length;
                         // 判断该用户所在的组是否有权限
-                        for (int i = 0; i < len; i++) {
-                            if (groups[i].getCode().equals(lp.getName())) {
-                            	if ("write".equals(privType)) {
-                            		return lp.getFieldWrite();
-                            	}
-                            	else {
-                            		return lp.getFieldHide();
-                            	}
+                        for (UserGroupDb group : groups) {
+                            if (group.getCode().equals(lp.getName())) {
+                                if ("write".equals(privType)) {
+                                    return lp.getFieldWrite();
+                                } else if ("export".equals(privType)) {
+                                    return lp.getFieldExport();
+                                } else {
+                                    return lp.getFieldHide();
+                                }
                             }
                         }
                     }
@@ -1074,4 +1237,82 @@ public class ModulePrivDb extends ObjectDb {
 		return log;
 	}
 
+    public boolean isFilter() {
+        return filter;
+    }
+
+    public void setFilter(boolean filter) {
+        this.filter = filter;
+    }
+
+    public String getFilterCond() {
+        return filterCond;
+    }
+
+    public void setFilterCond(String filterCond) {
+        this.filterCond = filterCond;
+    }
+
+    /**
+     * 取得用于在某模块权限中勾选过滤时所设的条件，如果未找到则返回null
+     * @param moduleCode
+     * @param userName
+     * @return
+     */
+    public String getFilterForUser(String moduleCode, String userName) {
+	    UserDb user = new UserDb();
+	    user = user.getUserDb(userName);
+        Vector<ModulePrivDb> v = getModulePrivsOfModule(moduleCode);
+        for (ModulePrivDb modulePrivDb : v) {
+            if (modulePrivDb.isFilter()) {
+                if (modulePrivDb.getType() == ModulePrivDb.TYPE_ROLE) {
+                    if (modulePrivDb.getName().equals(ConstUtil.ROLE_MEMBER)) {
+                        return modulePrivDb.getFilterCond();
+                    } else if (user.isUserOfRole(modulePrivDb.getName())) {
+                        return modulePrivDb.getFilterCond();
+                    }
+                } else if (modulePrivDb.getType() == ModulePrivDb.TYPE_USERGROUP) {
+                    if (modulePrivDb.getName().equals(ConstUtil.GROUP_EVERYONE)) {
+                        return modulePrivDb.getFilterCond();
+                    } else {
+                        UserGroupDb[] groups = user.getGroups();
+                        for (UserGroupDb group : groups) {
+                            if (modulePrivDb.getName().equals(group.getCode())) {
+                                return modulePrivDb.getFilterCond();
+                            }
+                        }
+                    }
+                } else if (modulePrivDb.getType() == ModulePrivDb.TYPE_USER) {
+                    if (modulePrivDb.getName().equals(userName)) {
+                        return modulePrivDb.getFilterCond();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public int getCopy() {
+        return copy;
+    }
+
+    public void setCopy(int copy) {
+        this.copy = copy;
+    }
+
+    public int getZip() {
+        return zip;
+    }
+
+    public void setZip(int zip) {
+        this.zip = zip;
+    }
+
+    public int getRollBack() {
+        return rollBack;
+    }
+
+    public void setRollBack(int rollBack) {
+        this.rollBack = rollBack;
+    }
 }

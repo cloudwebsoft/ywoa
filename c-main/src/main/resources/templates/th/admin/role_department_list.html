@@ -1,0 +1,352 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>角色下的组织列表</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
+    <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <link href="../js/select2/select2.css" rel="stylesheet"/>
+    <style>
+        i {
+            margin-right: 3px;
+        }
+        .page-main {
+            clear: both;
+            margin: 10px 15px 0 15px;
+        }
+        .search-form {
+            padding-top: 10px;
+        }
+        .search-form input,select {
+            vertical-align:middle;
+        }
+        .search-form select {
+            width: 80px;
+        }
+        .search-form input:not([type="radio"]):not([type="button"]):not([type="checkbox"]) {
+            width: 80px;
+            line-height: 20px; /*否则输入框的文字会偏下*/
+        }
+        .cond-title {
+            margin: 0 5px;
+        }
+    </style>
+    <script src="../inc/common.js"></script>
+    <script src="../js/jquery-1.9.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+    <script src="../js/jquery-alerts/jquery.alerts.js"></script>
+    <script src="../js/jquery-alerts/cws.alerts.js"></script>
+    <script src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../js/soul-table/soulTable.css" media="all">
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
+    <script src="../js/select2/select2.js"></script>
+</head>
+<body>
+<div th:replace="th/include/tab_role :: navRole(${role.code}, ${role.description}, 7)"></div>
+<div class="page-main">
+    <div id="searchFormBox" class="search-form-box">
+        <form id="searchForm" name="searchForm" class="search-form" method="get">
+            <div class="layui-inline">
+                &nbsp;名称
+                <input name="name" value=""/>
+                <input type="hidden" name="op" value="search"/>
+                <button type="submit" class="layui-btn layui-btn-primary layui-btn-sm">搜索</button>
+            </div>
+        </form>
+    </div>
+    <table class="layui-hide" id="table_list" lay-filter="table_list"></table>
+    <script type="text/html" id="toolbar_list">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="setup" title="设置"><i class="fa fa-plus-circle"></i>设置</button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary layui-border-red" lay-event="del" title="删除"><i class="layui-icon layui-icon-delete"></i>删除</button>
+        </div>
+    </script>
+
+    <script type="text/html" id="operateBar">
+        <a class="layui-btn layui-btn-xs" lay-event="postUser">成员管理</a>
+    </script>
+
+    <div id="dlg" style="display:none; line-height: 1.5" class="form-inline">
+        <div style="margin: 10px 10px">
+            <span>名称</span>
+            <input id="name" name="name" class="form-control" style="width: 400px"/>
+        </div>
+        <div style="margin: 10px 10px">
+            <span>备注</span>
+            <textarea id="description" class="form-control" style="width: 400px; height: 80px"></textarea>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    var tableData;
+    layui.config({
+        base: '../js/',   // 第三方模块所在目录
+        // version: 'v1.6.2' // 插件版本号
+    }).extend({
+        soulTable: 'soul-table/soulTable',
+        tableChild: 'soul-table/tableChild',
+        tableMerge: 'soul-table/tableMerge',
+        tableFilter: 'soul-table/tableFilter',
+        excel: 'soul-table/excel',
+    });
+
+    var curPostId = -1;
+    layui.use(['table', 'soulTable', 'form'], function () {
+        var table = layui.table;
+        var soulTable = layui.soulTable;
+        var form = layui.form;
+
+        table.render({
+            id: 'tableList'
+            , elem: '#table_list'
+            , toolbar: '#toolbar_list'
+            , defaultToolbar: ['filter', 'print'/*, 'exports', {
+				title: '提示'
+				,layEvent: 'LAYTABLE_TIPS'
+				,icon: 'layui-icon-tips'
+			}*/]
+            , drag: {toolbar: true}
+            , method: 'post'
+            , url: 'roleDepartmentList.do?roleCode=' + [[${role.code}]]
+            , cols: [
+                [
+                    {type: 'checkbox', fixed: 'left'}
+                    , {field: 'name', width: 300, title: '部门名称', sort: true}
+                    , {field: 'fullDeptName', width: 500, title: '部门全名', sort: false}
+                    , {
+                        field: 'include',
+                        title: '包含子部门',
+                        align: 'center',
+                        templet: function (d) {
+                            var state = "";
+                            if (d.include) {
+                                state = "<input type='checkbox' value='" + d.id + "' id='include' lay-filter='include' checked='checked' name='include' lay-skin='switch' lay-text='包含|不含' >";
+                            }
+                            else {
+                                state = "<input type='checkbox' value='" + d.id + "' id='include' lay-filter='include' name='include'  lay-skin='switch' lay-text='包含|不含' >";
+
+                            }
+                            return state;
+                        }
+                    }
+                ]
+            ]
+            , page: true
+            , unresize: false
+            , limit: 50
+            , height: 'full-68'
+            , parseData: function (res) { //将原始数据解析成 table 组件所规定的数据
+                return {
+                    "code": res.errCode, //解析接口状态
+                    "msg": res.msg, //解析提示文本
+                    "count": res.total, //解析数据长度
+                    "data": res.rows //解析数据列表
+                };
+            }
+            , done: function (res, curr, count) {
+                tableData = res.data;
+                soulTable.render(this);
+            }
+        });
+
+        // 监听开关事件
+        form.on('switch(include)', function (data) {
+            var contexts;
+            var val = data.elem.checked;    // 判断开关状态
+            if (val) {
+                contexts = "包含";
+            } else {
+                contexts = "不含";
+            }
+
+            var recordId = data.elem.value;
+
+            layer.open({
+                content: "你确定要"+contexts+"子部门么?"
+                , btn: ['确定', '取消']
+                , yes: function (index, layero) {
+                    console.log(data);
+                    //按钮确定【按钮一】的回调
+                    data.elem.checked = val;
+                    //对商品进行上架或下架处理
+                    $.ajax({
+                        type: "post",
+                        url: 'changeRoleDepartmentStatus.do',
+                        dataType: "json",
+                        data: {
+                            //上下架的参数
+                            "id": recordId,
+                            "include": val
+                        },
+                        success: function (data) {
+                            layer.msg(data.msg);
+                        }
+                    });
+
+                    form.render();
+                    layer.close(index);
+                }
+                , btn2: function (index, layero) {
+                    //按钮【按钮二】的回调
+                    data.elem.checked = !x;
+                    form.render();
+                    layer.close(index);
+                    //return false 开启该代码可禁止点击该按钮停用
+                }
+                , cancel: function () {
+                    //右上角停用回调
+                    data.elem.checked = !x;
+                    form.render();
+                    // return false; //开启该代码可禁止点击该按钮停用
+                }
+            });
+            return false;
+        });
+
+        //头工具栏事件
+        table.on('toolbar()', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch (obj.event) {
+                case 'setup':
+                    openWin('../deptMultiSel.do', 800, 600)
+                    break;
+                case 'del':
+                    var data = checkStatus.data;
+                    if (data.length == 0) {
+                        layer.msg('请选择记录', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+
+                    var ids = '';
+                    for (var i in data) {
+                        var json = data[i];
+                        if (ids == '') {
+                            ids = json.id;
+                        } else {
+                            ids += ',' + json.id;
+                        }
+                    }
+
+                    layer.confirm('您确定要删除么？', {icon: 3, title: '提示'}, function (index) {
+                        $.ajax({
+                            type: "post",
+                            url: "del.do",
+                            data: {
+                                ids: ids
+                            },
+                            dataType: "html",
+                            beforeSend: function (XMLHttpRequest) {
+                                $("body").showLoading();
+                            },
+                            success: function (data, status) {
+                                data = $.parseJSON(data);
+                                layer.msg(data.msg, {
+                                    offset: '6px'
+                                });
+                                if (data.res == 0) {
+                                    refresh();
+                                }
+                            },
+                            complete: function (XMLHttpRequest, status) {
+                                $("body").hideLoading();
+                            },
+                            error: function (XMLHttpRequest, textStatus) {
+                                // 请求出错处理
+                                alert(XMLHttpRequest.responseText);
+                            }
+                        });
+                        layer.close(index);
+                    });
+                    break;
+            }
+        });
+
+        $('.search-form .layui-btn').on('click', function (e) {
+            e.preventDefault();
+            table.reload('tableList', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                , where: $('.search-form').serializeJsonObject()
+            }, 'data');
+        });
+
+        //监听表格排序问题
+        table.on('sort()', function (obj) { //注：sort lay-filter="对应的值"
+            table.reload('tableList', { //testTable是表格容器id
+                initSort: obj // 记录初始排序，如果不设的话，将无法标记表头的排序状态。 layui 2.1.1 新增参数
+                , where: {
+                    orderBy: obj.field //排序字段
+                    , sort: obj.type //排序方式
+                }
+            });
+        });
+    });
+
+    // 刷新
+    function doQuery() {
+        refresh();
+    }
+
+    $.fn.serializeJsonObject = function () {
+        var json = {};
+        var form = this.serializeArray();
+        $.each(form, function () {
+            if (json[this.name]) {
+                if (!json[this.name].push) {
+                    json[this.name] = [json[this.name]];
+                }
+                json[this.name].push();
+            } else {
+                json[this.name] = this.value || '';
+            }
+        });
+        return json;
+    };
+
+    function refresh() {
+        layui.table.reload('tableList');
+    }
+
+    function selectNode(codes, names) {
+        $.ajax({
+            type: "post",
+            url: "create.do",
+            data: {
+                deptCodes: codes,
+                roleCode: '[(${role.code})]'
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $("body").showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                layer.msg(data.msg, {
+                    offset: '6px'
+                });
+                if (data.res == 0) {
+                    refresh();
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $("body").hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+</script>
+</html>

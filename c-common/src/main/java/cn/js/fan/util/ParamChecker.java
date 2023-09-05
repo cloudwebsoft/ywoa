@@ -3,14 +3,21 @@ package cn.js.fan.util;
 import java.util.Vector;
 import java.util.Iterator;
 import javax.servlet.http.HttpServletRequest;
+
+import com.cloudwebsoft.framework.util.IPUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 
 import java.util.HashMap;
+
 import cn.js.fan.security.SecurityUtil;
+
 import java.text.SimpleDateFormat;
+
 import cn.js.fan.web.SkinUtil;
+
 import java.util.Date;
-import org.apache.log4j.Logger;
+
 import com.cloudwebsoft.framework.base.ISequence;
 
 /**
@@ -28,7 +35,7 @@ import com.cloudwebsoft.framework.base.ISequence;
  * Date类型时 current表示当前时间 min表示日期的最小值, max表示日期的最大值
  * 说明：对于大小写不敏感，如RegName,将会被转换为regname
  * 域的描述格式：　#资源名称
- *               非#开头，表示直接使用
+ * 非#开头，表示直接使用
  * 资源文件中的key使用小写
  * </p>
  *
@@ -48,9 +55,7 @@ public class ParamChecker {
     String formResource = "";
 
     String res = "res.checker";
-
-    Logger logger = Logger.getLogger(ParamConfig.class.getName());
-
+    
     public static String TYPE_DATE = "Date";
     public static String TYPE_INT = "int";
     public static String TYPE_STRING = "String";
@@ -90,23 +95,21 @@ public class ParamChecker {
         if (sourceType == SOURCE_TYPE_REQUEST) {
             return ParamUtil.get(request, field, false);
         } else {
-        	String val = "";
-        	try {
-        		val = StrUtil.getNullStr(fu.getFieldValue(field, false));
-        	}
-        	catch (ClassCastException e) {
-        		// 使表单域选择宏控件支持多选的时候，这里得到的应是数组，将其拼装成,号分隔的字符串
-        		String[] ary = fu.getFieldValues(field);
-        		for (String str : ary) {
-        			if ("".equals(val)) {
-        				val = str;
-        			}
-        			else {
-        				val += "," + str;
-        			}
-        		}
-        	}            
-        	return val;
+            String val = "";
+            try {
+                val = StrUtil.getNullStr(fu.getFieldValue(field, false));
+            } catch (ClassCastException e) {
+                // 使表单域选择宏控件支持多选的时候，这里得到的应是数组，将其拼装成,号分隔的字符串
+                String[] ary = fu.getFieldValues(field);
+                for (String str : ary) {
+                    if ("".equals(val)) {
+                        val = str;
+                    } else {
+                        val += "," + str;
+                    }
+                }
+            }
+            return val;
         }
     }
 
@@ -120,15 +123,16 @@ public class ParamChecker {
 
     /**
      * 切分规则，并对其中的转义字符&comma;作处理
+     *
      * @param str String
      * @return String[]
      */
     public static String[] split(String str) {
         str = str.replaceAll("，", ","); // 替换全角
         String[] r = StrUtil.split(str, ",");
-        if (r!=null) {
+        if (r != null) {
             int len = r.length;
-            for (int i=0; i<len;  i++) {
+            for (int i = 0; i < len; i++) {
                 r[i] = r[i].trim().replaceAll("\\\\comma", ",");
             }
         }
@@ -137,11 +141,10 @@ public class ParamChecker {
 
     public Object getValue(String fieldName) throws ErrMsgException {
         if (fields.containsKey(fieldName)) {
-            // logger.info("getValue:" + ((Field) fields.get(fieldName)).value);
-            // System.out.println(getClass() + "g etValue:" + ((Field) fields.get(fieldName)).value);
+            // LogUtil.getLog(getClass()).info("getValue:" + ((Field) fields.get(fieldName)).value);
+            // LogUtil.getLog(getClass()).info(getClass() + "g etValue:" + ((Field) fields.get(fieldName)).value);
             return ((Field) fields.get(fieldName)).value;
-        }
-        else {
+        } else {
             throw new ParamCheckerException(fieldName + " is not found in the form rule.", ParamCheckerException.TYPE_PARAM_NOT_SET_IN_FORM_RULE); // 调试用，所以不调用资源文件
         }
     }
@@ -152,57 +155,57 @@ public class ParamChecker {
     }
 
     public String getString(String fieldName) throws ErrMsgException {
-        return (String)getValue(fieldName);
+        return (String) getValue(fieldName);
     }
 
     public int getInt(String fieldName) throws ErrMsgException {
-        Integer it = (Integer)getValue(fieldName);
-        if (it==null)
+        Integer it = (Integer) getValue(fieldName);
+        if (it == null)
             return -1;
         else
             return it.intValue();
     }
 
     public Date getDate(String fieldName) throws ErrMsgException {
-        Date d = (Date)getValue(fieldName);
+        Date d = (Date) getValue(fieldName);
         return d;
     }
 
     public String[] getStringValues(String fieldName) throws ErrMsgException {
-        return (String[])getValue(fieldName);
+        return (String[]) getValue(fieldName);
     }
 
     public int[] getIntValues(String fieldName) throws ErrMsgException {
-        return (int[])getValue(fieldName);
+        return (int[]) getValue(fieldName);
     }
 
     public boolean getBoolean(String fieldName) throws ErrMsgException {
-        Boolean b = (Boolean)getValue(fieldName);
-        if (b==null)
+        Boolean b = (Boolean) getValue(fieldName);
+        if (b == null)
             return false;
         else
             return b.booleanValue();
     }
 
     public long getLong(String fieldName) throws ErrMsgException {
-        Long v = (Long)getValue(fieldName);
-        if (v==null)
+        Long v = (Long) getValue(fieldName);
+        if (v == null)
             return -1;
         else
             return v.longValue();
     }
 
     public double getDouble(String fieldName) throws ErrMsgException {
-        Double v = (Double)getValue(fieldName);
-        if (v==null)
+        Double v = (Double) getValue(fieldName);
+        if (v == null)
             return -1;
         else
             return v.doubleValue();
     }
 
     public float getFloat(String fieldName) throws ErrMsgException {
-        Float v = (Float)getValue(fieldName);
-        if (v==null)
+        Float v = (Float) getValue(fieldName);
+        if (v == null)
             return -1;
         else
             return v.floatValue();
@@ -210,31 +213,32 @@ public class ParamChecker {
 
     /**
      * 获取UnionCond中的成结的Field的值
+     *
      * @param rulePairStr String
-     * @param token String
+     * @param token       String
      * @return String[]
      */
     public boolean checkUnionCond(String rulePairStr, String token) {
         boolean isValid = true;
         String[] pairs = rulePairStr.split(token);
         if (pairs.length < 2) {
-            addMsg("err_format", new String[] {rulePairStr});
+            addMsg("err_format", new String[]{rulePairStr});
             isValid = false;
         }
         String leftFieldName = pairs[0].trim();
         String rightFieldName = pairs[1].trim();
 
-        // logger.info("checkUnionCond leftField name=" + leftFieldName + " rightFieldName=" + rightFieldName);
+        // LogUtil.getLog(getClass()).info("checkUnionCond leftField name=" + leftFieldName + " rightFieldName=" + rightFieldName);
 
         Field leftField = (Field) fields.get(leftFieldName);
         Field rightField = (Field) fields.get(rightFieldName);
         if (leftField == null) {
-            addMsg("err_not_in_result", new String[] {leftFieldName});
+            addMsg("err_not_in_result", new String[]{leftFieldName});
             isValid = false;
             return false;
         }
         if (rightField == null) {
-            addMsg("err_not_in_result", new String[] {rightFieldName});
+            addMsg("err_not_in_result", new String[]{rightFieldName});
             isValid = false;
             return false;
         }
@@ -242,20 +246,20 @@ public class ParamChecker {
         String leftFieldDesc = leftField.desc;
         String rightFieldDesc = rightField.desc;
 
-        // logger.info("checkUnionCond leftField name=" + leftField.name + " value=" + leftField.value + " type=" + leftField.type);
-        // logger.info("checkUnionCond rightField name=" + rightField.name + " value=" + rightField.value + " type=" + rightField.type);
-        if (leftField.value==null || rightField.value==null)
+        // LogUtil.getLog(getClass()).info("checkUnionCond leftField name=" + leftField.name + " value=" + leftField.value + " type=" + leftField.type);
+        // LogUtil.getLog(getClass()).info("checkUnionCond rightField name=" + rightField.name + " value=" + rightField.value + " type=" + rightField.type);
+        if (leftField.value == null || rightField.value == null)
             return false;
 
         if (!leftField.type.equals(rightField.type)) {
             isValid = false;
-            addMsg("err_type_not_match", new String[] {leftFieldDesc, "" +rightFieldDesc});
+            addMsg("err_type_not_match", new String[]{leftFieldDesc, "" + rightFieldDesc});
         }
 
         if (leftField.type.equals(this.TYPE_STRING) || leftField.type.equals(this.TYPE_INT) || leftField.type.equals(this.TYPE_DATE) || leftField.type.equals(this.TYPE_LONG))
             ;
         else {
-            addMsg("err_can_not_compare", new String[] {leftFieldDesc, "" +rightFieldDesc});
+            addMsg("err_can_not_compare", new String[]{leftFieldDesc, "" + rightFieldDesc});
             isValid = false;
             return isValid;
         }
@@ -267,17 +271,16 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
-            }
-            else if (leftField.type.equals(this.TYPE_DATE)) {
-                Date a = (Date)leftField.value;
-                Date b = (Date)rightField.value;
-                if (DateUtil.compare(a, b)==1 || DateUtil.compare(a, b)==0)
+            } else if (leftField.type.equals(this.TYPE_DATE)) {
+                Date a = (Date) leftField.value;
+                Date b = (Date) rightField.value;
+                if (DateUtil.compare(a, b) == 1 || DateUtil.compare(a, b) == 0)
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_LONG)) {
                 long a = ((Long) leftField.value).longValue();
@@ -286,7 +289,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DOUBLE)) {
                 double a = ((Double) leftField.value).doubleValue();
@@ -295,7 +298,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_FLOAT)) {
                 float a = ((Float) leftField.value).floatValue();
@@ -304,7 +307,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             }
         } else if (token.equals(">")) {
@@ -315,17 +318,16 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
-            }
-            else if (leftField.type.equals(this.TYPE_DATE)) {
-                Date a = (Date)leftField.value;
-                Date b = (Date)rightField.value;
-                if (DateUtil.compare(a, b)==1)
+            } else if (leftField.type.equals(this.TYPE_DATE)) {
+                Date a = (Date) leftField.value;
+                Date b = (Date) rightField.value;
+                if (DateUtil.compare(a, b) == 1)
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_LONG)) {
                 long a = ((Long) leftField.value).longValue();
@@ -334,7 +336,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DOUBLE)) {
                 double a = ((Double) leftField.value).doubleValue();
@@ -343,7 +345,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_FLOAT)) {
                 float a = ((Float) leftField.value).floatValue();
@@ -352,7 +354,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_more", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_more", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             }
         } else if (token.equals("<=")) {
@@ -363,17 +365,16 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
-            }
-            else if (leftField.type.equals(this.TYPE_DATE)) {
-                Date a = (Date)leftField.value;
-                Date b = (Date)rightField.value;
-                if (DateUtil.compare(a, b)==2 || DateUtil.compare(a, b)==0)
+            } else if (leftField.type.equals(this.TYPE_DATE)) {
+                Date a = (Date) leftField.value;
+                Date b = (Date) rightField.value;
+                if (DateUtil.compare(a, b) == 2 || DateUtil.compare(a, b) == 0)
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_LONG)) {
                 long a = ((Long) leftField.value).longValue();
@@ -382,7 +383,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DOUBLE)) {
                 double a = ((Double) leftField.value).doubleValue();
@@ -391,7 +392,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_FLOAT)) {
                 float a = ((Float) leftField.value).floatValue();
@@ -400,7 +401,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             }
 
@@ -412,17 +413,16 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
-            }
-            else if (leftField.type.equals(this.TYPE_DATE)) {
-                Date a = (Date)leftField.value;
-                Date b = (Date)rightField.value;
-                if (DateUtil.compare(a, b)==2)
+            } else if (leftField.type.equals(this.TYPE_DATE)) {
+                Date a = (Date) leftField.value;
+                Date b = (Date) rightField.value;
+                if (DateUtil.compare(a, b) == 2)
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_LONG)) {
                 long a = ((Long) leftField.value).longValue();
@@ -431,7 +431,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DOUBLE)) {
                 double a = ((Double) leftField.value).doubleValue();
@@ -440,7 +440,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_FLOAT)) {
                 float a = ((Float) leftField.value).floatValue();
@@ -449,7 +449,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_less", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_less", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             }
         } else if (token.equals("=")) {
@@ -460,7 +460,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DATE)) {
                 Date a = (Date) leftField.value;
@@ -469,7 +469,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_LONG)) {
                 long a = ((Long) leftField.value).longValue();
@@ -478,7 +478,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_BOOLEAN)) {
                 boolean a = ((Boolean) leftField.value).booleanValue();
@@ -487,7 +487,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_STRING)) {
                 String a = (String) leftField.value;
@@ -496,7 +496,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DOUBLE)) {
                 double a = ((Double) leftField.value).doubleValue();
@@ -505,7 +505,7 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_FLOAT)) {
                 float a = ((Float) leftField.value).floatValue();
@@ -514,12 +514,11 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_equal", new String[] {leftFieldDesc, "" +rightFieldDesc});
+                    addMsg("err_need_equal", new String[]{leftFieldDesc, "" + rightFieldDesc});
                 }
             }
 
-        }
-        else if (token.equals("!=")) {
+        } else if (token.equals("!=")) {
             if (leftField.type.equals(this.TYPE_INT)) {
                 int a = ((Integer) leftField.value).intValue();
                 int b = ((Integer) rightField.value).intValue();
@@ -527,19 +526,19 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            rightFieldDesc});
                 }
             } else if (leftField.type.equals(TYPE_DATE)) {
                 Date a = (Date) leftField.value;
                 Date b = (Date) rightField.value;
-                // System.out.println(getClass() + " a=" + a + " b=" + b);
+                // LogUtil.getLog(getClass()).info(getClass() + " a=" + a + " b=" + b);
                 if (DateUtil.compare(a, b) != 0)
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            rightFieldDesc});
                 }
             } else if (leftField.type.equals(TYPE_LONG)) {
                 long a = ((Long) leftField.value).longValue();
@@ -548,8 +547,8 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            rightFieldDesc});
                 }
             } else if (leftField.type.equals(TYPE_BOOLEAN)) {
                 boolean a = ((Boolean) leftField.value).booleanValue();
@@ -558,20 +557,20 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           "" + rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_STRING)) {
                 String a = (String) leftField.value;
                 String b = (String) rightField.value;
-                // System.out.println(getClass() + " a=" + a + " b=" + b);
+                // LogUtil.getLog(getClass()).info(getClass() + " a=" + a + " b=" + b);
 
                 if (!a.equals(b))
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           "" + rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_DOUBLE)) {
                 double a = ((Double) leftField.value).doubleValue();
@@ -580,8 +579,8 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           "" + rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            "" + rightFieldDesc});
                 }
             } else if (leftField.type.equals(this.TYPE_FLOAT)) {
                 float a = ((Float) leftField.value).floatValue();
@@ -590,14 +589,13 @@ public class ParamChecker {
                     ;
                 else {
                     isValid = false;
-                    addMsg("err_need_not_equal", new String[] {leftFieldDesc,
-                           "" + rightFieldDesc});
+                    addMsg("err_need_not_equal", new String[]{leftFieldDesc,
+                            "" + rightFieldDesc});
                 }
             }
-        }
-        else {
+        } else {
             isValid = false;
-            addMsg("err_format", new String[] {rulePairStr});
+            addMsg("err_format", new String[]{rulePairStr});
         }
         return isValid;
     }
@@ -615,21 +613,20 @@ public class ParamChecker {
             isValid = true;
             String rule = (String) rules.get(i);
             rule = rule.trim();
-            if (rule.indexOf(">=")!=-1) {
+            if (rule.indexOf(">=") != -1) {
                 isValid = this.checkUnionCond(rule, ">=");
-            } else if (rule.indexOf("<=")!=-1) {
+            } else if (rule.indexOf("<=") != -1) {
                 isValid = this.checkUnionCond(rule, "<=");
-            } else if (rule.indexOf(">")!=-1) {
+            } else if (rule.indexOf(">") != -1) {
                 isValid = this.checkUnionCond(rule, ">");
-            } else if (rule.indexOf("<")!=-1) {
+            } else if (rule.indexOf("<") != -1) {
                 isValid = this.checkUnionCond(rule, "<");
-            } else if (rule.indexOf("!=")!=-1) {
+            } else if (rule.indexOf("!=") != -1) {
                 isValid = this.checkUnionCond(rule, "!=");
-            } else if (rule.indexOf("=")!=-1) {
+            } else if (rule.indexOf("=") != -1) {
                 isValid = this.checkUnionCond(rule, "=");
-            }
-            else {
-                addMsg("err_format", new String[] {rule});
+            } else {
+                addMsg("err_format", new String[]{rule});
                 if (onErrorExit) {
                     break;
                 }
@@ -643,15 +640,15 @@ public class ParamChecker {
     }
 
     public void doCheck(FormRule fr) throws CheckErrException, ErrMsgException {
-        if (fr==null) {
-            throw new ErrMsgException(LoadString("err_formrule_none", new String[] {}));
+        if (fr == null) {
+            throw new ErrMsgException(LoadString("err_formrule_none", new String[]{}));
         }
         onErrorExit = fr.isOnErrorExit();
         formResource = fr.getRes();
         check(fr.getRules());
         checkUnionCond(fr.getUnionRules());
 
-        if (msgs.size()!=0) {
+        if (msgs.size() != 0) {
             throw new ErrMsgException(getMessage(false));
         }
     }
@@ -686,13 +683,13 @@ public class ParamChecker {
         } else if (rule.startsWith(TYPE_FLOAT)) {
             checkFieldFloat(rule);
         } else {
-            throw new ErrMsgException(LoadString("err_type", new String[] {rule}));
+            throw new ErrMsgException(LoadString("err_type", new String[]{rule}));
         }
     }
 
     public String parseFieldDesc(String desc) {
-        // logger.info("parseFieldDesc desc=" + desc + " formResource=" + formResource);
-        if (formResource==null || formResource.equals("")) {
+        // LogUtil.getLog(getClass()).info("parseFieldDesc desc=" + desc + " formResource=" + formResource);
+        if (formResource == null || formResource.equals("")) {
             return desc;
         }
         if (!desc.startsWith("#")) {
@@ -703,18 +700,18 @@ public class ParamChecker {
         }
     }
 
-    public void checkFieldIntArray(String ruleStr) throws CheckErrException  {
+    public void checkFieldIntArray(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
@@ -724,16 +721,15 @@ public class ParamChecker {
         String[] values = getFieldValues(fieldName);
         int[] intValues = null;
         len = 0;
-        if (values!=null) {
+        if (values != null) {
             len = values.length;
             intValues = new int[len];
         }
-        for (int i=0; i<len; i++) {
+        for (int i = 0; i < len; i++) {
             try {
                 intValues[i] = Integer.parseInt(values[i]);
-            }
-            catch (Exception e) {
-                addMsg("err_not_num", new String[] {fieldDesc});
+            } catch (Exception e) {
+                addMsg("err_not_num", new String[]{fieldDesc});
                 break;
             }
         }
@@ -744,24 +740,24 @@ public class ParamChecker {
         String NULL = rule[3];
         if (values == null) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
             }
         }
     }
 
-    public void checkFieldStringArray(String ruleStr) throws CheckErrException  {
+    public void checkFieldStringArray(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         fieldName = rule[1];
@@ -775,28 +771,27 @@ public class ParamChecker {
 
         if (values == null) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
-            }
-            else if (NULL.equals("allow"))
+                addMsg("err_want", new String[]{fieldDesc});
+            } else if (NULL.equals("allow"))
                 ;
             else {
-                addMsg("err_format", new String[] {NULL});
+                addMsg("err_format", new String[]{NULL});
             }
         }
     }
 
-    public void checkFieldBoolean(String ruleStr) throws CheckErrException  {
+    public void checkFieldBoolean(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         fieldName = rule[1];
@@ -813,13 +808,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         type = rule[0];
@@ -830,10 +825,9 @@ public class ParamChecker {
 
         if (value == null) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
-            }
-            else if (NULL.equals("allow"))
+            } else if (NULL.equals("allow"))
                 ;
             else {
                 value = NULL;
@@ -842,7 +836,7 @@ public class ParamChecker {
 
         Boolean bu;
 
-        if (value!=null && value.equals("true") || value.equals("1"))
+        if (value != null && value.equals("true") || value.equals("1"))
             bu = new Boolean(true);
         else
             bu = new Boolean(false);
@@ -864,18 +858,18 @@ public class ParamChecker {
         }
     }
 
-    public void checkFieldDate(String ruleStr) throws CheckErrException  {
+    public void checkFieldDate(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-                addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         fieldName = rule[1];
@@ -892,13 +886,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         type = rule[0];
@@ -909,10 +903,9 @@ public class ParamChecker {
 
         if (value == null || value.equals("")) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
-            }
-            else if (NULL.equals("allow"))
+            } else if (NULL.equals("allow"))
                 ;
             else if (NULL.equals("current")) {
                 // 如果默认为当前时间
@@ -920,7 +913,7 @@ public class ParamChecker {
                 fields.put(fieldName, f);
                 return;
             } else {
-                addMsg("err_format", new String[] {NULL});
+                addMsg("err_format", new String[]{NULL});
                 return;
             }
         }
@@ -933,7 +926,7 @@ public class ParamChecker {
         // 规则部分，以类似email=true的方式
         for (int i = 4; i < len; i++) {
             String cond = rule[i].trim();
-            if (value!=null && !value.equals("")) {
+            if (value != null && !value.equals("")) {
                 if (cond.startsWith("format")) {
                     format = getCondValue(cond);
                     SimpleDateFormat sdf = new SimpleDateFormat(
@@ -942,8 +935,7 @@ public class ParamChecker {
                         d = sdf.parse(value);
                     } catch (Exception e) {
                         isValid = false;
-                        addMsg("err_format",
-                               new String[] {fieldDesc + "=" + value});
+                        addMsg("err_format", new String[]{fieldDesc + "=" + value});
                     }
                 }
             }
@@ -962,58 +954,76 @@ public class ParamChecker {
                     char token = cond.charAt(3);
                     if (token == '>') {
                         if (cond.charAt(4) == '=') {
-                            String strMin = cond.substring(5, cond.length()).
-                                            trim();
+                            String strMin = cond.substring(5, cond.length()).trim();
                             try {
                                 Date min = null;
                                 try {
-                                    min = DateUtil.parse(strMin, format,
-                                            SkinUtil.getLocale(request));
-                                }
-                                catch (Exception e) {
-                                    addMsg("err_format", new String[] {strMin});
-                                }
-                                if (min!=null) {
-                                    if (DateUtil.compare(d, min) == 1 ||
-                                        DateUtil.compare(d, min) == 0)
-                                        ;
+                                    // curDate是来自于表单字段的属性：大小，其没有等于的情况，只有>=、>或<=、<
+                                    if ("curDate".equals(strMin)) {
+                                        if ("yyyy-MM-dd HH:mm:ss".equals(format)) {
+                                            min = new Date();
+                                        }
+                                        else {
+                                            min = DateUtil.parse(DateUtil.format(new Date(), format), format);
+                                        }
+                                    }
                                     else {
+                                        min = DateUtil.parse(strMin, format, SkinUtil.getLocale(request));
+                                    }
+                                } catch (Exception e) {
+                                    LogUtil.getLog(getClass()).info(ParamChecker.class + " checkFieldDate ParseException: " + e.getMessage() + " ruleStr=" + ruleStr + " strMax=" + strMin);
+                                    addMsg("err_format", new String[]{ruleStr + ", min value=" + strMin});
+                                }
+                                if (min != null) {
+                                    if (DateUtil.compare(d, min) == 1 ||
+                                            DateUtil.compare(d, min) == 0) {
+                                        ;
+                                    } else {
                                         isValid = false;
-                                        addMsg("err_need_more_equal", new String[] {fieldDesc, DateUtil.format(min, format)});
+                                        addMsg("err_need_more_equal", new String[]{fieldDesc, DateUtil.format(min, format)});
                                     }
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
-                            String strMin = cond.substring(5, cond.length()).
-                                             trim();
+                            String strMin = cond.substring(4, cond.length()).trim();
                             try {
-                                 Date min = null;
-                                 try {
-                                     min = DateUtil.parse(strMin, format,
-                                             SkinUtil.getLocale(request));
-                                 }
-                                 catch (Exception e) {
-                                    addMsg("err_format", new String[] {strMin});
-                                 }
-                                 if (min!=null) {
-                                     if (DateUtil.compare(d, min) == 1)
-                                         ;
-                                     else {
-                                         isValid = false;
-                                         addMsg("err_need_more", new String[] {fieldDesc,DateUtil.format(min, format)});
-                                     }
-                                 }
-                             } catch (Exception e) {
-                                 isValid = false;
-                                 addMsg("err_format", new String[] {cond});
+                                Date min = null;
+                                try {
+                                    // curDate是来自于表单字段的属性：大小，其没有等于的情况，只有>=、>或<=、<
+                                    if ("curDate".equals(strMin)) {
+                                        if ("yyyy-MM-dd HH:mm:ss".equals(format)) {
+                                            min = new Date();
+                                        }
+                                        else {
+                                            min = DateUtil.parse(DateUtil.format(new Date(), format), format);
+                                        }
+                                    }
+                                    else {
+                                        min = DateUtil.parse(strMin, format, SkinUtil.getLocale(request));
+                                    }
+                                } catch (Exception e) {
+                                    LogUtil.getLog(getClass()).error(e);
+                                    addMsg("err_format", new String[]{ruleStr + ", min value=" + strMin});
+                                }
+                                if (min != null) {
+                                    if (DateUtil.compare(d, min) == 1) {
+                                        ;
+                                    } else {
+                                        isValid = false;
+                                        addMsg("err_need_more", new String[]{fieldDesc, DateUtil.format(min, format)});
+                                    }
+                                }
+                            } catch (Exception e) {
+                                isValid = false;
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             } else if (cond.startsWith("max")) {
@@ -1022,58 +1032,74 @@ public class ParamChecker {
                     char token = cond.charAt(3);
                     if (token == '<') {
                         if (cond.charAt(4) == '=') {
-                            String strMax = cond.substring(5, cond.length()).
-                                            trim();
+                            String strMax = cond.substring(5, cond.length()).trim();
                             try {
                                 Date max = null;
                                 try {
-                                    max = DateUtil.parse(strMax, format,
-                                            SkinUtil.getLocale(request));
-                                }
-                                catch (Exception e) {
-                                    addMsg("err_format", new String[] {strMax});
-                                }
-                                if (max!=null) {
-                                    if (DateUtil.compare(d, max) == 2 ||
-                                        DateUtil.compare(d, max) == 0)
-                                        ;
+                                    if ("curDate".equals(strMax)) {
+                                        if ("yyyy-MM-dd HH:mm:ss".equals(format)) {
+                                            max = new Date();
+                                        }
+                                        else {
+                                            max = DateUtil.parse(DateUtil.format(new Date(), format), format);
+                                        }
+                                    }
                                     else {
+                                        max = DateUtil.parse(strMax, format, SkinUtil.getLocale(request));
+                                    }
+                                } catch (java.text.ParseException e) {
+                                    LogUtil.getLog(getClass()).error(e);
+                                    addMsg("err_format", new String[]{ruleStr + ", max value=" + strMax});
+                                }
+                                if (max != null) {
+                                    if (DateUtil.compare(d, max) == 2 ||
+                                            DateUtil.compare(d, max) == 0) {
+                                        ;
+                                    } else {
                                         isValid = false;
-                                        addMsg("err_need_less_equal", new String[] {fieldDesc, DateUtil.format(max, format)});
+                                        addMsg("err_need_less_equal", new String[]{fieldDesc, DateUtil.format(max, format)});
                                     }
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
-                            String strMax = cond.substring(5, cond.length()).
-                                             trim();
+                            String strMax = cond.substring(4, cond.length()).trim();
                             try {
-                                 Date max = null;
-                                 try {
-                                     max = DateUtil.parse(strMax, format,
-                                             SkinUtil.getLocale(request));
-                                 }
-                                 catch (Exception e) {
-                                    addMsg("err_format", new String[] {strMax});
-                                 }
-                                 if (max!=null) {
-                                     if (DateUtil.compare(d, max) == 2)
-                                         ;
-                                     else {
-                                         isValid = false;
-                                         addMsg("err_need_less", new String[] {fieldDesc, DateUtil.format(max, format)});
-                                     }
-                                 }
-                             } catch (Exception e) {
-                                 isValid = false;
-                                 addMsg("err_format", new String[] {cond});
-                             }
+                                Date max = null;
+                                try {
+                                    if ("curDate".equals(strMax)) {
+                                        if ("yyyy-MM-dd HH:mm:ss".equals(format)) {
+                                            max = new Date();
+                                        }
+                                        else {
+                                            max = DateUtil.parse(DateUtil.format(new Date(), format), format);
+                                        }
+                                    }
+                                    else {
+                                        max = DateUtil.parse(strMax, format, SkinUtil.getLocale(request));
+                                    }
+                                } catch (Exception e) {
+                                    LogUtil.getLog(getClass()).error(e);
+                                    addMsg("err_format", new String[]{ruleStr + ", max value=" + strMax});
+                                }
+                                if (max != null) {
+                                    if (DateUtil.compare(d, max) == 2) {
+                                        ;
+                                    } else {
+                                        isValid = false;
+                                        addMsg("err_need_less", new String[]{fieldDesc, DateUtil.format(max, format)});
+                                    }
+                                }
+                            } catch (Exception e) {
+                                isValid = false;
+                                addMsg("err_format", new String[]{cond});
+                            }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             }
@@ -1085,18 +1111,18 @@ public class ParamChecker {
         }
     }
 
-    public void checkFieldLong(String ruleStr) throws CheckErrException  {
+    public void checkFieldLong(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
@@ -1113,13 +1139,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
@@ -1135,49 +1161,41 @@ public class ParamChecker {
 
         if (value == null || value.equals("")) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
-            }
-            else if (NULL.equals("allow"))
+            } else if (NULL.equals("allow"))
                 ;
             else if (NULL.startsWith("auto_inc")) {
                 // 自动增长
                 String s = NULL.substring(9, NULL.length());
                 String[] ary = s.split("\\$");
                 try {
-                    ISequence is = (ISequence)Class.forName(ary[0]).newInstance();
+                    ISequence is = (ISequence) Class.forName(ary[0]).newInstance();
                     int typeId = Integer.parseInt(ary[1]);
                     longValue = new Long(is.getNextId(typeId));
-                    // System.out.println(getClass() + " fieldName=" + fieldName + " typeId=" + typeId + " longValue=" + longValue);
-                }
-                catch (Exception e) {
-                    logger.error("checkFieldLong1:" + StrUtil.trace(e));
-                    addMsg("err_format", new String[] {fieldDesc + "=" + e.getMessage()});
+                } catch (Exception e) {
+                    LogUtil.getLog(getClass()).error("checkFieldLong1:" + StrUtil.trace(e));
+                    addMsg("err_format", new String[]{fieldDesc + "=" + e.getMessage()});
                     return;
                 }
-            }
-            else {
+            } else {
                 try {
                     long v = Long.parseLong(NULL);
                     longValue = new Long(v);
-                }
-                catch (Exception e) {
-                    addMsg("err_format", new String[] {NULL});
+                } catch (Exception e) {
+                    addMsg("err_format", new String[]{NULL});
                     return;
                 }
             }
-        }
-        else {
+        } else {
             try {
                 long v = Long.parseLong(value);
                 longValue = new Long(v);
             } catch (Exception e) {
-                addMsg("err_format", new String[] {fieldDesc + "=" + value});
+                addMsg("err_format", new String[]{fieldDesc + "=" + value});
                 return;
             }
         }
-
-        // System.out.println(getClass() + " fieldName=" + fieldName + " longValue=" + longValue);
 
         // 存储field值
         Field f = new Field(fieldName, fieldDesc, longValue, type);
@@ -1186,9 +1204,9 @@ public class ParamChecker {
         boolean isValid = true;
 
         // 规则部分，以类似email=true的方式
-        if (len>=5) {
+        if (len >= 5) {
             // 如果长度大于5，表示有规则，而如果值为允许空且获得的值为空，则不再验证这些规则
-            if (longValue==null) {
+            if (longValue == null) {
                 return;
                 // addMsg("The value of " + fieldName + " is null but has rule, please check the rule is correct!");
             }
@@ -1203,37 +1221,37 @@ public class ParamChecker {
                     if (token == '>') {
                         if (cond.charAt(4) == '=') {
                             String strMin = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 long min = Long.parseLong(strMin);
                                 if (fieldValue >= min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more_equal", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more_equal", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMin = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 long min = Long.parseLong(strMin);
                                 if (fieldValue > min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             } else if (cond.startsWith("max")) {
@@ -1244,38 +1262,38 @@ public class ParamChecker {
                     if (token == '<') {
                         if (cond.charAt(4) == '=') {
                             String strMax = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 long max = Long.parseLong(strMax);
                                 if (fieldValue <= max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less_equal", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less_equal", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMax = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 long max = Long.parseLong(strMax);
                                 if (fieldValue < max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             }
@@ -1287,25 +1305,48 @@ public class ParamChecker {
         }
     }
 
-
-    public void checkFieldDouble(String ruleStr) throws CheckErrException  {
+    public void checkFieldDouble(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         fieldName = rule[1];
 
         String value = getFieldValue(fieldName);
+        checkFieldDouble(ruleStr, value);
+    }
+
+    public void checkFieldPrice(String ruleStr) throws CheckErrException {
+        String fieldName = "";
+
+        String[] rule = split(ruleStr);
+        if (rule == null) {
+            addMsg("err_format", new String[]{ruleStr});
+            return;
+        }
+
+        int len = rule.length;
+        if (len < 4) {
+            addMsg("err_format", new String[]{ruleStr});
+            return;
+        }
+
+        fieldName = rule[1];
+
+        String value = getFieldValue(fieldName);
+        // 去掉千分位逗号
+        value = value.replaceAll(",", "");
+
         checkFieldDouble(ruleStr, value);
     }
 
@@ -1316,13 +1357,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
@@ -1336,32 +1377,27 @@ public class ParamChecker {
 
         Double doubleValue = null;
 
-        // System.out.println(getClass() + " ruleStr=" + ruleStr + " NULL=" + NULL);
-
         if (value == null || value.equals("")) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
-            }
-            else if (NULL.equals("allow"))
+            } else if (NULL.equals("allow"))
                 ;
             else {
                 try {
                     double v = Double.parseDouble(NULL);
                     doubleValue = new Double(v);
-                }
-                catch (Exception e) {
-                    addMsg("err_format", new String[] {NULL});
+                } catch (Exception e) {
+                    addMsg("err_format", new String[]{NULL});
                     return;
                 }
             }
-        }
-        else {
+        } else {
             try {
                 double v = Double.parseDouble(value);
                 doubleValue = new Double(v);
             } catch (Exception e) {
-                addMsg("err_format", new String[] {fieldDesc + "=" + value});
+                addMsg("err_format", new String[]{fieldDesc + "=" + value});
                 return;
             }
         }
@@ -1373,9 +1409,9 @@ public class ParamChecker {
         boolean isValid = true;
 
         // 规则部分，以类似email=true的方式
-        if (len>=5) {
+        if (len >= 5) {
             // 如果长度大于5，表示有规则，而如果值为允许空且获得的值为空，则不再验证这些规则
-            if (doubleValue==null) {
+            if (doubleValue == null) {
                 return;
                 // addMsg("The value of " + fieldName + " is null but has rule, please check the rule is correct!");
             }
@@ -1390,37 +1426,37 @@ public class ParamChecker {
                     if (token == '>') {
                         if (cond.charAt(4) == '=') {
                             String strMin = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 double min = Double.parseDouble(strMin);
                                 if (fieldValue >= min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more_equal", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more_equal", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMin = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 double min = Double.parseDouble(strMin);
                                 if (fieldValue > min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             } else if (cond.startsWith("max")) {
@@ -1431,38 +1467,38 @@ public class ParamChecker {
                     if (token == '<') {
                         if (cond.charAt(4) == '=') {
                             String strMax = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 double max = Double.parseDouble(strMax);
                                 if (fieldValue <= max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less_equal", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less_equal", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMax = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 double max = Double.parseDouble(strMax);
                                 if (fieldValue < max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             }
@@ -1474,18 +1510,18 @@ public class ParamChecker {
         }
     }
 
-    public void checkFieldFloat(String ruleStr) throws CheckErrException  {
+    public void checkFieldFloat(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
@@ -1502,13 +1538,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
@@ -1524,28 +1560,25 @@ public class ParamChecker {
 
         if (value == null || value.equals("")) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
-            }
-            else if (NULL.equals("allow"))
+            } else if (NULL.equals("allow"))
                 ;
             else {
                 try {
                     float v = Float.parseFloat(NULL);
                     floatValue = new Float(v);
-                }
-                catch (Exception e) {
-                    addMsg("err_format", new String[] {NULL});
+                } catch (Exception e) {
+                    addMsg("err_format", new String[]{NULL});
                     return;
                 }
             }
-        }
-        else {
+        } else {
             try {
                 float v = Float.parseFloat(value);
                 floatValue = new Float(v);
             } catch (Exception e) {
-                addMsg("err_format", new String[] {fieldDesc + "=" + value});
+                addMsg("err_format", new String[]{fieldDesc + "=" + value});
                 return;
             }
         }
@@ -1557,9 +1590,9 @@ public class ParamChecker {
         boolean isValid = true;
 
         // 规则部分，以类似email=true的方式
-        if (len>=5) {
+        if (len >= 5) {
             // 如果长度大于5，表示有规则，而如果值为允许空且获得的值为空，则不再验证这些规则
-            if (floatValue==null) {
+            if (floatValue == null) {
                 return;
                 // addMsg("The value of " + fieldName + " is null but has rule, please check the rule is correct!");
             }
@@ -1574,37 +1607,37 @@ public class ParamChecker {
                     if (token == '>') {
                         if (cond.charAt(4) == '=') {
                             String strMin = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 float min = Float.parseFloat(strMin);
                                 if (fieldValue >= min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more_equal", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more_equal", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMin = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 float min = Float.parseFloat(strMin);
                                 if (fieldValue > min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             } else if (cond.startsWith("max")) {
@@ -1615,38 +1648,38 @@ public class ParamChecker {
                     if (token == '<') {
                         if (cond.charAt(4) == '=') {
                             String strMax = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 float max = Float.parseFloat(strMax);
                                 if (fieldValue <= max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less_equal", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less_equal", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMax = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 float max = Float.parseFloat(strMax);
                                 if (fieldValue < max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             }
@@ -1658,18 +1691,18 @@ public class ParamChecker {
         }
     }
 
-    public void checkFieldInt(String ruleStr) throws CheckErrException  {
+    public void checkFieldInt(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         fieldName = rule[1];
@@ -1685,13 +1718,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         type = rule[0];
@@ -1704,44 +1737,38 @@ public class ParamChecker {
 
         if (value == null || value.equals("")) {
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
+                addMsg("err_want", new String[]{fieldDesc});
                 return;
-            }
-            else if (NULL.equals("allow"))
+            } else if (NULL.equals("allow"))
                 ;
             else if (NULL.startsWith("auto_inc")) {
                 // 自动增长
                 String s = NULL.substring(9, NULL.length());
                 String[] ary = s.split("\\$");
                 try {
-                    ISequence is = (ISequence)Class.forName(ary[0]).newInstance();
+                    ISequence is = (ISequence) Class.forName(ary[0]).newInstance();
                     int typeId = Integer.parseInt(ary[1]);
-                    intValue = new Integer((int)is.getNextId(typeId));
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    logger.error("checkFieldInt1:" + StrUtil.trace(e));
-                    addMsg("err_format", new String[] {fieldDesc + "=" + e.getMessage()});
+                    intValue = new Integer((int) is.getNextId(typeId));
+                } catch (Exception e) {
+                    LogUtil.getLog(getClass()).error(e);
+                    addMsg("err_format", new String[]{fieldDesc + "=" + e.getMessage()});
                     return;
                 }
-            }
-            else {
+            } else {
                 try {
                     int v = Integer.parseInt(NULL);
                     intValue = new Integer(v);
-                }
-                catch (Exception e) {
-                    addMsg("err_format", new String[] {fieldDesc + "=" + NULL});
+                } catch (Exception e) {
+                    addMsg("err_format", new String[]{fieldDesc + "=" + NULL});
                     return;
                 }
             }
-        }
-        else {
+        } else {
             try {
                 int v = Integer.parseInt(value);
                 intValue = new Integer(v);
             } catch (Exception e) {
-                addMsg("err_format", new String[] {fieldDesc + "=" + value});
+                addMsg("err_format", new String[]{fieldDesc + "=" + value});
                 return;
             }
         }
@@ -1753,9 +1780,9 @@ public class ParamChecker {
         boolean isValid = true;
 
         // 验证规则部分，以类似email=true的方式
-        if (len>=5) {
+        if (len >= 5) {
             // 如果长度大于5，表示有规则，而如果值为允许空且获得的值为空，则不再验证这些规则
-            if (intValue==null) {
+            if (intValue == null) {
                 return;
                 // addMsg("The value of " + fieldName + " is null but has rule, please check the rule is correct!");
             }
@@ -1770,37 +1797,37 @@ public class ParamChecker {
                     if (token == '>') {
                         if (cond.charAt(4) == '=') {
                             String strMin = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int min = Integer.parseInt(strMin);
                                 if (fieldValue >= min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more_equal", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more_equal", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMin = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int min = Integer.parseInt(strMin);
                                 if (fieldValue > min)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_more", new String[] {fieldDesc, "" + min});
+                                    addMsg("err_need_more", new String[]{fieldDesc, "" + min});
                                 }
                             } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             } else if (cond.startsWith("max")) {
@@ -1811,38 +1838,38 @@ public class ParamChecker {
                     if (token == '<') {
                         if (cond.charAt(4) == '=') {
                             String strMax = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int max = Integer.parseInt(strMax);
                                 if (fieldValue <= max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less_equal", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less_equal", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strMax = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int max = Integer.parseInt(strMax);
                                 if (fieldValue < max)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_need_less", new String[] {fieldDesc, "" + max});
+                                    addMsg("err_need_less", new String[]{fieldDesc, "" + max});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             }
@@ -1854,18 +1881,18 @@ public class ParamChecker {
         }
     }
 
-    public void checkFieldString(String ruleStr) throws CheckErrException  {
+    public void checkFieldString(String ruleStr) throws CheckErrException {
         String fieldName = "";
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         fieldName = rule[1];
@@ -1881,7 +1908,7 @@ public class ParamChecker {
 			addMsg("err_format", new String[] {rule[2]} );
 			throw new CheckErrException(msgs);
 		}*/
-        
+
         checkFieldString(ruleStr, value);
     }
 
@@ -1892,13 +1919,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return;
         }
         type = rule[0];
@@ -1914,31 +1941,27 @@ public class ParamChecker {
         if (value == null) {
             isReturn = true;
             if (NULL.equalsIgnoreCase("not")) {
-                addMsg("err_want", new String[] {fieldDesc});
-            }
-            else if (NULL.equalsIgnoreCase("empty")) {
+                addMsg("err_want", new String[]{fieldDesc});
+            } else if (NULL.equalsIgnoreCase("empty")) {
                 value = "";
-            }
-            else if (NULL.equalsIgnoreCase("allow")) {
+            } else if (NULL.equalsIgnoreCase("allow")) {
                 ;
-            }
-            else if (NULL.equalsIgnoreCase("ip")) {
+            } else if (NULL.equalsIgnoreCase("ip")) {
                 value = request.getHeader("HTTP_X_FORWARDED_FOR"); // 如果有代理
                 if (value == null) {
-                    value = StrUtil.getNullStr(request.getRemoteAddr());
+                    value = IPUtil.getRemoteAddr(request);
                 }
                 // 存储field值
                 Field f = new Field(fieldName, fieldDesc, value, type);
                 fields.put(fieldName, f);
-            }
-            else
+            } else
                 value = NULL;
         } else {
             value = value.trim();
             if (value.equals("")) {
                 isReturn = true;
                 if (NULL.equalsIgnoreCase("not")) {
-                    addMsg("err_blank", new String[] {fieldDesc});
+                    addMsg("err_blank", new String[]{fieldDesc});
                     isValid = false;
                 }
                 if (NULL.equalsIgnoreCase("empty")) {
@@ -1950,7 +1973,7 @@ public class ParamChecker {
         }
 
         // 存储field值
-        // logger.info("checkFieldString:" + fieldName + " " + fieldDesc + " value=" + value + " type=" + type);
+        // LogUtil.getLog(getClass()).info("checkFieldString:" + fieldName + " " + fieldDesc + " value=" + value + " type=" + type);
         Field f = new Field(fieldName, fieldDesc, value, type);
         fields.put(fieldName, f);
 
@@ -1958,9 +1981,9 @@ public class ParamChecker {
             return;
 
         // 规则部分，以类似email=true,xss=true,isnotcn=true的方式
-        if (len>=5) {
+        if (len >= 5) {
             // 如果长度大于5，表示有规则，而如果值为允许空且获得的值为空，则不再验证这些规则
-            if (value==null) {
+            if (value == null) {
                 return;
                 // addMsg("The value of " + fieldName + " is null but has rule, please check the rule is correct!");
             }
@@ -1973,7 +1996,7 @@ public class ParamChecker {
                     if (v.equals("true")) {
                         if (!StrUtil.IsValidEmail(value)) {
                             isValid = false;
-                            addMsg("err_email", new String[] {fieldDesc});
+                            addMsg("err_email", new String[]{fieldDesc});
                         }
                     }
                 }
@@ -1981,10 +2004,9 @@ public class ParamChecker {
                 if (value != null) {
                     String v = getCondValue(cond);
                     if (v.equals("true")) {
-                        // System.out.println(getClass() + " StrUtil.isNotCN(v)=" + StrUtil.isNotCN(value));
                         if (!StrUtil.isNotCN(value)) {
                             isValid = false;
-                            addMsg("err_cn", new String[] {fieldDesc});
+                            addMsg("err_cn", new String[]{fieldDesc});
                         }
                     }
                 }
@@ -1999,7 +2021,7 @@ public class ParamChecker {
                     for (int k = 0; k < chlen; k++) {
                         if (value.indexOf(chars[k]) != -1) {
                             isValid = false;
-                            addMsg("err_except", new String[] {fieldDesc, chars[k]} );
+                            addMsg("err_except", new String[]{fieldDesc, chars[k]});
                         }
                     }
                 }
@@ -2009,7 +2031,7 @@ public class ParamChecker {
                     if (v.equals("sqlserver")) {
                         if (!SecurityUtil.isValidSqlParam(value)) {
                             isValid = false;
-                            addMsg("err_sql", new String[] {fieldDesc} );
+                            addMsg("err_sql", new String[]{fieldDesc});
                         }
                     }
                 }
@@ -2019,20 +2041,18 @@ public class ParamChecker {
                     if (v.equals("true")) {
                         if (!StrUtil.isNumeric(value)) {
                             isValid = false;
-                            addMsg("err_not_num", new String[] {fieldDesc});
+                            addMsg("err_not_num", new String[]{fieldDesc});
                         }
                     }
                 }
-            }
-            else if (cond.startsWith("xss")) { // 过滤跨站攻击
+            } else if (cond.startsWith("xss")) { // 过滤跨站攻击
                 if (value != null) {
                     String v = getCondValue(cond);
                     if (v.equals("true")) {
                         value = cn.js.fan.security.AntiXSS.antiXSS(value);
                     }
                 }
-            }
-            else if (cond.startsWith("min")) {
+            } else if (cond.startsWith("min")) {
                 if (value != null) {
                     int valueLen = value.length();
                     // 取出符号
@@ -2040,38 +2060,38 @@ public class ParamChecker {
                     if (token == '>') {
                         if (cond.charAt(4) == '=') {
                             String strLen = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int minLen = Integer.parseInt(strLen);
                                 if (valueLen >= minLen)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_len_more_equal", new String[] {fieldDesc, "" + minLen});
+                                    addMsg("err_len_more_equal", new String[]{fieldDesc, "" + minLen});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strLen = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int minLen = Integer.parseInt(strLen);
                                 if (valueLen > minLen)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_len_more", new String[] {fieldDesc, "" + minLen});
+                                    addMsg("err_len_more", new String[]{fieldDesc, "" + minLen});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else if (token == '<') {
                         // 最小长度，不应出现<符号
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     } else if (token == '=') {
                         String strLen = cond.substring(4, cond.length()).trim();
                         try {
@@ -2080,15 +2100,15 @@ public class ParamChecker {
                                 ;
                             else {
                                 isValid = false;
-                                addMsg("err_len_equal", new String[] {fieldDesc, "" + slen});
+                                addMsg("err_len_equal", new String[]{fieldDesc, "" + slen});
                             }
                         } catch (Exception e) {
                             isValid = false;
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             } else if (cond.startsWith("max")) {
@@ -2099,39 +2119,39 @@ public class ParamChecker {
                     if (token == '<') {
                         if (cond.charAt(4) == '=') {
                             String strLen = cond.substring(5, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int maxLen = Integer.parseInt(strLen);
                                 if (valueLen <= maxLen)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_len_less_equal", new String[] {fieldDesc, "" + maxLen});
+                                    addMsg("err_len_less_equal", new String[]{fieldDesc, "" + maxLen});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         } else {
                             String strLen = cond.substring(4, cond.length()).
-                                            trim();
+                                    trim();
                             try {
                                 int maxLen = Integer.parseInt(strLen);
                                 if (valueLen < maxLen)
                                     ;
                                 else {
                                     isValid = false;
-                                    addMsg("err_len_less", new String[] {fieldDesc, "" +maxLen});
+                                    addMsg("err_len_less", new String[]{fieldDesc, "" + maxLen});
                                 }
                             } catch (Exception e) {
                                 isValid = false;
-                                addMsg("err_format", new String[] {cond});
+                                addMsg("err_format", new String[]{cond});
                             }
                         }
                     } else if (token == '>') {
                         // 最小长度，不应出现<符号
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     } else if (token == '=') {
                         String strLen = cond.substring(4, cond.length()).trim();
                         try {
@@ -2140,15 +2160,15 @@ public class ParamChecker {
                                 ;
                             else {
                                 isValid = false;
-                                addMsg("err_len_less_equal", new String[] {fieldDesc, "" + slen});
+                                addMsg("err_len_less_equal", new String[]{fieldDesc, "" + slen});
                             }
                         } catch (Exception e) {
                             isValid = false;
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     } else {
                         isValid = false;
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 }
             }
@@ -2161,8 +2181,8 @@ public class ParamChecker {
     }
 
     public String doGetCheckJS(FormRule fr, boolean isForm) throws ErrMsgException {
-        if (fr==null)
-            throw new ErrMsgException(LoadString("err_formrule_none", new String[] {}));
+        if (fr == null)
+            throw new ErrMsgException(LoadString("err_formrule_none", new String[]{}));
         formResource = fr.getRes();
         return getCheckJS(fr.getRules(), isForm);
     }
@@ -2172,8 +2192,7 @@ public class ParamChecker {
     }
 
     /**
-     *
-     * @param rules Vector
+     * @param rules  Vector
      * @param isForm boolean 是否需带有form提交事件检查
      * @return String
      */
@@ -2220,11 +2239,11 @@ public class ParamChecker {
             // 可能会出现someNotNullFieldName为空的情况，如：没有必填项，所以增加fieldNameFirst
             if (!someNotNullFieldName.equals("")) {
                 sb.append("var automaticOn" + someNotNullFieldName + "Submit = " +
-                          "f_" + someNotNullFieldName + ".form.onsubmit;\n");
+                        "f_" + someNotNullFieldName + ".form.onsubmit;\n");
                 sb.append("f_" + someNotNullFieldName +
-                          ".form.onsubmit = function() {\n");
+                        ".form.onsubmit = function() {\n");
                 sb.append("var valid = automaticOn" + someNotNullFieldName +
-                          "Submit();\n");
+                        "Submit();\n");
                 sb.append("if(valid)\n");
                 sb.append("        return true;\n");
                 sb.append("else\n");
@@ -2232,10 +2251,10 @@ public class ParamChecker {
                 sb.append("}\n");
             } else if (!fieldNameFirst.equals("")) {
                 sb.append("var automaticOnFirst" + fieldNameFirst + "Submit = " +
-                          "f_" + fieldNameFirst + ".form.onsubmit;\n");
+                        "f_" + fieldNameFirst + ".form.onsubmit;\n");
                 sb.append("f_" + fieldNameFirst + ".form.onsubmit = function() {\n");
                 sb.append("var valid = automaticOnFirst" + fieldNameFirst +
-                          "Submit();\n");
+                        "Submit();\n");
                 sb.append("if(valid)\n");
                 sb.append("        return true;\n");
                 sb.append("else\n");
@@ -2266,8 +2285,7 @@ public class ParamChecker {
             return getCheckJSOfFieldDouble(rule);
         } else if (rule.startsWith(TYPE_FLOAT)) {
             return getCheckJSOfFieldFloat(rule);
-        }
-        else {
+        } else {
             return "";
         }
     }
@@ -2279,13 +2297,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
@@ -2298,8 +2316,22 @@ public class ParamChecker {
         StringBuffer js = new StringBuffer();
         js.append("var f_" + fieldName + " = new LiveValidation('" + fieldName + "');\n");
 
-        if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+        if ("not".equalsIgnoreCase(NULL)) {
+			// 嵌套表格2字段可能在渲染后不存在，所以需判断		
+            js.append("if (findObj('" + fieldName + "')) {\n");
+			js.append("if ($(findObj('" + fieldName + "')).is(':hidden') || findObj('" + fieldName + "').type=='hidden') {\n");
+            js.append("     if (findObj('" + fieldName + "_realshow')) {\n"); // 表单域选择宏控件
+            // js.append("console.log(findObj('" + fieldName + "_realshow'));\n");
+            js.append("         new LiveValidation('" + fieldName + "_realshow').add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
+            js.append("     }\n");
+            js.append("     else if (findObj('" + fieldName + "_realname')) {\n"); // 表单域选择宏控件
+            // js.append("console.log(o('" + fieldName + "_realname'));\n");
+            js.append("         new LiveValidation('" + fieldName + "_realname').add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
+            js.append("     }\n");
+            js.append("} else {\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
+            js.append("}\n");
+            js.append("} else { console.warn('getCheckJSOfFieldString: " + fieldName + " is not exist') }\n");
         }
 
         for (int i = 4; i < len; i++) {
@@ -2307,45 +2339,44 @@ public class ParamChecker {
             if (cond.startsWith("email")) {
                 String v = getCondValue(cond);
                 if (v.equals("true")) {
-                    js.append("f_" + fieldName + ".add(Validate.Email, {failureMessage:'" + LoadString("err_email",  new String[] {fieldDesc}) + "'});\n");
+                    js.append("f_" + fieldName + ".add(Validate.Email, {failureMessage:'" + LoadString("err_email", new String[]{fieldDesc}) + "'});\n");
                 }
             } else if (cond.startsWith("isnotcn")) {
-                    String v = getCondValue(cond);
-                    if (v.equals("true")) {
-                        js.append("f_" + fieldName + ".add(Validate.isNotCN, {failureMessage:'" + LoadString("err_cn",  new String[] {fieldDesc}) + "'});\n");
-                    }
+                String v = getCondValue(cond);
+                if (v.equals("true")) {
+                    js.append("f_" + fieldName + ".add(Validate.isNotCN, {failureMessage:'" + LoadString("err_cn", new String[]{fieldDesc}) + "'});\n");
+                }
             } else if (cond.startsWith("exclude")) {
-                    String v = getCondValue(cond);
-                    String[] chars = StrUtil.split(v, "\\|");
-                    int chlen = 0;
-                    if (chars != null) {
-                        chlen = chars.length;
+                String v = getCondValue(cond);
+                String[] chars = StrUtil.split(v, "\\|");
+                int chlen = 0;
+                if (chars != null) {
+                    chlen = chars.length;
+                }
+                String chs = "";
+                for (int k = 0; k < chlen; k++) {
+                    String c = chars[k];
+                    if (c.equals("\"")) {
+                        c = "\\" + c;
                     }
-                    String chs = "";
-                    for (int k = 0; k < chlen; k++) {
-                        String c = chars[k];
-                        if (c.equals("\"")) {
-                            c = "\\" + c;
-                        }
-                        if (chs=="")
-                            chs = "\"" + c + "\"";
-                        else
-                            chs += ",\"" + c + "\"";
-                    }
-                    js.append("f_" + fieldName + ".add(Validate.Exclusion, { within: [ " + chs + " ], partialMatch: true, failureMessage:'" + LoadString("err_except", new String[]{fieldDesc}) + "'});\n");
+                    if (chs == "")
+                        chs = "\"" + c + "\"";
+                    else
+                        chs += ",\"" + c + "\"";
+                }
+                js.append("f_" + fieldName + ".add(Validate.Exclusion, { within: [ " + chs + " ], partialMatch: true, failureMessage:'" + LoadString("err_except", new String[]{fieldDesc}) + "'});\n");
 
             } else if (cond.startsWith("sql")) {
-                    String v = getCondValue(cond);
-                    if (v.equals("sqlserver")) {
-                        js.append("f_" + fieldName + ".add(Validate.isSQLInjection, { failureMessage:'" + LoadString("err_sql", new String[]{fieldDesc}) + "'});\n");
-                    }
+                String v = getCondValue(cond);
+                if (v.equals("sqlserver")) {
+                    js.append("f_" + fieldName + ".add(Validate.isSQLInjection, { failureMessage:'" + LoadString("err_sql", new String[]{fieldDesc}) + "'});\n");
+                }
             } else if (cond.startsWith("isnum")) {
-                    String v = getCondValue(cond);
-                    if (v.equals("true")) {
-                        js.append("f_" + fieldName + ".add(Validate.Numericality, { failureMessage:'" + LoadString("err_not_num", new String[]{fieldDesc}) + "'});\n");
-                    }
-            }
-            else if (cond.startsWith("ismobile")) {
+                String v = getCondValue(cond);
+                if (v.equals("true")) {
+                    js.append("f_" + fieldName + ".add(Validate.Numericality, { failureMessage:'" + LoadString("err_not_num", new String[]{fieldDesc}) + "'});\n");
+                }
+            } else if (cond.startsWith("ismobile")) {
                 String v = getCondValue(cond);
                 if (v.equals("true")) {
                     js.append("f_" + fieldName + ".add(Validate.Mobile, { failureMessage:'" + LoadString("err_not_mobile", new String[]{fieldDesc}) + "'});\n");
@@ -2365,109 +2396,109 @@ public class ParamChecker {
                 if (token == '>') {
                     if (cond.charAt(4) == '=') {
                         String strLen = cond.substring(5, cond.length()).
-                                        trim();
+                                trim();
                         try {
                             int minLen = Integer.parseInt(strLen);
                             js.append("f_" + fieldName +
-                                      ".add(Validate.Length, { minimum:" +
-                                      minLen + ",tooShortMessage:\"" +
-                                      LoadString("err_len_more_equal",
-                                                 new String[] {fieldDesc, "" + minLen}) +
-                                      "\"});\n");
+                                    ".add(Validate.Length, { minimum:" +
+                                    minLen + ",tooShortMessage:\"" +
+                                    LoadString("err_len_more_equal",
+                                            new String[]{fieldDesc, "" + minLen}) +
+                                    "\"});\n");
                         } catch (Exception e) {
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     } else {
                         String strLen = cond.substring(4, cond.length()).
-                                        trim();
+                                trim();
                         try {
                             // @task:暂不支持大于
                             int minLen = Integer.parseInt(strLen) + 1;
                             js.append("f_" + fieldName +
-                                      ".add(Validate.Length, { minimum:" +
-                                      minLen + ",tooShortMessage:\"" +
-                                      LoadString("err_len_more",
-                                                 new String[] {fieldDesc, "" + minLen}) +
-                                      "\"});\n");
+                                    ".add(Validate.Length, { minimum:" +
+                                    minLen + ",tooShortMessage:\"" +
+                                    LoadString("err_len_more",
+                                            new String[]{fieldDesc, "" + minLen}) +
+                                    "\"});\n");
                         } catch (Exception e) {
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     }
                 } else if (token == '<') {
                     // 最小长度，不应出现<符号
-                    addMsg("err_format", new String[] {cond});
+                    addMsg("err_format", new String[]{cond});
                 } else if (token == '=') {
                     String strLen = cond.substring(4, cond.length()).trim();
                     try {
                         int slen = Integer.parseInt(strLen);
                         js.append("f_" + fieldName +
-                                  ".add(Validate.Length, { is:" +
-                                  slen + ",wrongLengthMessage:'" +
-                                  LoadString("err_len_equal",
-                                             new String[] {fieldDesc, "" + slen}) +
-                                      "'});\n");
+                                ".add(Validate.Length, { is:" +
+                                slen + ",wrongLengthMessage:'" +
+                                LoadString("err_len_equal",
+                                        new String[]{fieldDesc, "" + slen}) +
+                                "'});\n");
                     } catch (Exception e) {
-                        addMsg("err_format", new String[] {cond});
+                        addMsg("err_format", new String[]{cond});
                     }
                 } else {
-                    addMsg("err_format", new String[] {cond});
+                    addMsg("err_format", new String[]{cond});
                 }
 
             } else if (cond.startsWith("max")) {
-                    char token = cond.charAt(3);
-                    // 取出符号
-                    if (token == '<') {
-                        if (cond.charAt(4) == '=') {
-                            String strLen = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                int maxLen = Integer.parseInt(strLen);
-
-                                js.append("f_" + fieldName +
-                                          ".add(Validate.Length, { maximum:" +
-                                          maxLen + ",tooLongMessage:'" +
-                                          LoadString("err_len_less_equal",
-                                                     new String[] {fieldDesc, "" + maxLen}) +
-                                      "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strLen = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                int maxLen = Integer.parseInt(strLen) - 1;
-
-                                js.append("f_" + fieldName +
-                                          ".add(Validate.Length, { maximum:" +
-                                          maxLen + ",tooLongMessage:'" +
-                                          LoadString("err_len_less",
-                                                     new String[] {fieldDesc, "" + maxLen}) +
-                                      "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        }
-                    } else if (token == '>') {
-                        // 最小长度，不应出现<符号
-                        addMsg("err_format", new String[] {cond});
-                    } else if (token == '=') {
-                        String strLen = cond.substring(4, cond.length()).trim();
+                char token = cond.charAt(3);
+                // 取出符号
+                if (token == '<') {
+                    if (cond.charAt(4) == '=') {
+                        String strLen = cond.substring(5, cond.length()).
+                                trim();
                         try {
-                            int slen = Integer.parseInt(strLen);
+                            int maxLen = Integer.parseInt(strLen);
+
                             js.append("f_" + fieldName +
-                                      ".add(Validate.Length, { maximum:" +
-                                      slen + ",wrongLengthMessage:'" +
-                                      LoadString("err_len_less",
-                                                 new String[] {fieldDesc, "" + slen}) +
-                                      "'});\n");
+                                    ".add(Validate.Length, { maximum:" +
+                                    maxLen + ",tooLongMessage:'" +
+                                    LoadString("err_len_less_equal",
+                                            new String[]{fieldDesc, "" + maxLen}) +
+                                    "'});\n");
                         } catch (Exception e) {
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     } else {
-                        addMsg("err_format", new String[] {cond});
+                        String strLen = cond.substring(4, cond.length()).
+                                trim();
+                        try {
+                            int maxLen = Integer.parseInt(strLen) - 1;
+
+                            js.append("f_" + fieldName +
+                                    ".add(Validate.Length, { maximum:" +
+                                    maxLen + ",tooLongMessage:'" +
+                                    LoadString("err_len_less",
+                                            new String[]{fieldDesc, "" + maxLen}) +
+                                    "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
                     }
+                } else if (token == '>') {
+                    // 最小长度，不应出现<符号
+                    addMsg("err_format", new String[]{cond});
+                } else if (token == '=') {
+                    String strLen = cond.substring(4, cond.length()).trim();
+                    try {
+                        int slen = Integer.parseInt(strLen);
+                        js.append("f_" + fieldName +
+                                ".add(Validate.Length, { maximum:" +
+                                slen + ",wrongLengthMessage:'" +
+                                LoadString("err_len_less",
+                                        new String[]{fieldDesc, "" + slen}) +
+                                "'});\n");
+                    } catch (Exception e) {
+                        addMsg("err_format", new String[]{cond});
+                    }
+                } else {
+                    addMsg("err_format", new String[]{cond});
                 }
+            }
 
         }
 
@@ -2481,13 +2512,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
         type = rule[0];
@@ -2501,67 +2532,64 @@ public class ParamChecker {
         js.append("var f_" + fieldName + " = new LiveValidation('" + fieldName + "');\n");
 
         if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
         }
 
         boolean isFound = false;
         for (int i = 4; i < len; i++) {
             String cond = rule[i].trim();
             if (cond.startsWith("min")) {
-                    // 取出符号
-                    char token = cond.charAt(3);
-                    if (token == '>') {
-                        if (cond.charAt(4) == '=') {
-                            String strMin = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                int min = Integer.parseInt(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMin = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                int min = Integer.parseInt(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                // 取出符号
+                char token = cond.charAt(3);
+                if (token == '>') {
+                    if (cond.charAt(4) == '=') {
+                        String strMin = cond.substring(5, cond.length()).trim();
+                        try {
+                            int min = Integer.parseInt(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:true, tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
                     } else {
-                        addMsg("err_format", new String[] {cond});
+                        String strMin = cond.substring(4, cond.length()).
+                                trim();
+                        try {
+                            int min = Integer.parseInt(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:false, tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
                     }
+                    isFound = true;
+                } else {
+                    addMsg("err_format", new String[]{cond});
+                }
 
             } else if (cond.startsWith("max")) {
-                    char token = cond.charAt(3);
-                    // 取出符号
-                    if (token == '<') {
-                        if (cond.charAt(4) == '=') {
-                            String strMax = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                int max = Integer.parseInt(strMax);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { maximum:" + max + ", tooHighMessage:'" + LoadString("err_need_less_equal", new String[]{fieldDesc, "" + max}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMax = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                int max = Integer.parseInt(strMax);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { maximum:" + max + ", tooHighMessage:'" + LoadString("err_need_less", new String[]{fieldDesc, "" + max}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                char token = cond.charAt(3);
+                // 取出符号
+                if (token == '<') {
+                    if (cond.charAt(4) == '=') {
+                        String strMax = cond.substring(5, cond.length()).trim();
+                        try {
+                            int max = Integer.parseInt(strMax);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { maximum:" + max + ", eq:true, tooHighMessage:'" + LoadString("err_need_less_equal", new String[]{fieldDesc, "" + max}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
                     } else {
-                        addMsg("err_format", new String[] {cond});
+                        String strMax = cond.substring(4, cond.length()).trim();
+                        try {
+                            int max = Integer.parseInt(strMax);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { maximum:" + max + ", eq:false, tooHighMessage:'" + LoadString("err_need_less", new String[]{fieldDesc, "" + max}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
                     }
+                    isFound = true;
+                } else {
+                    addMsg("err_format", new String[]{cond});
+                }
             }
         }
         if (!isFound) {
@@ -2577,13 +2605,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
         type = rule[0];
@@ -2596,7 +2624,7 @@ public class ParamChecker {
 
         String NULL = rule[3];
         if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
         }
         return js.toString();
     }
@@ -2608,13 +2636,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
@@ -2627,70 +2655,66 @@ public class ParamChecker {
 
         String NULL = rule[3];
         if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
         }
 
         boolean isFound = false;
         for (int i = 4; i < len; i++) {
             String cond = rule[i].trim();
             if (cond.startsWith("min")) {
-                    // 取出符号
-                    char token = cond.charAt(3);
-                    if (token == '>') {
-                        if (cond.charAt(4) == '=') {
-                            String strMin = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                long min = Long.parseLong(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMin = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                long min = Long.parseLong(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                // 取出符号
+                char token = cond.charAt(3);
+                if (token == '>') {
+                    if (cond.charAt(4) == '=') {
+                        String strMin = cond.substring(5, cond.length()).trim();
+                        try {
+                            long min = Long.parseLong(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:true, tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
                     } else {
-                        addMsg("err_format", new String[] {cond});
+                        String strMin = cond.substring(4, cond.length()).trim();
+                        try {
+                            long min = Long.parseLong(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:false, tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
                     }
+                    isFound = true;
+                } else {
+                    addMsg("err_format", new String[]{cond});
+                }
             } else if (cond.startsWith("max")) {
                 char token = cond.charAt(3);
                 // 取出符号
                 if (token == '<') {
                     if (cond.charAt(4) == '=') {
-                        String strMax = cond.substring(5, cond.length()).
-                                        trim();
+                        String strMax = cond.substring(5, cond.length()).trim();
                         try {
                             long max = Long.parseLong(strMax);
                             js.append("f_" + fieldName +
-                                      ".add(Validate.Numericality, { maximum:" +
-                                      max + ", tooHighMessage:'" +
-                                      LoadString("err_need_less_equal",
-                                                 new String[] {fieldDesc, "" + max}) +
-                                      "'});\n");
+                                    ".add(Validate.Numericality, { maximum:" +
+                                    max + ", eq:true, tooHighMessage:'" +
+                                    LoadString("err_need_less_equal",
+                                            new String[]{fieldDesc, "" + max}) +
+                                    "'});\n");
                         } catch (Exception e) {
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     } else {
-                        String strMax = cond.substring(4, cond.length()).
-                                        trim();
+                        String strMax = cond.substring(4, cond.length()).trim();
                         try {
                             long max = Long.parseLong(strMax);
                             js.append("f_" + fieldName +
-                                      ".add(Validate.Numericality, { maximum:" +
-                                      max + ", tooHighMessage:'" +
-                                      LoadString("err_need_less",
-                                                 new String[] {fieldDesc, "" + max}) +
-                                      "'});\n");
+                                    ".add(Validate.Numericality, { maximum:" +
+                                    max + ", eq:false, tooHighMessage:'" +
+                                    LoadString("err_need_less",
+                                            new String[]{fieldDesc, "" + max}) +
+                                    "'});\n");
                         } catch (Exception e) {
-                            addMsg("err_format", new String[] {cond});
+                            addMsg("err_format", new String[]{cond});
                         }
                     }
                     isFound = true;
@@ -2712,13 +2736,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
@@ -2731,7 +2755,7 @@ public class ParamChecker {
 
         String NULL = rule[3];
         if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
         }
         return js.toString();
     }
@@ -2743,13 +2767,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
@@ -2762,75 +2786,70 @@ public class ParamChecker {
 
         String NULL = rule[3];
         if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
         }
 
         boolean isFound = false;
         for (int i = 4; i < len; i++) {
             String cond = rule[i].trim();
             if (cond.startsWith("min")) {
-                    // 取出符号
-                    char token = cond.charAt(3);
-                    if (token == '>') {
-                        if (cond.charAt(4) == '=') {
-                            String strMin = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                double min = Double.parseDouble(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMin = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                double min = Double.parseDouble(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                // 取出符号
+                char token = cond.charAt(3);
+                if (token == '>') {
+                    if (cond.charAt(4) == '=') {
+                        String strMin = cond.substring(5, cond.length()).trim();
+                        try {
+                            double min = Double.parseDouble(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:true, tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
                     } else {
-                        addMsg("err_format", new String[] {cond});
-                    }
-
-            } else if (cond.startsWith("max")) {
-                    char token = cond.charAt(3);
-                    // 取出符号
-                    if (token == '<') {
-                        if (cond.charAt(4) == '=') {
-                            String strMax = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                double max = Double.parseDouble(strMax);
-                                js.append("f_" + fieldName +
-                                          ".add(Validate.Numericality, { maximum:" +
-                                          max + ", tooHighMessage:'" +
-                                          LoadString("err_need_less_equal",
-                                                     new String[] {fieldDesc, "" + max}) +
-                                      "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMax = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                double max = Double.parseDouble(strMax);
-                                js.append("f_" + fieldName +
-                                          ".add(Validate.Numericality, { maximum:" +
-                                          max + ", tooHighMessage:'" +
-                                          LoadString("err_need_less",
-                                                     new String[] {fieldDesc, "" + max}) +
-                                      "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                        String strMin = cond.substring(4, cond.length()).trim();
+                        try {
+                            double min = Double.parseDouble(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:false, tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
                     }
+                    isFound = true;
+                } else {
+                    addMsg("err_format", new String[]{cond});
+                }
+            } else if (cond.startsWith("max")) {
+                char token = cond.charAt(3);
+                // 取出符号
+                if (token == '<') {
+                    if (cond.charAt(4) == '=') {
+                        String strMax = cond.substring(5, cond.length()).trim();
+                        try {
+                            double max = Double.parseDouble(strMax);
+                            js.append("f_" + fieldName +
+                                    ".add(Validate.Numericality, { maximum:" +
+                                    max + ", eq:true, tooHighMessage:'" +
+                                    LoadString("err_need_less_equal",
+                                            new String[]{fieldDesc, "" + max}) +
+                                    "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
+                    } else {
+                        String strMax = cond.substring(4, cond.length()).trim();
+                        try {
+                            double max = Double.parseDouble(strMax);
+                            js.append("f_" + fieldName +
+                                    ".add(Validate.Numericality, { maximum:" +
+                                    max + ", eq:false, tooHighMessage:'" +
+                                    LoadString("err_need_less",
+                                            new String[]{fieldDesc, "" + max}) +
+                                    "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
+                    }
+                    isFound = true;
+                }
             }
         }
         if (!isFound) {
@@ -2846,13 +2865,13 @@ public class ParamChecker {
 
         String[] rule = split(ruleStr);
         if (rule == null) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
         int len = rule.length;
         if (len < 4) {
-            addMsg("err_format", new String[] {ruleStr});
+            addMsg("err_format", new String[]{ruleStr});
             return "";
         }
 
@@ -2865,72 +2884,68 @@ public class ParamChecker {
 
         String NULL = rule[3];
         if (NULL.equalsIgnoreCase("not")) {
-            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank",  new String[] {""}) + "'});\n");
+            js.append("f_" + fieldName + ".add(Validate.Presence, {failureMessage:'" + LoadString("err_blank", new String[]{""}) + "'});\n");
         }
 
         boolean isFound = false;
         for (int i = 4; i < len; i++) {
             String cond = rule[i].trim();
             if (cond.startsWith("min")) {
-                    // 取出符号
-                    char token = cond.charAt(3);
-                    if (token == '>') {
-                        if (cond.charAt(4) == '=') {
-                            String strMin = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                float min = Float.parseFloat(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMin = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                float min = Float.parseFloat(strMin);
-                                js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                // 取出符号
+                char token = cond.charAt(3);
+                if (token == '>') {
+                    if (cond.charAt(4) == '=') {
+                        String strMin = cond.substring(5, cond.length()).trim();
+                        try {
+                            float min = Float.parseFloat(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:true, tooLowMessage:'" + LoadString("err_need_more_equal", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
+                    } else {
+                        String strMin = cond.substring(4, cond.length()).trim();
+                        try {
+                            float min = Float.parseFloat(strMin);
+                            js.append("f_" + fieldName + ".add(Validate.Numericality, { minimum:" + min + ", eq:false, tooLowMessage:'" + LoadString("err_need_more", new String[]{fieldDesc, "" + min}) + "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
                     }
+                    isFound = true;
+                }
             } else if (cond.startsWith("max")) {
-                    char token = cond.charAt(3);
-                    // 取出符号
-                    if (token == '<') {
-                        if (cond.charAt(4) == '=') {
-                            String strMax = cond.substring(5, cond.length()).
-                                            trim();
-                            try {
-                                float max = Float.parseFloat(strMax);
-                                js.append("f_" + fieldName +
-                                          ".add(Validate.Numericality, { maximum:" +
-                                          max + ", tooHighMessage:'" +
-                                          LoadString("err_need_less_equal",
-                                                     new String[] {fieldDesc, "" + max}) +
-                                      "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
-                        } else {
-                            String strMax = cond.substring(4, cond.length()).
-                                            trim();
-                            try {
-                                float max = Float.parseFloat(strMax);
-                                js.append("f_" + fieldName +
-                                          ".add(Validate.Numericality, { maximum:" +
-                                          max + ", tooHighMessage:'" +
-                                          LoadString("err_need_less",
-                                                     new String[] {fieldDesc, "" + max}) +
-                                      "'});\n");
-                            } catch (Exception e) {
-                                addMsg("err_format", new String[] {cond});
-                            }
+                char token = cond.charAt(3);
+                // 取出符号
+                if (token == '<') {
+                    if (cond.charAt(4) == '=') {
+                        String strMax = cond.substring(5, cond.length()).trim();
+                        try {
+                            float max = Float.parseFloat(strMax);
+                            js.append("f_" + fieldName +
+                                    ".add(Validate.Numericality, { maximum:" +
+                                    max + ", eq:true, tooHighMessage:'" +
+                                    LoadString("err_need_less_equal",
+                                            new String[]{fieldDesc, "" + max}) +
+                                    "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
                         }
-                        isFound = true;
+                    } else {
+                        String strMax = cond.substring(4, cond.length()).trim();
+                        try {
+                            float max = Float.parseFloat(strMax);
+                            js.append("f_" + fieldName +
+                                    ".add(Validate.Numericality, { maximum:" +
+                                    max + ", eq:false, tooHighMessage:'" +
+                                    LoadString("err_need_less",
+                                            new String[]{fieldDesc, "" + max}) +
+                                    "'});\n");
+                        } catch (Exception e) {
+                            addMsg("err_format", new String[]{cond});
+                        }
                     }
+                    isFound = true;
+                }
             }
         }
         if (!isFound) {
@@ -2941,6 +2956,7 @@ public class ParamChecker {
 
     /**
      * 取得表达式中＝号后面的值
+     *
      * @param cond String
      * @return String
      */
@@ -2961,10 +2977,10 @@ public class ParamChecker {
         String str = "";
         Iterator ir = msgs.iterator();
         while (ir.hasNext()) {
-            if (str.equals("")) {
+            if ("".equals(str)) {
                 str = (String) ir.next();
             } else {
-                str += "\\r" + (String) ir.next();
+                str += "\r\n" + ir.next();
             }
         }
         if (isHtml) {
@@ -2979,6 +2995,7 @@ public class ParamChecker {
 
     /**
      * 设置当检查出来错误时，是否继续检查其它域
+     *
      * @param onErrorExit boolean
      */
     public void setOnErrorExit(boolean onErrorExit) {
@@ -3046,8 +3063,8 @@ public class ParamChecker {
     }
 
     public String getFieldDesc(String field) {
-        Field f = (Field)fields.get(field);
-        if (f==null) {
+        Field f = (Field) fields.get(field);
+        if (f == null) {
             return "";
         } else {
             return f.desc;

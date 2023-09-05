@@ -1,9 +1,10 @@
 package com.redmoon.oa.fileark;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import cn.js.fan.cache.jcs.*;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Iterator;
 
 public class LeafChildrenCacheMgr {
@@ -12,23 +13,23 @@ public class LeafChildrenCacheMgr {
     RMCache rmCache = RMCache.getInstance();
     static String cachePrix = "CMSdirlist_";
     static String group = "CMSLeafChildren";
-    static Logger logger = Logger.getLogger(LeafChildrenCacheMgr.class.getName());
-    Vector list = null;
+    Vector<Leaf> list = null;
 
     public LeafChildrenCacheMgr(String parentCode) {
         this.parentCode = parentCode;
         connname = Global.getDefaultDB();
-        if (connname.equals(""))
-            logger.info("LeafChildrenCacheMgr:默认数据库名不能为空");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("LeafChildrenCacheMgr:默认数据库名不能为空");
+        }
         list = getDirList();
     }
 
-    public Vector getList() {
+    public Vector<Leaf> getList() {
         return list;
     }
 
-    public Vector getDirList() {
-        Vector v = null;
+    public Vector<Leaf> getDirList() {
+        Vector<Leaf> v = null;
         try {
             v = (Vector) rmCache.getFromGroup(cachePrix + parentCode,
                                               group);
@@ -37,23 +38,22 @@ public class LeafChildrenCacheMgr {
                 rmCache.putInGroup(cachePrix + parentCode, group, v);
             }
             else {
-                Iterator ir = v.iterator();
-                while (ir.hasNext()) {
-                    Leaf lf = (Leaf) ir.next();
+                for (Leaf lf : v) {
                     lf.renew();
                 }
             }
         } catch (Exception e) {
-            logger.error("getDirList:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDirList:" + e.getMessage());
         }
         return v;
     }
 
-    public Vector load() {
+    public Vector<Leaf> load() {
         Directory dir = new Directory();
         Leaf leaf = dir.getLeaf(parentCode);
-        if (leaf==null || !leaf.isLoaded())
-            return new Vector();
+        if (leaf==null || !leaf.isLoaded()) {
+            return new Vector<>();
+        }
         return leaf.getChildren();
     }
 
@@ -62,7 +62,7 @@ public class LeafChildrenCacheMgr {
             RMCache rmCache = RMCache.getInstance();
             rmCache.remove(cachePrix + parentCode, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(LeafChildrenCacheMgr.class).error(e.getMessage());
         }
     }
 
@@ -71,7 +71,7 @@ public class LeafChildrenCacheMgr {
             RMCache rmCache = RMCache.getInstance();
             rmCache.invalidateGroup(group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(LeafChildrenCacheMgr.class).error(e.getMessage());
         }
     }
 }

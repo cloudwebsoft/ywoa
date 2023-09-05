@@ -1,0 +1,107 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>用户分管的部门</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<div th:replace="th/include/tab_user :: navUser(${userName}, 4)"></div>
+<div class="spacerH"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <form id="formAdminDept" name="formAdminDept" method="post">
+                <table align="center" class="table table-bordered table-hover">
+                    <tr>
+                        <td align="center" class="active" th:inline="text">[[${realName}]]&nbsp;分管的部门</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="hidden" id="deptCodes" name="deptCodes" th:value="${depts}">
+                            <input type="hidden" name="userName" th:value="${userName}">
+                            <textarea class="form-control" style="width:100%" cols="50" rows="3" readOnly wrap="yes" id="deptNames" th:inline="text">[[${deptNames}]]</textarea>
+                            <div>
+                                用户所属角色分管的部门：
+                            </div>
+                            <div th:each="item, stat:${adminDeptMap}">
+                                <span th:text="${stat.current.key}"></span>
+                                :&nbsp;&nbsp;
+                                <span th:text="${stat.current.value}"></span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <button id="btnClear" class="btn btn-default" title="清空所选部门">清空</button>
+                            &nbsp;&nbsp;
+                            <button id="btnSel" class="btn btn-default" title="选择部门">选择</button>
+                            &nbsp;&nbsp;
+                            <button id="btnOk" class="btn btn-default">确定</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+<br>
+
+</body>
+<script language="javascript" th:inline="javascript">
+    <!--
+    function getDepts() {
+        return $('#depts').val();
+    }
+
+    function selectNode(code, name) {
+        o("deptCodes").value = code;
+        o("deptNames").value = name;
+    }
+
+    $(function() {
+       $('#btnSel').click(function(e) {
+           e.preventDefault();
+           openWin("../../deptMultiSel.do?deptCodes=" + $('#deptCodes').val(), 800, 600);
+       });
+
+       $('#btnClear').click(function(e) {
+           e.preventDefault();
+           o("deptCodes").value = "";
+           o("deptNames").value = "";
+       });
+
+       $('#btnOk').click(function(e) {
+           e.preventDefault();
+
+           $.ajax({
+               type: "post",
+               url: "../../user/setUserAdminDept.do",
+               data: $('#formAdminDept').serialize(),
+               dataType: "json",
+               beforeSend: function (XMLHttpRequest) {
+                   $('body').showLoading();
+               },
+               success: function (data, status) {
+                   if (data.ret==1) {
+                       $.toaster({
+                           "priority": "info",
+                           "message": data.msg
+                       });
+                   }
+                   else {
+                       jAlert(data.msg, "提示");
+                   }
+               },
+               complete: function (XMLHttpRequest, status) {
+                   $('body').hideLoading();
+               },
+               error: function () {
+                   //请求出错处理
+                   alert(XMLHttpRequest.responseText);
+               }
+           });
+       })
+    });
+    //-->
+</script>
+</html>

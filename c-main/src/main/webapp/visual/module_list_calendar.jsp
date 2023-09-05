@@ -113,7 +113,7 @@ String menuItem = ParamUtil.get(request, "menuItem");
 			},
 			eventClick: function(info) {
 				// console.log(info);
-				addTab(info.event.title, '<%=request.getContextPath()%>/visual/module_show.jsp?id=' + info.event.id + '&code=<%=code%>');
+				addTab(info.event.title, '<%=request.getContextPath()%>/visual/moduleShowPage.do?id=' + info.event.id + '&code=<%=code%>');
 
 				/*alert('Event: ' + info.event.title);
 				alert('Coordinates: ' + info.jsEvent.pageX + ',' + info.jsEvent.pageY);

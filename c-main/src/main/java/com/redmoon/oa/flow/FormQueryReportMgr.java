@@ -43,6 +43,7 @@ public class FormQueryReportMgr extends QObjectMgr {
         return re;
     }
 
+    @Override
     public boolean save(HttpServletRequest request, QObjectDb qObjectDb, String formCode) throws
             ErrMsgException {
         boolean re = false;

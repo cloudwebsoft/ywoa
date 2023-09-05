@@ -6,13 +6,12 @@ import cn.js.fan.db.ResultIterator;
 import cn.js.fan.util.*;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
 
 public class PaperNoPrefixMgr {
-	Logger logger = Logger.getLogger(PaperNoPrefixMgr.class.getName());
 
 	public PaperNoPrefixMgr() {
 	}
@@ -27,8 +26,9 @@ public class PaperNoPrefixMgr {
 		boolean re = true;
 		PaperNoPrefixDb pnp = new PaperNoPrefixDb();
         String name = ParamUtil.get(request, "name");
-        if (checkExist(name))
-        	throw new ErrMsgException("名称不能重复！");
+        if (checkExist(name)) {
+			throw new ErrMsgException("名称不能重复！");
+		}
         int id = (int) SequenceManager.nextID(SequenceManager.FLOW_PAPER_NO_PREFIX);
         int orders = ParamUtil.getInt(request, "sort", 1);
         String depts = ParamUtil.get(request, "depts");
@@ -108,8 +108,7 @@ public class PaperNoPrefixMgr {
 	        	pnd.delOfPrefix(id);
 	        }			
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
         return re;
@@ -126,7 +125,7 @@ public class PaperNoPrefixMgr {
 				re = true;
 			}			
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return re;

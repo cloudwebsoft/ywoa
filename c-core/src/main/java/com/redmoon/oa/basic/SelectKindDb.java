@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -48,16 +49,16 @@ public class SelectKindDb extends ObjectDb {
         QUERY_CREATE =
                 "insert into " + tableName + " (name,orders) values (?,?)";
         QUERY_SAVE = "update " + tableName + " set name=?,orders=? where id=?";
-        QUERY_LIST =
-                "select id from " + tableName + " order by orders";
+        QUERY_LIST = "select id from " + tableName + " order by orders desc";
         QUERY_DEL = "delete from " + tableName + " where id=?";
         QUERY_LOAD = "select name,orders from " + tableName + " where id=?";
     }
 
     public SelectKindDb getSelectKindDb(int id) {
-        return (SelectKindDb)getObjectDb(new Integer(id));
+        return (SelectKindDb) getObjectDb(id);
     }
 
+    @Override
     public boolean create() throws ErrMsgException {
         Conn conn = new Conn(connname);
         boolean re = false;
@@ -65,21 +66,16 @@ public class SelectKindDb extends ObjectDb {
             PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
             ps.setString(1, name);
             ps.setInt(2, orders);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 SelectKindCache rc = new SelectKindCache(this);
                 rc.refreshCreate();
             }
-        }
-        catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
-        }
-        finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+        } finally {
+            conn.close();
         }
         return re;
     }
@@ -89,38 +85,33 @@ public class SelectKindDb extends ObjectDb {
      *
      * @return boolean
      * @throws ErrMsgException
-     * @throws ResKeyException
-     * @todo Implement this cn.js.fan.base.ObjectDb method
      */
+    @Override
     public boolean del() throws ErrMsgException {
         Conn conn = new Conn(connname);
         boolean re = false;
         try {
             PreparedStatement ps = conn.prepareStatement(QUERY_DEL);
             ps.setInt(1, id);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 SelectKindCache rc = new SelectKindCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
 
     /**
-     *
      * @param pk Object
      * @return Object
-     * @todo Implement this cn.js.fan.base.ObjectDb method
      */
+    @Override
     public ObjectDb getObjectRaw(PrimaryKey pk) {
         return new SelectKindDb(pk.getIntValue());
     }
@@ -128,15 +119,13 @@ public class SelectKindDb extends ObjectDb {
     /**
      * load
      *
-     * @throws ErrMsgException
-     * @throws ResKeyException
-     * @todo Implement this cn.js.fan.base.ObjectDb method
      */
+    @Override
     public void load() {
-        ResultSet rs = null;
+        ResultSet rs;
         Conn conn = new Conn(connname);
         try {
-        // QUERY_LOAD = "select name,reason,direction,type,myDate from " + tableName + " where id=?";
+            // QUERY_LOAD = "select name,reason,direction,type,myDate from " + tableName + " where id=?";
             PreparedStatement ps = conn.prepareStatement(QUERY_LOAD);
             ps.setInt(1, id);
             rs = conn.executePreQuery();
@@ -144,15 +133,12 @@ public class SelectKindDb extends ObjectDb {
                 name = rs.getString(1);
                 orders = rs.getInt(2);
                 loaded = true;
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -161,41 +147,38 @@ public class SelectKindDb extends ObjectDb {
      *
      * @return boolean
      * @throws ErrMsgException
-     * @throws ResKeyException
-     * @todo Implement this cn.js.fan.base.ObjectDb method
      */
+    @Override
     public boolean save() throws ErrMsgException {
         Conn conn = new Conn(connname);
-         boolean re = false;
-         try {
-             PreparedStatement ps = conn.prepareStatement(QUERY_SAVE);
-             ps.setString(1, name);
-             ps.setInt(2, orders);
-             ps.setInt(3, id);
-             re = conn.executePreUpdate()==1?true:false;
-             if (re) {
-                 SelectKindCache rc = new SelectKindCache(this);
-                 primaryKey.setValue(new Integer(id));
-                 rc.refreshSave(primaryKey);
-             }
-         } catch (SQLException e) {
-             logger.error("save: " + e.getMessage());
-         } finally {
-             if (conn != null) {
-                 conn.close();
-                 conn = null;
-             }
-         }
+        boolean re = false;
+        try {
+            PreparedStatement ps = conn.prepareStatement(QUERY_SAVE);
+            ps.setString(1, name);
+            ps.setInt(2, orders);
+            ps.setInt(3, id);
+            re = conn.executePreUpdate() == 1;
+            if (re) {
+                SelectKindCache rc = new SelectKindCache(this);
+                primaryKey.setValue(id);
+                rc.refreshSave(primaryKey);
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("save: " + e.getMessage());
+        } finally {
+            conn.close();
+        }
         return re;
     }
 
     /**
      * 取出全部信息置于result中
      */
-    public Vector list(String sql) {
-        ResultSet rs = null;
+    @Override
+    public Vector<SelectKindDb> list(String sql) {
+        ResultSet rs;
         Conn conn = new Conn(connname);
-        Vector result = new Vector();
+        Vector<SelectKindDb> result = new Vector<>();
         try {
             rs = conn.executeQuery(sql);
             if (rs == null) {
@@ -206,16 +189,16 @@ public class SelectKindDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return result;
     }
 
+    public String getListSql(String what) {
+        return "select id from " + tableName + " where name like " + StrUtil.sqlstr("%" + what + "%") + " order by orders desc";
+    }
 
     public String getName() {
         return name;
@@ -227,16 +210,15 @@ public class SelectKindDb extends ObjectDb {
 
 
     private String name;
-    
+
     private int orders = 0;
 
-	public int getOrders() {
-		return orders;
-	}
+    public int getOrders() {
+        return orders;
+    }
 
-	public void setOrders(int orders) {
-		this.orders = orders;
-	}
-
+    public void setOrders(int orders) {
+        this.orders = orders;
+    }
 
 }

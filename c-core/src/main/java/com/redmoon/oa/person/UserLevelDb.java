@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -33,27 +34,29 @@ public class UserLevelDb extends ObjectDb {
 
     /**
      * 确定onlineTime所属的等级
-     * @param levelCompare int
+     * @param onlineTime double
      * @return UserLevelDb
      */
     public UserLevelDb getUserLevelDbByLevel(double onlineTime) {
-        Vector v = getAllLevel();
+        Vector<UserLevelDb> v = getAllLevel();
 
         int len = v.size();
         
         // 未设用户等级
-        if (len==0)
-        	return new UserLevelDb();
+        if (len==0) {
+            return new UserLevelDb();
+        }
         
-        UserLevelDb myuld = (UserLevelDb) v.get(0);
-        if(onlineTime < (myuld.getLevel()))
+        UserLevelDb myuld = v.get(0);
+        if(onlineTime < (myuld.getLevel())) {
             return myuld;
+        }
         int i = 0;
         while (i < len) {
-            myuld = (UserLevelDb) v.get(i);
+            myuld = v.get(i);
             int lv = myuld.getLevel();
             if ((i + 1) < len) {
-                UserLevelDb uld1 = (UserLevelDb) v.get(i + 1);
+                UserLevelDb uld1 = v.get(i + 1);
                 int lv1 = uld1.getLevel();
                 if (onlineTime >= lv && onlineTime < lv1) {
                     break;
@@ -67,18 +70,20 @@ public class UserLevelDb extends ObjectDb {
     }
 
     public UserLevelDb getUserLevelDb(int level) {
-        return (UserLevelDb)getObjectDb(new Integer(level));
+        return (UserLevelDb)getObjectDb(level);
     }
 
+    @Override
     public ObjectDb getObjectRaw(PrimaryKey pk) {
         return new UserLevelDb(pk.getIntValue());
     }
 
-    public Vector getAllLevel() {
+    public Vector<UserLevelDb> getAllLevel() {
         UserLevelCache ulc = new UserLevelCache();
         return ulc.getAllLevel();
     }
 
+    @Override
     public void initDB() {
         this.tableName = "oa_user_level";
         primaryKey = new PrimaryKey("levelAmount", PrimaryKey.TYPE_INT);
@@ -96,10 +101,10 @@ public class UserLevelDb extends ObjectDb {
         isInitFromConfigDB = false;
     }
 
+    @Override
     public boolean save() throws ErrMsgException {
-        // Based on the id in the object, get the message data from the database.
         Conn conn = new Conn(connname);
-        PreparedStatement pstmt = null;
+        PreparedStatement pstmt;
         try {
             pstmt = conn.prepareStatement(this.QUERY_SAVE);
             pstmt.setInt(1, newLevel);
@@ -108,32 +113,31 @@ public class UserLevelDb extends ObjectDb {
             pstmt.setInt(4, level);
             if (conn.executePreUpdate() == 1) {
                 UserLevelCache mc = new UserLevelCache(this);
-                primaryKey.setValue(new Integer(level));
+                primaryKey.setValue(level);
                 mc.refreshSave(primaryKey);
                 mc.refreshCreate();
                 return true;
             }
-            else
+            else {
                 return false;
+            }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("保存时出错，请检查级别是否有重复！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
 
             UserLevelCache uc = new UserLevelCache(this);
-            primaryKey.setValue(new Integer(level));
+            primaryKey.setValue(level);
             uc.refreshSave(primaryKey);
         }
     }
 
+    @Override
     public void load() {
         // Based on the id in the object, get the message data from the database.
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        PreparedStatement pstmt;
+        ResultSet rs;
         Conn conn = new Conn(connname);
         try {
             pstmt = conn.prepareStatement(this.QUERY_LOAD);
@@ -143,65 +147,63 @@ public class UserLevelDb extends ObjectDb {
             if (rs.next()) {
                 this.desc = StrUtil.getNullString(rs.getString(1));
                 this.levelPicPath = StrUtil.getNullString(rs.getString(2));
-                primaryKey.setValue(new Integer(level));
+                primaryKey.setValue(level);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
+    @Override
     public boolean del() throws ErrMsgException {
         Conn conn = null;
-        PreparedStatement pstmt = null;
+        PreparedStatement pstmt;
         try {
             conn = new Conn(connname);
-            pstmt = conn.prepareStatement(this.QUERY_DEL);
+            pstmt = conn.prepareStatement(QUERY_DEL);
             pstmt.setInt(1, level);
             if (conn.executePreUpdate()==1) {
                 UserLevelCache mc = new UserLevelCache(this);
                 mc.refreshDel(primaryKey);
                 return true;
             }
-            else
+            else {
                 return false;
+            }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("删除出错！");
         } finally {
             if (conn != null) {
                 conn.close();
-                conn = null;
             }
         }
     }
 
+    @Override
     public boolean create() throws ErrMsgException {
         Conn conn = null;
-        boolean re = false;
-        PreparedStatement pstmt = null;
+        boolean re;
+        PreparedStatement pstmt;
         try {
             conn = new Conn(connname);
             pstmt = conn.prepareStatement(this.QUERY_CREATE);
             pstmt.setInt(1, level);
             pstmt.setString(2, desc);
             pstmt.setString(3, levelPicPath);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 UserLevelCache mc = new UserLevelCache(this);
                 mc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("插入等级时出错！");
         } finally {
             if (conn != null) {
                 conn.close();
-                conn = null;
             }
         }
         return re;

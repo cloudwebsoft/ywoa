@@ -12,8 +12,6 @@
 <%@ page import = "com.redmoon.oa.dept.DeptUserDb"%>
 <%@ page import = "com.redmoon.oa.dept.DeptMgr"%>
 <%@ page import = "java.util.List"%>
-<%@ page import = "com.redmoon.oa.post.PostUserDb"%>
-<%@ page import = "com.redmoon.oa.post.PostUserMgr"%>
 <%
 	/*
     - 功能描述：

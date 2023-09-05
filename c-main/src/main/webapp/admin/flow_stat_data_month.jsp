@@ -7,21 +7,23 @@
 <%@ page import="jofc2.model.elements.*"%>
 <%@ page import="jofc2.model.*"%>
 <%@page import="jofc2.OFCException"%>
-<%@page import="net.sf.json.JSONObject"%>
+<%@page import="org.json.JSONObject"%>
 <%@ include file="../inc/nocache.jsp"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege" />
 <%
-	if (!privilege.isUserPrivValid(request, "admin.flow"))
+	if (!privilege.isUserPrivValid(request, "admin.flow")) {
 		return;
+	}
 	
 	String typeCode = ParamUtil.get(request, "typeCode");
 	if (typeCode.equals("")) {
-		if (!privilege.isUserPrivValid(request, "admin"))
+		if (!privilege.isUserPrivValid(request, "admin")) {
 			return;
+		}
 	}
 	JSONObject json = new JSONObject();
 	String leafName = "全部";
-	if (!typeCode.equals("")) {
+	if (!"".equals(typeCode)) {
 		Leaf lf = new Leaf();
 		lf = lf.getLeaf(typeCode);
 		leafName = lf.getName();
@@ -33,14 +35,16 @@
 	String strshowyear = request.getParameter("showyear");
 	String strshowmonth = request.getParameter("showmonth");
 	
-	if (strshowyear != null)
+	if (strshowyear != null) {
 		showyear = Integer.parseInt(strshowyear);
-	else
+	} else {
 		showyear = cal.get(Calendar.YEAR);
-	if (strshowmonth != null)
+	}
+	if (strshowmonth != null) {
 		showmonth = Integer.parseInt(strshowmonth);
-	else
+	} else {
 		showmonth = cal.get(Calendar.MONTH) + 1;
+	}
 	
 	int totalWorkflow = 0;
 	int totalWorkplan = 0;
@@ -66,16 +70,18 @@
 		nextCal.set(showyear, showmonth - 1, i + 1);
 		String edate = SQLFilter.getDateStr(DateUtil.format(nextCal, "yyyy-MM-dd 00:00:00"), "yyyy-MM-dd HH:mm:ss");
 
-		if (typeCode.equals(""))	
+		if ("".equals(typeCode)) {
 			sql = "select id from flow where begin_date>=" + bdate + " and begin_date<" + edate + " order by begin_date desc";
-		else
-			sql = "select id from flow where type_code=" + StrUtil.sqlstr(typeCode) + " and begin_date>=" + bdate + " and begin_date<" + edate + " order by begin_date desc";		
+		} else {
+			sql = "select id from flow where type_code=" + StrUtil.sqlstr(typeCode) + " and begin_date>=" + bdate + " and begin_date<" + edate + " order by begin_date desc";
+		}
 		
 		actionV = mad.list(sql);
 		totalWorkflow += actionV.size();
 		al.add(actionV.size());
-		if (max<actionV.size())
+		if (max<actionV.size()) {
 			max = actionV.size();
+		}
 
         BarChart.Bar bar = new BarChart.Bar(actionV.size(),i+"月");       //条标题，显示在x轴上
         bar.setColour("0xff0000"); //颜色
@@ -95,8 +101,9 @@
 			
 	YAxis y = new YAxis(); //y轴
 	
-	if (max<10)
+	if (max<10) {
 		max = 10;
+	}
 	y.setMax(max); //y轴最大值
 	y.setSteps(max / 10 * 1.0); //步进
 	flashChart.setYAxis(y);
@@ -107,21 +114,11 @@
 	
 	Text title = new Text(leafName + " " + showyear + "年" + showmonth + "月统计   共计：" + totalWorkflow);
 	flashChart.setTitle(title);
-	
-	String printString = "";
-	try {
-		printString = flashChart.toString();
-	} catch (OFCException e) {
-		printString = flashChart.toDebugString();
-	} catch (Exception e) {
-		printString = flashChart.toDebugString();
-	}
-	
+
 	for(int i = 1 ; i<=al.size() ; i++){
 		json.put("dayNum"+i, al.get(i-1));
 	}
 	json.put("leafName",leafName);
 	json.put("total",totalWorkflow);
 	out.print(json);
-	//out.print(printString);
 %>

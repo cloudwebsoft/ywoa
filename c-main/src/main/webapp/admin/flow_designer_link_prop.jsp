@@ -53,8 +53,8 @@
         return;
     }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"/>
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>流程连接属性</title>
@@ -212,14 +212,14 @@
         var toVal = window.parent.GetSelectedLinkProperty("to");
 
         <%
-            if(!linkProp.equals("")){
+            if(!"".equals(linkProp)){
                 SAXBuilder parser = new SAXBuilder();
                 org.jdom.Document doc = parser.build(new InputSource(new StringReader(linkProp)));
                 Element root = doc.getRootElement();
                 List<Element> v = root.getChildren();
                    for (Element e : v) {
-                           String from = e.getChildText("from");
-                           String to = e.getChildText("to");
+                       String from = e.getChildText("from");
+                       String to = e.getChildText("to");
         %>
         if (fromVal == "<%=from%>" && toVal == "<%=to%>") {
             document.getElementById("imgId").style.display = "inline-block";
@@ -293,9 +293,9 @@
             o("roleAddBtn").disabled = false;
             o("deptNames").readOnly = true;
 
-            $(deptAddBtn).hide();
-            $(roleAddBtn).show();
-            $(deptClearBtn).show();
+            $('#deptAddBtn').hide();
+            $('#roleAddBtn').show();
+            $('#deptClearBtn').show();
             $("#scriptBtn").hide();
 
             if (!isOnLoad)
@@ -322,9 +322,9 @@
             o("deptNames").value = "";
             o("deptNames").readOnly = false;
 
-            $(deptAddBtn).hide();
-            $(roleAddBtn).hide();
-            $(deptClearBtn).show();
+            $('#deptAddBtn').hide();
+            $('#roleAddBtn').hide();
+            $('#deptClearBtn').show();
             $("#scriptBtn").show();
 
             o("condName").innerHTML = "脚本";
@@ -343,37 +343,29 @@
             $(".toHide").hide();
             $(".linkShow").show();
             //openWin('combination_condition.jsp', 600, 480);
-            //showModalDialog('combination_condition.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;');
         }
     }
 
     function getDepts() {
-        return depts.value;
+        return o("depts").value;
+    }
+
+    function selectNode(code, name) {
+        o("depts").value = code;
+        o("deptNames").value = name;
+
+        if (o("depts").value.indexOf("<%=DeptDb.ROOTCODE%>") != -1) {
+            o("depts").value = "<%=DeptDb.ROOTCODE%>";
+            o("deptNames").value = "全部";
+        }
     }
 
     function openWinDepts() {
-        var ret = showModalDialog('../dept_multi_sel.jsp', window.self, 'dialogWidth:520px;dialogHeight:350px;status:no;help:no;')
-        if (ret == null)
-            return;
-        deptNames.value = "";
-        depts.value = "";
-        for (var i = 0; i < ret.length; i++) {
-            if (deptNames.value == "") {
-                depts.value += ret[i][0];
-                deptNames.value += ret[i][1];
-            } else {
-                depts.value += "," + ret[i][0];
-                deptNames.value += "," + ret[i][1];
-            }
-        }
-        if (depts.value.indexOf("<%=DeptDb.ROOTCODE%>") != -1) {
-            depts.value = "<%=DeptDb.ROOTCODE%>";
-            deptNames.value = "全部";
-        }
+        openWin('../deptMultiSel.do', 520, 350);
     }
 
     function setRoles(roles, descs) {
-        depts.value = roles;
+        o("depts").value = roles;
         deptNames.value = descs
     }
 
@@ -386,10 +378,14 @@
         var fromValue = window.parent.GetSelectedLinkProperty("from");
         var toValue = window.parent.GetSelectedLinkProperty("to");
         var hiddenLinkProp = $("#hiddenLinkProp").html();
+        var hiddenConditionVal = $('#hiddenCondition').val();
+        if (hiddenConditionVal != '') {
+            hiddenLinkProp = hiddenConditionVal;
+        }
         if (fromValue == "" && toValue == "") {
             alert("请选择分支");
         } else {
-            // 注意不能用此方式，因为通过get方式传参,linkProp中的&lt;会在传至combination_condition.jsp中的时候被自动转义为<，导致XML在解析时出错
+            // 注意不能用此方式，因为通过get方式传参,linkProp中的&lt;会在传至combination_condition.jsp中的时候被自动转义为 <，导致XML在解析时出错
             // openWin("combination_condition.jsp?flowTypeCode=<%=flowTypeCode%>&linkProp=" + hiddenLinkProp + "&fromValue=" + fromValue + "&toValue=" + toValue,800,600);
             openWin("", 1024, 668);
 
@@ -575,11 +571,10 @@
         %></textarea>
             <input type="hidden" name="depts" value="<%=depts%>">
             <input type="hidden" name="hiddenCondition" id="hiddenCondition" value="">
-            <xmp name="hiddenLinkProp" id="hiddenLinkProp" style="display:none"><%=linkProp %>
-            </xmp>
+            <xmp name="hiddenLinkProp" id="hiddenLinkProp" style="display:none"><%=linkProp %></xmp>
             <br>
             <input id="deptAddBtn" title="选择部门" onClick="openWinDepts()" class="btn" type="button" value="选择" name="button">
-            <input name="roleAddBtn" type="button" class="btn" onClick="showModalDialog('../role_multi_sel.jsp?roleCodes=',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="添加">
+            <input id="roleAddBtn" name="roleAddBtn" type="button" class="btn" onClick="openWin('../role_multi_sel.jsp?roleCodes=', 526, 435)" value="添加">
             <input id="scriptBtn" type="button" value="设计器" class="btn" onclick="openIdeWin()"/>
             &nbsp;&nbsp;
             <input id="deptClearBtn" title="清空" class="btn" onClick="deptNames.value='';depts.value=''" type="button" value="清空" name="button">

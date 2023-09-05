@@ -8,7 +8,7 @@ public class OaSysVerDb extends QObjectDb {
     }
 
     public OaSysVerDb getOaSysVerDb(int id) {
-        return (OaSysVerDb) getQObjectDb(new Integer(id));
+        return (OaSysVerDb) getQObjectDb(id);
     }
 
 }

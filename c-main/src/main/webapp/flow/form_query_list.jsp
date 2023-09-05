@@ -108,12 +108,24 @@
 		return;
 	}
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>查询列表</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+<style>
+	.search-form input, select {
+		vertical-align: middle;
+	}
+	.search-form .tSearch {
+		/*float: left;*/
+	}
+	.search-form input:not([type="radio"]):not([type="button"]):not([type="checkbox"]):not([type="submit"]) {
+		width: 80px;
+		line-height: 20px; /*否则输入框的文字会偏下*/
+	}
+</style>
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
@@ -148,10 +160,11 @@ o("menu0").className="current";
 	}
 	String queryKey = ParamUtil.get(request, "queryKey");
 	if(op.equals("query")) {
-		if (!isSystem)
+		if (!isSystem) {
 			sql = "select id from form_query where user_name=" + StrUtil.sqlstr(privilege.getUser(request)) + " and query_name like " + StrUtil.sqlstr("%" + queryKey + "%") + " and is_saved=1";
-		else
+		} else {
 			sql = "select id from form_query where is_system=1 and query_name like " + StrUtil.sqlstr("%" + queryKey + "%") + " and is_saved=1";
+		}
 	}
 	
 	sql += " order by " + orderBy + " " + sort;
@@ -184,14 +197,14 @@ o("menu0").className="current";
 	FormDb fd = new FormDb();
 %>
       	<table id="searchTable" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
-            <tr> 
-              <td>
-          <form name="queryForm" method="post" action="form_query_list.jsp?op=query" >          
-              &nbsp;名称
-<input type="text" name="queryKey" value="<%=queryKey%>" />&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" class="tSearch" value="查找" />
-          </form>
-          </td>
-            </tr>
+			<tr>
+				<td>
+					<form name="queryForm" class="search-form" method="post" action="form_query_list.jsp?op=query">
+						&nbsp;名称
+						<input type="text" name="queryKey" value="<%=queryKey%>"/>&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" class="tSearch" value="查找"/>
+					</form>
+				</td>
+			</tr>
         </table>
 	    <table id="grid" border="0" cellpadding="2" cellspacing="0" >
         <thead>
@@ -207,9 +220,9 @@ o("menu0").className="current";
 	    <%
 		while (ir!=null && ir.hasNext()) {
 			aqd = (FormQueryDb)ir.next();
-			// System.out.println(getClass() + " " + aqd.isScript());
-			if (!aqd.isScript())
+			if (!aqd.isScript()) {
 				fd = fd.getFormDb(aqd.getTableCode());
+			}
 		%>
         <tr align="center" id=<%=aqd.getId()%> isScript="<%=aqd.isScript()%>">
           <td width="225" height="22" align="left"><span id="queryName<%=aqd.getId()%>"><%=aqd.getQueryName()%></span></td>
@@ -253,9 +266,9 @@ o("menu0").className="current";
       <%}%>	 
       </table>
 <form id="form1" name="form1" method="post" action="form_query_list.jsp">
-  <input name="op" value="modifyDeptCode" type="hidden" />
-<input name="deptCodes" type="hidden" />
-<input name="id" type="hidden" />
+	<input name="op" value="modifyDeptCode" type="hidden"/>
+	<input name="deptCodes" type="hidden"/>
+	<input name="id" type="hidden"/>
 </form>
 
 <div id="dlg" style="display:none">

@@ -138,7 +138,7 @@
 			},
 			eventClick: function(info) {
 				// console.log(info);
-				addTab(info.event.title, '<%=request.getContextPath()%>/visual/module_show.jsp?id=' + info.event.id + '&code=<%=formCodeRelated%>');
+				addTab(info.event.title, '<%=request.getContextPath()%>/visual/moduleShowPage.do?id=' + info.event.id + '&code=<%=formCodeRelated%>');
 				/*alert('Event: ' + info.event.title);
 				alert('Coordinates: ' + info.jsEvent.pageX + ',' + info.jsEvent.pageY);
 				alert('View: ' + info.view.type);*/

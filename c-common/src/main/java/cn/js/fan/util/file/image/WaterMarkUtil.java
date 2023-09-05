@@ -1,5 +1,6 @@
 package cn.js.fan.util.file.image;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.sun.image.codec.jpeg.JPEGImageEncoder;
 import java.awt.Image;
 import java.io.File;
@@ -161,7 +162,6 @@ public class WaterMarkUtil {
              int stringWidth(String str)返回字符串宽度
             */
 
-            // System.out.println("WaterMarkUtil.java top=" + getMarkStringTop());
             g.drawString(waterMarkStr, getMarkStringLeft(), getMarkStringTop()); // 向BufferedImage写入文本字符
             g.dispose(); // 使更改生效
 
@@ -175,8 +175,7 @@ public class WaterMarkUtil {
 
             out.close();
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -221,9 +220,8 @@ public class WaterMarkUtil {
 
             out.close();
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            System.out.println("water mark img path:" + waterMarkImgPath);
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("water mark img path:" + waterMarkImgPath);
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 

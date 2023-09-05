@@ -89,9 +89,7 @@ if (op.equals("")) {
 			
 			String cond = sn.getCondition();
 			String right = sn.getRight();
-			
-			// System.out.println(getClass() + " right=" + right);
-			
+
 			if (right.startsWith("'")) {
 				right = right.substring(1, right.length()-1);
 			}

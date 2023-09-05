@@ -71,7 +71,7 @@ UserDb user = um.getUserDb(userName);
             <%=strGender%> </td>
         <td colspan="2" rowspan="8" align="center" valign="middle" id="photoTd">
 		<%if (!"".equals(user.getPhoto())) {%>
-        <img class="photoImg" src="<%=user.getPhoto()%>" />
+        <img class="photoImg" src="<%="showImg.do?path=" + user.getPhoto()%>" />
         <%}%>        
 		<script>
           $(function() {

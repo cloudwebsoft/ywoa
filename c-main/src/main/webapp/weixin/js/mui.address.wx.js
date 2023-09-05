@@ -2,7 +2,8 @@
     var w = window;
     var d = document;
     var self;
-    var ADDRESS_AJAX_URL = "../../public/address/list.do";
+    // var ADDRESS_AJAX_URL = "../../public/address/list.do";
+    var ADDRESS_AJAX_URL = "../../public/android/user/listAddress.do";
     $.Address = $.Class.extend({
         init: function (element, options) {
             this.element = element,
@@ -46,8 +47,10 @@
                             li += "<p class='mui-ellipsis'>";
                             li += '<span addrId=' + item.user.id + '>' + item.user.email + '</span>';
                             li += "</p>";
+                            li += "<p class='mui-ellipsis'>";
+                            li += '<span addrId=' + item.user.id + '>' + item.user.company + '</span>';
+                            li += "</p>";
                             li += '</div>';
-
                             li += '</li>';
                         }
                         jQuery(".mui-table-view").append(li);
@@ -60,7 +63,7 @@
         },
         bindEvent: function () {
             mui('.mui-indexed-list-item').on('tap', 'span', function() {
-                window.location.href = "address_show.jsp?id=" + jQuery(this).attr('addrId');
+                window.location.href = "address_show.jsp?id=" + jQuery(this).attr('addrId') + "&isUniWebview=" + self.options.isUniWebview;
             });
         }
     })

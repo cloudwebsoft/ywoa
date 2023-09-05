@@ -7,10 +7,11 @@ import javax.servlet.http.HttpSession;
 
 import cn.js.fan.base.ISkin;
 import cn.js.fan.util.ResBundle;
-import org.apache.log4j.Logger;
 import cn.js.fan.cache.jcs.RMCache;
 import java.util.HashMap;
 import cn.js.fan.util.XMLConfig;
+import cn.js.fan.util.file.image.Thumbnail;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Element;
 import java.util.List;
 import java.util.Iterator;
@@ -18,7 +19,6 @@ import cn.js.fan.util.StrUtil;
 
 public class SkinUtil implements ISkin {
     static final String resName = "res.common";
-    static Logger logger = Logger.getLogger("SkinUtil");
 
     public static final String ERR_DB = "err_db";
     public static final String PVG_INVALID = "pvg_invalid";
@@ -68,7 +68,7 @@ public class SkinUtil implements ISkin {
                 // logger.info("getLocale:lang=" + lang + " country=" + country);
             }
             catch (Exception e) { // 防止数组越界等
-                logger.error("getLocale: " + StrUtil.trace(e));
+                LogUtil.getLog(SkinUtil.class).error("getLocale: " + StrUtil.trace(e));
             }
         }
         if (lang == null || country == null) {
@@ -114,8 +114,8 @@ public class SkinUtil implements ISkin {
             // logger.info("LoadString: key=" + key + " str=" + str + " " + getLocale(request));
         }
         catch (Exception e) {
-            logger.error("LoadString: resource=" + resource + " key=" + key + " " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(SkinUtil.class).error("LoadString: resource=" + resource + " key=" + key + " " + e.getMessage());
+            LogUtil.getLog(SkinUtil.class).error(e);
         }
         return str;
     }
@@ -206,11 +206,11 @@ public class SkinUtil implements ISkin {
             hm = (HashMap) RMCache.getInstance().get(key);
         }
         catch (Exception e) {
-            logger.error("getSupportLocales:" + e.getMessage());
+            LogUtil.getLog(SkinUtil.class).error("getSupportLocales:" + e.getMessage());
         }
         if (hm==null) {
             hm = new HashMap();
-            XMLConfig xc = new XMLConfig("config_i18n.xml", false, "utf-8");
+            XMLConfig xc = new XMLConfig("config_i18n.xml", true, "utf-8");
             Element root = xc.getRootElement();
             Element child = root.getChild("support");
             List list = child.getChildren();
@@ -224,7 +224,7 @@ public class SkinUtil implements ISkin {
                     RMCache.getInstance().put(key, hm);
                 }
                 catch (Exception e) {
-                    logger.error("getSupportLocales2:" + e.getMessage());
+                    LogUtil.getLog(SkinUtil.class).error("getSupportLocales2:" + e.getMessage());
                 }
             }
         }

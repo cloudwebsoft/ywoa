@@ -51,7 +51,6 @@ function exchange(moneyTypeField,moneyValueField ){
 	ajaxExchange(bz,num);
 }
 
-	
 function ajaxExchange(bz, num) {
 	$.ajax({
 		type: "post",

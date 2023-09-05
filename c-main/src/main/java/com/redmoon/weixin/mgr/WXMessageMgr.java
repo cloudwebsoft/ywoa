@@ -1,11 +1,9 @@
 package com.redmoon.weixin.mgr;
 
+import com.alibaba.fastjson.JSONObject;
 import com.cloudwebsoft.framework.util.LogUtil;
-import net.sf.json.JSONObject;
-
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
-
 import com.redmoon.oa.account.AccountDb;
 import com.redmoon.oa.flow.MyActionDb;
 import com.redmoon.oa.person.UserDb;

@@ -15,6 +15,7 @@ import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.ResponseUtil;
 import com.cloudweb.oa.vo.AccountVO;
+import com.cloudweb.oa.vo.Result;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.redmoon.oa.pvg.Privilege;
@@ -70,27 +71,27 @@ public class AccountController {
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/listAccount")
-    public String listAccount(String op, String by, String what, String searchUnitCode, Model model) {
+    @ResponseBody
+    public Result<JSONObject> listAccount(String op, String by, String what, String searchUnitCode) {
+        JSONObject object = new JSONObject();
         Privilege pvg = new Privilege();
         StringBuffer sb = new StringBuffer();
         Department department = departmentService.getDepartment(ConstUtil.DEPT_ROOT);
         departmentService.getUnitAsOptions(sb, department, department.getLayer());
-        model.addAttribute("unitOpts", sb.toString());
+        object.put("unitOpts", sb.toString());
 
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        model.addAttribute("op", op);
-        model.addAttribute("what", what);
-        model.addAttribute("searchUnitCode", searchUnitCode);
+        object.put("op", op);
+        object.put("what", what);
+        object.put("searchUnitCode", searchUnitCode);
 
-        model.addAttribute("unitCode", pvg.getUserUnitCode());
-
-        model.addAttribute("by", by);
-        return "th/admin/account_list";
+        object.put("unitCode", pvg.getUserUnitCode());
+        object.put("by", by);
+        return new Result<>(object);
     }
 
     @RequestMapping(value = "/getAccountList", produces={"text/html;charset=UTF-8;","application/json;"})
     @ResponseBody
-    public String getAccountList(@RequestParam(defaultValue = "") String op,
+    public Result<Object> getAccountList(@RequestParam(defaultValue = "") String op,
                                           @RequestParam(defaultValue = "") String by,
                                           @RequestParam(defaultValue = "") String what,
                                           @RequestParam(defaultValue = "") String searchUnitCode,
@@ -111,6 +112,7 @@ public class AccountController {
             User user = userService.getUser(acc.getUserName());
             if (user!=null) {
                 accountVO.setRealName(user.getRealName());
+                accountVO.setUserName(user.getName());
 
                 StringBuffer deptNames = new StringBuffer();
                 List<DeptUser> duList = deptUserService.listByUserName(user.getName());
@@ -119,7 +121,7 @@ public class AccountController {
                     String deptName;
                     if (!dept.getParentCode().equals(ConstUtil.DEPT_ROOT) && !dept.getCode().equals(ConstUtil.DEPT_ROOT)) {
                         Department parentDept = departmentService.getDepartment(dept.getParentCode());
-                        deptName = parentDept.getName() + "<span style='font-family:宋体'>&nbsp;->&nbsp;</span>" + dept.getName();
+                        deptName = parentDept.getName() + dept.getName();
                     } else {
                         deptName = dept.getName();
                     }
@@ -131,31 +133,33 @@ public class AccountController {
             else {
                 accountVO.setOp("");
                 accountVO.setRealName("");
+                accountVO.setUserName("");
                 accountVO.setDeptName("");
             }
             resultList.add(accountVO);
         }
 
         JSONObject json = new JSONObject();
-        json.put("data", resultList);
+        json.put("list", resultList);
         json.put("total", pageInfo.getTotal());
-        return json.toString();
+        json.put("page",pageNum);
+        return new Result<>(json);
     }
 
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
-    @RequestMapping(value = "/addAccount")
-    public String addAccount(Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        Privilege pvg = new Privilege();
-        model.addAttribute("unitCode", pvg.getUserUnitCode());
-
-        return "th/admin/account_add";
-    }
+//    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+//    @RequestMapping(value = "/addAccount")
+//    public String addAccount(Model model) {
+//        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+//        Privilege pvg = new Privilege();
+//        model.addAttribute("unitCode", pvg.getUserUnitCode());
+//
+//        return "th/admin/account_add";
+//    }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/createAccount", produces={"text/html;charset=UTF-8;","application/json;"})
     @ResponseBody
-    public String createAccount(String name, String userName) throws ValidateException {
+    public Result<Object> createAccount(String name, String userName) throws ValidateException {
         Account account = accountService.getAccount(name);
         if (account!=null) {
             throw new ValidateException("#user.account.exist");
@@ -163,13 +167,13 @@ public class AccountController {
         account = new Account();
         account.setName(name);
         account.setUserName(userName);
-        return responseUtil.getResultJson(account.insert()).toString();
+        return new Result<>(account.insert());
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/checkNotExist", produces={"text/html;charset=UTF-8;", "application/json;"})
     @ResponseBody
-    public String checkNotExist(String name) {
+    public Result<Object> checkNotExist(String name) {
         Account account = accountService.getAccount(name);
         boolean re = account==null;
         JSONObject jsonObject = new JSONObject();
@@ -179,37 +183,37 @@ public class AccountController {
         else {
             jsonObject.put("valid", false);
         }
-        return jsonObject.toString();
+        return new Result<>(jsonObject);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/delAccount", produces={"text/html;charset=UTF-8;","application/json;"})
     @ResponseBody
-    public String delAccount(String account) {
-        return responseUtil.getResultJson(accountService.del(account)).toString();
+    public Result<Object> delAccount(String account) {
+        return new Result<>(accountService.del(account));
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/editAccount")
-    public String editAccount(String name, String tabIdOpener, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+    public Result<Object> editAccount(String name, String tabIdOpener) {
+        JSONObject object = new JSONObject();
         Account account = accountService.getAccount(name);
-        model.addAttribute("account", account);
+        object.put("account", account);
 
         User user = userService.getUser(account.getUserName());
-        model.addAttribute("realName", user.getRealName());
+        object.put("realName", user.getRealName());
 
-        model.addAttribute("tabIdOpener", tabIdOpener);
-        return "th/admin/account_edit";
+        object.put("tabIdOpener", tabIdOpener);
+        return new Result<>(object);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/updateAccount", produces={"text/html;charset=UTF-8;","application/json;"})
     @ResponseBody
-    public String updateAccount(String name, String userName) throws ValidateException {
+    public Result<Object> updateAccount(String name, String userName) throws ValidateException {
         Account account = new Account();
         account.setName(name);
         account.setUserName(userName);
-        return responseUtil.getResultJson(accountService.update(account)).toString();
+        return new Result<>(accountService.update(account));
     }
 }

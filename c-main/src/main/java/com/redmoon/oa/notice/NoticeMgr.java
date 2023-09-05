@@ -12,7 +12,6 @@ import java.util.Vector;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
 import org.htmlparser.Node;
 import org.htmlparser.NodeFilter;
 import org.htmlparser.Parser;
@@ -74,137 +73,6 @@ public class NoticeMgr {
         return fileUpload;
     }
 
-    public boolean create(ServletContext application,
-                          HttpServletRequest request) throws ErrMsgException {
-
-        Privilege pvg = new Privilege();
-        if (!pvg.isUserLogin(request)) {
-            throw new ErrMsgException("请先登录!");
-        }
-
-        doUpload(application, request);
-
-        if (!isNoticeAddable(request)) {
-            return false;
-        }
-
-        boolean re = true;
-        String userName = pvg.getUser(request);
-        String title = StrUtil.getNullStr(fileUpload.getFieldValue("title"));
-        //String content = StrUtil.getNullStr(fileUpload.getFieldValue("content"));
-        String content = StrUtil.getNullStr(fileUpload.getFieldValue("htmlcode"));
-        boolean isToMobile = StrUtil.getNullStr(fileUpload.getFieldValue("isToMobile")).equals("true");
-        // boolean isMessageSend = StrUtil.getNullStr(fileUpload.getFieldValue("isUseMsg")).equals("true");
-        String strusers = StrUtil.getNullStr(fileUpload.getFieldValue("receiver"));
-        int isShow = StrUtil.toInt(fileUpload.getFieldValue("isShow"), 0);
-        
-        int isDeptNotice = StrUtil.toInt(fileUpload.getFieldValue(
-                "isDeptNotice"));
-        if (title.equals(""))
-            throw new ErrMsgException("标题不能为空！");
-        if (content.equals(""))
-            throw new ErrMsgException("正文不能为空！");
-        
-        java.util.Date beginDate = DateUtil.parse(fileUpload.getFieldValue("beginDate"), "yyyy-MM-dd");
-        java.util.Date endDate = DateUtil.parse(fileUpload.getFieldValue("endDate"), "yyyy-MM-dd");   
-        
-        if (beginDate == null) {
-        	beginDate = new Date();
-        }
-
-        if (endDate != null && DateUtil.compare(beginDate, endDate)==1) {
-        	throw new ErrMsgException("有效期的开始日期不能大于结束日期");
-        }
-        
-        String color = StrUtil.getNullStr(fileUpload.getFieldValue("color"));;
-        //boolean isBold = StrUtil.getNullStr(fileUpload.getFieldValue("isBold")).equals("true");
-        String unitCode = StrUtil.getNullStr(fileUpload.getFieldValue("unitCode"));
-        
-        int level = StrUtil.toInt(fileUpload.getFieldValue("level"), NoticeDb.LEVEL_NONE);
-        boolean isBold = false;
-        if(level == 1){
-        	isBold = true;
-        }
-        //add by tbl
-       int isall = StrUtil.toInt(fileUpload.getFieldValue("isall"));
-        //add by tbl
-       //add by lzm 是否回复 强制回复
-       int is_reply = StrUtil.toInt(fileUpload.getFieldValue("is_reply"), 0);
-       int is_forced_response = StrUtil.toInt(fileUpload.getFieldValue("is_forced_response"),0);
-       
-        
-        NoticeDb nd = new NoticeDb();
-        nd.setTitle(title);
-        nd.setContent(content);
-        nd.setUserName(userName);
-        nd.setCreateDate(new java.util.Date());
-        nd.setIsDeptNotice(isDeptNotice);
-        nd.setIsShow(isShow);
-        nd.setBeginDate(beginDate);
-        nd.setEndDate(endDate);
-        nd.setColor(color);
-        nd.setBold(isBold);
-        nd.setUnitCode(unitCode);
-        nd.setLevel(level);
-        //add by tbl
-        nd.setIsall(isall);
-        nd.setUserList(strusers);
-        //add by tbl
-        //add by lzm
-        nd.setIs_reply(is_reply);
-        nd.setIs_forced_response(is_forced_response);
-        
-        re = nd.create(fileUpload);
-        
-        if(re) {
-        	re = createNoticeReply(nd, isToMobile);
-        }
-        
-/*        if (re) {
-        	
-            int intToMobile = 0;
-            if (isToMobile) {
-                intToMobile = 2;
-            } else if (isMessageSend) {
-                intToMobile = 1;
-            }
-
-            UserDb user = new UserDb();
-            user = user.getUserDb(userName);
-
-            if (!strusers.trim().equals("")) {
-                sendMsg(request, user.getRealName(), title, content, StrUtil.split(strusers, ","),
-                        intToMobile, false, nd.getId());
-            }
-        }*/
-
-        return re;
-    }
-    
-    public boolean creatNoticeForFlow(NoticeDb noticeDb)
-    {
-    	boolean re = true;
-        NoticeDb nd = new NoticeDb();
-        re = nd.createNoticeForFlow();
-        
-        boolean isToMobile = com.redmoon.oa.sms.SMSFactory.isUseSMS();
-        
-        if(re)
-        	re = createNoticeReply(nd, isToMobile);
-
-        if (re) {
-
-            UserDb user = new UserDb();
-            user = user.getUserDb(nd.getUserName());
-
-//            if (!nd.getUserList().trim().equals("")) {
-//                sendMsg(request, user.getRealName(), title, content, StrUtil.split(strusers, ","),
-//                        intToMobile, false, nd.getId());
-//            }
-        }
-    	return re;
-    }
-
     public boolean createNoticeReply(NoticeDb noticeDb, boolean isToMobile) {
 
         String[] usernames = null;
@@ -222,7 +90,7 @@ public class NoticeMgr {
                     try {
                         va = deptDb.getAllChild(va, deptDb);
                     } catch (ErrMsgException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                     Vector va2 = new Vector();
                     va2.add(deptDb);
@@ -248,7 +116,6 @@ public class NoticeMgr {
                             }
                         } catch (SQLException e) {
                             LogUtil.getLog(getClass()).error("createNoticeReply:" + StrUtil.trace(e));
-                            e.printStackTrace();
                         } finally {
                             jt.close();
                         }
@@ -261,7 +128,7 @@ public class NoticeMgr {
             try {
                 v = dd.getAllChild(v, dd);
             } catch (ErrMsgException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             Vector va2 = new Vector();
             va2.add(dd);
@@ -288,7 +155,6 @@ public class NoticeMgr {
                     }
                 } catch (SQLException e) {
                     LogUtil.getLog(getClass()).error("createNoticeReply:" + StrUtil.trace(e));
-                    e.printStackTrace();
                 } finally {
                     jt.close();
                 }
@@ -311,7 +177,7 @@ public class NoticeMgr {
             try {
                 mdb.sendSysMsgNotice(noticeDb.getId(), usernames, "请注意查看：通知公告 " + noticeDb.getTitle(), txt);
             } catch (ErrMsgException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
                 re = false;
             }
 
@@ -321,7 +187,7 @@ public class NoticeMgr {
                     try {
                         imu.sendBatch(usernames, txt, noticeDb.getUserName());
                     } catch (ErrMsgException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
             }
@@ -339,97 +205,7 @@ public class NoticeMgr {
 		}
 		list.clear();
 		list.addAll(newList);
-		//System.out.println(" remove duplicate " + list);
 	}
-
-    /**
-     *
-     * @param application ServletContext
-     * @param request HttpServletRequest
-     * @return boolean
-     * @throws ErrMsgException
-     */
-    public boolean edit(ServletContext application, HttpServletRequest request) throws
-            ErrMsgException {
-        Privilege pvg = new Privilege();
-        if (!pvg.isUserLogin(request))
-            throw new ErrMsgException("请先登录!");
-        doUpload(application, request);
-
-        String id = StrUtil.getNullStr(fileUpload.getFieldValue("id"));
-        long idLong = Long.valueOf(id).longValue();
-        if (!isNoticeManageable(request, idLong)){
-            return false;
-        }
-        if (!isNoticeAddable(request)){
-            return false;
-        }
-
-        boolean re = true;
-
-        String userName = pvg.getUser(request);
-        String title = StrUtil.getNullStr(fileUpload.getFieldValue("title"));
-        String content = StrUtil.getNullStr(fileUpload.getFieldValue("content"));
-        int isDeptNotice = StrUtil.toInt(fileUpload.getFieldValue(
-                "isDeptNotice"));
-        if (title.equals(""))
-            throw new ErrMsgException("标题不能为空！");
-        if (content.equals(""))
-            throw new ErrMsgException("正文不能为空！");
-        int isShow = StrUtil.toInt(fileUpload.getFieldValue("isShow"),0);
-        boolean isToMobile = StrUtil.getNullStr(fileUpload.getFieldValue("isToMobile")).equals("true");
-        boolean isMessageSend = StrUtil.getNullStr(fileUpload.getFieldValue("isUseMsg")).equals("true");
-        String strusers = StrUtil.getNullStr(fileUpload.getFieldValue("receiver"));
-        java.util.Date beginDate = DateUtil.parse(fileUpload.getFieldValue("beginDate"), "yyyy-MM-dd");
-        java.util.Date endDate = DateUtil.parse(fileUpload.getFieldValue("endDate"), "yyyy-MM-dd");        
-        if (DateUtil.compare(beginDate, endDate)==1) {
-        	throw new ErrMsgException("有效期的开始日期不能大于结束日期");
-        }
-        
-        String color = StrUtil.getNullStr(fileUpload.getFieldValue("color"));
-        boolean isBold = StrUtil.getNullStr(fileUpload.getFieldValue("isBold")).equals("true");
-
-        String unitCode = StrUtil.getNullStr(fileUpload.getFieldValue("unitCode"));
-        int level = StrUtil.toInt(fileUpload.getFieldValue("level"), NoticeDb.LEVEL_NONE);
-
-        NoticeDb nd = new NoticeDb();
-        nd = nd.getNoticeDb(idLong);
-        nd.setTitle(title);
-        nd.setContent(content);
-        nd.setUserName(userName);
-        nd.setCreateDate(new java.util.Date());
-        nd.setIsDeptNotice(isDeptNotice);
-        nd.setIsShow(isShow);
-        nd.setBeginDate(beginDate);
-        nd.setEndDate(endDate);
-        
-        nd.setColor(color);
-        nd.setBold(isBold);
-        nd.setUnitCode(unitCode);
-        
-        nd.setLevel(level);
-        
-        re = nd.save(fileUpload);
-
-        /**
-        if (re) {
-            int intToMobile = 0;
-            if (isToMobile) {
-                intToMobile = 2;
-            } else if (isMessageSend) {
-                intToMobile = 1;
-            }
-
-            UserDb user = new UserDb();
-            user = user.getUserDb(userName);
-            
-            if (!strusers.trim().equals(""))
-                sendMsg(request, user.getRealName(), title, content, StrUtil.split(strusers, ","),
-                        intToMobile, true, nd.getId());
-        }*/
-
-        return re;
-    }
 
     /**
      *
@@ -829,7 +605,7 @@ public class NoticeMgr {
           }
       }
       catch (ParserException e) {
-          Logger.getLogger(SMSDocumentAction.class).error("getAbstract:" + e.getMessage());
+          LogUtil.getLog(SMSDocumentAction.class).error("getAbstract:" + e.getMessage());
       }
       return str;
     }
@@ -856,7 +632,7 @@ public class NoticeMgr {
 					try {
 						va = deptDb.getAllChild(va, deptDb);
 					} catch (ErrMsgException e) {
-						e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
 					}
 					Vector va2 = new Vector();
 					va2.add(deptDb);
@@ -892,7 +668,6 @@ public class NoticeMgr {
 						} catch (SQLException e) {
 							LogUtil.getLog(getClass()).error(
 									"createNoticeReply:" + StrUtil.trace(e));
-							e.printStackTrace();
 						} finally {
 							jt.close();
 						}
@@ -916,7 +691,7 @@ public class NoticeMgr {
 			try {
 				v = dd.getAllChild(v, dd);
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
 			}
 			Vector va2 = new Vector();
 			va2.add(dd);
@@ -951,7 +726,6 @@ public class NoticeMgr {
 				} catch (SQLException e) {
 					LogUtil.getLog(getClass()).error(
 							"createNoticeReply:" + StrUtil.trace(e));
-					e.printStackTrace();
 				} finally {
 					jt.close();
 				}
@@ -980,8 +754,7 @@ public class NoticeMgr {
 			try {
 				mdb.sendSysMsgNotice(noticeDb.getId(), usernames, "请注意查看：通知公告 "+noticeDb.getTitle(), noticeDb.getContent());
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
 				re = false;
 			}
 			
@@ -992,8 +765,7 @@ public class NoticeMgr {
 	                	String txt = StrUtil.getAbstract(null, noticeDb.getContent(), 380, "", false);
 						imu.sendBatch(usernames, txt, noticeDb.getUserName());
 					} catch (ErrMsgException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
 					}
 				}
 			// }			
@@ -1002,7 +774,7 @@ public class NoticeMgr {
 	
 	public String getUserList(int flowId){
 		String userList = "";
-		String sql = "select deptNames from form_table_tzgg where flowId="+flowId;
+		String sql = "select deptNames from ft_tzgg where flowId="+flowId;
 		JdbcTemplate jt = new JdbcTemplate();
 		ResultIterator ri = null;
 		ResultRecord rd = null;
@@ -1013,8 +785,7 @@ public class NoticeMgr {
 				userList = rd.getString(1);
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 		return userList;
 	}
@@ -1108,8 +879,7 @@ public class NoticeMgr {
 				return true;
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 		return false;
 	}
@@ -1119,10 +889,9 @@ public class NoticeMgr {
 		String sql = "update oa_notice_reply set is_readed=0 where notice_id=?";
 		JdbcTemplate jt = new JdbcTemplate();
 		try {
-			res = jt.executeUpdate(sql, new Object[]{id})>0?true:false;
+			res = jt.executeUpdate(sql, new Object[]{id}) > 0;
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 		return res;
 	}
@@ -1145,8 +914,7 @@ public class NoticeMgr {
 				}
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 		return usersStr;
 	}

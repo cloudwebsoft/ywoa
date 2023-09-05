@@ -12,10 +12,12 @@ import cn.js.fan.db.*;
 import cn.js.fan.security.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import net.sf.json.JSON;
+import com.cloudweb.oa.utils.I18nUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.sys.DebugUtil;
 
 import org.apache.commons.collections.map.HashedMap;
-import org.apache.log4j.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,7 +28,6 @@ import com.redmoon.oa.ui.LocalUtil;
 public class Leaf implements Serializable, ITagSupport {
     transient RMCache rmCache = RMCache.getInstance();
     String connname = "";
-    transient Logger logger = Logger.getLogger(Leaf.class.getName());
 
     int docId;
 
@@ -106,157 +107,190 @@ public class Leaf implements Serializable, ITagSupport {
         this.condProps = condProps;
     }
 
+    public static String getFlowColTitle(String field) {
+        I18nUtil i18nUtil = SpringUtil.getBean(I18nUtil.class);
+        switch (field) {
+            case "f.id":
+                return "ID";
+            case "f.flow_level":
+                return i18nUtil.get("rating");
+            case "f.title":
+                return i18nUtil.get("tit");
+            case "f.type_code":
+                return i18nUtil.get("type");
+            case "f.userName":
+                return i18nUtil.get("organ");
+            case "f.begin_date":
+                return i18nUtil.get("startTime");
+            case "f.finallyApply":
+                return i18nUtil.get("finallyApply");
+            case "f.currentHandle":
+                return i18nUtil.get("currentHandle");
+            case "f.remainTime":
+                return i18nUtil.get("remainTime");
+            case "f.status":
+                return i18nUtil.get("state");
+            case "f.end_date":
+                return i18nUtil.get("endTime");
+        }
+        return "";
+    }
+
     /**
      * 默认搜索结果列表所显示的列
      *
      * @param request
      * @return
      */
-    public static JSONArray getDefaultColProps(HttpServletRequest request, String typeCode, int displayMode) {
-        JSONArray aryColProps = null;
-        try {
-            if ("".equals(typeCode)) {
-                typeCode = Leaf.CODE_ROOT;
-                Leaf lf = new Leaf();
-                lf = lf.getLeaf(typeCode);
-                String colProps = lf.getColProps();
-                if (!"".equals(colProps)) {
-                    aryColProps = new JSONArray(colProps);
+    public static com.alibaba.fastjson.JSONArray getDefaultColProps(HttpServletRequest request, String typeCode, int displayMode) {
+        com.alibaba.fastjson.JSONArray aryColProps = null;
+        if ("".equals(typeCode)) {
+            typeCode = Leaf.CODE_ROOT;
+            Leaf lf = new Leaf();
+            lf = lf.getLeaf(typeCode);
+            String colProps = lf.getColProps();
+            if (!StrUtil.isEmpty(colProps)) {
+                aryColProps = com.alibaba.fastjson.JSONArray.parseArray(colProps);
+                if (aryColProps == null) {
+                    DebugUtil.e(Leaf.class, "json格式非法：" , colProps);
                 }
             }
-            if (aryColProps == null) {
-                aryColProps = new JSONArray();
-                JSONObject json = new JSONObject();
-                json.put("display", "ID");
-                json.put("name", "f.id");
-                json.put("width", 60);
-                json.put("sortable", true);
-                json.put("align", "center");
-                json.put("hide", false);
-                aryColProps.put(json);
+        }
+        if (aryColProps == null) {
+            aryColProps = new com.alibaba.fastjson.JSONArray();
 
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "rating"));
-                json.put("name", "f.flow_level");
-                json.put("width", 35);
-                json.put("sortable", true);
-                json.put("align", "center");
-                json.put("hide", false);
-                aryColProps.put(json);
+            com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.id"));
+            json.put("field", "f.id");
+            json.put("width", 65);
+            json.put("sort", true);
+            json.put("align", "center");
+            json.put("hide", false);
+            aryColProps.add(json);
 
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "tit"));
-                json.put("name", "f.title");
-                json.put("width", 260);
-                json.put("sortable", true);
-                json.put("align", "left");
-                json.put("hide", false);
-                aryColProps.put(json);
-
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "type"));
-                json.put("name", "f.type_code");
-                json.put("width", 120);
-                json.put("sortable", true);
-                json.put("align", "center");
-                json.put("hide", false);
-                aryColProps.put(json);
-
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "organ"));
-                json.put("name", "f.userName");
-                json.put("width", 72);
-                json.put("sortable", true);
-                json.put("align", "center");
-                json.put("hide", false);
-                aryColProps.put(json);
-
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "startTime"));
-                json.put("name", "f.begin_date");
-                json.put("width", 99);
-                json.put("sortable", true);
-                json.put("align", "center");
-                json.put("hide", false);
-                aryColProps.put(json);
-
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "finallyApply"));
-                json.put("name", "f.finallyApply");
-                json.put("width", 74);
-                json.put("sortable", false);
-                json.put("align", "center");
-                json.put("hide", false);
-                aryColProps.put(json);
-
-                if (displayMode != WorkflowMgr.DISPLAY_MODE_DOING) {
-                    json = new JSONObject();
-                    json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "currentHandle"));
-                    json.put("name", "f.currentHandle");
-                    json.put("width", 81);
-                    json.put("sortable", false);
-                    json.put("align", "center");
-                    json.put("hide", false);
-                    aryColProps.put(json);
-                } else {
-                    json = new JSONObject();
-                    json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "remainTime"));
-                    json.put("name", "f.remainTime");
-                    json.put("width", 98);
-                    json.put("sortable", false);
-                    json.put("align", "center");
-                    json.put("hide", false);
-                    aryColProps.put(json);
-                }
-
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "state"));
-                json.put("name", "f.status");
+            com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+            if (cfg.getBooleanProperty("isFlowLevelDisplay")) {
+                json = new com.alibaba.fastjson.JSONObject();
+                json.put("title", getFlowColTitle("f.flow_level"));
+                json.put("field", "f.flow_level");
                 json.put("width", 80);
-                json.put("sortable", true);
+                json.put("sort", true);
                 json.put("align", "center");
                 json.put("hide", false);
-                aryColProps.put(json);
+                aryColProps.add(json);
+            }
 
-                json = new JSONObject();
-                json.put("display", SkinUtil.LoadString(request, "res.flow.Flow", "endTime"));
-                json.put("name", "f.end_date");
-                json.put("width", 80);
-                json.put("sortable", true);
-                json.put("align", "center");
-                json.put("hide", true);
-                aryColProps.put(json);
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.title"));
+            json.put("field", "f.title");
+            json.put("width", 350);
+            json.put("sort", true);
+            json.put("align", "left");
+            json.put("hide", false);
+            aryColProps.add(json);
 
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.type_code"));
+            json.put("field", "f.type_code");
+            json.put("width", 150);
+            json.put("sort", true);
+            json.put("align", "center");
+            json.put("hide", false);
+            aryColProps.add(json);
 
-                Leaf lf = new Leaf();
-                lf = lf.getLeaf(typeCode);
-                String formCode = lf.getFormCode();
-                if (!"".equals(formCode)) {
-                    FormDb fd = new FormDb();
-                    fd = fd.getFormDb(formCode);
-                    for (FormField ff : fd.getFields()) {
-                        json = new JSONObject();
-                        json.put("display", ff.getTitle());
-                        json.put("name", ff.getName());
-                        json.put("width", 80);
-                        json.put("sortable", true);
-                        json.put("align", "center");
-                        json.put("hide", true);
-                        aryColProps.put(json);
-                    }
-                }
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.userName"));
+            json.put("field", "f.userName");
+            json.put("width", 100);
+            json.put("sort", true);
+            json.put("align", "center");
+            json.put("hide", false);
+            aryColProps.add(json);
 
-                json = new JSONObject();
-                json.put("display", "操作");
-                json.put("name", "operate");
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.begin_date"));
+            json.put("field", "f.begin_date");
+            json.put("width", 105);
+            json.put("sort", true);
+            json.put("align", "center");
+            json.put("hide", false);
+            aryColProps.add(json);
+
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.finallyApply"));
+            json.put("field", "f.finallyApply");
+            json.put("width", 100);
+            json.put("sort", false);
+            json.put("align", "center");
+            json.put("hide", false);
+            aryColProps.add(json);
+
+            if (displayMode != WorkflowMgr.DISPLAY_MODE_DOING) {
+                json = new com.alibaba.fastjson.JSONObject();
+                json.put("title", getFlowColTitle("f.currentHandle"));
+                json.put("field", "f.currentHandle");
                 json.put("width", 100);
-                json.put("sortable", false);
+                json.put("sort", false);
                 json.put("align", "center");
                 json.put("hide", false);
-                aryColProps.put(json);
+                aryColProps.add(json);
+            } else {
+                json = new com.alibaba.fastjson.JSONObject();
+                json.put("title", getFlowColTitle("f.remainTime"));
+                json.put("field", "f.remainTime");
+                json.put("width", 100);
+                json.put("sort", false);
+                json.put("align", "center");
+                json.put("hide", false);
+                aryColProps.add(json);
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.status"));
+            json.put("field", "f.status");
+            json.put("width", 80);
+            json.put("sort", true);
+            json.put("align", "center");
+            json.put("hide", false);
+            aryColProps.add(json);
+
+            json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", getFlowColTitle("f.end_date"));
+            json.put("field", "f.end_date");
+            json.put("width", 100);
+            json.put("sort", true);
+            json.put("align", "center");
+            json.put("hide", true);
+            aryColProps.add(json);
+
+            // 加入所有字段
+            /*Leaf lf = new Leaf();
+            lf = lf.getLeaf(typeCode);
+            String formCode = lf.getFormCode();
+            if (!"".equals(formCode)) {
+                FormDb fd = new FormDb();
+                fd = fd.getFormDb(formCode);
+                for (FormField ff : fd.getFields()) {
+                    json = new com.alibaba.fastjson.JSONObject();
+                    json.put("title", ff.getTitle());
+                    json.put("field", ff.getName());
+                    json.put("width", 100);
+                    json.put("sort", true);
+                    json.put("align", "center");
+                    json.put("hide", true);
+                    aryColProps.add(json);
+                }
+            }*/
+
+            /*json = new com.alibaba.fastjson.JSONObject();
+            json.put("title", "操作");
+            json.put("field", "operate");
+            json.put("width", 150);
+            json.put("sort", false);
+            json.put("align", "center");
+            json.put("hide", false);
+            json.put("fixed", "right");
+            aryColProps.add(json);*/
         }
         return aryColProps;
     }
@@ -284,23 +318,20 @@ public class Leaf implements Serializable, ITagSupport {
     public Leaf() {
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
     }
 
     public Leaf(String code) {
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
         this.code = code;
         loadFromDb();
     }
 
     public void renew() {
-        if (logger == null) {
-            logger = Logger.getLogger(Leaf.class.getName());
-        }
         if (rmCache == null) {
             rmCache = RMCache.getInstance();
         }
@@ -348,8 +379,7 @@ public class Leaf implements Serializable, ITagSupport {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("loadFromDb: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -473,7 +503,7 @@ public class Leaf implements Serializable, ITagSupport {
                 v.addElement(getLeaf(c));
             }
         } catch (SQLException e) {
-            logger.error("getChildren: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getChildren: " + e.getMessage());
         } finally {
             conn.close();
         }
@@ -501,8 +531,7 @@ public class Leaf implements Serializable, ITagSupport {
                 v.addElement(getLeaf(c));
             }
         } catch (SQLException e) {
-            logger.error("getChildren: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -579,12 +608,10 @@ public class Leaf implements Serializable, ITagSupport {
                     LeafChildrenCacheMgr.remove(parent_code);
                 }
             } catch (Exception e) {
-                logger.error("update: " + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         } catch (SQLException e) {
-            logger.error("update: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         boolean re = r > 0;
         if (re) {
@@ -600,8 +627,9 @@ public class Leaf implements Serializable, ITagSupport {
      * @return boolean
      */
     public synchronized boolean update(String newParentCode) throws ErrMsgException {
-        if (newParentCode.equals(parent_code))
+        if (newParentCode.equals(parent_code)) {
             return false;
+        }
         if (newParentCode.equals(code)) {
             throw new ErrMsgException("不能将本节点设为父节点！");
         }
@@ -674,21 +702,22 @@ public class Leaf implements Serializable, ITagSupport {
 
                     // 将其原来的父结点的孩子数-1
                     Leaf oldParentLeaf = getLeaf(oldParentCode);
-                    oldParentLeaf.setChildCount(oldParentLeaf.getChildCount() - 1);
-                    oldParentLeaf.update();
-
+                    if (oldParentLeaf != null) {
+                        oldParentLeaf.setChildCount(oldParentLeaf.getChildCount() - 1);
+                        oldParentLeaf.update();
+                    } else {
+                        DebugUtil.e(getClass(), "update", "节点 oldParentCode:" + oldParentCode + "不存在");
+                    }
                     // 将其新父结点的孩子数 + 1
                     Leaf newParentLeaf = getLeaf(newParentCode);
                     newParentLeaf.setChildCount(newParentLeaf.getChildCount() + 1);
                     newParentLeaf.update();
                 }
             } catch (Exception e) {
-                logger.error("update: " + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         } catch (SQLException e) {
-            logger.error("update: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         boolean re = r == 1;
         if (re) {
@@ -753,8 +782,7 @@ public class Leaf implements Serializable, ITagSupport {
             conn.commit();
         } catch (SQLException e) {
             conn.rollback();
-            logger.error("AddChild: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return false;
         } finally {
             conn.close();
@@ -773,7 +801,7 @@ public class Leaf implements Serializable, ITagSupport {
             rmCache.remove(code, dirCache);
             LeafChildrenCacheMgr.remove(code);
         } catch (Exception e) {
-            logger.error("removeFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeFromCache: " + e.getMessage());
         }
     }
 
@@ -790,7 +818,7 @@ public class Leaf implements Serializable, ITagSupport {
             rmCache.invalidateGroup(dirCache);
             LeafChildrenCacheMgr.removeAll();
         } catch (Exception e) {
-            logger.error("removeAllFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeAllFromCache: " + e.getMessage());
         }
     }
 
@@ -799,7 +827,7 @@ public class Leaf implements Serializable, ITagSupport {
         try {
             leaf = (Leaf) rmCache.getFromGroup(code, dirCache);
         } catch (Exception e) {
-            logger.error("getLeaf1: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getLeaf1: " + e.getMessage());
         }
         if (leaf == null) {
             leaf = new Leaf(code);
@@ -809,8 +837,7 @@ public class Leaf implements Serializable, ITagSupport {
                 try {
                     rmCache.putInGroup(code, dirCache, leaf);
                 } catch (Exception e) {
-                    logger.error("getLeaf2: " + e.getMessage());
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         } else {
@@ -837,8 +864,7 @@ public class Leaf implements Serializable, ITagSupport {
                 }
             }
         } catch (SQLException e) {
-            logger.error("getLeavesUseForm: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -881,8 +907,7 @@ public class Leaf implements Serializable, ITagSupport {
 
         } catch (SQLException e) {
             conn.rollback();
-            logger.error("delsingle: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return false;
         } finally {
             removeAllFromCache();
@@ -919,8 +944,7 @@ public class Leaf implements Serializable, ITagSupport {
                 bleaf = getLeaf(rr.getString(1));
             }
         } catch (SQLException e) {
-            logger.error("getBrother: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return bleaf;
     }
@@ -963,8 +987,7 @@ public class Leaf implements Serializable, ITagSupport {
                 removeFromCache(bleaf.getCode());
             } catch (SQLException e) {
                 conn.rollback();
-                logger.error("move: " + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
                 return false;
             } finally {
                 conn.close();
@@ -993,8 +1016,7 @@ public class Leaf implements Serializable, ITagSupport {
                 lf = getLeaf(rs.getString(1));
             }
         } catch (SQLException e) {
-            logger.error("getLeafByFormCode: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1021,8 +1043,7 @@ public class Leaf implements Serializable, ITagSupport {
                 lf = getLeaf(rs.getString(1));
             }
         } catch (SQLException e) {
-            logger.error("getLeafByName: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1042,12 +1063,11 @@ public class Leaf implements Serializable, ITagSupport {
             rs = conn.executePreQuery();
             while (rs.next()) {
                 String c = rs.getString(1);
-                //logger.info("child=" + c);
+                //LogUtil.getLog(getClass()).info("child=" + c);
                 v.addElement(getLeaf(c));
             }
         } catch (SQLException e) {
-            logger.error("getChildren: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }

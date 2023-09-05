@@ -167,7 +167,7 @@
                     <option value="">不限</option>
                     <%
                         String searchUnitCode = ParamUtil.get(request, "searchUnitCode");
-                        if (License.getInstance().isPlatform()) {
+                        if (License.getInstance().isPlatformGroup()) {
                             DeptDb dd = new DeptDb();
                             DeptView dv = new DeptView(request, dd);
                             StringBuffer sb = new StringBuffer();
@@ -201,7 +201,7 @@
         <th width="150" height="25" align="left">编码</th>
         <th width="280" height="25" align="left">名称</th>
         <th width="215" align="left">表格名称</th>
-        <th width="215" align="left">流程类型</th>
+        <th width="150" align="left">流程类型</th>
         <th width="140" height="25" align="center">操作</th>
     </tr>
     </thead>
@@ -230,10 +230,8 @@
             &nbsp;<a href="javascript:;"
                      onClick="del('<%=ftd.getCode()%>')">删除</a>
             <%}%>
-            <%if (com.redmoon.oa.kernel.License.getInstance().isPlatform()) {%>
             &nbsp;<a href="javascript:;" onclick="addTab('<%=ftd.getName()%>视图', '<%=request.getContextPath()%>/admin/form_view_list.jsp?formCode=<%=ftd.getCode()%>')">视图</a>
             &nbsp;<a href="javascript:;" onclick="addTab('<%=ftd.getName()%>模块', '<%=request.getContextPath()%>/visual/module_setup_list.jsp?formCode=<%=ftd.getCode()%>')">模块</a>
-            <%}%>
         </td>
     </tr>
     <%}%>
@@ -269,7 +267,7 @@
                     {name: '导入', bclass: 'import1', onpress: action},
                     <%}%>
                     <%
-                    if (com.redmoon.oa.kernel.License.getInstance().isPlatformSuper()) {
+                    if (com.redmoon.oa.kernel.License.getInstance().isPlatformSrc()) {
                     %>
                     {name: '导出', bclass: 'export', onpress: action},
                     <%}%>

@@ -1,0 +1,68 @@
+#phraseBox {
+  margin: 0 auto 0;
+  position: absolute;
+  display: none;
+}
+
+#phraseBox cite {
+  position: relative;
+  margin: 0;
+  padding: 0 30px 1px;
+  background: transparent url(images/tip.gif) no-repeat 50px 10px;
+  font-style: normal;
+}
+
+#phraseBox .phraseCnt div {
+  float: left;
+}
+
+#phraseBox .phraseCnt .phraseIcon img {
+  margin: 2px 3px 2px 3px;
+}
+
+#phraseBox .phraseCnt {
+  width: 300px;
+  height: 150px;
+  clear: both;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  position: relative;
+  padding: 8px;
+  behavior: url(css/ie-css3.htc);
+  background-color: #fff9ec;
+  border: 1px solid #e5dcc6;
+  word-wrap: break-word;
+  line-height: 25px;
+  word-break: break-all;
+}
+
+#phraseBox .phraseCnt .phraseAdd {
+  cursor: pointer;
+  float: right;
+  margin-right: 10px;
+  border: 1px solid #c3c3c3;
+  width: 16px;
+  line-height: 16px;
+  text-align: center;
+  background-color: #fff;
+  font-size: 16px;
+}
+
+#phraseBox .phraseCnt .phraseClose {
+  cursor: pointer;
+  float: right;
+  border: 1px solid #c3c3c3;
+  width: 16px;
+  line-height: 16px;
+  text-align: center;
+  background-color: #fff;
+  font-size: 16px;
+}
+
+.tip-phrase-close {
+  color: red;
+  cursor: pointer;
+}

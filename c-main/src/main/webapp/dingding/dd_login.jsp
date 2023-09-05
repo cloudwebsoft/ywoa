@@ -1,6 +1,6 @@
 <%@ page language="java" import="com.redmoon.oa.android.Privilege" pageEncoding="utf-8" %>
 <%@ page import="com.redmoon.dingding.service.auth.AuthService" %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
     <title>应用</title>
@@ -50,10 +50,10 @@
             corpId : _config.corpId,
             onSuccess : function(info) {
                 $.ajax({
-                    url : 'do/dingding_do.jsp?code=' + info.code ,
-                    type : 'GET',
-                    success : function(data, status, xhr) {
-                        data = $.parseJSON(data);
+                    url : '../public/dingding/loginByCode?code=' + info.code ,
+                    type : 'POST',
+                    success : function(res, status, xhr) {
+                        var data = res.data;
                         window.location.href = "../weixin/message/msg_new_list.jsp?skey=" + data.skey;
                     },
                     error : function(xhr, errorType, error) {

@@ -4,7 +4,7 @@
 <%@page import="cn.js.fan.util.StrUtil"%>
 <%@page import="com.redmoon.oa.flow.WorkflowDb"%>
 <%@page import="com.redmoon.oa.flow.Leaf"%>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 	<head>
 		<title>位置</title>
@@ -20,6 +20,11 @@
 		<link rel="stylesheet" type="text/css"
 			href="../css/mui.picker.min.css" />
 		<link rel="stylesheet" href="../css/my_dialog.css" />
+		<style>
+			html, body, .mui-content {
+				height: 100%;
+			}
+		</style>
 	</head>
 
 	<body>
@@ -31,11 +36,12 @@
 		<a id='comp' class="mui-btn mui-btn-link mui-pull-right mui-btn-blue ">完成</a>
 		</header>
 		<div class="mui-content">
-			<div id="container" style="width:100%;height: 50%;margin:0 auto;" >
+			<div id="container" style="width:100%;height: 90%;margin:0 auto;" >
 			</div>
-			<span id="s_lo" style="margin-top:10px"></span>
+			<span id="s_lo" style="margin:10px"></span>
 		</div>
-		<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=3dd31b657f333528cc8b581937fd066a"></script>
+<%--		<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>--%>
+		<script type="text/javascript" src="http://api.map.baidu.com/getscript?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
 		<script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 		<script src="../js/mui.min.js"></script>
 		<script src="../js/macro/open_window_macro.js"></script>
@@ -64,7 +70,7 @@
 					lon = r.point.lng;
 					showMap(lat, lon);
 				}     
-			},{enableHighAccuracy: true})	
+			},{enableHighAccuracy: true})
 			/*
 			// 该方法定位不准确，有偏移
    			if(navigator.geolocation)

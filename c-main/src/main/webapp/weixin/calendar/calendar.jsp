@@ -7,13 +7,13 @@
     Privilege pvg = new Privilege();
     pvg.auth(request);
     String skey = pvg.getSkey();
-    String userName = pvg.getUserName();
 
     boolean isShared = ParamUtil.getBoolean(request, "isShared", false);
     String docTitle = "日程安排";
     if (isShared) {
         docTitle = "共享日程";
     }
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE html>
 <html>
@@ -62,10 +62,18 @@
 <script type="text/javascript" src="js/simple-calendar.js"></script>
 <script type="text/javascript" src="js/hammer-2.0.8-min.js"></script>
 <script type="text/javascript">
-	if(!mui.os.plus) {
+    var isUniWebview = <%=isUniWebview%>;
+
+    if(!mui.os.plus || isUniWebview) {
 		// 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
 		$('.mui-bar').remove();
 	}
+
+    mui.init({
+        keyEventBind: {
+            backbutton: !isUniWebview //关闭back按键监听
+        }
+    });
 
     var myCalendar = new SimpleCalendar('#calendar');
     $(function () {

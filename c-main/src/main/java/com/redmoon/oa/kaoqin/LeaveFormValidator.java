@@ -8,8 +8,6 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
@@ -27,8 +25,7 @@ import com.redmoon.oa.person.UserDb;
 import org.json.*;
 
 public class LeaveFormValidator implements IFormValidator {
-    Logger logger = Logger.getLogger(LeaveFormValidator.class.getName());
-    
+
     private boolean used = true;
     private String extraData = "";
     
@@ -90,7 +87,7 @@ public class LeaveFormValidator implements IFormValidator {
         	String idCard = "", cjgzsj = "";
 			java.util.Date workDate = null;
 
-			String sql = "select id from form_table_personbasic where user_name=" + StrUtil.sqlstr(userName);
+			String sql = "select id from ft_personbasic where user_name=" + StrUtil.sqlstr(userName);
 			com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
 			Iterator ir = fdao.list("personbasic", sql).iterator();
 			if (ir.hasNext()) {
@@ -195,8 +192,7 @@ public class LeaveFormValidator implements IFormValidator {
 			json = new JSONObject(extraData);
 			checkNJ = "true".equals(json.getString("isCheckNJ"));
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 

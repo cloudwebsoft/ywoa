@@ -1,5 +1,6 @@
 package com.cloudwebsoft.framework.util;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -33,8 +34,9 @@ public class IDCardUtil {
         String tipInfo = "1";// 记录错误信息
         String Ai = "";
 
-        if (null == IDStr || IDStr.trim().isEmpty())
-            return "身份证号码长度应该为15位或18位。";
+        if (null == IDStr || IDStr.trim().isEmpty()) {
+            return "身份证号码长度应该为15位或者18位。";
+        }
 
         // 判断号码的长度 15位或18位
         if (IDStr.length() != 15 && IDStr.length() != 18) {
@@ -47,7 +49,7 @@ public class IDCardUtil {
         } else if (IDStr.length() == 15) {
             Ai = IDStr.substring(0, 6) + "19" + IDStr.substring(6, 15);
         }
-        if (isNumeric(Ai) == false) {
+        if (!isNumeric(Ai)) {
             tipInfo = "身份证15位号码都应为数字 ; 18位号码除最后一位外，都应为数字。";
             return tipInfo;
         }
@@ -55,7 +57,7 @@ public class IDCardUtil {
         String strYear = Ai.substring(6, 10);// 年份
         String strMonth = Ai.substring(10, 12);// 月份
         String strDay = Ai.substring(12, 14);// 日期
-        if (isDate(strYear + "-" + strMonth + "-" + strDay) == false) {
+        if (!isDate(strYear + "-" + strMonth + "-" + strDay)) {
             tipInfo = "身份证出生日期无效。";
             return tipInfo;
         }
@@ -77,10 +79,8 @@ public class IDCardUtil {
                 tipInfo = "身份证生日不在有效范围。";
                 return tipInfo;
             }
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-        } catch (java.text.ParseException e) {
-            e.printStackTrace();
+        } catch (NumberFormatException | ParseException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
 
         // 判断地区码是否有效
@@ -91,7 +91,7 @@ public class IDCardUtil {
             return tipInfo;
         }
         //判断第18位校验码是否正确
-        if (isVarifyCode(Ai, IDStr) == false) {
+        if (!isVarifyCode(Ai, IDStr)) {
             tipInfo = "身份证校验码无效，不是合法的身份证号码";
             return tipInfo;
         }
@@ -115,7 +115,7 @@ public class IDCardUtil {
         String strVerifyCode = VarifyCode[modValue];
         Ai = Ai + strVerifyCode;
         if (IDStr.length() == 18) {
-            if (Ai.equals(IDStr) == false) {
+            if (!Ai.equals(IDStr)) {
                 return false;
             }
         }

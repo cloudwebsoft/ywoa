@@ -1,0 +1,453 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>菜单管理-菜单项</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link th:href="@{/lte/css/font-awesome.min.css?v=4.4.0}" rel="stylesheet"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <style>
+        .checkedBox {
+            /*width: 800px;*/
+            height: 29px;
+            border-bottom: 1px solid #ccc;
+            background: #eee;
+            padding: 0 15px 0 15px;
+            font-size: 12px;
+            overflow: hidden;
+        }
+
+        .checkedBox dt {
+            color: #454444;
+            line-height: 32px;
+            float: left;
+        }
+
+        .checkedBox dd {
+            float: left;
+            padding: 6px 8px 0 0;
+            margin-left: 10px;
+        }
+
+        .checkedBox dd a {
+            color: #608acc;
+            background: url(../images/close1.gif) right #fff no-repeat;
+            overflow: hidden;
+            display: block;
+            float: left;
+            height: 20px;
+            line-height: 20px;
+            border: 1px solid #b4c6dc;
+            padding: 0 20px 0 5px;
+        }
+
+        .checkedBox dd a:hover {
+            color: #47b4eb;
+            background: url(../images/close2.gif) right #fff no-repeat;
+            border: 1px solid #79bfe2;
+        }
+    </style>
+</head>
+<body>
+<form id="form1" method="post" role="form">
+    <table width="100%" class="table table-bordered">
+        <tr>
+            <td colspan="2" align="left" class="active">
+                <h5>修改</h5>
+            </td>
+        </tr>
+        <tr>
+            <td width="156" rowspan="8" align="left" style="vertical-align: top">
+                <div style="margin:5px;" th:inline="text">父节点：[[${parentName}]]
+                </div>
+                <div id="iconDiv" style="text-align:center; margin-top: 10px">
+                    <th:block th:if="${isShowIcon and (menu.icon ne null and menu.icon ne '')}">
+                        <img title="小图标" th:src="@{${skinPath} + '/icons/' + ${menu.icon}}"/>
+                    </th:block>
+                </div>
+                <div id="bigIconDiv" style="margin-top:10px; text-align:center">
+                    <th:block th:if="${menu.bigIcon ne ''}">
+                        <img title="大图标" th:src="@{'/images/bigicons/' + ${menu.bigIcon}}"/>
+                    </th:block>
+                </div>
+            </td>
+            <td align="left">
+                <div class="form-inline form-group">
+                    名称
+                    <input id="name" name="name" class="form-control" th:value="${menu.name}"/>
+                    <input name="code" type="hidden" th:value="${menu.code}"/>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+                <div class="form-inline form-group">
+                链接
+                <input name="link" class="form-control" th:value="${menu.link}"/>
+                target
+                <select id="target" name="target" class="form-control">
+                    <option value="mainFrame">右侧页面</option>
+                    <option value="_blank">_blank</option>
+                    <option value="_self">_self</option>
+                    <option value="_parent">_parent</option>
+                    <option value="_top">_top</option>
+                </select>
+                <input name="width" value="0" type="hidden"/>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="form-inline form-group">
+                描述
+                <input type="text" id="description" name="description" class="form-control" th:value="${menu.description}"/>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+                <div class="form-inline form-group">
+                <span th:if="${isShowIcon}" th:remove="tag">
+                    小图标
+                    <input name="icon" class="form-control" title="用于经典版界面" readonly th:value="${menu.icon}"/>
+                    <button id="btnSelIcon" class="btn btn-default">选择</button>
+                    &nbsp;&nbsp;
+                </span>
+                <span th:if="${isShowFontIcon}" th:remove="tag">
+                    <span title="用于轻简型界面">字体图标</span>
+                    <select id="fontIcon" name="fontIcon" style="width:150px" class="js-example-templating js-states form-control">
+                        <th:block th:each="font, stat : ${fontAry}" th:inline="text">
+                            <option th:value="${font}">
+                                <i th:attr="class='fa ' + ${font}"></i>
+                                [[${font}]]
+                            </option>
+                        </th:block>
+                    </select>
+                </span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="form-inline form-group">
+                    大图标
+                    <input id="bigIcon" name="bigIcon" title="用于门户快捷按钮、时尚型、绚丽型界面" readonly th:value="${menu.bigIcon}" class="form-control"/>
+                    <button id="btnSelBigIcon" name="button" class="btn btn-default">选择</button>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+              <span id="spanPvg">
+                  <div class="form-inline form-group">
+                    能看到菜单项的权限
+                    <input id="pvg" name="pvg" type="hidden" th:value="${menu.pvg}"/>
+                    <select id="pvgCode" name="pvgCode" class="form-control" onchange="onChangePvgCode()">
+                        <option value="">请选择</option>
+                            <th:block th:each="privilege, stat : ${allPrivList}">
+                                <th:block th:switch="${privilege.layer}">
+                                    <option th:case="2" th:value='${privilege.priv}' th:inline="text">&nbsp;&nbsp;&nbsp;&nbsp;[[${privilege.description}]]</option>
+                                    <option th:case="*" th:value='X' th:inline="text">[[${privilege.description}]]</option>
+                                </th:block>
+                            </th:block>
+                        <option value="!admin">非管理员</option>
+                    </select>
+                    （不选择表示全部人员都能看见）
+                  </div>
+                    <dl class="checkedBox">
+                        <dt>已选权限：</dt>
+                        <th:block th:each="json : ${aryPvg}">
+                            <dd><a href="javascript:;" th:attr="privCode=${json[priv]}" onclick="delSel(this)">[[${json[desc]}]]</a></dd>
+                        </th:block>
+                    </dl>
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+                <div class="form-inline form-group">
+                类型
+                <select id="preCode" name="preCode" onchange="onChangePreCode()" class="form-control">
+                    <option value="">
+                        链接
+                    </option>
+                    <option value="flow">流程</option>
+                    <option value="module">模块</option>
+                    <option value="basicdata">基础数据</option>
+                    <th:block th:utext="${itemOpts}"></th:block>
+                </select>
+                <span id="spanModule">
+                <select id="formCode" name="formCode" onchange="o('preCode').value='module';onChangePreCode()">
+                    <option value="">选择智能模块</option>
+                        <th:block th:each="module, stat : ${allModule}" th:inline="text">
+                            <option th:value="${module.code}" th:inline="text">[[${module.name}]]</option>
+                        </th:block>
+                    </select>
+                </span>
+                <span id="spanFlow">
+                    <select id="flowTypeCode" name="flowTypeCode" class="form-control" onchange="if (this.value=='not') {layer.msg('请选择流程类型！'); return;} o('preCode').value='flow'; onChangePreCode();">
+                    <th:block th:utext="${flowOpts}"></th:block>
+                    </select>
+                </span>
+                <span id="spanBasicdata">
+                    <select id="basicdata" name="basicdata" class="form-control" onchange="o('preCode').value='basicdata';onChangePreCode()">
+                    <option value="">选择基础数据类别</option>
+                    <th:block th:each="kind, stat : ${kindV}" th:inline="text">
+                    <option th:value="${kind.id}">
+                        [[${kind.name}]]
+                    </option>
+                    </th:block>
+                    </select>
+                </span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+                <div class="form-inline form-group">
+                    <span>
+                    <input name="isUse" value="1" th:checked="${menu.isUse==1}" type="checkbox"/>
+                    启用
+                    </span>
+                    <span th:if="${!isShowFontIcon}" th:remove="tag">
+                    <span title="允许在多个选项卡中同时打开">
+                    <input name="canRepeat" value="1" type="checkbox" th:checked="${menu.canRepeat==1}"/>
+                    多窗口
+                    </span>
+                    </span>
+                    <input type="hidden" name="isHome" th:value="${menu.isHome}"/>
+                    <th:block th:if="${isShowWidget and isPlatform}">
+                        <span title="是否为绚丽型界面窗口组件">
+                        <input id="isWidget" name="isWidget" type="checkbox" onclick="onclickIsWidget()" th:checked="${menu.isWidget==1}" value="1"/>
+                        窗口组件
+                        </span>
+                        <span id="spanWidgetProp">
+                        宽度
+                        <input id="widgetWidth" name="widgetWidth" th:value="${menu.widgetWidth}" class="form-control" size="3"/>
+                        高度
+                        <input id="widgetHeight" name="widgetHeight" th:value="${menu.widgetHeight}" class="form-control" size="3"/>
+                        </span>
+                    </th:block>
+                    <th:block th:if="!${realLink eq ''}">
+                    &nbsp;&nbsp;
+                    <span id="btnOpenMenu" style="cursor: pointer">打开菜单</span>
+                    </th:block>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div class="text-center">
+      <button id="btnOk" class="btn btn-default">确定</button>
+    </div>
+</form>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
+<script th:inline="javascript">
+    var oMenuIcon;
+    $(function () {
+        $('#btnOpenMenu').click(function() {
+            addTab('[(${menuName})]', [[${realLink}]]);
+        })
+
+        $('#fontIcon').val([[${menu.fontIcon}]]);
+        // 带图片
+        oMenuIcon = $("#fontIcon").select2({
+            width: 200,
+            templateResult: formatState,
+            templateSelection: formatState
+        });
+
+        $('#preCode').val([[${menu.preCode}]]);
+        $('#formCode').val([[${menu.formCode}]]);
+        $('#flowTypeCode').val([[${menu.formCode}]]);
+        $('#basicdata').val([[${menu.formCode}]]);
+        $('#target').val([[${menu.target}]]);
+
+        $('input').iCheck({
+            checkboxClass: 'icheckbox_minimal-grey',
+            radioClass: 'iradio_minimal-grey',
+            increaseArea: '10%' // optional
+        });
+
+        $('#formCode').select2();
+
+        onChangePreCode();
+
+        $('#form1').bootstrapValidator({
+            message: 'This value is not valid',
+            excluded: [':disabled', ':hidden', ':not(:visible)'],
+            // 配置校验图标
+            feedbackIcons: {
+                valid: 'glyphicon glyphicon-ok',    // 校验成功
+                invalid: 'glyphicon glyphicon-remove',   // 校验失败
+                validating: 'glyphicon glyphicon-refresh'  // 校验中
+            },
+            // 配置校验字段
+            fields: {
+                name: {
+                    message: '名称验证失败',
+                    validators: {
+                        notEmpty: {
+                            message: '名称不能为空'
+                        }
+                    }
+                }
+            }
+        }).on('success.form.bv', function (e) {
+            // 阻止默认的提交
+            e.preventDefault();
+
+            if (o("preCode").value == "module") {
+                if (o("formCode").value == "") {
+                    layer.msg("请选择模块！", {
+                        offset: '6px'
+                    });
+                    return false;
+                }
+            }
+            if (o("preCode").value == "flow") {
+                if (o("flowTypeCode").value == "" || o("flowTypeCode").value == "not") {
+                    layer.msg("请选择流程！", {
+                        offset: '6px'
+                    });
+                    return false;
+                }
+            }
+
+            $.ajax({
+                type: "post",
+                url: "updateMenu.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret==1) {
+                        layer.msg(data.msg, {
+                            // icon: 1,
+                            offset: '6px',
+                            time: 2000 // 2秒关闭（如果不配置，默认是3秒）
+                        }, function() {
+                            window.parent.leftFrame.location.href = "menuTree.do?nodeSelected=" + $('#code').val();
+                        });
+                    }
+                    else {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+
+        $('#btnSelIcon').click(function(e) {
+            e.preventDefault();
+            openWin('menu_icon_sel.jsp', 800, 600);
+        });
+
+        $('#btnSelBigIcon').click(function(e) {
+            e.preventDefault();
+            openWin('menu_big_icon_sel.jsp', 800, 600);
+        });
+    });
+
+    function formatState(state) {
+        if (!state.id) {
+            return state.text;
+        }
+        var $state = $(
+            '<span><i class="fa ' + state.id + '"></i>&nbsp;&nbsp;' + state.text + '</span>'
+        );
+        return $state;
+    };
+
+    function addSel(val, desc) {
+        $(".checkedBox").append("<dd><a href='javascript:;' privCode='" + val + "' onclick='delSel(this)'>" + desc + "</a></dd>");
+    }
+
+    function delSel(obj) {
+        $(obj).parent().remove();
+        var privCode = $(obj).attr("privCode");
+        var val = "," + o("pvg").value;
+        val = val.replace(new RegExp("," + privCode, "gm"), "");
+        val = val.substring(1);
+        o("pvg").value = val;
+    }
+
+    function onChangePvgCode() {
+        if (o("pvgCode").value == "X") {
+            layer.msg("您选择的是权限类别，请选择权限项", {
+                offset: '6px'
+            });
+            return;
+        }
+
+        if (o("pvgCode").value == "") {
+            return;
+        }
+
+        if (o("pvg").value == "") {
+            o("pvg").value = o("pvgCode").value;
+            addSel(o("pvgCode").value, $("#pvgCode").find("option:selected").text());
+        } else {
+            o("pvg").value += "," + o("pvgCode").value;
+            addSel(o("pvgCode").value, $("#pvgCode").find("option:selected").text());
+        }
+    }
+
+    function onChangePreCode() {
+        if (o("preCode").value == "") {
+            o("link").disabled = false;
+
+            o("pvgCode").disabled = false;
+            o("pvg").disabled = false;
+            $('#spanPvg').show();
+            $('#spanFlow').hide();
+            $('#spanModule').hide();
+            $('#spanBasicdata').hide();
+        } else if (o("preCode").value == "flow") {
+            o("link").value = "";
+            o("link").disabled = true;
+            $('#spanPvg').hide();
+            $('#spanFlow').show();
+            $('#spanModule').hide();
+            $('#spanBasicdata').hide();
+        } else if (o("preCode").value == "module") {
+            o("link").value = "";
+            o("link").disabled = true;
+            $('#spanPvg').hide();
+            $('#spanFlow').hide();
+            $('#spanModule').show();
+            $('#spanBasicdata').hide();
+        } else if (o("preCode").value == "basicdata") {
+            o("link").value = "";
+            o("link").disabled = true;
+            $('#spanPvg').hide();
+            $('#spanFlow').hide();
+            $('#spanModule').hide();
+            $('#spanBasicdata').show();
+        } else {
+            $('#spanFlow').hide();
+            $('#spanModule').hide();
+            $('#spanBasicdata').hide();
+        }
+    }
+
+    function selIcon(icon) {
+        o("icon").value = icon;
+        o("iconDiv").innerHTML = "<img src='.." + "[(${skinPath})]" + "/icons/" + icon + "'>";
+    }
+
+    function selBigIcon(icon) {
+        o("bigIcon").value = icon;
+        o("bigIconDiv").innerHTML = "<img src='../images/bigicons/" + icon + "'>";
+    }
+</script>
+</body>
+</html>

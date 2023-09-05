@@ -1,4 +1,5 @@
-<%@ page contentType="text/html; charset=utf-8" language="java" import="java.sql.*" errorPage="" %><%@page import="cn.js.fan.util.*"%><%@page import="cn.js.fan.web.*"%><%@page import="com.redmoon.oa.fileark.*"%><%@page import="org.json.*"%><%@page import="java.util.*"%><%@page import="java.io.*"%><%@page import="java.net.*"%><%@page import="com.redmoon.oa.map.*"%><%
+<%@ page contentType="text/html; charset=utf-8" language="java" import="java.sql.*" errorPage="" %><%@page import="cn.js.fan.util.*"%><%@page import="cn.js.fan.web.*"%><%@page import="com.redmoon.oa.fileark.*"%><%@page import="org.json.*"%><%@page import="java.util.*"%><%@page import="java.io.*"%><%@page import="java.net.*"%><%@page import="com.redmoon.oa.map.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %><%
 /*
 - 功能描述：移动手机端使用
 - 访问规则：手机端口文件柜
@@ -12,17 +13,16 @@
   com.redmoon.oa.android.Privilege pri = new com.redmoon.oa.android.Privilege();
   String userName = pri.getUserName(skey);
 
-  if(userName.equals("")){
-	 try {
-				result.put("res","-1");
-				result.put("msg","skey不存在");
-				out.println(result.toString());
-				return;
-			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	}
+    if (userName.equals("")) {
+        try {
+            result.put("res", "-1");
+            result.put("msg", "skey不存在");
+            out.println(result.toString());
+            return;
+        } catch (JSONException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+    }
 
   int id = ParamUtil.getInt(request, "id");
   LocationDb ld = new LocationDb();
@@ -35,10 +35,8 @@
 			out.println(result.toString());
 			return;
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
-	
   }
   
   

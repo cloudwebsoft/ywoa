@@ -1,6 +1,7 @@
 package cn.js.fan.db;
 
 import cn.js.fan.util.DateUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.util.*;
 import java.sql.Timestamp;
@@ -47,7 +48,6 @@ public class ResultRecord implements java.io.Serializable {
         if (itg==null) {
             throw new IllegalArgumentException(colname + " is not exist.");
         }
-        // System.out.println(this.getClass().getName() + " colname=" + colname + " mapIndex=" + mapIndex);
         return getString(itg.intValue());
     }
 
@@ -204,7 +204,7 @@ public class ResultRecord implements java.io.Serializable {
             d = getDate(itg.intValue());
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return d;
     }
@@ -219,7 +219,7 @@ public class ResultRecord implements java.io.Serializable {
         try {
             d = getTimestamp(itg.intValue());
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return d;
     }
@@ -294,9 +294,7 @@ public class ResultRecord implements java.io.Serializable {
                 try {
                     return Double.parseDouble((String) obj);
                 } catch (NumberFormatException e1) {
-                    System.out.println(getClass().getName() + " getDouble:" +
-                                       e1.getMessage());
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             else {
@@ -330,9 +328,7 @@ public class ResultRecord implements java.io.Serializable {
                 try {
                     return Float.parseFloat((String) obj);
                 } catch (NumberFormatException e1) {
-                    System.out.println(this.getClass().getName() + " getFloat:" +
-                                       e1.getMessage());
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             else {
@@ -379,9 +375,7 @@ public class ResultRecord implements java.io.Serializable {
                 try {
                     return Integer.parseInt((String) obj);
                 } catch (NumberFormatException e1) {
-                    System.out.println(this.getClass().getName() + " getInt:" +
-                                       e1.getMessage());
-                    e1.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             } else {
                 throw new ClassCastException("obj = " + obj + " class=" + obj.getClass());
@@ -427,9 +421,7 @@ public class ResultRecord implements java.io.Serializable {
         try {
             d = (Date) obj;
         } catch (ClassCastException e) {
-            System.out.println(this.getClass().getName() + " getDate:" +
-                               e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return d;
     }
@@ -440,9 +432,7 @@ public class ResultRecord implements java.io.Serializable {
         try {
             d = (Timestamp) obj;
         } catch (ClassCastException e) {
-            System.out.println(this.getClass().getName() + " getTimestamp:" +
-                               e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return d;
     }

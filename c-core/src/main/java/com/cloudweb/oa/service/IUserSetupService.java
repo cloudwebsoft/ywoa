@@ -38,4 +38,6 @@ public interface IUserSetupService extends IService<UserSetup> {
     String getWallpaperPath(String userName);
 
     boolean clearToken(String token);
+
+    String getPortraitForFront(User user);
 }

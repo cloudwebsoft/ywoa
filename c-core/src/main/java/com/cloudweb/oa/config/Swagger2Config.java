@@ -39,11 +39,11 @@ public class Swagger2Config {
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 //标题
-                .title("Spring Boot2中采用Swagger2构建RESTful APIs")
-                .description("通过访问swagger-ui.html,实现接口测试、文档生成")
-                .termsOfServiceUrl("http://localhost:8888/oa/swagger-ui.html")
+                .title("CWOA接口说明文档")
+                .description("CWOA接口说明文档")
+                .termsOfServiceUrl("http://localhost:8086/tzcj/swagger-ui.html")
                 //设置联系方式
-                .contact(new Contact("bluewind", "https://www.cloudwebsoft.com", "1119032388@qq.com"))
+                .contact(new Contact("cws", "https://www.cloudwebsoft.com", "someone@qq.com"))
                 .version("1.0")
                 .build();
     }

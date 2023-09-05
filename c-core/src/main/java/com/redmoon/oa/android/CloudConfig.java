@@ -4,10 +4,16 @@ import java.io.*;
 import java.net.*;
 
 import cn.js.fan.util.*;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudwebsoft.framework.util.*;
-import org.apache.log4j.*;
 import org.jdom.*;
 import org.jdom.input.*;
+import org.jdom.output.Format;
+import org.jdom.output.XMLOutputter;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+
 import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,34 +25,46 @@ public class CloudConfig {
 
     private String cfgpath;
 
-    Logger logger;
-
     Document doc = null;
     Element root = null;
 
     public static CloudConfig cfg = null;
-    private static Object initLock = new Object();
+    private static final Object initLock = new Object();
 
     public CloudConfig() {
     }
 
     public void init() {
-        logger = Logger.getLogger(CloudConfig.class.getName());
         URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
         cfgpath = cfgURL.getFile();
         cfgpath = URLDecoder.decode(cfgpath);
-        properties = new XMLProperties(cfgpath);
+        // properties = new XMLProperties(cfgpath);
 
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+            properties = new XMLProperties(CONFIG_FILENAME, doc);
+
+            /*FileInputStream fin = new FileInputStream(cfgpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
+            fin.close();*/
         } catch (org.jdom.JDOMException e) {
             LogUtil.getLog(getClass()).error("init:" + e.getMessage());
         } catch (java.io.IOException e) {
             LogUtil.getLog(getClass()).error("init2:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -78,13 +96,14 @@ public class CloudConfig {
             return Integer.parseInt(p);
         }else if ("-1".equals(p)) {
         	return -1;
-        } else
+        } else {
             return -65536;
+        }
     }
 
     public boolean getBooleanProperty(String name) {
         String p = getProperty(name);
-        return p.equals("true");
+        return "true".equals(p);
     }
 
     public void setProperty(String name, String value) {
@@ -127,4 +146,105 @@ public class CloudConfig {
     	return true;
     }
 
+
+    public void writemodify() {
+        String indent = "    ";
+        Format format = Format.getPrettyFormat();
+        format.setIndent(indent);
+        format.setEncoding("utf-8");
+        XMLOutputter outp = new XMLOutputter(format);
+        try {
+            FileOutputStream fout = new FileOutputStream(cfgpath);
+            outp.output(doc, fout);
+            fout.close();
+        } catch (IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+        reload();
+    }
+
+    public JSONArray getDevelopers() {
+        JSONArray arr = new JSONArray();
+        Element developers = root.getChild("developers");
+        if (developers == null) {
+            return arr;
+        }
+
+        List users = developers.getChildren("user");
+        for (Object obj : users) {
+            Element user = (Element)obj;
+            JSONObject json = new JSONObject();
+            json.put("userName", user.getChildText("userName"));
+            json.put("userSecret", user.getChildText("userSecret"));
+            arr.add(json);
+        }
+        return arr;
+    }
+
+    public boolean modifyDeveloper(String userName, String userSecret) {
+        Element developers = root.getChild("developers");
+        if (developers == null) {
+            return false;
+        }
+        List users = developers.getChildren("user");
+        for (Object obj : users) {
+            Element user = (Element)obj;
+            if (userName.equals(user.getChildText("userName"))) {
+                user.getChild("userSecret").setText(userSecret);
+                writemodify();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean delDeveloper(String userName) {
+        Element developers = root.getChild("developers");
+        if (developers == null) {
+            return false;
+        }
+        List users = developers.getChildren("user");
+        for (Object obj : users) {
+            Element user = (Element)obj;
+            if (userName.equals(user.getChildText("userName"))) {
+                developers.removeContent(user);
+                writemodify();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean addDeveloper(String userName, String userSecret) {
+        Element developers = root.getChild("developers");
+        if (developers == null) {
+            return false;
+        }
+        Element user = new Element("user");
+        Element elUserName = new Element("userName");
+        elUserName.addContent(userName);
+        Element elUserSecret = new Element("userSecret");
+        elUserSecret.addContent(userSecret);
+        user.addContent(elUserName);
+        user.addContent(elUserSecret);
+
+        developers.addContent(user);
+        writemodify();
+        return true;
+    }
+
+    public String getUserSecret(String userName) {
+        Element developers = root.getChild("developers");
+        if (developers == null) {
+            return null;
+        }
+        List users = developers.getChildren("user");
+        for (Object obj : users) {
+            Element user = (Element)obj;
+            if (userName.equals(user.getChildText("userName"))) {
+                return user.getChildText("userSecret");
+            }
+        }
+        return null;
+    }
 }

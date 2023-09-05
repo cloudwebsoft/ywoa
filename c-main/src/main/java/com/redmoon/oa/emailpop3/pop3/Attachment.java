@@ -3,6 +3,9 @@ package com.redmoon.oa.emailpop3.pop3;
 import javax.mail.*;
 import javax.mail.internet.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.kit.util.FileInfo;
+
 import java.io.InputStream;
 
 /**
@@ -31,7 +34,7 @@ public class Attachment {
                 ext = "";
             size = part.getSize();
         } catch (Exception e) {
-            System.out.println("Attachment:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         this.num = num;
     }

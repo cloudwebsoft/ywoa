@@ -51,8 +51,8 @@ a:focus {
 }
 
 .nav > li > a {
-    color: #a7b1c2;
-    font-weight: 600;
+    color: #c6cdd8;
+    font-weight: 500;
     padding: 14px 20px 14px 25px;
 }
 
@@ -82,7 +82,7 @@ a:focus {
 }
 
 .nav > li > a i {
-    margin-right: 6px;
+    margin-right: 15px;
 }
 
 .navbar {
@@ -4110,6 +4110,7 @@ table.table-mail tr td {
 .ibox-title h5 {
     display: inline-block;
     font-size: 14px;
+    font-weight: bold;
     margin: 0 0 7px;
     padding: 0;
     text-overflow: ellipsis;
@@ -7586,7 +7587,7 @@ body.skin-3 {
 }
 
 .navbar-static-side {
-    background: #2f4050;
+    background: #223443;
 }
 
 .nav-close {

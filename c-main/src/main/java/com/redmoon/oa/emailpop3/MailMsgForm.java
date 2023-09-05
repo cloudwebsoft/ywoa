@@ -6,6 +6,7 @@ import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.db.SQLFilter;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.kit.util.FileUpload;
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class MailMsgForm extends AbstractForm {
                 throw new ErrMsgException("ret=" + ret + " " + fileUpload.getErrMessage());
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
         }
         return fileUpload;
     }
@@ -138,7 +139,6 @@ public class MailMsgForm extends AbstractForm {
 
     public String chkFrom() {
         String from = fileUpload.getFieldValue("email");
-        // System.out.println("from=" + from);
         if (from.equals("")) {
             log("发送者必须填写！");
         }

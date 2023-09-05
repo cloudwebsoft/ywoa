@@ -1,15 +1,11 @@
 package com.redmoon.weixin.mgr;
 
-
 import java.util.List;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import org.jdom.Element;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import cn.js.fan.util.StrUtil;
-
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.config.Constant;
 
@@ -144,8 +140,6 @@ public class WXMenuMgr extends WXBaseMgr {
 				JSONObject resObj = new JSONObject();
 				resObj.put("button", btnArr);
 
-				// System.out.println(getClass() + " resObj=" + resObj);
-				
 				// deleteMenu(StrUtil.toInt(agentId)); //删除菜单
 				createMenu(isWork, StrUtil.toInt(agentId), resObj.toString(), agentSecret);//创建菜单
 			}
@@ -161,13 +155,11 @@ public class WXMenuMgr extends WXBaseMgr {
 					String type = btnEle.getChild("type").getText();
 					String name = btnEle.getChild("name").getText();
 					String urls = btnEle.getChild("url").getText();
-					//System.out.println(urls);
 					String url = "https://open.weixin.qq.com/connect/oauth2/authorize?appid="+corpId+"&redirect_uri="+StrUtil.UrlEncode(urls)+"&response_type=codeagentid=" + agentId + "&scope=snsapi_base#wechat_redirect";
 					String serverName = Config.getInstance().getProperty("serverName");
 					if (!serverName.equals("qyapi.weixin.qq.com")) {
 						url = "https://" + serverName + "/connect/oauth2/authorize?appid="+corpId+"&redirect_uri="+StrUtil.UrlEncode(urls)+"&response_type=code&agentid=" + agentId + "&scope=snsapi_base#wechat_redirect";
 					}
-					// System.out.println(url);
 					JSONObject jsonObj = new JSONObject();
 					jsonObj.put("type",type);
 					jsonObj.put("name", name);
@@ -176,7 +168,6 @@ public class WXMenuMgr extends WXBaseMgr {
 				}
 				JSONObject resultObj = new JSONObject();
 				resultObj.put("button", jsonArr);
-				System.out.println(getClass() + " jsonArr=" + jsonArr);
 				// deleteMenu(StrUtil.toInt(agentId)); //删除菜单
 				createMenu(isWork, StrUtil.toInt(agentId), resultObj.toString(), agentSecret);//创建菜单
 			}

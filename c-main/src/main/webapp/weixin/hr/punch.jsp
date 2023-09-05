@@ -214,10 +214,15 @@
         {
             content: '\e471';
         }
+
+        .mui-icon-arrowleft:before {
+            content: '\e582';
+        }
     </style>
     <%--<link rel="stylesheet" href="../css/mui.css">--%>
     <link rel="stylesheet" href="../../js/toastr/toastr.min.css">
-    <script type="text/javascript" src="https://api.map.baidu.com/api?v=2.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
+<%--    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>--%>
+    <script type="text/javascript" src="http://api.map.baidu.com/getscript?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
     <script src="../../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
     <script type="text/javascript" src="../js/mui.js"></script>
@@ -230,6 +235,7 @@
 </header>
 <div class="mui-content">
     <%
+        boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
         String code = ParamUtil.get(request, "code");
         Privilege pvg = new Privilege();
         pvg.auth(request);
@@ -339,10 +345,18 @@
 </jsp:include>
 </body>
 <script>
-    if (!mui.os.plus) {
+    var isUniWebview = <%=isUniWebview%>;
+
+    if(!mui.os.plus || isUniWebview) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
     }
+
+    mui.init({
+        keyEventBind: {
+            backbutton: !isUniWebview //关闭back按键监听
+        }
+    });
 
     var type = <%=aryPunch[0]%>;
     var isLocationAbnormal = false;
@@ -401,7 +415,7 @@
                         if (data.ret == 1) {
                             // 如果迟到或者早退，则说明理由
                             var url = "punch_result.jsp?skey=<%=skey%>&result=" + data.result + "&min=" + data.min + "&isLocationAbnormal=" + isLocationAbnormal;
-                            url += "&address=" + encodeURI(address) + "&id=" + data.id;
+                            url += "&address=" + encodeURI(address) + "&id=" + data.id + "&isUniWebview=" + isUniWebview;
                             window.location.href = url;
                         } else {
                             toastr.info(data.msg);

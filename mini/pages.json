@@ -1,0 +1,309 @@
+{
+	"easycom": {
+		// 下载安装的方式，需要"@/"
+		// "uni-(.*)": "@/components/uni-$1/uni-$1.vue", //在components文件夹中以   uni-   开头的组件
+		// "vue-file-(.*)": "@/uview-ui/components/u-$1/u-$1.vue",
+		// npm安装方式，注意不能用cnpm和yarn，否则会报["usingComponents"]["u-button"] 未找到
+		"^u-(.*)": "uview-ui/components/u-$1/u-$1.vue"
+	},
+	"pages": [{
+			"path": "pages/index/indexPage", // 空白页入口
+			"style": {
+				"navigationBarTitleText": "",
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/login/login", // 登录
+			"style": {
+				"navigationBarTitleText": "",
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/login/selectRole", // 角色选择
+			"style": {
+				"navigationBarTitleText": "选择角色"
+			}
+		},
+		{
+			"path": "pages/login/setAppBaseUrl", // 设置基地址
+			"style": {
+				"navigationBarTitleText": "设置地址"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				// "navigationStyle": "custom",
+				"enablePullDownRefresh": true
+				// "app-plus": {
+				// 	"titleNView": false
+				// }
+			}
+		},
+		{
+			"path": "pages/index/auth",
+			"style": {
+				"navigationBarTitleText": "授权",
+				// "navigationStyle": "custom",
+				"enablePullDownRefresh": false
+				// "app-plus": {
+				// 	"titleNView": false
+				// }
+			}
+		},
+		{
+			"path": "pages/userCenter/index",
+			"style": {
+				"navigationBarTitleText": "我的",
+				// "navigationStyle": "custom",
+				"app-plus": {
+					// "titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/userCenter/myInfo",
+			"style": {
+				"navigationBarTitleText": "个人信息",
+				// "navigationStyle": "custom",
+				"app-plus": {
+					// "titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/userCenter/changeMyPassword",
+			"style": {
+				"navigationBarTitleText": "修改密码",
+				// "navigationStyle": "custom",
+				"app-plus": {
+					// "titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/applications/applications",
+			"style": {
+				"navigationBarTitleText": "应用"
+				// "navigationStyle": "custom",
+				// "app-plus": {
+				// 	"titleNView": false
+				// }
+			}
+		}
+	],
+	"subPackages": [{
+		"root": "application",
+		"pages": [{
+				"path": "news/newsShowPage",
+				"style": {
+					"navigationBarTitleText": "消息详情",
+					"enablePullDownRefresh": false
+				}
+			},
+			{
+				"path": "sysMessage",
+				"style": {
+					"navigationBarTitleText": "系统消息",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "calendar",
+				"style": {
+					"navigationBarTitleText": "日程",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "calendarShared",
+				"style": {
+					"navigationBarTitleText": "共享日程",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "punch",
+				"style": {
+					"navigationBarTitleText": "打卡",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "address",
+				"style": {
+					"navigationBarTitleText": "通讯录",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "noticeList",
+				"style": {
+					"navigationBarTitleText": "通知公告",
+					"enablePullDownRefresh": true
+					// "app-plus": {
+					// 	"titleNView": {
+					// 		"buttons": [{
+					// 			"text": "+",
+					// 			// "fontSrc": "/static/icon/iconfont.ttf",
+					// 			"fontSize": "48rpx",
+					// 			"color": "#ffffff"
+					// 		}]
+					// 	}
+					// }
+				}
+			},
+			{
+				"path": "filearkDir",
+				"style": {
+					"navigationBarTitleText": "文档中心",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "waitProcessListH5",
+				"style": {
+					"navigationBarTitleText": "待办流程",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "initProcessListH5",
+				"style": {
+					"navigationBarTitleText": "发起流程",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "hadProcessListH5",
+				"style": {
+					"navigationBarTitleText": "我的流程",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "processInfo",
+				"style": {
+					"navigationBarTitleText": "处理流程",
+					"enablePullDownRefresh": false
+				}
+			},
+			{
+				"path": "moduleAddEdit",
+				"style": {
+					"navigationBarTitleText": "编辑",
+					"enablePullDownRefresh": false
+				}
+			},
+			{
+				"path": "chilPage/chilPage/fileView",
+				"style": {
+					"navigationBarTitleText": "预览",
+					"enablePullDownRefresh": false
+				}
+			},
+			{
+				"path": "chilPage/rectificationNoticeDetails",
+				"style": {
+					"navigationBarTitleText": "详情"
+				}
+			},
+			{
+				"path": "moduleList",
+				"style": {
+					"navigationBarTitleText": "",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "moduleShow",
+				"style": {
+					"navigationBarTitleText": "",
+					"enablePullDownRefresh": true
+				}
+			},
+			{
+				"path": "process",
+				"style": {
+					"navigationBarTitleText": ""
+				}
+			}
+		]
+	}, {
+		"root": "cmn",
+		"pages": [{
+			"path": "changePassword",
+			"style": {
+				"navigationBarTitleText": "修改密码"
+			}
+		},{
+			"path": "forgetPassword",
+			"style": {
+				"navigationBarTitleText": "忘记密码"
+			}
+		}]
+	}],
+	"preloadRule": {
+		"pages/index/index": { //想要实现预加载的页面名称
+			"network": "all", //指定网络 all 不限网络   wifi：仅wifi
+			"packages": [
+				"__APP__"
+			] //分包的 root 或 name
+		},
+		"pages/index/index": { //想要实现预加载的页面名称
+			"network": "all", //指定网络 all 不限网络   wifi：仅wifi
+			"packages": [
+				"application"
+			] //分包的 root 或 name
+		}
+	},
+	"globalStyle": {
+		// "navigationStyle": "custom", // 设置成 custom 可解决微信H5双标题的问题
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "APP",
+		"navigationBarBackgroundColor": "#1c6ec4",
+		"backgroundColor": "#FFFFFF"
+	},
+	"tabBar": {
+		"color": "#999999",
+		"selectedColor": "#999999",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"height": "70px",
+		"fontSize": "12px",
+		"list": [{
+				"pagePath": "pages/index/index",
+				"iconPath": "static/tabBar/home.png",
+				"selectedIconPath": "static/tabBar/home-active.png",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/applications/applications",
+				"iconPath": "static/tabBar/application.png",
+				"selectedIconPath": "static/tabBar/application-active.png",
+				"text": "应用"
+			},
+			{
+				"pagePath": "pages/userCenter/index",
+				"iconPath": "static/tabBar/user.png",
+				"selectedIconPath": "static/tabBar/user-active.png",
+				"text": "我的"
+			}
+		]
+	},
+	"condition": { //模式配置，仅开发期间生效
+		"current": 0, //当前激活的模式(list 的索引项)
+		"list": [{
+			"name": "", //模式名称
+			"path": "pages/index/indexPage", //启动页面，必选
+			"query": "" //启动参数，在页面的onLoad函数里面得到
+		}]
+	}
+}

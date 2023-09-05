@@ -18,6 +18,7 @@
 <%@page import="com.redmoon.oa.flow.macroctl.DeptSelectCtl"%>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr"%>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit"%>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	String flowTypeCode = ParamUtil.get(request,"flowTypeCode");
@@ -30,6 +31,9 @@
 	String strToghter = "";
 	while(ir1.hasNext()){
 		roleDb1 = (RoleDb)ir1.next();
+		if (roleDb1.getCode().equals(ConstUtil.ROLE_MEMBER)) {
+			continue;
+		}
 		strToghter += "<option value='"+roleDb1.getCode()+"'>"+roleDb1.getDesc()+"</option>";
 	}
 	
@@ -425,7 +429,9 @@
 	    					Iterator ir = roleDb.list().iterator();
 	    					while(ir.hasNext()){
 	    						roleDb = (RoleDb)ir.next();
-	    					
+								if (roleDb.getCode().equals(ConstUtil.ROLE_MEMBER)) {
+									continue;
+								}
 	    				%>
 	    					<option value="<%=roleDb.getCode() %>"><%=roleDb.getDesc() %></option>
 	    				<%
@@ -528,7 +534,9 @@
 	    					Iterator ir = roleDb.list().iterator();
 	    					while(ir.hasNext()){
 	    						roleDb = (RoleDb)ir.next();
-	    					
+								if (roleDb.getCode().equals(ConstUtil.ROLE_MEMBER)) {
+									continue;
+								}
 	    				%>
 	    					<option value="<%=roleDb.getCode() %>"><%=roleDb.getDesc() %></option>
 	    				<%
@@ -692,7 +700,9 @@
 	    					Iterator ir = roleDb.list().iterator();
 	    					while(ir.hasNext()){
 	    						roleDb = (RoleDb)ir.next();
-	    					
+	    						if (roleDb.getCode().equals(ConstUtil.ROLE_MEMBER)) {
+	    							continue;
+								}
 	    				%>
 	    					<option value="<%=roleDb.getCode() %>"><%=roleDb.getDesc() %></option>
 	    				<%

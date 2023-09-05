@@ -4,3 +4,7 @@ sohu.com
 sina.com
 google.cn
 google.com
+servicewechat.com
+localhost
+192.168.3.77
+192.168.3.70

@@ -4,7 +4,6 @@
 <%@ page import="org.apache.lucene.search.*,org.apache.lucene.document.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.fileark.*" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <!DOCTYPE html>
 <html>
 <head>

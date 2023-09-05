@@ -71,6 +71,7 @@
 	</div>
 </div>
 
+<script type="text/javascript" src="../../inc/common.js"></script>
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/macro/open_window_macro.js"></script>
 <script src="../js/mui.min.js"></script>
@@ -78,6 +79,7 @@
 <script src="../js/mui.indexedlist.js"></script>
 <script src="../js/jq_mydialog.js"></script>
 <script src="../js/macro/macro.js"></script>
+<script type="text/javascript" src="../js/newPopup.js"></script>
 <script type="text/javascript" src="../js/config.js"></script>
 <script type="text/javascript" src="../js/base/mui.form.js"></script>
 <script type="text/javascript" src="../js/mui.nest_sheet.js"></script>
@@ -92,7 +94,7 @@
     String parentFields = ParamUtil.get(request, "parentFields");
     int isWx = ParamUtil.getInt(request, "isWx", 0);
     String parentModuleCode = ParamUtil.get(request, "parentModuleCode");
-    if (parentCode.equals("")) {
+    if ("".equals(parentCode)) {
         if (flowId != -1) {
             WorkflowDb wf = new WorkflowDb();
             wf = wf.getWorkflowDb(flowId);
@@ -112,8 +114,8 @@
     int id = ParamUtil.getInt(request, "id", 0);
 
     String pageType = ParamUtil.get(request, "pageType");
-
 %>
+<script src="<%=request.getContextPath()%>/weixin/flow/form_js/<%=dFormCode%>.jsp?flowId=<%=flowId%>&pageType=<%=pageType%>&actionId=<%=actionId%>&skey=<%=skey %>"></script>
 <script type="text/javascript" charset="utf-8">
     // 用于在nest_sheet_add_edit.jsp中当post时提取页面的类型，如为add表示在智能模块中添加，edit表示在流程或智能模块编辑页面中添加
     function getParentPageType() {
@@ -136,8 +138,6 @@
         "pageType": "<%=pageType%>",
         "urlParams": '<%=urlParams%>'
     };
-
-    // console.log(params);
 
     var content = document.querySelector('.mui-content');
     window.nest_sheet = new mui.NestSheet(content, params);

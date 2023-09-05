@@ -36,8 +36,7 @@ public class OnlineUserMgr {
         	if (lic.isTrial()) {
 	            com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 	            String appName = cfg.get("enterprise"); 
-	            //System.out.println(" - (试用版，注册后可永久免费使用)';");
-                return "window.top.document.title='" + appName + " - (试用版，注册后可永久免费使用)';";        		
+                return "window.top.document.title='" + appName + " - (试用版，注册后可永久免费使用)';";
         	}
         	else {
 	            com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
@@ -88,7 +87,6 @@ public class OnlineUserMgr {
     public static void setStayTime(HttpServletRequest req, HttpServletResponse res) throws
                 ErrMsgException {
             Authorization auth = Privilege.getAuthorization(req);
-            // System.out.println("OnlineUserMgr.java auth=" + auth + " " + auth.getStayTime());
             if (auth==null) {
                 return;
             }

@@ -18,53 +18,51 @@
         birthField = desc;
     }
 %>
-$(o("<%=fieldName%>")).change(function() {
+$(findObj("<%=fieldName%>")).change(function() {
 	var fieldName = "<%=fieldName%>";
 	var obj = this;
-	if ($(this).val=="") {
+    console.log('<%=fieldName%>', $(this).val());
+    console.log('birthField=<%=birthField%>');
+	if ($(this).val()=="") {
 		return;
 	}
-    $.ajax({
-        type: "post",
-        url: "<%=request.getContextPath()%>/module_check/checkIDCard.do",
-        data : {
-            val: $(this).val()
-        },
-        dataType: "html",
-        beforeSend: function(XMLHttpRequest) {
-            // $('body').ShowLoading();
-        },
-        success: function(data, status) {
-			data = $.parseJSON(data);
-			if (data.ret==0) {
-                // console.log('msg=' + data.msg);
-                $('#errMsgBox_' + fieldName).remove();
-				$(obj).parent().append("<span id='errMsgBox_" + fieldName + "' class='LV_validation_message LV_invalid'>" + data.msg + "</span>");
-                if (typeof(o('<%=birthField%>').value)=="string") {
-                    o('<%=birthField%>').value = "";
+
+    var isMap = "<%=birthField%>" != "";
+    console.log('isMap', isMap);
+    /*
+    if (!isMap) {
+        return;
+    }
+    */
+
+    var ajaxData = {
+        val: $(this).val()
+    };
+	ajaxPost('/module_check/checkIDCard', ajaxData).then((data) => {
+		console.log('data', data);
+		if (data.ret==0) {
+            // console.log('msg=' + data.msg);
+            $('#errMsgBox_' + fieldName).remove();
+            $(obj).parent().append("<span id='errMsgBox_" + fieldName + "' class='LV_validation_message LV_invalid'>" + data.msg + "</span>");
+            if (isMap) {
+                if (typeof(findObj('<%=birthField%>').value)=="string") {
+                    findObj('<%=birthField%>').value = "";
                 }
                 else {
-                    o('<%=birthField%>').innerHTML = "";
+                    findObj('<%=birthField%>').innerHTML = "";
                 }
-			}
-			else {
-				$('#errMsgBox_' + fieldName).remove();
-                if (o('<%=birthField%>')) {
-                    if (typeof(o('<%=birthField%>').value)=="string") {
-                        o('<%=birthField%>').value = data.birthday;
-                    }
-                    else {
-                        o('<%=birthField%>').innerHTML = data.birthday;
-                    }
-                }
-			}
-        },
-        complete: function(XMLHttpRequest, status) {
-            // $('body').hideLoading();
-        },
-        error: function(XMLHttpRequest, textStatus) {
-            // 请求出错处理
-            alert(XMLHttpRequest.responseText);
+            }
         }
-    });		    
+        else {
+            $('#errMsgBox_' + fieldName).remove();
+            if (isMap && findObj('<%=birthField%>')) {
+                if (typeof(findObj('<%=birthField%>').value)=="string") {
+                    findObj('<%=birthField%>').value = data.birthday;
+                }
+                else {
+                    findObj('<%=birthField%>').innerHTML = data.birthday;
+                }
+            }
+        }
+	});
 }) 

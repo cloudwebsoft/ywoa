@@ -8,6 +8,7 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.*;
 
 /**
@@ -87,7 +88,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 aqcc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("插入FormQueryCondition时出错！");
         } finally {
             if (conn != null) {
@@ -120,7 +121,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 aqcc.refreshSave(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
             throw new ErrMsgException("更新FormQueryCondition时出错！");
         } finally {
             if (conn != null) {
@@ -153,7 +154,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 primaryKey.setValue(new Long(id));
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -183,7 +184,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 aqcc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
             throw new ErrMsgException("删除FormQueryCondition时出错！");
         } finally {
             if (conn != null) {
@@ -218,8 +219,9 @@ public class FormQueryConditionDb extends ObjectDb{
                 rs = null;
             }
 
-            if (total != 0)
+            if (total != 0) {
                 conn.setMaxRows(curPage * pageSize); // 尽量减少内存的使用
+            }
 
             rs = conn.executeQuery(listsql);
             if (rs == null) {
@@ -236,7 +238,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
@@ -264,7 +266,7 @@ public class FormQueryConditionDb extends ObjectDb{
         try {
             ri = rmconn.executeQuery(sqlOfQuery, curPage, pageSize);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return ri;
     }
@@ -284,7 +286,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -307,7 +309,7 @@ public class FormQueryConditionDb extends ObjectDb{
                 list.add(rr.getString(1));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return list;
     }

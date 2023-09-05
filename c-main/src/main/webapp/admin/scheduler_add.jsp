@@ -11,8 +11,8 @@
 				 com.redmoon.oa.ui.*,
 				 com.cloudwebsoft.framework.base.*"
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>调度-添加</title>
@@ -23,33 +23,13 @@
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
 <script>
-function findObj(theObj, theDoc)
-{
-  var p, i, foundObj;
-  
-  if(!theDoc) theDoc = document;
-  if( (p = theObj.indexOf("?")) > 0 && parent.frames.length)
-  {
-    theDoc = parent.frames[theObj.substring(p+1)].document;
-    theObj = theObj.substring(0,p);
-  }
-  if(!(foundObj = theDoc[theObj]) && theDoc.all) foundObj = theDoc.all[theObj];
-  for (i=0; !foundObj && i < theDoc.forms.length; i++) 
-    foundObj = theDoc.forms[i][theObj];
-  for(i=0; !foundObj && theDoc.layers && i < theDoc.layers.length; i++) 
-    foundObj = findObj(theObj,theDoc.layers[i].document);
-  if(!foundObj && document.getElementById) foundObj = document.getElementById(theObj);
-  
-  return foundObj;
-}
-
 function SelectDateTime(objName) {
-    var dt = openWin("../util/calendar/time.htm","266px","185px");//showModalDialog("../util/calendar/time.htm", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
+    var dt = openWin("../util/calendar/time.htm","266px","185px");
     
 }
 function sel(dt) {
     if (dt!=null)
-        findObj("time").value = dt;
+        o("time").value = dt;
 }
 function openWin(url,width,height)
 {
@@ -65,28 +45,28 @@ function trimOptionText(strValue)
 </script>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
-String priv="admin";
-if (!privilege.isUserPrivValid(request,priv)) {
-    out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-	return;
-}
+    String priv = "admin";
+    if (!privilege.isUserPrivValid(request, priv)) {
+        out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+        return;
+    }
 
-String op = ParamUtil.get(request, "op");
+    String op = ParamUtil.get(request, "op");
 
-if (op.equals("add")) {
-	QObjectMgr qom = new QObjectMgr();
-	JobUnitDb ju = new JobUnitDb();
-	try {
-	if (qom.create(request, ju, "scheduler_add"))
-		out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "scheduler_list.jsp"));
-	else
-		out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
-	}
-	catch (ErrMsgException e) {
-		out.print(StrUtil.Alert_Back(e.getMessage()));
-	}
-	return;
-}
+    if ("add".equals(op)) {
+        QObjectMgr qom = new QObjectMgr();
+        JobUnitDb ju = new JobUnitDb();
+        try {
+            if (qom.create(request, ju, "scheduler_add")) {
+                out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "scheduler_list.jsp"));
+            } else {
+                out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
+            }
+        } catch (ErrMsgException e) {
+            out.print(StrUtil.Alert_Back(e.getMessage()));
+        }
+        return;
+    }
 %>
 </head>
 <body>
@@ -158,15 +138,16 @@ o("menu2").className="current";
     <tr>
       <td align="left">
     选择流程：
-        <select name="flowCode" onchange="if(this.options[this.selectedIndex].value=='not'){alert(this.options[this.selectedIndex].text+' 不能被选择！'); return false;} form1.job_name.value=trimOptionText(this.options[this.selectedIndex].text) ">
+        <select name="flowCode" style="min-width: 150px" onchange="if(this.options[this.selectedIndex].value=='not'){alert(this.options[this.selectedIndex].text+' 不能被选择！'); return false;} form1.job_name.value=trimOptionText(this.options[this.selectedIndex].text) ">
             <%
-					Leaf lf = new Leaf();
-					lf = lf.getLeaf("root");
-					DirectoryView dv = new DirectoryView(lf);
-					//dv.ShowDirectoryAsOptions(request, out, lf, 1);
-					dv.ShowDirectoryAsOptionsForSchedule(request, out, lf, 1);
-				  %>
-        </select>      <span style="color:red">*(只能选择能确认发起人或者发起角色的流程)</span>
+            Leaf lf = new Leaf();
+            lf = lf.getLeaf(Leaf.CODE_ROOT);
+            DirectoryView dv = new DirectoryView(lf);
+            //dv.ShowDirectoryAsOptions(request, out, lf, 1);
+            dv.ShowDirectoryAsOptionsForSchedule(request, out, lf, 1);
+          %>
+        </select>
+          <span style="color:red">*(只能选择能确认发起人或者发起角色的流程)</span>
       </td>
     </tr>
     <tr>
@@ -176,7 +157,8 @@ o("menu2").className="current";
       <input name="cron" type="hidden" />
       <span class="p14">
       <input name="data_map" type="hidden" />
-      </span></td>
+      </span>
+      </td>
     </tr>
 </table>
 </form>

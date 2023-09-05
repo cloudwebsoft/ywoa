@@ -13,7 +13,6 @@
 <%@ page import="org.apache.commons.lang3.StringUtils" %>
 <%@ page import="com.cloudweb.oa.api.IMyflowUtil" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <!DOCTYPE html>
 <html>
@@ -55,7 +54,7 @@
         String userName = mad.getUserName();
         UserDb user = new UserDb();
         user = user.getUserDb(userName);
-        String mainPage = "../flow_dispose.jsp?myActionId=" + myActionId;
+        String mainPage = "../flowDispose.do?myActionId=" + myActionId;
         // 置 session中的调试标志
         Privilege.setAttribute(request, Privilege.SESSION_OA_FLOW_TESTER, privilege.getUser(request));
         privilege.doLogin(request, user.getName(), user.getPwdMD5());
@@ -69,7 +68,7 @@
         return;
     }
 
-    long myActionId = ParamUtil.getLong(request, "myActionId");
+    long myActionId = ParamUtil.getLong(request, "myActionId", -1);
     MyActionDb mad = new MyActionDb();
     mad = mad.getMyActionDb(myActionId);
     long actionId = mad.getActionId();
@@ -229,7 +228,7 @@
     var $flow;
     $(function () {
         var flowData = $('#flowJson').val();
-        console.log(flowData);
+        // console.log(flowData);
         $flow = $('#myflow').myflow({
             allowStateMultiLine: false,
             editable: false,

@@ -52,3 +52,9 @@
     background-position-y: 8px;
     padding-left: 18px;
 }
+
+.chart {
+    background: transparent url(tabpanel-image/chart.gif) no-repeat 0 2px;
+    background-position-y: 8px;
+    padding-left: 18px;
+}

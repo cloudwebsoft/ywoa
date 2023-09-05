@@ -2,6 +2,7 @@ package com.redmoon.oa.visual;
 
 import cn.js.fan.base.ObjectCache;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.util.Vector;
 
@@ -24,12 +25,12 @@ public class ModulePrivCache extends ObjectCache {
         super(mpd);
     }
 
-    public Vector getModulePrivsOfModule(String formCode) {
-        Vector v = null;
+    public Vector<ModulePrivDb> getModulePrivsOfModule(String formCode) {
+        Vector<ModulePrivDb> v = null;
         try {
-            v = (Vector) rmCache.getFromGroup(REFIX_PRIV + formCode, group);
+            v = (Vector<ModulePrivDb>) rmCache.getFromGroup(REFIX_PRIV + formCode, group);
         } catch (Exception e) {
-            logger.error("getModulePrivsOfModule:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getModulePrivsOfModule:" + e.getMessage());
         }
         if (v == null) {
             ModulePrivDb mpd = (ModulePrivDb)objectDb;
@@ -37,7 +38,7 @@ public class ModulePrivCache extends ObjectCache {
             try {
                 rmCache.putInGroup(REFIX_PRIV + formCode, group, v);
             } catch (Exception e) {
-                logger.error("getModulePrivsOfModule:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getModulePrivsOfModule:" + e.getMessage());
             }
         }
         return v;
@@ -47,7 +48,7 @@ public class ModulePrivCache extends ObjectCache {
         try {
             rmCache.remove(REFIX_PRIV + formCode, group);
         } catch (Exception e) {
-            logger.error("refreshPrivs:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("refreshPrivs:" + e.getMessage());
         }
     }
 

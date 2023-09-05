@@ -1,6 +1,9 @@
 package com.redmoon.oa.flow.macroctl;
 
 import javax.servlet.http.HttpServletRequest;
+
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysUtil;
 import com.redmoon.oa.flow.FormField;
 import com.redmoon.oa.flow.FormDAO;
 import com.redmoon.oa.flow.FormDb;
@@ -59,8 +62,10 @@ public class LowerToUpperCtl extends AbstractMacroCtl {
                          str += "</script>";
              */
 
-            str += "<script src='" + request.getContextPath() +
-                    "/flow/macro/macro_lowertoupperctl.js" + "'></script>";
+            SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+            /*str += "<script src='" + request.getContextPath() +
+                    "/flow/macro/macro_lowertoupperctl.js" + "'></script>";*/
+            str += "<script src=\"" + sysUtil.getPublicPath() + "/resource/js/macro/macro_lowertoupperctl.js\"></script>";
 
             request.setAttribute("isLowerToUpperCtlJSWrited", "y");
         }

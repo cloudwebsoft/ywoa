@@ -1,11 +1,8 @@
 package com.redmoon.oa.android.base;
 
-import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
-
 public class BaseAction implements IbeanUtil {
-	public Logger logger = Logger.getLogger(BaseAction.class.getName());
 	public static int RETURNCODE_SUCCESS = 0;       //登录成功
 	public static int RESULT_TIME_OUT = -2;//时间过期
 	public static int RESULT_SUCCESS = 0;//请求成功
@@ -42,8 +39,8 @@ public class BaseAction implements IbeanUtil {
 	public static final String MACRO_USER_SELECT = "macro_user_select";//用户列表
 	public static final String MACRO_USER_SELECT_WIN= "macro_user_select_win";//用户选择框
 	public static final String MACRO_DEPT_SELECT = "macro_dept_select"; //部门选择框
-	public static final String MACRO_POST_LIST = "macro_post_list"; //岗位列表宏控件
-	public static final String MACRO_POST = "macro_post"; //当前用户岗位宏控件
+	public static final String MACRO_POST_LIST = "macro_post_list"; //职位列表宏控件
+	public static final String MACRO_POST = "macro_post"; //当前用户职位宏控件
 
 	public static final int WOKR_lOG_PRJ_TYPE = 1;
 	public static final int WOKR_lOG_TASK_TYPE = 0;

@@ -8,6 +8,7 @@ import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -69,8 +70,7 @@ public class DirKindDb extends ObjectDb {
 	    	if (ri.hasNext())
 	    		return true;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 
     	return false;
@@ -91,7 +91,7 @@ public class DirKindDb extends ObjectDb {
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
         }
         finally {
@@ -124,7 +124,7 @@ public class DirKindDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -167,7 +167,7 @@ public class DirKindDb extends ObjectDb {
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn!=null) {
                 conn.close();
@@ -199,7 +199,7 @@ public class DirKindDb extends ObjectDb {
                  rc.refreshSave(primaryKey);
              }
          } catch (SQLException e) {
-             logger.error("save: " + e.getMessage());
+             LogUtil.getLog(getClass()).error("save: " + e.getMessage());
          } finally {
              if (conn != null) {
                  conn.close();
@@ -237,7 +237,7 @@ public class DirKindDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();

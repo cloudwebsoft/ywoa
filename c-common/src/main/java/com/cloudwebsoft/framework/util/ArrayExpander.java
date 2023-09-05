@@ -54,13 +54,11 @@ public final class ArrayExpander {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println("test:" + "aaa&nbsp;bbb".replaceAll("&nbsp;", ""));
-
         ArrayExpander ae = new ArrayExpander();
         int[] a = {1, 2, 3, 4, 5, 6};
-        a = (int[]) ae.expand(a, 10);
+        a = expand(a, 10);
         for (int i = 0; i < a.length; ++i) {
-            System.out.println(a);
+            LogUtil.getLog(ArrayExpander.class).info(a.toString());
         }
     }
 }

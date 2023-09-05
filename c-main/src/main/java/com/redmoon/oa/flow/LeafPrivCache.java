@@ -1,6 +1,7 @@
 package com.redmoon.oa.flow;
 
 import cn.js.fan.base.ObjectCache;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.util.Vector;
 
@@ -24,7 +25,7 @@ public class LeafPrivCache extends ObjectCache {
             rmCache.putInGroup(PREFIX + dirCode + "_priv" + priv, group, v);
         }
         catch (Exception e) {
-            logger.error("listPriv:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listPriv:" + e.getMessage());
         }
         return v;
     }

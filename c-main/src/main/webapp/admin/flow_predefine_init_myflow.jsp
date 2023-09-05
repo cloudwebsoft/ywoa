@@ -26,8 +26,10 @@
     <title>预定义流程</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="../js/flow/myflow.css">
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/jquery-ui/jquery-ui-1.10.4.css" />
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
     <%@ include file="../inc/nocache.jsp" %>
     <script src="../inc/common.js"></script>
     <script src="../js/jquery.js"></script>
@@ -87,14 +89,12 @@
 <script>
     o("menu2").className = "current";
 </script>
-<table width="100%" align="center" style="background-color: #fff; border-bottom: 1px solid #efefef; height: 50px">
+<table width="100%" align="center" style="background-color: #fff; border-bottom: 1px solid #efefef; height: 50px" class="form-inline">
     <tr>
-        <td>
+        <td align="center">
             <span id="infoSpan" style="color:red"></span>
-        </td>
-        <td align="left" width="75%">
             <%=title%>&nbsp;&nbsp;
-            <select id="flowTemplate" name="flowTemplate">
+            <select id="flowTemplate" name="flowTemplate" class="form-control">
                 <%
                     Leaf rootlf = new Leaf();
                     rootlf = rootlf.getLeaf(Leaf.CODE_ROOT);
@@ -102,11 +102,11 @@
                     flowdv.ShowDirectoryAsOptions(request, out, rootlf, rootlf.getLayer());
                 %>
             </select>
-            <input type="button" class="btn" value="套用流程图" onclick="applyFlow()"/>
+            <input type="button" class="btn btn-default" value="套用" title="套用流程图" onclick="applyFlow()"/>
             <%
                 if (lp.canUserExamine(privilege.getUser(request))) {
             %>
-            &nbsp;&nbsp;<input type="button" class="btn" onclick="openWin('flow_designer_myflow.jsp?flowTypeCode=<%=flowTypeCode%>', screen.width, screen.height)" value="编辑流程图"/>
+            &nbsp;&nbsp;<input type="button" class="btn btn-default" onclick="openWin('flow_designer_myflow.jsp?flowTypeCode=<%=flowTypeCode%>', screen.width, screen.height)" value="设计"/>
             <%}%>
         </td>
     </tr>
@@ -117,51 +117,95 @@
 </div>
 
 <textarea id="flowData" style="display: none;"><%=flowJson%></textarea>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
 </body>
 <script>
+    var layer;
+    layui.use('layer', function(){
+        layer = layui.layer;
+    });
+
     function applyFlow() {
-        $(".tabStyle_1_title").parent().parent().parent().hide();
         if (o("flowTemplate").value == "not") {
-            jAlert("请选择流程！", "提示");
+            layer.open({
+                type: 1
+                ,offset: 'auto' //具体配置参考：http://www.layui.com/doc/modules/layer.html#offset
+                ,id: 'dlg' //防止重复弹出
+                ,content: '<div style="padding: 20px 100px;">请选择流程</div>'
+                ,btn: '确定'
+                ,btnAlign: 'c' //按钮居中
+                ,shade: 0 //不显示遮罩
+            });
             return;
         }
 
-        jConfirm("您确定要套用流程图么？", "提示", function (r) {
-            if (!r) {
-                return;
-            } else {
-                $.ajax({
-                    type: "post",
-                    url: "applyFlow.do",
-                    contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
-                    data: {
-                        flowTypeCode: "<%=flowTypeCode%>",
-                        templateCode: o("flowTemplate").value
-                    },
-                    dataType: "html",
-                    beforeSend: function (XMLHttpRequest) {
-                        $('body').showLoading();
-                    },
-                    success: function (data, status) {
-                        data = $.parseJSON(data);
-                        if (data.ret == "1") {
-                            jAlert(data.msg, "提示", function() {
-                                window.location.reload();
-                            });
-                        } else {
-                            $.toaster({priority : 'info', message : data.msg });
-                        }
-                    },
-                    complete: function (XMLHttpRequest, status) {
-                        $('body').hideLoading();
-                    },
-                    error: function (XMLHttpRequest, textStatus) {
-                        // 请求出错处理
-                        alert(XMLHttpRequest.responseText);
-                    }
-                });
+        layer.open({
+            type: 1
+            ,offset: 'auto' //具体配置参考：http://www.layui.com/doc/modules/layer.html#offset
+            ,id: 'dlg' //防止重复弹出
+            ,content: '<div style="padding: 20px 50px;">套用流程时同时附带事件脚本么</div>'
+            ,btn: ['是', '否', '取消']
+            ,btnAlign: 'c' //按钮居中
+            ,shade: 0 //不显示遮罩
+            ,yes: function(index, layero){
+                //按钮【按钮一】的回调
+                postApplyFlow(true);
+                layer.close(index);
             }
-        })
+            ,btn2: function(index, layero){
+                //按钮【按钮二】的回调
+                postApplyFlow(false);
+                // return false; // 开启该代码可禁止点击该按钮关闭
+            }
+            ,btn3: function(index, layero){
+                //按钮【按钮三】的回调
+                // layer.close(index);
+            }
+            ,cancel: function(){
+                //右上角关闭回调
+                //return false 开启该代码可禁止点击该按钮关闭
+            }
+        });
+    }
+
+    function postApplyFlow(isWithScript) {
+        $(".tabStyle_1_title").parent().parent().parent().hide();
+
+        $.ajax({
+            type: "post",
+            url: "applyFlow.do",
+            contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+            data: {
+                flowTypeCode: "<%=flowTypeCode%>",
+                isWithScript: isWithScript,
+                templateCode: o("flowTemplate").value
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == "1") {
+                    layer.open({
+                        content: '<div style="padding: 20px 100px;">' + data.msg + '</div>'
+                        ,btn: '确定'
+                        ,yes: function(index, layero){
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    $.toaster({priority : 'info', message : data.msg });
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
     }
 
     $(function () {

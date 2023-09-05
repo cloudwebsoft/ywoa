@@ -68,27 +68,26 @@ public class RobotUtil {
 
             HttpGet httpGet = new HttpGet(link);
             response = httpclient.execute(httpGet);
-            // System.out.println(response.getStatusLine());
             //把内容转成字符串
             HttpEntity entity = response.getEntity();
             // EntityUtils.consume(entity);
             return EntityUtils.toString(entity);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (KeyManagementException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ClientProtocolException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (response!=null) {
                 try {
                     response.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -136,11 +135,9 @@ public class RobotUtil {
         } catch (IOException e) {
             LogUtil.getLog(getClass()).error("gather2: link=" + link);
             LogUtil.getLog(getClass()).error("gather2: " + StrUtil.trace(e));
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (reader != null) {
                 try {
@@ -567,7 +564,7 @@ public class RobotUtil {
         // String str = ru.gather("https://tech.163.com/");
         String str = ru.gather("https://tech.163.com/", "gbk");
 
-        System.out.println(str);
+        LogUtil.getLog(RobotUtil.class).info(str);
         if (true)
             return;
 
@@ -593,18 +590,18 @@ public class RobotUtil {
 
         Matcher m = pat.matcher(content);
         while (m.find()) {
-            System.out.println("m.group(0)=" + m.group(0));
-            System.out.println(RobotUtil.class + " m.groupCount=" + m.groupCount());
+            LogUtil.getLog(RobotUtil.class).info("m.group(0)=" + m.group(0));
+            LogUtil.getLog(RobotUtil.class).info(RobotUtil.class + " m.groupCount=" + m.groupCount());
 
             if (m.groupCount() == 1) {
-                System.out.println(RobotUtil.class + " m.group(1)=" + m.group(1));
+                LogUtil.getLog(RobotUtil.class).info(RobotUtil.class + " m.group(1)=" + m.group(1));
             }
 
         }
 
-        System.out.println(ru.getSegmentRegex(content, "<a href=\"[url]\" class=\"", "[url]", true, true));
+        // LogUtil.getLog(RobotUtil.class).info(ru.getSegmentRegex(content, "<a href=\"[url]\" class=\"", "[url]", true, true));
         try {
-            System.out.println(UrlDecode("http://cn.pg.photos.yahoo.com/ph/y3dlabs1234/detail_hires?.dir=1daa&.dnm=ba84cnb.jpg", "gb2312"));
+            LogUtil.getLog(RobotUtil.class).info(UrlDecode("http://cn.pg.photos.yahoo.com/ph/y3dlabs1234/detail_hires?.dir=1daa&.dnm=ba84cnb.jpg", "gb2312"));
         } catch (Exception e) {
         }
     }

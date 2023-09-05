@@ -1,0 +1,41 @@
+.barbox {
+  width: 235px;
+}
+
+.barline {
+  margin-top: 6px;
+  margin-bottom: 5px;
+  float: left;
+  width: 200px;
+  background: #fff;
+  border: 1px solid #4dbf7d;
+  height: 7px;
+  /* display: inline-block; */
+  border-radius: 4px;
+}
+
+.barbox .barline-remove {
+  color: red;
+  font-size: 18px;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+/*.barline #percent{position:absolute;left:0px;top:-30px;display:inline-block;color:#4DBF7D;font-size:16px;}*/
+.barline .barline-bar {
+  float: left;
+  height: 6px;
+  overflow: hidden;
+  background: #4dbf7d;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 4px;
+  color: white;
+}
+
+.barbox .barline-percent {
+  float: right;
+  /* display: inline-block; */
+  color: #4dbf7d;
+  font-size: 6px;
+}

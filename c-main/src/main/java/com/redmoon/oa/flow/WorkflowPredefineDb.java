@@ -6,10 +6,13 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudweb.oa.cache.FlowShowRuleCache;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.util.*;
 import com.redmoon.oa.db.*;
 import com.redmoon.oa.person.*;
 import com.redmoon.oa.pvg.*;
+import com.redmoon.oa.sys.DebugUtil;
 
 /**
  * <p>Title: </p>
@@ -103,14 +106,14 @@ public class WorkflowPredefineDb extends ObjectDb {
 
         QUERY_CREATE =
                 "insert into " + tableName + " (flowString,typeCode,title,return_back,IS_DEFAULT_FLOW,id,dir_code,examine,is_reactive,is_recall,return_mode,return_style,role_rank_mode,props,views,scripts,is_light,link_prop,write_prop,is_distribute,write_db_prop,msg_prop,is_plus,is_transfer,is_reply,download_count,flow_json) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        QUERY_SAVE = "update " + tableName + " set flowString=?,typeCode=?,title=?,return_back=?,IS_DEFAULT_FLOW=?,dir_code=?,examine=?,is_reactive=?,is_recall=?,return_mode=?,return_style=?,role_rank_mode=?,props=?,views=?,scripts=?,is_light=?,link_prop=?,write_prop=?,is_distribute=?,write_db_prop=?,msg_prop=?,is_plus=?,is_transfer=?,is_reply=?,download_count=?,can_del_on_return=?,flow_json=? where id=?";
+        QUERY_SAVE = "update " + tableName + " set flowString=?,typeCode=?,title=?,return_back=?,IS_DEFAULT_FLOW=?,dir_code=?,examine=?,is_reactive=?,is_recall=?,return_mode=?,return_style=?,role_rank_mode=?,props=?,views=?,scripts=?,is_light=?,link_prop=?,write_prop=?,is_distribute=?,write_db_prop=?,msg_prop=?,is_plus=?,is_transfer=?,is_reply=?,download_count=?,can_del_on_return=?,flow_json=?,is_module_filter=?,is_use_form_view_rule=? where id=?";
         QUERY_LIST = "select id from " + tableName;
         QUERY_DEL = "delete from " + tableName + " where id=?";
-        QUERY_LOAD = "select flowString,typeCode,title,return_back,IS_DEFAULT_FLOW,dir_code,examine,is_reactive,is_recall,return_mode,return_style,role_rank_mode,props,views,scripts,is_light,link_prop,write_prop,is_distribute,write_db_prop,msg_prop,is_plus,is_transfer,is_reply,download_count,can_del_on_return,flow_json from " + tableName + " where id=?";
+        QUERY_LOAD = "select flowString,typeCode,title,return_back,IS_DEFAULT_FLOW,dir_code,examine,is_reactive,is_recall,return_mode,return_style,role_rank_mode,props,views,scripts,is_light,link_prop,write_prop,is_distribute,write_db_prop,msg_prop,is_plus,is_transfer,is_reply,download_count,can_del_on_return,flow_json,is_module_filter,is_use_form_view_rule from " + tableName + " where id=?";
     }
 
     public WorkflowPredefineDb getWorkflowPredefineDb(int id) {
-        return (WorkflowPredefineDb)getObjectDb(new Integer(id));
+        return (WorkflowPredefineDb)getObjectDb(id);
     }
     
     public int getDownloadCount() {
@@ -168,12 +171,14 @@ public class WorkflowPredefineDb extends ObjectDb {
      * @throws ErrMsgException
      */
     public String[][] getRolePrivsOfFree() {
-        if (flowString.trim().equals(""))
+        if (flowString.trim().equals("")) {
             return new String[0][0];
+        }
         int p = flowString.indexOf("[roles]");
         int q = flowString.indexOf("[/roles]");
-        if (p == -1 || q==-1 || q==p+7)
+        if (p == -1 || q==-1 || q==p+7) {
             return new String[0][0];
+        }
         String str = flowString.substring(p + "[roles]".length(), q);
         String[] ary = str.split(";");
         int len = ary.length;
@@ -185,9 +190,7 @@ public class WorkflowPredefineDb extends ObjectDb {
             int n = privs.length;
             // LogUtil.getLog(getClass()).info("getRolePrivOfFree " + str + "n=" + n);
             rolePrivs[i][0] = roleCode;
-            for (int j=0; j<n; j++) {
-                rolePrivs[i][j+1] = privs[j];
-            }
+            System.arraycopy(privs, 0, rolePrivs[i], 1, n);
         }
         return rolePrivs;
     }
@@ -210,8 +213,7 @@ public class WorkflowPredefineDb extends ObjectDb {
             
             try {
                 wp = new WorkflowPredefineDb();
-                int id = (int) SequenceManager.nextID(SequenceManager.
-                        OA_WORKFLOW_PREDEFINED);
+                int id = (int) SequenceManager.nextID(SequenceManager.OA_WORKFLOW_PREDEFINED);
                 wp.setTypeCode(typeCode);
                 wp.setTitle(lf.getName());
                 wp.setDefaultFlow(true);
@@ -235,11 +237,10 @@ public class WorkflowPredefineDb extends ObjectDb {
     public String[] getFieldsWriteOfRole(String roleCode) {
         String[][] rolePrivs = getRolePrivsOfFree();
         // 根据用户角色判定权限
-        int privLen = rolePrivs.length;
-        for (int i=0; i<privLen; i++) {
-            if (roleCode.equals(rolePrivs[i][0])) {
-                String fieldStr = rolePrivs[i][7];
-                LogUtil.getLog(getClass()).info("getFieldsWriteOfRole:" + rolePrivs[i][7]);
+        for (String[] rolePriv : rolePrivs) {
+            if (roleCode.equals(rolePriv[0])) {
+                String fieldStr = rolePriv[7];
+                LogUtil.getLog(getClass()).info("getFieldsWriteOfRole:" + rolePriv[7]);
                 return StrUtil.split(fieldStr, "\\|");
             }
         }
@@ -270,8 +271,9 @@ public class WorkflowPredefineDb extends ObjectDb {
 				// 获取角色能写的表单域
 				String[] fields = getFieldsWriteOfRole(roles[i].getCode());
 
-				if (fields == null)
-					continue;
+				if (fields == null) {
+                    continue;
+                }
 				int flen = fields.length;
 				for (int j = 0; j < flen; j++) {
 					boolean isAdded = false;
@@ -317,7 +319,6 @@ public class WorkflowPredefineDb extends ObjectDb {
         	if (starterRoleAry!=null)
         		len = starterRoleAry.length;
         	for (int i=0; i<len; i++) {
-        		// System.out.println(getClass() + " " + starterRoleAry[i]);
                 if (user.isUserOfRole(starterRoleAry[i])) {
                 	return true;
                 }
@@ -395,12 +396,10 @@ public class WorkflowPredefineDb extends ObjectDb {
                  return getWorkflowPredefineDb(id);
              }
          } catch (SQLException e) {
-             logger.error("getDefaultFlow: " + e.getMessage());
+             LogUtil.getLog(getClass()).error("getDefaultFlow: " + e.getMessage());
+             LogUtil.getLog(getClass()).error(e);
          } finally {
-             if (conn!=null) {
-                 conn.close();
-                 conn = null;
-             }
+             conn.close();
          }
          return null;
     }
@@ -441,22 +440,19 @@ public class WorkflowPredefineDb extends ObjectDb {
             ps.setInt(25, reply?1:0);
             ps.setInt(26, downloadCount);
             ps.setString(27, flowJson);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate()==1;
             if (re) {
                 WorkflowPredefineCache rc = new WorkflowPredefineCache(this);
                 rc.refreshCreate();
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage() + " " + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage() + " " + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作失败！");
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -477,17 +473,15 @@ public class WorkflowPredefineDb extends ObjectDb {
                     wd.del();
                 }
                 catch (ErrMsgException e) {
-                    logger.error("delWorkflowPredefineDbOfType:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("delWorkflowPredefineDbOfType:" + e.getMessage());
                 }
                 i++;
             }
         } catch (SQLException e) {
-            logger.error("delWorkflowPredefineDbOfType:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("delWorkflowPredefineDbOfType:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return i;
     }
@@ -507,19 +501,17 @@ public class WorkflowPredefineDb extends ObjectDb {
         try {
             ps = conn.prepareStatement(QUERY_DEL);
             ps.setInt(1, id);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 WorkflowPredefineCache rc = new WorkflowPredefineCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -577,17 +569,16 @@ public class WorkflowPredefineDb extends ObjectDb {
                 downloadCount = rs.getInt(25);
                 canDelOnReturn = rs.getInt(26)==1;
                 flowJson = StrUtil.getNullStr(rs.getString(27));
+                moduleFilter = rs.getInt(28) == 1;
+                useFormViewRule = rs.getInt(29) == 1;
                 loaded = true;
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -613,51 +604,54 @@ public class WorkflowPredefineDb extends ObjectDb {
         Conn conn = new Conn(connname);
         try {
             ps = conn.prepareStatement(QUERY_SAVE);
-            if (flowString.equals(""))
+            if ("".equals(flowString)) {
                 flowString = " "; // 适应SQLSERVER
+            }
             ps.setString(1, flowString); //适应Oracle，LONG类型需放在第一个
             ps.setString(2, typeCode);
             ps.setString(3, title);
-            ps.setInt(4, returnBack?1:0);
-            ps.setInt(5, defaultFlow?1:0);
+            ps.setInt(4, returnBack ? 1 : 0);
+            ps.setInt(5, defaultFlow ? 1 : 0);
             ps.setString(6, dirCode);
             ps.setInt(7, examine);
-            ps.setInt(8, reactive?1:0);
-            ps.setInt(9, recall?1:0);
+            ps.setInt(8, reactive ? 1 : 0);
+            ps.setInt(9, recall ? 1 : 0);
             ps.setInt(10, returnMode);
             ps.setInt(11, returnStyle);
             ps.setInt(12, roleRankMode);
             ps.setString(13, props);
             ps.setString(14, views);
             ps.setString(15, scripts);
-            ps.setInt(16, light?1:0);
+            ps.setInt(16, light ? 1 : 0);
             ps.setString(17, linkProp);
             ps.setString(18, writeProp);
-            ps.setInt(19, distribute?1:0);
+            ps.setInt(19, distribute ? 1 : 0);
             ps.setString(20, writeDbProp);
             ps.setString(21, msgProp);
-            ps.setInt(22, plus?1:0);
-            ps.setInt(23, transfer?1:0);
-            ps.setInt(24, reply?1:0);
+            ps.setInt(22, plus ? 1 : 0);
+            ps.setInt(23, transfer ? 1 : 0);
+            ps.setInt(24, reply ? 1 : 0);
             ps.setInt(25, downloadCount);
-            ps.setInt(26, canDelOnReturn?1:0);
+            ps.setInt(26, canDelOnReturn ? 1 : 0);
             ps.setString(27, flowJson);
-            ps.setInt(28, id);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            ps.setInt(28, moduleFilter ? 1 : 0);
+            ps.setInt(29, useFormViewRule ? 1 : 0);
+            ps.setInt(30, id);
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 WorkflowPredefineCache rc = new WorkflowPredefineCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 rc.refreshSave(primaryKey);
+
+                FlowShowRuleCache flowShowRuleCache = SpringUtil.getBean(FlowShowRuleCache.class);
+                flowShowRuleCache.refresh(typeCode);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("save: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("save: " + e.getMessage());
             throw new ErrMsgException(e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -680,12 +674,10 @@ public class WorkflowPredefineDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return result;
     }
@@ -714,8 +706,9 @@ public class WorkflowPredefineDb extends ObjectDb {
                 rs = null;
             }
 
-            if (total != 0)
+            if (total != 0) {
                 conn.setMaxRows(curPage * pageSize); // 尽量减少内存的使用
+            }
 
             rs = conn.executeQuery(listsql);
             if (rs == null) {
@@ -723,7 +716,7 @@ public class WorkflowPredefineDb extends ObjectDb {
             } else {
                 rs.setFetchSize(pageSize);
                 int absoluteLocation = pageSize * (curPage - 1) + 1;
-                if (rs.absolute(absoluteLocation) == false) {
+                if (!rs.absolute(absoluteLocation)) {
                     return lr;
                 }
                 do {
@@ -732,19 +725,15 @@ public class WorkflowPredefineDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
-                rs = null;
+                } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         lr.setResult(result);
@@ -777,14 +766,13 @@ public class WorkflowPredefineDb extends ObjectDb {
             if (re) { // 如果是action，而不是link
                 if (wa.isStart == 1) {
                     String jobCode = wa.getJobCode();
-                    if (jobCode.equals("$self")) {
+                    if ("$self".equals(jobCode)) {
                         return v;
                     }
 
                     // 检查发起人是否合法
                     if (wa.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE) {
-                        String[] prearyrole = StrUtil.split(wa.getJobCode(),
-                                ",");
+                        String[] prearyrole = StrUtil.split(wa.getJobCode(), ",");
                         int prelen = 0;
                         if (prearyrole != null) {
                             prelen = prearyrole.length;
@@ -792,6 +780,10 @@ public class WorkflowPredefineDb extends ObjectDb {
                         RoleMgr rm = new RoleMgr();
                         for (int k=0; k<prelen; k++) {
                             RoleDb rd = rm.getRoleDb(prearyrole[k]);
+                            if (!rd.isLoaded()) {
+                                DebugUtil.w(getClass(), "getStarters", "角色: " + prearyrole[k] + " 不存在");
+                                continue;
+                            }
                             Vector vt = rd.getAllUserOfRole();
                             int vsize = v.size();
                             int vtsize = vt.size();
@@ -813,15 +805,14 @@ public class WorkflowPredefineDb extends ObjectDb {
                         }
                     } else {
                         String[] aryuser = StrUtil.split(wa.getJobCode(), ",");
-                        int aryuserlen = aryuser.length;
                         UserMgr um = new UserMgr();
-                        for (int m=0; m<aryuserlen; m++) {
-                            UserDb ud = um.getUserDb(aryuser[m]);
+                        for (String s : aryuser) {
+                            UserDb ud = um.getUserDb(s);
                             v.addElement(ud);
                         }
                     }
+                    return v;
                 }
-                return v;
             }
         }
         return v;
@@ -1062,11 +1053,31 @@ public class WorkflowPredefineDb extends ObjectDb {
 	 * 是否允许指派
 	 */
 	boolean transfer;
+
+    public boolean isUseFormViewRule() {
+        return useFormViewRule;
+    }
+
+    public void setUseFormViewRule(boolean useFormViewRule) {
+        this.useFormViewRule = useFormViewRule;
+    }
+
+    boolean useFormViewRule = true;
 	
 	/**
 	 * 下载次数限制，-1表示不限
 	 */
 	private int downloadCount = -1;
+
+    public boolean isModuleFilter() {
+        return moduleFilter;
+    }
+
+    public void setModuleFilter(boolean moduleFilter) {
+        this.moduleFilter = moduleFilter;
+    }
+
+    private boolean moduleFilter = true;
 
     public String getFlowJson() {
         return flowJson;

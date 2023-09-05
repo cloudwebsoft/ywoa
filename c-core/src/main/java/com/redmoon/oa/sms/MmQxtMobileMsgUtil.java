@@ -1,32 +1,23 @@
 package com.redmoon.oa.sms;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.sql.SQLException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+
+import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.person.UserDb;
+import com.redmoon.oa.sys.DebugUtil;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-
-import com.redmoon.oa.sys.DebugUtil;
-import org.apache.log4j.Logger;
-import org.apache.tools.ant.taskdefs.Get;
-
-import com.cloudwebsoft.framework.db.JdbcTemplate;
-import com.cloudwebsoft.framework.util.LogUtil;
-import com.redmoon.oa.person.UserDb;
-
-import cn.js.fan.security.SecurityUtil;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.StrUtil;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Vector;
 
 public class MmQxtMobileMsgUtil implements IMsgUtil{
 
@@ -38,8 +29,7 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 	 * @return boolean not math return false else return true
 	 */
 	public synchronized static boolean isEmpty(String str) {
-
-		return ((str == null) || (str.trim().equals(""))) ? true : false;
+		return str == null || "".equals(str.trim());
 	}
 
 	/**
@@ -101,12 +91,12 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 		try {
 			sb.append("&password="+pwd);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		//sb.append("&encode=utf8");
 		URL url;
 		try {
-			System.out.println(getClass() + " url=" + sb.toString());
+			LogUtil.getLog(getClass()).info("url=" + sb.toString());
 			url = new URL(sb.toString());
 
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -121,31 +111,28 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 			//13912341234||企信通测试回复||2008-05-27 12:10:11||1068112227282
 			SMSReceiveRecordDb srrdDb = new SMSReceiveRecordDb();
 			String receiveStr= sbReceive.toString();
-			if(receiveStr.indexOf("&") != -1){
-				System.out.println(getClass()+ " receive info = " + receiveStr);
+			if(receiveStr.contains("&")){
+				LogUtil.getLog(getClass()).info("receive info = " + receiveStr);
 				String[] receiveResultAry = receiveStr.split("\\{\\&\\}");
-				System.out.println(getClass() + "receiveResultAry size = " + receiveResultAry.length );
 				if(receiveResultAry != null && receiveResultAry.length > 1){
 					for(int i = 1; i < receiveResultAry.length; i++){
-						System.out.println(getClass() + "receiveResultAry=" + receiveResultAry[i]);
 						String[] receiveSmsAry = receiveResultAry[i].split("\\|\\|");
-						System.out.println(getClass()+ "mobile info = " + receiveSmsAry[0]);
-						System.out.println(getClass()+ "content info = " + receiveSmsAry[1]);
-						System.out.println(getClass()+ "mydate info = " + receiveSmsAry[2]);
-						System.out.println(getClass()+ "dest info = " + receiveSmsAry[3]);
+						/*LogUtil.getLog(getClass()).info(getClass()+ "mobile info = " + receiveSmsAry[0]);
+						LogUtil.getLog(getClass()).info(getClass()+ "content info = " + receiveSmsAry[1]);
+						LogUtil.getLog(getClass()).info(getClass()+ "mydate info = " + receiveSmsAry[2]);
+						LogUtil.getLog(getClass()).info(getClass()+ "dest info = " + receiveSmsAry[3]);*/
 						boolean re = srrdDb.create(new JdbcTemplate(), new Object[] {
 								receiveSmsAry[0],
 								receiveSmsAry[1],
 								receiveSmsAry[2],
 								receiveSmsAry[3],
 						});
-						System.out.println(getClass()+ "re info = " + re);
 					}
 				}
 			}
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return 0;
 	}
@@ -201,7 +188,7 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 		try {
 			sb.append("&password=" + pwd); // +SecurityUtil.MD5(pwd));
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		String inputline = "";
 		URL url;
@@ -213,16 +200,17 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 			connection.setRequestProperty("Accept-Charset", "UTF-8");
 			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
 			inputline = in.readLine();
-			// System.out.println(getClass()+ "sms send info = " +inputline);
+			// LogUtil.getLog(getClass()).info(getClass()+ "sms send info = " +inputline);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return inputline;
 	}
 
-	public boolean sendSMS(String content, String mobilePhones,
-						   String priority, String messageFlag, String moduleName,
-						   String exNumber) {
+	// 老接口
+	public boolean sendSMSXXX(String content, String mobilePhones,
+							  String priority, String messageFlag, String moduleName,
+							  String exNumber) {
 		com.redmoon.oa.sms.Config smscfg = new com.redmoon.oa.sms.Config();
 		String Signature = smscfg.getIsUsedProperty("Signature");
 		String strURL = smscfg.getIsUsedProperty("qxtMasSendSmsUrl");
@@ -235,7 +223,7 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 			// username对应于APIKey，password对应于APISecret
 			sb.append("&password=" + pwd);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		sb.append("&phone="+mobilePhones);
 		sb.append("&content="+URLEncoder.encode("【" + Signature + "】" + content));
@@ -252,7 +240,41 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 			String inputline = in.readLine();
 			DebugUtil.log(getClass(), "sendSMS", "info=" + inputline);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
+		}
+		return true;
+	}
+
+	public boolean sendSMS(String content, String mobilePhones,
+						   String priority, String messageFlag, String moduleName,
+						   String exNumber) {
+		com.redmoon.oa.sms.Config smscfg = new com.redmoon.oa.sms.Config();
+		String Signature = smscfg.getIsUsedProperty("Signature");
+		String strURL = smscfg.getIsUsedProperty("qxtMasSendSmsUrl");
+		String userName = smscfg.getIsUsedProperty("user_name");;
+		String pwd = smscfg.getIsUsedProperty("password");
+		StringBuilder sb = new StringBuilder(strURL);
+		// 使用新接口http://api.qirui.com:7891/mt?
+		// http://api.qirui.com:7891/mt?dc=8&un=2888880080&pw=abcdegfh12345678&sm=【启瑞云】您的验证码是：8888&da=13988888888&tf=3&rf=2&rd=0
+		sb.append("dc=8&un=" + userName);
+		sb.append("&pw=" + pwd);
+		sb.append("&da=" + mobilePhones);
+		sb.append("&tf=3");
+		sb.append("&rd=1"); // 0不需要状态报告
+		sb.append("&sm="+StrUtil.UrlEncode("【" + Signature + "】" + content));
+
+		URL url;
+		try {
+			url = new URL(sb.toString());
+			DebugUtil.log(getClass(), "sendSMS", "url=" + url);
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			//connection.setRequestMethod("post");
+			connection.setRequestProperty("Accept-Charset", "UTF-8");
+			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+			String inputline = in.readLine();
+			DebugUtil.log(getClass(), "sendSMS", "info=" + inputline);
+		} catch (Exception e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return true;
 	}
@@ -337,6 +359,4 @@ public class MmQxtMobileMsgUtil implements IMsgUtil{
 	public int sendBatch(String[] users, String content, String sender) throws ErrMsgException {
 		return 0;
 	}
-
-
 }

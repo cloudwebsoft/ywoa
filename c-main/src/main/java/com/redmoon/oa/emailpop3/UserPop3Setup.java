@@ -3,13 +3,12 @@ package com.redmoon.oa.emailpop3;
 import java.sql.*;
 import cn.js.fan.util.*;
 import cn.js.fan.db.Conn;
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class UserPop3Setup {
 	String mailserver, email_user, email_pwd;
 	int port;
-	Logger logger = Logger.getLogger(UserPop3Setup.class.getName());
 
 	public UserPop3Setup() {
 	}
@@ -53,7 +52,7 @@ public class UserPop3Setup {
 				i++;
 			}
 		} catch (SQLException e) {
-			logger.error("getUserPop3Setup error: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getUserPop3Setup error: " + e.getMessage());
 		} finally {
 			try {
 				if (rs != null) {
@@ -88,7 +87,7 @@ public class UserPop3Setup {
 				setSsl(rs.getInt(6) == 1);
 			}
 		} catch (SQLException e) {
-			logger.error("getUserPop3Setup error: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getUserPop3Setup error: " + e.getMessage());
 		} finally {
 			try {
 				if (conn != null) {
@@ -118,7 +117,7 @@ public class UserPop3Setup {
 				setSsl(rs.getInt(6) == 1);
 			}
 		} catch (SQLException e) {
-			logger.error("getUserPop3Setup error: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getUserPop3Setup error: " + e.getMessage());
 		} finally {
 			try {
 				if (conn != null) {

@@ -3,7 +3,6 @@ package com.redmoon.oa.flow;
 import cn.js.fan.util.*;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
 import java.util.*;
 import java.lang.*;
 import cn.js.fan.db.SQLFilter;
@@ -23,8 +22,6 @@ import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
  * @version 1.0
  */
 public class FormQueryConditionMgr {
-    Logger logger = Logger.getLogger(FormQueryConditionMgr.class.getName());
-
     public FormQueryConditionMgr() {
     }
 
@@ -34,7 +31,6 @@ public class FormQueryConditionMgr {
         int i = 0;
         String conditionFieldCode = "", conditionSign = "", conditionValue = "", conditionType = "", inputValue = "";
         String compareType = "";
-        // System.out.println(getClass() + " " + aqd.getConditionFieldCode());
         String[] conditionFieldCodeArr = StrUtil.split(aqd.getConditionFieldCode(), "\\$");
         // 如果没有条件
         if (conditionFieldCodeArr==null)
@@ -48,7 +44,6 @@ public class FormQueryConditionMgr {
                 i++;
                 continue;
             }
-            // System.out.println(getClass() + " conditionFieldCodeArr[" + i + "]=" + conditionFieldCodeArr[i]);
 
             String[] ary = conditionFieldCodeArr[i].split("\\|");
             conditionFieldCode = ary[0];
@@ -99,7 +94,6 @@ public class FormQueryConditionMgr {
 
         String conditionFieldCodeStr = ParamUtil.get(request,
                                                      "conditionFieldCodeStr");
-        // System.out.println(getClass() + " conditionFieldCodeStr=" + conditionFieldCodeStr);
         String[] conditionFieldCodeArr = StrUtil.split(conditionFieldCodeStr, ",");
 
         FormDb fd = new FormDb();

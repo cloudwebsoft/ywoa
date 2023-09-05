@@ -1,5 +1,6 @@
 package com.redmoon.oa.job;
 
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 
 import com.redmoon.oa.flow.MyActionDb;
@@ -21,9 +22,10 @@ import com.redmoon.oa.message.MobileAfterAdvice;
 import com.redmoon.oa.flow.WorkflowDb;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sms.IMsgUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
- * <p>Title: </p>
+ * <p>Title: 调度发起流程</p>
  *
  * <p>Description: </p>
  *
@@ -34,7 +36,12 @@ import com.redmoon.oa.sms.IMsgUtil;
  * @author not attributable
  * @version 1.0
  */
-public class WorkflowJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class WorkflowJob extends QuartzJobBean {
     public WorkflowJob() {
     }
 
@@ -43,13 +50,12 @@ public class WorkflowJob implements Job {
      *
      * @param jobExecutionContext JobExecutionContext
      * @throws JobExecutionException
-     * @todo Implement this org.quartz.Job method
      */
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         String flowCode = data.getString("flowCode");
-        // System.out.println(getClass() + " execute：flowCode = " + data.getString("flowCode"));
 
         Leaf lf = new Leaf();
         lf = lf.getLeaf(flowCode);

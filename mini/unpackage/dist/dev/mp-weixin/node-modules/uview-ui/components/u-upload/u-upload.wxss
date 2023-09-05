@@ -1,0 +1,108 @@
+@charset "UTF-8";
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* uni.scss */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+.u-upload.data-v-49deb6f2 {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.u-list-item.data-v-49deb6f2 {
+  width: 200rpx;
+  height: 200rpx;
+  overflow: hidden;
+  margin: 10rpx;
+  background: #f4f5f6;
+  position: relative;
+  border-radius: 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.u-preview-wrap.data-v-49deb6f2 {
+  border: 1px solid #ebecee;
+}
+.u-add-wrap.data-v-49deb6f2 {
+  flex-direction: column;
+  color: #606266;
+  font-size: 26rpx;
+}
+.u-add-tips.data-v-49deb6f2 {
+  margin-top: 20rpx;
+  line-height: 40rpx;
+}
+.u-add-wrap__hover.data-v-49deb6f2 {
+  background-color: #ebecee;
+}
+.u-preview-image.data-v-49deb6f2 {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 10rpx;
+}
+.u-delete-icon.data-v-49deb6f2 {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  z-index: 10;
+  background-color: #fa3534;
+  border-radius: 100rpx;
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.u-icon.data-v-49deb6f2 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.u-progress.data-v-49deb6f2 {
+  position: absolute;
+  bottom: 10rpx;
+  left: 8rpx;
+  right: 8rpx;
+  z-index: 9;
+  width: auto;
+}
+.u-error-btn.data-v-49deb6f2 {
+  color: #ffffff;
+  background-color: #fa3534;
+  font-size: 20rpx;
+  padding: 4px 0;
+  text-align: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  line-height: 1;
+}
+

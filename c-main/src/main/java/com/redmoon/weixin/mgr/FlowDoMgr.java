@@ -3,18 +3,19 @@ package com.redmoon.weixin.mgr;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.StrUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.Directory;
 import com.redmoon.oa.flow.DirectoryView;
 import com.redmoon.oa.flow.Leaf;
 import com.redmoon.oa.person.UserDb;
-import com.redmoon.oa.post.PostFlowMgr;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.weixin.bean.SortModel;
 import com.redmoon.weixin.util.CharacterParser;
 import com.redmoon.weixin.util.PinyinComparator;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.SQLException;
@@ -57,9 +58,6 @@ public class FlowDoMgr {
         DirectoryView dv = new DirectoryView(rootlf);
         Vector<Leaf> children;
         children = dir.getChildren(Leaf.CODE_ROOT);
-        PostFlowMgr pfMgr = new PostFlowMgr();
-        // 5.0（不含）之前的老版中，绩效考核流程权限判定，5.0以后已弃用
-        ArrayList<String> list = pfMgr.listCanUserStartFlow(userName);
         for (Leaf childlf : children) {
             if (childlf.isOpen() && dv.canUserSeeWhenInitFlow(request, childlf)) {
                 for (Leaf leaf : dir.getChildren(childlf.getCode())) {
@@ -67,13 +65,7 @@ public class FlowDoMgr {
                     if (leaf.isOpen()
                             && dv.canUserSeeWhenInitFlow(request, leaf)
                             && leaf.isMobileStart()) {
-                        if ("performance".equals(leaf.getParentCode())) {
-                            if (list.contains(leaf.getCode())) {
-                                isMobileStart = true;
-                            }
-                        } else {
-                            isMobileStart = true;
-                        }
+                        isMobileStart = true;
                         if (isMobileStart) {
                             SortModel sortModel = new SortModel();
                             sortModel.setObjs(leaf);
@@ -141,23 +133,51 @@ public class FlowDoMgr {
     /**
      * 所有用户 字母A-Z
      *
+     * limitDeptArr 节上被限定的部门编码数组
      * @return
      * @Description:
      */
-    public JSONObject usersInitList() {
-        JSONArray arr = new JSONArray();
+    public com.alibaba.fastjson.JSONObject usersInitList(String[] limitDeptArr) {
+        boolean includeRootDept = false;
+        if (limitDeptArr != null) {
+            for (String dept : limitDeptArr) {
+                if (dept.equals(ConstUtil.DEPT_ROOT)) {
+                    includeRootDept = true;
+                    break;
+                }
+            }
+        }
+        StringBuilder deptForSql = new StringBuilder();
+        if (!includeRootDept) {
+            if (limitDeptArr != null) {
+                for (String dept : limitDeptArr) {
+                    if (!"".equals(deptForSql.toString())) {
+                        deptForSql.append(",").append(StrUtil.sqlstr(dept));
+                    }
+                    else {
+                        deptForSql.append(StrUtil.sqlstr(dept));
+                    }
+                }
+            }
+        }
+
+        com.alibaba.fastjson.JSONArray arr = new com.alibaba.fastjson.JSONArray();
         List<SortModel> sortModels = new ArrayList<SortModel>();
-        JSONObject obj = new JSONObject();
+        com.alibaba.fastjson.JSONObject obj = new com.alibaba.fastjson.JSONObject();
         // UserDb userDb = new UserDb();
         // 通过三表联合查询，3000多人的情况下，约为80ms
         String sql = "select u.name,realName,gender,mobile,photo,d.name from users u, dept_user du, department d where u.name=du.user_name and d.code=du.dept_code and isValid=1 and isPass=1 and u.name<>" + StrUtil.sqlstr("system");
+        if (deptForSql.length() > 0) {
+            sql += " and du.dept_code in (" + deptForSql.toString() + ")";
+        }
+
         JdbcTemplate jt = new JdbcTemplate();
         ResultIterator ri = null;
         ResultRecord rd = null;
         try {
             ri = jt.executeQuery(sql);
             while (ri.hasNext()) {
-                rd = (ResultRecord) ri.next();
+                rd = ri.next();
                 String userName = rd.getString(1);
                 UserDb ud = new UserDb();
                 String realName = rd.getString(2);
@@ -191,25 +211,24 @@ public class FlowDoMgr {
                 sortModels.add(sortUserModel);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
-
 
         if (sortModels.size() > 0) {
             PinyinComparator pinyinComparator = new PinyinComparator();
             Collections.sort(sortModels, pinyinComparator);
             for (int i = 0; i < sortModels.size(); i++) {
-                JSONObject itemObj = new JSONObject();
+                com.alibaba.fastjson.JSONObject itemObj = new com.alibaba.fastjson.JSONObject();
                 int sec = sortModels.get(i).getSortLetters().charAt(0);
                 UserDb users = (UserDb) sortModels.get(i).getObjs();
-                JSONObject userObj = new JSONObject();
+                com.alibaba.fastjson.JSONObject userObj = new com.alibaba.fastjson.JSONObject();
                 String name = users.getName();
                 // DeptUserDb dud = new DeptUserDb(name);
                 // String deptName = dud.getDeptName();
                 userObj.put("name", users.getName());
                 userObj.put("realName", users.getRealNameRaw());
                 userObj.put("mobile", users.getMobile());
-                userObj.put("photo", users.getPhoto());
+                userObj.put("photo", users.getPhoto()); // 在mui.user.wx.js中未用到photo，故未改为：showImg.do?path=user.getPhoto
                 userObj.put("gender", users.getGender());
                 userObj.put("dName", users.getParty());  // 借用party存储deptName
                 if (i == getPositionForSection(sec, sortModels)) {
@@ -218,7 +237,7 @@ public class FlowDoMgr {
                     itemObj.put("name", sortModels.get(i).getSortLetters());
                     itemObj.put("pyName", sortModels.get(i).getSortLetters());
                     arr.add(itemObj);
-                    JSONObject itemObj2 = new JSONObject();
+                    com.alibaba.fastjson.JSONObject itemObj2 = new com.alibaba.fastjson.JSONObject();
                     itemObj2.put("isGroup", false);
                     itemObj2.put("name", users.getRealNameRaw());
                     itemObj2.put("pyName", CharacterParser.getInstance()

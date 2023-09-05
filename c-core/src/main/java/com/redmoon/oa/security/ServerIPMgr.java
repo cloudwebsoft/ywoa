@@ -5,6 +5,7 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.sms.SMSTemplateDb;
 import java.io.IOException;
 import cn.js.fan.util.ResKeyException;
@@ -68,7 +69,7 @@ public class ServerIPMgr {
             try {
                 del(StrUtil.toInt(ids[i]));
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
     }

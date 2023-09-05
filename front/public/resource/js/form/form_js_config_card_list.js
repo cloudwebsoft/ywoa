@@ -1,0 +1,3 @@
+function copy() {
+    copyRecords();
+}

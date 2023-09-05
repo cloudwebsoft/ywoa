@@ -15,11 +15,13 @@
         <result column="role_type" property="roleType" />
         <result column="is_dept_manager" property="isDeptManager" />
         <result column="kind" property="kind"/>
+        <result column="status" property="status"/>
+        <result column="id" property="id"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        code, description, isSystem, orders, disk_quota, unit_code, msg_space_quota, rank_code, role_type, is_dept_manager, kind
+        code, description, isSystem, orders, disk_quota, unit_code, msg_space_quota, rank_code, role_type, is_dept_manager, kind, status, id
     </sql>
 
     <select id="listBySql" parameterType="string" resultMap="BaseResultMap">

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>关联模块添加</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
+    <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <style>
+        input[readonly] {
+            background-color: #ddd;
+        }
+        select[readonly] {
+            background-color: #ddd;
+        }
+        textarea[readonly] {
+            background-color: #ddd;
+        }
+        select {
+            line-height: 27px;
+            height: 29px !important;
+            border: 1px solid #d4d4d4;
+        }
+    </style>
+    <script src="../inc/common.js"></script>
+    <script src="../js/jquery-1.9.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery.raty.min.js"></script>
+    <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <script src="../inc/livevalidation_standalone.js"></script>
+    <script src="../inc/upload.js"></script>
+    <script src="../inc/flow_dispose_js.jsp"></script>
+    <script th:src="@{'/inc/flow_js.jsp?parentFormCode=' + ${formCode}}"></script>
+    <script src="../inc/ajax_getpage.jsp"></script>
+    <script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}"/>
+    <script th:src="@{'/flow/form_js/form_js_' + ${formCodeRelated} + '.jsp?pageType=addRelate&parentId=' + ${parentId} + '&formCode=' + ${formCode} + '&formCodeRelated=' + ${formCodeRelated} + '&moduleCodeRelated=' + ${moduleCodeRelated} + '&time=' + ${random}}"></script>
+    <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
+    <script src="../js/datepicker/jquery.datetimepicker.js"></script>
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <link href="../js/select2/select2.css" rel="stylesheet"/>
+    <script src="../js/select2/select2.js"></script>
+    <script src="../js/select2/i18n/zh-CN.js"></script>
+    <script src="../inc/map.js"></script>
+</head>
+<body>
+<div th:if="${isNav and hasTab}" class="tabs1Box">
+    <div id="tabs1">
+        <ul>
+            <li th:each="json : ${aryTab}" th:id="${json.id}" th:attr="tagName=${json.name}">
+                <th:block th:switch="${json.get('target')!=null and json.target eq 'newTab'}">
+                    <th:block th:case="true">
+                        <a href="javascript:;" th:title="${json.name}" th:onclick="addTab('[(${json.name})]', '[(${json.url})]')"><span>[(${json.name})]</span></a>
+                    </th:block>
+                    <th:block th:case="*">
+                        <a th:href="${json.url}" title="${json.name}"><span>[(${json.name})]</span></a>
+                    </th:block>
+                </th:block>
+            </li>
+        </ul>
+    </div>
+    <script th:inline="javascript">
+        $("#menu[(${menuItem})]").addClass("current");
+    </script>
+</div>
+<div class="spacerH"></div>
+<form method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
+    <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="left">
+                <div>
+                    [(${rend})]
+                </div>
+            </td>
+        </tr>
+        <tr th:if="${isHasAttachment}">
+            <td>
+                <div style="clear:both">
+                    <script>initUpload()</script>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td height="30" align="center">
+                <button id="btnAdd" class="btn btn-default">确定</button>
+                <th:block th:switch="${isTabStyleHor}">
+                    &nbsp;&nbsp;
+                    <button th:case="true" id="btnBack" class="btn btn-default" type="button" name="btnBack" onclick="window.history.back()">返回</button>
+                    &nbsp;&nbsp;
+                    <button th:case="*" id="btnClose" class="btn btn-default" type="button" name="btnBack" onclick="closeDlg()">关闭</button>
+                </th:block>
+
+                <input id="cws_id" name="cws_id" th:value="${relateFieldValue}" type="hidden"/>
+                <input id="helper" value="1" type="hidden"/>
+            </td>
+        </tr>
+    </table>
+    <span id="spanTempCwsIds"></span>
+</form>
+<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+<script src="../js/layui/layui.js" charset="utf-8"></script>
+<script th:inline="javascript">
+    var layer;
+    layui.use('layer', function(){
+        layer = layui.layer;
+    });
+
+    function closeDlg() {
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index);
+    }
+
+    var isPageStyleLight = [(${isPageStyleLight})];
+    if (isPageStyleLight) {
+        // 不能放在$(function中，原来的tabStyle_8风格会闪现
+        // $(function() {
+        var $table = $('#visualForm').find('.tabStyle_8');
+        $table.addClass('layui-table');
+        $table.removeClass('tabStyle_8');
+        // })
+    }
+
+    $(function () {
+        SetNewDate();
+    });
+
+
+    // 记录添加的嵌套表格2记录的ID
+    function addTempCwsId(formCode, cwsId) {
+        var name = "[(${NAME_TEMP_CWS_IDS})]_" + formCode;
+        var inp;
+        try {
+            inp = document.createElement('<input type="hidden" name="' + name + '" />');
+        } catch (e) {
+            inp = document.createElement("input");
+            inp.type = "hidden";
+            inp.name = name;
+        }
+        inp.value = cwsId;
+
+        spanTempCwsIds.appendChild(inp);
+    }
+
+    $(function () {
+        var f_helper = new LiveValidation('helper');
+
+        $('#btnAdd').click(function () {
+            if (!LiveValidation.massValidate(f_helper.formObj.fields)) {
+                jAlert("请检查表单中的内容填写是否正常！", "提示");
+                return;
+            }
+            $('#btnAdd').attr("disabled", true);
+
+            var formData = new FormData($('#visualForm')[0]);
+
+            $.ajax({
+                url: 'createRelate.do?code=[(${moduleCode})]&parentId=[(${parentId})]&formCodeRelated=[(${formCodeRelated})]&formCode=[(${formCode})]&moduleCodeRelated=[(${moduleCodeRelated})]' ,
+                type: 'post',
+                data: formData,
+                async: true,
+                // 下面三个参数要指定，如果不指定，会报一个JQuery的错误
+                cache: false,
+                contentType: false,
+                processData: false,
+                dataType: "html",
+                beforeSend: function(XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data) {
+                    var data = $.parseJSON($.trim(data));
+                    if (data.ret=="0") {
+                        layer.msg(data.msg);
+                        $('#btnAdd').attr("disabled", false);
+                    }
+                    else {
+                        try {
+                            onModuleAdd[(${moduleCodeRelated})](data.id, [(${isTabStyleHor})]);
+                        }
+                        catch (e) {}
+                        // 如果有父窗口，则自动刷新父窗口
+                        if (window.opener != null) {
+                            window.opener.location.reload();
+                        }
+
+                        var isTabStyleHor = [(${isTabStyleHor})];
+                        if (isTabStyleHor) {
+                            layer.alert(data.msg, {
+                                yes: function() {
+                                    window.location.href = "moduleListRelatePage.do?parentPageType=[(${parentPageType})]&code=[(${moduleCode})]&parentId=[(${parentId})]&menuItem=[(${menuItem})]&formCodeRelated=[(${formCodeRelated})]&formCode=[(${formCode})]&isNav=[(${isNav})]&moduleCodeRelated=[(${moduleCodeRelated})]";
+                                }
+                            });
+                        }
+                        else {
+                            parent.layui.table.reload('table[(${moduleCodeRelated})]');
+                            layer.open({
+                                type: 1
+                                ,offset: 'auto' //具体配置参考：http://www.layui.com/doc/modules/layer.html#offset
+                                ,id: 'dlg' //防止重复弹出
+                                ,content: '<div style="padding: 20px 100px;">'+ data.msg +'</div>'
+                                ,btn: '确定'
+                                ,btnAlign: 'c' //按钮居中
+                                ,shade: 0 //不显示遮罩
+                                ,yes: function(){
+                                    closeDlg();
+                                }
+                            });
+                        }
+                    }
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function (returndata) {
+                    $('body').hideLoading();
+                    $('#btnAdd').attr("disabled", false);
+                    alert(returndata);
+                }
+            });
+        });
+    });
+
+    $(function() {
+        $('input, select, textarea').each(function () {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+            }
+        });
+    });
+</script>
+</body>
+</html>

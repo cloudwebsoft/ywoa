@@ -1,7 +1,6 @@
 package com.redmoon.oa.address;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 
 import com.cloudwebsoft.framework.util.LogUtil;
 
@@ -46,8 +45,7 @@ public class LeafChildrenCacheMgr {
                 }
             }
         } catch (Exception e) {
-        	LogUtil.getLog(getClass()).error("getDirList:" + e.getMessage());
-        	e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }

@@ -2,7 +2,11 @@ package com.redmoon.oa.visual.func;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import cn.js.fan.util.XMLProperties;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
 
@@ -10,7 +14,6 @@ import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -18,14 +21,15 @@ import cn.js.fan.cache.jcs.RMCache;
 import org.jdom.output.Format;
 import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class FuncMgr {
     RMCache rmCache;
     final String group = "FuncMgr";
     final String ALLFUNC = "ALLFUNC";
 
-    static Logger logger;
-    public final String FILENAME = "config_func.xml";
+    public static final String FILENAME = "config_func.xml";
 
     public static Document doc = null;
     public static Element root = null;
@@ -36,7 +40,6 @@ public class FuncMgr {
     public FuncMgr() {
         rmCache = RMCache.getInstance();
 
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -45,16 +48,25 @@ public class FuncMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
+                Resource resource = new ClassPathResource(FILENAME);
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
                 root = doc.getRootElement();
-                fin.close();
+
                 isInited = true;
             } catch (JDOMException | IOException e) {
-                logger.error(e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(FuncMgr.class).error(e);
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(FuncMgr.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -69,7 +81,7 @@ public class FuncMgr {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -79,7 +91,7 @@ public class FuncMgr {
             pu = (FuncUnit)rmCache.getFromGroup(code, group);
         }
         catch (Exception e) {
-            logger.error("getFuncUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getFuncUnit:" + e.getMessage());
         }
         if (pu==null) {
             init();
@@ -110,8 +122,7 @@ public class FuncMgr {
                         try {
                             rmCache.putInGroup(ecode, group, pu);
                         } catch (Exception e) {
-                            logger.error("getFuncUnit:" + e.getMessage());
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
                         }
                         return pu;
                     }
@@ -131,7 +142,7 @@ public class FuncMgr {
         try {
             v = (Vector) rmCache.getFromGroup(ALLSCORE, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
         */
@@ -148,7 +159,7 @@ public class FuncMgr {
                     rmCache.putInGroup(ALLFUNC, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllEntrance:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllEntrance:" + e.getMessage());
                 }
             }
         // }
@@ -165,6 +176,8 @@ public class FuncMgr {
             FileOutputStream fout = new FileOutputStream(xmlPath);
             outp.output(doc, fout);
             fout.close();
-        } catch (java.io.IOException e) {e.printStackTrace();}
+        } catch (java.io.IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
     }
 }

@@ -71,7 +71,6 @@ if ("validate".equals(op)){
 if ("field".equals(op)){
 	fd = fd.getFormDb(writeBackCode);
 	String field = ParamUtil.get(request,"field");
-	// System.out.println(getClass() + " field=" + field);
 	if ("cws_id".equals(field)) {
 		json.put("fieldType", "text");
 		json.put("ret",0);
@@ -137,7 +136,6 @@ if (!"".equals(mainCode)){
 		while (ir.hasNext()) {
 			FormField ff = (FormField)ir.next();
 			if (ff.getType().equals(FormField.TYPE_MACRO)) {
-				// System.out.println(getClass() + " ff.getMacroType()=" + ff.getMacroType());
 				if (ff.getMacroType().equals("nest_table") || ff.getMacroType().equals("nest_sheet")) {
 					String nestFormCode = ff.getDefaultValue();
 					try {
@@ -182,7 +180,6 @@ if (!"".equals(mainCode)){
 		while (ir.hasNext()) {
 			FormField ff = (FormField)ir.next();
 			if (ff.getType().equals(FormField.TYPE_MACRO)) {
-				// System.out.println(getClass() + " ff.getMacroType()=" + ff.getMacroType());
 				if (ff.getMacroType().equals("nest_table") || ff.getMacroType().equals("nest_sheet")) {
 					String nestFormCode = ff.getDefaultValue();
 					try {

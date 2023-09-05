@@ -74,7 +74,7 @@
         select
         <include refid="Base_Column_List"/>
         from oa_notice where notice_level=1 and begin_date &lt;= #{curDate} and (end_date is null or end_date&gt;= #{curDate})
-        and (id in (select notice_id from oa_notice_reply where user_name = #{userName}))
+        and (id in (select notice_id from oa_notice_reply where user_name = #{userName} and is_readed='0'))
         order by id desc
     </select>
 

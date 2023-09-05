@@ -1,18 +1,16 @@
 package com.redmoon.oa.flow.strategy;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.Serializable;
-import org.apache.log4j.Logger;
 
 public class StrategyUnit implements Serializable {
-    transient Logger logger = Logger.getLogger(this.getClass().getName());
 
     public StrategyUnit(String code) {
         this.code = code;
     }
 
     public void renew() {
-        if (logger==null)
-            logger = Logger.getLogger(this.getClass().getName());
     }
 
     public void setCode(String code) {
@@ -67,7 +65,7 @@ public class StrategyUnit implements Serializable {
             ist = (IStrategy) Class.forName(className).newInstance();
             ist.setX(x);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return ist;
     }

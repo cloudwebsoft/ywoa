@@ -3,10 +3,30 @@
 <%@page import="com.redmoon.weixin.mgr.WXUserMgr" %>
 <%@page import="com.redmoon.oa.person.UserDb" %>
 <%@page import="cn.js.fan.util.ParamUtil" %>
+<%@ page import="org.json.JSONArray" %>
+<%@ page import="org.json.JSONObject" %>
 <%
     Privilege pvg = new Privilege();
     pvg.auth(request);
     String skey = pvg.getSkey();
+    // 通过uniapp的webview载入
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
+
+    JSONArray params = new JSONArray();
+    Enumeration reqParamNames = request.getParameterNames();
+    while (reqParamNames.hasMoreElements()) {
+        String paramName = (String) reqParamNames.nextElement();
+        if (!"isUniWebview".equals(paramName) && !"skey".equals(paramName)) {
+            String[] paramValues = request.getParameterValues(paramName);
+            if (paramValues.length == 1) {
+                String paramValue = ParamUtil.getParam(request, paramName);
+                JSONObject json = new JSONObject();
+                json.put("name", paramName);
+                json.put("value", paramValue);
+                params.put(json);
+            }
+        }
+    }
 %>
 <!DOCTYPE HTML>
 <html>
@@ -89,20 +109,34 @@
     // 将路径改为完整的路径，否则ios中5+app会因为spring security不允许url中包括../而致无法访问
     var url = "../../public/android/flow/doingorreturn?";
     if(mui.os.plus && mui.os.ios) {
-        url = getContextPath() + "/public/android/flow/doingorreturn?";
+        // url = getContextPath() + "/public/android/flow/doingorreturn?";
+
+        var rootPath = getContextPath();
+        var p = rootPath.indexOf('/weixin');
+        if ( p != -1) {
+            rootPath = rootPath.substring(0, p);
+        }
+        url = rootPath + "/public/android/flow/doingorreturn?";
     }
 
+    var isUniWebview = <%=isUniWebview%>;
     var skey = '<%=skey%>';
     var options = {
         "ajax_params": {"skey": skey},
         "url": url,
-        "ajaxDatasType": "flows"
+        "ajaxDatasType": "flows",
+        "isUniWebview": isUniWebview,
+        "params": <%=params.toString()%>
     };
     var content = document.querySelector('.mui-content');
     /*var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
     PullToRefrshListApi.loadListDate();*/
 
     if(mui.os.plus) {
+        // 如果是通过uniapp的webview载入
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
         // 使搜索区域下方空白不致过大，因为搜索框中的input的margin-bottom为15px，而在原生手机端中则不会有此margin-bottom
         $('#pullrefresh').css('margin-top', '-15px');
         document.addEventListener('plusready', function() {
@@ -126,8 +160,8 @@
 
     var iosCallJS = JSON.stringify(appProp);
 
-    // 当5+app中流程处理完毕返回此页面时执行刷新
-    window.addEventListener('refresh', function(e){
+    // 当5+app中流程处理完毕返回此页面时执行刷新，注意不能用refresh字符串，否则页面会不停地刷新
+    window.addEventListener('refreshList', function(e){
         location.reload();
     });
 </script>

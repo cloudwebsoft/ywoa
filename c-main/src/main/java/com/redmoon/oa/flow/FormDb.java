@@ -18,6 +18,11 @@ import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
+import com.cloudweb.oa.cache.FlowFormDaoCache;
+import com.cloudweb.oa.cache.FlowShowRuleCache;
+import com.cloudweb.oa.cache.FormShowRuleCache;
+import com.cloudweb.oa.cache.VisualFormDaoCache;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.ISQLGenerator;
@@ -40,7 +45,7 @@ public class FormDb extends ObjectDb {
     public FormDb() {
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("FormDb:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("FormDb:默认数据库名为空！");
         }
         isInitFromConfigDB = false;
         init();
@@ -50,7 +55,7 @@ public class FormDb extends ObjectDb {
         this.code = code;
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("FormDb:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("FormDb:默认数据库名为空！");
         }
         load();
         init();
@@ -104,18 +109,18 @@ public class FormDb extends ObjectDb {
             Iterator<String> ir = vt.iterator();
             while (ir.hasNext()) {
                 sql = ir.next();
-                // logger.info("create2: sql=" + sql);
+                // LogUtil.getLog(getClass()).info("create2: sql=" + sql);
                 conn.executeUpdate(sql);
             }
             
             vt = SQLGeneratorFactory.getSQLGenerator().generateCreateStrForLog(getTableName(code), v);
             ir = vt.iterator();
             while (ir.hasNext()) {
-                sql = (String)ir.next();
+                sql = ir.next();
                 conn.executeUpdate(sql);
             }            
 
-            sql = "insert into form_field (formCode, name, title, type, macroType, defaultValue, fieldType, canNull, fieldRule, description, is_func, css_width, is_readonly,present, is_helper) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            sql = "insert into form_field (formCode, name, title, type, macroType, defaultValue, fieldType, canNull, fieldRule, description, is_func, css_width, is_readonly,present, is_helper,read_only_type,format) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             // 增加新的表单域
             Iterator<FormField> irField = v.iterator();
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -142,9 +147,11 @@ public class FormDb extends ObjectDb {
                 ps.setInt(13, ff.isReadonly()?1:0);
                 ps.setString(14, ff.getPresent());
                 ps.setInt(15, ff.isHelper()?1:0);
+                ps.setString(16, ff.getReadOnlyType());
+                ps.setString(17, ff.getFormat());
                 LogUtil.getLog(getClass()).info("create:" + ff.getName() + "--" + ff.getDefaultValue() +
                                    "--" + ff.getDefaultValueRaw() + " canNull=" + ff.isCanNull() + " rule=" + ff.getRule());
-                // System.out.println("FormDb save:" + ff.getName() + "=" + ff.getDefaultValue());
+                // LogUtil.getLog(getClass()).info("FormDb save:" + ff.getName() + "=" + ff.getDefaultValue());
                 conn.executePreUpdate();
             }
 
@@ -182,9 +189,8 @@ public class FormDb extends ObjectDb {
                 mc.refreshCreate();
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("create:" + StrUtil.trace(e) + ". Now transaction rollback");
             conn.rollback();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("插入时出错！");
         } catch (Exception e) {
             throw new ErrMsgException(e.getMessage());
@@ -250,7 +256,7 @@ public class FormDb extends ObjectDb {
                     try {
                         mrd.del();
                     } catch (ResKeyException ex) {
-                        ex.printStackTrace();
+                        LogUtil.getLog(getClass()).error(ex);
                     }
                 }
 
@@ -285,9 +291,8 @@ public class FormDb extends ObjectDb {
             }
             conn.commit();
         } catch (SQLException e) {
-            e.printStackTrace();
             conn.rollback();
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -300,7 +305,7 @@ public class FormDb extends ObjectDb {
      * @return String
      */
     public static String getTableName(String code) {
-        return "form_table_" + code;
+        return "ft_" + code;
     }
     
     public static String getTableNameForLog(String code) {
@@ -310,12 +315,12 @@ public class FormDb extends ObjectDb {
     /**
      * 取得表格名称对应的表单编码
      * @param tableName 表名
-     * @return 如果表格名称不是以form_table_开头，则返回null
+     * @return 如果表格名称不是以ft_开头，则返回null
      */
     public static String getCodeByTableName(String tableName) {
     	tableName = tableName.toLowerCase();
-    	if (tableName.startsWith("form_table_")) {
-            return tableName.substring(11);
+    	if (tableName.startsWith("ft_")) {
+            return tableName.substring(3);
         } else {
             return null;
         }
@@ -450,6 +455,7 @@ public class FormDb extends ObjectDb {
                     "cws_create_date".equalsIgnoreCase(colName) ||
                     "cws_modify_date".equalsIgnoreCase(colName) ||
                     "cws_quote_form".equalsIgnoreCase(colName) ||
+                    "cws_visited".equalsIgnoreCase(colName) ||
                     "cws_finish_date".equalsIgnoreCase(colName)) {
                     continue;
                 }
@@ -458,8 +464,7 @@ public class FormDb extends ObjectDb {
                 v.addElement(ff);
             }
         } catch (SQLException e) {
-            logger.error("getTableColumnsFromDb:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -479,8 +484,31 @@ public class FormDb extends ObjectDb {
             FormCache mc = new FormCache(this);
             primaryKey.setValue(code);
             mc.refreshSave(primaryKey);
+
+            // 因为FormDAO中会缓存FormDb，故在修改显示规则后应清空FormDAO所有的缓存记录
+            VisualFormDaoCache visualFormDaoCache = SpringUtil.getBean(VisualFormDaoCache.class);
+            visualFormDaoCache.refreshAll(code);
+
+            FormShowRuleCache formShowRuleCache = SpringUtil.getBean(FormShowRuleCache.class);
+            formShowRuleCache.refresh(code);
+
+            // 取出跟该表单相关的流程类型，如果采用的是表单验证规则，则刷新流程中的显示规则
+            WorkflowPredefineDb wfd = new WorkflowPredefineDb();
+            Leaf lf = new Leaf();
+            for (Object o : lf.getLeavesUseForm(code)) {
+                lf = (Leaf) o;
+                wfd = wfd.getDefaultPredefineFlow(lf.getCode());
+                if (wfd == null) {
+                    wfd = new WorkflowPredefineDb();
+                } else {
+                    if (wfd.isUseFormViewRule()) {
+                        FlowShowRuleCache flowShowRuleCache = SpringUtil.getBean(FlowShowRuleCache.class);
+                        flowShowRuleCache.refresh(wfd.getTypeCode());
+                    }
+                }
+            }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return re;
     }
@@ -493,6 +521,9 @@ public class FormDb extends ObjectDb {
         try {
             // 解析content，在表form_field中建立相应的域
             // FormParser fp = new FormParser(content);
+            if (formParser == null) {
+                formParser = new FormParser(content);
+            }
             formParser.validateFields();
             Vector<FormField> newv = formParser.getFields();
             // 检查其中的fields是否合法
@@ -524,7 +555,7 @@ public class FormDb extends ObjectDb {
                 ir = vtCreate.iterator();
                 while (ir.hasNext()) {
                     String sql = ir.next();
-                    logger.info("save2: sql=" + sql);
+                    LogUtil.getLog(getClass()).info("save2: sql=" + sql);
                     conn.executeUpdate(sql);
                 }
             }
@@ -562,7 +593,7 @@ public class FormDb extends ObjectDb {
 
             // 取得原来表单域的序号置于map中
             HashMap<String, FormField> map = new HashMap<String, FormField>();
-            String sql = "select name,orders,canNull,canQuery,canList,width,is_mobile_display,is_hide,more_than,more_than_mode,present,is_unique,is_helper from form_field where formCode=?";
+            String sql = "select name,orders,canNull,canQuery,canList,width,is_mobile_display,is_hide,more_than,more_than_mode,present,is_unique,is_helper,read_only_type,format from form_field where formCode=?";
             ps = conn.prepareStatement(sql);
             ps.setString(1, code);
             ResultSet rs = conn.executePreQuery();
@@ -571,7 +602,8 @@ public class FormDb extends ObjectDb {
             	ff.setName(rs.getString(1));
             	ff.setOrders(rs.getInt(2));
             	ff.setCanNull(rs.getInt(3) == 1);
-            	ff.setCanQuery(rs.getInt(4) == 1);
+            	ff.setCanQuery(rs.getInt(4) >= 1);
+            	ff.setQueryMode(rs.getInt(4));
             	ff.setCanList(rs.getInt(5) == 1);
             	ff.setWidth(rs.getInt(6));
             	ff.setMobileDisplay("1".equals(rs.getString(7)));
@@ -591,6 +623,8 @@ public class FormDb extends ObjectDb {
                     ff.setUnique(false);
                 }
             	ff.setHelper(rs.getInt(13)==1);
+				ff.setReadOnlyType(StrUtil.getNullStr(rs.getString(14)));
+                ff.setFormat(StrUtil.getNullStr(rs.getString(15)));
                 map.put(rs.getString(1), ff);
             }
             rs.close();
@@ -603,7 +637,7 @@ public class FormDb extends ObjectDb {
             conn.executePreUpdate();
             ps.close();
 
-            sql = "insert into form_field (formCode, name, title, type, macroType, defaultValue, fieldType, canNull, fieldRule, orders, canQuery, canList, is_mobile_display, width, description,is_hide,more_than,more_than_mode,is_func,css_width,is_readonly,present,is_unique,is_helper) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            sql = "insert into form_field (formCode, name, title, type, macroType, defaultValue, fieldType, canNull, fieldRule, orders, canQuery, canList, is_mobile_display, width, description,is_hide,more_than,more_than_mode,is_func,css_width,is_readonly,present,is_unique,is_helper,read_only_type,format) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             // 增加新的表单域
             Iterator<FormField> irField = newv.iterator();
             ps = conn.prepareStatement(sql);
@@ -618,14 +652,14 @@ public class FormDb extends ObjectDb {
                 ps.setInt(7, ff.getFieldType());
                 ps.setInt(8, ff.isCanNull() ? 1 : 0);
                 ps.setString(9, ff.getRule());
-                LogUtil.getLog(getClass()).info("save:" + ff.getName() + "--" +
+                /*DebugUtil.i(getClass(), "save", ff.getName() + "--" +
                                                 ff.getDefaultValue() +
-                                                "--" + ff.getDefaultValueRaw());
+                                                "--" + ff.getDefaultValueRaw() + "--" + ff.getReadOnlyType());*/
                 FormField o = map.get(ff.getName());
                 // 如果字段原先有序号等，则赋予原来的序号等
                 if (o != null) {
                     ps.setInt(10, o.getOrders());
-                    ps.setInt(11, o.isCanQuery() ? 1 : 0);
+                    ps.setInt(11, o.getQueryMode());
                     ps.setInt(12, o.isCanList() ? 1 : 0);
                     ps.setString(13, o.isMobileDisplay() ? "1" : "0");
                     ps.setInt(14, o.getWidth());
@@ -668,7 +702,8 @@ public class FormDb extends ObjectDb {
                 else {
                     ps.setInt(24, ff.isHelper() ? 1 : 0);
                 }
-                
+                ps.setString(25, ff.getReadOnlyType());
+                ps.setString(26, ff.getFormat());
                 conn.executePreUpdate();
             }
 
@@ -684,13 +719,36 @@ public class FormDb extends ObjectDb {
 
             conn.commit();
 
+            FlowFormDaoCache flowFormDaoCache = SpringUtil.getBean(FlowFormDaoCache.class);
+            flowFormDaoCache.refreshAll(code);
+            VisualFormDaoCache visualFormDaoCache = SpringUtil.getBean(VisualFormDaoCache.class);
+            visualFormDaoCache.refreshAll(code);
+
             FormCache mc = new FormCache(this);
             primaryKey.setValue(code);
             mc.refreshSave(primaryKey);
+
+            FormShowRuleCache formShowRuleCache = SpringUtil.getBean(FormShowRuleCache.class);
+            formShowRuleCache.refresh(code);
+
+            // 取出跟该表单相关的流程类型，如果采用的是表单验证规则，则刷新流程中的显示规则
+            WorkflowPredefineDb wfd = new WorkflowPredefineDb();
+            Leaf lf = new Leaf();
+            for (Object o : lf.getLeavesUseForm(code)) {
+                lf = (Leaf) o;
+                wfd = wfd.getDefaultPredefineFlow(lf.getCode());
+                if (wfd == null) {
+                    wfd = new WorkflowPredefineDb();
+                } else {
+                    if (wfd.isUseFormViewRule()) {
+                        FlowShowRuleCache flowShowRuleCache = SpringUtil.getBean(FlowShowRuleCache.class);
+                        flowShowRuleCache.refresh(wfd.getTypeCode());
+                    }
+                }
+            }
         } catch (SQLException e) {
             conn.rollback();
-            logger.error("save:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(e.getMessage());
         } finally {
             conn.close();
@@ -771,7 +829,7 @@ public class FormDb extends ObjectDb {
             pstmt.setString(1, code);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                DebugUtil.e(getClass(), "load", "load:表单 " + code + " 在数据库中未找到." + StrUtil.trace(new Exception()));
+                DebugUtil.e(getClass(), "load", "load:表单 " + code + " 在数据库中未找到."); // + StrUtil.trace(new Exception()));
             } else {
                 this.code = rs.getString(1);
                 this.name = rs.getString(2);
@@ -796,7 +854,7 @@ public class FormDb extends ObjectDb {
                 fields = new Vector<>();
                 fieldsMap = new LinkedHashMap<>();
 
-                String sql = "select name,title,type,macroType,defaultValue,fieldType,canNull,fieldRule,canQuery,canList,orders,width,description,is_mobile_display,is_hide,more_than,more_than_mode,is_func,css_width,is_readonly,present,is_unique,is_helper from form_field where formCode=? order by orders desc";
+                String sql = "select name,title,type,macroType,defaultValue,fieldType,canNull,fieldRule,canQuery,canList,orders,width,description,is_mobile_display,is_hide,more_than,more_than_mode,is_func,css_width,is_readonly,present,is_unique,is_helper,read_only_type,format from form_field where formCode=? order by orders desc";
                 pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, code);
                 rs = conn.executePreQuery();
@@ -812,7 +870,8 @@ public class FormDb extends ObjectDb {
                         ff.setFieldType(rs.getInt(6));
                         ff.setCanNull(rs.getInt(7)==1);
                         ff.setRule(StrUtil.getNullStr(rs.getString(8)));
-                        ff.setCanQuery(rs.getInt(9)==1);
+                        ff.setCanQuery(rs.getInt(9)>=1);
+                        ff.setQueryMode(rs.getInt(9));
                         ff.setCanList(rs.getInt(10)==1);
                         ff.setOrders(rs.getInt(11));
                         ff.setWidth(rs.getInt(12));
@@ -839,15 +898,28 @@ public class FormDb extends ObjectDb {
                         }
 
                         ff.setHelper(rs.getInt(23)==1);
-
+                        ff.setReadOnlyType(StrUtil.getNullStr(rs.getString(24)));
+                        ff.setFormat(StrUtil.getNullStr(rs.getString(25)));
                         fields.addElement(ff);
                         fieldsMap.put(ff.getName(), ff);
+
+                        if (ff.getType().equals(FormField.TYPE_SELECT)) {
+                            String[][] ary = FormParser.getOptionsArrayOfSelect(this, ff);
+                            for (String[] opt : ary) {
+                                ff.getOptions().put(opt[1], opt[0]);
+                            }
+                        }
+                        else if (ff.getType().equals(FormField.TYPE_RADIO)) {
+                            String[][] ary = FormParser.getOptionsArrayOfRadio(this, ff);
+                            for (String[] opt : ary) {
+                                ff.getOptions().put(opt[0], opt[1]);
+                            }
+                        }
                     }
                 }
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (rs != null) {
                 try {
@@ -926,7 +998,7 @@ public class FormDb extends ObjectDb {
             try {
                 v.addElement((FormField) ff.clone());
             } catch (Exception e) {
-                logger.error("getFields:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getFields:" + e.getMessage());
             }
         }
         return v;
@@ -977,8 +1049,7 @@ public class FormDb extends ObjectDb {
                 bleaf = getFormDb(rr.getString(1));
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return bleaf;
     }
@@ -999,8 +1070,7 @@ public class FormDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("getMaxOrder:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1057,8 +1127,7 @@ public class FormDb extends ObjectDb {
             re = true;
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1110,7 +1179,9 @@ public class FormDb extends ObjectDb {
                         + "or code like " + StrUtil.sqlstr("%" + name + "%") + ")";
             }
         } else {
-            sql += " and unit_code=" + StrUtil.sqlstr(curUnitCode);
+            if (!privilege.isUserPrivValid(request, Privilege.ADMIN)) {
+                sql += " and unit_code=" + StrUtil.sqlstr(curUnitCode);
+            }
         }
 
         sql += " order by code asc";
@@ -1142,6 +1213,11 @@ public class FormDb extends ObjectDb {
         try {
             re = jt.executeUpdate(sql, new Object[]{title, canNull, canQuery, canList, orders, width, isMobileDisplay, isHide, moreThan, morethanMode, isUnique, isHelper, formCode, name})==1;
             if (re) {
+                boolean isCanNull = "1".equals(canNull);
+                if (ffOld.isCanNull() != isCanNull) {
+                    FormParser formParser = new FormParser();
+                    formParser.setFieldAttribute(this, name, "cannull", isCanNull ? "1" : "0");
+                }
                 if (isHelper == 1) {
                     // 如果为辅助字段，则置表单中的字段为readonly
                     sql = "update form_field set is_readonly=1 where formCode=? and name=?";
@@ -1160,7 +1236,7 @@ public class FormDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -1207,6 +1283,68 @@ public class FormDb extends ObjectDb {
 
 	public Map<String, FormField> getFieldsMap() {
         return fieldsMap;
+    }
+
+    /**
+     * 列出所有某一类宏控件字段，用于查询出二维码宏控件
+     * @param macroType
+     * @return
+     */
+    public List<FormField> listMacorFields(String macroType) {
+        List<FormField> list = new ArrayList<>();
+        String sql = "select name,title,type,macroType,defaultValue,fieldType,canNull,fieldRule,canQuery,canList,orders,width,description,is_mobile_display,is_hide,more_than,more_than_mode,is_func,css_width,is_readonly,present,is_unique,is_helper,read_only_type,format,formCode from form_field where macroType=?";
+        JdbcTemplate jt = new JdbcTemplate();
+        try {
+            ResultIterator ri = jt.executeQuery(sql, new Object[]{macroType});
+            while (ri.hasNext()) {
+                ResultRecord rr = ri.next();
+                FormField ff = new FormField();
+                ff.setFormCode(code);
+                ff.setName(rr.getString(1));
+                ff.setTitle(rr.getString(2));
+                ff.setType(rr.getString(3));
+                ff.setMacroType(rr.getString(4));
+                ff.setDefaultValue(StrUtil.getNullStr(rr.getString(5)));
+                ff.setFieldType(rr.getInt(6));
+                ff.setCanNull(rr.getInt(7)==1);
+                ff.setRule(StrUtil.getNullStr(rr.getString(8)));
+                ff.setCanQuery(rr.getInt(9)>=1);
+                ff.setQueryMode(rr.getInt(9));
+                ff.setCanList(rr.getInt(10)==1);
+                ff.setOrders(rr.getInt(11));
+                ff.setWidth(rr.getInt(12));
+                ff.setDescription(StrUtil.getNullStr(rr.getString(13)));
+                ff.setMobileDisplay(rr.getInt(14)==1);
+                ff.setHide(rr.getInt(15));
+                ff.setMoreThan(StrUtil.getNullStr(rr.getString(16)));
+                ff.setMorethanMode(StrUtil.getNullStr(rr.getString(17)));
+                ff.setFunc(rr.getInt(18)==1);
+                ff.setCssWidth(StrUtil.getNullStr(rr.getString(19)));
+                ff.setReadonly(rr.getInt(20)==1);
+                ff.setPresent(StrUtil.getNullStr(rr.getString(21)));
+
+                int isUnique = rr.getInt(22);
+                if (isUnique == FormField.UNIQUE_GLOBAL) {
+                    ff.setUnique(true);
+                }
+                else if (isUnique == FormField.UNIQUE_NEST) {
+                    ff.setUniqueNest(true);
+                    ff.setUnique(false);
+                }
+                else {
+                    ff.setUnique(false);
+                }
+
+                ff.setHelper(rr.getInt(23)==1);
+                ff.setReadOnlyType(StrUtil.getNullStr(rr.getString(24)));
+                ff.setFormat(StrUtil.getNullStr(rr.getString(25)));
+                ff.setFormCode(rr.getString(26));
+                list.add(ff);
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+        return list;
     }
 
 	private String code;

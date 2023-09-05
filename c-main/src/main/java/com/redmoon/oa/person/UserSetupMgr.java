@@ -1,5 +1,6 @@
 package com.redmoon.oa.person;
 
+import cn.js.fan.cache.jcs.RMCache;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ErrMsgException;
@@ -9,15 +10,17 @@ import com.cloudweb.oa.entity.UserSetup;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.oa.ui.menu.WallpaperDb;
 import com.redmoon.oa.usermobile.UserMobileMgr;
-import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.sql.SQLException;
+import java.util.Date;
+import java.util.Vector;
 
 public class UserSetupMgr {
 
@@ -42,7 +45,7 @@ public class UserSetupMgr {
 			}
 		} catch (SQLException e) {
 			flag = false;
-			Logger.getLogger(UserSetupMgr.class).error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 		}
 		return flag;
 	}
@@ -65,7 +68,7 @@ public class UserSetupMgr {
 			}
 		} catch (SQLException e) {
 			flag = false;
-			Logger.getLogger(UserSetupMgr.class).error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 		}
 		return flag;
 	}

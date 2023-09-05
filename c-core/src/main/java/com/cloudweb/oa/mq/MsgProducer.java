@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.jms.Destination;
 
+@ConditionalOnProperty(name = "mq.type", matchIfMissing = false, havingValue = "ActiveMQ")
 @Component
 public class MsgProducer implements IMsgProducer {
 

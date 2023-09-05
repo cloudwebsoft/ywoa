@@ -44,8 +44,8 @@ if (stampId!=-1) {
 	stamp = stamp.getStampDb(stampId);
 }
 String filename = stamp.getImage();
-String link = Global.getRealPath() + "upfile/" + stamp.linkBasePath + "/" + filename ; 
-String link1 = stamp.getImageUrl(request);
+String link = Global.getRealPath() + "upfile/" + StampDb.LINK_BASE_PATH + "/" + filename ;
+String link1 = stamp.getImageUrl();
 UserDb user = new UserDb();
 user = user.getUserDb(privilege.getUser(request));
 

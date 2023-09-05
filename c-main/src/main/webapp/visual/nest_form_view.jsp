@@ -43,14 +43,14 @@ if (op.equals("add")) {
 else if (op.equals("view")) {
 	int cwsId = ParamUtil.getInt(request, "cwsId", -1);
 	com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO(fd);
-	long id = fdao.getIDByCwsId(cwsId);
+	long id = fdao.getIDByCwsId(String.valueOf(cwsId));
 	com.redmoon.oa.visual.Render rd = new com.redmoon.oa.visual.Render(request, id, fd);
 	out.print(rd.report(true));
 }
 else if (op.equals("edit")) {
 	int cwsId = ParamUtil.getInt(request, "cwsId", -1);
 	com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO(fd);
-	long id = fdao.getIDByCwsId(cwsId);
+	long id = fdao.getIDByCwsId(String.valueOf(cwsId));
 	com.redmoon.oa.visual.Render rd = new com.redmoon.oa.visual.Render(request, id, fd);
 	out.print(rd.rend());	
 }

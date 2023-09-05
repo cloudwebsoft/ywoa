@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import cn.js.fan.db.ResultIterator;
 import java.util.Iterator;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -61,7 +62,7 @@ public class SlideMenuDb extends QObjectDb {
             try {
                 smd.del();
             } catch (ResKeyException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
     }

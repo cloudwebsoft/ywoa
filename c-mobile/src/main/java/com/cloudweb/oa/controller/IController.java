@@ -6,8 +6,12 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.cache.UserCache;
 import com.cloudweb.oa.entity.Role;
+import com.cloudweb.oa.entity.User;
 import com.cloudweb.oa.service.IRoleService;
+import com.cloudweb.oa.service.IUserService;
+import com.cloudweb.oa.utils.Base64Util;
 import com.cloudweb.oa.utils.PasswordUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
@@ -17,9 +21,11 @@ import com.redmoon.oa.android.Privilege;
 import com.redmoon.oa.android.tools.Des3;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
+import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.person.UserDb;
+import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.verificationCode.HttpClientVerificationCode;
@@ -35,6 +41,7 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -46,6 +53,9 @@ public class IController {
 
     @Autowired
     HttpServletRequest request;
+
+    @Autowired
+    IUserService userService;
 
     public static int RETURNCODE_SUCCESS = 0;
     public static int RES_SUCCESS = 0;                      //成功
@@ -75,6 +85,9 @@ public class IController {
     @Autowired
     IRoleService roleService;
 
+    @Autowired
+    UserCache userCache;
+
     @ResponseBody
     @RequestMapping(value = "/i/getInforList", produces = {"application/json;charset=UTF-8;"})
     public String getInforList(@RequestParam(required = true) String skey) throws JSONException {
@@ -93,7 +106,7 @@ public class IController {
 
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         jReturn.put("res", RES_SUCCESS);
@@ -133,7 +146,7 @@ public class IController {
                 return jReturn.toString();
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         UserDb ud = new UserDb(name);
@@ -213,7 +226,7 @@ public class IController {
 
                 if (re) {
                     result = 0;
-                    System.out.println("-----手机" + ud.getMobile() + ",【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】初始密码已经发送-----");
+                    LogUtil.getLog(getClass()).info("-----手机" + ud.getMobile() + ",【" + com.redmoon.oa.Config.getInstance().get("enterprise") + "】初始密码已经发送-----");
                 } else {
                     result = 1;
                 }
@@ -243,15 +256,15 @@ public class IController {
             }
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (IOException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (Exception e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (!flag) {
@@ -260,7 +273,7 @@ public class IController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -289,7 +302,7 @@ public class IController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -298,15 +311,17 @@ public class IController {
             try {
                 decrypOldPassWord = Des3.decode(oldPassword);
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         } else {
             decrypOldPassWord = oldPassword;
         }
 
         String name = privilege.getUserName(skey);
-        UserDb ub = new UserDb(name);
-        re = ub.Auth(ub.getName(), decrypOldPassWord);
+        UserDb ub = new UserDb();
+        ub = ub.getUserDb(name);
+
+        re = ub.Auth(name, decrypOldPassWord);
 
         if (!re) {
             try {
@@ -315,7 +330,7 @@ public class IController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -325,7 +340,7 @@ public class IController {
                 try {
                     decrypPassWord = Des3.decode(password);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             } else {
                 decrypPassWord = password;
@@ -344,7 +359,7 @@ public class IController {
                         jReturn.put("msg", pu.getResultDesc(request));
                         return jReturn.toString();
                     } catch (JSONException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
             }
@@ -354,7 +369,9 @@ public class IController {
             String pwdMD5 = SecurityUtil.MD5(pwdRaw);
 
             ub.setPwdMD5(pwdMD5);
-            ub.setPwdRaw(pwdRaw);
+            // ub.setPwdRaw(pwdRaw);
+            ub.setPwdRaw(userService.encryptPwd(pwdRaw));
+
             re = ub.save();
 
             if (re) {
@@ -364,15 +381,15 @@ public class IController {
             }
         } catch (SQLException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (Exception e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (!flag) {
@@ -381,7 +398,7 @@ public class IController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -408,7 +425,7 @@ public class IController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -467,7 +484,7 @@ public class IController {
                 String gender = String.valueOf(ud.getGender());
 
                 StringBuilder sb = new StringBuilder();
-                List<Role> list = roleService.getRolesOfUser(userName, false);
+                List<Role> list = roleService.getAllRolesOfUser(userName, false);
                 for (Role role : list) {
                     StrUtil.concat(sb, ",", role.getDescription());
                 }
@@ -493,11 +510,7 @@ public class IController {
             }
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
-            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-        } catch (Exception e) {
-            flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (!flag) {
@@ -506,7 +519,7 @@ public class IController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -544,7 +557,7 @@ public class IController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -635,11 +648,11 @@ public class IController {
             }
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (Exception e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (!flag) {
@@ -648,7 +661,7 @@ public class IController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -678,7 +691,7 @@ public class IController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         UserDb ud = new UserDb(privilege.getUserName(skey));
@@ -717,13 +730,13 @@ public class IController {
                 return jReturn.toString();
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         }
 
@@ -747,13 +760,9 @@ public class IController {
             jReturn.put("res", RES_SUCCESS);
             jResult.put("returnCode", RETURNCODE_SUCCESS);
             jReturn.put("result", jResult);
-        } catch (JSONException e) {
-            flag = false;
-            e.printStackTrace();
-            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (Exception e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (!flag) {
@@ -762,7 +771,7 @@ public class IController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -789,15 +798,15 @@ public class IController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
         FileOutputStream fos = null;
         InputStream is = null;
         try {
-            String imageSavePath = Global.getAppPath() + "public/users/";
-            //System.out.println(imageSavePath);
+            String imageSavePath = Global.getRealPath() + "public/users/";
+            //LogUtil.getLog(getClass()).info(imageSavePath);
 
             File file = new File(imageSavePath);
             if (!file.exists()) {
@@ -836,39 +845,39 @@ public class IController {
             }
         } catch (FileNotFoundException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (IOException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (SQLException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         }catch (Exception e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (is != null) {
                 try {
                     is.close();
                 } catch (IOException e) {
-                    System.out.println("FileInputStream关闭失败");
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).info("FileInputStream关闭失败");
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             if (fos != null) {
                 try {
                     fos.close();
                 } catch (IOException e) {
-                    System.out.println("FileOutputStream关闭失败");
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).info("FileOutputStream关闭失败");
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             if(!flag){
@@ -877,11 +886,55 @@ public class IController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                     LogUtil.getLog(getClass()).error(StrUtil.trace(e));
                 }
             }
         }
         return jReturn.toString();
+    }
+
+    /**
+     * 我的详情接口
+     *
+     * @return
+     */
+    @ResponseBody
+    @RequestMapping(value = "/i/info", method = RequestMethod.GET, produces = {"application/json;charset=UTF-8;"})
+    public String info() throws ErrMsgException{
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+        String userName = pvg.getUser(request);
+
+        com.redmoon.oa.person.UserDb userDb = new com.redmoon.oa.person.UserDb();
+        userDb = userDb.getUserDb(userName);
+
+        com.alibaba.fastjson.JSONObject userObj = new com.alibaba.fastjson.JSONObject();
+
+        User user = userCache.getUser(userName);
+        userObj.put("wx_name", user.getRealName());
+        if (!user.getGender()) {
+            userObj.put("gender", "男");
+        } else {
+            userObj.put("gender", "女");
+        }
+
+        // String curRoleCode = com.redmoon.oa.pvg.Privilege.getCurRoleCode();
+
+        userObj.put("phone", user.getMobile());
+        userObj.put("real_name", user.getRealName());
+        userObj.put("user_name",user.getName());
+        userObj.put("id_number",user.getIDCard());
+        userObj.put("remark","");
+        userObj.put("address_detail", user.getAddress());
+        userObj.put("phone2",user.getPhone());
+
+        try {
+            json.put("res", 0);
+            json.put("result",userObj);
+        } catch (Exception e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+        return json.toString();
     }
 }

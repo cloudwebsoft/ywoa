@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>修改流程标题</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="js/bootstrap/css/bootstrap.min.css"/>
+    <link href="js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <link rel="stylesheet" href="js/layui/css/layui.css" media="all">
+    <script src="inc/common.js"></script>
+    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script src="js/layui/layui.js" charset="utf-8"></script>
+</head>
+<body class="form-inline">
+<div th:replace="th/include/tab_flow_show :: nav(${myUserName}, ${flowId}, ${canManageFlow}, ${isFlowChartShow}, ${canModifyTitle}, ${visitKey}, 6)"></div>
+<div class="spacerH"></div>
+<table class="tabStyle_1 percent60">
+    <form id="form1" name="form1" action="flow/modifyTitle.do" method="post">
+        <tr>
+            <td class="tabStyle_1_title">
+                [(#{typeProcess})]
+                ：
+                [(${flowTypeName})]
+                <input type="hidden" name="typeCode" th:value="${flowTypeCode}"/>
+                <input type="hidden" th:name="flowId" th:value="${flowId}"/>
+            </td>
+        </tr>
+        <tr th:if="${isFlowLevelDisplay}">
+            <td>
+                [(#{levelProcess})]
+                ：
+                <input name="level" type="radio" th:value="${LEVEL_NORMAL}" checked="checked"/>
+                <img src="images/general.png" align="absmiddle"/>
+                [(#{ordi})]
+                <input name="level" type="radio" th:value="${LEVEL_IMPORTANT}"/>
+                <img src="images/important.png" align="absmiddle"/>&nbsp;[(#{impor})]
+                <input name="level" type="radio" th:value="${LEVEL_URGENT}"/>
+                <img src="images/urgent.png" align="absmiddle"/>&nbsp;[(#{emergent})]
+                <script th:inline="javascript">
+                    setRadioValue("level", "[(${level})]");
+                </script>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                [(#{nameProcess})]
+                ：
+                <input type="text" name="title" th:value="${flowTitle}" style="width:500px"></td>
+        </tr>
+        <tr>
+            <td align="center"><input id="btnOk" class="btn btn-default" type="button" th:value='#{sure}'/></td>
+        </tr>
+    </form>
+</table>
+<script>
+    $(function() {
+        $('input, select, textarea').each(function () {
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+            }
+        });
+
+        $('#btnOk').click(function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: "post",
+                url: "flow/modifyTitle.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    layer.msg(data.msg);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    })
+</script>
+</body>
+</html>

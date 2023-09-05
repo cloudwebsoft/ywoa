@@ -17,33 +17,20 @@
     response.setHeader("Content-Security-Policy", "default-src 'self' http: https:; script-src 'self'; frame-ancestors 'self'");
     response.setContentType("text/javascript;charset=utf-8");
 %>
-function restore(id) {
-    jConfirm('您确定要恢复么？', '提示', function(r) {
-        if (r) {	
-            $.ajax({
-                type: "post",
-                contentType:"application/x-www-form-urlencoded; charset=iso8859-1",        
-                url: "<%=request.getContextPath()%>/visual/restore.do",
-                async: false,
-                data: {
-                	id: id
-                },
-                dataType: "html",
-                beforeSend: function(XMLHttpRequest){
-                    // $('#bodyBox').showLoading();
-                },
-                success: function(data, status) {
-                    data = $.parseJSON(data);
-                    jAlert(data.msg, "提示");
-                },
-                complete: function(XMLHttpRequest, status){
-                    // $('#bodyBox').hideLoading();				
-                },
-                error: function(XMLHttpRequest, textStatus){
-                    // 请求出错处理
-                    alert(XMLHttpRequest.responseText);
+<script>
+    function restore(id) {
+        myConfirm('提示', '您确定要恢复么？', function() {
+            var ajaxData = {
+                id: id
+            }
+            ajaxPost('/visual/restore', ajaxData).then((data) => {
+                console.log('data', data);
+                if (data.ret=="1") {
+                    myMsg(data.msg);
+                } else {
+                    myMsg(data.msg, 'error');
                 }
-            });   
-        }
-    });		   
-}
+            });
+        });
+    }
+</script>

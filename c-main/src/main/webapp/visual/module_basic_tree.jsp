@@ -13,7 +13,6 @@
 <%@ page import="com.redmoon.oa.basic.*" %>
 <%@ page import="cn.js.fan.web.SkinUtil" %>
 <%@ page import="java.util.Vector" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="strutil" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="dm" scope="page" class="com.redmoon.oa.basic.TreeSelectMgr"/>
 <%

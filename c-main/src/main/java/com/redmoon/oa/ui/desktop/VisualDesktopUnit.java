@@ -25,7 +25,6 @@ import com.redmoon.oa.visual.FormDAO;
 import com.redmoon.oa.visual.ModuleSetupDb;
 import com.redmoon.oa.visual.ModuleUtil;
 import com.redmoon.oa.visual.SQLBuilder;
-import com.redmoon.oa.workplan.WorkPlanDb;
 
 /**
  * @Description: 
@@ -46,7 +45,8 @@ public class VisualDesktopUnit implements IDesktopUnit {
         return url;
     }
 
-    public String display(HttpServletRequest request, UserDesktopSetupDb uds) {
+    @Override
+	public String display(HttpServletRequest request, UserDesktopSetupDb uds) {
         DesktopMgr dm = new DesktopMgr();
         com.redmoon.oa.ui.DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
         String str = "";
@@ -64,7 +64,9 @@ public class VisualDesktopUnit implements IDesktopUnit {
             
             String orderBy = "id";
             String sort = "desc";
-        	String filter = StrUtil.getNullStr(msd.getString("filter")).trim();
+			Privilege pvg = new Privilege();
+			String userName = pvg.getUser(request);
+        	String filter = StrUtil.getNullStr(msd.getFilter(userName)).trim();
         	boolean isComb = filter.startsWith("<items>") || filter.equals("");
         	// 如果是组合条件，则赋予后台设置的排序字段
         	if (isComb) {
@@ -99,8 +101,7 @@ public class VisualDesktopUnit implements IDesktopUnit {
 				fieldTitle = json.getString("fieldTitle");
 				fieldDate = json.getString("fieldDate");
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			
 			MacroCtlMgr mm = new MacroCtlMgr();

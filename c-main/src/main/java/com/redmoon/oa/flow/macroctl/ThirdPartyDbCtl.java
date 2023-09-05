@@ -97,7 +97,7 @@ public class ThirdPartyDbCtl extends AbstractMacroCtl {
 				// 将数据保存主表单
 				iFormDAO.save();
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			
 			// 获取子表单的数据
@@ -121,14 +121,13 @@ public class ThirdPartyDbCtl extends AbstractMacroCtl {
 						Vector fieldsRelated = fdaoRelated.getFields();
 						setFieldsValue(fdRelated.getCode(), rrds, fieldsRelated);
 						
-						fdaoRelated.setCwsId("" + flowId);
+						fdaoRelated.setCwsId(String.valueOf(flowId));
 						fdaoRelated.setFlowTypeCode(wf.getTypeCode());
 						fdaoRelated.setUnitCode(pvg.getUserUnitCode(request));
 						fdaoRelated.create();						
 					}
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 			}
 		} else {
@@ -217,7 +216,7 @@ public class ThirdPartyDbCtl extends AbstractMacroCtl {
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     	return name;
     } 

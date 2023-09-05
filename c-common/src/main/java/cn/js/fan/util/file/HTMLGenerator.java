@@ -55,7 +55,6 @@ public class HTMLGenerator {
         visualPath = filepath + "/" + name;
         String fullPath = realPath + visualPath; // 生成html的完整路径
 
-        // System.out.println(getClass() + " url=" + url);
 
         RequestDispatcher rd = request.getRequestDispatcher(url);
 

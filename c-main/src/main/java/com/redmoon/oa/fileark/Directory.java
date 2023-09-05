@@ -10,9 +10,10 @@ import cn.js.fan.db.*;
 import cn.js.fan.security.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
 import java.util.Vector;
 import java.util.Iterator;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.util.BeanShellUtil;
 
@@ -36,7 +37,6 @@ import com.redmoon.oa.util.BeanShellUtil;
 
 public class Directory implements IDirectory {
     String connname = "";
-    Logger logger = Logger.getLogger(Directory.class.getName());
     
     String code;
 
@@ -57,7 +57,7 @@ public class Directory implements IDirectory {
 	public Directory() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
     }
 
@@ -88,7 +88,7 @@ public class Directory implements IDirectory {
                 orders + "," + StrUtil.sqlstr(root_code) + "," +
                 child_count + ",1)";
 
-        logger.info(insertsql);
+        LogUtil.getLog(getClass()).info(insertsql);
         if (!SecurityUtil.isValidSql(insertsql)) {
             throw new ErrMsgException("请勿输入非法字符如;号等！");
         }
@@ -97,7 +97,7 @@ public class Directory implements IDirectory {
         try {
             r = conn.executeUpdate(insertsql);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("请检查编码" + code + "是否重复！");
         }
         return r == 1 ? true : false;
@@ -403,7 +403,7 @@ public class Directory implements IDirectory {
             Leaf lfch = (Leaf)ir.next();
             // 重置孩子节点的排列顺序
             lfch.setOrders(orders);
-            // System.out.println(getClass() + " leaf name=" + lfch.getName() + " orders=" + orders);
+            // LogUtil.getLog(getClass()).info(getClass() + " leaf name=" + lfch.getName() + " orders=" + orders);
 
             lfch.update();
             orders ++;
@@ -415,15 +415,15 @@ public class Directory implements IDirectory {
             layer = 1;
         }
         else {
-            if (parentCode.equals(Leaf.ROOTCODE))
+            if (parentCode.equals(Leaf.ROOTCODE)) {
                 layer = 2;
-            else {
+            } else {
                 while (!parentCode.equals(Leaf.ROOTCODE)) {
-                    // System.out.println(getClass() + "leaf parentCode=" + parentCode);
+                    // LogUtil.getLog(getClass()).info(getClass() + "leaf parentCode=" + parentCode);
                     Leaf parentLeaf = getLeaf(parentCode);
-                    if (parentLeaf == null || !parentLeaf.isLoaded())
+                    if (parentLeaf == null || !parentLeaf.isLoaded()) {
                         break;
-                    else {
+                    } else {
                         parentCode = parentLeaf.getParentCode();
                     }
                     layer++;
@@ -436,7 +436,7 @@ public class Directory implements IDirectory {
 
     // 修复根结点为leaf的树
     public void repairTree(Leaf leaf) throws Exception {
-        // System.out.println(getClass() + "leaf name=" + leaf.getName());
+        // LogUtil.getLog(getClass()).info(getClass() + "leaf name=" + leaf.getName());
         repairLeaf(leaf);
         Directory dir = new Directory();
         Vector children = dir.getChildren(leaf.getCode());
@@ -455,9 +455,7 @@ public class Directory implements IDirectory {
     }
     
     /**
-     * 
-     * @param doc
-     * @param attIds
+     *
      * @param userName
      * @param isZip 如果为true，则attIds为null
      * @return
@@ -500,8 +498,7 @@ public class Directory implements IDirectory {
 					// throw new ErrMsgException("该节点脚本中未配置ret=...");
 				}
 			} catch (EvalError e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(Directory.class).error(e);
 			}
 		}     
 		return info;
@@ -530,8 +527,7 @@ public class Directory implements IDirectory {
 				if (errMsg != null)
 					throw new ErrMsgException(errMsg);*/
 			} catch (EvalError e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+                LogUtil.getLog(Directory.class).error(e);
 			}
 		}     
 		return ret;

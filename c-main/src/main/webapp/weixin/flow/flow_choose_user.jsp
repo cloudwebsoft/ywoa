@@ -1,5 +1,19 @@
 <%@ page language="java" import="java.util.*" pageEncoding="utf-8" %>
 <%@page import="cn.js.fan.util.ParamUtil" %>
+<%
+    String chooseUsers = ParamUtil.getParam(request, "chooseUsers");
+    boolean isAt = ParamUtil.getBoolean(request, "isAt", false);
+    boolean isFree = ParamUtil.getBoolean(request, "isFree", false);
+    String code = ParamUtil.get(request, "code");
+    boolean isMulti = ParamUtil.getBoolean(request, "isMulti", false);
+    String internalName = ParamUtil.get(request, "internalName");
+    boolean isCondition = ParamUtil.getBoolean(request, "isCondition", false);
+    String workflowActionIdStr = ParamUtil.get(request, "workflowActionIdStr");
+    boolean isPlus = ParamUtil.getBoolean(request, "isPlus", false);
+    int plusType = ParamUtil.getInt(request, "plusType", 1);
+    int plusMode = ParamUtil.getInt(request, "plusMode", 0);
+    int myActionId = ParamUtil.getInt(request, "myActionId", -1);
+%>
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -55,6 +69,10 @@
         color: #000;
         font-size: 17px;
     }
+
+    .mui-media-body {
+        font-size: 12px;
+    }
 </style>
 <body>
 <header class="mui-bar mui-bar-nav">
@@ -109,7 +127,6 @@
         </div>
     </div>
 </div>
-
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/mui.js"></script>
 <script src="../js/mui.user.wx.js"></script>
@@ -118,21 +135,34 @@
 <script src="../js/macro/macro.js"></script>
 <script src="../js/macro/open_window_macro.js"></script>
 <script src="../js/mui.user.indexedlist.js"></script>
-<%
-    String chooseUsers = ParamUtil.getParam(request, "chooseUsers");
-    boolean isAt = ParamUtil.getBoolean(request, "isAt", false);
-    boolean isFree = ParamUtil.getBoolean(request, "isFree", false);
-    String code = ParamUtil.get(request, "code");
-    boolean isMulti = ParamUtil.getBoolean(request, "isMulti", false);
-    String internalName = ParamUtil.get(request, "internalName");
-%>
 <script type="text/javascript" charset="utf-8">
-    var list = document.getElementById('list');
-    var header = document.querySelector('header.mui-bar');
-    list.style.height = (document.body.offsetHeight - header.offsetHeight) + 'px';
-    var op = {"chooseUsers": "<%=chooseUsers%>", "internalName": "<%=internalName%>", "isAt":<%=isAt%>, "code": '<%=code%>', "isMulti": "<%=isMulti%>", "isFree":<%=isFree%>};
-    window.user = new mui.User(list, op);
-    window.user.chooseUserInit();
+    $(function() {
+        // 即便延时，list.style.height的计算也不准确
+        setTimeout(function () {
+            var list = document.getElementById('list');
+            var header = document.querySelector('header.mui-bar');
+            // list.style.height = (document.body.offsetHeight - header.offsetHeight) + 'px';
+            // console.log('list.style.height', list.style.height);
+            // 计算不准确，故写成固定值
+            list.style.height = '460px';
+            var op = {
+                "chooseUsers": "<%=chooseUsers%>",
+                "internalName": "<%=internalName%>",
+                "isAt":<%=isAt%>,
+                "code": '<%=code%>',
+                "isMulti": "<%=isMulti%>",
+                "isFree":<%=isFree%>,
+                "isCondition":<%=isCondition%>,
+                "workflowActionIdStr": "<%=workflowActionIdStr%>",
+                "isPlus": <%=isPlus%>,
+                "plusType": <%=plusType%>,
+                "plusMode": <%=plusMode%>,
+                "myActionId": <%=myActionId%>,
+            };
+            window.user = new mui.User(list, op);
+            window.user.chooseUserInit();
+        }, 200);
+    })
 </script>
 </body>
 </html>

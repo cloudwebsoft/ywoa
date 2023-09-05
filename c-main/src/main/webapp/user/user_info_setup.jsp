@@ -9,21 +9,21 @@
     LoginService loginService = SpringUtil.getBean(LoginService.class);
     String url = loginService.getUIModePage("");
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>完善用户信息</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <script src="../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
     <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
     <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
     <script type="text/javascript" src="../inc/livevalidation_standalone.js"></script>
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
-    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
 </head>
 <body>
 <br/>
@@ -76,10 +76,9 @@
             },
             success: function (data, status) {
                 data = $.parseJSON(data);
-                if (data.ret==1) {
+                if (data.ret == 1) {
                     jAlert_Redirect('操作成功', '提示', '<%=request.getContextPath() + "/" + url%>');
-                }
-                else {
+                } else {
                     jAlert(data.msg, "提示");
                 }
             },

@@ -27,6 +27,14 @@
         return;
     }
 %>
+<style>
+    #tabs1 ul li.current {
+        width: 80px !important;
+    }
+    #tabs1 ul li {
+        width: 80px !important;
+    }
+</style>
 <div id="tabs1">
     <ul>
         <%
@@ -34,8 +42,7 @@
             if (lfTop.getType() == com.redmoon.oa.flow.Leaf.TYPE_LIST) {
         %>
         <%if (lpTop.canUserExamine(pvgTop.getUser(request))) {%>
-        <!--<li id="menu1"><a href="flow_predefine_list.jsp?dirCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>流程图列表</span></a></li>-->
-        <li id="menu2"><a href="<%=request.getContextPath()%>/admin/flow_predefine_init.jsp?flowTypeCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>流程图</span></a></li>
+        <li id="menu2"><a href="<%=request.getContextPath()%>/admin/flow_predefine_init_myflow.jsp?flowTypeCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>流程图</span></a></li>
         <%}%>
         <%} else if (lfTop.getType() == com.redmoon.oa.flow.Leaf.TYPE_FREE) {%>
         <%if (lpTop.canUserExamine(pvgTop.getUser(request))) {%>
@@ -60,7 +67,7 @@
         <li id="menu6"><a href="<%=request.getContextPath()%>/admin/flow_dir_priv_m.jsp?dirCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>权限</span></a></li>
         <%}%>
         <%
-            if (lfTop.getLayer() > 2 && License.getInstance().isPlatformSrc()) {
+            if (lfTop.getLayer() > 2 && !License.getInstance().isCloud()) {
         %>
         <li id="menu10"><a href="<%=request.getContextPath()%>/admin/flow_designer_action_view.jsp?dirCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>显示规则</span></a></li>
         <%
@@ -69,12 +76,12 @@
         <%if (lfTop.getLayer() <= 2) {%>
         <li id="menu7"><a href="<%=request.getContextPath()%>/admin/flow_predefine_dir.jsp?parent_code=<%=StrUtil.UrlEncode(dirCodeTop)%>&op=AddChild"><span>添加</span></a></li>
         <%}%>
-
         <%
+            boolean isShowRecord = lfTop.getLayer() > 2 || Leaf.CODE_ROOT.equals(lfTop.getCode());
             if (lpTop.canUserQuery(pvgTop.getUser(request)) || lpTop.canUserExamine(pvgTop.getUser(request))) {
-                if (lfTop.getLayer() > 2 || Leaf.CODE_ROOT.equals(lfTop.getCode())) {
+                if (isShowRecord) {
         %>
-        <li id="menu5"><a href="<%=request.getContextPath()%>/admin/flow_list.jsp?typeCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>记录</span></a></li>
+        <li id="menu5"><a href="javascript:;"><span>记录</span></a></li>
         <%
             }
             if (lfTop.getLayer() > 2) {
@@ -85,7 +92,7 @@
             if (!"".equals(dirCodeTop)) {
                 if (lfTop.getType() != Leaf.TYPE_FREE) {
         %>
-        <li id="menu10"><a href="<%=request.getContextPath()%>/flow/flow_analysis_year.jsp?typeCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>效率分析</span></a></li>
+        <li id="menu11"><a href="<%=request.getContextPath()%>/flow/flow_analysis_year.jsp?typeCode=<%=StrUtil.UrlEncode(dirCodeTop)%>"><span>效率分析</span></a></li>
         <%
                         }
                     }
@@ -98,7 +105,18 @@
     $(function() {
         // 必须要通过jQuery绑定click，如果直接通过onclick事件addTab，则左侧树形菜单中的链接在addTab后将无法点击
         $("a[formCode]").click(function(e) {
+            e.preventDefault(); // 必须要加上，否则仍会无法点击
             addTab($(this).attr('formName'), '<%=request.getContextPath()%>/admin/form_edit.jsp?code=' + $(this).attr('formCode'));
         })
+
+        <%
+        if (isShowRecord) {
+        %>
+        $('#menu5').click(function() {
+            addTab("<%=lfTop.getName()%>", "<%=request.getContextPath()%>/admin/flow_list.jsp?typeCode=<%=StrUtil.UrlEncode(dirCodeTop)%>");
+        });
+        <%
+        }
+        %>
     })
 </script>

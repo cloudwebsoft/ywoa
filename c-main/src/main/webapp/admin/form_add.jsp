@@ -8,21 +8,28 @@
 <%@ page import="com.redmoon.oa.kernel.License" %>
 <%@ page import="cn.js.fan.web.Global" %>
 <%@ page import="org.apache.http.client.utils.URIBuilder" %>
+<%@ page import="com.cloudweb.oa.api.ICloudUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudwebsoft.framework.util.IPUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
-if (!privilege.isUserPrivValid(request, "admin.flow")) {
-    out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-	return;
-}
+    if (!privilege.isUserPrivValid(request, "admin.flow")) {
+        out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+        return;
+    }
 
-String flowTypeCode = ParamUtil.get(request, "flowTypeCode");
-String isFlow = ParamUtil.get(request, "isFlow");		
-String op = ParamUtil.get(request, "op");
+    String flowTypeCode = ParamUtil.get(request, "flowTypeCode");
+    String isFlow = ParamUtil.get(request, "isFlow");
+    String op = ParamUtil.get(request, "op");
 
-FormDb restoreFormDb = null;
-String code = "";
-String name = "";
-String content = "";
+    FormDb restoreFormDb = null;
+    String code = "";
+    String name = "";
+    String content = "";
+
+    ICloudUtil cloudUtil = SpringUtil.getBean(ICloudUtil.class);
+    String userSecret = cloudUtil.getUserSecret();
+    String ip = IPUtil.getRemoteAddr(request);
 %>
 <!DOCTYPE html>
 <html>
@@ -55,8 +62,13 @@ function getFormContent() {
 }
 
 function myFormAdd_onsubmit() {
+    if ($('#isFlow').prop('checked') && $('#flowTypeCode').val()=="-1") {
+        jAlert("请选择流程类型", "提示");
+        return false;
+    }
+
 	var formContent = getFormContent();
-	if (formContent.indexOf("<form>")!=-1) {
+	if (formContent.indexOf("<form ")!=-1) {
 		jAlert("表单中不能含有form", "提示");
 		return false;
 	}
@@ -76,7 +88,7 @@ function restoreContent() {
 </head>
 <body onload="restoreContent()">
 <%
-if (op.equals("add")) {
+if ("add".equals(op)) {
 	FormMgr ftm = new FormMgr();
 	boolean re = false;
 	try {
@@ -98,6 +110,7 @@ if (op.equals("add")) {
 		return;
 	}
 	catch (ErrMsgException e) {
+	    e.printStackTrace();
 		FormForm fc = new FormForm();
 		try {
 			fc.checkCreate(request);
@@ -130,13 +143,13 @@ if (op.equals("add")) {
           </tr>
           <tr>
             <td width="20%" >表单编码</td>
-            <td width="80%" align="left" ><input type="text" name="code" maxlength="18" value="<%=code%>"></td>
+            <td width="80%" align="left" ><input type="text" name="code" maxlength="27" value="<%=code%>"></td>
           </tr>
           <tr>
             <td >表单名称</td>
             <td align="left" ><input type="text" name="name" value="<%=name%>" maxlength="50"><input name="isFlow" type="hidden" value="<%=isFlow%>" /></td>
           </tr>
-          <tr>
+          <tr style="display: <%=License.getInstance().isPlatformSrc()?"":"none"%>">
             <td >历史记录</td>
             <td align="left"><input type="checkbox" id="isLog" name="isLog" value="1" />
               保留 </td>
@@ -174,7 +187,26 @@ if (op.equals("add")) {
             </script>            
 			</td>
           </tr>
-          <tr style="<%=!isFlow.equals("0")?"":"display:none"%>">
+            <tr>
+                <td >表单类型</td>
+                <td >
+                    <input type="radio" id="isFlow" name="isFlow" value="1" <%="1".equals(isFlow)?"checked":""%> />
+                    流程型
+                    <input type="radio" id="isModule" name="isFlow" value="0" <%="0".equals(isFlow)?"checked":""%> />
+                    模块型
+                    <script>
+                        $(function() {
+                            $('#isFlow').click(function() {
+                                $('#trFlowType').show();
+                            })
+                            $('#isModule').click(function() {
+                                $('#trFlowType').hide();
+                            })
+                        });
+                    </script>
+                </td>
+            </tr>
+          <tr id="trFlowType" style="<%=!isFlow.equals("0")?"":"display:none"%>">
             <td >流程类型</td>
             <td align="left" >
 			<%
@@ -186,7 +218,7 @@ if (op.equals("add")) {
 				<%=lf.getName(request)%><input name="flowTypeCode" type="hidden" value="<%=flowTypeCode%>">
 			<%} else {
 			%>
-			<select name="flowTypeCode" onChange="if(this.options[this.selectedIndex].value=='root'){jAlert(this.options[this.selectedIndex].text+' 不能被选择！','提示'); return false;}">
+			<select id="flowTypeCode" name="flowTypeCode" onChange="if(this.options[this.selectedIndex].value=='root'){jAlert(this.options[this.selectedIndex].text+' 不能被选择！','提示'); return false;}">
 			<option value="-1">无</option>
                 <%
 				Leaf rootlf = new Leaf();
@@ -423,6 +455,8 @@ function getFieldsOnSubmit() {
     loadDataToWebeditCtrl(o("myFormAdd"), we);
     we.AddField("content", getFormContent());
     we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+    we.AddField("userSecret", "<%=userSecret%>");
+    we.AddField("ip", "<%=ip%>");
     we.UploadToCloud();
 
     var data = $.parseJSON(we.ReturnMessage);

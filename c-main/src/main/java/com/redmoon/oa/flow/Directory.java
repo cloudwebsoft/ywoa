@@ -7,9 +7,9 @@ import javax.servlet.http.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.pvg.*;
-import org.apache.log4j.*;
 
 /**
  *
@@ -26,12 +26,11 @@ import org.apache.log4j.*;
 
 public class Directory {
     String connname = "";
-    Logger logger = Logger.getLogger(Directory.class.getName());
 
     public Directory() {
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
     }
 
@@ -345,7 +344,7 @@ public class Directory {
         for (Leaf lfch : children) {
             // 重置孩子节点的排列顺序
             lfch.setOrders(orders);
-            // System.out.println(getClass() + " leaf name=" + lfch.getName() + " orders=" + orders);
+            // LogUtil.getLog(getClass()).info(getClass() + " leaf name=" + lfch.getName() + " orders=" + orders);
 
             lfch.update();
             orders++;
@@ -360,7 +359,7 @@ public class Directory {
                 layer = 2;
             } else {
                 while (!parentCode.equals(Leaf.CODE_ROOT)) {
-                    // System.out.println(getClass() + "leaf parentCode=" + parentCode);
+                    // LogUtil.getLog(getClass()).info(getClass() + "leaf parentCode=" + parentCode);
                     Leaf parentLeaf = getLeaf(parentCode);
                     if (parentLeaf == null || !parentLeaf.isLoaded()) {
                         break;

@@ -4,10 +4,8 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Vector;
 
-import org.quartz.Job;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
@@ -23,8 +21,14 @@ import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
-public class OAStatJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class OAStatJob extends QuartzJobBean {
     public OAStatJob() {
     }
 
@@ -33,26 +37,17 @@ public class OAStatJob implements Job {
      *
      * @param jobExecutionContext JobExecutionContext
      * @throws JobExecutionException
-     * @todo Implement this org.quartz.Job method
      */
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+	public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         // String flowCode = data.getString("flowCode");
-        // System.out.println(getClass() + " execute：flowCode = " + data.getString("flowCode"));
 
-    	String sql = "select sum(file_size) from netdisk_document_attach";
     	JdbcTemplate jt = new JdbcTemplate();
     	ResultIterator ri;
 		try {
-			ri = jt.executeQuery(sql);
-	    	long netdiskSize = 0;
-	    	if (ri.hasNext()) {
-	    		ResultRecord rr = (ResultRecord)ri.next();
-	    		netdiskSize = rr.getLong(1);
-	    	}
-	    	
-	    	sql = "select sum(file_size) from oa_message_attach";
+	    	String sql = "select sum(file_size) from oa_message_attach";
 	    	ri = jt.executeQuery(sql);
 	    	long msgSpace = 0;
 	    	if (ri.hasNext()) {
@@ -84,17 +79,14 @@ public class OAStatJob implements Job {
 	    		noticeFileSize = rr.getLong(1);
 	    	}		    	
 	    	
-	    	long allSpaceUsed = (netdiskSize + msgSpace + flowFileSize + docFileSize + noticeFileSize) / 1024000;
+	    	long allSpaceUsed = (msgSpace + flowFileSize + docFileSize + noticeFileSize) / 1024000;
 	    	
 	    	// 置已用空间
 	    	com.redmoon.oa.android.CloudConfig cfg = com.redmoon.oa.android.CloudConfig.getInstance();
 	    	cfg.setProperty("diskSpaceUsed", "" + allSpaceUsed);
 
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
-
-        
     }
 }

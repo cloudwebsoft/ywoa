@@ -47,7 +47,6 @@ public class NetUtil {
      * @return
      */
     public static String gather(HttpServletRequest request, String charset, String linkUrl) {
-        // System.out.println("NetUtil gather:" + linkUrl);
         StringBuffer str = new StringBuffer(100);
         HttpURLConnection huc = null;
         BufferedReader reader = null;
@@ -127,7 +126,6 @@ public class NetUtil {
             char[] buffer = new char[10240];
             int count = 0;
             while ((count = reader.read(buffer)) > 0) {
-                // System.out.println(buffer);
                 str.append(buffer, 0, count);
             }
         } catch (Exception e) {
@@ -212,7 +210,7 @@ public class NetUtil {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(NetUtil.class).error(e);
         }
         finally{
             try{
@@ -224,7 +222,7 @@ public class NetUtil {
                 }
             }
             catch(IOException ex){
-                ex.printStackTrace();
+                LogUtil.getLog(NetUtil.class).error(ex);
             }
         }
         return result.toString();

@@ -9,11 +9,11 @@ import java.util.List;
 
 import cn.js.fan.util.*;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -45,15 +45,16 @@ import com.redmoon.oa.pvg.PrivDb;
  */
 // 日程安排
 public class WorkflowPredefineMgr {
-	Logger logger = Logger.getLogger(WorkflowPredefineMgr.class.getName());
 
 	private int newId = -1;
+
+	public static final String SUBSTITUTION = "#@#";
 
 	public WorkflowPredefineMgr() {
 
 	}
 
-	public boolean modify(HttpServletRequest request) throws ErrMsgException, Exception{
+	public boolean modify(HttpServletRequest request) throws ErrMsgException, JDOMException, IOException {
 		Privilege privilege = new Privilege();
 		String priv = "admin.flow";
 		if (!privilege.isUserPrivValid(request, priv)) {
@@ -90,10 +91,10 @@ public class WorkflowPredefineMgr {
 		}
 
 		String dirCode = ParamUtil.get(request, "dirCode");
-		if (dirCode.equals("not")) {
+		if ("not".equals(dirCode)) {
 			throw new ErrMsgException("请选择目录！");
 		}
-		int examine = ParamUtil.getInt(request, "examine");
+		int examine = ParamUtil.getInt(request, "examine", 1);
 		boolean isReactive = ParamUtil.getInt(request, "isReactive", 0) == 1;
 		boolean isRecall = ParamUtil.getInt(request, "isRecall", 0) == 1;
 		boolean distribute = ParamUtil.getInt(request, "isDistribute", 0)==1;
@@ -114,6 +115,7 @@ public class WorkflowPredefineMgr {
 		int downloadCount = ParamUtil.getInt(request, "downloadCount", -1);
 
 		boolean canDelOnReturn = ParamUtil.getInt(request, "canDelOnReturn", 0)==1;
+		boolean isModuleFilter = ParamUtil.getInt(request, "isModuleFilter", 0) == 1;
 
 		WorkflowPredefineDb wpd = getWorkflowPredefineDb(request, id);
 		/*
@@ -289,9 +291,10 @@ public class WorkflowPredefineMgr {
 		wpd.setReturnStyle(returnStyle);
 		wpd.setRoleRankMode(roleRankMode);
 		wpd.setProps(props);
-		wpd.setViews(views);
+		// 不能在此处保存，因为数据来自于flow_designer_myflow.jsp，如显示规则中存在不等于<>，会被转义，致规则不能被解析
+		// wpd.setViews(views);
 		wpd.setDistribute(distribute);
-		if(wld_linkProp.equals("")){
+		if("".equals(wld_linkProp)){
 			wpd.setLinkProp(linkProp);
 		}else{
 			wpd.setLinkProp(wld_linkProp);
@@ -304,6 +307,7 @@ public class WorkflowPredefineMgr {
 		wpd.setDownloadCount(downloadCount);
 		wpd.setCanDelOnReturn(canDelOnReturn);
 		wpd.setFlowJson(flowJson);
+		wpd.setModuleFilter(isModuleFilter);
 		re = wpd.save();
 		return re;
 	}
@@ -403,7 +407,7 @@ public class WorkflowPredefineMgr {
 		if (dirCode.equals("not")) {
 			throw new ErrMsgException("请选择目录！");
 		}
-		int examine = ParamUtil.getInt(request, "examine");
+		int examine = ParamUtil.getInt(request, "examine", 1);
 
 		WorkflowPredefineDb wld = getWorkflowPredefineDb(request, id);
 
@@ -450,7 +454,7 @@ public class WorkflowPredefineMgr {
 			throw new ErrMsgException("请选择目录！");
 		}
 
-		int examine = ParamUtil.getInt(request, "examine");
+		int examine = ParamUtil.getInt(request, "examine", 1);
 		String flowJson = ParamUtil.get(request, "flowJson");
 
 		if ("".equals(flowString) && "".equals(flowJson)) {
@@ -559,8 +563,10 @@ public class WorkflowPredefineMgr {
 	 * @return
 	 */
 	public String getValidateScript(String scripts, String internalName) {
+		if (scripts == null) {
+			return null;
+		}
 		String beginStr = "//[validate_begin_" + internalName + "]\r\n";
-		
 		int b = scripts.indexOf(beginStr);
 		if (b!=-1) {
 			String endStr = "//[validate_end_" + internalName + "]\r\n";
@@ -569,10 +575,68 @@ public class WorkflowPredefineMgr {
 				return scripts.substring(b + beginStr.length(), e);
 			}
 		}
-		
 		return null;
 	}
-	
+
+	/**
+	 * 取得节点预处理脚本
+	 * @param scripts
+	 * @param internalName
+	 * @return
+	 */
+	public String getActionPreDisposeScript(String scripts, String internalName) {
+		String beginStr = "//[pre_dispose_start_" + internalName + "]\r\n";
+
+		int b = scripts.indexOf(beginStr);
+		if (b!=-1) {
+			String endStr = "//[pre_dispose_end_" + internalName + "]\r\n";
+			int e = scripts.indexOf(endStr);
+			if (e!=-1) {
+				return scripts.substring(b + beginStr.length(), e);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 取得节点激活脚本
+	 * @param scripts
+	 * @param internalName
+	 * @return
+	 */
+	public String getActionActiveScript(String scripts, String internalName) {
+		String beginStr = "//[action_active_start_" + internalName + "]\r\n";
+
+		int b = scripts.indexOf(beginStr);
+		if (b!=-1) {
+			String endStr = "//[action_active_end_" + internalName + "]\r\n";
+			int e = scripts.indexOf(endStr);
+			if (e!=-1) {
+				return scripts.substring(b + beginStr.length(), e);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 取得流程预处理脚本
+	 * @param scripts
+	 * @return
+	 */
+	public String getPreInitScript(String scripts) {
+		String beginStr = "//[pre_init_start]\r\n";
+
+		int b = scripts.indexOf(beginStr);
+		if (b!=-1) {
+			String endStr = "//[pre_init_end]\r\n";
+			int e = scripts.indexOf(endStr);
+			if (e!=-1) {
+				return scripts.substring(b + beginStr.length(), e);
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * 取得节点流转事件脚本
 	 * @param scripts
@@ -721,7 +785,114 @@ public class WorkflowPredefineMgr {
 		return wpd.save();
 
 	}
-		
+
+	/**
+	 * 保存节点预处理脚本
+	 * @param wpd
+	 * @param internalName
+	 * @param script
+	 * @return
+	 * @throws ErrMsgException
+	 */
+	public boolean saveActionPreDisposeScript(WorkflowPredefineDb wpd, String internalName, String script) throws ErrMsgException {
+		if (!License.getInstance().isSrc()) {
+			throw new ErrMsgException("开发版才有脚本编写功能！");
+		}
+
+		String scripts = wpd.getScripts();
+		String beginStr = "//[pre_dispose_start_" + internalName + "]\r\n";
+		String endStr = "//[pre_dispose_end_" + internalName + "]\r\n";
+
+		int b = scripts.indexOf(beginStr);
+		int e = scripts.indexOf(endStr);
+		if (b==-1 || e==-1) {
+			scripts += "\r\n" + beginStr;
+			scripts += script;
+			scripts += "\r\n" + endStr;
+		}
+		else {
+			String str = scripts.substring(0, b);
+			str += "\r\n" + beginStr;
+			str += script;
+			str += "\r\n" + scripts.substring(e);
+
+			scripts = str;
+		}
+		wpd.setScripts(scripts);
+		return wpd.save();
+	}
+
+	/**
+	 * 保存节点激活脚本
+	 * @param wpd
+	 * @param internalName
+	 * @param script
+	 * @return
+	 * @throws ErrMsgException
+	 */
+	public boolean saveActionActiveScript(WorkflowPredefineDb wpd, String internalName, String script) throws ErrMsgException {
+		if (!License.getInstance().isSrc()) {
+			throw new ErrMsgException("开发版才有脚本编写功能！");
+		}
+
+		String scripts = wpd.getScripts();
+		String beginStr = "//[action_active_start_" + internalName + "]\r\n";
+		String endStr = "//[action_active_end_" + internalName + "]\r\n";
+
+		int b = scripts.indexOf(beginStr);
+		int e = scripts.indexOf(endStr);
+		if (b==-1 || e==-1) {
+			scripts += "\r\n" + beginStr;
+			scripts += script;
+			scripts += "\r\n" + endStr;
+		}
+		else {
+			String str = scripts.substring(0, b);
+			str += "\r\n" + beginStr;
+			str += script;
+			str += "\r\n" + scripts.substring(e);
+
+			scripts = str;
+		}
+		wpd.setScripts(scripts);
+		return wpd.save();
+	}
+
+	/**
+	 * 保存流程预处理脚本
+	 * @param wpd
+	 * @param script
+	 * @return
+	 * @throws ErrMsgException
+	 */
+	public boolean savePreInitScript(WorkflowPredefineDb wpd, String script) throws ErrMsgException {
+		if (!License.getInstance().isSrc()) {
+			throw new ErrMsgException("开发版才有脚本编写功能！");
+		}
+
+		String scripts = wpd.getScripts();
+		String beginStr = "//[pre_init_start]\r\n";
+		String endStr = "//[pre_init_end]\r\n";
+
+		int b = scripts.indexOf(beginStr);
+		int e = scripts.indexOf(endStr);
+		if (b==-1 || e==-1) {
+			scripts += "\r\n" + beginStr;
+			scripts += script;
+			scripts += "\r\n" + endStr;
+		}
+		else {
+			String str = scripts.substring(0, b);
+			str += "\r\n" + beginStr;
+			str += script;
+			str += "\r\n" + scripts.substring(e);
+
+			scripts = str;
+		}
+		wpd.setScripts(scripts);
+		return wpd.save();
+	}
+
 	public boolean saveActionFinishScript(WorkflowPredefineDb wpd, String internalName, String script) throws ErrMsgException {
 		if (!License.getInstance().isSrc()) {
 			throw new ErrMsgException("开发版才有脚本编写功能！");
@@ -963,9 +1134,14 @@ public class WorkflowPredefineMgr {
 		WorkflowPredefineDb wpd = new WorkflowPredefineDb();
 		wpd = wpd.getDefaultPredefineFlow(flowTypeCode);
 		String writeProp = wpd.getWriteProp();                   //从数据库获取回写
-		
+
+		Leaf lf = new Leaf();
+		lf = lf.getLeaf(flowTypeCode);
+		if (lf == null) {
+			throw new ErrMsgException("流程类型不存在");
+		}
 		FormDb fd = new FormDb();
-		fd = fd.getFormDb(flowTypeCode);
+		fd = fd.getFormDb(lf.getFormCode());
 
 		SAXBuilder parser = new SAXBuilder();
 		org.jdom.Document doc = null;
@@ -982,50 +1158,56 @@ public class WorkflowPredefineMgr {
 		int writeBackType = ParamUtil.getInt(request, "writeBackType", WorkflowPredefineDb.WRITE_BACK_UPDATE);
 		String primaryKey = ParamUtil.get(request, "primaryKey");
 		
-		Element del = null;
-		Element con = null;
+		Element nodeToDel = null;
+		// 条件
+		Element cond = null;
 		
 		try {
-			if (writeProp!=null&&!"".equals(writeProp)){
+			if (writeProp != null && !"".equals(writeProp)) {
 				doc = parser.build(new InputSource(new StringReader(writeProp)));
 				root = doc.getRootElement();
-				if ("flowFinish".equals(writeBackTime)){                                
-						Element  flowFinish = root.getChild("flowFinish");
-						if (flowFinish!=null){
-							String writeBackOld = flowFinish.getChildText("writeBackForm");
-							if (writeBackOld.equals(writeBackFormCode))
-								con = flowFinish.getChild("condition");
-							root.removeContent(flowFinish);
+				// 流程结束
+				if ("flowFinish".equals(writeBackTime)) {
+					Element flowFinish = root.getChild("flowFinish");
+					if (flowFinish != null) {
+						String writeBackOld = flowFinish.getChildText("writeBackForm");
+						if (writeBackOld.equals(writeBackFormCode)) {
+							cond = flowFinish.getChild("condition");
 						}
-						child = new Element("flowFinish");
+						root.removeContent(flowFinish);
+					}
+					child = new Element("flowFinish");
 				} else {
-						list = root.getChildren("nodeFinish");
-						if (list!=null)	
-							ir = list.iterator();
-						while (ir!=null&&ir.hasNext()){
-							Element nodeFinish = (Element)ir.next();
+					// 核定节点通过
+					list = root.getChildren("nodeFinish");
+					if (list != null) {
+						ir = list.iterator();
+						while (ir.hasNext()) {
+							Element nodeFinish = (Element) ir.next();
 							Element internalNode = nodeFinish.getChild("internalName");
 							String internalNodeText = internalNode.getText();
-							if (internalName.equals(internalNodeText)){ // 节点存在先删除
+							if (internalName.equals(internalNodeText)) { // 节点存在先删除
 								String writeBackOld = nodeFinish.getChildText("writeBackForm");
-								if (writeBackOld.equals(writeBackFormCode))
-									con = nodeFinish.getChild("condition");
-								del = nodeFinish;
+								if (writeBackOld.equals(writeBackFormCode)) {
+									cond = nodeFinish.getChild("condition");
+								}
+								nodeToDel = nodeFinish;
 							}
 						}
-						child = new Element("nodeFinish");
-						Element internalNode = new Element("internalName");
-						internalNode.setText(internalName);
-						child.addContent(internalNode);
+					}
+					child = new Element("nodeFinish");
+					Element internalNode = new Element("internalName");
+					internalNode.setText(internalName);
+					child.addContent(internalNode);
 				}
-				if (del!=null)
-					root.removeContent(del);
-				
+				if (nodeToDel != null) {
+					root.removeContent(nodeToDel);
+				}
 			} else {  // 如果writeProp为空，新建root元素
 				doc = new org.jdom.Document();
 				root = new Element("root");
 				doc.addContent(root);
-				if ("flowFinish".equals(writeBackTime)){
+				if ("flowFinish".equals(writeBackTime)) {
 					child = new Element("flowFinish");
 				} else {
 					child = new Element("nodeFinish");
@@ -1034,8 +1216,8 @@ public class WorkflowPredefineMgr {
 					child.addContent(internalNode);
 				}
 			}
-			
-			child.setAttribute("id",RandomSecquenceCreator.getId(10));
+
+			child.setAttribute("id", RandomSecquenceCreator.getId(10));
 			root.addContent(child);
 			Element writeBackForm = new Element("writeBackForm");
 			writeBackForm.setText(writeBackFormCode);
@@ -1043,39 +1225,39 @@ public class WorkflowPredefineMgr {
 			Element writeBackTypeEl = new Element("writeBackType");
 			writeBackTypeEl.setText(String.valueOf(writeBackType));
 			child.addContent(writeBackTypeEl);
-			
+
 			Element primaryKeyEl = new Element("primaryKey");
 			primaryKeyEl.setText(primaryKey);
 			child.addContent(primaryKeyEl);
-			
+
 			Element writeBackTimeStamp = new Element("writeBackTime");
 			writeBackTimeStamp.setText(writeBackTime);
 			child.addContent(writeBackTimeStamp);
-						
+
 			FormDb fdWriteBack = new FormDb();
 			fdWriteBack = fd.getFormDb(writeBackFormCode);
-			
-			for (int i=0;i<repeatCount;i++){
-				String field = ParamUtil.get(request,"formfield"+i);
-				String math = ParamUtil.get(request,"math"+i);
+
+			// 设置字段值，可能会有多个字段
+			for (int i = 0; i < repeatCount; i++) {
+				String field = ParamUtil.get(request, "formfield" + i);
+				String math = ParamUtil.get(request, "math" + i);
 				// 判断是否为字符串型，如果是则加单引号
 				FormField ff = fdWriteBack.getFormField(field);
-				if (ff==null) {
+				if (ff == null) {
 					continue;
 				}
 				int fieldType = ff.getFieldType();
 				// int、long、float、double、price类型
-				if (fieldType==FormField.FIELD_TYPE_DOUBLE||fieldType==FormField.FIELD_TYPE_FLOAT||fieldType==FormField.FIELD_TYPE_INT||fieldType==FormField.FIELD_TYPE_LONG||fieldType==FormField.FIELD_TYPE_PRICE){                            
+				if (fieldType == FormField.FIELD_TYPE_DOUBLE || fieldType == FormField.FIELD_TYPE_FLOAT || fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG || fieldType == FormField.FIELD_TYPE_PRICE) {
 					if ("".equals(math)) {
 						math = "0";
 					}
-				}
-				else {
+				} else {
 					if (!math.startsWith("'")) {
 						math = StrUtil.sqlstr(math);
 					}
 				}
-				
+
 				Element writeBackField = new Element("writeBackField");
 				writeBackField.setAttribute("fieldName", field);
 				child.addContent(writeBackField);
@@ -1083,68 +1265,84 @@ public class WorkflowPredefineMgr {
 				writeBackMath.setText(math);
 				writeBackField.addContent(writeBackMath);
 			}
-			if (!"".equals(conditionStr)){
-				 org.jdom.Document cdoc = parser.build(new InputSource(new StringReader(conditionStr)));
-				 Element croot = cdoc.getRootElement();
-				 Element condition = croot.getChild("condition");
-				 child.addContent(condition.detach());
+			if (!"".equals(conditionStr)) {
+				org.jdom.Document cdoc = parser.build(new InputSource(new StringReader(conditionStr)));
+				Element croot = cdoc.getRootElement();
+				Element condition = croot.getChild("condition");
+				child.addContent(condition.detach());
 			} else {
-				if (con!=null)
-					child.addContent(con.detach());
+				if (cond != null) {
+					child.addContent(cond.detach());
+				}
 			}
-			
+
 			// 处理插入
 			Element fieldsToInsert = new Element("insertFields");
 			child.addContent(fieldsToInsert);
 			JSONObject json = new JSONObject();
-			ir = fdWriteBack.getFields().iterator();
-			while (ir.hasNext()) {
-				FormField ff = (FormField)ir.next();
-				String math = ParamUtil.get(request, ff.getName() + "_formula");
-				int fieldType = ff.getFieldType();
-				if (fieldType==FormField.FIELD_TYPE_DOUBLE||fieldType==FormField.FIELD_TYPE_FLOAT||fieldType==FormField.FIELD_TYPE_INT||fieldType==FormField.FIELD_TYPE_LONG||fieldType==FormField.FIELD_TYPE_PRICE){                            
-					if ("".equals(math)) {
-						math = "0";
-					}
-				}
-				else if (fieldType==FormField.FIELD_TYPE_DATE || fieldType==FormField.FIELD_TYPE_DATETIME) {
-					// 改为在插入的时候，插入null，否则在配置界面上显示为null比较难看
+			if (writeBackType==WorkflowPredefineDb.WRITE_BACK_INSERT || writeBackType==WorkflowPredefineDb.WRITE_BACK_UPDATE_INSERT) {
+				// primaryKey表示插入时如果主键字段未设置，或者主键字段不存在则插入数据，故不能以此条件判断是否需保存插入插入字段的值
+				// if (!"empty".equals(primaryKey)) {
+				ir = fdWriteBack.getFields().iterator();
+				while (ir.hasNext()) {
+					FormField ff = (FormField) ir.next();
+					String math = ParamUtil.get(request, ff.getName() + "_formula");
+					int fieldType = ff.getFieldType();
+					if (fieldType == FormField.FIELD_TYPE_DOUBLE || fieldType == FormField.FIELD_TYPE_FLOAT || fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG || fieldType == FormField.FIELD_TYPE_PRICE) {
+						if ("".equals(math)) {
+							math = "0";
+						}
+					} else if (fieldType == FormField.FIELD_TYPE_DATE || fieldType == FormField.FIELD_TYPE_DATETIME) {
+						// 改为在插入的时候，插入null，否则在配置界面上显示为null比较难看
 					/*
 					if ("".equals(math)) {
 						math = "null";
 					}
 					*/
-				}				
-				else {
-					if (!math.startsWith("'")) {
-						math = StrUtil.sqlstr(math);
+					} else {
+						if (!math.startsWith("'")) {
+							math = StrUtil.sqlstr(math);
+						}
+					}
+					try {
+						json.put(ff.getName(), math);
+					} catch (JSONException e) {
+						LogUtil.getLog(getClass()).error(e);
 					}
 				}
-				try {
-					json.put(ff.getName(), math);
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 			}
-			fieldsToInsert.setText(json.toString());			
-			
+			fieldsToInsert.setText(json.toString());
+
 			Format format = Format.getPrettyFormat();
-		    ByteArrayOutputStream byteRsp = new ByteArrayOutputStream();
-		    XMLOutputter xmlOut = new XMLOutputter(format);
-		    xmlOut.output(doc, byteRsp);
-		    writeProp = byteRsp.toString("utf-8");
+			ByteArrayOutputStream byteRsp = new ByteArrayOutputStream();
+			XMLOutputter xmlOut = new XMLOutputter(format);
+			xmlOut.output(doc, byteRsp);
+			writeProp = byteRsp.toString("utf-8");
 			byteRsp.close();
-			
+
 			wpd.setWriteProp(writeProp);
 			return wpd.save();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		} catch (JDOMException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (IOException | JDOMException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return false;
+	}
+
+	public org.json.JSONObject getFlowJson(String flowTypeCode) {
+		WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+		wpd = wpd.getDefaultPredefineFlow(flowTypeCode);
+		String flowJsonStr = wpd.getFlowJson();
+		if (StrUtil.isEmpty(flowJsonStr)) {
+			return new org.json.JSONObject();
+		} else {
+			try {
+				// 直接转因为其中的\字符，导致不认，故先将\转为#@#
+				flowJsonStr = flowJsonStr.replaceAll("\\\\", SUBSTITUTION);
+				return new JSONObject(flowJsonStr);
+			} catch (JSONException e) {
+				LogUtil.getLog(getClass()).error(e);
+			}
+		}
+		return new org.json.JSONObject();
 	}
 }

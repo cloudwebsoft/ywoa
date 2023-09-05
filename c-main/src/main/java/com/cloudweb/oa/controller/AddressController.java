@@ -6,9 +6,11 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.SkinUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.cloudweb.oa.bean.Address;
 import com.cloudweb.oa.service.AddressService;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.address.DirectoryView;
 import com.redmoon.oa.address.Leaf;
 import com.redmoon.oa.android.Privilege;
@@ -16,7 +18,6 @@ import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.weixin.bean.SortModel;
 import com.redmoon.weixin.util.CharacterParser;
 import com.redmoon.weixin.util.PinyinComparator;
-import net.sf.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,22 +81,21 @@ public class AddressController {
                 // json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
-        JSONArray arr = new JSONArray();
+        com.alibaba.fastjson.JSONArray arr = new com.alibaba.fastjson.JSONArray();
         List<SortModel> sortModels = new ArrayList<SortModel>();
-        net.sf.json.JSONObject obj = new net.sf.json.JSONObject();
+        com.alibaba.fastjson.JSONObject obj = new com.alibaba.fastjson.JSONObject();
 
         String what = ParamUtil.get(request, "what");
         int type = ParamUtil.getInt(request, "type", AddressService.TYPE_USER);
         String sql;
         if (type == AddressService.TYPE_USER) {
-            sql = "select id from address where userName=" + StrUtil.sqlstr(userName) + " and type=" + AddressService.TYPE_USER;
+            sql = "select * from address where userName=" + StrUtil.sqlstr(userName) + " and type=" + AddressService.TYPE_USER;
         } else {
-            sql = "select id from address where type=" + type;
+            sql = "select * from address where type=" + type;
         }
 
         if (!what.equals("")) {
@@ -105,7 +105,7 @@ public class AddressController {
         sql += " order by id desc";
 
         Address addr;
-        Iterator ir = addressService.listSql(sql).getResult().iterator();;
+        Iterator ir = addressService.listSql(sql).getResult().iterator();
         while (ir.hasNext()) {
             addr = (Address) ir.next();
             String person = addr.getPerson();
@@ -126,10 +126,10 @@ public class AddressController {
             PinyinComparator pinyinComparator = new PinyinComparator();
             Collections.sort(sortModels, pinyinComparator);
             for (int i = 0; i < sortModels.size(); i++) {
-                net.sf.json.JSONObject itemObj = new net.sf.json.JSONObject();
+                com.alibaba.fastjson.JSONObject itemObj = new com.alibaba.fastjson.JSONObject();
                 int sec = sortModels.get(i).getSortLetters().charAt(0);
                 addr = (Address) sortModels.get(i).getObjs();
-                net.sf.json.JSONObject userObj = new net.sf.json.JSONObject();
+                com.alibaba.fastjson.JSONObject userObj = new com.alibaba.fastjson.JSONObject();
                 userObj.put("person", addr.getPerson());
                 userObj.put("mobile", addr.getMobile());
                 userObj.put("company", addr.getCompany());
@@ -142,7 +142,7 @@ public class AddressController {
                     itemObj.put("pyName", sortModels.get(i).getSortLetters());
                     arr.add(itemObj);
 
-                    net.sf.json.JSONObject itemObj2 = new net.sf.json.JSONObject();
+                    com.alibaba.fastjson.JSONObject itemObj2 = new com.alibaba.fastjson.JSONObject();
                     itemObj2.put("isGroup", false);
                     itemObj2.put("name", addr.getPerson());
                     itemObj2.put("pyName", CharacterParser.getInstance()
@@ -185,7 +185,7 @@ public class AddressController {
                 json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         boolean re = false;
@@ -215,7 +215,7 @@ public class AddressController {
             }
         }
         catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -239,7 +239,7 @@ public class AddressController {
                 return json.toString();
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         boolean re = false;
@@ -259,7 +259,7 @@ public class AddressController {
             }
         }
         catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -282,7 +282,7 @@ public class AddressController {
                 return json.toString();
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         boolean re = true;
@@ -302,7 +302,7 @@ public class AddressController {
             }
         }
         catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -402,7 +402,7 @@ public class AddressController {
             dv.ShowDirectoryAsOptionsWithCode(sb, lf, rootlayer);
             model.addAttribute("dirOpts", sb.toString());
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         // return "address/address";
@@ -460,7 +460,7 @@ public class AddressController {
             dv.ShowDirectoryAsOptionsWithCode(sb, lf, rootlayer);
             model.addAttribute("dirOpts", sb.toString());
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return "th/address/address_add";
@@ -478,7 +478,7 @@ public class AddressController {
         Address address = addressService.getAddress(id);
 
         model.addAttribute("addr", address);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request));
+        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
 
         String tabIdOpener = ParamUtil.get(request, "tabIdOpener");
         model.addAttribute("tabIdOpener", tabIdOpener);
@@ -498,7 +498,7 @@ public class AddressController {
             dv.ShowDirectoryAsOptionsWithCode(sb, lf, rootlayer);
             model.addAttribute("dirOpts", sb.toString());
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return "th/address/address_edit";

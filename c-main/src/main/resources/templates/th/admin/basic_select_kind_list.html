@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>基础数据类型管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<div th:replace="th/include/tab_basic_select :: navConfig(3)"></div>
+<div class="spacerH"></div>
+<table class="tabStyle_1 percent60" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+    <tr>
+        <td colspan="3" class="tabStyle_1_title">类型</td>
+    </tr>
+    <tr>
+        <td colspan="3" align="center">
+            <form id="form1" name="form1" method="post">
+                序号
+                <input name="orders" size="3"/>
+                名称
+                <input name="name" maxlength="20"/>
+                &nbsp;
+                <input class="btn btn-default" id="btnOk" type="button" value="添加"/>
+                &nbsp;&nbsp;
+            </form>
+        </td>
+    </tr>
+    <tr th:each="json, stat : ${ary}" th:id="'tr' + ${json.id}">
+        <td width="7%" align="center">
+            [(${json.orders})]
+        </td>
+        <td width="70%">
+            <a th:href="@{'/admin/basic_select_list.jsp?kind=' + ${json.id}}">[(${json.name})]</a>
+        </td>
+        <td width="23%" align="center">
+            <a th:href="'basicSelectKindEditPage.do?id=' + ${json.id}">编辑</a>
+            &nbsp;&nbsp;
+            <a href="javascript:;" th:onclick="del([(${json.id})])">删除</a>
+            &nbsp;&nbsp;
+            <a href="javascript:;" th:onclick="addTab('[(${json.name})]权限', 'admin/basic_select_kind_priv_m.jsp?kindId=[(${json.id})]')">权限</a>
+        </td>
+    </tr>
+</table>
+<script>
+    $(function() {
+        $('#btnOk').click(function(e) {
+            e.preventDefault();
+            add();
+        })
+    })
+
+    function add() {
+        $.ajax({
+            type: "post",
+            url: "../basicdata/createKind.do",
+            data: $('#form1').serialize(),
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                if (data.res == 0) {
+                    layer.alert(data.msg, {
+                        yes: function() {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function del(id) {
+        layer.confirm('您确认要删除么?', {icon: 3, title: '提示'}, function (index) {
+            $.ajax({
+                type: "post",
+                url: "../basicdata/delKind.do",
+                data: {
+                    id: id
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                    if (data.res == 0) {
+                        $('#tr' + id).remove();
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    $(function() {
+        $('body').addClass('form-inline');
+        $('input, select, textarea').each(function() {
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+                $(this).attr('autocomplete', 'off');
+            }
+        });
+    })
+</script>
+</body>
+</html>

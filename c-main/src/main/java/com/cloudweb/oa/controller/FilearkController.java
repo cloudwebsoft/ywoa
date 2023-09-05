@@ -1,24 +1,42 @@
 package com.cloudweb.oa.controller;
 
+import javax.imageio.ImageIO;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.js.fan.db.ListResult;
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.I18nUtil;
+import com.cloudweb.oa.utils.ResponseUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.util.IPUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.android.Privilege;
+import com.redmoon.oa.basic.SelectDb;
+import com.redmoon.oa.basic.SelectMgr;
+import com.redmoon.oa.basic.SelectOptionDb;
 import com.redmoon.oa.fileark.*;
+import com.redmoon.oa.fileark.plugin.PluginMgr;
+import com.redmoon.oa.fileark.plugin.PluginUnit;
+import com.redmoon.oa.fileark.plugin.base.IPluginUI;
+import com.redmoon.oa.flow.AttachmentLogDb;
+import com.redmoon.oa.flow.AttachmentLogMgr;
+import com.redmoon.oa.notice.NoticeAttachmentDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
+import com.redmoon.oa.person.UserSetupDb;
+import com.redmoon.oa.pvg.PrivDb;
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.oa.util.PdfUtil;
 import com.redmoon.oa.util.WordUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.htmlparser.Parser;
 import org.htmlparser.filters.TagNameFilter;
 import org.htmlparser.tags.ImageTag;
@@ -28,16 +46,23 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -47,13 +72,22 @@ public class FilearkController {
     @Autowired
     private HttpServletRequest request;
 
+    @Autowired
+    private IFileService fileService;
+
+    @Autowired
+    private I18nUtil i18nUtil;
+
+    @Autowired
+    private ResponseUtil responseUtil;
+
     /**
      * 下载前验证，如：打包下载
      *
      * @return
      */
     @ResponseBody
-    @RequestMapping(value = "/downloadValidate", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    @RequestMapping(value = "/downloadValidate", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
     public String downloadValidate() {
         JSONObject json = new JSONObject();
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
@@ -83,7 +117,7 @@ public class FilearkController {
                 json.put("msg", msg);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -95,7 +129,7 @@ public class FilearkController {
      * @return
      */
     @ResponseBody
-    @RequestMapping(value = "/list", method = RequestMethod.POST, produces = {"text/html;", "application/json;charset=UTF-8;"})
+    @RequestMapping(value = "/list", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
     public String list(String skey) {
         JSONObject json = new JSONObject();
 
@@ -107,7 +141,7 @@ public class FilearkController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -164,7 +198,7 @@ public class FilearkController {
             result.put("documents", arr);
             json.put("result", result);
         } catch (JSONException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return json.toString();
     }
@@ -176,7 +210,7 @@ public class FilearkController {
      * @return
      */
     @ResponseBody
-    @RequestMapping(value = "/getDoc", method = RequestMethod.GET, produces = {"text/html;", "application/json;charset=UTF-8;"})
+    @RequestMapping(value = "/getDoc", method = RequestMethod.GET, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
     public String getDoc(int id) {
         JSONObject json = new JSONObject();
         Privilege privilege = new Privilege();
@@ -187,7 +221,7 @@ public class FilearkController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -230,14 +264,14 @@ public class FilearkController {
                 json.put("res", -1);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
 
     @ResponseBody
-    @RequestMapping(value = "/move", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String move(int attachId, String direction) {
+    @RequestMapping(value = "/moveAttachment", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    public String moveAttachment(int attachId, String direction) {
         com.redmoon.oa.fileark.Attachment att = new com.redmoon.oa.fileark.Attachment(attachId);
         int docId = att.getDocId();
         Document doc = new Document();
@@ -252,7 +286,7 @@ public class FilearkController {
                 json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             return json.toString();
         }
@@ -270,8 +304,90 @@ public class FilearkController {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
+        return json.toString();
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/move", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    public String move() throws Exception {
+        com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        String code = ParamUtil.get(request, "code");
+        String parent_code = ParamUtil.get(request, "parent_code");
+        int position = Integer.parseInt(ParamUtil.get(request, "position"));
+        if ("root".equals(code)) {
+            json.put("ret", "0");
+            json.put("msg", "根节点不能移动！");
+            return json.toString();
+        }
+        if ("#".equals(parent_code)) {
+            json.put("ret", "0");
+            json.put("msg", "不能与根节点平级！");
+            return json.toString();
+        }
+
+        Directory dir = new Directory();
+        com.redmoon.oa.fileark.Leaf moveleaf = dir.getLeaf(code);
+        int old_position = moveleaf.getOrders();//得到被移动节点原来的位置
+        String old_parent_code = moveleaf.getParentCode();
+
+        LeafPriv lp = new LeafPriv();
+        lp.setDirCode(code);
+        if (!lp.canUserExamine(privilege.getUser(request))) {
+            json.put("ret", "0");
+            json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
+            return json.toString();
+        }
+
+        if (!parent_code.equals(old_parent_code)) {
+            lp.setDirCode(parent_code);
+            if (!lp.canUserExamine(privilege.getUser(request))) {
+                json.put("ret", "0");
+                json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
+                return json.toString();
+            }
+        }
+
+        com.redmoon.oa.fileark.Leaf newParentLeaf = dir.getLeaf(parent_code);
+
+        int p = position + 1;
+        moveleaf.setOrders(p);
+        if (!parent_code.equals(old_parent_code)) {
+            moveleaf.update(parent_code);
+        } else {
+            moveleaf.update();
+        }
+
+        // 重新梳理orders
+        Iterator ir = newParentLeaf.getChildren().iterator();
+        while (ir.hasNext()) {
+            Leaf lf = (Leaf) ir.next();
+            // 跳过自己
+            if (lf.getCode().equals(code)) {
+                continue;
+            }
+            if (p < old_position) {//上移
+                if (lf.getOrders() >= p) {
+                    lf.setOrders(lf.getOrders() + 1);
+                    lf.update();
+                }
+            } else {//下移
+                if (lf.getOrders() <= p && lf.getOrders() > old_position) {
+                    lf.setOrders(lf.getOrders() - 1);
+                    lf.update();
+                }
+            }
+        }
+
+        // 原节点下的孩子节点通过修复repairTree处理
+        com.redmoon.oa.fileark.Leaf rootLeaf = dir.getLeaf(com.redmoon.oa.fileark.Leaf.ROOTCODE);
+        Directory dm = new Directory();
+        dm.repairTree(rootLeaf);
+
+        json.put("ret", "1");
+        json.put("msg", "操作成功！");
         return json.toString();
     }
 
@@ -358,7 +474,7 @@ public class FilearkController {
                 json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             return json.toString();
         }
@@ -375,7 +491,7 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -423,9 +539,9 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -451,9 +567,9 @@ public class FilearkController {
             json.put("ret", 1);
             json.put("msg", "操作成功！");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -479,9 +595,9 @@ public class FilearkController {
             json.put("ret", 1);
             json.put("msg", "操作成功！");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -507,9 +623,9 @@ public class FilearkController {
             json.put("ret", 1);
             json.put("msg", "操作成功！");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -550,7 +666,7 @@ public class FilearkController {
                 return "";
             }
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return "";
     }
@@ -617,12 +733,6 @@ public class FilearkController {
                     json.put("redirectUri", pageUrl);
                     return json.toString();
                 }
-            } else if (action.equals("wikiPost")) {
-                String pageUrl = "fileark/wiki_list.jsp?dir_code=" + StrUtil.UrlEncode(docmanager.getDirCode());
-                json.put("ret", 1);
-                json.put("msg", "操作成功！");
-                json.put("redirectUri", pageUrl);
-                return json.toString();
             } else {
                 // 用于fwebedit.jsp
                 Document doc = docmanager.getDocument();
@@ -712,9 +822,9 @@ public class FilearkController {
             json.put("ret", 1);
             json.put("msg", "操作成功！");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -743,121 +853,26 @@ public class FilearkController {
     }
 
     @ResponseBody
-    @RequestMapping(value = "/move", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public String move() throws Exception {
-        com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
-        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
-        String code = ParamUtil.get(request, "code");
-        String parent_code = ParamUtil.get(request, "parent_code");
-        int position = Integer.parseInt(ParamUtil.get(request, "position"));
-        if ("root".equals(code)) {
-            json.put("ret", "0");
-            json.put("msg", "根节点不能移动！");
-            return json.toString();
-        }
-        if ("#".equals(parent_code)) {
-            json.put("ret", "0");
-            json.put("msg", "不能与根节点平级！");
-            return json.toString();
-        }
-
-        Directory dir = new Directory();
-        com.redmoon.oa.fileark.Leaf moveleaf = dir.getLeaf(code);
-        int old_position = moveleaf.getOrders();//得到被移动节点原来的位置
-        String old_parent_code = moveleaf.getParentCode();
-
-        LeafPriv lp = new LeafPriv();
-        lp.setDirCode(code);
-        if (!lp.canUserExamine(privilege.getUser(request))) {
-            json.put("ret", "0");
-            json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
-            return json.toString();
-        }
-
-        if (!parent_code.equals(old_parent_code)) {
-            lp.setDirCode(parent_code);
-            if (!lp.canUserExamine(privilege.getUser(request))) {
-                json.put("ret", "0");
-                json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
-                return json.toString();
-            }
-        }
-
-        com.redmoon.oa.fileark.Leaf newParentLeaf = dir.getLeaf(parent_code);
-
-        int p = position + 1;
-        moveleaf.setOrders(p);
-        if (!parent_code.equals(old_parent_code)) {
-            moveleaf.update(parent_code);
-        } else {
-            moveleaf.update();
-        }
-
-        // 重新梳理orders
-        Iterator ir = newParentLeaf.getChildren().iterator();
-        while (ir.hasNext()) {
-            Leaf lf = (Leaf) ir.next();
-            // 跳过自己
-            if (lf.getCode().equals(code)) {
-                continue;
-            }
-            if (p < old_position) {//上移
-                if (lf.getOrders() >= p) {
-                    lf.setOrders(lf.getOrders() + 1);
-                    lf.update();
-                }
-            } else {//下移
-                if (lf.getOrders() <= p && lf.getOrders() > old_position) {
-                    lf.setOrders(lf.getOrders() - 1);
-                    lf.update();
-                }
-            }
-        }
-
-        // 原节点下的孩子节点通过修复repairTree处理
-        com.redmoon.oa.fileark.Leaf rootLeaf = dir.getLeaf(com.redmoon.oa.fileark.Leaf.ROOTCODE);
-        Directory dm = new Directory();
-        dm.repairTree(rootLeaf);
-
-        json.put("ret", "1");
-        json.put("msg", "操作成功！");
-        return json.toString();
-    }
-
-    @ResponseBody
     @RequestMapping(value = "/uploadBatch", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
     public String uploadBatch() {
         DocumentMgr dm = new DocumentMgr();
         com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
         ServletContext application = request.getSession().getServletContext();
-        int uploadType = ParamUtil.getInt(request, "uploadType", 0); // 1表示通过webedit上传
         boolean re;
         try {
-            if (uploadType == 1) {
-                re = dm.uploadByWebedit(application, request);
-            } else {
-                re = dm.uploadBatch(application, request);
-            }
+            re = dm.uploadBatch(application, request);
         } catch (ErrMsgException e) {
             json.put("ret", 0);
             json.put("msg", e.getMessage());
             return json.toString();
         }
 
-        if (uploadType == 1) {
-            if (re) {
-                return "上传成功!";
-            } else {
-                return "操作失败!";
-            }
+        if (re) {
+            json.put("ret", "1");
+            json.put("msg", "操作成功！");
         } else {
-            if (re) {
-                json.put("ret", "1");
-                json.put("msg", "操作成功！");
-            } else {
-                json.put("ret", "0");
-                json.put("msg", "操作失败！");
-            }
+            json.put("ret", "0");
+            json.put("msg", "操作失败！");
         }
         return json.toString();
     }
@@ -892,7 +907,7 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
             try {
                 json.put("ret", 0);
@@ -938,9 +953,9 @@ public class FilearkController {
             json.put("ret", 1);
             json.put("msg", "操作成功！");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -1010,9 +1025,9 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -1045,9 +1060,9 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -1130,9 +1145,9 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -1163,9 +1178,9 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -1196,9 +1211,9 @@ public class FilearkController {
                 json.put("msg", "操作失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             try {
                 json.put("ret", 0);
                 json.put("msg", e.getMessage());
@@ -1222,7 +1237,7 @@ public class FilearkController {
             DocumentMgr documentMgr = new DocumentMgr();
             documentMgr.clearDustbin(request);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             json.put("ret", 0);
             json.put("msg", e.getMessage());
         }
@@ -1241,19 +1256,10 @@ public class FilearkController {
      * @throws JSONException
      */
     @RequestMapping("/download")
-    public void download(HttpServletResponse response) throws IOException, ErrMsgException, JSONException {
-        BufferedInputStream bis = null;
+    public void download(HttpServletResponse response) throws IOException, ErrMsgException {
         BufferedOutputStream bos = null;
         try {
             bos = new BufferedOutputStream(response.getOutputStream());
-            com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
-            if (!privilege.isUserPrivValid(request, "read")) {
-                response.setContentType("text/html;charset=utf-8");
-                String str = SkinUtil.LoadString(request, "pvg_invalid");
-                bos.write(str.getBytes("utf-8"));
-                return;
-            }
-
             int id = ParamUtil.getInt(request, "id", -1);
             int attId = ParamUtil.getInt(request, "attachId");
 
@@ -1273,6 +1279,7 @@ public class FilearkController {
                 att = mmd.getAttachment(pageNum, attId);
             }
 
+            com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
             String uName = privilege.getUser(request);
             String ip = IPUtil.getRemoteAddr(request);
             java.util.Date logDate = new java.util.Date();
@@ -1281,9 +1288,9 @@ public class FilearkController {
             // 记录访问日志
             Leaf lf = new Leaf();
             lf = lf.getLeaf(mmd.getDirCode());
-            if (lf==null) {
+            if (lf == null) {
                 response.setContentType("text/html;charset=utf-8");
-                bos.write("目录不存在".getBytes("utf-8"));
+                bos.write("目录不存在".getBytes(StandardCharsets.UTF_8));
                 return;
             }
             if (lf.isLog()) {
@@ -1300,60 +1307,34 @@ public class FilearkController {
                 dld.setLogDate(logDate);
                 dld.create();
             }
-
-            String s = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
-
             att.setDownloadCount(att.getDownloadCount() + 1);
             att.save();
 
             if (StrUtil.isImage(StrUtil.getFileExt(att.getDiskName()))) {
+                /* 因为不支持<img src='...'/>，故注释掉
                 response.setContentType("text/html;charset=utf-8");
-                String str = "<img src=\"" + request.getContextPath() + "/" + att.getVisualPath() + "/" + att.getDiskName() + "\" />";
-                bos.write(str.getBytes("utf-8"));
+                String str = "<img src=\"" + request.getContextPath() + "/showImg.do?path=" + att.getVisualPath() + "/" + att.getDiskName() + "\" />";
+                bos.write(str.getBytes(StandardCharsets.UTF_8));
+                */
                 try {
                     Directory.onDownload(request, String.valueOf(attId), uName, false);
                 } catch (ErrMsgException e) {
-                    bos.write(e.getMessage().getBytes("utf-8"));
+                    bos.write(e.getMessage().getBytes(StandardCharsets.UTF_8));
                     return;
                 }
+                fileService.preview(response, att.getVisualPath() + "/" + att.getDiskName());
                 return;
             }
 
-            java.io.File f = new java.io.File(s);
-            if (!f.exists()) {
-                response.setContentType("text/html;charset=utf-8");
-                String str = "文件不存在";
-                bos.write(str.getBytes("utf-8"));
-                return;
-            }
-
-            // 用下句会使IE在本窗口中打开文件
-            // response.setContentType(MIMEMap.get(StrUtil.getFileExt(att.getDiskName())));
-            // 使客户端直接下载，上句会使IE在本窗口中打开文件，下句也一样
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-disposition", "attachment; filename=" + StrUtil.GBToUnicode(att.getName()));
-
-            bis = new BufferedInputStream(new FileInputStream(Global.realPath + att.getVisualPath() + "/" + att.getDiskName()));
-
-            byte[] buff = new byte[2048];
-            int bytesRead;
-
-            while (-1 != (bytesRead = bis.read(buff, 0, buff.length))) {
-                bos.write(buff, 0, bytesRead);
-            }
-
+            fileService.download(response, att.getName(), att.getVisualPath(), att.getDiskName());
             try {
                 Directory.onDownload(request, String.valueOf(attId), uName, false);
             } catch (ErrMsgException e) {
-                bos.write(e.getMessage().getBytes("utf-8"));
-                return;
+                bos.write(e.getMessage().getBytes(StandardCharsets.UTF_8));
             }
         } catch (final IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (bis != null) {
-                bis.close();
-            }
             if (bos != null) {
                 bos.close();
             }
@@ -1415,7 +1396,7 @@ public class FilearkController {
                 if (nodes != null || nodes.size() > 0) {
                     StringBuffer sb = new StringBuffer();
                     int lastNodeEnd = 0;
-                    for (int k=0; k<nodes.size(); k++) {
+                    for (int k = 0; k < nodes.size(); k++) {
                         ImageTag node = (ImageTag) nodes.elementAt(k);
 
                         // image/png;base64,
@@ -1424,8 +1405,7 @@ public class FilearkController {
                         if (p == -1) {
                             if (imgUrl.startsWith("/")) {
                                 imgUrl = Global.getFullRootPath(request) + imgUrl;
-                            }
-                            else {
+                            } else {
                                 imgUrl = Global.getFullRootPath(request) + "/" + imgUrl;
                             }
 
@@ -1436,8 +1416,7 @@ public class FilearkController {
                             c += node.toHtml();
                             sb.append(c);
                             lastNodeEnd = e;
-                        }
-                        else {
+                        } else {
                             int e = node.getEndPosition();
                             String c = contentTmp.substring(lastNodeEnd, e);
                             sb.append(c);
@@ -1449,12 +1428,12 @@ public class FilearkController {
                 }
 
             } catch (ParserException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
 
             WordUtil.htmlToWord(content, bos);
         } catch (final Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (bos != null) {
                 bos.close();
@@ -1476,7 +1455,7 @@ public class FilearkController {
                 if (lf == null) {
                     response.setContentType("text/html;charset=utf-8");
                     bos = new BufferedOutputStream(response.getOutputStream());
-                    bos.write(("目录" + id + "不存在").getBytes("utf-8"));
+                    bos.write(("目录" + id + "不存在").getBytes(StandardCharsets.UTF_8));
                     return;
                 }
 
@@ -1484,7 +1463,7 @@ public class FilearkController {
                 if (docId == Leaf.DOC_ID_NONE) {
                     response.setContentType("text/html;charset=utf-8");
                     bos = new BufferedOutputStream(response.getOutputStream());
-                    bos.write(("文档" + id + "不存在").getBytes("utf-8"));
+                    bos.write(("文档" + id + "不存在").getBytes(StandardCharsets.UTF_8));
                     return;
                 }
             }
@@ -1494,7 +1473,7 @@ public class FilearkController {
             if (!doc.isLoaded()) {
                 response.setContentType("text/html;charset=utf-8");
                 bos = new BufferedOutputStream(response.getOutputStream());
-                bos.write("文章不存在".getBytes("utf-8"));
+                bos.write("文章不存在".getBytes(StandardCharsets.UTF_8));
                 return;
             }
 
@@ -1502,7 +1481,7 @@ public class FilearkController {
             if (!lp.canUserExportWord(SpringUtil.getUserName())) {
                 response.setContentType("text/html;charset=utf-8");
                 bos = new BufferedOutputStream(response.getOutputStream());
-                bos.write("权限非法".getBytes("utf-8"));
+                bos.write("权限非法".getBytes(StandardCharsets.UTF_8));
                 return;
             }
 
@@ -1513,7 +1492,7 @@ public class FilearkController {
 
             PdfUtil.htmlToPdf(response, doc.getTitle(), content, doc.getAuthor());
         } catch (final Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (bos != null) {
                 bos.close();
@@ -1584,5 +1563,660 @@ public class FilearkController {
             json.put("msg", "操作失败！");
         }
         return json.toString();
+    }
+
+    @RequestMapping("/getFile")
+    public void getFile(HttpServletResponse response, @RequestParam(required = true) Integer docId, @RequestParam(required = true) Integer attId) throws IOException, ErrMsgException {
+        Document doc = new Document();
+        doc = doc.getDocument(docId);
+        Attachment att = doc.getAttachment(1, attId);
+        if (!att.isLoaded()) {
+            throw new ErrMsgException("文件不存在");
+        }
+        String op = ParamUtil.get(request, "op");
+        if ("preview".equals(op)) {
+            fileService.download(response, att.getName(), att.getVisualPath(), att.getDiskName());
+        } else {
+            fileService.preview(response, att.getVisualPath() + "/" + att.getDiskName());
+        }
+    }
+
+    /**
+     * 预览
+     *
+     * @param docId
+     * @param attId
+     * @param model
+     * @return
+     */
+    @RequestMapping(value = "/preview")
+    public String preview(@RequestParam(required = true) Integer docId, @RequestParam(required = true) Integer attId, Model model) {
+        Attachment att = new Attachment(attId);
+        if (!att.isLoaded()) {
+            model.addAttribute("msg", "文件不存在，docId=" + attId + " id=" + attId);
+            return "th/error/error";
+        }
+
+        if (StrUtil.isImage(StrUtil.getFileExt(att.getDiskName()))) {
+            // 下载记录存至日志
+            model.addAttribute("imgPath", att.getVisualPath() + "/" + att.getDiskName());
+            return "th/img_show";
+        } else {
+            return "forward:getFile.do?op=preview&docId=" + docId + "&attId=" + attId;
+        }
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/getImgForShow", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public String getImgForShow(@RequestParam(required = true) Integer docId, @RequestParam(required = true) Integer attId) {
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        try {
+            Attachment att = new Attachment(attId);
+            String realPath = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
+            File input = new File(realPath);
+            BufferedImage image = ImageIO.read(input);
+            if (image == null) {
+                json.put("ret", 0);
+                json.put("msg", "图片不存在！");
+            } else {
+                int w = image.getWidth();
+                int h = image.getHeight();
+                json.put("ret", 1);
+                json.put("width", w);
+                json.put("height", h);
+                json.put("downloadUrl", "fileark/getFile.do?docId=" + docId + "&attId=" + attId);
+            }
+        } catch (IOException e) {
+            json.put("ret", 0);
+            json.put("msg", e.getMessage());
+        }
+        return json.toString();
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/getNextImgForShow", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public String getNextImgForShow(@RequestParam(required = true) Integer docId, @RequestParam(required = true) Integer attId) {
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        String arrow = ParamUtil.get(request, "arrow");//判断显示上一张还是下一张图片
+        int isImgSearch = ParamUtil.getInt(request, "isImgSearch", 0);
+        int newId = 0;
+        try {
+            Attachment att = new Attachment();
+            newId = att.showNextImg(attId, docId, arrow, isImgSearch);
+            Attachment attNew = new Attachment(newId);
+            String realPath = Global.getRealPath() + attNew.getVisualPath() + "/" + attNew.getDiskName();
+            File input = new File(realPath);
+            BufferedImage image = ImageIO.read(input);
+            if (image == null) {
+                json.put("ret", 0);
+                json.put("msg", "图片不存在！");
+            } else {
+                int w = image.getWidth();
+                int h = image.getHeight();
+                json.put("ret", 1);
+                json.put("newId", newId);
+                json.put("width", w);
+                json.put("height", h);
+                json.put("downloadUrl", "fileark/getFile.do?docId=" + docId + "&attId=" + newId);
+            }
+        } catch (IOException e) {
+            json.put("ret", 0);
+            json.put("msg", e.getMessage());
+        }
+        return json.toString();
+    }
+
+    @RequestMapping("/zipFile")
+    public void zipFile(HttpServletResponse response) throws IOException, ErrMsgException {
+        String ids = ParamUtil.get(request, "ids");
+        String fileDiskPath = "";
+        String realPath = Global.getRealPath() + "upfile/zip";
+        int id = -1;
+        if ("".equals(ids)) {
+            id = ParamUtil.getInt(request, "id", -1);
+            if (id == -1) {
+                throw new ErrMsgException("文章不存在！");
+            }
+        }
+
+        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+        boolean isZip = true;
+        String attIds = ids;
+        if (id != -1) {
+            attIds = String.valueOf(id);
+        }
+        Directory.onDownloadValidate(request, attIds, pvg.getUser(request), isZip);
+
+        try {
+            if (id != -1) {
+                fileDiskPath = FileBakUp.zipDocFiles(id, realPath);
+
+            } else {
+                fileDiskPath = FileBakUp.zipDocsFiles(ids, realPath);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
+        Directory.onDownload(request, attIds, pvg.getUser(request), isZip);
+
+        // response.setContentType(MIMEMap.get(StrUtil.getFileExt(att.getDiskName())));
+        response.setContentType("application/octet-stream");
+        response.setHeader("Content-disposition", "attachment; filename=" + StrUtil.GBToUnicode("文档下载.zip"));
+
+        BufferedInputStream bis = null;
+        BufferedOutputStream bos = null;
+
+        try {
+            bis = new BufferedInputStream(new FileInputStream(fileDiskPath));
+            bos = new BufferedOutputStream(response.getOutputStream());
+
+            byte[] buff = new byte[2048];
+            int bytesRead;
+
+            while (-1 != (bytesRead = bis.read(buff, 0, buff.length))) {
+                bos.write(buff, 0, bytesRead);
+            }
+        } catch (final IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            if (bis != null) {
+                bis.close();
+            }
+            if (bos != null) {
+                bos.close();
+            }
+        }
+    }
+
+    @RequestMapping("/docListPage")
+    public String docListPage(Model model, String curDeptCode) {
+        String skinPath = SkinMgr.getSkinPath(request, false);
+        model.addAttribute("skinPath", skinPath);
+
+        com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
+        String dirCode = ParamUtil.get(request, "dirCode"); // 从目录树上点击的目录
+
+        int examine1 = ParamUtil.getInt(request, "examine1", -1);
+        String kind = ParamUtil.get(request, "kind");
+
+        Leaf fileLeaf = new Leaf();
+        String filePath = fileLeaf.getFilePath();
+
+        String orderBy = ParamUtil.get(request, "orderBy");
+        if ("".equals(orderBy)) {
+            orderBy = "id"; // "createDate";
+        }
+        String sort = ParamUtil.get(request, "sort");
+        if ("".equals(sort)) {
+            sort = "desc";
+        }
+
+        UserSetupDb usd = new UserSetupDb();
+        usd = usd.getUserSetupDb(privilege.getUser(request));
+        //String pageUrl = usd.isWebedit()?"fwebedit.jsp":"fwebedit_new.jsp";
+        String pageUrl = "fwebedit_new.jsp";
+
+        //swfUpload文件上传
+        com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+        HashMap<String, String> explorerFileType = new HashMap<String, String>();
+        String file_size_limit = cfg.get("file_size_limit");
+        int file_upload_limit = cfg.getInt("file_upload_limit");
+
+        model.addAttribute("orderBy", orderBy);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dirCode", dirCode);
+        model.addAttribute("pageUrl", pageUrl);
+
+        if (!privilege.isUserPrivValid(request, PrivDb.PRIV_READ)) {
+            model.addAttribute("msg", i18nUtil.get("pvg_invalid"));
+            return "th/error/error";
+        }
+
+        // 如果dir_code为空，则需检查权限
+        LeafPriv lp = new LeafPriv();
+        if ("".equals(dirCode) && examine1 != Document.EXAMINE_DRAFT) {
+            lp.setDirCode(Leaf.ROOTCODE);
+            // 如果是管理员或者文章根目录节点上有审核的权限，则允许查看全部的文章列表
+            if (privilege.isUserPrivValid(request, "admin") || lp.canUserExamine(privilege.getUser(request))) {
+                ;
+            } else {
+                model.addAttribute("msg", "请选择目录");
+                return "th/error/info";
+            }
+        }
+
+        Directory dir = new Directory();
+        Leaf leaf = null;
+        if (!"".equals(dirCode) && !Leaf.CODE_DRAFT.equals(dirCode)) {
+            leaf = dir.getLeaf(dirCode);
+        }
+        String viewPage = "";
+        if (!"".equals(dirCode) && !Leaf.CODE_DRAFT.equals(dirCode)) {
+            if (leaf == null) {
+                model.addAttribute("msg", "目录" + dirCode + "不存在");
+                return "th/error/error";
+            }
+
+            lp.setDirCode(dirCode);
+            if (!lp.canUserSee(privilege.getUser(request))) {
+                model.addAttribute("msg", "权限不足");
+                return "th/error/error";
+            }
+
+            PluginMgr pm = new PluginMgr();
+            PluginUnit pu = pm.getPluginUnitOfDir(dirCode);
+
+            if (pu != null) {
+                IPluginUI ipu = pu.getUI(request);
+                viewPage = request.getContextPath() + "/" + ipu.getViewPage();
+            }
+        }
+        if ("".equals(viewPage)) {
+            viewPage = request.getContextPath() + "/doc_show.jsp";
+        }
+
+        String dirName = "";
+        if (leaf != null) {
+            dirName = leaf.getName();
+        }
+        model.addAttribute("dirName", dirName);
+
+        String parentCode = ParamUtil.get(request, "parentCode");
+        String uName = privilege.getUser(request);
+        LeafPriv plp = null;
+        if (!"".equals(parentCode)) {
+            plp = new LeafPriv(parentCode);
+        }
+
+        model.addAttribute("kind", kind);
+        DirKindDb dkd = new DirKindDb();
+        Vector vkind = dkd.listOfDir(dirCode);
+        SelectOptionDb sod = new SelectOptionDb();
+        com.alibaba.fastjson.JSONArray aryKind = new com.alibaba.fastjson.JSONArray();
+        for (Object o : vkind) {
+            DirKindDb dirKindDb = (DirKindDb) o;
+            com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+            json.put("kind", dirKindDb.getKind());
+            json.put("kindName", sod.getOptionName("fileark_kind", dkd.getKind()));
+            aryKind.add(json);
+        }
+        model.addAttribute("aryKind", aryKind);
+
+        boolean canExamine = false;
+        boolean isDraftBox = examine1 == Document.EXAMINE_DRAFT;
+        if (!isDraftBox) {
+            if (privilege.isUserPrivValid(request, "admin") || lp.canUserModify(privilege.getUser(request))) {
+                canExamine = true;
+            }
+        }
+        model.addAttribute("examine1", examine1);
+        model.addAttribute("isDraftBox", isDraftBox);
+        model.addAttribute("canExamine", canExamine);
+        model.addAttribute("EXAMINE_NOT", Document.EXAMINE_NOT);
+        model.addAttribute("EXAMINE_PASS", Document.EXAMINE_PASS);
+        model.addAttribute("EXAMINE_NOTPASS", Document.EXAMINE_NOTPASS);
+        model.addAttribute("EXAMINE_DRAFT", Document.EXAMINE_DRAFT);
+        model.addAttribute("isRoot", "".equals(dirCode));
+
+        com.alibaba.fastjson.JSONArray aryFilearkKind = new com.alibaba.fastjson.JSONArray();
+        SelectMgr sm = new SelectMgr();
+        SelectDb sd = sm.getSelect("fileark_kind");
+        Vector<SelectOptionDb> vsd = sd.getOptions();
+        for (SelectOptionDb selectOptionDb : vsd) {
+            sod = selectOptionDb;
+            com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+            json.put("value", sod.getValue());
+            json.put("name", sod.getName());
+            aryFilearkKind.add(json);
+        }
+        model.addAttribute("aryFilearkKind", aryFilearkKind);
+
+        model.addAttribute("parentCode", parentCode);
+
+        boolean isBtnAddShow = false;
+        if (!dirCode.equals("") && !Leaf.CODE_DRAFT.equals(dirCode) && leaf.getType() == 2) {
+            if (lp.canUserAppend(privilege.getUser(request))) {
+                isBtnAddShow = true;
+            }
+        }
+        model.addAttribute("isBtnAddShow", isBtnAddShow);
+
+        boolean isBtnEditShow = false;
+        int filearkUserEditDelInterval = cfg.getInt("filearkUserEditDelInterval");
+        if (isDraftBox || lp.canUserModify(privilege.getUser(request)) || (lp.canUserAppend(privilege.getUser(request)) && filearkUserEditDelInterval > 0)) {
+            isBtnEditShow = true;
+        }
+        model.addAttribute("isBtnEditShow", isBtnEditShow);
+
+        boolean isBtnDelShow = false;
+        if (examine1 == Document.EXAMINE_DRAFT || lp.canUserDel(privilege.getUser(request)) || (lp.canUserAppend(privilege.getUser(request)) && filearkUserEditDelInterval > 0)) {
+            isBtnDelShow = true;
+        }
+        model.addAttribute("isBtnDelShow", isBtnDelShow);
+
+        boolean isBtnZipShow = false;
+        if (isDraftBox || lp.canUserDownLoad(privilege.getUser(request))) {
+            isBtnZipShow = true;
+        }
+        model.addAttribute("isBtnZipShow", isBtnZipShow);
+
+        boolean isBtnMoveShow = false;
+        if (!"".equals(dirCode) && !Leaf.CODE_DRAFT.equals(dirCode) && (privilege.isUserPrivValid(request, "admin") || lp.canUserExamine(privilege.getUser(request)))) {
+            isBtnMoveShow = true;
+        }
+        model.addAttribute("isBtnMoveShow", isBtnMoveShow);
+
+        boolean isBtnUploadShow = false;
+        if (!"".equals(dirCode) && !Leaf.CODE_DRAFT.equals(dirCode) && leaf.getType() == Leaf.TYPE_LIST) {
+            if (lp.canUserAppend(privilege.getUser(request))) {
+                isBtnUploadShow = true;
+            }
+        }
+        model.addAttribute("isBtnUploadShow", isBtnUploadShow);
+
+        boolean isBtnFulltextSearch = false;
+        if (cfg.getBooleanProperty("fullTextSearchSupported")) {
+            isBtnFulltextSearch = true;
+        }
+        model.addAttribute("isBtnFulltextSearch", isBtnFulltextSearch);
+
+        boolean isBtnAllShow = false;
+        if (leaf != null && leaf.getChildCount() > 0) {
+            isBtnAllShow = true;
+        }
+        model.addAttribute("isBtnAllShow", isBtnAllShow);
+
+        return "th/fileark/doc_list";
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/docList", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    public String docList(@RequestParam(defaultValue = "") String dirCode) throws ErrMsgException {
+        com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
+        String myUserName = privilege.getUser(request);
+        Document doc = new Document();
+
+        int examine1 = ParamUtil.getInt(request, "examine1", -1);
+        // 如果dir_code为空，则需检查权限
+        LeafPriv lp = new LeafPriv();
+        if ("".equals(dirCode) && examine1 != Document.EXAMINE_DRAFT) {
+            lp.setDirCode(Leaf.ROOTCODE);
+        }
+        else if (!StrUtil.isEmpty(dirCode)) {
+            lp.setDirCode(dirCode);
+        }
+
+        String parentCode = ParamUtil.get(request, "parentCode");
+        String uName = privilege.getUser(request);
+        LeafPriv plp = null;
+        if (!"".equals(parentCode)) {
+            plp = new LeafPriv(parentCode);
+        }
+
+        String op = StrUtil.getNullString(request.getParameter("op"));
+        String searchKind = ParamUtil.get(request, "searchKind");
+        String what = ParamUtil.get(request, "what");
+        int examine = ParamUtil.getInt(request, "examine", -1);
+        String kind = ParamUtil.get(request, "kind");
+        String kind1 = ParamUtil.get(request, "kind1");
+        String title = ParamUtil.get(request, "title");
+        String content = ParamUtil.get(request, "content");
+        String modifyType = ParamUtil.get(request, "dateType");
+        String docSize = ParamUtil.get(request, "docSize");
+        String fromDate = ParamUtil.get(request, "fromDate");
+        String toDate = ParamUtil.get(request, "toDate");
+        String keywords1 = ParamUtil.get(request, "keywords1");
+        String author = ParamUtil.get(request, "author");
+        String ext = ParamUtil.get(request, "ext");
+        String checkbox_png = ParamUtil.get(request, "checkbox_png");
+        String checkbox_ppt = ParamUtil.get(request, "checkbox_ppt");
+        String checkbox_gif = ParamUtil.get(request, "checkbox_gif");
+        String checkbox_zip = ParamUtil.get(request, "checkbox_zip");
+        String checkbox_pdf = ParamUtil.get(request, "checkbox_pdf");
+        String checkbox_doc = ParamUtil.get(request, "checkbox_doc");
+        String checkbox_xlsx = ParamUtil.get(request, "checkbox_xlsx");
+        String checkbox_txt = ParamUtil.get(request, "checkbox_txt");
+
+        String orderBy = ParamUtil.get(request, "orderBy");
+        if ("".equals(orderBy)) {
+            orderBy = "id";
+        }
+        String sort = ParamUtil.get(request, "sort");
+        if ("".equals(sort)) {
+            sort = "desc";
+        }
+
+        String sql = doc.getListSql(request, privilege, lp, plp, uName, examine1, checkbox_png, checkbox_ppt, checkbox_gif,
+                checkbox_zip, checkbox_pdf, checkbox_doc, checkbox_xlsx, checkbox_txt,
+                ext, docSize, parentCode, dirCode, kind, op, searchKind, what, keywords1,
+                fromDate, toDate, examine, title, content, author, kind1, modifyType, orderBy, sort);
+        DebugUtil.i(getClass(), "docList", sql);
+
+        boolean canExamine = false;
+        if (examine1!=Document.EXAMINE_DRAFT) {
+            canExamine = lp.canUserExamine(privilege.getUser(request));
+        }
+        DocPriv dp = new DocPriv();
+        boolean isDraftBox = examine1 == Document.EXAMINE_DRAFT;
+        Leaf clf = new Leaf();
+        Directory dir = new Directory();
+        UserDb ud = new UserDb();
+
+        SelectOptionDb sod = new SelectOptionDb();
+        com.alibaba.fastjson.JSONArray aryDoc = new com.alibaba.fastjson.JSONArray();
+        int curpage = ParamUtil.getInt(request, "page", 1);
+        int pagesize = ParamUtil.getInt(request, "limit", 20);
+        PluginMgr pm = new PluginMgr();
+
+        ListResult lr = doc.listResult(sql, curpage, pagesize);
+        Vector<Document> v = lr.getResult();
+        for (Document d : v) {
+            doc = d;
+
+            String color = doc.getColor();
+            boolean isBold = doc.isBold();
+            java.util.Date expireDate = doc.getExpireDate();
+            int docId = doc.getId();
+            String docTitle = doc.getTitle();
+
+            // 判断是否有浏览文件的权限
+            // 如果不是草稿箱
+            if (examine1 != Document.EXAMINE_DRAFT) {
+                // 如果不是作者
+                if (!uName.equals(doc.getAuthor())) {
+                    if (!canExamine) {
+                        if (!dp.canUserSee(request, doc.getId())) {
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            boolean canDownload = isDraftBox || (lp.canUserDownLoad(privilege.getUser(request)) && dp.canUserDownload(privilege.getUser(request), docId));
+
+            long attId = -1;
+
+            com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+            clf = clf.getLeaf(doc.getDirCode());
+            json.put("dirName", clf.getName());
+            json.put("icon", "<img src=\"images/" + doc.getFileIcon() + "\" class=\"file-icon\"/>");
+
+            String titlePrefix = "";
+            if (!"".equals(doc.getKind())) {
+                titlePrefix = "<a href=\"docListPage.do?dirCode=" + doc.getDirCode() + "&kind=" + doc.getKind() + "\">[&nbsp;" + sod.getOptionName("fileark_kind", doc.getKind()) + "&nbsp;]</a>";
+            }
+
+            String viewPage = "";
+            if (!doc.getDirCode().equals("") && !Leaf.CODE_DRAFT.equals(doc.getDirCode())) {
+                PluginUnit pu = pm.getPluginUnitOfDir(doc.getDirCode());
+                if (pu != null) {
+                    IPluginUI ipu = pu.getUI(request);
+                    viewPage = request.getContextPath() + "/" + ipu.getViewPage();
+                }
+            }
+            if (viewPage.equals("")) {
+                viewPage = request.getContextPath() + "/doc_show.jsp";
+            }
+
+            String myTitle = docTitle;
+            if (DateUtil.compare(new java.util.Date(), expireDate) == 2) {
+                myTitle = "<a href=\"javascript:\" linkType=\"view\" title=\"ID：" + doc.getId() + "\" data-id=\"" + doc.getId() + "\" viewPage=\"" + viewPage + "?id=" + doc.getId() + "\" doc-title=\"" + doc.getTitle() + "\">";
+                if (isBold) {
+                    myTitle += "<B>";
+                }
+                if (!"".equals(color)) {
+                    myTitle += "<span style=\"color:" + doc.getColor() + "\">";
+                }
+                myTitle += docTitle;
+                if (!"".equals(color)) {
+                    myTitle += "</span>";
+                }
+
+                if (isBold) {
+                    myTitle += "</B>";
+                }
+                myTitle += "</a>";
+            }
+            else {
+                if (doc.getType() == Document.TYPE_FILE) {
+                    Attachment am = null;
+                    Vector<Attachment> attachments = doc.getAttachments(1);
+                    Iterator<Attachment> ir = attachments.iterator();
+                    if (ir.hasNext()) {
+                        am = (Attachment) ir.next();
+                        attId = am.getId();
+                    }
+
+                    boolean isImage = false;
+                    if (attId != -1) {
+                        if (StrUtil.isImage(StrUtil.getFileExt(am.getDiskName()))) {
+                            isImage = true;
+                        }
+                        if (isImage) {
+                            if (canDownload) {
+                                myTitle = "<a target=\"_blank\" title=\"ID：" + docId + "\" href=\"download.do?pageNum=1&id=" + docId + "&attachId=" + am.getId() + "\">" + docTitle + "</a>";
+                            } else {
+                                myTitle = docTitle;
+                            }
+                        } else {
+                            String fileExt = StrUtil.getFileExt(am.getDiskName());
+                            boolean isOffice = "doc".equals(am.getExt())
+                                    || "docx".equals(am.getExt())
+                                    || "xls".equals(am.getExt())
+                                    || "xlsx".equals(am.getExt());
+                            if (isOffice) {
+                                String s = Global.getRealPath() + am.getVisualPath() + "/" + am.getDiskName();
+                                String htmlfile = s.substring(0, s.lastIndexOf(".")) + ".html";
+                                File fileExist = new File(htmlfile);
+                                if (fileExist.exists()) {
+                                    myTitle = "<a target=\"_blank\" title=\"ID：" + docId + "\" href=\"../doc_show_preview.jsp?pageNum=1&id=" + docId + "&attachId=" + am.getId() + "\">";
+                                    myTitle += docTitle;
+                                    myTitle += "</a>";
+
+                                } else {
+                                    if (canDownload) {
+                                        myTitle = "<a target=\"_blank\" title=\"ID：" + docId + "\" href=\"download.do?pageNum=1&id=" + docId + "&attachId=" + am.getId() + "\">" + docTitle + "</a>";
+                                    } else {
+                                        myTitle = "<a target=\"_blank\" title=\"ID：" + docId + "\" href=\"fileark_ntko_show.jsp?pageNum=1&docId=" + docId + "&attachId=" + am.getId() + "\">" + docId + "</a>";
+                                    }
+                                }
+                            } else if ("pdf".equals(fileExt)) {
+                                myTitle = "<a target=\"_blank\" title=\"ID：" + docId + "\" href=\"pdf_js/viewer.html?file=" + request.getContextPath() + "/" + am.getVisualPath() + "/" + am.getDiskName() + "\">" + docTitle + "</a>";
+                            } else {
+                                if (canDownload) {
+                                    myTitle = "<a title=\"ID：" + docId + "\" href=\"javascript:;\" onclick=\"downLoadDoc(" + docId + ", " + am.getId() + ")\">" + docTitle + "</a>";
+                                } else {
+                                    myTitle = docTitle;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    myTitle = "<a href=\"javascript:\" linkType=\"doc\" title=\"ID：" + docId + "\" data-id=\"" + docId + "\" doc-title=\"" + docTitle + "\">";
+                    myTitle += "<span style=\"color:" + doc.getColor() + "\">";
+                    if (isBold) {
+                        myTitle += "<b>" + docTitle + "</b>";
+                    } else {
+                        myTitle += docTitle;
+                    }
+                    myTitle += "</span>";
+                    myTitle += "</a>";
+                }
+                DocLogDb dldb = new DocLogDb();
+                if (!dldb.isUserReaded(myUserName, doc.getId())) {
+                    myTitle += "&nbsp;<img src=\"../images/icon_new.gif\"/>";
+                }
+            }
+            json.put("title", titlePrefix + myTitle);
+            json.put("attId", attId);
+            json.put("docTitle", docTitle);
+            json.put("id", docId);
+
+            ud = ud.getUserDb(doc.getNick());
+            String realName = "";
+            if (ud != null && ud.isLoaded()) {
+                realName = StrUtil.getNullStr(ud.getRealName());
+            }
+            else {
+                realName = doc.getNick();
+            }
+            json.put("author", realName);
+            json.put("createDate", DateUtil.format(doc.getCreateDate(), "yy-MM-dd HH:mm"));
+            json.put("modifiedDate", DateUtil.format(doc.getModifiedDate(), "yy-MM-dd HH:mm"));
+
+            String examineStatus = "";
+            int ex = doc.getExamine();
+            if (ex == Document.EXAMINE_NOT) {
+                examineStatus = "<font color='blue'>未审核</font>";
+            } else if (ex == Document.EXAMINE_NOTPASS) {
+                examineStatus = "<font color='red'>未通过</font>";
+            } else if (ex == Document.EXAMINE_PASS) {
+                examineStatus = "已通过";
+            } else if (ex == Document.EXAMINE_DRAFT) {
+                examineStatus = "草稿";
+            }
+            json.put("status", examineStatus);
+
+            String operate = "";
+
+            Leaf lf6 = dir.getLeaf(doc.getDirCode());
+            if (lf6 == null) {
+                operate += "目录不存在";
+                json.put("operate", operate);
+                continue;
+            }
+
+            lp = new LeafPriv(lf6.getCode());
+            if (examine1!=Document.EXAMINE_DRAFT && lp.canUserExamine(privilege.getUser(request))) {
+                if (doc.getLevel() != Document.LEVEL_TOP) {
+                    operate += "<a href=\"javascript:\" onclick=\"isTop(" + Document.LEVEL_TOP + "," + docId + ")\">置顶</a>";
+                } else {
+                    operate += "<a href=\"javascript:\" onclick=\"noTop(" + docId + ")\">取消置顶</a>";
+                }
+            }
+
+            if (examine1==Document.EXAMINE_DRAFT || lp.canUserExamine(privilege.getUser(request)) || dp.canUserManage(request, docId)) {
+                operate += "<a href=\"javascript:\" linkType=\"priv\" data-id=\"" + docId + "\" title=\"" + docTitle + "\" dirCode=\"" + lf6.getCode() + "\" dirName=\"" + lf6.getName() + "\">权限</a>";
+                if (lf6.isLog()) {
+                    operate += "<a href=\"javascript:\" linkType=\"log\" data-id=\"" + docId + "\" title=\"" + docTitle + "\">日志</a>";
+                }
+                if (canDownload) {
+                    if (doc.getType() == Document.TYPE_FILE) {
+                        operate += "<a href=\"javascript:\" onclick=\"downLoadDoc(" + docId + ", " + attId + ")\" title=\"ID：" + docTitle + "\">下载</a>";
+                    }
+                }
+            }
+            json.put("operate", operate);
+
+            aryDoc.add(json);
+        }
+
+        com.alibaba.fastjson.JSONObject jsonObject = responseUtil.getResJson(true);
+        int total = doc.getDocCount(sql);
+        jsonObject.put("errCode", 0);
+        jsonObject.put("total", String.valueOf(total));
+        jsonObject.put("data", aryDoc);
+        return jsonObject.toString();
     }
 }

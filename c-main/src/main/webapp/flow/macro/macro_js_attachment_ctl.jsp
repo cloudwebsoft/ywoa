@@ -22,3 +22,26 @@
 function changeToUpload(fieldName) {
 	return;
 }
+
+function deAttachment(attId, fieldName, flowId, docId) {
+	var ajaxData = {
+		"flowId": flowId,
+		"docId": docId,
+		"attachId": attId
+	}
+	ajaxPost('/flow/delAttach', ajaxData).then((data) => {
+		console.log('data', data);
+		myMsg(data.msg);
+		if (data.code == 200) {
+			if (fieldName != null) {
+				$('#helper_' + fieldName).remove();
+			}
+			// 刷新附件
+			reloadAttachment();
+		}
+	});
+}
+
+function delAtt(attId, fieldName, flowId, docId) {
+	myConfirm('提示', '您确定要删除么', function() { deAttachment(attId, fieldName, flowId, docId) });
+}

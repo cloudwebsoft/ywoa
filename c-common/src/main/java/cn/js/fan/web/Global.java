@@ -5,16 +5,29 @@ import cn.js.fan.util.IpUtil;
 import cn.js.fan.util.PropertiesUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.util.XMLConfig;
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.entity.SysConfig;
+import com.cloudweb.oa.service.ISysConfigService;
+import com.cloudweb.oa.utils.CommonConstUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysProperties;
+import com.cloudweb.oa.utils.SysUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.UploadReaper;
-import org.apache.log4j.Logger;
+import org.apache.xmlbeans.SystemProperties;
 import org.jdom.Element;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import sun.security.action.GetPropertyAction;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.swing.*;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.security.AccessController;
@@ -42,7 +55,6 @@ import java.util.*;
  * @version 1.0
  */
 public final class Global {
-	static Logger logger = Logger.getLogger(Global.class.getName());
 
 	public static String author;
 	public static String AppName;
@@ -124,23 +136,24 @@ public final class Global {
 	}
 
 	public void init() {
-		System.out.println("Global start init.");
+		LogUtil.getLog(getClass()).info("Global start init.");
 
-		Config config = new Config();
+		// config中不能使用默认构造函数，因为其中的configUtil.getXml("config_sys")用到了cache，因为在本方法的后面位置需要对jcs cache进行初始化，应在初始化后才能使用jcs cache
+		boolean isNotUseCache = true;
+		Config config = new Config(isNotUseCache);
 
 		debug = "true".equals(config.getProperty("Application.isDebug"));
 
-		if (debug) {
-			System.out.println("Global.java init " + config);
-		}
+		/*if (debug) {
+			LogUtil.getLog(getClass()).info("Global.java init " + config);
+		}*/
 
-		clusterNo = config.getProperty("Application.clusterNo");
-
+		SysProperties systemProperties = SpringUtil.getBean(SysProperties.class);
+		clusterNo = systemProperties.getId();
+		// clusterNo = config.getProperty("Application.clusterNo");
 		author = config.getProperty("Application.author");
-
 		AppRealName = config.getProperty("Application.name");
-
-		AppName = AppRealName; // + " - Powered by CWBBS";
+		AppName = AppRealName;
 
 		server = config.getProperty("Application.server");
 		port = config.getProperty("Application.port");
@@ -166,74 +179,56 @@ public final class Global {
 		}
 		smtpUser = StrUtil.getNullString(config.getProperty("Application.smtpUser"));
 		smtpPwd = StrUtil.getNullString(config.getProperty("Application.smtpPwd"));
-
 		smtpSSL = "true".equals(StrUtil.getNullString(config.getProperty("Application.smtpSSL")));
-		
 		smtpCharset = StrUtil.getNullString(config.getProperty("Application.smtpCharset"));
+		SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+		realPath = sysUtil.getUploadPath();
 
-		realPath = config.getProperty("Application.realPath");
+		/*realPath = config.getProperty("Application.realPath");
 		if (realPath != null){
 			realPath = StrUtil.replace(realPath, "\\", "/");
 		}
 		if (realPath.lastIndexOf("/") != realPath.length() - 1
 				&& realPath.lastIndexOf("\\") != realPath.length() - 1) {
 			realPath += "/";
-		}
+		}*/
 
 		email = StrUtil.getNullString(config.getProperty("Application.email"));
-
 		internetFlag = StrUtil.getNullString(config.getProperty("Application.internetFlag"));
-
 		desc = StrUtil.getNullStr(config.getProperty("Application.desc"));
 		copyright = StrUtil.getNullStr(config.getProperty("Application.copyright"));
-
 		icp = StrUtil.getNullStr(config.getProperty("Application.icp"));
-
 		contact = StrUtil.getNullStr(config.getProperty("Application.contact"));
-
 		version = StrUtil.getNullStr(config.getProperty("Application.version"));
-
 		title = StrUtil.getNullStr(config.getProperty("Application.title"));
-
 		String strIsRequestSupportCN = StrUtil.getNullStr(config.getProperty("Application.isRequestSupportCN"));
-		if (strIsRequestSupportCN == null) {
-			System.out.println("Error:Global Application.isRequestSupportCN is not found.");
-		}
-		else {
-			requestSupportCN = "true".equals(strIsRequestSupportCN);
-		}
-
+		requestSupportCN = "true".equals(strIsRequestSupportCN);
 		String lang = StrUtil.getNullStr(config.getProperty("i18n.lang"));
 		String country = StrUtil.getNullStr(config.getProperty("i18n.country"));
 		String strTimeZone = StrUtil.getNullStr(config.getProperty("i18n.timeZone"));
-
-		String strIsSpecified = StrUtil.getNullStr(config
-				.getProperty("i18n.isSpecified"));
-		if (strIsSpecified == null) {
-			System.out.println("Error:Global i18n.isSpecified is not found.");
-		}
+		String strIsSpecified = StrUtil.getNullStr(config.getProperty("i18n.isSpecified"));
 		localeSpecified = "true".equals(strIsSpecified);
 		locale = new Locale(lang, country);
 		timeZone = TimeZone.getTimeZone(strTimeZone);
 
 		if (debug) {
-			System.out.println("Global.java: timeZone=" + strTimeZone
+			LogUtil.getLog(getClass()).info("Global.java: timeZone=" + strTimeZone
 					+ " zoneID=" + timeZone.getID() + " lang=" + lang
 					+ " country=" + country);
-			System.out.println("Global.java init AppName=" + AppName);
 		}
+		LogUtil.getLog(getClass()).info("Global.java init AppName=" + AppName);
 
 		String strIsSubDomainSupported = config
 				.getProperty("Application.isSubDomainSupported");
 		if (strIsSubDomainSupported == null) {
-			System.out.println(Global.class + " Warn:Global Application.isSubDomainSupported is not found.");
+			LogUtil.getLog(getClass()).warn("Global Application.isSubDomainSupported is not found.");
 		}
 
 		isSubDomainSupported = "true".equals(strIsSubDomainSupported);
 
 		String strIsTransactionSupported = config.getProperty("Application.isTransactionSupported");
 		if (strIsTransactionSupported == null) {
-			System.out.println(Global.class + " Warn:Global Application.isTransactionSupported is not found.");
+			LogUtil.getLog(getClass()).warn("Global Application.isTransactionSupported is not found.");
 		}
 
 		isTransactionSupported = "true".equals(strIsTransactionSupported);
@@ -241,7 +236,7 @@ public final class Global {
 		String strIsGZIPEnabled = config
 				.getProperty("Application.isGZIPEnabled");
 		if (strIsGZIPEnabled == null) {
-			System.out.println(Global.class + " Warn:Global Application.isGZIPEnabled is not found.");
+			LogUtil.getLog(getClass()).warn("Global Application.isGZIPEnabled is not found.");
 		}
 
 		isGZIPEnabled = "true".equals(strIsGZIPEnabled);
@@ -249,7 +244,7 @@ public final class Global {
 
 		dbVersion = config.getProperty("Application.dbVersion");
 		if (dbVersion == null) {
-			System.out.println(Global.class + " Warn:Global Application.dbVersion is not found.");
+			LogUtil.getLog(getClass()).warn("Global Application.dbVersion is not found.");
 		}
 
 		dbinfos.clear();
@@ -259,32 +254,52 @@ public final class Global {
 			DBInfo di = (DBInfo) ir.next();
 			if (di.isDefault) {
 				defaultDB = di.name;
-				// logger.info("defaultDb=" + defaultDB);
 			}
 			dbinfos.put(di.name, di);
 		}
 
 		String strIsCluster = config.getProperty("Application.isCluster");
 		if (strIsCluster == null) {
-			System.out.println(Global.class + " Error:Global Application.isCluster is not found.");
+			LogUtil.getLog(getClass()).warn("Global Application.isCluster is not found.");
 		} else {
 			cluster = "true".equals(strIsCluster);
 		}
 
 		String strIsSchedule = config.getProperty("Application.isSchedule");
 		if (strIsSchedule==null) {
-			System.out.println(Global.class + " Error:Global Application.isSchedule is not found.");
+			LogUtil.getLog(getClass()).warn("Global Application.isSchedule is not found.");
 		}
 		else {
 			schedule = "true".equals(strIsSchedule);
 		}
 
-		String strIsClusterNoDisplay = config.getProperty("Application.isClusterNoDisplay");
+		/*String strIsClusterNoDisplay = config.getProperty("Application.isClusterNoDisplay");
 		if (strIsClusterNoDisplay!=null) {
 			clusterNoDisplay = "true".equals(strIsClusterNoDisplay);
-		}
+		}*/
+		SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+		clusterNoDisplay = sysProperties.isShowId();
 
-		String strIsUseRedis = config.getProperty("Application.isUseRedis");
+		// 系统是否正式启用
+		formalOpen = "true".equals(config.getProperty("Application.isFormalOpen"));
+		/*
+		 * 以下代码迁移至AppInit中，因为当Tomcat reload时，需在servlet的init方法中重新启动调度
+		 * 调度放在Global中是不妥当的，如果在系统启动过程中写代码的时候不小心在Listener中调用了Global，就会导致调度开始，而此时
+		 * proxool未初始化，调用连接就会失败，导致Tomcat启动不了，详见AppServletContextListener中的说明 //
+		 * 调度初始化 Scheduler.initInstance(1000); // 单态模式 if (debug)
+		 * LogUtil.getLog(getClass()).info("Global.java: Scheduler initInstance end");
+		 *
+		 * // 加载调度项 config.initScheduler(); if (debug)
+		 * LogUtil.getLog(getClass()).info("Global.java: initScheduler end");
+		 */
+
+		// 初始化缓存定时器
+		// CacheTimer.initInstance();
+
+		// 初始化临时文件删除器
+		UploadReaper.initInstance(UploadReaper.getReapInterval());
+
+		/*String strIsUseRedis = config.getProperty("Application.isUseRedis");
 		if (strIsUseRedis!=null) {
 			useRedis = "true".equals(strIsUseRedis);
 		}
@@ -298,39 +313,52 @@ public final class Global {
 		redisMaxWaitMillis = StrUtil.toInt(config.getProperty("Application.redisMaxWaitMillis"), 10000);
 		redisDb = StrUtil.toInt(config.getProperty("Application.redisDb"), 0);
 
-		formalOpen = "true".equals(config.getProperty("Application.isFormalOpen"));
-
-		/*
-		 * 以下代码迁移至AppInit中，因为当Tomcat reload时，需在servlet的init方法中重新启动调度
-		 * 调度放在Global中是不妥当的，如果在系统启动过程中写代码的时候不小心在Listener中调用了Global，就会导致调度开始，而此时
-		 * proxool未初始化，调用连接就会失败，导致Tomcat启动不了，详见AppServletContextListener中的说明 //
-		 * 调度初始化 Scheduler.initInstance(1000); // 单态模式 if (debug)
-		 * System.out.println("Global.java: Scheduler initInstance end");
-		 * 
-		 * // 加载调度项 config.initScheduler(); if (debug)
-		 * System.out.println("Global.java: initScheduler end");
-		 */
-
-		// 初始化缓存定时器
-		// CacheTimer.initInstance();
-
-		// 初始化临时文件删除器
-		UploadReaper.initInstance(UploadReaper.getReapInterval());
-
 		// 只能放在方法的末尾处，否则在RMCache.getInstance().getCanCache()中会调用Global.getInstance().isUseRedis()，而如果此段代码放在前面，那么调用时isUseRedis尚未初始化
 		String strUseCache = config.getProperty("Application.useCache");
 		if (strUseCache == null) {
-			System.out.println("Error:Global Application.useCache is not found.");
+			LogUtil.getLog(getClass()).info("Error:Global Application.useCache is not found.");
 		}
 		useCache = "true".equals(strUseCache);
-		// 如果与原来的不一样，则刷新RMCache
+		*/
+
+		useRedis = CommonConstUtil.CACHE_TYPE_REDIS.equals(sysProperties.getCacheType());
+		redisHost = sysProperties.getRedisHost();
+		redisPort = sysProperties.getRedisPort();
+		redisPassword = sysProperties.getRedisPassword();
+		redisMaxTotal = sysProperties.getRedisMaxTotal();
+		redisMaxIdle = sysProperties.getRedisMaxIdle();
+		redisMinIdle = sysProperties.getRedisMinIdle();
+		redisMaxWaitMillis = sysProperties.getRedisMaxWaitMillis();
+		redisDb = sysProperties.getRedisDb();
+
+		useCache = sysProperties.isCache();
+
+		if (!cluster) {
+			if (useCache && !useRedis) {
+				IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+				String cfgPath = configUtil.getFilePath();
+				PropertiesUtil propertiesUtil = new PropertiesUtil(cfgPath + "/cache.ccf");
+				if (propertiesUtil.getSafeProperties() != null) {
+					LogUtil.getLog(getClass()).info("Init cache.ccf.");
+					String cloudHome = Global.getAppPath();
+					propertiesUtil.setValue("jcs.auxiliary.DC.attributes.DiskPath", cloudHome + "CacheTemp");
+					try {
+						propertiesUtil.saveFile(cfgPath + "/cache.ccf");
+					} catch (Exception e) {
+						LogUtil.getLog(getClass()).error(e);
+					}
+				}
+			}
+		}
+
+		// 如果前台配置后与原来的不一样，则刷新RMCache
 		boolean isEqual = (useCache == RMCache.getInstance().getCanCache());
 		if (!isEqual) {
 			RMCache.refresh();
 		}
 
 		if (debug) {
-			System.out.println("Global.java: init end");
+			LogUtil.getLog(getClass()).info("Global.java: init end");
 		}
 	}
 
@@ -442,8 +470,6 @@ public final class Global {
 
 		String server = request.getServerName();
 		int port = request.getServerPort();
-		// LogUtil.getLog(Global.class).info("request.getContextPath()=" +
-		// request.getContextPath());
 		if (!request.getContextPath().equals("")) {
 			if (port == 80) {
 				return scheme + "://" + server + request.getContextPath(); // "http://www.zjrj.cn";
@@ -507,6 +533,14 @@ public final class Global {
 	 * @return
 	 */
 	public static String getAppPath(HttpServletRequest request) {
+		// 判断是否在jar文件中运行
+		URL url = Global.class.getResource("");
+		String protocol = url.getProtocol();
+		if (CommonConstUtil.RUN_MODE_JAR.equals(protocol)) {
+			// jar包中不支持读取路径
+			return getRealPath();
+		}
+
 		String path = "";
 		if (request != null) {
 			path = request.getSession().getServletContext().getRealPath("");
@@ -517,13 +551,13 @@ public final class Global {
 		} else {
 			String temp = Global.class.getResource("/").getPath();   //Thread.currentThread().getContextClassLoader().getResource("").getPath();
 			try {
-				path = URLDecoder.decode(temp, (String) AccessController.doPrivileged(new GetPropertyAction("file.encoding")));
+				path = URLDecoder.decode(temp, AccessController.doPrivileged(new GetPropertyAction("file.encoding")));
 			} catch (UnsupportedEncodingException e) {
-				logger.error("getAppPath: " + e.getMessage());
-				e.printStackTrace();
+				LogUtil.getLog(Global.class).error("getAppPath: " + e.getMessage());
+				LogUtil.getLog(Global.class).error(e);
 				path = temp;
 			}
-			if (path.startsWith("/") && !File.separator.equals("/")) {
+			if (path.startsWith("/") && !"/".equals(File.separator)) {
 				path = path.substring(1, path.indexOf("WEB-INF"));
 			} else {
 				path = path.substring(0, path.indexOf("WEB-INF"));
@@ -690,81 +724,64 @@ public final class Global {
 	 * 在AppInit中调用，对程序的路径初始化，以避免需要setup带来的麻烦
 	 * @return
 	 */
-	public boolean initOnStart() {
-		boolean flag = false;
+	public void initOnStart() {
 		try{
+			SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
 			String cloudHome = Global.getAppPath();
-			// 如果没有集群，则修改 realPath
-			if (!Global.isCluster()) {
-				Config cwsCfg = new Config();
-				cwsCfg.setProperty("Application.realPath", cloudHome);
-				Global.getInstance().setRealPath(cloudHome);
+			String uploadPath = sysUtil.getUploadPath();
+			LogUtil.getLog(getClass()).info("cloudHome=" + cloudHome + " uploadPath=" + uploadPath);
 
-				try {
-					InetAddress addr = InetAddress.getLocalHost();
-					String ip = addr.getHostAddress().toString();
-					// 如果是公网地址，则置Application.server
-					if (!IpUtil.isInnerIP(ip)) {
-						cwsCfg.setProperty("Application.server", ip);
-						Global.getInstance().setServer(ip);
-					}
-				} catch (UnknownHostException e2) {
-					LogUtil.getLog(getClass()).error(StrUtil.trace(e2));
-				}
-			}
+			IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+			if (!configUtil.isRunJar()) {
+				// 如果没有集群，则修改 realPath
+				if (!Global.isCluster()) {
+					Config cwsCfg = new Config();
+					// cwsCfg.setProperty("Application.realPath", cloudHome);
+					Global.getInstance().setRealPath(uploadPath);
 
-			System.out.println("cloudHome=" + cloudHome);
-
-			// 改变config_cws.xml目录
-			PropertiesUtil pu = new PropertiesUtil(cloudHome + "WEB-INF/" + File.separator + "log4j.properties");
-			pu.setValue("log4j.appender.R.File", cloudHome + "logs/oa.log");
-			pu.saveFile(cloudHome + "WEB-INF" + File.separator + "log4j.properties");
-
-			// 改变JCS 目录，当正式运行时才改变，如果是debug时，可能会部署为reloadable，修改xml会引起reload
-			if (!Global.getInstance().isDebug()) {
-				java.net.URL cfgURL = getClass().getClassLoader().getResource("cache.ccf");
-				PropertiesUtil pucache = new PropertiesUtil(java.net.URLDecoder.decode(cfgURL.getFile()));
-				pucache.setValue("jcs.auxiliary.DC.attributes.DiskPath", cloudHome + "CacheTemp");
-				pucache.saveFile(java.net.URLDecoder.decode(cfgURL.getFile()));
-			}
-
-			if (!Global.isCluster()) {
-				// XMLConfig cfg = new XMLConfig("../reportConfig.xml",false,"utf-8"); // ../reportConfig.xml路径也有效
-				XMLConfig reportCfg = new XMLConfig(cloudHome + "WEB-INF" + java.io.File.separator + "reportConfig.xml", true, "utf-8");
-				try {
-					Element root = reportCfg.getRootElement();
-					Iterator ir = root.getChildren().iterator();
-					while (ir.hasNext()) {
-						Element e = (Element) ir.next();
-
-						if ("cachedReportDir".equals(e.getChild("name").getValue())) {
-							e.getChild("value").setText(cloudHome + "report/cached");
-							File rptCacheDir = new File(cloudHome + "report/cached");
-							if (!rptCacheDir.exists()) {
-								rptCacheDir.mkdir();
-							}
-							break;
+					try {
+						InetAddress addr = InetAddress.getLocalHost();
+						String ip = addr.getHostAddress();
+						// 如果是公网地址，则置Application.server
+						if (!IpUtil.isInnerIP(ip)) {
+							cwsCfg.setProperty("Application.server", ip);
+							Global.getInstance().setServer(ip);
 						}
+					} catch (UnknownHostException e2) {
+						LogUtil.getLog(getClass()).error(StrUtil.trace(e2));
 					}
-					reportCfg.writemodify();
-				} catch (Exception e) {
-					// out.print("<font style='font-size:14px' color='#FF0000'>请检查WEB-INF/proxool.xml文件中的driver-url是否设置正确！<br>参照设置为：jdbc:microsoft:sqlserver://localhost:1433;DatabaseName=cwbbs</font><br>");
-					e.printStackTrace();
+
+					XMLConfig reportCfg = new XMLConfig("../reportConfig.xml",true,"utf-8"); // ../reportConfig.xml路径也有效
+					try {
+						Element root = reportCfg.getRootElement();
+						Iterator ir = root.getChildren().iterator();
+						while (ir.hasNext()) {
+							Element e = (Element) ir.next();
+
+							if ("cachedReportDir".equals(e.getChild("name").getValue())) {
+								e.getChild("value").setText(cloudHome + "report/cached");
+								File rptCacheDir = new File(cloudHome + "report/cached");
+								if (!rptCacheDir.exists()) {
+									rptCacheDir.mkdir();
+								}
+								break;
+							}
+						}
+						reportCfg.writemodify();
+					} catch (Exception e) {
+						LogUtil.getLog(getClass()).error(e);
+					}
 				}
 			}
-
-			flag = true;
 		}
 		catch(Exception ex){
 			LogUtil.getLog(getClass()).error("modify file path error :" + ex.getMessage());
 		}
-
-		return flag;
 	}
 
 	private boolean useRedis = false;
 	private String redisHost;
-    private int redisPort;
+    private String redisPort;
     private String redisPassword;
     private int redisMaxTotal = 8;
     private int redisMaxIdle = 8;
@@ -808,11 +825,11 @@ public final class Global {
 		this.redisHost = redisHost;
 	}
 
-	public int getRedisPort() {
+	public String getRedisPort() {
 		return redisPort;
 	}
 
-	public void setRedisPort(int redisPort) {
+	public void setRedisPort(String redisPort) {
 		this.redisPort = redisPort;
 	}
 

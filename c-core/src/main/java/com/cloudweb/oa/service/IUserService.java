@@ -82,4 +82,18 @@ public interface IUserService extends IService<User> {
     int updateUserUnitInDept(String unitCode, String deptCode);
 
     List<User> listByOnlineTime();
+
+    User getUserByOpenId(String openId);
+
+    User getUserByUnionId(String openId);
+
+    User getUserByUin(String uin);
+
+    User getUserByLoginName(String loginName);
+
+    List<User> listForAddress(String what);
+
+    String encryptPwd(String pwd);
+
+    String aesEncryptPwdRaw(String pwdRaw);
 }

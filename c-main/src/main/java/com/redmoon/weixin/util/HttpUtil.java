@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
+import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.util.WordUtil;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -59,23 +61,17 @@ public class HttpUtil {
         */  	    
 	    
 	    HttpGet httpGet = new HttpGet(url);
-
 	    try {
 			HttpResponse httpResponse = httpClient.execute(httpGet);
 			int status = httpResponse.getStatusLine().getStatusCode();
 	    	if (status == HttpStatus.SC_OK){
 	    		HttpEntity httpEntity = httpResponse.getEntity();
-		    	java.io.InputStream is = httpEntity.getContent(); 
+		    	java.io.InputStream is = httpEntity.getContent();
 		    	result = StreamToString(is);
-	    	}
-		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
-			LogUtil.getLog(HttpUtil.class).error(StrUtil.trace(e));
-			e.printStackTrace();
+				DebugUtil.i(HttpUtil.class, "MethodGet", "url=" + url + " result=" + result);
+			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			LogUtil.getLog(HttpUtil.class).error(StrUtil.trace(e));
-			e.printStackTrace();
+			LogUtil.getLog(HttpUtil.class).error(e);
 		}
 		return result;
 
@@ -111,18 +107,11 @@ public class HttpUtil {
 	    		HttpEntity httpEntity = httpResponse.getEntity();
 		    	java.io.InputStream is = httpEntity.getContent(); 
 		    	result = StreamToString(is);
-		    	// System.out.println("HttpUtil MethodPost result=" + result);
+				DebugUtil.i(HttpUtil.class, "MethodPost", "url=" + url + " result=" + result);
 	    	}
-	    } catch (UnsupportedEncodingException e) {
-	    	LogUtil.getLog(HttpUtil.class).error(e.getMessage());
-	    	e.printStackTrace();
-	    } catch (ClientProtocolException e) {
-	    	LogUtil.getLog(HttpUtil.class).error(e.getMessage());
-	    	e.printStackTrace();
-		} catch (IOException e) {
-			LogUtil.getLog(HttpUtil.class).error(e.getMessage());
-			e.printStackTrace();
-		}
+	    } catch (IOException e) {
+	    	LogUtil.getLog(HttpUtil.class).error(e);
+	    }
 		return result;
 		
 	}

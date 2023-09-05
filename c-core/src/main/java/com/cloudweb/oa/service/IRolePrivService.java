@@ -28,4 +28,8 @@ public interface IRolePrivService extends IService<RolePriv> {
     List<RolePriv> listByRolePriv(String priv);
 
     boolean delByRoleCode(String roleCode);
+
+    void refreshRoleUserAuthority(String roleCode);
+
+    boolean create(String roleCode, String priv);
 }

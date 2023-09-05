@@ -12,19 +12,24 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import com.cloudweb.oa.api.IMsgProducer;
+import com.cloudweb.oa.api.IMyflowUtil;
+import com.cloudweb.oa.api.IWorkflowScriptUtil;
+import com.cloudweb.oa.api.IWorkflowUtil;
 import com.cloudweb.oa.service.FormArchiveService;
-import com.cloudweb.oa.utils.ConstUtil;
-import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.*;
 import com.cloudwebsoft.framework.util.IPUtil;
 import com.cloudwebsoft.framework.web.UserAgentParser;
+import com.redmoon.oa.base.IAttachment;
 import com.redmoon.oa.base.IFormDAO;
+import com.redmoon.oa.basic.TreeSelectDb;
 import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.util.Pdf2Html;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -96,7 +101,6 @@ public class WorkflowMgr {
      */
     public static final int DISPLAY_MODE_FAVORIATE = 4;
 
-    Logger logger = Logger.getLogger(WorkflowMgr.class.getName());
     FileUpload fu = new FileUpload();
 
     public WorkflowMgr() {
@@ -121,13 +125,11 @@ public class WorkflowMgr {
             }
         }
         catch (IOException e) {
-        	e.printStackTrace();
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(e.getMessage());
         }
         return true;
     }
-
 
     /**
      * 初始化自由流程
@@ -177,19 +179,21 @@ public class WorkflowMgr {
         int id = wf.getId();
         WorkflowDb wfd = getWorkflowDb(id);
 
-        if (re) {
-            WorkflowActionDb wa = new WorkflowActionDb();
-            wa.setFlowId(id);
-            wa.setStatus(WorkflowActionDb.STATE_DOING);
-            wa.setUserName(userName);
-            wa.setUserRealName(user.getRealName());
-            wa.setInternalName(RandomSecquenceCreator.getId(30));
-            wa.setIsStart(1);            
-            wa.create();
-            // 给发起者一条待办记录
-            startActionId = wfd.notifyUser(userName, new java.util.Date(),-1, null,
-                                           wa, WorkflowActionDb.STATE_DOING, id).getId();
-        }
+        WorkflowActionDb wa = new WorkflowActionDb();
+        wa.setFlowId(id);
+        wa.setStatus(WorkflowActionDb.STATE_DOING);
+        wa.setUserName(userName);
+        wa.setUserRealName(user.getRealName());
+        wa.setInternalName(RandomSecquenceCreator.getId(30));
+        wa.setIsStart(1);
+        wa.create();
+        // 给发起者一条待办记录
+        startActionId = wfd.notifyUser(userName, new Date(),-1, null,
+                                       wa, WorkflowActionDb.STATE_DOING, id).getId();
+
+        // 生成流程图
+        IMyflowUtil myflowUtil = SpringUtil.getBean(IMyflowUtil.class);
+        myflowUtil.generateMyflowForFree(wf.getId());
 
         return startActionId;
     }
@@ -208,6 +212,8 @@ public class WorkflowMgr {
      */
     public long initWorkflow(String userName, String typeCode, String flowTitle, long projectId, int level, long parentActionId) throws
             ErrMsgException {
+        long t = System.currentTimeMillis();
+
         long startActionId = -1;
 
         Leaf lf = new Leaf();
@@ -215,6 +221,11 @@ public class WorkflowMgr {
 
         WorkflowPredefineDb wpd = new WorkflowPredefineDb();
         wpd = wpd.getDefaultPredefineFlow(typeCode);
+
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "initWorkflow getDefaultPredefineFlow", String.valueOf(((double)System.currentTimeMillis() - t)/1000));
+        }
+
         boolean isPredefined = wpd != null && wpd.isLoaded();
 
         if (!isPredefined) {
@@ -237,10 +248,18 @@ public class WorkflowMgr {
 
         FormArchiveService formArchiveService = SpringUtil.getBean(FormArchiveService.class);
         IFormDAO fdao = formArchiveService.getCurFormArchiveOrInit(lf.getFormCode());
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "initWorkflow getCurFormArchiveOrInit", String.valueOf(((double)System.currentTimeMillis() - t)/1000));
+        }
+
         long formArchiveId = fdao.getId();
         wf.setFormArchiveId(formArchiveId);
 
         boolean re = wf.create(typeCode, flowTitle, userName);
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "initWorkflow create", String.valueOf(((double)System.currentTimeMillis() - t)/1000));
+        }
+
         int id = -1;
         if (!re) {
             throw new ErrMsgException("初始化流程失败！");
@@ -248,22 +267,31 @@ public class WorkflowMgr {
 
         id = wf.getId();
 
+        // 运行流程初始化事件
+        WorkflowPredefineMgr wpm = new WorkflowPredefineMgr();
+        String script = wpm.getPreInitScript(wpd.getScripts());
+        if (!StrUtil.isEmpty(script)) {
+            FormDAO dao = new FormDAO();
+            dao = dao.getFormDAO(id, fd);
+            runPreInitScript(SpringUtil.getRequest(), SpringUtil.getUserName(), id, script, dao);
+        }
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "initWorkflow runPreInitScript", String.valueOf(((double)System.currentTimeMillis() - t)/1000));
+        }
         WorkflowDb wfd = getWorkflowDb(id);
-
-        // 套用流程
         String flowString = wpd.getFlowString();
         String flowJson = wpd.getFlowJson();
-
-        // System.out.println(getClass() + " " + flowString);
         try {
             // 替换其中的“本人”节点，检查发起人是否合法等
-            flowString = wfd.regeneratePredefinedFlowString(userName, flowString);
+            // flowString = wfd.regeneratePredefinedFlowString(userName, flowString);
             startActionId = wfd.createFromString(flowString, flowJson);
         } catch (ErrMsgException e) {
             wfd.del();
             throw e;
         }
-
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "initWorkflow createFromString", String.valueOf(((double)System.currentTimeMillis() - t)/1000));
+        }
         return startActionId;
     }
 
@@ -271,14 +299,14 @@ public class WorkflowMgr {
      * 在调度发起流程或者手机短信自动发起流程中，自动完成第一个节点（即发起人节点）
      * 注意不支持发起人节点为发散节点的情况
      * @param wf WorkflowDb
-     * @param myAction WorkflowActionDb
+     * @param myAction WorkflowActionDb 发起人所在节点
      * @param myActionId long 发起人的myActionId
-     * @param starter String 如果在系统中没有帐户，则以手机号替代，如果有，则根据手机号匹配用户名
-     * @param nextActionUserName String 下一节点处理人员
+     * @param starter String 发起人帐户，如果在系统中没有帐户，则以手机号替代，如果有，则根据手机号匹配用户名
+     * @param nextActionUserNames String 下一节点处理人员帐户，以半角逗号分隔
      * @return boolean
      * @throws ErrMsgException
      */
-    public boolean finishFirstAction(WorkflowDb wf, WorkflowActionDb myAction, long myActionId, String starter, String nextActionUserName) throws ErrMsgException {
+    public boolean finishFirstAction(WorkflowDb wf, WorkflowActionDb myAction, long myActionId, String starter, String nextActionUserNames) throws ErrMsgException {
         MyActionDb mad = new MyActionDb();
         mad = mad.getMyActionDb(myActionId);
         if (!mad.isLoaded()) {
@@ -286,25 +314,30 @@ public class WorkflowMgr {
         }
 
         // 更新后续节点上选择的用户名和用户真实姓名
+        List listUserRealNames = new ArrayList();
         UserMgr um = new UserMgr();
-        UserDb user = um.getUserDb(nextActionUserName);
+        List<String> list = Arrays.asList(nextActionUserNames.split(","));
+        for (String userName : list) {
+            UserDb user = um.getUserDb(userName);
+            listUserRealNames.add(user.getRealName());
+        }
 
         WorkflowActionDb wfa = null;
-        Vector vto = myAction.getLinkToActions();
         // 流程中不能有分支
-        Iterator irto = vto.iterator();
+        Vector<WorkflowActionDb> vto = myAction.getLinkToActions();
+        if (vto.size() > 1) {
+            throw new ErrMsgException("自动提交时，节点上不能带有分支线");
+        }
+        Iterator<WorkflowActionDb> irto = vto.iterator();
         if (irto.hasNext()) {
-            wfa = (WorkflowActionDb)irto.next();
+            wfa = irto.next();
             // 置节点上的用户名
-            wfa.setUserName(nextActionUserName);
-            wfa.setUserRealName(user.getRealName());
+            wfa.setUserName(nextActionUserNames);
+            wfa.setUserRealName(String.join(",", list));
             wfa.save();
         }
 
-        Leaf lf = new Leaf();
-        lf = lf.getLeaf(wf.getTypeCode());
-
-        boolean re = false;
+        boolean re;
         String result = "";
         int resultValue = 0;
 
@@ -321,23 +354,22 @@ public class WorkflowMgr {
         }
 
         if (re) {
-            Config cfg = new Config();
-            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-            boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+            /*Config cfg = new Config();
+            boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");*/
+
+            SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+            boolean mqIsOpen = sysProperties.isMqOpen();
 
             boolean isUseMsg = true; // getFieldValue("isUseMsg").equals("true");
             boolean isToMobile = true; // getFieldValue("isToMobile").equals("true");
-            Iterator ir = myAction.getTmpUserNameActived().iterator();
-            while (ir.hasNext()) {
-                MyActionDb mad2 = (MyActionDb) ir.next();
-
+            for (MyActionDb mad2 : myAction.getTmpUserNameActived()) {
                 MessageDb md = new MessageDb();
                 String t = SkinUtil.LoadString(request,
-                                               "res.module.flow",
-                                               "msg_user_actived_title");
+                        "res.module.flow",
+                        "msg_user_actived_title");
                 String c = SkinUtil.LoadString(request,
-                                               "res.module.flow",
-                                               "msg_user_actived_content");
+                        "res.module.flow",
+                        "msg_user_actived_content");
                 t = t.replaceFirst("\\$flowTitle", wf.getTitle());
                 c = c.replaceFirst("\\$flowTitle", wf.getTitle());
                 c = c.replaceFirst("\\$fromUser", myAction.getUserRealName());
@@ -346,9 +378,9 @@ public class WorkflowMgr {
                     IMsgUtil imu = SMSFactory.getMsgUtil();
                     if (imu != null) {
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendSms(wf.getUserName(), c);
-                        }
-                        else {
+                        } else {
                             UserDb ud = um.getUserDb(wf.getUserName());
                             imu.send(ud, c, MessageDb.SENDER_SYSTEM);
                         }
@@ -359,9 +391,9 @@ public class WorkflowMgr {
                     // 发送信息
                     c += WorkflowMgr.getFormAbstractTable(wf);
                     if (mqIsOpen) {
+                        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                         msgProducer.sendSysMsg(mad2.getUserName(), t, c, "");
-                    }
-                    else {
+                    } else {
                         md.sendSysMsg(mad2.getUserName(), t, c);
                     }
                 }
@@ -384,8 +416,9 @@ public class WorkflowMgr {
         lf = lf.getLeaf(wc.typeCode);
         FormDb fd = new FormDb();
         fd = fd.getFormDb(lf.getFormCode());
-        if (fd==null || !fd.isLoaded())
+        if (fd==null || !fd.isLoaded()) {
             throw new ErrMsgException("表单不存在！");
+        }
 
         WorkflowDb wf = new WorkflowDb();
         Privilege privilege = new Privilege();
@@ -394,10 +427,11 @@ public class WorkflowMgr {
         //清缓存
         //WorkflowCacheMgr wcm = new WorkflowCacheMgr();
         //wcm.refreshcreate(dir_code);
-        if (re)
+        if (re) {
             return wf.getId();
-        else
+        } else {
             return -1;
+        }
     }
 
     public WorkflowDb getWorkflowDb(int id) {
@@ -460,19 +494,17 @@ public class WorkflowMgr {
 
             ri = jt.executeQuery(sql, new Object[] {lf.getFormCode()});
             while (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord) ri.next();
+                ResultRecord rr = ri.next();
                 FormField ff = fd.getFormField(rr.getString("name"));
                 String val = fdao.getFieldValue(ff.getName());
                 if (ff.getType().equals(FormField.TYPE_MACRO)) {
-                    MacroCtlUnit mu = mm.getMacroCtlUnit(ff.
-                                                         getMacroType());
+                    MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
                     if (mu != null) {
-                        val = mu.getIFormMacroCtl().converToHtml(null, ff,
-                                                           fdao.getFieldValue(ff.getName()));
+                        HttpServletRequest request = SpringUtil.getRequest();
+                        val = mu.getIFormMacroCtl().converToHtml(request, ff, fdao.getFieldValue(ff.getName()));
                     }
                 }
-                sb.append("<tr><td>" + rr.getString("title") + "：</td><td>" +
-                          val + "</td></tr>");
+                sb.append("<tr><td>" + rr.getString("title") + "：</td><td>" + val + "</td></tr>");
             }
         } catch (SQLException ex) {
             LogUtil.getLog(WorkflowActionDb.class).error(StrUtil.trace(ex));
@@ -495,32 +527,8 @@ public class WorkflowMgr {
      * @throws ErrMsgException
      */
     public BSHShell runReturnScript(HttpServletRequest request, String curUserName, int flowId, FormDAO fdao, String script) throws ErrMsgException {
-        BSHShell bs = new BSHShell();
-        StringBuffer sb = new StringBuffer();
-
-        BeanShellUtil.setFieldsValue(fdao, sb);
-
-        // 赋值当前用户
-        sb.append("String userName=\"" + curUserName + "\";");
-        sb.append("int flowId=" + flowId + ";");
-
-        bs.set(ConstUtil.SCENE, ConstUtil.SCENE_FLOW_ACTION_RETURN);
-        bs.set("request", request);
-        bs.set("fileUpload", fu);
-        bs.set("fdao", fdao);
-
-        bs.eval(BeanShellUtil.escape(sb.toString()));
-
-        bs.eval(script);
-        Object obj = bs.get("ret");
-        if (obj != null) {
-            boolean ret = ((Boolean) obj).booleanValue();
-            if (!ret) {
-                String errMsg = (String) bs.get("errMsg");
-                LogUtil.getLog(getClass()).error("ReturnAction bsh errMsg=" + errMsg);
-            }
-        }
-        return bs;
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.runReturnScript(request, curUserName, flowId, fdao, script, fu);
     }
 
     /**
@@ -537,6 +545,13 @@ public class WorkflowMgr {
         Leaf lf = new Leaf();
         lf = lf.getLeaf(wf.getTypeCode());
         Privilege privilege = new Privilege();
+
+        WorkflowPredefineDb wfp = new WorkflowPredefineDb();
+        wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
+        MyActionDb mad = new MyActionDb();
+        mad = mad.getMyActionDb(myActionId);
+        canSubmit(request, wf, myAction, mad, privilege.getUser(request), wfp);
+
         FormDAOMgr fdm = new FormDAOMgr(wf.getId(), lf.getFormCode(), fu, myAction);
         // 返回时不进行表单域的有效性检查
         if (fdm.update(request, true)) {
@@ -561,27 +576,46 @@ public class WorkflowMgr {
                                            myActionId);
             }
             if (re) {
-                MyActionDb mad = new MyActionDb();
-                mad = mad.getMyActionDb(myActionId);
-
                 mad.setIp(IPUtil.getRemoteAddr(request));
                 mad.setIp(IPUtil.getRemoteAddr(request));
                 String ua = request.getHeader("User-Agent");
                 mad.setOs(UserAgentParser.getOS(ua));
                 mad.setBrowser(UserAgentParser.getBrowser(ua));
+                mad.setClusterNo(Global.getInstance().getClusterNo());
 
                 // 置其它当前正在办理的节点的状态为因返回而忽略
                 mad.returnMyAction();
-                
-				// 流程被返回时，节点上的事件脚本处理
-                WorkflowActionDb wad = new WorkflowActionDb();
-                wad = wad.getWorkflowActionDb(StrUtil.toInt(returnIds[0]));
+
+                // 如果节点上设置了标志位：套红或盖章，则清除Document中的templateId及附件中的套红和标志位，以使得退回后再提交至本节点时需重新套红或盖章
+                WorkflowActionDb wa = new WorkflowActionDb();
+                wa = wa.getWorkflowActionDb((int)mad.getActionId());
+                if (wa.canReceiveRevise() || wa.canSeal()) {
+                    Document doc = new Document();
+                    doc = doc.getDocument(wf.getDocId());
+                    if (wa.canReceiveRevise()) {
+                        if (doc.getTemplateId() != Document.NOTEMPLATE) {
+                            doc.setTemplateId(Document.NOTEMPLATE);
+                            doc.updateTemplateId();
+                        }
+                    }
+                    // 清除附件中的套红及盖章标志
+                    Vector<IAttachment> v = doc.getAttachments(1);
+                    for (IAttachment att : v) {
+                        if (wa.canReceiveRevise()) {
+                            att.setRed(false);
+                        }
+                        if (wa.canSeal()) {
+                            att.setSealed(false);
+                        }
+                        att.save();
+                    }
+                }
 
                 // 处理返回事件
 				WorkflowPredefineDb wpd = new WorkflowPredefineDb();
 				wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
 				WorkflowPredefineMgr wpm = new WorkflowPredefineMgr();
-				String script = wpm.getActionReturnScript(wpd.getScripts(), wad.getInternalName());
+				String script = wpm.getActionReturnScript(wpd.getScripts(), myAction.getInternalName());
 				if (!StringUtils.isEmpty(script)) {
                     FormDAO fdao = new FormDAO();
                     FormDb fd = new FormDb();
@@ -619,8 +653,10 @@ public class WorkflowMgr {
 	                String userRealName = um.getUserDb(mad.getUserName()).getRealName();
 	
 	                Config cfg = new Config();
-                    IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-                    boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                    // boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                    SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                    boolean mqIsOpen = sysProperties.isMqOpen();
+
                     boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
 	                String charset = Global.getSmtpCharset();
 	                cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -659,6 +695,7 @@ public class WorkflowMgr {
                             IMsgUtil imu = SMSFactory.getMsgUtil();
                             if (imu != null) {
                                 if (mqIsOpen) {
+                                    IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                     msgProducer.sendSms(mad2.getUserName(), fc);
                                 } else {
                                     UserDb ud = um.getUserDb(mad2.getUserName());
@@ -672,6 +709,7 @@ public class WorkflowMgr {
                             // 发送信息
                             String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad2.getId();
                             if (mqIsOpen) {
+                                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                 msgProducer.sendSysMsg(mad2.getUserName(), t, fc, action);
                             } else {
                                 md.sendSysMsg(mad2.getUserName(), t, fc, action);
@@ -684,11 +722,12 @@ public class WorkflowMgr {
                                 String action = "userName=" + user.getName() + "|" + "myActionId=" + mad2.getId();
                                 action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
                                 UserSetupDb usd = new UserSetupDb(mad2.getUserName());
-                                fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath(request) +
-                                        "/public/flow_dispose.jsp?action=" + action +
+                                fc += "<BR />>>&nbsp;<a href='" +
+                                        WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                                         "' target='_blank'>" +
                                         ("en-US".equals(usd.getLocal()) ? "Click here to apply" : "请点击此处办理") + "</a>";
                                 if (mqIsOpen) {
+                                    IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                     msgProducer.sendEmail(user.getEmail(), senderName, t, fc);
                                 } else {
                                     sendmail.initMsg(user.getEmail(), senderName, t, fc, true);
@@ -761,33 +800,23 @@ public class WorkflowMgr {
         	com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();//从XML文件里取出文件存入路径
 			String file_flow = cfg.get("file_flow");
 			Calendar cal = Calendar.getInstance();
-			String year = "" + (cal.get(cal.YEAR));
-			String month = "" + (cal.get(cal.MONTH) + 1);
+			String year = "" + (cal.get(Calendar.YEAR));
+			String month = "" + (cal.get(Calendar.MONTH) + 1);
 			
 			String vpath = file_flow + "/" + year + "/" + month;
 			String filepath = Global.getRealPath() + vpath;//拼凑路径
-            File f = new File(filepath);
-            if (!f.isDirectory())
-                f.mkdirs();
 
         	int len = attachmentFiles.length;
         	com.redmoon.oa.emailpop3.Attachment  attMail;
         	for (int i=0; i<len; i++) {
         		attMail = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(attachmentFiles[i]));//取得外部邮箱附件对象
         		
-        		String fullPath = Global.getRealPath() +
-				"/" + attMail.getVisualPath() + "/" +
-				attMail.getDiskName();
-        		
-        		String newDiskName = RandomSecquenceCreator.getId() + "." +
-				StrUtil.getFileExt(attMail.getDiskName());
-				String newFullPath = filepath + "/" + newDiskName;
-
-				// 拷贝文件
-				FileUtil.CopyFile(fullPath, newFullPath);//将附件从邮箱复制到流程下
+        		String fullPath = Global.getRealPath() + "/" + attMail.getVisualPath() + "/" + attMail.getDiskName();
+        		String newDiskName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(attMail.getDiskName());
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
+                fileService.write(fullPath, vpath, newDiskName);
 				
 				com.redmoon.oa.flow.Attachment flowAttachment = new com.redmoon.oa.flow.Attachment();
-				flowAttachment.setFullPath(newFullPath);
 				flowAttachment.setDocId(wf.getDocId());
 				flowAttachment.setName(attMail.getName());
 				flowAttachment.setDiskName(newDiskName);
@@ -796,6 +825,7 @@ public class WorkflowMgr {
 				flowAttachment.setCreator(privilege.getUser(request));
 				flowAttachment.setOrders((i+1));
 				flowAttachment.setPageNum(1);
+				flowAttachment.setFlowId(wf.getId());
 				flowAttachment.create();//保存数据
         	}
         }
@@ -809,7 +839,7 @@ public class WorkflowMgr {
         int ordersLen = 0;
         // 如果是@流程
         if (false && wfd.isLight()) {
-            Vector v = new Vector();
+            Vector<String> v = new Vector<>();
             String patternStr = "@(.*?)[&|<| |　]"; // 注意全角空格
             Pattern pattern = Pattern.compile(patternStr,
                                       Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -820,19 +850,18 @@ public class WorkflowMgr {
             while (re) {
             	String u = matcher.group(1);
             	// 避免重复
-            	if (!v.contains(u))
-            		v.addElement(u);
+            	if (!v.contains(u)) {
+                    v.addElement(u);
+                }
                 re = matcher.find();
             }
             if (v.size()>0) {
             	nextActionUsers = new String[v.size()];
-            	Iterator ir = v.iterator();
             	int i = 0;
-            	while (ir.hasNext()) {
-            		String u = (String)ir.next();
-            		nextActionUsers[i] = u;
-            		i ++;
-            	}
+                for (String u : v) {
+                    nextActionUsers[i] = u;
+                    i++;
+                }
             	
             	expireHours = new String[v.size()];
             	for (i=0; i<v.size(); i++) {
@@ -845,9 +874,8 @@ public class WorkflowMgr {
             	}
             	
             	ordersLen = v.size();
-            }
-            else {
-            	// throw new ErrMsgException("请选择用户！");
+            } else {
+                // throw new ErrMsgException("请选择用户！");
             }
         }
         else {
@@ -855,8 +883,7 @@ public class WorkflowMgr {
             // 获取被选中的用户
             nextActionUsers = fu.getFieldValues("nextUsers");
             if (nextActionUsers!=null) {
-                int aryLen = 0;
-                aryLen = nextActionUsers.length;
+                int aryLen = nextActionUsers.length;
                 for (int i=0; i<aryLen; i++) {
                     nextActionUsers[i] = nextActionUsers[i].trim();
                 }
@@ -889,8 +916,10 @@ public class WorkflowMgr {
             // String[] toMes = fu.getFieldValues("toMes");
 
             String[] ordersStr = fu.getFieldValues("orders");
-            if (nextActionUsers!=null && ordersStr!=null) // 手机端当@流程未选择下一步的用户时，orders仍为字符串1
+            // 手机端当@流程未选择下一步的用户时，orders仍为字符串1
+            if (ordersStr != null) {
                 ordersLen = ordersStr.length;
+            }
             orders = new int[ordersLen];
             for (int i=0; i<orders.length; i++) {
                 orders[i] = StrUtil.toInt(ordersStr[i].trim(), 1);
@@ -909,7 +938,6 @@ public class WorkflowMgr {
 	        selectSort(orders, nextActionUsers, expireHours);	        
         }
 
-
         // 当上一节点同时转交给多个人，其中有用户办理完毕，而其它人未办理完毕时，该用户却因为没有选择下一节点的用户，而无法继续
         // 此时如果点击“结束流程”按钮，则会使得流程状态为已结束，且其它人的待办记录也会变为已办理
         // if (nextActionUsers==null)
@@ -919,10 +947,10 @@ public class WorkflowMgr {
         Leaf lf = new Leaf();
         lf = lf.getLeaf(wf.getTypeCode());
 
-        Vector vto = myAction.getLinkToActions();
+        Vector<WorkflowActionDb> vto = myAction.getLinkToActions();
 
         // 如果流程状态为已结束，而因为重激活的原因又启动了，则需重置流程状态
-        if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
+        if (wf.getStatus() == WorkflowDb.STATUS_FINISHED) {
             WorkflowPredefineDb wfp = new WorkflowPredefineDb();
             wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
             if (wfp.isReactive()) {
@@ -936,12 +964,10 @@ public class WorkflowMgr {
                 fdao = fdao.getFormDAO(wf.getId(), fd);
                 fdao.setStatus(FormDAO.STATUS_NOT);
                 fdao.save();
+            } else {
+                String str = LocalUtil.LoadString(request, "res.flow.Flow", "processHaveBeenComplete");
+                throw new ErrMsgException(str);
             }
-            else{
-            	String str = LocalUtil.LoadString(request,"res.flow.Flow","processHaveBeenComplete");
-            	 throw new ErrMsgException(str);
-            }
-               
         }
 
         UserMgr um = new UserMgr();
@@ -951,8 +977,8 @@ public class WorkflowMgr {
         // WorkflowActionDb privAction = myAction;
         // boolean isOrder = StrUtil.toInt(fu.getFieldValue("isOrder"), -1)==1;
 
-        Map map = new HashMap();
-        for (int i=0; i<ordersLen; i++) {
+        Map<String, WorkflowActionDb> map = new HashMap<>();
+        for (int i = 0; i < ordersLen; i++) {
             // 取得顺序号
             int order = orders[i];
 
@@ -975,14 +1001,11 @@ public class WorkflowMgr {
             // 而nextActionUsers后续节点和连接已被创建，此时也需检查
             if (myAction.getStatus()==WorkflowActionDb.STATE_RETURN ||
                     myAction.getStatus()==WorkflowActionDb.STATE_FINISHED || myAction.getStatus()==WorkflowActionDb.STATE_DOING) {
-
                 // LogUtil.getLog(getClass()).info("FinishActionFree: myAction.getStatus()=" + myAction.getStatus() + "nextActionUsers[" + i + "]=" + nextActionUsers[i]);
-
-                Iterator irto = vto.iterator();
                 boolean isUserExist = false;
                 WorkflowActionDb toAction = null;
-                while (irto.hasNext()) {
-                    toAction = (WorkflowActionDb)irto.next();
+                for (WorkflowActionDb workflowActionDb : vto) {
+                    toAction = workflowActionDb;
                     if (toAction.getUserName().equals(nextActionUsers[i])) {
                         isUserExist = true;
                         break;
@@ -990,7 +1013,6 @@ public class WorkflowMgr {
                 }
 
                 // LogUtil.getLog(getClass()).info("FinishActionFree: isUserExist=" + isUserExist);
-
                 if (isUserExist) {
                     // 检查连接线上的到期时间有没有更改，如有更改，则重置到期时间
                     WorkflowLinkDb wld = new WorkflowLinkDb();
@@ -1016,7 +1038,11 @@ public class WorkflowMgr {
             // 创建节点
             WorkflowActionDb wa = new WorkflowActionDb();
             wa.setFlowId(wf.getId());
-            wa.setStatus(WorkflowActionDb.STATE_DOING);
+            if (order == orders[0]) {
+                wa.setStatus(WorkflowActionDb.STATE_DOING);
+            } else {
+                wa.setStatus(WorkflowActionDb.STATE_NOTDO);
+            }
             wa.setUserName(nextActionUsers[i]);
             UserDb user = um.getUserDb(nextActionUsers[i]);
             wa.setUserRealName(user.getRealName());
@@ -1049,10 +1075,11 @@ public class WorkflowMgr {
                                 // 考虑到顺序号不连续的情况
                                 if (orders[j] == searchOrder) {
                                     isFound = true;
-                                    if (privUsers.equals(""))
+                                    if ("".equals(privUsers)) {
                                         privUsers = nextActionUsers[j];
-                                    else
+                                    } else {
                                         privUsers += "," + nextActionUsers[j];
+                                    }
 
                                     // 创建连接线
                                     WorkflowLinkDb wl = new WorkflowLinkDb();
@@ -1134,17 +1161,21 @@ public class WorkflowMgr {
             // 解锁流程
             unlock(wf.getId());
 
+            // 生成流程图
+            IMyflowUtil myflowUtil = SpringUtil.getBean(IMyflowUtil.class);
+            myflowUtil.generateMyflowForFree(wf.getId());
+
             // 自动存档
             String flag = myAction.getFlag();
-            if (flag.length() >= 5 && flag.substring(4, 5).equals("2")) {
+            if (flag.length() >= 5 && "2".equals(flag.substring(4, 5))) {
                 String formReportContent = StrUtil.getNullStr(fu.getFieldValue(
                         "formReportContent"));
                 saveDocumentArchive(wf, privilege.getUser(request),
                                     formReportContent);
             }
 
-            boolean isUseMsg = getFieldValue("isUseMsg").equals("true");
-            boolean isToMobile = getFieldValue("isToMobile").equals("true");
+            boolean isUseMsg = "true".equals(getFieldValue("isUseMsg"));
+            boolean isToMobile = "true".equals(getFieldValue("isToMobile"));
 
             MyActionDb mad = new MyActionDb();
             mad = mad.getMyActionDb(myActionId);
@@ -1157,8 +1188,9 @@ public class WorkflowMgr {
             // 调试模式不发送消息及邮件
             if (!lf.isDebug()) {
 	            Config cfg = new Config();
-                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-                boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                // boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                boolean mqIsOpen = sysProperties.isMqOpen();
 	            boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
 	            String charset = Global.getSmtpCharset();
 	            cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -1188,65 +1220,60 @@ public class WorkflowMgr {
 	            String tail = WorkflowMgr.getFormAbstractTable(wf);
 	
 	            boolean isReplyToMe = "1".equals(fu.getFieldValue("isReplyToMe"));
-	            Iterator ir = myAction.getTmpUserNameActived().iterator();
-	            while (ir.hasNext()) {
-	                MyActionDb mad2 = (MyActionDb) ir.next();
-	                
-	                // 是否回复给我
-	                if (isReplyToMe) {
-	                	mad2.setResult("@" + privilege.getUser(request) + "&nbsp;");
-	                	mad2.save();
-	                }
-	                
-	                t = t.replaceFirst("\\$flowTitle", wf.getTitle().replace("$", "\\$"));
-	                String fc = c.replaceFirst("\\$flowTitle", wf.getTitle().replace("$", "\\$"));
-	                fc = fc.replaceFirst("\\$fromUser", userRealName);
-	
-	                if (isToMobile) {
-	                    IMsgUtil imu = SMSFactory.getMsgUtil();
-	                    if (imu != null) {
+                for (MyActionDb mad2 : myAction.getTmpUserNameActived()) {
+                    // 是否回复给我
+                    if (isReplyToMe) {
+                        mad2.setResult("@" + privilege.getUser(request) + "&nbsp;");
+                        mad2.save();
+                    }
+
+                    t = t.replaceFirst("\\$flowTitle", wf.getTitle().replace("$", "\\$"));
+                    String fc = c.replaceFirst("\\$flowTitle", wf.getTitle().replace("$", "\\$"));
+                    fc = fc.replaceFirst("\\$fromUser", userRealName);
+
+                    if (isToMobile) {
+                        IMsgUtil imu = SMSFactory.getMsgUtil();
+                        if (imu != null) {
                             if (mqIsOpen) {
+                                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                 msgProducer.sendSms(mad2.getUserName(), fc);
-                            }
-                            else {
+                            } else {
                                 UserDb ud = um.getUserDb(mad2.getUserName());
                                 imu.send(ud, fc, MessageDb.SENDER_SYSTEM);
                             }
-	                    }
-	                }
-	
-	                fc += tail;
-	                if (isUseMsg) {
-	                    // 发送信息
-	                    String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad2.getId();
-                        if (mqIsOpen) {
-                            msgProducer.sendSysMsg(mad2.getUserName(), t, fc, action);
                         }
-                        else {
+                    }
+
+                    fc += tail;
+                    if (isUseMsg) {
+                        // 发送信息
+                        String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad2.getId();
+                        if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
+                            msgProducer.sendSysMsg(mad2.getUserName(), t, fc, action);
+                        } else {
                             md.sendSysMsg(mad2.getUserName(), t, fc, action);
                         }
-	                }
-	                if (flowNotifyByEmail) {
-	                    UserDb user = um.getUserDb(mad2.getUserName());
-	                    if (!user.getEmail().equals("")) {
-	                        String action = "userName=" + user.getName() + "|" + "myActionId=" + mad2.getId();
-	                        action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-	                        UserSetupDb usd = new UserSetupDb(mad2.getUserName());
-	                        fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath(request) +
-	                                "/public/flow_dispose.jsp?action=" + action +
-	                                "' target='_blank'>" + 
-	                                (usd.getLocal().equals("en-US") ? "Click here to apply" : "请点击此处办理") + "</a>";
+                    }
+                    if (flowNotifyByEmail) {
+                        UserDb user = um.getUserDb(mad2.getUserName());
+                        if (!"".equals(user.getEmail())) {
+                            String action = "userName=" + user.getName() + "|" + "myActionId=" + mad2.getId();
+                            action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
+                            fc += "<BR />>>&nbsp;<a href='" + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) + "' target='_blank'>" +
+                                    SkinUtil.LoadString(request, "res.module.flow", "link_dispose") + "</a>";
+
                             if (mqIsOpen) {
+                                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                 msgProducer.sendEmail(user.getEmail(), senderName, t, fc);
-                            }
-                            else {
+                            } else {
                                 sendmail.initMsg(user.getEmail(), senderName, t, fc, true);
                                 sendmail.send();
                                 sendmail.clear();
                             }
-	                    }
-	                }
-	            }
+                        }
+                    }
+                }
 	            // 如果流程完成了，则通知发起者
 	            wf = wf.getWorkflowDb(myAction.getFlowId());
 	            if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
@@ -1263,6 +1290,7 @@ public class WorkflowMgr {
 	                    IMsgUtil imu = SMSFactory.getMsgUtil();
 	                    if (imu != null) {
                             if (mqIsOpen) {
+                                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                 msgProducer.sendSms(wf.getUserName(), fc);
                             }
                             else {
@@ -1276,6 +1304,7 @@ public class WorkflowMgr {
 	                    // 发送信息
 	                    String action = "action=" + MessageDb.ACTION_FLOW_SHOW + "|flowId=" + wf.getId();
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendSysMsg(wf.getUserName(), ft, fc, action);
                         }
                         else {
@@ -1285,17 +1314,17 @@ public class WorkflowMgr {
 	                // 发邮件
 	                if (flowNotifyByEmail) {
 	                    UserDb user = um.getUserDb(wf.getUserName());
-	                    if (!user.getEmail().equals("")) {
-	                        String action = "op=show|userName=" + user.getName() + "|" +
+	                    if (!"".equals(user.getEmail())) {
+	                        String action = "userName=" + user.getName() + "|" +
 	                                        "flowId=" + wf.getId();
 	                        action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
 	                        UserSetupDb usd = new UserSetupDb(user.getName());
 	                        fc += "<BR />>>&nbsp;<a href='" +
-	                                Global.getFullRootPath(request) +
-	                                "/public/flow_dispose.jsp?action=" + action +
+	                                WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_SHOW, action) +
 	                                "' target='_blank'>" + 
-	                                (usd.getLocal().equals("en-US") ? "Click here to view" : "请点击此处查看") + "</a>";
+	                                ("en-US".equals(usd.getLocal()) ? "Click here to view" : "请点击此处查看") + "</a>";
                             if (mqIsOpen) {
+                                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                                 msgProducer.sendEmail(user.getEmail(), senderName, ft, fc);
                             }
                             else {
@@ -1328,7 +1357,7 @@ public class WorkflowMgr {
         wad.setStatus(WorkflowActionDb.STATE_IGNORED);
         wad.save();
         WorkflowActionDb wfa = null;
-        Vector vto = wad.getLinkToActions(); // 出度
+        Vector<WorkflowActionDb> vto = wad.getLinkToActions(); // 出度
         /*
         if (vto.size()==1) {
             wfa = (WorkflowActionDb)vto.elementAt(0);
@@ -1352,16 +1381,45 @@ public class WorkflowMgr {
         }*/
         
         // 用递归来做
-        Iterator it = vto.iterator();
-        while (it.hasNext()) {
-        	wfa = (WorkflowActionDb) it.next();
-        	// 已经置为忽略的话,则不再执行,防止多次操作
-        	if (wfa.getStatus() != WorkflowActionDb.STATE_IGNORED) {
-            	ignoreBranch(wfa, endAction);
-        	}
+        for (WorkflowActionDb workflowActionDb : vto) {
+            wfa = workflowActionDb;
+            // 已经置为忽略的话,则不再执行,防止多次操作
+            if (wfa.getStatus() != WorkflowActionDb.STATE_IGNORED) {
+                ignoreBranch(wfa, endAction);
+            }
         }
     }
 
+    /**
+     * 用于发起流程时，如果存在多起点，忽略相应的分支，wad为分支上的第一个节点，以统一保存被忽略的节点状态，以及调用wfd.renewWorkflowString，以减少开销
+     * @param wad WorkflowActionDb
+     */
+    public void ignoreBranch(WorkflowActionDb wad, WorkflowActionDb endAction, List<WorkflowActionDb> actionsToIgnore) throws ErrMsgException {
+        // 到终止节点前的节点全部忽略
+        if (endAction != null && wad.getInternalName().equalsIgnoreCase(endAction.getInternalName())) {
+            // 20180721 如果wad与endAction为同一节点，则有可能是刚进入函数，还没进入下一步的递归，所以也需检查处理
+            if (endAction.getStatus()!=WorkflowActionDb.STATE_IGNORED) {
+                endAction.setStatus(WorkflowActionDb.STATE_IGNORED);
+                // endAction.save();
+                actionsToIgnore.add(endAction);
+            }
+            return;
+        }
+
+        wad.setStatus(WorkflowActionDb.STATE_IGNORED);
+        // wad.save();
+        actionsToIgnore.add(wad);
+
+        // 出度
+        Vector<WorkflowActionDb> vto = wad.getLinkToActions();
+        // 递归
+        for (WorkflowActionDb workflowActionDb : vto) {
+            // 已经置为忽略的话,则不再执行,防止多次操作
+            if (workflowActionDb.getStatus() != WorkflowActionDb.STATE_IGNORED) {
+                ignoreBranch(workflowActionDb, endAction, actionsToIgnore);
+            }
+        }
+    }
 
     /**
      * 流程移交
@@ -1399,15 +1457,17 @@ public class WorkflowMgr {
             sql = "select a.id from flow_my_action a, flow f where f.id=a.flow_id and a.user_name=" +
                   StrUtil.sqlstr(oldUserName) + " and f.type_code in " + typeStr + " and (a.is_checked=0 or a.is_checked=" + MyActionDb.CHECK_STATUS_SUSPEND + ")";
         }
-        if (beginDate != null)
+        if (beginDate != null) {
             sql += " and a.receive_date>=" +
                     SQLFilter.getDateStr(DateUtil.format(beginDate, "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss");
-        if (endDate != null)
+        }
+        if (endDate != null) {
             sql += " and a.receive_date<" +
                     SQLFilter.getDateStr(DateUtil.format(DateUtil.addDate(endDate, 1), "yyyy-MM-dd HH:mm:ss"),
                                          "yyyy-MM-dd HH:mm:ss");
+        }
 
-        // System.out.println(getClass() + " sql=" + sql);
+        // LogUtil.getLog(getClass()).info(getClass() + " sql=" + sql);
 
         MyActionDb mad = new MyActionDb();
         Vector v = mad.list(sql);
@@ -1464,8 +1524,9 @@ public class WorkflowMgr {
                 }
                 
                 Config cfg = new Config();
-                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-                boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                // boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                boolean mqIsOpen = sysProperties.isMqOpen();
                 boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
                 String charset = Global.getSmtpCharset();
                 cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -1502,6 +1563,7 @@ public class WorkflowMgr {
                     IMsgUtil imu = SMSFactory.getMsgUtil();
                     if (imu != null) {
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendSms(nextMyActionDb.getUserName(), fc);
                         }
                         else {
@@ -1518,6 +1580,7 @@ public class WorkflowMgr {
                     String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE +
                                     "|myActionId=" + nextMyActionDb.getId();
                     if (mqIsOpen) {
+                        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                         msgProducer.sendSysMsg(nextMyActionDb.getUserName(), t, fc, action);
                     }
                     else {
@@ -1534,10 +1597,10 @@ public class WorkflowMgr {
                         action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
                                 ssoCfg.getKey(), action);
                         fc += "<BR />>>&nbsp;<a href='" +
-                                Global.getFullRootPath(request) +
-                                "/public/flow_dispose.jsp?action=" + action +
+                                WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                                 "' target='_blank'>请点击此处办理</a>";
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendEmail(user.getEmail(), senderName, t, fc);
                         }
                         else {
@@ -1682,8 +1745,9 @@ public class WorkflowMgr {
             boolean isToMobile = ParamUtil.get(request, "isToMobile").equals("true");
 
             Config cfg = new Config();
-            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-            boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+            // boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+            SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+            boolean mqIsOpen = sysProperties.isMqOpen();
             boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
             String charset = Global.getSmtpCharset();
             cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -1719,6 +1783,7 @@ public class WorkflowMgr {
                 IMsgUtil imu = SMSFactory.getMsgUtil();
                 if (imu != null) {
                     if (mqIsOpen) {
+                        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                         msgProducer.sendSms(nextMyActionDb.getUserName(), fc);
                     }
                     else {
@@ -1734,6 +1799,7 @@ public class WorkflowMgr {
                 // 发送信息
                 String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + nextMyActionDb.getId();
                 if (mqIsOpen) {
+                    IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                     msgProducer.sendSysMsg(nextMyActionDb.getUserName(), t, fc, action);
                 }
                 else {
@@ -1741,21 +1807,21 @@ public class WorkflowMgr {
                 }
             }
 
-            if (flowNotifyByEmail && !nextMyActionDb.getUserName().equals("")) {
+            if (flowNotifyByEmail && !"".equals(nextMyActionDb.getUserName())) {
                 UserMgr um = new UserMgr();
                 UserDb user = um.getUserDb(nextMyActionDb.getUserName());
-                if (user.isLoaded() && !user.getEmail().equals("")) {
+                if (user.isLoaded() && !"".equals(user.getEmail())) {
                     String action = "userName=" + user.getName() + "|" +
                                     "myActionId=" + nextMyActionDb.getId();
                     action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
                             ssoCfg.getKey(), action);
                     UserSetupDb usd = new UserSetupDb(user.getName());
                     fc += "<BR />>>&nbsp;<a href='" +
-                            Global.getFullRootPath(request) +
-                            "/public/flow_dispose.jsp?action=" + action +
+                            WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                             "' target='_blank'>" + 
-                            (usd.getLocal().equals("en-US") ? "Click here to apply" : "请点击此处办理") + "</a>";
+                            ("en-US".equals(usd.getLocal()) ? "Click here to apply" : "请点击此处办理") + "</a>";
                     if (mqIsOpen) {
+                        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                         msgProducer.sendEmail(user.getEmail(), senderName, t, fc);
                     }
                     else {
@@ -1813,8 +1879,9 @@ public class WorkflowMgr {
                 boolean isToMobile = ParamUtil.get(request, "isToMobile").equals("true");
 
                 Config cfg = new Config();
-                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-                boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                // boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+                SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                boolean mqIsOpen = sysProperties.isMqOpen();
                 boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
                 String charset = Global.getSmtpCharset();
                 cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -1847,6 +1914,7 @@ public class WorkflowMgr {
                     IMsgUtil imu = SMSFactory.getMsgUtil();
                     if (imu != null) {
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendSms(nextMyActionDb.getUserName(), fc);
                         }
                         else {
@@ -1862,6 +1930,7 @@ public class WorkflowMgr {
                     // 发送信息
                     String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + nextMyActionDb.getId();
                     if (mqIsOpen) {
+                        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                         msgProducer.sendSysMsg(nextMyActionDb.getUserName(), t, fc, action);
                     }
                     else {
@@ -1875,9 +1944,9 @@ public class WorkflowMgr {
                     if (!user.getEmail().equals("")) {
                         String action = "userName=" + user.getName() + "|" + "myActionId=" + nextMyActionDb.getId();
                         action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-                        fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath(request) +
-                                "/public/flow_dispose.jsp?action=" + action + "' target='_blank'>请点击此处办理</a>";
+                        fc += "<BR />>>&nbsp;<a href='" + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) + "' target='_blank'>请点击此处办理</a>";
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendEmail(user.getEmail(), senderName, t, fc);
                         }
                         else {
@@ -1952,22 +2021,36 @@ public class WorkflowMgr {
     public static String makeTitle(HttpServletRequest request, String userName, Leaf lf, boolean isClearField) {
     	String title = lf.getName(request);
         // 如果设置了默认标题
-        if (lf.getDescription() != null && !lf.getDescription().equals("")) {
+        if (lf.getDescription() != null && !"".equals(lf.getDescription())) {
             title = lf.getDescription();
-            if (title.indexOf("{dept}") != -1) {
+            if (title.contains("{dept}")) {
                 String deptShortName;
-                DeptUserDb dud = new DeptUserDb();
-                Iterator ir = dud.getDeptsOfUser(userName).iterator();
-                if (ir.hasNext()) {
-                    DeptDb dd = (DeptDb) ir.next();
+                Config cfg = Config.getInstance();
+                if (cfg.isDeptSwitchable()) {
+                    String deptCode = Privilege.getCurDeptCode();
+                    DeptDb dd = new DeptDb();
+                    dd = dd.getDeptDb(deptCode);
                     deptShortName = dd.getShortName(); // 发起人所在部门的简称
-                    if (deptShortName==null || deptShortName.equals(""))
+                    if (StringUtils.isEmpty(deptShortName)) {
                         deptShortName = dd.getName();
+                    }
                     title = title.replaceAll("\\{dept\\}", deptShortName);
+                }
+                else {
+                    DeptUserDb dud = new DeptUserDb();
+                    Iterator ir = dud.getDeptsOfUser(userName).iterator();
+                    if (ir.hasNext()) {
+                        DeptDb dd = (DeptDb) ir.next();
+                        deptShortName = dd.getShortName(); // 发起人所在部门的简称
+                        if (StringUtils.isEmpty(deptShortName)) {
+                            deptShortName = dd.getName();
+                        }
+                        title = title.replaceAll("\\{dept\\}", deptShortName);
+                    }
                 }
             }
 
-            if (title.indexOf("{user}") != -1) {
+            if (title.contains("{user}")) {
                 UserDb user = new UserDb();
                 user = user.getUserDb(userName);
                 title = title.replaceAll("\\{user\\}", user.getRealName());
@@ -1982,12 +2065,8 @@ public class WorkflowMgr {
                 if (ary.length == 2) {
                     format = ary[1];
                 }
-                try {
-                	d = DateUtil.format(new java.util.Date(), format);
-                }
-                catch(Exception e) {
-                	LogUtil.getLog(WorkflowMgr.class).error(e.getMessage());
-                }
+
+                d = DateUtil.format(new java.util.Date(), format);
                 title = title.substring(0, p) + d + title.substring(q + 1);
             }
             
@@ -2051,8 +2130,7 @@ public class WorkflowMgr {
             try {
 				pd.create();
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
 			}   
 			
         	if (wa.isDistribute()) {
@@ -2061,8 +2139,7 @@ public class WorkflowMgr {
                 try {
 					wa.save();
 				} catch (ErrMsgException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
 				}			
         	}
         }
@@ -2082,7 +2159,7 @@ public class WorkflowMgr {
 			// 生成的标题
 			String mkTitle = makeTitle(request, pvg, lf, false);
 
-			// 将标题中的{fildName}或{fieldTitle}，默认标题
+			// 替换标题中的{fildName}或{fieldTitle}，默认标题
 			Pattern p = Pattern.compile(
 					"\\{([A-Z0-9a-z_\\u4e00-\\u9fa5\\xa1-\\xff]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
 					Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -2114,8 +2191,7 @@ public class WorkflowMgr {
 				}
 				
 				// 如果不为空则替换，否则当保存草稿时，该表单域可能为空
-				// if (!"".equals(v))
-					m.appendReplacement(sb, v);
+				m.appendReplacement(sb, v);
 			}
 			m.appendTail(sb);
 
@@ -2212,56 +2288,77 @@ public class WorkflowMgr {
             LogUtil.getLog(getClass()).info("XorNextActionInternalName=" +
                                             XorNextActionInternalNames + " :" +
                                             myAction.getTitle());
-            if (XorNextActionInternalNames.equals("")) { // NODE_SELECTED在flow_dispose.jsp表示存在被忽略的节点，可以认为已有后继节点被选中
-                throw new ErrMsgException("请选择后续节点或检查是否本节点设为了条件分支但未设置条件");
-            } else {
-                String[] selectedNames = StrUtil.split(XorNextActionInternalNames, ",");
-                int selLen = selectedNames.length;
-                Vector vto = myAction.getLinkToActions();
-                Iterator ir = vto.iterator();
-                while (ir.hasNext()) {
-                    WorkflowActionDb wad = (WorkflowActionDb) ir.next();
-                    boolean isFound = false;
-                    for (int i = 0; i < selLen; i++) {
-                        if (wad.getInternalName().equals(selectedNames[i])) {
-                            isFound = true;
-                            // 2009.5.31异或发散时，如果下一节点打回，而此时另有分支首节点为被忽略状态，当该节点被重新选中时，需重置该分支首点的状态为未办理状态
-                            // 以便在afterChangeStatus方法中对该节点进行处理
-                            // 2012.2.6还有一种情况，详见《20120206条件分支上节点被忽略后再被激活.doc》
-                            if (wad.getStatus() == WorkflowActionDb.STATE_IGNORED) {
-                                wad.setStatus(WorkflowActionDb.STATE_NOTDO);
-                                wad.save();
-                            }
-                            break;
-                        }
+            boolean hasXor = false;
+            if ("".equals(XorNextActionInternalNames)) {
+                StringBuilder sb = new StringBuilder();
+                WorkflowLinkDb wld = new WorkflowLinkDb();
+                Vector<WorkflowActionDb> vto = myAction.getLinkToActions();
+                for (WorkflowActionDb towa : vto) {
+                    wld = wld.getWorkflowLinkDbForward(myAction, towa);
+                    // 如果是默认条件，或者是必走的分支
+                    if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_NONE) || wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_MUST)) {
+                        hasXor = true;
+                        StrUtil.concat(sb, ",", towa.getInternalName());
                     }
-                    // 如果在选择中的分支中未找到该节点，则认为该节点及后续节点被忽略
-                    if (!isFound) {
-                        // 如果不是审阅分支，则忽略
-                        // if (wad.getKind()==WorkflowActionDb.KIND_READ)
-                    	for (String selectedName : selectedNames) {
-	                    	WorkflowActionDb selectedAction = wad.getWorkflowActionDbByInternalName(selectedName, wad.getFlowId());
-	                    	// 取得被忽略的分支线节点与被选中节点之间存在的相交节点
-	                    	WorkflowActionDb endAction = getRelationOfTwoActions(wad, selectedAction);
-	                    	if (endAction!=null) {
-                                // 如果相交节点不是被选中节点本身，则执行忽略操作
-                                LogUtil.getLog(getClass()).info("selectedAction title=" + selectedAction.getTitle() + " endAction title=" + endAction.getTitle());
-                                if (!endAction.getInternalName().equals(selectedName)) {
-                                    ignoreBranch(wad, endAction);
-                                }
-                                else {
-                                    ignoreBranch(wad, wad);
-                                }
-                            }
-	                    	else {
-                                LogUtil.getLog(getClass()).info("endAction=null " + wad.getTitle() + "->" + selectedAction.getTitle());
+                }
+                XorNextActionInternalNames = sb.toString();
+            } else {
+                hasXor = true;
+            }
+            if (!hasXor) {
+                throw new ErrMsgException("请选择后续节点或检查是否本节点设为了条件分支但未设置条件");
+            }
+            String[] selectedNames = StrUtil.split(XorNextActionInternalNames, ",");
+            Vector<WorkflowActionDb> vto = myAction.getLinkToActions();
+            for (WorkflowActionDb wad : vto) {
+                boolean isFound = false;
+                for (String name : selectedNames) {
+                    if (wad.getInternalName().equals(name)) {
+                        isFound = true;
+                        // 2009.5.31异或发散时，如果下一节点打回，而此时另有分支首节点为被忽略状态，当该节点被重新选中时，需重置该分支首点的状态为未办理状态
+                        // 以便在afterChangeStatus方法中对该节点进行处理
+                        // 2012.2.6还有一种情况，详见《20120206条件分支上节点被忽略后再被激活.doc》
+                        if (wad.getStatus() == WorkflowActionDb.STATE_IGNORED) {
+                            wad.setStatus(WorkflowActionDb.STATE_NOTDO);
+                            wad.save();
+                        }
+                        break;
+                    }
+                }
+                // 如果在选择中的分支中未找到该节点，则认为该节点及后续节点被忽略
+                if (!isFound) {
+                    // 如果不是审阅分支，则忽略
+                    // if (wad.getKind()==WorkflowActionDb.KIND_READ)
+                    for (String selectedName : selectedNames) {
+                        WorkflowActionDb selectedAction = wad.getWorkflowActionDbByInternalName(selectedName, wad.getFlowId());
+                        // 取得被忽略的分支线节点与被选中节点之间存在的相交节点
+                        WorkflowActionDb endAction = getRelationOfTwoActions(wad, selectedAction);
+                        if (endAction != null) {
+                            // 如果相交节点不是被选中节点本身，则执行忽略操作
+                            LogUtil.getLog(getClass()).info("selectedAction title=" + selectedAction.getTitle() + " endAction title=" + endAction.getTitle());
+                            if (!endAction.getInternalName().equals(selectedName)) {
+                                ignoreBranch(wad, endAction);
+                            } else {
                                 ignoreBranch(wad, wad);
                             }
-                    	}
+                        } else {
+                            LogUtil.getLog(getClass()).info("endAction=null " + wad.getTitle() + "->" + selectedAction.getTitle());
+                            ignoreBranch(wad, wad);
+                        }
+                    }
+
+                    // 防止忽略的时候，把符合条件所匹配到的节点也给忽略了，详见：2023013001
+                    for (String selectedName : selectedNames) {
+                        WorkflowActionDb selectedAction = wad.getWorkflowActionDbByInternalName(selectedName, wad.getFlowId());
+                        if (selectedAction.getStatus() == WorkflowActionDb.STATE_IGNORED) {
+                            selectedAction.setStatus(WorkflowActionDb.STATE_NOTDO);
+                            selectedAction.save();
+                        }
                     }
                 }
             }
         }
+
     }
     
     /**
@@ -2366,40 +2463,39 @@ public class WorkflowMgr {
             throw new ErrMsgException(user.getRealName() + "正在审批处理中，请重新打开再审批！");
         }
     }
-    
-   	public BSHShell runDeliverScript(HttpServletRequest request, String curUserName, WorkflowDb wf, FormDAO fdao, MyActionDb mad, String script, boolean isTest) throws ErrMsgException {
-	   	BSHShell bs = new BSHShell();
-		StringBuffer sb = new StringBuffer();
-		
-		BeanShellUtil.setFieldsValue(fdao, sb);
 
-		// 赋值用户
-		sb.append("String userName=\"" + curUserName
-				+ "\";");
-		sb.append("int flowId=" + wf.getId() + ";");
+    /**
+     * 运行预处理事件脚本
+     * @param request
+     * @param curUserName
+     * @param wf
+     * @param fdao
+     * @param mad
+     * @param script
+     * @return
+     * @throws ErrMsgException
+     */
+    public BSHShell runPreDisposeScript(HttpServletRequest request, String curUserName, WorkflowDb wf, FormDAO fdao, MyActionDb mad, String script) throws ErrMsgException {
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.runPreDisposeScript(request, curUserName, wf, fdao, mad, script);
+    }
 
-        bs.set(ConstUtil.SCENE, ConstUtil.SCENE_FLOW_ACTION_FINISH);
-
-        bs.set("fdao", fdao);
-		bs.set("mad", mad);
-		bs.set("request", request);
-		bs.set("fileUpload", fu);
-
-		bs.eval(BeanShellUtil.escape(sb.toString()));
-
-		bs.eval(script);
-		Object obj = bs.get("ret");
-		if (obj != null) {
-			boolean ret = ((Boolean) obj).booleanValue();
-			if (!ret) {
-				String errMsg = (String) bs.get("errMsg");
-				LogUtil.getLog(getClass()).error(
-						"bsh errMsg=" + errMsg);
-			}
-		}
-
-		return bs;
-   	}    
+    /**
+     * 运行流转事件脚本
+     * @param request
+     * @param curUserName
+     * @param wf
+     * @param fdao
+     * @param mad
+     * @param script
+     * @param isTest
+     * @return
+     * @throws ErrMsgException
+     */
+    public BSHShell runDeliverScript(HttpServletRequest request, String curUserName, WorkflowDb wf, FormDAO fdao, MyActionDb mad, String script, boolean isTest) throws ErrMsgException {
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.runDeliverScript(request, curUserName, wf, fdao, mad, script, isTest, fu);
+   	}
 
     /**
      * 处理完毕节点
@@ -2472,16 +2568,26 @@ public class WorkflowMgr {
                 }
             }
         }
-        
+
+        I18nUtil i18nUtil = SpringUtil.getBean(I18nUtil.class);
         // 如果是套红节点，则检查是否已套红
         if (myAction.canReceiveRevise()) {
 	        Document doc = new Document();
 	        doc = doc.getDocument(wf.getDocId());
 	        if (doc.getTemplateId()==Document.NOTEMPLATE) {
 	        	// 请先套红
-	        	String str = LocalUtil.LoadString(request, "res.flow.Flow","err_template");
-	        	throw new ErrMsgException(str);
+	        	throw new ErrMsgException(i18nUtil.get("err_template"));
 	        }
+        }
+
+        // 如果是盖章节点，则检查是否已有附件被盖章
+        if (myAction.canSeal()) {
+            Document doc = new Document();
+            doc = doc.getDocument(wf.getDocId());
+            if (!doc.isSealed()) {
+                // 请先盖章
+                throw new ErrMsgException(i18nUtil.get("err_seal"));
+            }
         }
 
         // 如果流程未开始，则保存流程的标题等
@@ -2497,8 +2603,8 @@ public class WorkflowMgr {
         UserDb user = null;
         WorkflowActionDb wfa = null;
 
-        // 加签节点不需要检查后续处理用户
-        if (mad.getActionStatus() != WorkflowActionDb.STATE_PLUS) {
+        // 直送给返回者及加签节点不需要检查后续处理用户
+        if (!"toRetuner".equals(flowAction) && mad.getActionStatus() != WorkflowActionDb.STATE_PLUS) {
             // 如果是异或节点，则检查是否有被选中的后继节点
             String XorNextActionInternalNames = "";
             // 判断是否来自手机端
@@ -2510,7 +2616,7 @@ public class WorkflowMgr {
                 os = ua.getOperatingSystem();
             }
             catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
 	        if(os==null || DeviceType.MOBILE.equals(os.getDeviceType())) {
 	            isMobile = true;
@@ -2573,10 +2679,9 @@ public class WorkflowMgr {
             	}
             	
             	// 按理说上面的逻辑是可以完全解决两点之间回路问题的
-            	if (wfa.getUserName() != null && !wfa.getUserName().equals("")) {
-	            	Vector from = myAction.getLinkFromActions();
-                    for (Object o : from) {
-                        WorkflowActionDb waDb = (WorkflowActionDb) o;
+            	if (wfa.getUserName() != null && !"".equals(wfa.getUserName())) {
+	            	Vector<WorkflowActionDb> froms = myAction.getLinkFromActions();
+                    for (WorkflowActionDb waDb : froms) {
                         if (waDb.getInternalName().equals(wfa.getInternalName())) {
                             isRecycle = true;
                             break;
@@ -2628,7 +2733,17 @@ public class WorkflowMgr {
 	            
 	            // 置节点上选择的用户名
 	            String uNames = "", uRealNames = "";
-	            String[] userNames = fu.getFieldValues(prefix + wfa.getId());
+	            String[] userNames;
+                if (!isMobile) {
+                    userNames = fu.getFieldValues(prefix + wfa.getId());
+                } else {
+                    // 手机端当在条件分支上自选用户时选择多用户是以逗号分隔的
+                    try {
+                        userNames = StrUtil.split(fu.getFieldValue(prefix + wfa.getId()), ",");
+                    } catch (ClassCastException e) {
+                        userNames = fu.getFieldValues(prefix + wfa.getId());
+                    }
+                }
 	            
                 // 注意此处，如果放在if (wfa.getStatus() == WorkflowActionDb.STATE_IGNORED)之后将不起作用，因为wfa所在的分支在流程处理时此分支没有选人，分支没被选中，所以节点将会被忽略
                 if (wfa.getStatus() != WorkflowActionDb.STATE_IGNORED) {
@@ -2660,9 +2775,10 @@ public class WorkflowMgr {
                                continue;
                            }
 	            		}
-	            	} else {
-	            		continue;
-	            	}
+                    } else if (wfa.getLinkFromActions().size() == 1) {
+                        // 20221201 如果分支被忽略，但wfa为聚合节点，即入度>1，那么也可以走该分支，否则流程将走不下去
+                        continue;
+                    }
 	            }
 	                      
 	            LogUtil.getLog(getClass()).info("FinishAction: prefix + wfa.getId()=" + prefix + wfa.getId());
@@ -2699,12 +2815,29 @@ public class WorkflowMgr {
     	                	String str1 = LocalUtil.LoadString(request, "res.flow.Flow","canNotEdit");
     	                    throw new ErrMsgException(str + wfa.getTitle() + str1);
     	                }
-    	                
-    	                // 20180929 fgf 应以选择的用户为准，故注释掉上面的部分
-		                wfa.setUserName(uNames);
-		                wfa.setUserRealName(uRealNames);
-    	                wfa.save();
-    	
+
+    	                if (!StrUtil.isEmpty(wfa.getUserName()) && myAction.isXorFinish()) {
+    	                    // 20220812 如果当前节点为异步提交模式，则在节点上增加之前未被选择的用户
+                            String oldUserNames = "," + wfa.getUserName() + ",";
+                            List<String> nameList = new ArrayList<>();
+                            List<String> realNameList = new ArrayList<>();
+                            for (String uName : userNames) {
+                                if (!oldUserNames.contains("," + uName + ",")) {
+                                    nameList.add(uName);
+                                    realNameList.add(um.getUserDb(uName).getRealName());
+                                }
+                            }
+                            wfa.setUserName(wfa.getUserName() + "," + StringUtils.join(nameList, ","));
+                            wfa.setUserRealName(wfa.getUserRealName() + "," + StringUtils.join(realNameList, ","));
+                            wfa.save();
+                        }
+    	                else {
+                            // 20180929 fgf 应以选择的用户为准
+                            wfa.setUserName(uNames);
+                            wfa.setUserRealName(uRealNames);
+                            wfa.save();
+                        }
+
     	                LogUtil.getLog(getClass()).info("FinishAction: " + "wfa.getUserName()=" + wfa.getUserName());
     	            }
 	            }
@@ -2745,6 +2878,8 @@ public class WorkflowMgr {
             String ua = request.getHeader("User-Agent");
             mad.setOs(UserAgentParser.getOS(ua));
             mad.setBrowser(UserAgentParser.getBrowser(ua));
+            mad.setClusterNo(Global.getInstance().getClusterNo());
+
             // 是否在变更
             if (isAltering) {
                 mad.setAlter(true);
@@ -2852,12 +2987,12 @@ public class WorkflowMgr {
                 }
             } catch (SQLException | JDOMException e) {
                 LogUtil.getLog(getClass()).error("parse writeProp field error1");
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } catch (IOException e) {
                 LogUtil.getLog(getClass()).error("parse writeProp field error2");
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -2873,96 +3008,17 @@ public class WorkflowMgr {
                 if (nodeFinishList!=null) {
                     ir = nodeFinishList.iterator();
                 }
-                while (ir!=null&&ir.hasNext()) {
+                IWorkflowUtil workflowUtil = SpringUtil.getBean(IWorkflowUtil.class);
+                while (ir != null && ir.hasNext()) {
                     Element nodeFinish = (Element)ir.next();
-                    String  internalName = nodeFinish.getChildText("internalName");
-                    if (internalName.equals(myAction.getInternalName())){
-
-                        String dbSource = nodeFinish.getChildText("dbSource");
-                        String writeBackTable = nodeFinish.getChildText("writeBackForm");
-                        StringBuilder sb = new StringBuilder ("");                       				 //用于拼接回写字段
-                        StringBuilder cond = new StringBuilder("");                       			//用于拼接条件字段
-                        List writeBackFieldList = nodeFinish.getChildren("writeBackField");
-                        Element condition = nodeFinish.getChild("condition");
-                        List conditionFieldList = null;
-                        Iterator conditionIr = null;
-                        if (condition!=null) {
-                            conditionFieldList = condition.getChildren("conditionField");
-                        }
-                        if (conditionFieldList!=null) {
-                            conditionIr = conditionFieldList.iterator();
-                        }
-                        while (conditionIr!=null&&conditionIr.hasNext()) {                         //解析条件字段
-                            Element conditionField = (Element)conditionIr.next();
-                            String conditionFieldName = conditionField.getAttributeValue("fieldName");
-
-                            int fieldType = WorkflowUtil.getColumnType(dbSource, writeBackTable, conditionFieldName);
-
-                            String beginBracket = conditionField.getAttributeValue("beginBracket");
-                            String endBracket = conditionField.getAttributeValue("endBracket");
-                            String compare = conditionField.getChildText("compare");
-                            String compareVal = conditionField.getChildText("compareVal");
-
-                            if (fieldType==FormField.FIELD_TYPE_TEXT||fieldType==FormField.FIELD_TYPE_VARCHAR||fieldType==FormField.FIELD_TYPE_DATE) {
-                                compareVal = SQLFilter.sqlstr(compareVal);
-                            }
-
-                            String logical = conditionField.getChildText("logical");
-                            cond.append(" ").append(beginBracket).append(" ").append(conditionFieldName).append(" ").append(compare).append(" ").append(compareVal).append(" ").append(endBracket).append(" ").append(logical);
-                        }
-                        String condString = cond.toString();
-                        Iterator writeBackFieldIr = null;
-                        if (writeBackFieldList!=null) {
-                            writeBackFieldIr= writeBackFieldList.iterator();
-                        }
-                        while (writeBackFieldIr!=null&&writeBackFieldIr.hasNext()) {            //解析回写字段
-                            Element writeBackField = (Element)writeBackFieldIr.next();
-                            String writeBackFieldStr = writeBackField.getAttributeValue("fieldName");
-                            String writeBackMathStr = writeBackField.getChildText("writeBackMath");
-                            sb.append(writeBackFieldStr).append(" = ").append(writeBackMathStr).append(",");
-                        }
-                        String setField = sb.toString();
-                        if (!"".equals(setField)) {
-                            WorkflowMgr wMgr = new WorkflowMgr();
-                            setField = setField.substring(0, setField.lastIndexOf(","));
-                            String sql = "update " + writeBackTable + " set " + setField;
-                            if (!"".equals(condString)) {
-                                condString = condString.substring(0, condString.lastIndexOf(" "));
-                                sql += " where "+condString;
-                            }
-                            sql = wMgr.parseWriteBackDbField(sql);            //过滤{}，用于回写值
-                            if (condString.indexOf("{$nest.")==-1) {
-                                sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), sql, wf.getId());     //过滤{$}，用于条件值
-                                JdbcTemplate jt = new JdbcTemplate(dbSource);
-                                jt.executeUpdate(sql);
-                            }
-                            else {
-                                // 取得当前主表中的子表中对应字段的值，并赋予
-                                List ary = wMgr.parseAndSetNestFieldValue(lf.getFormCode(), sql, wf.getId());     //过滤{$}，用于条件值
-                                if (ary.size()==0) {
-                                    LogUtil.getLog(getClass()).error("parseAndSetNestFieldValue error");
-                                }
-                                else {
-                                    JdbcTemplate jt = new JdbcTemplate(dbSource);
-                                    for (int i=0; i<ary.size(); i++) {
-                                        sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), (String)ary.get(i), wf.getId());     //过滤{$}，用于条件值
-                                        jt.addBatch(sql);
-                                    }
-                                    jt.executeBatch();
-                                }
-                            }
-                        }
+                    String internalName = nodeFinish.getChildText("internalName");
+                    if (internalName.equals(myAction.getInternalName())) {
+                        workflowUtil.writeBackDb(wf, lf, nodeFinish);
                     }
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | JDOMException | IOException e) {
                 LogUtil.getLog(getClass()).error("parse writeProp field error");
-                e.printStackTrace();
-            } catch (JDOMException e) {
-                LogUtil.getLog(getClass()).error("parse writeProp field error");
-                e.printStackTrace();
-            } catch (IOException e) {
-                LogUtil.getLog(getClass()).error("parse writeProp field error");
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         // 回写数据库处理结束
@@ -2987,12 +3043,9 @@ public class WorkflowMgr {
                             sendRemindMsg(request, wf, lf, myAction, action);
                         }
                     }
-                } catch (JDOMException e) {
+                } catch (JDOMException | IOException e) {
                     LogUtil.getLog(getClass()).error("parse msgProp field error");
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    LogUtil.getLog(getClass()).error("parse msgProp field error");
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -3026,13 +3079,16 @@ public class WorkflowMgr {
         }
         // 调试模式不发送消息及邮件
         if (!lf.isDebug() && myAction.isMsg()) {
-            boolean isUseMsg = getFieldValue("isUseMsg").equals("true");
+            // boolean isUseMsg = getFieldValue("isUseMsg").equals("true");
+            boolean isUseMsg = true;
 
             // @task: 20170615 fgf 此处IOS端，因为没有发送isToMobile，所以暂置为true
             // boolean isToMobile = getFieldValue("isToMobile").equals("true");
             boolean isToMobile = true;
 
-            boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+            // boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+            SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+            boolean mqIsOpen = sysProperties.isMqOpen();
             boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
             String charset = Global.getSmtpCharset();
             cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -3062,10 +3118,11 @@ public class WorkflowMgr {
             String tail = getFormAbstractTable(wf);
 
             UserMgr um = new UserMgr();
-            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-            Iterator ir = myAction.getTmpUserNameActived().iterator();
-            while (ir.hasNext()) {
-                MyActionDb mad2 = (MyActionDb) ir.next();
+            IMsgProducer msgProducer = null;
+            if (mqIsOpen) {
+                msgProducer = SpringUtil.getBean(IMsgProducer.class);
+            }
+            for (MyActionDb mad2 : myAction.getTmpUserNameActived()) {
                 t = t.replaceFirst("\\$flowTitle", wf.getTitle());
                 String fc = c.replaceFirst("\\$flowTitle", wf.getTitle());
                 fc = fc.replaceFirst("\\$fromUser", myAction.getUserRealName());
@@ -3075,8 +3132,7 @@ public class WorkflowMgr {
                     if (imu != null) {
                         if (mqIsOpen) {
                             msgProducer.sendSms(mad2.getUserName(), fc);
-                        }
-                        else {
+                        } else {
                             UserDb ud = um.getUserDb(mad2.getUserName());
                             imu.send(ud, fc, MessageDb.SENDER_SYSTEM);
                         }
@@ -3089,24 +3145,22 @@ public class WorkflowMgr {
                     String action = "action=" + MessageDb.ACTION_FLOW_DISPOSE + "|myActionId=" + mad2.getId();
                     if (mqIsOpen) {
                         msgProducer.sendSysMsg(mad2.getUserName(), t, fc, action);
-                    }
-                    else {
+                    } else {
                         md.sendSysMsg(mad2.getUserName(), t, fc, action);
                     }
                 }
 
                 if (flowNotifyByEmail) {
                     UserDb user = um.getUserDb(mad2.getUserName());
-                    if (user.getEmail()!=null && !user.getEmail().equals("")) {
+                    if (!StrUtil.isEmpty(user.getEmail())) {
                         String action = "userName=" + user.getName() + "|" + "myActionId=" + mad2.getId();
                         action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-                        fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath(request) +
-                                "/public/flow_dispose.jsp?action=" + action + "' target='_blank'>" +
+                        fc += "<BR />>>&nbsp;<a href='" + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) + "' target='_blank'>" +
                                 SkinUtil.LoadString(request, "res.module.flow", "link_dispose") + "</a>";
+
                         if (mqIsOpen) {
                             msgProducer.sendEmail(user.getEmail(), senderName, t, fc);
-                        }
-                        else {
+                        } else {
                             sendmail.initMsg(user.getEmail(), senderName, t, fc, true);
                             sendmail.send();
                             sendmail.clear();
@@ -3149,10 +3203,9 @@ public class WorkflowMgr {
                 if (flowNotifyByEmail) {
                     UserDb user = um.getUserDb(wf.getUserName());
                     if (user.getEmail()!=null && !user.getEmail().equals("")) {
-                        String action = "op=show|userName=" + user.getName() + "|" + "flowId=" + wf.getId();
+                        String action = "userName=" + user.getName() + "|" + "flowId=" + wf.getId();
                         action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-                        fc += "<BR />>>&nbsp;<a href='" + Global.getFullRootPath(request) +
-                                "/public/flow_dispose.jsp?action=" + action + "' target='_blank'>" +
+                        fc += "<BR />>>&nbsp;<a href='" + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_SHOW, action) + "' target='_blank'>" +
                                 SkinUtil.LoadString(request, "res.module.flow", "link_show") + "</a>";
 
                         if (mqIsOpen) {
@@ -3175,210 +3228,8 @@ public class WorkflowMgr {
     }
     
     public void writeBack(WorkflowDb wf, Leaf lf, Element nodeFinish) throws SQLException, JSONException  {
-		String writeBackForm = nodeFinish.getChildText("writeBackForm");
-		int writeBackType = StrUtil.toInt(StrUtil.getNullStr(nodeFinish.getChildText("writeBackType")), WorkflowPredefineDb.WRITE_BACK_UPDATE);
-
-		// 更新字段
-		if (writeBackType==WorkflowPredefineDb.WRITE_BACK_UPDATE || writeBackType==WorkflowPredefineDb.WRITE_BACK_UPDATE_INSERT) {
-			FormDb fd = new FormDb();
-			fd = fd.getFormDb(writeBackForm);
-			
-			StringBuilder sb = new StringBuilder ("");
-			StringBuilder cond = new StringBuilder("");
-			List writeBackFieldList = nodeFinish.getChildren("writeBackField");
-			Element condition = nodeFinish.getChild("condition");
-			List conditionFieldList = null;
-			Iterator conditionIr = null;
-			if (condition!=null)
-				conditionFieldList = condition.getChildren("conditionField");
-			if (conditionFieldList!=null)
-				conditionIr = conditionFieldList.iterator();
-			// 拼接条件字段
-			while (conditionIr!=null&&conditionIr.hasNext()) {                   
-				Element conditionField = (Element)conditionIr.next();
-				String conditionFieldName = conditionField.getAttributeValue("fieldName");
-				FormField ff = fd.getFormField(conditionFieldName);
-				String beginBracket = conditionField.getAttributeValue("beginBracket");
-				String endBracket = conditionField.getAttributeValue("endBracket");
-				String compare = conditionField.getChildText("compare");
-				String compareVal = conditionField.getChildText("compareVal");
-				if (ff!=null) {
-					int fieldType = ff.getFieldType();
-					if (fieldType==FormField.FIELD_TYPE_TEXT||fieldType==FormField.FIELD_TYPE_VARCHAR||fieldType==FormField.FIELD_TYPE_DATE)
-						compareVal = SQLFilter.sqlstr(compareVal);
-				}
-				String logical = conditionField.getChildText("logical");
-				cond.append(" ").append(beginBracket).append(" ").append(conditionFieldName).append(" ").append(compare).append(" ").append(compareVal).append(" ").append(endBracket).append(" ").append(logical);
-			}
-			String condString = cond.toString();
-			
-			// 对所设置的回写字段赋值
-			Iterator writeBackFieldIr = null;
-			if (writeBackFieldList!=null)
-				writeBackFieldIr= writeBackFieldList.iterator();
-			while (writeBackFieldIr!=null && writeBackFieldIr.hasNext()) {        // 拼接回写字段
-				Element writeBackField = (Element)writeBackFieldIr.next();
-				String writeBackFieldStr = writeBackField.getAttributeValue("fieldName");
-				String writeBackMathStr = writeBackField.getChildText("writeBackMath");
-				sb.append(writeBackFieldStr).append(" = ").append(writeBackMathStr).append(",");
-			}
-			String setField = sb.toString();
-			if (!"".equals(setField)){
-				setField = setField.substring(0, setField.lastIndexOf(","));
-				String sql = "update form_table_" + writeBackForm + " set " + setField;
-				if (!"".equals(condString)){
-					condString = condString.substring(0, condString.lastIndexOf(" "));
-					sql += " where "+condString;
-				}									
-				sql = parseAndSetFieldValue(writeBackForm, sql);            //过滤{}，用于回写值
-				// 如果条件中带有嵌套表中的字段
-				if (condString.indexOf("{$nest.")==-1) {
-					sql = parseAndSetMainFieldValue(lf.getFormCode(), sql, wf.getId());     //过滤{$}，用于条件值
-					JdbcTemplate jt = new JdbcTemplate();
-					jt.executeUpdate(sql);										
-				}
-				else {
-					// 取得当前主表中的子表中对应字段的值，并赋予
-					List ary = parseAndSetNestFieldValue(lf.getFormCode(), sql, wf.getId());     //过滤{$}，用于条件值
-					if (ary.size()==0) {
-						LogUtil.getLog(getClass()).error("parseAndSetNestFieldValue error");
-					} 
-					else {
-						JdbcTemplate jt = new JdbcTemplate();											
-						for (int i=0; i<ary.size(); i++) {
-							sql = parseAndSetMainFieldValue(lf.getFormCode(), (String)ary.get(i), wf.getId());     //过滤{$}，用于条件值
-							jt.addBatch(sql);
-						}
-						jt.executeBatch();
-					}
-				}
-			}
-		}
-
-		// 插入数据处理
-		if (writeBackType==WorkflowPredefineDb.WRITE_BACK_INSERT || writeBackType==WorkflowPredefineDb.WRITE_BACK_UPDATE_INSERT) {
-			WorkflowMgr wMgr = new WorkflowMgr();
-
-			String primaryKey = nodeFinish.getChildText("primaryKey");
-			boolean hasPrimaryKey = !"".equals(primaryKey) && !"empty".equals(primaryKey);
-			String primaryKeyVal = "";
-			
-			String insertFields = nodeFinish.getChildText("insertFields");
-			if (insertFields!=null) {
-				boolean hasNest = false; // 是否取自嵌套表，如果是，则需插入多条数据
-				JSONObject insFields = new JSONObject(insertFields);
-				StringBuffer fields = new StringBuffer();
-				StringBuffer values = new StringBuffer();
-				Iterator irKeys = insFields.keys();
-				while (irKeys.hasNext()) {
-					String fieldName = (String)irKeys.next();
-					
-					StrUtil.concat(fields, ",", fieldName);
-					String val = insFields.getString(fieldName);
-					if (val.indexOf("{$nest.")!=-1) {
-						hasNest = true;
-					}
-					
-					// 得到主键字段被赋予的值
-					if (hasPrimaryKey) {
-						if (primaryKey.equals(fieldName)) {
-							primaryKeyVal = val;
-						}
-					}
-					
-					if ("".equals(val)) {
-						// 日期型如果预置为空字符串将变为null
-						StrUtil.concat(values, ",", "null");										
-					}
-					else {
-						StrUtil.concat(values, ",", val);
-					}
-				}
-				
-				if (!hasNest) {
-					// 判断主键字段是否存在
-					boolean isPrimaryKeyExist = false;
-					if (hasPrimaryKey) {
-						String sql = "select id from form_table_" + writeBackForm + " where " + primaryKey + "=" + primaryKeyVal;
-						JdbcTemplate jt = new JdbcTemplate();
-						ResultIterator ri = jt.executeQuery(sql, 1, 1);
-						if (ri.size()>0) {
-							isPrimaryKeyExist = true;
-						}
-					}
-					// 如果主键字段未设置，或者主键字段不存在则插入数据
-					if (!isPrimaryKeyExist) {
-						String flowTypeCode = String.valueOf(System.currentTimeMillis());
-						String sql = "insert into form_table_" + writeBackForm;
-						sql += " (unit_code, cws_status, flowTypeCode, " + fields + ") values ('root', 1, " + StrUtil.sqlstr(flowTypeCode) + "," + values + ")";
-						sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), sql, wf.getId());     //过滤{$}，用于条件值
-						JdbcTemplate jt = new JdbcTemplate();					
-						jt.executeUpdate(sql);
-					}
-				}
-				else {
-					// 如果字段中有嵌套表
-					boolean isPrimaryKeyValHasNest = false;
-					if (hasPrimaryKey) {
-						if (primaryKeyVal.indexOf("{$nest.")!=-1) {
-							isPrimaryKeyValHasNest = true;
-						}
-					}
-					List aryVal = null;
-					if (isPrimaryKeyValHasNest) {
-						aryVal = wMgr.parseAndSetNestFieldValue(lf.getFormCode(), primaryKeyVal, wf.getId());
-					}
-					List ary = wMgr.parseAndSetNestFieldValue(lf.getFormCode(), values.toString(), wf.getId());     //过滤{$}，用于条件值
-					if (ary.size()==0) {
-						LogUtil.getLog(getClass()).error("changeStatus3:parseAndSetNestFieldValue error");
-					}
-					else {
-						JdbcTemplate jtBatch = new JdbcTemplate();
-						JdbcTemplate jt = new JdbcTemplate();
-						jt.setAutoClose(false);
-						try {
-							boolean isAddBatch = false;
-							for (int i=0; i<ary.size(); i++) {
-								// 判断主键字段是否存在
-								boolean isPrimaryKeyExist = false;
-								if (hasPrimaryKey) {
-									String sql;
-									if (isPrimaryKeyValHasNest) {
-										sql = "select id from form_table_" + writeBackForm + " where " + primaryKey + "=" + aryVal.get(i);
-									}
-									else {
-										sql = "select id from form_table_" + writeBackForm + " where " + primaryKey + "=" + primaryKeyVal;									
-									}
-									sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), sql, wf.getId());												
-									ResultIterator ri = jt.executeQuery(sql, 1, 1);
-									if (ri.size()>0) {
-										isPrimaryKeyExist = true;
-									}
-								}											
-								
-								if (!isPrimaryKeyExist) {
-									String flowTypeCode = String.valueOf(System.currentTimeMillis());
-									String sql = "insert into form_table_" + writeBackForm;
-									sql += " (unit_code, cws_status, flowTypeCode, " + fields + ") values ('root', 1, " + StrUtil.sqlstr(flowTypeCode) + "," + ary.get(i) + ")";											
-									sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), sql, wf.getId());
-									jtBatch.addBatch(sql);
-									
-									isAddBatch = true;
-								}
-							}
-							
-							if (isAddBatch) {
-								jtBatch.executeBatch();
-							}
-						}
-						finally {
-							jt.close();
-							jtBatch.close();
-						}
-					}									
-				}
-			}
-		}		    	
+        IWorkflowUtil workflowUtil = SpringUtil.getBean(IWorkflowUtil.class);
+        workflowUtil.writeBack(wf, lf, nodeFinish);
     }
     
     public void sendRemindMsg(HttpServletRequest request, WorkflowDb wf, Leaf lf, WorkflowActionDb myAction, Element action) {
@@ -3478,14 +3329,10 @@ public class WorkflowMgr {
                     WorkflowRouter workflowRouter = new WorkflowRouter();
                     try {
                         v = workflowRouter.matchActionUser(null, wa, myAction, false, null);
-                    } catch (ErrMsgException e) {
-                        e.printStackTrace();
-                        LogUtil.getLog(getClass()).info(StrUtil.trace(e));
-                    } catch (MatchUserException e) {
-                        e.printStackTrace();
-                        LogUtil.getLog(getClass()).info(StrUtil.trace(e));
+                    } catch (ErrMsgException | MatchUserException e) {
+                        LogUtil.getLog(getClass()).error(e);
                     }
-				}
+                }
 			}
 		}
 		
@@ -3568,9 +3415,13 @@ public class WorkflowMgr {
 		// String tail = getFormAbstractTable(wf);
         com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
 		MessageDb md = new MessageDb();
-        Config cfg = Config.getInstance();
-        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-        boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+
+        SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+        boolean mqIsOpen = sysProperties.isMqOpen();
+        IMsgProducer msgProducer = null;
+        if (mqIsOpen) {
+            msgProducer = SpringUtil.getBean(IMsgProducer.class);
+        }
 
 		Iterator ir = v.iterator();
 		while (ir.hasNext()) {
@@ -3586,7 +3437,7 @@ public class WorkflowMgr {
                         try {
                             imu.send(ud, title, MessageDb.SENDER_SYSTEM);
                         } catch (ErrMsgException e) {
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
                         }
                     }
 				}
@@ -3606,7 +3457,7 @@ public class WorkflowMgr {
                         md.sendSysMsg(ud.getName(), title, content, strAtion);
                     }
 				} catch (ErrMsgException e) {
-					e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
 				}
 			}
 
@@ -3615,16 +3466,13 @@ public class WorkflowMgr {
 				String mailCont = content; // + tail;
 				
 				if (isFlowShow) {
-					String strAction = "op=show|userName=" + ud.getName() + "|" +
-                		"flowId=" + wf.getId();
+					String strAction = "userName=" + ud.getName() + "|" + "flowId=" + wf.getId();
 					strAction = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
 							ssoCfg.getKey(), strAction);				
 					mailCont += "<BR />>>&nbsp;<a href='"
-							+ Global.getFullRootPath()
-							+ "/public/flow_dispose.jsp?action="
-							+ strAction
+                            + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_SHOW, strAction)
 							+ "' target='_blank'>"
-							+ (usd.getLocal().equals("en-US") ? "Click here to apply"
+							+ ("en-US".equals(usd.getLocal()) ? "Click here to apply"
 									: "请点击此处查看") + "</a>";					
 				}
                 if (mqIsOpen) {
@@ -3673,7 +3521,6 @@ public class WorkflowMgr {
                     LogUtil.getLog(WorkflowMgr.class).error("表单：" + fd.getName() + "，脚本：" + strWithFields + "中，字段：" + fieldTitle + " 不存在！");
                 }
             }
-            // System.out.println(getClass() + " scriptStr=" + scriptStr + " fieldTitle=" + fieldTitle + " ff=" + ff);
             String val = "";
             if (field!=null) {
 	        	val = fdao.getFieldValue(field.getName());
@@ -3740,7 +3587,7 @@ public class WorkflowMgr {
     	
         List list = new ArrayList();
         JdbcTemplate jt = new JdbcTemplate();
-        String sql2 = "select * from form_table_" + nestFormCode + " where cws_id=" + fdaoScriptId + " order by id desc";
+        String sql2 = "select * from ft_" + nestFormCode + " where cws_id='" + fdaoScriptId + "' order by id desc";
         ResultIterator ri;
 		try {
 			ri = jt.executeQuery(sql2);
@@ -3776,8 +3623,7 @@ public class WorkflowMgr {
 	        }    	
 			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 		return list;
 
@@ -3867,7 +3713,7 @@ public class WorkflowMgr {
             ErrMsgException {
         // 自动存档
         String flag = action.getFlag();
-        if (flag.length() >= 5 && flag.substring(4, 5).equals("2")) {
+        if (flag.length() >= 5 && "2".equals(flag.substring(4, 5))) {
         	return doAutoSaveArchive(request, wf);
         }
         return false;
@@ -3892,7 +3738,7 @@ public class WorkflowMgr {
         wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
         String dirCode = wpd.getDirCode();
         if (dirCode.equals("")) {
-            logger.error("saveDocumentArchive:" + "存档所选的节点为空！");
+            LogUtil.getLog(getClass()).error("saveDocumentArchive:" + "存档所选的节点为空！");
             return false;
         }
         
@@ -4051,37 +3897,14 @@ public class WorkflowMgr {
         // 置保存的时间
         myAction.setResult(DateUtil.format(new java.util.Date(), "yyyy-MM-dd HH:mm"));
         myAction.save();
-        
-        // 条件判断前，先保存草稿，再判定条件，所以也需validate
-        if ("saveformvalueBeforeXorCondSelect".equals(op)) {
+
+        // 当op为saveformvalueBeforeXorCondSelect，是在PC端条件判断前，先保存草稿，再判定条件，所以也需validate
+        // 当op为finish时，是从手机端提交时调用WorkflowServiceImpl.finishActionByMobile时会调用到本方法，此时需调用验证
+        // 当手机端遇到存在分支条件的情况时，会调用两次，op都为finish，第一次finish是保存表单，然后匹配分支条件
+        if ("saveformvalueBeforeXorCondSelect".equals(op) || "finish".equals(op)) {
             return fdm.update(request, false);
         } else {
             return fdm.update(request, true); // 参数true表示保存草稿
-        }
-    }
-
-    public boolean addNewDocument(ServletContext application, HttpServletRequest request) throws ErrMsgException {
-        String[] extnames = {"jpg", "gif", "xls", "rar", "doc", "rm", "avi",
-                            "bmp", "swf"};
-        FileUpload TheBean = new FileUpload();
-        TheBean.setValidExtname(extnames); // 设置可上传的文件类型
-        TheBean.setMaxFileSize(Global.FileSize); // 35000); // 最大35000K
-        int ret = 0;
-        try {
-            ret = TheBean.doUpload(application, request);
-            if (ret!=FileUpload.RET_SUCCESS) {
-                throw new ErrMsgException(TheBean.getErrMessage());
-            }
-        }
-        catch (Exception e) {
-            logger.error("addNewDocument:" + e.getMessage());
-        }
-        if (ret == 1) {
-            WorkflowDb wf = new WorkflowDb();
-            return wf.addNewDocument(application, TheBean);
-        }
-        else {
-            return false;
         }
     }
 
@@ -4111,7 +3934,7 @@ public class WorkflowMgr {
             }
         }
         catch (Exception e) {
-            logger.error("writeDocument:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("writeDocument:" + e.getMessage());
         }
 
         int flowId = ParamUtil.getInt(request, "flowId", -1);
@@ -4184,7 +4007,7 @@ public class WorkflowMgr {
             }
         }
         catch (Exception e) {
-            logger.error("uploadDocument:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("uploadDocument:" + e.getMessage());
         }
         if (ret == 1) {
             Privilege pvg = new Privilege();
@@ -4205,6 +4028,17 @@ public class WorkflowMgr {
                 if (re) {
                     att.setLockUser(""); // 解锁
                     att.save();
+
+                    // 重新生成html
+                    String previewfile =  Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
+                    String ext = StrUtil.getFileExt(att.getDiskName());
+                    if ("doc".equals(ext) || "docx".equals(ext) || "xls".equals(ext) || "xlsx".equals(ext)) {
+                        PreviewUtil.createOfficeFilePreviewHTML(previewfile);
+                    }
+                    else if ("pdf".equals(ext)) {
+                        Pdf2Html.createPreviewHTML(previewfile);
+                    }
+
                     // 保存日志
                     AttachmentLogMgr.log(userName, doc.getFlowId(), att.getId(), AttachmentLogDb.TYPE_EDIT);
                 }
@@ -4214,8 +4048,9 @@ public class WorkflowMgr {
                 return false;
             }
         }
-        else
+        else {
             return false;
+        }
     }
 
     /**
@@ -4230,7 +4065,7 @@ public class WorkflowMgr {
         // int actionId = ParamUtil.getInt(request, "actionId");
         String title = ParamUtil.get(request, "title");
         String content = ParamUtil.get(request, "content");
-        if (title.equals("")) {
+        if ("".equals(title)) {
             throw new ErrMsgException("标题不能为空！");
         }
         String dirCode = ParamUtil.get(request, "dirCode");
@@ -4244,8 +4079,9 @@ public class WorkflowMgr {
         Privilege privilege = new Privilege();
         String userName = privilege.getUser(request);
         boolean re = lp.canUserAppend(userName);
-        if (!re)
+        if (!re) {
             throw new ErrMsgException("非法操作");
+        }
 
         WorkflowPredefineDb wpd = new WorkflowPredefineDb();
         wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
@@ -4257,12 +4093,14 @@ public class WorkflowMgr {
         // 根据流程中需要保存的文档创建附件
         String[] attachIds = ParamUtil.getParameters(request, "attachIds");
         int len;
-        if (attachIds==null)
+        if (attachIds==null) {
             len = 0;
-        else
+        } else {
             len = attachIds.length;
-        if (len == 0)
+        }
+        if (len == 0) {
             return true;
+        }
         doc = doc.getDocument(doc.getID());
         com.redmoon.oa.fileark.Attachment att = new com.redmoon.oa.fileark.Attachment();
 
@@ -4272,17 +4110,14 @@ public class WorkflowMgr {
         Calendar cal = Calendar.getInstance();
         String year = "" + (cal.get(Calendar.YEAR));
         String month = "" + (cal.get(Calendar.MONTH) + 1);
-        String vpath = filepath + "/" +
-                       year + "/" + month + "/";
+        String vpath = filepath + "/" + year + "/" + month + "/";
 
-        int orders = 1;
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
         for (int i = 0; i < len; i++) {
             // 取得流程中的附件
         	com.redmoon.oa.flow.Attachment a = new com.redmoon.oa.flow.Attachment(Integer.parseInt(attachIds[i]));
             String diskName = FileUpload.getRandName() + "." + StrUtil.getFileExt(a.getDiskName());
-            String fullPath = Global.getRealPath() + vpath + diskName;
-            att.setFullPath(fullPath);
-            // logger.info("fullPath1=" + fullPath);
+            // LogUtil.getLog(getClass()).info("fullPath1=" + fullPath);
             att.setDocId(doc.getID());
             att.setName(a.getName());
             att.setDiskName(diskName);
@@ -4293,20 +4128,15 @@ public class WorkflowMgr {
             re = att.create();
             if (re) {
                 // 将流程中的文件拷贝至存档文件目录
-                if (i == 0) {
-                    File f = new File(Global.getRealPath() + vpath);
-                    if (!f.isDirectory()) {
-                        f.mkdirs();
-                    }
+                try {
+                    fileService.copy(a.getVisualPath(), a.getDiskName(), vpath, diskName);
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
                 }
-                // logger.info("fullPath=" + fullPath);
-                FileUtil.CopyFile(a.getFullPath(), fullPath);
             }
-            orders++;
         }
         return true;
     }
-    
 
     /**
      * 自动存档
@@ -4317,13 +4147,13 @@ public class WorkflowMgr {
      * @throws ErrMsgException
      */
     public boolean saveDocumentArchive(WorkflowDb wf, String userName, String formReportContent) throws ErrMsgException {
-        // logger.info("saveDocumentArchive:" + wf.getTitle() + " dirCode=" + wf.getTypeCode());
+        // LogUtil.getLog(getClass()).info("saveDocumentArchive:" + wf.getTitle() + " dirCode=" + wf.getTypeCode());
 
     	WorkflowPredefineDb wpd = new WorkflowPredefineDb();
         wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
         String dirCode = wpd.getDirCode();
-        if (dirCode.equals("")) {
-            logger.error("saveDocumentArchive:" + "存档所选的节点为空！");
+        if ("".equals(dirCode)) {
+            LogUtil.getLog(getClass()).error("saveDocumentArchive:" + "存档所选的节点为空！");
             return false;
         }
 
@@ -4339,93 +4169,102 @@ public class WorkflowMgr {
      * @throws ErrMsgException
      */
     public boolean saveDocumentArchive(WorkflowDb wf, String userName, String formReportContent, String dirCode, boolean isExamined) throws ErrMsgException {
-        // logger.info("saveDocumentArchive:" + wf.getTitle() + " dirCode=" + wf.getTypeCode());
+        // LogUtil.getLog(getClass()).info("saveDocumentArchive:" + wf.getTitle() + " dirCode=" + wf.getTypeCode());
         /*
     	WorkflowPredefineDb wpd = new WorkflowPredefineDb();
         wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
         String dirCode = wpd.getDirCode();
         if (dirCode.equals("")) {
-            logger.error("saveDocumentArchive:" + "存档所选的节点为空！");
+            LogUtil.getLog(getClass()).error("saveDocumentArchive:" + "存档所选的节点为空！");
             return false;
         }
         */
-        com.redmoon.oa.fileark.Leaf lf = new com.redmoon.oa.fileark.Leaf();
-        lf = lf.getLeaf(dirCode);
-        if (lf==null || !lf.isLoaded()) {
-            logger.error("saveDocumentArchive:" + "存档所选的节点不存在！");
-            // throw new ErrMsgException("对不起，存档所选的节点不存在！");
-            return false;
+
+        TreeSelectDb tsd = new TreeSelectDb();
+        tsd = tsd.getTreeSelectDb(dirCode);
+        if (!tsd.isLoaded()) {
+            LogUtil.getLog(getClass()).error("saveDocumentArchive:" + "存档所选的节点不存在！");
+            throw new ErrMsgException("存档所选的节点不存在！");
         }
+
         int doc_id = wf.getDocId();
         DocumentMgr dm = new DocumentMgr();
         Document formDoc = dm.getDocument(doc_id);
 
-        // logger.info("saveDocumentArchive: formDoc.title=" + formDoc.getTitle() + " lf.name=" + lf.getName());
-
-        com.redmoon.oa.fileark.Document doc = new com.redmoon.oa.fileark.Document();
-        // doc.setExamine(wpd.getExamine());
-        doc.setExamine(isExamined?Document.EXAMINE_PASS:Document.EXAMINE_NOT);
-        doc.setFlowId(wf.getId());
-        boolean ret = doc.create(dirCode, wf.getTitle(), formReportContent, com.redmoon.oa.fileark.Document.TYPE_DOC, "", "", userName, doc.NOTEMPLATE, userName);
-        // logger.info("saveDocumentArchive: ret=" + ret);
-        doc = doc.getDocument(doc.getID());
-
-        // 置文件目录
-        Config cfg = new Config();
-        String filepath = cfg.get("file_folder");
-        Calendar cal = Calendar.getInstance();
-        String year = "" + (cal.get(Calendar.YEAR));
-        String month = "" + (cal.get(Calendar.MONTH) + 1);
-        String vpath = filepath + "/" +
-                       year + "/" + month + "/";
+        // LogUtil.getLog(getClass()).info("saveDocumentArchive: formDoc.title=" + formDoc.getTitle() + " lf.name=" + lf.getName());
+        FormDb fdDoc = new FormDb();
+        fdDoc = fdDoc.getFormDb(ConstUtil.FILEARK_DOC);
+        com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO(fdDoc);
+        fdao.setFieldValue("title", wf.getTitle());
+        fdao.setFieldValue("content", formReportContent);
+        fdao.setFieldValue("user_name", wf.getUserName());
+        fdao.setFieldValue("dir_code", dirCode);
+        fdao.setFieldValue("status", String.valueOf(isExamined ? ConstUtil.FILEARK_EXAMINE_PASS : ConstUtil.FILEARK_EXAMINE_NOT));
+        fdao.setFieldValue("create_date", DateUtil.format(new Date(), "yyyy-MM-dd"));
+        fdao.setFlowId(wf.getId());
+        Privilege pvg = new Privilege();
+        fdao.setCreator(SpringUtil.getUserName()); // 参数为用户名（创建记录者），必填
+        fdao.setUnitCode(pvg.getUserUnitCode(SpringUtil.getRequest())); // 置单位编码，必填
+        boolean re = false;
+        try {
+            re = fdao.create();
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
 
         int orders = 1;
-        com.redmoon.oa.fileark.Attachment att = new com.redmoon.oa.fileark.Attachment();
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
+
+        com.redmoon.oa.visual.Attachment att = new com.redmoon.oa.visual.Attachment();
         // 取得流程中的附件
-        java.util.Vector attachments = formDoc.getAttachments(1);
-        java.util.Iterator ir = attachments.iterator();
-        while (ir.hasNext()) {
-        	com.redmoon.oa.flow.Attachment a = (com.redmoon.oa.flow.Attachment) ir.next();
+        java.util.Vector<IAttachment> attachments = formDoc.getAttachments(1);
+        for (IAttachment a : attachments) {
             String diskName = FileUpload.getRandName() + "." + StrUtil.getFileExt(a.getDiskName());
-            String fullPath = Global.getRealPath() + vpath + diskName;
-            att.setFullPath(fullPath);
-            // logger.info("fullPath1=" + fullPath);
-            att.setDocId(doc.getID());
-            att.setName(a.getName());
-            att.setDiskName(diskName);
-            att.setVisualPath(vpath);
-            att.setPageNum(1);
-            att.setOrders(a.getOrders());
-            att.setUploadDate(new java.util.Date());
-            boolean re = att.create();
+
+            // 取得虚拟路径
+            String visualPath = fdao.getVisualPath();
+            att.setVisualId(fdao.getId());
+            att.setName(a.getName()); 					// 置文件名称
+            att.setDiskName(diskName); 			// 保存至磁盘的文件名
+            att.setVisualPath(visualPath);					// 置虚拟路径
+            att.setFormCode(fdao.getFormCode());					// 置表单编码
+            att.setFieldName("");			// 置文件上传框的表单域名
+            att.setCreator(userName); 	// 置上传者
+            att.setFileSize(a.getSize());					// 置文件大小
+            re = att.create();
             if (re) {
                 // 将流程中的文件拷贝至存档文件目录
                 if (orders == 1) {
-                    File f = new File(Global.getRealPath() + vpath);
+                    File f = new File(Global.getRealPath() + visualPath);
                     if (!f.isDirectory()) {
                         f.mkdirs();
                     }
                 }
-                // logger.info("fullPath=" + fullPath);
-                FileUtil.CopyFile(a.getFullPath(), fullPath);
+                // 将流程中的文件拷贝至存档文件目录
+                try {
+                    fileService.copy(a.getVisualPath(), a.getDiskName(), visualPath, diskName);
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
             }
             orders++;
         }
-        return ret;
+        return re;
     }
 
     public boolean addMonitor(HttpServletRequest request) throws ErrMsgException {
         int flowId = ParamUtil.getInt(request, "flowId");
         String userName = ParamUtil.get(request, "userName");
-        if (userName.equals("")) {
+        if ("".equals(userName)) {
             throw new ErrMsgException("请选择流程监控人员！");
         }
         WorkflowDb wfd = new WorkflowDb();
         wfd = wfd.getWorkflowDb(flowId);
 
         WorkflowRuler wr = new WorkflowRuler();
-        if (!wr.canMonitor(request, wfd))
+        if (!wr.canMonitor(request, wfd)) {
             throw new ErrMsgException("权限非法！");
+        }
         return wfd.addMonitor(userName);
     }
 
@@ -4442,28 +4281,22 @@ public class WorkflowMgr {
     }
 
     public BSHShell runDiscardScript(HttpServletRequest request, String curUserName, int flowId, FormDAO fdao, String script) throws ErrMsgException {
-        BSHShell bs = new BSHShell();
-        StringBuffer sb = new StringBuffer();
-        BeanShellUtil.setFieldsValue(fdao, sb);
-        // 赋值当前用户
-        sb.append("String userName=\"" + curUserName + "\";");
-        sb.append("int flowId=" + flowId + ";");
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.runDiscardScript(request, curUserName, flowId, fdao, script, fu);
+    }
 
-        bs.set(ConstUtil.SCENE, ConstUtil.SCENE_FLOW_DISCARD);
-        bs.set("request", request);
-        bs.set("fileUpload", fu);
-
-        bs.eval(BeanShellUtil.escape(sb.toString()));
-        bs.eval(script);
-        Object obj = bs.get("ret");
-        if (obj != null) {
-            boolean ret = ((Boolean) obj).booleanValue();
-            if (!ret) {
-                String errMsg = (String) bs.get("errMsg");
-                LogUtil.getLog(getClass()).error("Discard bsh errMsg=" + errMsg);
-            }
-        }
-        return bs;
+    /**
+     * 运行流程初始化事件
+     * @param request
+     * @param curUserName
+     * @param flowId
+     * @param script
+     * @return
+     * @throws ErrMsgException
+     */
+    public BSHShell runPreInitScript(HttpServletRequest request, String curUserName, int flowId, String script, FormDAO fdao) throws ErrMsgException {
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.runPreInitScript(request, curUserName, flowId, script, fdao);
     }
 
     /**
@@ -4480,7 +4313,6 @@ public class WorkflowMgr {
         // WorkflowRuler wr = new WorkflowRuler();
         // if (!wr.canMonitor(request, wfd))
         //    throw new ErrMsgException(SkinUtil.LoadString(request, "pvg_invalid"));
-        Privilege privilege = new Privilege();
         boolean re = wfd.discard(userName);
         if (re) {
 			FormDAO fdao = new FormDAO();
@@ -4545,7 +4377,7 @@ public class WorkflowMgr {
     }
 
     /**
-     * 拒绝流程，或者当op为manualFinishAgree时手工结束流程
+     * 拒绝流程，或者当op为manualFinishAgree时同意并结束流程
      * @param request HttpServletRequest
      * @param flowId int
      * @return boolean
@@ -4588,12 +4420,17 @@ public class WorkflowMgr {
        WorkflowDb wf = new WorkflowDb();
        wf = wf.getWorkflowDb(flowId);
 
-       boolean isUseMsg = getFieldValue("isUseMsg").equals("true");
-       boolean isToMobile = getFieldValue("isToMobile").equals("true");
+       boolean isUseMsg = "true".equals(getFieldValue("isUseMsg"));
+       boolean isToMobile = "true".equals(getFieldValue("isToMobile"));
 
-       Config cfg = new Config();
-       IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-       boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+        Config cfg = new Config();
+        SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+        boolean mqIsOpen = sysProperties.isMqOpen();
+        IMsgProducer msgProducer = null;
+        if (mqIsOpen) {
+            msgProducer = SpringUtil.getBean(IMsgProducer.class);
+        }
+
        boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
        String charset = Global.getSmtpCharset();
        cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -4662,17 +4499,16 @@ public class WorkflowMgr {
            }
 
            if (flowNotifyByEmail) {
-               if (!user.getEmail().equals("")) {
-                   String action = "op=show|userName=" + user.getName() + "|" +
+               if (!"".equals(user.getEmail())) {
+                   String action = "userName=" + user.getName() + "|" +
                                    "flowId=" + wf.getId();
                    action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
                            ssoCfg.getKey(), action);
                    UserSetupDb usd = new UserSetupDb(user.getName());
                    fc += "<BR /><BR />>>&nbsp;<a href='" +
-                           Global.getFullRootPath(request) +
-                           "/public/flow_dispose.jsp?action=" + action +
-                           "' target='_blank'>" + 
-                           (usd.getLocal().equals("en-US") ? "Click here to view" : "请点击此处查看") + "</a>";
+                           WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_SHOW, action) +
+                            "' target='_blank'>" +
+                           ("en-US".equals(usd.getLocal()) ? "Click here to view" : "请点击此处查看") + "</a>";
                    if (mqIsOpen) {
                        msgProducer.sendEmail(user.getEmail(), senderName, ft, fc);
                    }
@@ -4693,125 +4529,8 @@ public class WorkflowMgr {
      * @return boolean
      */
     public boolean recallMyAction(HttpServletRequest request, long myActionId) throws ErrMsgException {
-        MyActionDb mad = new MyActionDb();
-        mad = mad.getMyActionDb(myActionId);
-
-        Privilege privilege = new Privilege();
-        String myname = privilege.getUser(request);
-        if (!privilege.isUserPrivValid(request, "admin")) {
-	        if (!mad.getUserName().equals(myname) &&
-	            !mad.getProxyUserName().equals(myname)) {
-	            // 权限检查
-	            throw new ErrMsgException(SkinUtil.LoadString(request, "pvg_invalid"));
-	        }
-        }
-
-        if (!mad.isChecked()) {
-        	String str = LocalUtil.LoadString(request,"res.flow.Flow","upcomingItem");
-            throw new ErrMsgException(str);
-        }
-
-        boolean re = false;
-
-        Directory dir = new Directory();
-        int flowId = (int)mad.getFlowId();
-        WorkflowDb wf = new WorkflowDb();
-        wf = wf.getWorkflowDb(flowId);
-        Leaf ft = dir.getLeaf(wf.getTypeCode());
-        boolean isFree = ft.getType()!=Leaf.TYPE_LIST;
-
-        int k = 0;
-        if (isFree) {
-            k = mad.recallMyActionsByPrivMyActionFree(myActionId);
-        }
-        else {
-            // 检查下一节点是否处于延时状态，如果是，则撤回
-            WorkflowActionDb wad = new WorkflowActionDb();
-            wad = wad.getWorkflowActionDb((int)mad.getActionId());
-
-            // 撤回事件，事件在撤回处理之前运行，以取得与其相关的节点信息。
-            WorkflowPredefineDb wpd = new WorkflowPredefineDb();
-            wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
-            WorkflowPredefineMgr wpm = new WorkflowPredefineMgr();
-            String script = wpm.getRecallScript(wpd.getScripts());
-            if (script != null && !"".equals(script)) {
-                Interpreter bsh = new Interpreter();
-                try {
-                    StringBuffer sb = new StringBuffer();
-
-                    FormDAO fdao = new FormDAO();
-                    fdao = fdao.getFormDAO(flowId, new FormDb(ft.getFormCode()));
-
-                    // 赋值当前用户
-                    sb.append("String userName=\"" + myname + "\";");
-                    sb.append("int flowId=" + wf.getId() + ";");
-
-                    bsh.set("request", request);
-                    bsh.set("mad", mad);
-                    bsh.set("action", wad);
-                    bsh.set("fdao", fdao);
-
-                    bsh.eval(BeanShellUtil.escape(sb.toString()));
-
-                    bsh.eval(script);
-                    Object obj = bsh.get("ret");
-                    if (obj != null) {
-                        boolean ret = ((Boolean) obj).booleanValue();
-                        if (!ret) {
-                            String errMsg = (String) bsh.get("errMsg");
-                            LogUtil.getLog(getClass()).error("Recall bsh errMsg=" + errMsg);
-                        }
-                    }
-                } catch (EvalError e) {
-                    e.printStackTrace();
-                }
-            }
-
-            boolean isDelayed = false;
-            Vector va = wad.getLinkToActions();
-            if (va.size()==1) {
-                wad = (WorkflowActionDb)va.elementAt(0);
-                if (wad.getStatus()==WorkflowActionDb.STATE_DELAYED) {
-                    isDelayed = true;
-                }
-            }
-
-            if (isDelayed) {
-                if (wad.isCanPrivUserModifyDelayDate()) {
-                    wad.setStatus(WorkflowActionDb.STATE_NOTDO);
-                    wad.save();
-                    k = 1;
-                }
-                else {
-                	String str = LocalUtil.LoadString(request,"res.flow.Flow","illegalOperation");
-                    throw new ErrMsgException(str);
-                }
-            }
-            else {
-                k = mad.recallMyActionsByPrivMyAction(myActionId);
-            }
-        }
-
-        // LogUtil.getLog(getClass()).info("recallMyAction k=" + k + " mad.id=" + mad.getId());
-        // 如果是自由流程，则允许最后一个节点的人撤回，即允许重新处理
-        if (k>0 || (k==0 && isFree)) {
-            mad.setChecked(false);
-            re = mad.save();
-            if (re) {
-                // 置节点状态为正在办理状态
-                WorkflowActionDb wad = new WorkflowActionDb();
-                wad = wad.getWorkflowActionDb((int)mad.getActionId());
-                wad.setStatus(WorkflowActionDb.STATE_DOING);
-                wad.save();
-                
-                // 置流程为处理状态
-                if (wf.getStatus()==WorkflowDb.STATUS_FINISHED) {
-                	wf.setStatus(WorkflowDb.STATUS_STARTED);
-                	wf.save();
-                }
-            }
-        }
-        return re;
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.recallMyAction(request, myActionId);
     }
 
     public static String getLevelImg(HttpServletRequest request, WorkflowDb wf) {
@@ -4824,118 +4543,6 @@ public class WorkflowMgr {
         else {
             return "<img src='" + request.getContextPath() + "/images/general.png' align='absmiddle' title='"+ LocalUtil.LoadString(request, "res.flow.Flow","ordi") +"'>&nbsp;";
         }
-    }
-    
-    /**
-     * 从FinishActionBatch中分离，因为在任务管理中需自动提交流程给受命人
-     * @Description: 
-     * @param request
-     * @param mad 提交人的代办记录
-     * @param userName 提交人
-     * @param sb 用于收集出错信息
-     * @return
-     * @throws ErrMsgException
-     */
-    public boolean finishActionSingle(HttpServletRequest request, MyActionDb mad, String userName, StringBuffer sb) throws ErrMsgException {
-        WorkflowDb wf = new WorkflowDb();
-        wf = wf.getWorkflowDb((int) mad.getFlowId());
-        
-        if (!wf.isStarted()) {
-        	//errMsg += wf.getTitle() + " 尚未开始，不能批量提交！\r\n";
-        	String str = LocalUtil.LoadString(request, "res.flow.Flow", "canNotSubmitBatchForNotStarted"); //%s 尚未开始，%s不能批量提交！\r\n
-        	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) + "\\r");
-        	return false;            	
-        }
-        
-        Leaf lf = new Leaf();
-        lf = lf.getLeaf(wf.getTypeCode());
-        if (lf==null) {
-            return false;
-        }
-
-        WorkflowActionDb wa = new WorkflowActionDb();
-        wa = wa.getWorkflowActionDb((int)mad.getActionId());
-        
-        String reason = "";
-        String result = "";
-        int resultValue = 0; // WorkflowActionDb.RESULT_VALUE_AGGREE;
-
-        if (lf.getType()==Leaf.TYPE_FREE) {
-            WorkflowPredefineDb wfpd = new WorkflowPredefineDb();
-        	wfpd = wfpd.getPredefineFlowOfFree(wf.getTypeCode());
-        	// @流程
-        	if (wfpd.isLight()) {
-        		 try {
-                 	wa.changeStatusFree(request, wf, userName, WorkflowActionDb.STATE_FINISHED, reason, result, resultValue, mad.getId());
-                 }
-                 catch(ErrMsgException e) {
-                 	sb.append( wf.getTitle() + "，" + e.getMessage() + "\r\n" );
-                	return false;            	
-                 }
-                 
-        		java.util.Date date = new java.util.Date();
-        		if (!mad.isReaded()) {
-        			mad.setReaded(true);
-        			mad.setReadDate(date);
-        		}
-        		mad.setChecked(true);
-        		mad.setCheckDate(date);
-        		mad.setResultValue(WorkflowActionDb.RESULT_VALUE_AGGREE);
-                mad.save();
-        	} else {
-            	String str = LocalUtil.LoadString(request, "res.flow.Flow", "notSubmitForFreeFlow"); //%s 尚未开始，%s不能批量提交！\r\n
-            	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) + "\r\n");
-            	//errMsg += wf.getTitle() + " 是自由流程，不能批量提交！\r\n";
-            	return false;            	
-        	}
-        } else {
-        	Vector v = wa.getLinkToActions();
-        	if (v.size() >= 2) {
-        		String str = LocalUtil.LoadString(request, "res.flow.Flow", "distributionFlow"); //%s 分支流程，%s不能批量提交！\r\n
-            	sb.append( StrUtil.format(str, new Object[]{wf.getTitle()}) + "\r\n");
-            	return false;
-        	}
-
-            Config cfg = Config.getInstance();
-            long tDebug = System.currentTimeMillis();
-            try {
-                boolean re = wa.changeStatus(request, wf, userName, WorkflowActionDb.STATE_FINISHED, reason, result, resultValue, mad.getId());
-                if (re) {
-                    if (cfg.getBooleanProperty("isDebugFlow")) {
-                        DebugUtil.i(getClass(), "finishAction", "before onFinishAction: " + (System.currentTimeMillis() - tDebug) + " ms " + new Privilege().getUser(request));
-                    }
-                    onFinishAction(request, wf, wa, lf, mad, System.currentTimeMillis());
-                    if (cfg.getBooleanProperty("isDebugFlow")) {
-                        DebugUtil.i(getClass(), "finishAction", "after onFinishAction: " + (System.currentTimeMillis() - tDebug) + " ms " + new Privilege().getUser(request));
-                    }
-                }
-            }
-            catch(ErrMsgException e) {
-            	sb.append( wf.getTitle() + "，" + e.getMessage() + "\r\n" );
-            	e.printStackTrace();
-            	// 20161229 fgf 如果批处理有问题返回false的话，则该myaction的处理状态为：已处理()，
-            	// 而正常应为：已处理（同意），所以此处不应返回，以置为RESULT_VALUE_AGGREE
-            	// 还是保留原样吧，要不然出现此类反馈的时候，会导致无法定位这个问题，另外，把批处理置为默认不启用
-            	return false;
-            }
-
-            if (cfg.getBooleanProperty("isDebugFlow")) {
-                DebugUtil.i(getClass(), "finishAction", "after onFinishAction: " + (System.currentTimeMillis() - tDebug) + " ms " + new Privilege().getUser(request));
-            }
-
-            // 虽然在wa.changeStatus中调用了WorkflowActionDb.changeMyActionDb对由id获取mad进行了setChecked(true)操作（但未置为RESULT_VALUE_AGGREE）
-            // 但是为避免因参数为MyActionDb对象从而因缓存导致的脏数据问题，且为了保存RESULT_VALUE_AGGREE，此处再save一下
-            mad.setChecked(true);
-            mad.setCheckDate(new java.util.Date());
-            mad.setResultValue(WorkflowActionDb.RESULT_VALUE_AGGREE);
-            mad.save();
-        }
-        // 自动存档
-        if (wa != null && wa.isLoaded()) {
-        	autoSaveArchive(request, wf, wa);
-        }
-                
-        return true;
     }
 
     /**
@@ -4994,7 +4601,8 @@ public class WorkflowMgr {
         }
         else {
             // 有可能会是变更的情况，或者是异或聚合的情况
-            if (!wfp.isReactive() && !wa.isXorAggregate()) {
+            // 20220601 异或聚合也不能在非待办的情况下处理
+            if (!wfp.isReactive()) { //  && !wa.isXorAggregate()) {
                 // 如果是wa已处理的情况，有可能出现当前用户提交后再反复刷新页面致进入此处
                 /*
                 if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_CHECKED) {
@@ -5039,62 +4647,7 @@ public class WorkflowMgr {
         }
         return true;
     }
-    
-    /**
-     * 批量同意流程
-     * @param request
-     * @throws ErrMsgException 
-     */
-    public int FinishActionBatch(HttpServletRequest request) throws ErrMsgException {
-    	Privilege pvg = new Privilege();
-    	String userName = pvg.getUser(request);
-    	String[] ids = StrUtil.split(ParamUtil.get(request, "ids"), ",");
-    	
-    	if (ids==null) {
-    		return 0;
-    	}
-    	
-    	int c = 0;
-    	StringBuffer sb = new StringBuffer();
 
-    	MyActionDb mad = new MyActionDb();
-        WorkflowActionDb wa = new WorkflowActionDb();
-        WorkflowPredefineDb wfp = new WorkflowPredefineDb();
-
-        int len = ids.length;
-        for (int i=0; i<len; i++) {
-            // 检查能否提交
-            mad = mad.getMyActionDb(StrUtil.toLong(ids[i]));
-
-            int flowId = (int)mad.getFlowId();
-            WorkflowDb wf = getWorkflowDb(flowId);
-
-            int actionId = (int) mad.getActionId();
-            wa = wa.getWorkflowActionDb(actionId);
-
-            wfp = wfp.getPredefineFlowOfFree(wf.getTypeCode());
-
-            try {
-                canSubmit(request, wf, wa, mad, userName, wfp);
-            }
-            catch (ErrMsgException e) {
-                throw new ErrMsgException(wf.getTitle() + "，\r\n" + e.getMessage());
-            }
-        }
-
-    	for (int i=0; i<len; i++) {
-        	mad = mad.getMyActionDb(StrUtil.toLong(ids[i]));
-        	finishActionSingle(request, mad, userName, sb);
-            c++;
-    	}
-    	
-    	if (sb.length()>0) {
-    		throw new ErrMsgException(sb.toString());
-    	}
-    	
-    	return c;
-    }
-    
     /**
      * 为某用户发起某类流程
      * @Description: 
@@ -5137,9 +4690,14 @@ public class WorkflowMgr {
         }
 
         com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
-        Config cfg = new Config();
-        IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-        boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+        Config cfg = Config.getInstance();
+        SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+        boolean mqIsOpen = sysProperties.isMqOpen();
+        IMsgProducer msgProducer = null;
+        if (mqIsOpen) {
+            msgProducer = SpringUtil.getBean(IMsgProducer.class);
+        }
+
         boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
         String charset = Global.getSmtpCharset();
         cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
@@ -5186,15 +4744,14 @@ public class WorkflowMgr {
 
             if (flowNotifyByEmail) {
                 if (!ud.getEmail().equals("")) {
-                    action = "op=show|userName=" + ud.getName() + "|" +
+                    action = "userName=" + ud.getName() + "|" +
                             "flowId=" + wf.getId();
                     action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
                     UserSetupDb usd = new UserSetupDb(ud.getName());
                     c += "<BR /><BR />>>&nbsp;<a href='" +
-                            Global.getFullRootPath() +
-                            "/public/flow_dispose.jsp?action=" + action +
+                            WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_SHOW, action) +
                             "' target='_blank'>" +
-                            (usd.getLocal().equals("en-US") ? "Click here to view" : "请点击此处查看") + "</a>";
+                            ("en-US".equals(usd.getLocal()) ? "Click here to view" : "请点击此处查看") + "</a>";
                     if (mqIsOpen) {
                         msgProducer.sendEmail(ud.getEmail(), senderName, t, c);
                     }
@@ -5221,6 +4778,11 @@ public class WorkflowMgr {
      * @return
      */
     public static boolean canDelFlowOnAction(HttpServletRequest request, WorkflowDb wf, WorkflowActionDb wa, MyActionDb mad) {
+        // 挂起时不能删除
+        if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_SUSPEND) {
+            return false;
+        }
+
         boolean canDel = false;
         if (wa.isStart==1 && wf.getStatus()==WorkflowDb.STATUS_NOT_STARTED) {
             canDel = true;
@@ -5303,7 +4865,7 @@ public class WorkflowMgr {
         try {
             fdao.save();
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -5413,14 +4975,13 @@ public class WorkflowMgr {
 
             if (flowNotifyByEmail) {
                 UserDb user = um.getUserDb(mad2.getUserName());
-                if (user.getEmail()!=null && !user.getEmail().equals("")) {
+                if (user.getEmail()!=null && !"".equals(user.getEmail())) {
                     String action = "userName=" + user.getName() + "|" +
                             "myActionId=" + mad2.getId();
                     action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
                             ssoCfg.getKey(), action);
                     fc += "<BR />>>&nbsp;<a href='" +
-                            Global.getFullRootPath(request) +
-                            "/public/flow_dispose.jsp?action=" + action +
+                            WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                             "' target='_blank'><lt:Label res='res.flow.Flow' key='clickHere'/></a>";
                     sendmail.initMsg(user.getEmail(),
                             senderName,
@@ -5448,6 +5009,9 @@ public class WorkflowMgr {
             mad.setCheckStatus(checkStatus);
             re = mad.save();
             if (re) {
+                WorkflowDb wf = new WorkflowDb();
+                wf = wf.getWorkflowDb((int) mad.getFlowId());
+
                 WorkflowActionDb wa = new WorkflowActionDb();
                 wa = wa.getWorkflowActionDb((int) mad.getActionId());
                 // 如果新状态为未处理
@@ -5459,13 +5023,11 @@ public class WorkflowMgr {
                         try {
                             wa.save();
                         } catch (ErrMsgException e) {
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
                         }
                     }
 
                     // 如果流程状态为“已结束”，则置为“处理中”
-                    WorkflowDb wf = new WorkflowDb();
-                    wf = wf.getWorkflowDb((int) mad.getFlowId());
                     if (wf.getStatus() == WorkflowDb.STATUS_FINISHED) {
                         mad = mad.getLastMyActionDbOfFlow(wf.getId());
                         long actionId = mad.getActionId();
@@ -5481,6 +5043,14 @@ public class WorkflowMgr {
                         wa.setStatus(WorkflowActionDb.STATE_FINISHED);
                         re = wa.save();
                     }
+                }
+
+                if (re) {
+                    // 因为在wa.save()中修改了wf，所以此处需重新获取wf，否则flowstring得不到更新
+                    wf = wf.getWorkflowDb((int)mad.getFlowId());
+                    wf.setIntervenor(new Privilege().getUser(request));
+                    wf.setInterveneTime(new Date());
+                    wf.save();
                 }
             }
         }

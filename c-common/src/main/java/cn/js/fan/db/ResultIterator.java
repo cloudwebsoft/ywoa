@@ -58,6 +58,19 @@ public class ResultIterator implements Iterator, java.io.Serializable {
 	Vector curRow;
 	long total = 0; // 查询所得记录的全部数量,用于分页
 
+	public String getKey() {
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+	/**
+	 * 用于缓存
+	 */
+	String key;
+
 	public ResultIterator() {
 
 	}
@@ -110,22 +123,21 @@ public class ResultIterator implements Iterator, java.io.Serializable {
 	 * @return <tt>true</tt> if the iterator has more elements.
 	 * @todo Implement this java.util.Iterator method
 	 */
+	@Override
 	public boolean hasNext() {
-		if (result == null)
+		if (result == null) {
 			return false;
-		if (curRowIndex <= rows - 1)
-			return true;
-		else
-			return false;
+		}
+		return curRowIndex <= rows - 1;
 	}
 
 	/**
 	 * Returns the next element in the iteration.
 	 * 
 	 * @return the next element in the iteration.
-	 * @todo Implement this java.util.Iterator method
 	 */
-	public Object next() {
+	@Override
+	public ResultRecord next() {
 		curRow = (Vector) result.elementAt(curRowIndex);
 		curRowIndex++;
 		return new ResultRecord(curRow, mapIndex);
@@ -137,6 +149,7 @@ public class ResultIterator implements Iterator, java.io.Serializable {
 	 * 
 	 * @todo Implement this java.util.Iterator method
 	 */
+	@Override
 	public void remove() throws RuntimeException {
 		throw new RuntimeException("This operate is not suported！");
 	}

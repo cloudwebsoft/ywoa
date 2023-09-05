@@ -27,10 +27,10 @@ public class TestBeforeAdvice extends BeforeAdvice {
      * @param method Method
      * @param args Object[]
      * @throws Throwable
-     * @todo Implement this com.cloudwebsoft.framework.aop.base.Advice method
      */
+    @Override
     public void Before(Object proxy, Method method, Object[] args) throws
             Throwable {
-        System.out.println(this.getClass().getName() + " log here!");
+        // LogUtil.getLog(getClass()).info(this.getClass().getName() + " log here!");
     }
 }

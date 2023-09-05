@@ -159,8 +159,6 @@ o("menu4").className="current";
 		sql += " order by " + orderBy + " " + sort;
 		
 		// out.print(sql);
-		// System.out.println(getClass() + " sql=" + sql);
-		
 		String sortquerystr = querystr;
 		querystr += "&orderBy=" + orderBy + "&sort=" + sort;
 		
@@ -184,9 +182,9 @@ o("menu4").className="current";
 		<thead>
         <tr>
           <th width="49" style="cursor:pointer" abbr="id">ID</th>                  
-          <th width="105" style="cursor:pointer" abbr="from_user">名称</th>		  
-          <th width="109" style="cursor:pointer" abbr="to_user">类型</th>
-          <th width="112" style="cursor:pointer" abbr="content">日期字段</th>
+          <th width="250" style="cursor:pointer" abbr="from_user">名称</th>
+          <th width="150" style="cursor:pointer" abbr="to_user">类型</th>
+          <th width="150" style="cursor:pointer" abbr="content">日期字段</th>
           <th width="145" style="cursor:pointer" abbr="create_date">提前</th>
           </tr>
    </thead>

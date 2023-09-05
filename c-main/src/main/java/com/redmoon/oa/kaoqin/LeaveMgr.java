@@ -37,7 +37,7 @@ public class LeaveMgr {
 		String endDate = (year + 1) + "-01-01";
 
 		// 含跨年的休假
-		String sql = "select f.flowId from form_table_qjsqd f, flow fl where f.flowId=fl.id and fl.type_code='qj' and fl.status="
+		String sql = "select f.flowId from ft_qjsqd f, flow fl where f.flowId=fl.id and fl.type_code='qj' and fl.status="
 				+ WorkflowDb.STATUS_FINISHED;
 		sql += " and ((f.qjkssj>="
 				+ SQLFilter.getDateStr(beginDate, "yyyy-MM-dd")
@@ -105,8 +105,7 @@ public class LeaveMgr {
 				qjDays = oacal.getWorkDayCount(DateUtil.addDate(qjbDate, -1),
 						qjeDate);
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(LeaveMgr.class).error(e);
 			}
 
 			// 取得表单中的请假天数

@@ -11,6 +11,7 @@ import javax.servlet.http.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 
+import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.db.*;
 import com.cloudwebsoft.framework.util.*;
 import com.redmoon.kit.util.*;
@@ -61,8 +62,15 @@ public class FormField implements Cloneable,Serializable {
     public static final int FIELD_TYPE_DOUBLE = 6;
     public static final int FIELD_TYPE_DATE = 7;
     public static final int FIELD_TYPE_DATETIME = 8;
-    public static final int FIELD_TYPE_PRICE = 9; // 价格型，00.00
-    
+    /**
+     * 价格型，00.00
+     */
+    public static final int FIELD_TYPE_PRICE = 9;
+    /**
+     * 长文本型
+     */
+    public static final int FIELD_TYPE_LONGTEXT = 10;
+
     /**
      * 不隐藏
      */
@@ -79,7 +87,20 @@ public class FormField implements Cloneable,Serializable {
     /**
      * 单行文本框字段的默认长度
      */
-    public static final int TEXT_FIELD_DEFAULT_LENGTH = 100;
+    public static final int TEXT_FIELD_DEFAULT_LENGTH = 30;
+
+    /**
+     * 不参与查询
+     */
+    public static final int QUERY_MODE_NO = 0;
+    /**
+     * 参与查询
+     */
+    public static final int QUERY_MODE_YES = 1;
+    /**
+     * 辅助查询，如果在查询设置中被选择，则系统不会为此字段自动生成查询，需手动在过滤条件中组装该条件
+     */
+    public static final int QUERY_MODE_HELPER = 2;
 
 /*
     public static final String MACRO_USER_SELECT = "macro_user_select";
@@ -118,6 +139,16 @@ public class FormField implements Cloneable,Serializable {
      * 嵌套表（或关联模块）唯一
      */
     public static final int UNIQUE_NEST = 2;
+
+    /**
+     * 格式化：千分位
+     */
+    public static String FORMAT_THOUSANDTH = "0";
+
+    /**
+     * 格式化：百分比，如0.01将会被转换为1%
+     */
+    public static String FORMAT_PERCENTAGE = "1";
 
     public FormField() {
     }
@@ -289,7 +320,6 @@ public class FormField implements Cloneable,Serializable {
      * @return String
      */
     public String getDefaultValue() {
-        // System.out.println("FormField: getDeafultValue type=" + type + " name=" + name + " title=" + title);
         if (type==null) {
             LogUtil.getLog(getClass()).error("FormField: getDeafultValue type=" + type + " name=" + name + " title=" + title); //
             return "";
@@ -302,7 +332,6 @@ public class FormField implements Cloneable,Serializable {
 
         switch (type) {
             case TYPE_DATE:
-                // System.out.println("FormField: getDeafultValue type1=" + type);
                 // if (defaultValue.equals(DATE_CURRENT))
                 //    return DateUtil.format(new java.util.Date(), FORMAT_DATE);
                 return "";
@@ -413,7 +442,6 @@ public class FormField implements Cloneable,Serializable {
         while (ir.hasNext()) {
             FormField ff = (FormField)ir.next();
             if (fieldName.equals(ff.getName())) {
-                // System.out.println(getClass() + " " + ff.getName() + " " + ff.getTitle() + " " + ff.getValue());
                 return StrUtil.getNullStr(ff.getValue());
             }
         }
@@ -440,12 +468,14 @@ public class FormField implements Cloneable,Serializable {
             MacroCtlMgr mm = new MacroCtlMgr();
             MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
 
-            LogUtil.getLog(getClass()).info("createDAO: mu=" + mu + " ff.getMacroType()=" + getMacroType());
-
             if (mu!=null) {
                 IFormMacroCtl ictl = mu.getIFormMacroCtl();
                 if (ictl != null) {
+                    long t = System.currentTimeMillis();
                     Object obj = ictl.getValueForCreate(flowId, this);
+                    if (Global.getInstance().isDebug()) {
+                        LogUtil.getLog(getClass()).info("createDAO: " + getTitle() + " " + getName() + " take " + (System.currentTimeMillis() - t) + " ms mu=" + mu + " ff.getMacroType()=" + getMacroType());
+                    }
                     if (obj instanceof Integer) {
                         ps.setInt(index, (Integer) obj);
                     }
@@ -459,7 +489,39 @@ public class FormField implements Cloneable,Serializable {
                         ps.setDouble(index, (Float)obj);
                     }
                     else {
-                        ps.setString(index, (String) obj);
+                        // 宏控件的getValueForCreate方法返回的默认值优先，如果返回为空，则取 defaultValue
+                        if (obj==null || StringUtils.isEmpty(obj.toString())) {
+                            if (isNumeric(fieldType)) {
+                                if (!"".equals(defaultValue) && !defaultValue.equals(description)) {
+                                    if (fieldType == FIELD_TYPE_DOUBLE || fieldType == FIELD_TYPE_PRICE) {
+                                        ps.setDouble(index, StrUtil.toDouble(defaultValue));
+                                    } else if (fieldType == FIELD_TYPE_FLOAT) {
+                                        ps.setFloat(index, StrUtil.toFloat(defaultValue));
+                                    } else if (fieldType == FIELD_TYPE_LONG) {
+                                        ps.setLong(index, StrUtil.toLong(defaultValue));
+                                    } else {
+                                        ps.setInt(index, StrUtil.toInt(defaultValue));
+                                    }
+                                } else {
+                                    ps.setNull(index, java.sql.Types.INTEGER);
+                                }
+                            } else {
+                                if (!"".equals(defaultValue) && !defaultValue.equals(description)) {
+                                    ps.setString(index, defaultValue);
+                                }
+                                else {
+                                    ps.setString(index, "");
+                                }
+                            }
+                        }
+                        else {
+                            if ("".equals(obj.toString())) {
+                                if (!"".equals(defaultValue) && (!defaultValue.equals(description))) {
+                                    obj = defaultValue;
+                                }
+                            }
+                            ps.setString(index, (String) obj);
+                        }
                     }
                 }
                 else {
@@ -522,7 +584,7 @@ public class FormField implements Cloneable,Serializable {
             ps.setString(index, getDefaultValue());
         }
         else if (fieldType==FIELD_TYPE_INT) {
-            if (getDefaultValue().equals("")) {
+            if ("".equals(getDefaultValue())) {
                 ps.setNull(index, java.sql.Types.INTEGER);
             }
             else {
@@ -535,7 +597,7 @@ public class FormField implements Cloneable,Serializable {
             }
         }
         else if (fieldType==FIELD_TYPE_LONG) {
-            if (StrUtil.getNullStr(getDefaultValue()).equals("")) {
+            if ("".equals(StrUtil.getNullStr(getDefaultValue()))) {
                 ps.setNull(index, java.sql.Types.BIGINT);
             }
             else {
@@ -551,7 +613,7 @@ public class FormField implements Cloneable,Serializable {
             ps.setString(index, getDefaultValue());
         }
         else if (fieldType==FIELD_TYPE_FLOAT) {
-            if (StrUtil.getNullStr(getDefaultValue()).equals("")) {
+            if ("".equals(StrUtil.getNullStr(getDefaultValue()))) {
                 ps.setNull(index, java.sql.Types.FLOAT);
             }
             else {
@@ -559,10 +621,7 @@ public class FormField implements Cloneable,Serializable {
             }
         }
         else if (fieldType==FIELD_TYPE_DOUBLE) {
-            // System.out.println(getClass() + " " + getName() + " " + getDefaultValue());
-            // System.out.println(getClass() + " " + getName() + " " + getDefaultValue().equals(""));
-
-            if (StrUtil.getNullStr(getDefaultValue()).equals("")) {
+            if ("".equals(StrUtil.getNullStr(getDefaultValue()))) {
                 ps.setNull(index, java.sql.Types.DOUBLE);
             }
             else {
@@ -570,7 +629,7 @@ public class FormField implements Cloneable,Serializable {
             }
         }
         else if (fieldType==FIELD_TYPE_PRICE) {
-            if (getDefaultValue().equals("")) {
+            if ("".equals(getDefaultValue())) {
                 ps.setNull(index, java.sql.Types.DOUBLE);
             }
             else {
@@ -836,12 +895,13 @@ public class FormField implements Cloneable,Serializable {
     		}
     	}
     	
-        if (getType().equals(TYPE_MACRO)) { //  && ff.getMacroType().equals(ff.MACRO_WORKFLOW_SEQUENCE)) {
-//            MacroCtlMgr mm = new MacroCtlMgr();
-//            MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
+        /*
+        宏控件自6.0版已带有字段类型，故需根据fieldType来判断处理
+        if (getType().equals(TYPE_MACRO)) {
             ps.setString(index, val);
         }
-        else if (getType().equals(TYPE_SQL)) {
+        else */
+        if (getType().equals(TYPE_SQL)) {
             ps.setString(index, "");
         }
         /*
@@ -886,58 +946,63 @@ public class FormField implements Cloneable,Serializable {
             ps.setString(index, val);
         }
         else if (fieldType==FIELD_TYPE_INT) {
-            if (val==null || val.equals("")) {
+            if (val==null || "".equals(val)) {
                 ps.setNull(index, java.sql.Types.INTEGER);
             }
-            else
+            else {
                 ps.setInt(index, StrUtil.toInt(val));
+            }
         }
         else if (fieldType==FIELD_TYPE_LONG) {
-            if (val==null || val.equals("")) {
+            if (val==null || "".equals(val)) {
                 ps.setNull(index, java.sql.Types.BIGINT);
             }
-            else
+            else {
                 ps.setLong(index, StrUtil.toLong(val));
+            }
         }
         else if (fieldType==FIELD_TYPE_BOOLEAN) {
             ps.setString(index, val);
         }
         else if (fieldType==FIELD_TYPE_FLOAT) {
-            if (val==null || val.equals("")) {
+            if (val==null || "".equals(val)) {
                 ps.setNull(index, java.sql.Types.FLOAT);
             }
-            else
+            else {
                 ps.setFloat(index, StrUtil.toFloat(val));
+            }
         }
         else if (fieldType==FIELD_TYPE_DOUBLE) {
-            if (val==null || val.equals("")) {
+            if (val==null || "".equals(val)) {
                 ps.setNull(index, java.sql.Types.DOUBLE);
             }
-            else
+            else {
                 ps.setDouble(index, StrUtil.toDouble(val));
+            }
         }
         else if (fieldType==FIELD_TYPE_PRICE) {
-            if (val==null || val.equals("")) {
+            if (val==null || "".equals(val)) {
                 ps.setNull(index, java.sql.Types.DOUBLE);
             }
-            else
+            else {
                 ps.setDouble(index, StrUtil.toDouble(val));
+            }
         }
         else if (fieldType==FIELD_TYPE_DATE) {
             java.util.Date d = null;
             d = DateUtil.parse(val, FormField.FORMAT_DATE);
-            if (d==null)
+            if (d==null) {
                 ps.setDate(index, null);
-            else {
+            } else {
                 ps.setDate(index, new java.sql.Date(d.getTime()));
             }
         }
         else if (fieldType==FIELD_TYPE_DATETIME) {
             java.util.Date d = null;
             d = DateUtil.parse(val, FormField.FORMAT_DATE_TIME);
-            if (d==null)
+            if (d==null) {
                 ps.setDate(index, null);
-            else {
+            } else {
                 ps.setTimestamp(index, new java.sql.Timestamp(d.getTime()));
             }
         }
@@ -952,181 +1017,180 @@ public class FormField implements Cloneable,Serializable {
      */
     public void saveDAO(FormDAO fDao, PreparedStatement ps, int index, int flowId, FormDb fd, FileUpload fu) throws SQLException {
         // 在2.2版中增加表单中的字段类型后，将判断getType为TYPE_MACRO类型与其它类型区别开
-        if (getType().equals(TYPE_MACRO)) {
-            // LogUtil.getLog(getClass()).info("saveDAO1 " + getName() + " getType()=" + getType() + " getMacroType=" + this.getMacroType());
-            MacroCtlMgr mm = new MacroCtlMgr();
-            MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
-            if (mu==null) {
-                DebugUtil.e(getClass(), "saveDAO", "MacroCtl is not exist, macroType=" + getMacroType());
-        		// LogUtil.getLog(getClass()).error("MacroCtl is not exist, macroType=" + getMacroType());
-            }
-            else {
-                IFormMacroCtl iFormMacroCtl = mu.getIFormMacroCtl();
-	            value = (String) iFormMacroCtl.getValueForSave(this, flowId, fd, fu);
-                fieldType = iFormMacroCtl.getFieldType(this);
-                if (fieldType == FormField.FIELD_TYPE_INT
-                        || fieldType == FormField.FIELD_TYPE_LONG
-                        || fieldType == FormField.FIELD_TYPE_PRICE
-                        || fieldType == FormField.FIELD_TYPE_FLOAT
-                        || fieldType == FormField.FIELD_TYPE_DOUBLE) {
-                    if (value==null || "".equals(value)) {
-                        ps.setNull(index, java.sql.Types.INTEGER);
+        switch (getType()) {
+            case TYPE_MACRO:
+                // LogUtil.getLog(getClass()).info("saveDAO1 " + getName() + " getType()=" + getType() + " getMacroType=" + this.getMacroType());
+                MacroCtlMgr mm = new MacroCtlMgr();
+                MacroCtlUnit mu = mm.getMacroCtlUnit(getMacroType());
+                if (mu == null) {
+                    DebugUtil.e(getClass(), "saveDAO", "MacroCtl is not exist, macroType=" + getMacroType());
+                    // LogUtil.getLog(getClass()).error("MacroCtl is not exist, macroType=" + getMacroType());
+                } else {
+                    IFormMacroCtl iFormMacroCtl = mu.getIFormMacroCtl();
+                    value = (String) iFormMacroCtl.getValueForSave(this, flowId, fd, fu);
+                    fieldType = iFormMacroCtl.getFieldType(this);
+                    if (fieldType == FormField.FIELD_TYPE_INT
+                            || fieldType == FormField.FIELD_TYPE_LONG
+                            || fieldType == FormField.FIELD_TYPE_PRICE
+                            || fieldType == FormField.FIELD_TYPE_FLOAT
+                            || fieldType == FormField.FIELD_TYPE_DOUBLE) {
+                        if (value == null || "".equals(value)) {
+                            ps.setNull(index, Types.INTEGER);
+                        } else {
+                            if (fieldType == FormField.FIELD_TYPE_INT) {
+                                ps.setInt(index, StrUtil.toInt(value));
+                            } else if (fieldType == FormField.FIELD_TYPE_LONG) {
+                                ps.setLong(index, StrUtil.toLong(value));
+                            } else if (fieldType == FormField.FIELD_TYPE_FLOAT) {
+                                ps.setFloat(index, StrUtil.toFloat(value));
+                            } else {
+                                ps.setDouble(index, StrUtil.toDouble(value));
+                            }
+                        }
+                    } else if (fieldType == FIELD_TYPE_DATE) {
+                        Date d = null;
+                        d = DateUtil.parse(getValue(), FormField.FORMAT_DATE);
+                        if (d == null) {
+                            ps.setDate(index, null);
+                        } else {
+                            ps.setDate(index, new java.sql.Date(d.getTime()));
+                        }
+                    } else if (fieldType == FIELD_TYPE_DATETIME) {
+                        String dateStr = "";
+                        // 手机端有可能会传来没有秒的格式，如：2018-10-29 10:55，长度为16
+                        if (getValue() != null && getValue().length() == 16) {
+                            dateStr = getValue() + ":00";
+                        } else if (getValue() != null && getValue().length() == 10) {
+                            // 2018-10-29
+                            dateStr = getValue() + " 00:00:00";
+                        } else {
+                            dateStr = getValue();
+                        }
+                        Date d = DateUtil.parse(dateStr, FormField.FORMAT_DATE_TIME);
+                        if (d == null) {
+                            ps.setDate(index, null);
+                        } else {
+                            ps.setTimestamp(index, new Timestamp(d.getTime()));
+                        }
                     } else {
-                        if (fieldType == FormField.FIELD_TYPE_INT) {
-                            ps.setInt(index, StrUtil.toInt(value));
-                        } else if (fieldType == FormField.FIELD_TYPE_LONG) {
-                            ps.setLong(index, StrUtil.toLong(value));
-                        }
-                        else if (fieldType == FormField.FIELD_TYPE_FLOAT) {
-                            ps.setFloat(index, StrUtil.toFloat(value));
-                        }
-                        else {
-                            ps.setDouble(index, StrUtil.toDouble(value));
+                        ps.setString(index, value);
+                    }
+                }
+                break;
+            case TYPE_SQL:
+                String sql = getDefaultValue();
+                if (!"".equals(sql)) {
+                    JdbcTemplate jt = new JdbcTemplate();
+                    ResultIterator ri = jt.executeQuery(sql);
+                    if (ri.hasNext()) {
+                        ResultRecord rr = (ResultRecord) ri.next();
+                        ps.setString(index, rr.getString(1));
+                    }
+                } else {
+                    ps.setString(index, "");
+                }
+                break;
+            /*
+            case TYPE_CALCULATOR:
+                // 计算
+                String formula = getDefaultValue();
+                // 取出计算式子中的各项，包括操作符及括号
+                Vector fieldv = FormulaCalculator.getSymbolsWithBracket(formula);
+                int flen = fieldv.size();
+                for (int i=0; i<flen; i++) {
+                    String f = (String)fieldv.elementAt(i);
+                    // 如果不是操作符
+                    if (!FormulaCalculator.isOperator(f)) {
+                        // 如果是表单中的域，则替换
+                        String s = fDao.getFieldValue(f);
+                        LogUtil.getLog(getClass()).info("saveDAO: value=" + s + " fieldName=" + f);
+                        if (s!=null) {
+                            fieldv.set(i, s);
                         }
                     }
                 }
-                else if (fieldType == FIELD_TYPE_DATE) {
-                    java.util.Date d = null;
-                    d = DateUtil.parse(getValue(), FormField.FORMAT_DATE);
-                    if (d == null) {
-                        ps.setDate(index, null);
+                // 重组为算式
+                Iterator ir = fieldv.iterator();
+                formula = "";
+                while (ir.hasNext()) {
+                    String s = (String)ir.next();
+                    formula += s;
+                }
+                // 计算
+                FormulaCalculator fc = new FormulaCalculator(formula);
+                double r = fc.getResult();
+                ps.setDouble(index, r);
+                break;
+            */
+            case TYPE_BUTTON:
+                ps.setString(index, "");
+                break;
+            default:
+                if (fieldType == FIELD_TYPE_VARCHAR) {
+                    ps.setString(index, getValue());
+                } else if (fieldType == FIELD_TYPE_TEXT) {
+                    ps.setString(index, getValue());
+                } else if (fieldType == FIELD_TYPE_INT) {
+                    if (getValue() == null || "".equals(getValue())) {
+                        ps.setNull(index, Types.INTEGER);
                     } else {
+                        ps.setInt(index, StrUtil.toInt(getValue()));
+                    }
+                } else if (fieldType == FIELD_TYPE_LONG) {
+                    if (getValue() == null || "".equals(getValue())) {
+                        ps.setNull(index, Types.BIGINT);
+                    } else {
+                        ps.setLong(index, StrUtil.toLong(getValue()));
+                    }
+                } else if (fieldType == FIELD_TYPE_BOOLEAN) {
+                    ps.setString(index, getValue());
+                } else if (fieldType == FIELD_TYPE_FLOAT) {
+                    if (getValue() == null || "".equals(getValue())) {
+                        ps.setNull(index, Types.FLOAT);
+                    } else {
+                        ps.setFloat(index, StrUtil.toFloat(getValue()));
+                    }
+                } else if (fieldType == FIELD_TYPE_DOUBLE) {
+                    if (getValue() == null || "".equals(getValue())) {
+                        ps.setNull(index, Types.DOUBLE);
+                    } else {
+                        ps.setDouble(index, StrUtil.toDouble(getValue()));
+                    }
+                } else if (fieldType == FIELD_TYPE_PRICE) {
+                    if (getValue() == null || "".equals(getValue())) {
+                        ps.setNull(index, Types.DOUBLE);
+                    } else {
+                        ps.setDouble(index, StrUtil.toDouble(getValue()));
+                    }
+                } else if (fieldType == FIELD_TYPE_DATE) {
+                    Date d = null;
+                    d = DateUtil.parse(getValue(), FormField.FORMAT_DATE);
+                    if (d == null)
+                        ps.setDate(index, null);
+                    else {
                         ps.setDate(index, new java.sql.Date(d.getTime()));
                     }
                 } else if (fieldType == FIELD_TYPE_DATETIME) {
                     String dateStr = "";
                     // 手机端有可能会传来没有秒的格式，如：2018-10-29 10:55，长度为16
-                    if (getValue()!=null && getValue().length() == 16) {
+                    if (getValue() != null && getValue().length() == 16) {
                         dateStr = getValue() + ":00";
-                    } else if (getValue()!=null && getValue().length() == 10) {
+                    } else if (getValue() != null && getValue().length() == 10) {
                         // 2018-10-29
                         dateStr = getValue() + " 00:00:00";
                     } else {
                         dateStr = getValue();
                     }
-                    java.util.Date d = DateUtil.parse(dateStr, FormField.FORMAT_DATE_TIME);
-                    // System.out.println(getClass() + " getValue()=" + getValue() + " d=" + d);
+                    Date d = DateUtil.parse(dateStr, FormField.FORMAT_DATE_TIME);
                     if (d == null) {
                         ps.setDate(index, null);
                     } else {
-                        ps.setTimestamp(index, new java.sql.Timestamp(d.getTime()));
+                        ps.setTimestamp(index, new Timestamp(d.getTime()));
                     }
+                } else {
+                    ps.setString(index, getValue());
                 }
-                else {
-                    ps.setString(index, value);
-                }
-            }
-        }
-        else if (getType().equals(TYPE_SQL)) {
-            String sql = getDefaultValue();
-            if (!sql.equals("")) {
-                JdbcTemplate jt = new JdbcTemplate();
-                ResultIterator ri = jt.executeQuery(sql);
-                if (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord)ri.next();
-                    ps.setString(index, rr.getString(1));
-                }
-            }
-            else {
-                ps.setString(index, "");
-            }
-        }
-        /*
-        else if (getType().equals(TYPE_CALCULATOR)) {
-            // 计算
-            String formula = getDefaultValue();
-            // 取出计算式子中的各项，包括操作符及括号
-            Vector fieldv = FormulaCalculator.getSymbolsWithBracket(formula);
-            int flen = fieldv.size();
-            for (int i=0; i<flen; i++) {
-                String f = (String)fieldv.elementAt(i);
-                // 如果不是操作符
-                if (!FormulaCalculator.isOperator(f)) {
-                    // 如果是表单中的域，则替换
-                    String s = fDao.getFieldValue(f);
-                    LogUtil.getLog(getClass()).info("saveDAO: value=" + s + " fieldName=" + f);
-                    if (s!=null) {
-                        fieldv.set(i, s);
-                    }
-                }
-            }
-            // 重组为算式
-            Iterator ir = fieldv.iterator();
-            formula = "";
-            while (ir.hasNext()) {
-                String s = (String)ir.next();
-                formula += s;
-            }
-            // 计算
-            FormulaCalculator fc = new FormulaCalculator(formula);
-            double r = fc.getResult();
-            ps.setDouble(index, r);
-        }
-        */
-        else if (getType().equals(TYPE_BUTTON)) {
-            ps.setString(index, "");
-        }
-        else {
-            if (fieldType == FIELD_TYPE_VARCHAR) {
-                ps.setString(index, getValue());
-            } else if (fieldType == FIELD_TYPE_TEXT) {
-                ps.setString(index, getValue());
-            } else if (fieldType == FIELD_TYPE_INT) {
-                if (getValue()==null || getValue().equals("")) {
-                    ps.setNull(index, java.sql.Types.INTEGER);
-                } else
-                    ps.setInt(index, StrUtil.toInt(getValue()));
-            } else if (fieldType == FIELD_TYPE_LONG) {
-                if (getValue()==null || getValue().equals("")) {
-                    ps.setNull(index, java.sql.Types.BIGINT);
-                } else
-                    ps.setLong(index, StrUtil.toLong(getValue()));
-            } else if (fieldType == FIELD_TYPE_BOOLEAN) {
-                ps.setString(index, getValue());
-            } else if (fieldType == FIELD_TYPE_FLOAT) {
-                if (getValue()==null || getValue().equals("")) {
-                    ps.setNull(index, java.sql.Types.FLOAT);
-                } else
-                    ps.setFloat(index, StrUtil.toFloat(getValue()));
-            } else if (fieldType == FIELD_TYPE_DOUBLE) {
-                if (getValue()==null || getValue().equals("")) {
-                    ps.setNull(index, java.sql.Types.DOUBLE);
-                } else
-                    ps.setDouble(index, StrUtil.toDouble(getValue()));
-            } else if (fieldType == FIELD_TYPE_PRICE) {
-                if (getValue()==null || getValue().equals("")) {
-                    ps.setNull(index, java.sql.Types.DOUBLE);
-                } else
-                    ps.setDouble(index, StrUtil.toDouble(getValue()));
-            } else if (fieldType == FIELD_TYPE_DATE) {
-                java.util.Date d = null;
-                d = DateUtil.parse(getValue(), FormField.FORMAT_DATE);
-                if (d == null)
-                    ps.setDate(index, null);
-                else {
-                    ps.setDate(index, new java.sql.Date(d.getTime()));
-                }
-            } else if (fieldType == FIELD_TYPE_DATETIME) {
-            	String dateStr = "";
-            	// 手机端有可能会传来没有秒的格式，如：2018-10-29 10:55，长度为16
-				if (getValue()!=null && getValue().length() == 16) {
-					dateStr = getValue() + ":00";
-				} else if (getValue()!=null && getValue().length() == 10) {
-					// 2018-10-29
-					dateStr = getValue() + " 00:00:00";
-				} else {
-					dateStr = getValue();
-				}
-                java.util.Date d = DateUtil.parse(dateStr, FormField.FORMAT_DATE_TIME);
-                // System.out.println(getClass() + " getValue()=" + getValue() + " d=" + d);
-                if (d == null)
-                    ps.setDate(index, null);
-                else {
-                    ps.setTimestamp(index, new java.sql.Timestamp(d.getTime()));
-                }
-            }
-            else
-                ps.setString(index, getValue());
+                break;
         }
         // LogUtil.getLog(getClass()).info("saveDAO3 fieldType=" + fieldType + " name=" + getName() + " getType().equals(TYPE_MACRO)=" + getType().equals(TYPE_MACRO) + " getType()=" + getType() + " getMacroType=" + this.getMacroType());
     }
@@ -1190,7 +1254,6 @@ public class FormField implements Cloneable,Serializable {
                     dateStr = getValue();
                 }
                 java.util.Date d = DateUtil.parse(dateStr, FormField.FORMAT_DATE_TIME);
-                // System.out.println(getClass() + " getValue()=" + getValue() + " d=" + d);
                 if (d == null) {
                     ps.setDate(index, null);
                 } else {
@@ -1308,10 +1371,9 @@ public class FormField implements Cloneable,Serializable {
 				}
             	
                 java.util.Date d = DateUtil.parse(dateStr, FormField.FORMAT_DATE_TIME);
-                // System.out.println(getClass() + " getValue()=" + getValue() + " d=" + d);
-                if (d == null)
+                if (d == null) {
                     ps.setDate(index, null);
-                else {
+                } else {
                     ps.setTimestamp(index, new java.sql.Timestamp(d.getTime()));
                 }
             } else
@@ -1344,24 +1406,34 @@ public class FormField implements Cloneable,Serializable {
             } else
                 ps.setFloat(index, StrUtil.toFloat(getValue()));
         } else if (fieldType == FIELD_TYPE_DOUBLE) {
-            if (v.equals("")) {
+            if ("".equals(v)) {
                 ps.setNull(index, java.sql.Types.DOUBLE);
-            } else
+            } else {
                 ps.setDouble(index, StrUtil.toDouble(getValue()));
+            }
         } else if (fieldType == FIELD_TYPE_PRICE) {
-            if (v.equals("")) {
+            if ("".equals(v)) {
                 ps.setNull(index, java.sql.Types.DOUBLE);
-            } else
+            } else {
                 ps.setDouble(index, StrUtil.toDouble(getValue()));
+            }
         } else if (fieldType == FIELD_TYPE_DATE) {
             java.util.Date d = null;
-            d = DateUtil.parse(getValue(), FormField.FORMAT_DATE);
+            String dateStr = getValue();
+            int p = -1;
+            if (dateStr != null) {
+                p = getValue().indexOf(" ");
+            }
+            if (p!=-1 && p >= 10) {
+                dateStr = dateStr.substring(0, p);
+            }
+            d = DateUtil.parse(dateStr, FormField.FORMAT_DATE);
 
             LogUtil.getLog(getClass()).info(" ff.getName()=" + getName() + " getValue=" + getValue());
 
-            if (d == null)
+            if (d == null) {
                 ps.setDate(index, null);
-            else {
+            } else {
                 ps.setDate(index, new java.sql.Date(d.getTime()));
             }
         } else if (fieldType == FIELD_TYPE_DATETIME) {
@@ -1377,10 +1449,9 @@ public class FormField implements Cloneable,Serializable {
 			}
             java.util.Date d = DateUtil.parse(dateStr,
                                               FormField.FORMAT_DATE_TIME);
-            // System.out.println(getClass() + " getValue()=" + getValue() + " d=" + d);
-            if (d == null)
+            if (d == null) {
                 ps.setDate(index, null);
-            else {
+            } else {
                 ps.setTimestamp(index, new java.sql.Timestamp(d.getTime()));
             }
         } else
@@ -1439,8 +1510,6 @@ public class FormField implements Cloneable,Serializable {
 
         String defaultStr = StrUtil.sqlstr("");
         if (defaultValue != null) {
-            // System.out.println("FormField.java defaultValue=" + defaultValue +
-            //                   " type=" + type);
             if (type.equals(TYPE_DATE)) {
                 if (defaultValue.equals(DATE_CURRENT) || defaultStr.equals(""))
                     defaultStr = StrUtil.sqlstr("0000-00-00");
@@ -1461,8 +1530,6 @@ public class FormField implements Cloneable,Serializable {
         else
             str = "`" + name + "` " + typeStr + " COMMENT " +
                   StrUtil.sqlstr(title);
-        // System.out.println(getClass() + " toStrForCreate name=" + name + " fieldType=" + fieldType);
-        // System.out.println(getClass() + " toStrForCreate:" + str);
         return str;
     }
     */
@@ -1530,24 +1597,21 @@ public class FormField implements Cloneable,Serializable {
              ffDate = (FormField) ffFromDb.clone();
          }
          catch (Exception e) {
-             e.printStackTrace();
+             LogUtil.getLog(FormField.class).error(e);
          }
          if (ffFromDb.getType().equals(FormField.TYPE_DATE) ||
              ffFromDb.getType().equals(FormField.TYPE_DATE_TIME)) {
              // LogUtil.getLog("FormField").info("getSetCtlValueScript:" + ffFromDb.getTitle() + "=" + ffFromDb.getValue() + " getDefaultValueRaw=" + ffFromDb.getDefaultValueRaw());
-
              // 如果为日期型，且从数据库中取出的值为空
-             if (StrUtil.getNullStr(ffFromDb.getValue()).equals("")) {
+             if ("".equals(StrUtil.getNullStr(ffFromDb.getValue()))) {
                  // 此时ff是来自于数据库，值getDefaultValueRaw为空，则表示默认值为空
                  if (ffFromDb.getDefaultValueRaw().equals(DATE_CURRENT)) {
                      if (ffFromDb.getType().equals(FormField.TYPE_DATE_TIME)) {
-                         ffDate.setValue(DateUtil.format(new java.util.Date(),
-                                 FORMAT_DATE_TIME));
+                         ffDate.setValue(DateUtil.format(new java.util.Date(), FORMAT_DATE_TIME));
                      } else {
-                         ffDate.setValue(DateUtil.format(new java.util.Date(),
-                                 FORMAT_DATE));
+                         ffDate.setValue(DateUtil.format(new java.util.Date(), FORMAT_DATE));
                      }
-                    //  LogUtil.getLog("FormField").info("getSetCtlValueScript2:" + ffFromDb.getTitle() + "=" + ffFromDb.getValue());
+                     // LogUtil.getLog("FormField").info("getSetCtlValueScript2:" + ffFromDb.getTitle() + "=" + ffFromDb.getValue());
                  }
              }
          }
@@ -1557,23 +1621,19 @@ public class FormField implements Cloneable,Serializable {
              try {
                  dt = DateUtil.parse(ffDate.getValue(), FormField.FORMAT_DATE);
              } catch (Exception e) {
-                 LogUtil.getLog("com.redmoon.oa.flow.FormField").error("rend0:" +
-                         e.getMessage());
+                 LogUtil.getLog("com.redmoon.oa.flow.FormField").error("rend0:" + e.getMessage());
              }
              String d = DateUtil.format(dt, FormField.FORMAT_DATE);
-             String str = "setCtlValue('" + ffFromDb.getName() + "', '" + ffFromDb.getType() +
+             return "setCtlValue('" + ffFromDb.getName() + "', '" + ffFromDb.getType() +
                           "', '" +
                           d + "');\n";
-             return str;
          }
          else if (ffFromDb.getType().equals(FormField.TYPE_DATE_TIME)) {
 			java.util.Date dt = null;
 			try {
-				dt = DateUtil.parse(ffDate.getValue(),
-						FormField.FORMAT_DATE_TIME);
+				dt = DateUtil.parse(ffDate.getValue(), FormField.FORMAT_DATE_TIME);
 			} catch (Exception e) {
-				LogUtil.getLog("com.redmoon.oa.flow.FormField").error(
-						"rend1:" + e.getMessage());
+				LogUtil.getLog("com.redmoon.oa.flow.FormField").error("rend1:" + e.getMessage());
 			}
 			String d = DateUtil.format(dt, FormField.FORMAT_DATE);
 			String t = DateUtil.format(dt, "HH:mm:ss");
@@ -1609,13 +1669,20 @@ public class FormField implements Cloneable,Serializable {
                  while (result) {
                      String fieldName = m.group(1);
                      String value = "";
-                     if (fieldName.equals("id")) {
-                         value = String.valueOf(IFormDao.getIdentifier());
-                     } else if (fieldName.equals("cwsId")) {
-                         value = IFormDao.getCwsId();
+                     if ("id".equals(fieldName)) {
+                         // 智能模块添加ModuleRender.rendForAdd时，IFormDao为null
+                         if (IFormDao!=null) {
+                             value = String.valueOf(IFormDao.getIdentifier());
+                         }
+                     } else if ("cwsId".equals(fieldName)) {
+                         if (IFormDao!=null) {
+                             value = IFormDao.getCwsId();
+                         }
                      }
-                     else if (fieldName.equals("flowId")) {
-                         value = String.valueOf(IFormDao.getFlowId());
+                     else if ("flowId".equals(fieldName)) {
+                         if (IFormDao!=null) {
+                             value = String.valueOf(IFormDao.getFlowId());
+                         }
                      }
                      else if (fieldName.startsWith("request.")) {
                          String f = fieldName.substring(8);
@@ -1649,55 +1716,66 @@ public class FormField implements Cloneable,Serializable {
                 str += "o('" + ffFromDb.getName() + "').onclick=function(){" + script + "}\n";
                 return str;
             } else {
-                 String str = "setCtlValue('" + ffFromDb.getName() + "', '" +
+                 // 20220518由o(...)改为findObj(...)，因为findObj在前端的flow_process.js中定义，可以找到当前抽屉中对应的表单
+                 return "setCtlValue('" + ffFromDb.getName() + "', '" +
                               ffFromDb.getType() +
-                              "', " + 
-                              "o('cws_textarea_" + ffFromDb.getName() + "').value);\n";
-                 return str;
+                              "', " +
+                              "$(fo('cws_textarea_" + ffFromDb.getName() + "')).val());\n";
              }
          }
 
      }
 
-     /**
-      * 取得用来保存控件原始值及toHtml后的值的表单中的HTML元素，通常前者为textarea，后者为span
-      * @return String
-      */
-     public static String getOuterHTMLOfElementsWithRAWValueAndHTMLValue(HttpServletRequest request, FormField ffFromDb) {
-         return getOuterHTMLOfElementWithRAWValue(request, ffFromDb) + getOuterHTMLOfElementWithHTMLValue(request, ffFromDb);
-     }
+    /**
+     * 取得用来保存控件原始值及toHtml后的值的表单中的HTML元素，通常前者为textarea，后者为span
+     *
+     * @return String
+     */
+    public static String getOuterHTMLOfElementsWithRAWValueAndHTMLValue(HttpServletRequest request, FormField ffFromDb) {
+        return getOuterHTMLOfElementWithRAWValue(request, ffFromDb) + getOuterHTMLOfElementWithHTMLValue(request, ffFromDb);
+    }
 
-     /**
-      * 取得用来保存控件原始值的表单中的HTML元素，通常为textarea
-      * @return String
-      */
-     public static String getOuterHTMLOfElementWithRAWValue(HttpServletRequest request, FormField ff) {
-         // LogUtil.getLog(FormField.class).info(ff.getType() + " name=" + ff.getName() + " value =" + ff.getValue());
-         if (ff.getType().equals(FormField.TYPE_CALCULATOR)) {
-             // 使计算控件不显示初始值
-             String val = StrUtil.getNullStr(ff.getValue());
-             if ("".equals(val) || val.equals(ff.getDescription())) {
-                 return "<textarea style='display:none' id='cws_textarea_" +
-                 ff.getName() + "' name='cws_textarea_" + ff.getName() +
-                 "'></textarea>";
-             }
-         }
-
-         String val;
-         // 使价格型控件在编辑状态时，也能显示为两位小数
-         if (ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
-             if (ff.getValue()!=null) {
-                 val = NumberUtil.round(StrUtil.toDouble(ff.getValue(), 0), 2);
-             }
-             else {
-                 val = StrUtil.getNullStr(ff.getValue());
-             }
-         }
-         else {
-             val = StrUtil.getNullStr(ff.getValue());
-         }
-         return "<textarea style='display:none' id='cws_textarea_" + ff.getName() + "' name='cws_textarea_" + ff.getName() + "'>" + val + "</textarea>";
-     }
+    /**
+     * 取得用来保存控件原始值的表单中的HTML元素，通常为textarea
+     *
+     * @return String
+     */
+    public static String getOuterHTMLOfElementWithRAWValue(HttpServletRequest request, FormField ff) {
+        // LogUtil.getLog(FormField.class).info(ff.getType() + " name=" + ff.getName() + " value =" + ff.getValue());
+        String val = "";
+        if (ff.getType().equals(FormField.TYPE_CALCULATOR)) {
+            // 使计算控件不显示初始值
+            val = StrUtil.getNullStr(ff.getValue());
+            if ("".equals(val) || val.equals(ff.getDescription())) {
+                return "<textarea style='display:none' id='cws_textarea_" +
+                        ff.getName() + "' name='cws_textarea_" + ff.getName() +
+                        "'></textarea>";
+            } else {
+                if (FormField.FORMAT_THOUSANDTH.equals(ff.getFormat())) {
+                    val = NumberUtil.thousandth(StrUtil.toDouble(ff.getValue(), 0));
+                }
+                else {
+                    val = StrUtil.getNullStr(ff.getValue());
+                }
+            }
+        } else {
+            // 使价格型控件在编辑状态时，也能显示为两位小数
+            if (ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
+                if (FormField.FORMAT_THOUSANDTH.equals(ff.getFormat())) {
+                    val = NumberUtil.thousandth(StrUtil.toDouble(ff.getValue(), 0));
+                } else {
+                    if (!StringUtils.isEmpty(ff.getValue())) {
+                        val = NumberUtil.round(StrUtil.toDouble(ff.getValue(), 0), 2);
+                    } else {
+                        val = StrUtil.getNullStr(ff.getValue());
+                    }
+                }
+            } else {
+                val = StrUtil.getNullStr(ff.getValue());
+            }
+        }
+        return "<textarea style='display:none' id='cws_textarea_" + ff.getName() + "' name='cws_textarea_" + ff.getName() + "'>" + val + "</textarea>";
+    }
 
      /**
       * 当在模块中添加记录时，置默认值，而getOuterHTMLOfElementsWithRAWValueAndHTMLValue不能置默认值，只能用于编辑
@@ -1741,20 +1819,27 @@ public class FormField implements Cloneable,Serializable {
     	 // 如果数字大于10的7次方或者小于10的-3次方，就会使用科学计数法
     	 // 根据字段类型，自动转换为精确到小数点后两位的字符串
     	 String val = ff.getValue();
-    	 if (val != null && (ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_PRICE)) {
-    		 double v = StrUtil.toDouble(ff.getValue(), 0.0); 
-    		 if (v>Math.pow(10, 7)) {
-    			 val = NumberUtil.roundRMB(v);
-    		 }
-    	 }
+    	 if (ff.getType().equals(FormField.TYPE_SELECT)) {
+             FormDb fd = new FormDb();
+             fd = fd.getFormDb(ff.getFormCode());
+             String[][] arr = FormParser.getOptionsArrayOfSelect(fd, ff);
+             val = FormParser.getOptionText(arr, ff.getValue());
+         } else if (!StringUtils.isEmpty(val) && (ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_PRICE)) {
+             // 在FlowRender.report方法中调用renderFieldValue已经转成了千分位
+             if (!FormField.FORMAT_THOUSANDTH.equals(ff.getFormat())) {
+                 double v = StrUtil.toDouble(ff.getValue(), 0.0);
+                 if (v > Math.pow(10, 7)) {
+                     val = NumberUtil.roundRMB(v);
+                 }
+             }
+         }
     	 else {
     		 val = FormField.toHtml(val);
     	 }
-    	 String str = "<span style='display:none' id='cws_span_" + ff.getName() +
-                      "' name='cws_span_" + ff.getName() + "'>" +
-                      val +
-                      "</span>";
-         return str;
+         return "<span style='display:none' id='cws_span_" + ff.getName() +
+                    "' name='cws_span_" + ff.getName() + "'>" +
+                    val +
+                    "</span>";
      }
 
      /**
@@ -1764,7 +1849,7 @@ public class FormField implements Cloneable,Serializable {
      */
      public static String getReplaceCtlWithValueScript(FormField ff) {
          String str = "";
-         str = "ReplaceCtlWithValue('" + ff.getName() + "', '" + ff.getType() + "'," + "cws_span_" + ff.getName() + ".innerHTML);\n";
+         str = "ReplaceCtlWithValue('" + ff.getName() + "', '" + ff.getType() + "'," + "$(fo('cws_span_" + ff.getName() + "')).html());\n";
          /*if (ff.getType().equals(FormField.TYPE_DATE)) {
              String v = ff.getValue();
              Date d = DateUtil.parse(v, FormField.FORMAT_DATE);
@@ -1794,42 +1879,49 @@ public class FormField implements Cloneable,Serializable {
      public static String getDisableCtlScript(FormField ff, String formElementId) {
          String str = "";
 
-         // System.out.println("com.redmoon.oa.flow.FormField ff.getName()=" + ff.getName() + " ff.getType()=" + ff.getType() + " ff.getValue()=" + ff.getValue());
-
-         if (ff.getType().equals(FormField.TYPE_DATE)) {
-             String v = ff.getValue();
-             Date d = DateUtil.parse(v, FormField.FORMAT_DATE);
-             v = DateUtil.format(d, "yyyy-MM-dd");
-             str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
-                          "'," + "'" + v + "', " +
-                          "o('cws_textarea_" + ff.getName() +
-                          "').value);\n";
-         }
-         else if (ff.getType().equals(FormField.TYPE_DATE_TIME)) {
-             java.util.Date dt = null;
-             try {
-                 dt = DateUtil.parse(ff.getValue(),
-                         FormField.FORMAT_DATE_TIME);
+         switch (ff.getType()) {
+             case FormField.TYPE_DATE: {
+                 String v = ff.getValue();
+                 Date d = DateUtil.parse(v, FormField.FORMAT_DATE);
+                 v = DateUtil.format(d, "yyyy-MM-dd");
+                 str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
+                         "'," + "'" + v + "', " +
+                         "$(fo('cws_textarea_" + ff.getName() + "')).val());\n";
+                 break;
              }
-             catch (Exception e) {
-                 LogUtil.getLog("com.redmoon.oa.flow.FormField").error("getDisableCtlScript:" + e.getMessage());
+             case FormField.TYPE_DATE_TIME: {
+                 Date dt = null;
+                 try {
+                     dt = DateUtil.parse(ff.getValue(), FormField.FORMAT_DATE_TIME);
+                 } catch (Exception e) {
+                     LogUtil.getLog("com.redmoon.oa.flow.FormField").error("getDisableCtlScript:" + e.getMessage());
+                 }
+                 String d = DateUtil.format(dt, FormField.FORMAT_DATE);
+                 String t = DateUtil.format(dt, "HH:mm:ss");
+                 str = "if(fo('" + ff.getName() + "_time" + "')!=null){DisableCtl('" +
+                         ff.getName() + "', '" + ff.getType() +
+                         "', '" + d + "','" + d + "');\nDisableCtl('" +
+                         ff.getName() + "_time" + "', '" + ff.getType() +
+                         "', '" + t + "','" + t + "');}else{DisableCtl('" +
+                         ff.getName() + "', '" + ff.getType() +
+                         "', '" + DateUtil.format(dt, "yyyy-MM-dd HH:mm:ss") +
+                         "','" + ff.getValue() + "');}\n";
+                 break;
              }
-             String d = DateUtil.format(dt, FormField.FORMAT_DATE);
-             String t = DateUtil.format(dt, "HH:mm:ss");
-             str = "if(o('" + ff.getName() + "_time" + "')!=null){DisableCtl('" + 
-             		ff.getName() + "', '" + ff.getType() + 
-             		"', '" + d + "','" + d + "');\nDisableCtl('" + 
-             		ff.getName() + "_time" + "', '" + ff.getType() +
-                     "', '" + t + "','" + t + "');}else{DisableCtl('" + 
-             		ff.getName() + "', '" + ff.getType() + 
-             		"', '" + DateUtil.format(dt, "yyyy-MM-dd HH:mm:ss") + 
-             		"','" + ff.getValue() + "');}\n";
-         }
-         else {
-             str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
-                          "', " + "o('cws_span_" + ff.getName() + "').innerHTML, " +
-                          "o('cws_textarea_" + ff.getName() +
-                          "').value);\n";
+             case TYPE_SELECT:
+                 FormDb fd = new FormDb();
+                 fd = fd.getFormDb(ff.getFormCode());
+                 String[][] arr = FormParser.getOptionsArrayOfSelect(fd, ff);
+                 String text = FormParser.getOptionText(arr, ff.getValue());
+                 str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
+                         "', '" + text + "', " +
+                         "$(fo('cws_textarea_" + ff.getName() + "')).val());\n";
+                 break;
+             default:
+                 str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
+                         "', " + "$(fo('cws_span_" + ff.getName() + "')).html(), " +
+                         "$(fo('cws_textarea_" + ff.getName() + "')).val());\n";
+                 break;
          }
          return str;
     }
@@ -1841,7 +1933,6 @@ public class FormField implements Cloneable,Serializable {
     public static String getHideCtlScript(FormField ff, String formElementId) {
         String str = "";
 
-        // System.out.println("com.redmoon.oa.flow.FormField ff.getName()=" + ff.getName() + " ff.getType()=" + ff.getType() + " ff.getValue()=" + ff.getValue());
         if (ff==null) {
         	LogUtil.getLog(FormField.class).error("getHideCtlScript:字段已被删除");
         	return "";
@@ -1849,13 +1940,12 @@ public class FormField implements Cloneable,Serializable {
         if (FormField.TYPE_DATE_TIME.equals(ff.getType())) {
             str += "HideCtl('" + ff.getName() + "', '" + ff.getType() +
                     "', '" + ff.getMacroType() + "');\n";
-            str += "if(o('" + ff.getName() + "_time" + "')!=null){HideCtl('" + ff.getName() + "_time" + "', '" +
+            str += "if(fo('" + ff.getName() + "_time" + "')!=null){HideCtl('" + ff.getName() + "_time" + "', '" +
                     ff.getType() +
                     "', '" + ff.getMacroType() + "');}\n";
         }
         else {
-            str = "HideCtl('" + ff.getName() + "', '" + ff.getType() +
-                         "', '" + ff.getMacroType() + "');\n";
+            str = "HideCtl('" + ff.getName() + "', '" + ff.getType() + "', '" + ff.getMacroType() + "');\n";
         }
         return str;
     }
@@ -1962,14 +2052,52 @@ public class FormField implements Cloneable,Serializable {
 		return readonly;
 	}
 
+	public String getValueByPresent(String presentVal) {
+        if (type.equals(TYPE_CHECKBOX)) {
+            if (StringUtils.isBlank(present)) {
+                return "0";
+            }
+            else {
+                String[] ary = StrUtil.split(present, "\\|");
+                if (ary.length==2) {
+                    // checkbox的value为空或者1，当不选时，值为空（注意导入时会因默认值为0从而生成0，而添加时，不选中则数据库中值为空）
+                    if (ary[1].equals(presentVal)) {
+                        return "1";
+                    }
+                    else {
+                        return "0";
+                    }
+                }
+                else if (ary.length==1) {
+                    if (present.equals(presentVal)) {
+                        return "0";
+                    }
+                    else {
+                        return "1";
+                    }
+                }
+                else {
+                    return presentVal;
+                }
+            }
+        } else {
+            return presentVal;
+        }
+    }
+
     /**
      * 一般用于在module_list.jsp列中展现
      * @return
      */
 	public String convertToHtml() {
+	    long t = System.currentTimeMillis();
 	    if (type.equals(TYPE_CHECKBOX)) {
             if (StringUtils.isBlank(present)) {
-                return value;
+                if ("0".equals(value) || cn.hutool.core.util.StrUtil.isEmpty(value)) {
+                    return "否";
+                } else {
+                    return "是";
+                }
             }
             else {
                 String[] ary = StrUtil.split(present, "\\|");
@@ -2011,14 +2139,48 @@ public class FormField implements Cloneable,Serializable {
             }
         }
 	    else if (type.equals(TYPE_CALCULATOR)) {
-	        FormDb fd = new FormDb();
-	        fd = fd.getFormDb(formCode);
+            FormDb fd = new FormDb();
+            fd = fd.getFormDb(formCode);
             return convertToHtmlForCalculate(fd, value);
+        }
+	    else if (type.equals(TYPE_SELECT)) {
+            /*FormDb fd = new FormDb();
+            fd = fd.getFormDb(formCode);
+	        String[][] arr = FormParser.getOptionsArrayOfSelect(fd, this);
+	        return FormParser.getOptionText(arr, value);*/
+            return options.get(value);
+        } else if (type.equals(TYPE_RADIO)) {
+            /*FormDb fd = new FormDb();
+            fd = fd.getFormDb(formCode);
+            String[][] arr = FormParser.getOptionsArrayOfRadio(fd, this);
+            return FormParser.getOptionTextForRadio(arr, value);*/
+            return options.get(value);
         }
 	    else {
             if (fieldType==FormField.FIELD_TYPE_PRICE) {
-                if (!StringUtils.isEmpty(value)) {
-                    value = NumberUtil.round(StrUtil.toDouble(value, 0), 2);
+                // DebugUtil.i(getClass(), "title", title + " value:" + value + " formCode:" + formCode);
+                if (FORMAT_THOUSANDTH.equals(format)) {
+                    // 此处不能改变value值，因为在别的地方可能会用到
+                    return NumberUtil.thousandth(StrUtil.toDouble(value, 0));
+                }
+                else if (FORMAT_PERCENTAGE.equals(format)) {
+                    value = (int)(StrUtil.toDouble(value, 0) * 100) + "%";
+                }
+                else {
+                    if (!StringUtils.isEmpty(value)) {
+                        value = NumberUtil.round(StrUtil.toDouble(value, 0), 2);
+                    } else {
+                        value = StrUtil.getNullStr(value);
+                    }
+                }
+            }
+            else if (fieldType == FormField.FIELD_TYPE_DOUBLE
+                    || fieldType == FormField.FIELD_TYPE_FLOAT
+                    || fieldType == FormField.FIELD_TYPE_INT
+                    || fieldType == FormField.FIELD_TYPE_LONG
+            ) {
+                if (FORMAT_PERCENTAGE.equals(format)) {
+                    value = (int)(StrUtil.toDouble(value, 0) * 100) + "%";
                 }
                 else {
                     value = StrUtil.getNullStr(value);
@@ -2032,6 +2194,9 @@ public class FormField implements Cloneable,Serializable {
     }
 
     public String convertToHtmlForCalculate(FormDb fd, String value) {
+        if (FORMAT_THOUSANDTH.equals(format)) {
+            return NumberUtil.thousandth(StrUtil.toDouble(value, 0));
+        }
         FormParser fp = new FormParser();
         // 如果计算控件是四舍五入，小数点后位数digit才有效
         String isroundto5 = fp.getFieldAttribute(fd, this, "isroundto5"); // 0或1
@@ -2062,7 +2227,24 @@ public class FormField implements Cloneable,Serializable {
     private int fieldType = FIELD_TYPE_VARCHAR;
     private String rule;
     private boolean canNull = true;
+    /**
+     * 是否能参与查询
+     */
     private boolean canQuery = true;
+
+    public int getQueryMode() {
+        return queryMode;
+    }
+
+    public void setQueryMode(int queryMode) {
+        this.queryMode = queryMode;
+    }
+
+    /**
+     * 是否能参与查询的方式
+     */
+    private int queryMode = QUERY_MODE_YES;
+
     private int orders = 0;
     /**
      * 查询列表中字段显示的宽度
@@ -2156,6 +2338,15 @@ public class FormField implements Cloneable,Serializable {
 
     private boolean helper = false;
 
+    /**
+     * 只读类型
+     */
+    private String readOnlyType = "";
+    /**
+     * 格式，千分位
+     */
+    private String format = "";
+
     public boolean isHelper() {
         return helper;
     }
@@ -2204,4 +2395,33 @@ public class FormField implements Cloneable,Serializable {
     public void setUniqueNest(boolean uniqueNest) {
         this.uniqueNest = uniqueNest;
     }
+
+    public String getReadOnlyType() {
+        return readOnlyType;
+    }
+
+    public void setReadOnlyType(String readOnlyType) {
+        this.readOnlyType = readOnlyType;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
+    public Map<String, String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, String> options) {
+        this.options = options;
+    }
+
+    /**
+     * 下拉框或单选按钮的选项
+     */
+    Map<String, String> options = new HashMap<>();
 }

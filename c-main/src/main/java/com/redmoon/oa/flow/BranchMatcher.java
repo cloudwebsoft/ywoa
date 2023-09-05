@@ -69,8 +69,6 @@ public class BranchMatcher {
                     throw new ErrMsgException("表单：" + fd.getName() + "，脚本：" + scriptStr + "中，字段：" + fieldTitle + " 不存在！");
             }
 
-            // System.out.println(getClass() + " scriptStr=" + scriptStr + " fieldTitle=" + fieldTitle + " ff=" + ff);
-
             fields.addElement(ff);
             
             m.appendReplacement(sb, "\\$" + ff.getName());
@@ -240,16 +238,11 @@ public class BranchMatcher {
         while (m.find()) {
             String str = "";
 
-            System.out.print(m.group(2));
-
             str = "(" + str + ")";
             m.appendReplacement(sb, str);
         }
         
         if (true) return;
-
-    	
-    	
     	
         String str1 = "<P class=MsoNormal align=left><SPAN lang=EN-US><INPUT title=aaa name=aaa canNull=\"1\" maxV=\"\" maxT=\"x=\" minV=\"\" minT=\"d=\" kind=\"DATE_TIME\"><IMG style=\"CURSOR: hand\" onclick='SelectDate(\"aaa\",\"yyyy-mm-dd\")' name=aaa_btnImg align=absMiddle src=\"http://localhost:8080/oa/images/form/calendar.gif\" width=26 height=26><INPUT style=\"WIDTH: 50px\" name=aaa_time value=12:30:30>&nbsp;<IMG style=\"CURSOR: hand\" onclick='SelectDateTime(\"aaa\")' name=aaa_time_btnImg align=absMiddle src=\"http://localhost:8080/oa/images/form/clock.gif\"></SPAN></P>";
         String patternStr1 =
@@ -263,8 +256,6 @@ public class BranchMatcher {
         str1 = matcher1.replaceAll(
                 "src=\"/oa/$5");
 
-            System.out.println(str1);
-
             // if (true)
             //    return;
 
@@ -272,8 +263,6 @@ public class BranchMatcher {
         // String myStr = "aaa[br]aa";
 
         // myStr = myStr.replaceAll("\\[br\\]", "\n");
-
-        // System.out.println(myStr);
 
         String content = "src=\"http:/testoa/testoa/oa/images/form/calendar.gif\" _time_btnImg align=absMiddlealign=absMiddle src=\"/oa/images/form/clock.gif\">  ";
 
@@ -283,7 +272,6 @@ public class BranchMatcher {
         Pattern pattern = Pattern.compile(patternStr);
         Matcher matcher = pattern.matcher(content);
         content = matcher.replaceAll("src=\"aaa" + "$2");
-        System.out.println(content);
 
        patternStr =
                "src=\"([^\"]*?)(\\/images\\/([^\"]*?)clock.gif)";
@@ -300,7 +288,6 @@ public class BranchMatcher {
         Pattern pattern = Pattern.compile(patternStr);
         Matcher matcher = pattern.matcher(content);
         content = matcher.replaceAll("src=\"aaa$2");
-        System.out.println(content);
 
         patternStr =
                 "src=\"(.*?)(\\/images\\/.*?clock.gif)";
@@ -311,7 +298,6 @@ public class BranchMatcher {
         content = matcher.replaceAll(
                 "src=\"bbb$2");
         */
-        System.out.println(content);
 
         // if (true)
         //    return;
@@ -322,8 +308,6 @@ public class BranchMatcher {
         Matcher matScript = SCRIPT_TAG_PATTERN.matcher(str);
         str = matScript.replaceAll("");
 
-        System.out.println(str);
-
         Interpreter bsh = new Interpreter();
 
         // Evaluate statements and expressions
@@ -331,8 +315,7 @@ public class BranchMatcher {
         try {
 			BranchMatcher.bean();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(BranchMatcher.class).error(e);
 		}
     }
 
@@ -342,9 +325,9 @@ public class BranchMatcher {
         // Evaluate statements and expressions
         bsh.eval("foo=Math.sin(0.5)");
         bsh.eval("bar=foo*5; bar=Math.cos(bar);");
-        bsh.eval("for(i=0; i<10; i++) { System.out.println(\"hello\"); }");
+        bsh.eval("for(i=0; i<10; i++) { LogUtil.getLog(getClass()).info(\"hello\"); }");
         // same as above using java syntax and apis only
-        bsh.eval("for(int i=0; i<10; i++) { System.out.println(\"hello\"); }");
+        bsh.eval("for(int i=0; i<10; i++) { LogUtil.getLog(getClass()).info(\"hello\"); }");
 
         //Source from files or streams
         // bsh.source("myscript.bsh");  // or bsh.eval("source(\"myscript.bsh\")");
@@ -355,16 +338,16 @@ public class BranchMatcher {
         // This would also work:
         Date date2 = (Date) bsh.eval("date");
 
-        bsh.eval("System.out.println(year = date.getYear())");
+        bsh.eval("LogUtil.getLog(getClass()).info(year = date.getYear())");
         Integer year = (Integer) bsh.get("year"); // primitives use wrappers
 
         // bsh.set("thisObj", this); // 将this object 赋给变量thisObject
-        // String str = "System.out.println(thisObj.lineChart())";
+        // String str = "LogUtil.getLog(getClass()).info(thisObj.lineChart())";
 
         String str = "import com.redmoon.oa.ofc.*;";
-        str += "Test t = new Test();System.out.println(t.pieChart());";
+        str += "Test t = new Test();LogUtil.getLog(getClass()).info(t.pieChart());";
         str += "a=2;";
-        str += "System.out.println(1>a);";
+        str += "LogUtil.getLog(getClass()).info(1>a);";
         bsh.eval(str);
     }
 
@@ -377,7 +360,7 @@ public class BranchMatcher {
 
         long t2 = System.currentTimeMillis();
         if (Global.getInstance().isDebug()) {
-            // DebugUtil.i(ModuleUtil.class, "after parse", (t2-t) + " ms");
+            DebugUtil.i(ModuleUtil.class, "match after parse", (t2-t) + " ms");
         }
 
         boolean re = false;
@@ -390,7 +373,7 @@ public class BranchMatcher {
 
         long t3 = System.currentTimeMillis();
         if (Global.getInstance().isDebug()) {
-            // DebugUtil.i(ModuleUtil.class, "after setFieldsValue", (t3-t2) + " ms");
+            DebugUtil.i(ModuleUtil.class, "match after setFieldsValue", (t3-t2) + " ms");
         }
 
         // 赋值给用户
@@ -407,7 +390,7 @@ public class BranchMatcher {
 
             long t4 = System.currentTimeMillis();
             if (Global.getInstance().isDebug()) {
-                // DebugUtil.i(ModuleUtil.class, "after eval", (t4-t3) + " ms");
+                DebugUtil.i(ModuleUtil.class, "match after eval", (t4 - t3) + " ms");
             }
 
             // 查找ret=是为了保证跟以往版本的兼容性20131219 fgf
@@ -418,7 +401,7 @@ public class BranchMatcher {
             if (p==-1) {
 	            bsh.eval("re=(" + sc + ");");
 	            LogUtil.getLog(BranchMatcher.class).info("match3:" + bsh.get("re"));	            
-	            re = ((Boolean) bsh.get("re")).booleanValue();	            
+	            re = (Boolean) bsh.get("re");
             }
             else {
 				bsh.eval(sc);
@@ -427,25 +410,25 @@ public class BranchMatcher {
 					throw new ErrMsgException("请赋值给ret");
 				}
 				else {
-		            re = ((Boolean)obj).booleanValue();	            					
+		            re = (Boolean) obj;
 				}
             }
 
             long t5 = System.currentTimeMillis();
             if (Global.getInstance().isDebug()) {
-                // DebugUtil.i(ModuleUtil.class, "after eval2", (t5-t4) + " ms");
+                DebugUtil.i(ModuleUtil.class, "match  after eval2", (t5-t4) + " ms");
             }
         } 
         catch (java.lang.ClassCastException e) {
-            e.printStackTrace();
+            LogUtil.getLog(BranchMatcher.class).error(e);
             throw new ErrMsgException(e.getMessage());        	
         }
         catch (EvalError ex) {
             DebugUtil.e(BranchMatcher.class, "match eval", sb.toString());
-            ex.printStackTrace();
+            LogUtil.getLog(BranchMatcher.class).error(ex);
             throw new ErrMsgException(ex.getMessage());
         }
-
+        DebugUtil.i(ModuleUtil.class, "match end ", (System.currentTimeMillis()-t) + " ms");
         return re;
     }
 

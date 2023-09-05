@@ -2,12 +2,11 @@ package cn.js.fan.util;
 
 import java.util.*;
 
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class ResBundle {
     // 默认字符集为简体中文
-    Logger logger = Logger.getLogger(this.getClass().getName());
     Locale locale;
     ResourceBundle bundle;
     String encode = "";
@@ -17,7 +16,7 @@ public class ResBundle {
             try {
                 locale = Global.locale;
             } catch (Exception e) {
-                logger.error("ResBundle1:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("ResBundle1:" + e.getMessage());
                 locale = Locale.getDefault();
             }
         }
@@ -38,7 +37,7 @@ public class ResBundle {
         try {
             bundle = ResourceBundle.getBundle(resName, locale);
         } catch (MissingResourceException e) {
-            logger.error("ResBundle2:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("ResBundle2:" + e.getMessage());
             // bundle = ResourceBundle.getBundle(resName, Locale.CHINA);
         }
     }
@@ -53,11 +52,11 @@ public class ResBundle {
                 // str = new String(str.getBytes("ISO8859-1"), encode);
 
                 // 对于gb2312，资源文件不需要转成utf-8编码，转了反而会变成乱码，而big5的资源文件需转换为utf-8编码
-                // 晕，在本机区域改为台湾时，gb2312资源文件不能转换为utf8编码，而当本机区域改回中国即简体时，gb2312的资源文件需转成utf8编码
+                // 在本机区域改为台湾时，gb2312资源文件不能转换为utf8编码，而当本机区域改回中国即简体时，gb2312的资源文件需转成utf8编码
                 str = new String(str.getBytes("ISO8859-1"), "utf-8");
             } catch (java.io.UnsupportedEncodingException ex) {
-                System.out.println("resName=" + resName + " key=" + key + " locale=" + locale);
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error("resName=" + resName + " key=" + key + " locale=" + locale);
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
         return str;

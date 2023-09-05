@@ -13,7 +13,6 @@ import com.cloudwebsoft.framework.util.LogUtil;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import cn.js.fan.web.Global;
-import com.taobao.api.internal.toplink.embedded.websocket.util.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -135,8 +134,6 @@ public abstract class QObjectDb implements java.io.Serializable {
 	public QObjectDb getQObjectDb(Object primaryKeyValue) {
 		PrimaryKey pk = new PrimaryKey();
 		pk.setValue(primaryKeyValue);
-		// System.out.println(getClass() + " getQObjectDb:" + pk +
-		// " getCacheKey(pk)=" + getCacheKey(pk));
 		QObjectDb obj = null;
 		if (objCachable) {
 			try {
@@ -146,8 +143,6 @@ public abstract class QObjectDb implements java.io.Serializable {
 				LogUtil.getLog(this.getClass()).error(
 						"getQObjectDb:" + StrUtil.trace(e));
 			}
-			// System.out.println(getClass() + " getQObjectDb:" + pk + " obj=" +
-			// obj);
 
 			if (obj == null) {
 				// obj = new QObjectDb();
@@ -168,8 +163,6 @@ public abstract class QObjectDb implements java.io.Serializable {
 		} else {
 			obj = getQObjectDbRaw(primaryKeyValue);
 		}
-		// System.out.println(getClass() + " getQObjectDb2:" + obj.primaryKey);
-
 		return obj;
 	}
 
@@ -183,26 +176,17 @@ public abstract class QObjectDb implements java.io.Serializable {
 	public QObjectDb getQObjectDbRaw(Object primaryKeyValue) {
 		QObjectDb obj = null;
 		try {
-			obj = (QObjectDb) getClass().newInstance();
+			obj = getClass().newInstance();
 		} catch (Exception e) {
-			LogUtil.getLog(getClass()).error(
-					"getQObjectDbRaw:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("getQObjectDbRaw:" + e.getMessage());
 		}
 		obj.primaryKey.setValue(primaryKeyValue);
-		// System.out.println(getClass() + " getQObjectDbRaw:" +
-		// obj.primaryKey);
-
-		// LogUtil.getLog(getClass()).info("obj=" + obj + " primaryKeyValue=" +
-		// primaryKeyValue + " " + primaryKeyValue.getClass());
 
 		try {
 			obj.load();
 		} catch (SQLException e) {
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).error(
-					"getQObjectDbRaw2:" + StrUtil.trace(e));
-			LogUtil.getLog(getClass()).error(
-					"getQObjectDbRaw2:primaryKey=" + primaryKey);
+			LogUtil.getLog(getClass()).error(e);
+			LogUtil.getLog(getClass()).error("getQObjectDbRaw2:primaryKey=" + primaryKey);
 		}
 
 		// LogUtil.getLog(getClass()).info("obj=" + obj + " primaryKeyValue=" +
@@ -259,15 +243,12 @@ public abstract class QObjectDb implements java.io.Serializable {
 		} finally {
 			if (rs != null) {
 				rs.close();
-				rs = null;
 			}
 			if (ps != null) {
 				ps.close();
-				ps = null;
 			}
 			if (connection != null) {
 				connection.close();
-				connection = null;
 			}
 			jt.close();
 		}
@@ -276,12 +257,11 @@ public abstract class QObjectDb implements java.io.Serializable {
 
 	public boolean load() throws SQLException {
 		JdbcTemplate jt = new JdbcTemplate(new Connection(table.getConnName()));
-		ResultIterator ri = null;
 		Object[] params = primaryKey.toObjectArray();
-		ri = jt.executeQueryTFO(table.getQueryLoad(), params);
+		ResultIterator ri = jt.executeQueryTFO(table.getQueryLoad(), params);
 
 		if (ri.hasNext()) {
-			resultRecord = (ResultRecord) ri.next();
+			resultRecord = ri.next();
 			loaded = true;
 			return true;
 		}
@@ -365,8 +345,7 @@ public abstract class QObjectDb implements java.io.Serializable {
 
 			re = jt.executeUpdate(table.getQueryCreate(), params) == 1;
 		} catch (SQLException e) {
-			e.printStackTrace();
-			// LogUtil.getLog(getClass()).error("create:" + StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 			throw new ResKeyException(SkinUtil.ERR_DB, e);
 		}finally{
 			jt.close();
@@ -413,7 +392,7 @@ public abstract class QObjectDb implements java.io.Serializable {
 				docCount = rs.getLong(1);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} finally {
 			if (rs != null) {
 				try {
@@ -472,13 +451,6 @@ public abstract class QObjectDb implements java.io.Serializable {
 			// 当在修改OA中档案模块时，发现如果置用户为invalid，则在置用户职位时，因为user_sel.jsp中使用了getObjects，而当save时，并未刷新列表，就是因为未刷新列表
 			QCache.getInstance().invalidateGroup(cacheGroupCount + groupName);
 			QCache.getInstance().invalidateGroup(cacheGroup + groupName);
-
-			// System.out.println(getClass() +
-			// " refreshList: cacheGroupCount + groupName=" + cacheGroupCount +
-			// groupName);
-			// System.out.println(getClass() +
-			// " refreshList: cacheGroup+groupName=" + cacheGroup+groupName);
-
 		} catch (Exception e) {
 			LogUtil.getLog(this.getClass()).error(StrUtil.trace(e));
 		}
@@ -549,7 +521,7 @@ public abstract class QObjectDb implements java.io.Serializable {
 			re = jt.executeUpdate(table.getQuerySave(), params) == 1;
 		}catch(Exception ex){
 			LogUtil.getLog(getClass()).error("save:" + ex.getMessage());
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}finally{
 			if (jt != null){
 				jt.close();
@@ -615,7 +587,6 @@ public abstract class QObjectDb implements java.io.Serializable {
 		}
 		int len = fieldsForSave.length;
 		Object[] paramsPk = primaryKey.toObjectArray();
-		// System.out.println(getClass() + " save " + primaryKey);
 
 		Object[] params = new Object[fieldsForSave.length + paramsPk.length];
 		for (int i = 0; i < len; i++) {
@@ -774,9 +745,7 @@ public abstract class QObjectDb implements java.io.Serializable {
 				}
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
-			LogUtil.getLog(this.getClass()).error(
-					"listResult:" + e.getMessage());
+			LogUtil.getLog(getClass()).error(e);
 			throw new ResKeyException(SkinUtil.ERR_DB);
 		}finally{
 			jt.close();
@@ -897,9 +866,6 @@ public abstract class QObjectDb implements java.io.Serializable {
 							} else if (ku.getType() == PrimaryKey.TYPE_DATE) {
 								ku.setValue(new java.util.Date(rs.getTimestamp(ku.getOrders() + 1).getTime()));
 							} else {
-								// System.out.println("listResult ku.getOrders() + 1="
-								// + (ku.getOrders() + 1));
-								// System.out.println("listResult sql=" + sql);
 								ku.setValue(rs.getString(ku.getOrders() + 1));
 							}
 						}
@@ -1266,11 +1232,7 @@ public abstract class QObjectDb implements java.io.Serializable {
 			}
 
 			if (listCachable) {
-				// Add the thread block to cache
 				try {
-					// System.out.println(getClass() +
-					// " getQObjects: cacheGroup+groupName=" +
-					// cacheGroup+groupName);
 					QCache.getInstance().putInGroup(key,
 							cacheGroup + groupName, objkeys);
 				} catch (Exception e) {

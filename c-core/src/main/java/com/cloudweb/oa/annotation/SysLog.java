@@ -9,7 +9,7 @@ import java.lang.annotation.*;
 /**
  * @author fgf
  */
-// @Log(type = LogType.login, desc = "用户${userName}登录", level=LogLevel.INFO)
+// @SysLog(type = LogType.login, desc = "用户${userName}登录", level=LogLevel.INFO)
 @Documented
 @Target({ElementType.PARAMETER, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

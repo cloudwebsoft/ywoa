@@ -1,0 +1,242 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>用户导入</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/skin/common/organize.css}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+
+        td {
+            overflow: hidden;
+        }
+
+        td-err {
+            border: 1px solid #F90;
+        }
+    </style>
+</head>
+<body>
+<div class="oranize-number">
+    <!--最底层灰色条-->
+    <div class="oranize-number-linegray"></div>
+    <!--蓝色条1-->
+    <div class="oranize-number-lineblue1"></div>
+    <!--灰色条2-->
+    <div class="oranize-number-lineblue1 oranize-number-lineblue2"></div>
+
+    <!--1步-->
+    <div class="oranize-blue1">1</div>
+    <!--2步-->
+    <div class="oranize-blue2 oranize-roundness-blue2">2</div>
+    <!--3步-->
+    <div class="oranize-gray3">3</div>
+    <!--1步文字-->
+    <div class="oranize-txt1 ">导入Excel</div>
+    <!--2步文字-->
+    <div class="oranize-txt2 oranize-txt-sel">确认信息</div>
+    <!--3步文字-->
+    <div class="oranize-txt3">完成</div>
+</div>
+<table border="0" align="center" cellspacing="0" class="tabStyle_1 percent80">
+    <tr>
+        <td>
+            您共填写<span style="color: red" th:text="${infoLen}"></span>条数据，格式正确数据<span style="color: red" th:text="${#lists.size(successArr)}"></span>条，格式错误数据
+            <span style="color: red" th:text="${#lists.size(failArr)}"></span>条。
+            <span th:if="${#lists.size(failArr)>0}">
+	由于存在错误数据您需要修改员工资料后重新上传表格。
+	</span>
+            <br/>
+            导入失败的原因包括：<br/>
+            1. 必填项内容为空 2. 手机号码已被占用 3. 手机号非法 4. 员工编号已存在 <br/>
+        </td>
+    </tr>
+</table>
+<span style="margin-left:10px;">格式正确数据[[${#lists.size(successArr)}]]条</span>
+<table border="0" align="center" cellspacing="0" class="tabStyle_1" style="width:2000px;table-layout:fixed;margin: 10px">
+    <thead>
+    <tr>
+        <th class="tabStyle_1_title" width="10%">帐号</th>
+        <th class="tabStyle_1_title" width="10%">姓名</th>
+        <th class="tabStyle_1_title" width="10%">工号</th>
+        <th class="tabStyle_1_title" width="10%">手机</th>
+        <th class="tabStyle_1_title" width="10%">性别</th>
+        <th class="tabStyle_1_title" width="10%">员工编号</th>
+        <th class="tabStyle_1_title" width="20%">部门</th>
+        <th class="tabStyle_1_title" width="10%">角色</th>
+        <th class="tabStyle_1_title" width="10%" style="display: none">职位</th>
+        <th class="tabStyle_1_title" width="10%">身份证</th>
+        <th class="tabStyle_1_title" width="10%">婚否</th>
+        <th class="tabStyle_1_title" width="10%">出生日期</th>
+        <th class="tabStyle_1_title" width="10%">E-mail</th>
+        <th class="tabStyle_1_title" width="10%">QQ</th>
+        <th class="tabStyle_1_title" width="10%">电话</th>
+        <th class="tabStyle_1_title" width="10%">入职时间</th>
+        <th class="tabStyle_1_title" width="10%">短号</th>
+        <th class="tabStyle_1_title" width="10%">兴趣爱好</th>
+        <th class="tabStyle_1_title" width="20%">地址</th>
+        <th class="tabStyle_1_title" width="10%">提示</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="json, stat : ${successArr}">
+        <td>[[${json[name]}]]</td>
+        <td>[[${json[realName]}]]</td>
+        <td>[[${json[accountName]}]]</td>
+        <td>[[${json[mobile]}]]</td>
+        <td>[[${json[gender]}]]</td>
+        <td>[[${json[personNO]}]]</td>
+        <td>[[${json[dept]}]]</td>
+        <td>[[${json[roleName]}]]</td>
+        <td style="display: none">[[${json[postName]}]]</td>
+        <td>[[${json[idCard]}]]</td>
+        <td>[[${json[marriaged]}]]</td>
+        <td>[[${json[birthday]}]]</td>
+        <td>[[${json[email]}]]</td>
+        <td>[[${json[QQ]}]]</td>
+        <td>[[${json[phone]}]]</td>
+        <td>[[${json[entryDate]}]]</td>
+        <td>[[${json[shortMobile]}]]</td>
+        <td>[[${json[hobbies]}]]</td>
+        <td>[[${json[address]}]]</td>
+        <td align="center"><img width="16" th:src="@{/skin/images/organize/icon-finish.png}"/></td>
+    </tr>
+    </tbody>
+</table>
+<br/>
+<div style="margin-left:10px;">格式错误数据[[${#lists.size(failArr)}]]条</div>
+<table border="0" align="center" cellspacing="0" class="tabStyle_1" style="width:2000px;table-layout:fixed;margin: 10px">
+    <thead>
+    <tr>
+        <th class="tabStyle_1_title" width="10%">帐号</th>
+        <th class="tabStyle_1_title" width="10%">姓名</th>
+        <th class="tabStyle_1_title" width="10%">工号</th>
+        <th class="tabStyle_1_title" width="11%">手机</th>
+        <th class="tabStyle_1_title" width="10%">性别</th>
+        <th class="tabStyle_1_title" width="10%">员工编号</th>
+        <th class="tabStyle_1_title" width="20%">部门</th>
+        <th class="tabStyle_1_title" width="10%">角色</th>
+        <th class="tabStyle_1_title" width="10%" style="display: none;">职位</th>
+        <th class="tabStyle_1_title" width="10%">身份证</th>
+        <th class="tabStyle_1_title" width="10%">婚否</th>
+        <th class="tabStyle_1_title" width="10%">出生日期</th>
+        <th class="tabStyle_1_title" width="10%">E-mail</th>
+        <th class="tabStyle_1_title" width="10%">QQ</th>
+        <th class="tabStyle_1_title" width="10%">电话</th>
+        <th class="tabStyle_1_title" width="10%">入职时间</th>
+        <th class="tabStyle_1_title" width="10%">短号</th>
+        <th class="tabStyle_1_title" width="10%">兴趣爱好</th>
+        <th class="tabStyle_1_title" width="20%">地址</th>
+        <th class="tabStyle_1_title" width="10%">提示</th>
+    </tr>
+    </thead>
+    <tbody>
+        <tr th:each="json, stat : ${failArr}">
+            <td th:attr="class=${json['name_err'] ? 'td-err' : ''}">[[${json[name]}]]</td>
+            <td th:attr="class=${json['realName_err'] ? 'td-err' : ''}">[[${json[realName]}]]</td>
+            <td th:attr="class=${json['accountName_err'] ? 'td-err' : ''}">[[${json[accountName]}]]</td>
+            <td th:attr="class=${json['mobile_err'] ? 'td-err' : ''}">[[${json[mobile]}]]</td>
+            <td>[[${json[gender]}]]</td>
+            <td th:attr="class=${json['personNO_err'] ? 'td-err' : ''}">[[${json[personNO]}]]</td>
+            <td th:attr="class=${json['dept_err'] ? 'td-err' : ''}">[[${json[dept]}]]</td>
+            <td>[[${json[roleName]}]]</td>
+            <td style="display: none;">[[${json[postName]}]]</td>
+            <td>[[${json[idCard]}]]</td>
+            <td>[[${json[marriaged]}]]</td>
+            <td>[[${json[birthday]}]]</td>
+            <td>[[${json[email]}]]</td>
+            <td>[[${json[QQ]}]]</td>
+            <td>[[${json[phone]}]]</td>
+            <td>[[${json[entryDate]}]]</td>
+            <td>[[${json[shortMobile]}]]</td>
+            <td>[[${json[hobbies]}]]</td>
+            <td>[[${json[address]}]]</td>
+            <td>[[${json[prompt]}]]</td>
+        </tr>
+    </tbody>
+</table>
+<table align="center">
+    <tr>
+        <td>
+            <th:block th:switch="${#lists.size(failArr)>0}">
+                <input th:case="true" type="button" value="上一步" onclick="previous()" class="org-btn"/>
+                <th:block th:case="*">
+                    <button onclick="previous()" class="btn btn-default">上一步</button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <button onclick="next()" class="btn btn-default">下一步</button>
+                </th:block>
+            </th:block>
+        </td>
+    </tr>
+</table>
+<form id="form1" action="userImportFinish.do">
+    <textarea id="info" name="info" style="display: none">[(${successArr})]</textarea>
+</form>
+</body>
+<script type="text/javascript">
+    parent.hiddenLoading();
+
+    function previous() {
+        window.location.href = "userImport.do";
+    }
+
+    function next() {
+        $.ajax({
+            type: "post",
+            url: "userImportFinish.do",
+            data: {
+                info: $('#info').val()
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $("body").showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == "1") {
+                    jAlert(data.msg, "提示", function() {
+                        parent.page_refresh();
+                    });
+                }
+                else {
+                    jAlert(data.msg, "提示");
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $("body").hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function selAllCheckBox(checkboxname) {
+        var checkboxboxs = document.getElementsByName(checkboxname);
+        if (checkboxboxs != null) {
+            // 如果只有一个元素
+            if (checkboxboxs.length == null) {
+                checkboxboxs.checked = true;
+            }
+            for (i = 0; i < checkboxboxs.length; i++) {
+                checkboxboxs[i].checked = true;
+            }
+        }
+    }
+
+    function deSelAllCheckBox(checkboxname) {
+        var checkboxboxs = document.getElementsByName(checkboxname);
+        if (checkboxboxs != null) {
+            if (checkboxboxs.length == null) {
+                checkboxboxs.checked = false;
+            }
+            for (i = 0; i < checkboxboxs.length; i++) {
+                checkboxboxs[i].checked = false;
+            }
+        }
+    }
+</script>
+</html>

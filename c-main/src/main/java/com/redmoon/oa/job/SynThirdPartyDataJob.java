@@ -7,13 +7,12 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.quartz.Job;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import org.quartz.*;
 
 import com.cloudwebsoft.framework.db.DataSource;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
@@ -36,21 +35,24 @@ import cn.js.fan.util.NumberUtil;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * 第三方数据表的名称为表单的code
  * @author fgf
  *
  */
-public class SynThirdPartyDataJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class SynThirdPartyDataJob extends QuartzJobBean {
 
 	/**
 	 * 获取第三方数据源中的一条记录及其相关表的
 	 * @param thirdJt
 	 * @param fd 存放第三方数据的主表单
-	 * @param thirdId 第三方数据的ID
-	 * @param primaryKey 第三方数据的主键 
-	 * @param foreignKey 第三方数据外键
 	 * @throws JSONException 
 	 */
 	public void getRecord(JdbcTemplate thirdJt, FormDb fd, ResultRecord rr, int primaryKeyType, JSONObject dataMap) throws JSONException {
@@ -81,16 +83,18 @@ public class SynThirdPartyDataJob implements Job {
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_DATETIME) {
 				Timestamp ts = rr.getTimestamp(field);
 				String d = "";
-				if (ts != null)
+				if (ts != null) {
 					d = DateUtil.format(new java.util.Date(ts.getTime()),
 							FormField.FORMAT_DATE_TIME);
+				}
 				val = d;
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_DOUBLE) {
 				double r = rr.getDouble(field);
-				if (r == 0)
+				if (r == 0) {
 					val = "";
-				else
+				} else {
 					val = String.valueOf(rr.getDouble(field));
+				}
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_FLOAT) {
 				val = String.valueOf(rr.getFloat(field));
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
@@ -174,8 +178,7 @@ public class SynThirdPartyDataJob implements Job {
 					fdaoRelated.create();
 				}
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 
@@ -204,16 +207,18 @@ public class SynThirdPartyDataJob implements Job {
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_DATETIME) {
 				Timestamp ts = rr.getTimestamp(ff.getName());
 				String d = "";
-				if (ts != null)
+				if (ts != null) {
 					d = DateUtil.format(new java.util.Date(ts.getTime()),
 							FormField.FORMAT_DATE_TIME);
+				}
 				ff.setValue(d);
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_DOUBLE) {
 				double r = rr.getDouble(ff.getName());
-				if (r == 0)
+				if (r == 0) {
 					ff.setValue("");
-				else
+				} else {
 					ff.setValue("" + rr.getDouble(ff.getName()));
+				}
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_FLOAT) {
 				ff.setValue("" + rr.getFloat(ff.getName()));
 			} else if (ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
@@ -235,7 +240,8 @@ public class SynThirdPartyDataJob implements Job {
 		}
 	}
 
-	public void execute(JobExecutionContext jobExecutionContext)
+	@Override
+	public void executeInternal(JobExecutionContext jobExecutionContext)
 			throws JobExecutionException {
 
 		JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
@@ -248,7 +254,7 @@ public class SynThirdPartyDataJob implements Job {
 		
         JobUnitDb jud = new JobUnitDb();
         int id = StrUtil.toInt(strId);
-        jud = (JobUnitDb)jud.getQObjectDb(new Integer(id));
+        jud = (JobUnitDb)jud.getQObjectDb(id);
 		String lastValue = StrUtil.getNullStr(jud.getString("job_data")); // 最后取得的一条记录的主键
         
 		JdbcTemplate jt = null;
@@ -292,16 +298,14 @@ public class SynThirdPartyDataJob implements Job {
 			jt.setAutoClose(false);
 			ResultIterator ri = jt.executeQuery(sql);
 			while (ri.hasNext()) {
-				ResultRecord rr = (ResultRecord)ri.next();
+				ResultRecord rr = ri.next();
 				lastValue = rr.getString(primaryKey);
 				getRecord(jt, fd, rr, ff.getFieldType(), json);
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		finally {
 			if (jt!=null) {
@@ -313,8 +317,7 @@ public class SynThirdPartyDataJob implements Job {
 					jud.set("job_data", lastValue);
 					jud.save();
 				} catch (ResKeyException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}		
 			}
 		}

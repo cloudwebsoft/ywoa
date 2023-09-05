@@ -3,12 +3,12 @@
 				 cn.js.fan.db.*,
 				 cn.js.fan.util.*,
 				 cn.js.fan.web.*,
-				 com.redmoon.forum.*,
 				 org.jdom.*,
                  java.util.*,
 				 java.lang.*"
 %>
 <%@page import="com.redmoon.oa.kernel.License"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%
 XMLConfig cfg = new XMLConfig("config.xml", false, "gb2312");
 License lic = License.getInstance();
@@ -22,7 +22,7 @@ License lic = License.getInstance();
     <div align="left"><b>欢迎您使用<%=com.redmoon.oa.Config.getInstance().get("enterprise")%><%=cfg.get("oa.version")%>&nbsp;<font style="font-size='14px';color='red'">MSSQL版本</font></b></div>
     <hr size="0">
 <%
-cfg = new XMLConfig(application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml", true, "iso-8859-1");
+cfg = new XMLConfig("proxool.xml", false, "iso-8859-1");
 Element root, driverProp,  e_user=null, e_pwd=null, e_driverclass=null;
 String user="", pwd="", url="", ip="", database="", port="", maximum_connection_count="", dirverclass="";
 List list;
@@ -85,8 +85,7 @@ if (op.equals("setup")) {
 		org.logicalcobwebs.proxool.ProxoolFacade.removeAllConnectionPools(5000); // 
 		org.logicalcobwebs.proxool.configuration.JAXPConfigurator.configure(realPath + "WEB-INF/proxool.xml", false);
     } catch (Exception e) {
-    	out.print("Problem configuring: " + e.getMessage());
-		e.printStackTrace();
+		LogUtil.getLog(getClass()).error(e);
     }	
 }
 %>

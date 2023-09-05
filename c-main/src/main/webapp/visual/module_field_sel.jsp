@@ -29,6 +29,10 @@
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, e.getMessage()));
         return;
     }
+
+    // 表单域选择宏控件字段名
+    String curFieldName = ParamUtil.get(request, "fieldName");
+
     String params = ParamUtil.get(request, "params");
     JSONObject jsonObject = null;
     String formCode = "";
@@ -44,6 +48,8 @@
     boolean isSimilar = false;
     boolean isAjax = false;
     boolean isRealTime = false;
+    boolean isUseModuleFilter = false;
+    boolean isAgainst = false;
     JSONArray nestMaps = null;
     String requestParam = "";
     List<NestFieldMaping> nestList = null;
@@ -113,6 +119,18 @@
                     isRealTime = jsonObject.getBoolean("isRealTime");
                 }
 
+                if (jsonObject.has("isAgainst")) {
+                    isAgainst = jsonObject.getBoolean("isAgainst");
+                }
+
+                if (jsonObject.has("isUseModuleFilter")) {
+                    isUseModuleFilter = jsonObject.getBoolean("isUseModuleFilter");
+                }
+                else {
+                    // 向下兼容
+                    isUseModuleFilter = true;
+                }
+
                 filter = jsonObject.getString("filter");
                 if ("none".equals(filter)) {
                     filter = "";
@@ -123,8 +141,18 @@
 
                 nestList = new ArrayList<NestFieldMaping>();
                 nestMaps = jsonObject.getJSONArray("maps");
-                FormDb sourceFd = new FormDb(msd.getString("form_code"));
-                FormDb openerFd = new FormDb(formCode);
+                FormDb sourceFd = new FormDb();
+                sourceFd = sourceFd.getFormDb(msd.getString("form_code"));
+                if (!sourceFd.isLoaded()) {
+                    out.print("源表单: " + msd.getString("form_code") + " 不存在");
+                    return;
+                }
+                FormDb openerFd = new FormDb();
+                openerFd = openerFd.getFormDb(formCode);
+                if (!openerFd.isLoaded()) {
+                    out.print("主表单: " + formCode + " 不存在");
+                    return;
+                }
                 for(int i = 0 ; i < nestMaps.length(); i++){
                     JSONObject temp = new JSONObject();
                     temp = (JSONObject)nestMaps.get(i);
@@ -233,7 +261,7 @@
                 }
             );
 
-            $.getJSON('../flowform_data_map_ajax.jsp', {"sourceFormCode":formCodeSel}, function(data) {
+            $.getJSON('../flow/form_data_map_ajax.jsp', {"sourceFormCode":formCodeSel}, function(data) {
                 sources = data.result;
             });
         }
@@ -287,7 +315,7 @@
         <td height="28" colspan="4" class="tabStyle_1_title">&nbsp;请选择</td>
     </tr>
     <tr>
-        <td height="22" colspan="4" align="left">&nbsp;记录模块
+        <td height="22" colspan="4" align="left">&nbsp;源模块
             <select name="formCode" onchange="getFieldOfForm(this.value)" id="formCode">
                 <%
                     ModuleSetupDb msd = new ModuleSetupDb();
@@ -297,7 +325,7 @@
                     while (ir.hasNext()) {
                         msd = (ModuleSetupDb)ir.next();
 
-                        if (jsonStr.equals("")) {
+                        if ("".equals(jsonStr)) {
                             jsonStr = "{\"id\":\"" + msd.getString("code") + "\", \"name\":\"" + msd.getString("name") + "\"}";
                         } else {
                             jsonStr += ",{\"id\":\"" + msd.getString("code") + "\", \"name\":\"" + msd.getString("name") + "\"}";
@@ -310,11 +338,11 @@
             </select>
             (<a id="btnSourceModule" href="javascript:" title="维护模块">维护</a>)
             <!--中的字段-->
-            <span id="spanField"></span>
+            记录<span id="spanField"></span>
         </td>
         <script>
             var sourceFormCode = '<%=moduleCode%>';
-            if (sourceFormCode != null && sourceFormCode != ""){
+            if (sourceFormCode != null && sourceFormCode != "") {
                 $("#formCode").val(sourceFormCode);
             }
             $('#formCode').select2({width:300});
@@ -338,12 +366,12 @@
                         <img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>&nbsp;<a href="javascript:;" onclick="openCondition()">配置条件</a>&nbsp;
                         <img src="../admin/images/gou.png" style="margin-bottom:-5px;width:20px;height:20px;display:<%=(isComb && !filter.equals(""))?"":"none" %>;" id="imgId"/>
                         <textarea id="condition" name="condition" style="display:none" cols="80" rows="5"><%=filter %></textarea>
-                        &nbsp;&nbsp;（如果配置了条件，则根据配置条件过滤，如果未配置条件，则根据模块的条件过滤）
+                        &nbsp;&nbsp;<input id="isUseModuleFilter" name="isUseModuleFilter" type="checkbox"/>&nbsp;当配置条件为空时，使用模块中的条件
                     </div>
                 </div>
                 <div class="tab-pane fade <%=cssScript %>" id="script">
-                    <div>
-                        <textarea id="conds" name="conds" style="width:600px; height:150px"></textarea>
+                    <div style="margin-bottom: 10px">
+                        <textarea id="conds" name="conds" style="width:100%; height:150px"></textarea>
                         <br />
                         <a href="javascript:;" onclick="o('conds').value += ' {$curDate}';" title="当前日期">当前日期</a>
                         &nbsp;&nbsp;
@@ -353,7 +381,7 @@
                         &nbsp;&nbsp;
                         <a href="javascript:;" onclick="o('conds').value += ' in ({$curUserRole})';" title="当前用户的角色">当前用户的角色</a>
                         &nbsp;&nbsp;
-                        <a href="javascript:;" onclick="o('conds').value += ' in ({$admin.dept})';" title="用户可以管理的部门">当前用户管理的部门</a>&nbsp;&nbsp;(注：条件不能以and开头)
+                        <a href="javascript:;" onclick="o('conds').value += ' in ({$admin.dept})';" title="用户可以管理的部门">当前用户管理的部门</a>&nbsp;&nbsp;
                         <input type="button" value="设计器" class="btn btn-default" onclick="openIdeWin()" />
                         <textarea id='condHelper' style="display:none"><%=filter%></textarea>
                         <script>
@@ -363,6 +391,10 @@
                                 $("#conds").val(cond);
                             }
                         </script>
+                        <br/>
+                        注：<br/>
+                        1、条件不能以and开头<br/>
+                        2、当为集团版时，如果记录不需要限定为本单位的，则点击维护，在源模块的过滤条件中配置“单位”为不限制
                     </div>
                     <div style="float:left; padding-top:4px">源表单中的</div>
                     <div id="sourceCondFieldDiv" style="float:left">
@@ -444,9 +476,14 @@
         远程获取
       </span>
             &nbsp;&nbsp;&nbsp;&nbsp;
-            request请求参数名称：<input id="requestParam" name="requestParam" title="增加记录时从request请求中接收的参数名称" value="<%=requestParam%>" />
-            &nbsp;&nbsp;&nbsp;&nbsp;
             <input id="isRealTime" value="true" type="checkbox"/> 实时映射
+            <%
+                String strAgainstChecked = isAgainst?"checked":"";
+            %>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <input id="isAgainst" name="isAgainst" value="true" type="checkbox" <%=strAgainstChecked%> title="流程结束时自动冲抵源表单中的记录" />自动冲抵
+            <br/>
+            request请求参数名称：<input id="requestParam" name="requestParam" title="增加记录时从request请求中接收的参数名称" value="<%=requestParam%>" />
             <script>
                 $(function() {
                     var mode = $('input:radio[name=mode]:checked').val();
@@ -479,6 +516,17 @@
 
                     if (<%=isRealTime%>) {
                         $('#isRealTime').attr("checked", true);
+                    }
+
+                    if (<%=isAgainst%>) {
+                        $('#isAgainst').attr("checked", true);
+                    }
+
+                    if (<%=isUseModuleFilter%>) {
+                        $('#isUseModuleFilter').attr("checked", true);
+                    }
+                    else {
+                        $('#isUseModuleFilter').attr("checked", false);
                     }
 
                     $("input[name='mode']").click(function() {
@@ -515,6 +563,10 @@
                     String json = "";
                     while (ir.hasNext()) {
                         FormField ff = (FormField)ir.next();
+                        // 防止误映射表单域选择宏控件本身
+                        if (ff.getName().equals(curFieldName)) {
+                            continue;
+                        }
                 %>
                 <option value="<%=ff.getName()%>"><%=ff.getTitle()%></option>
                 <%
@@ -708,7 +760,9 @@
         var canOpenWinSel = $('#canOpenWinSel').is(':checked');
         var isAjax = $('#isAjax').is(':checked');
         var isRealTime = $('#isRealTime').is(':checked');
-        var json = "{'formCode':'<%=openerFormCode%>', 'mode':" + getRadioValue("mode") + ", 'requestParam':" + o("requestParam").value + ", 'isMulti':" + isMulti + ", 'canManualInput':" + canManualInput + ", 'isSimilar':" + isSimilar + ", 'canOpenWinSel':'" + canOpenWinSel + "', 'isAjax':'" + isAjax + "', 'sourceFormCode':'" + o("formCode").value + "', 'idField':" + o("otherField").value + "', 'showField':'" + o("otherShowField").value + "', 'filter':'" + encodeJSON(conds) + "', 'isParentSaveAndReload':'true', 'isRealTime':" + isRealTime + ", 'maps':[" + maps + "]}";
+        var isUseModuleFilter = $('#isUseModuleFilter').is(':checked');
+        var isAgainst = $('#isAgainst').is(':checked');
+        var json = "{'formCode':'<%=openerFormCode%>', 'mode':" + getRadioValue("mode") + ", 'requestParam':" + o("requestParam").value + ", 'isMulti':" + isMulti + ", 'canManualInput':" + canManualInput + ", 'isSimilar':" + isSimilar + ", 'canOpenWinSel':'" + canOpenWinSel + "', 'isAjax':'" + isAjax + "', 'sourceFormCode':'" + o("formCode").value + "', 'idField':" + o("otherField").value + "', 'showField':'" + o("otherShowField").value + "', 'filter':'" + encodeJSON(conds) + "', 'isParentSaveAndReload':'true', 'isRealTime':" + isRealTime + ", 'isAgainst':" + isAgainst + ", 'maps':[" + maps + "], 'isUseModuleFilter':" + isUseModuleFilter + "}";
         // 不能带有单或双引号，会使得赋值后，IE源码混乱，出现?号
         json = json.replace(/'/gi, "");
         window.opener.setSequence(json, formCode.options[formCode.selectedIndex].text + "_" + otherShowField.options[otherShowField.selectedIndex].text);

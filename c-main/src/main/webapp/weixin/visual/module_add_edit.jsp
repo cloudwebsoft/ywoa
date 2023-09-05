@@ -8,6 +8,7 @@
 <%@page import="com.redmoon.oa.android.*" %>
 <%@ page import="cn.js.fan.util.RandomSecquenceCreator" %>
 <%@ page import="cn.js.fan.util.StrUtil" %>
+<%@ page import="org.json.JSONObject" %>
 <%
     String skey = ParamUtil.get(request, "skey");
     long id = ParamUtil.getInt(request, "id", 0);
@@ -43,7 +44,9 @@
 
     isOnlyCamera = fd.isOnlyCamera();
     String formCodeRelated = ParamUtil.get(request, "formCodeRelated");
-    int parentId = ParamUtil.getInt(request, "parentId", 0);
+    long parentId = ParamUtil.getLong(request, "parentId", 0);
+    // 通过uniapp的webview载入
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE>
 <html>
@@ -118,7 +121,7 @@
 <%
     if (isLocation) {
 %>
-<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=3dd31b657f333528cc8b581937fd066a"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
 <%
     }
 %>
@@ -131,6 +134,12 @@
 <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jq_mydialog.js"></script>
 <script type="text/javascript" src="../js/newPopup.js"></script>
+<%--微信小程序SDK--%>
+<%--<script type="text/javascript" src="../js/jweixin-1.4.0.js"></script>
+<script type="text/javascript" src="../js/uni.webview.1.5.2.js"></script>--%>
+<script type="text/javascript" src="../js/weixin.js"></script>
+<script type="text/javascript" src="../js/uniapps.js"></script>
+
 <script src="../js/macro/macro.js"></script>
 <script src="../js/mui.min.js"></script>
 <script src="../js/mui.picker.min.js"></script>
@@ -138,8 +147,29 @@
 <script type="text/javascript" src="../js/base/mui.form.js"></script>
 
 <script type="text/javascript" src="../js/visual/mui_module.js"></script>
+<script type="text/javascript" src="../../js/jquery.raty.min.js"></script>
 
 <script type="text/javascript" charset="utf-8">
+    var isUniWebview = <%=isUniWebview%>;
+    if(mui.os.plus) {
+        // 如果是通过uniapp的webview载入
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
+
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        if (isUniWebview) {
+            mui.init({
+                keyEventBind: {
+                    backbutton: false // 关闭back按键监听
+                }
+            });
+        }
+    }
+    else {
+        $('.mui-bar').remove();
+    }
+
     var appProp = {"type": "module", "isOnlyCamera": "<%=isOnlyCamera%>"};
 
     function callJS() {
@@ -184,18 +214,36 @@
         if (id==0) {
             id = StrUtil.toLong(RandomSecquenceCreator.getId(10), 0);
         }
+
+        JSONObject extraData = new JSONObject();
+        Enumeration paramNames = request.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = (String) paramNames.nextElement();
+            String[] paramValues = ParamUtil.getParameters(request, paramName); // 因为参数来自于url链接中，所以一定得通过ParamUtil.getParameters转换，否则会为乱码
+            if (paramValues.length == 1) {
+                String paramValue = paramValues[0];
+                // 过滤掉formCode、code等，code是企业微信端传过来的，不能被二次消费
+                if (!("id".equals(paramName) || paramName.equals("moduleCode") || paramName.equals("formCodeRelated") || paramName.equals("parentId") || paramName.equals("pageType") || paramName.equals("skey"))) {
+                     extraData.put(paramName, paramValue);
+                }
+            }
+        }
         %>
         var id = <%=id%>;
         var formCodeRelated = '<%=formCodeRelated%>';
         var parentId = <%=parentId%>;
+        var isUniWebview = <%=isUniWebview%>;
         var options = {
             "skey": skey,
             "moduleCode": moduleCode,
             "id": id,
             "formCodeRelated": formCodeRelated,
             "pageType": pageType,
-            "parentId": parentId
+            "parentId": parentId,
+            "isUniWebview": isUniWebview
         };
+        options.extraData = '<%=extraData%>';
+
         window.ModuleForm = new mui.ModuleForm(content, options);
         window.ModuleForm.moduleInit();
     });

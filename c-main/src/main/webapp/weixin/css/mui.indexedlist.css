@@ -52,7 +52,7 @@
 }
 .mui-indexed-list-search {
 	border-bottom: solid 1px #e3e3e3;
-	z-index: 15;
+	z-index: 9;
 }
 .mui-indexed-list-search.mui-search:before {
 	margin-top: -10px;

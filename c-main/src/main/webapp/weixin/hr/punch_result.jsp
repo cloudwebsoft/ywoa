@@ -32,7 +32,7 @@
     </style>
     <link rel="stylesheet" href="../css/mui.css">
     <script type="text/javascript"
-            src="http://api.map.baidu.com/api?v=1.5&ak=3dd31b657f333528cc8b581937fd066a"></script>
+            src="http://api.map.baidu.com/api?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
     <script src="../../inc/common.js"></script>
     <script src="../../js/jquery-1.9.1.min.js"></script>
 
@@ -50,10 +50,11 @@
     Privilege pvg = new Privilege();
     pvg.auth(request);
     String skey = pvg.getSkey();
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 
     int result = ParamUtil.getInt(request, "result", -1);
     int min = ParamUtil.getInt(request, "min", 0);
-// String address = ParamUtil.get(request, "address");
+    // String address = ParamUtil.get(request, "address");
     String address = request.getParameter("address");
     boolean isLocationAbnormal = ParamUtil.getBoolean(request, "isLocationAbnormal", false);
 
@@ -130,10 +131,18 @@
 </jsp:include>
 </body>
 <script>
-    if(!mui.os.plus) {
+    var isUniWebview = <%=isUniWebview%>;
+
+    if(!mui.os.plus || isUniWebview) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
     }
+
+    mui.init({
+        keyEventBind: {
+            backbutton: !isUniWebview //关闭back按键监听
+        }
+    });
 
     $(function () {
         $('#btnOk').click(function () {

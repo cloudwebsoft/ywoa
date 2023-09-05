@@ -55,4 +55,7 @@ public class Role extends Model<Role> {
         return this.code;
     }
 
+    private Boolean status;
+
+    private Integer id;
 }

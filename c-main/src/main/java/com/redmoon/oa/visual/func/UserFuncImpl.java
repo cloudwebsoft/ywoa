@@ -21,7 +21,6 @@ public class UserFuncImpl implements IFuncImpl {
 
 	@Override
 	public String func(IFormDAO fdao, String[] func) throws ErrMsgException {
-		// System.out.println(getClass() + " " + func[1]);
 		String[] params = StrUtil.split(func[1], ",");
 		if (params==null || params.length!=2) {
 			throw new ErrMsgException("参数必须为2个！");

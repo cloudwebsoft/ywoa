@@ -1,0 +1,113 @@
+@charset "UTF-8";
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* uni.scss */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+.pageStyle.data-v-7f2f98d4 {
+  height: 100%;
+}
+.pageStyle .slot-button.data-v-7f2f98d4 {
+  display: flex;
+  height: 100%;
+  flex: 1;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  padding-bottom: 20rpx;
+}
+.pageStyle .slot-button .slot-button-con.data-v-7f2f98d4 {
+  height: 100%;
+  width: 100%;
+  padding: 0 20rpx;
+  display: flex;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-right: 10rpx;
+  margin-left: 10rpx;
+}
+.pageStyle .slot-button .slot-button-text.data-v-7f2f98d4 {
+  color: #ffffff;
+  font-size: 14px;
+}
+.pageStyle .buttons.data-v-7f2f98d4 {
+  background-color: "#31E6E1";
+  padding: "20rpx";
+  border: "none";
+  color: "#fff";
+}
+.pageStyle .marginBottom20.data-v-7f2f98d4 {
+  margin-bottom: 20rpx;
+}
+.pageStyle .body_top.data-v-7f2f98d4 {
+  padding: 20rpx 40rpx;
+}
+.pageStyle .body_top .search_top_but.data-v-7f2f98d4 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20rpx;
+}
+.pageStyle .body_conter.data-v-7f2f98d4 {
+  padding: 20rpx 20rpx 100rpx;
+}
+.pageStyle .content_box.data-v-7f2f98d4 {
+  background: #ffffff;
+  padding: 20rpx;
+  border-radius: 15rpx;
+  box-shadow: -3rpx 0px 22rpx 3rpx rgba(87, 193, 189, 0.2);
+  margin-bottom: 20rpx;
+}
+.pageStyle .content_box .imgs.data-v-7f2f98d4 {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.pageStyle .content_box .line.data-v-7f2f98d4 {
+  width: 100%;
+  height: 1;
+  margin: 20rpx 0;
+  border-top: 1px solid #eee;
+}
+.pageStyle .body_bottom.data-v-7f2f98d4 {
+  position: fixed;
+  bottom: 0;
+  height: 100rpx;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background-color: #31e6e1;
+}
+.pageStyle .timeBut.data-v-7f2f98d4 {
+  padding: 20rpx;
+}
+

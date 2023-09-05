@@ -751,9 +751,10 @@ DEFAULT_CALLBACKS = {
       if (/firefox/i.test(navigator.userAgent)) {
         wrapped_content = "<span>" + content + new_suffix + "</span>";
       } else {
-        suffix = "<span contenteditable='false'>" + new_suffix + "<span>";
+        suffix = "<span contenteditable='true'>" + new_suffix + "</span>";
         // 20210228末尾加&nbsp;以支持chrome下百度五笔输入法，不过这样处理后仍需在选中用户后，重新点击获取焦点，方可输入中文
-        wrapped_content = "<span contenteditable='false'>" + content + suffix + "</span>&nbsp;";
+        // 20220204 将contenteditable改为true，以支持chrome下百度五笔输入法，不需要重新点击获取焦点
+        wrapped_content = "<span contenteditable='true'>" + content + suffix + "</span>&nbsp;";
       }
       if (this.app.document.selection) {
         // wrapped_content = "<span contenteditable='true'>" + content + "</span>";

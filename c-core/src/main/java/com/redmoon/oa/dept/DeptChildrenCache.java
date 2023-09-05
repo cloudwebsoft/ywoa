@@ -1,11 +1,11 @@
 package com.redmoon.oa.dept;
 
-import java.util.*;
-import cn.js.fan.cache.jcs.*;
 import com.cloudweb.oa.cache.DepartmentCache;
 import com.cloudweb.oa.entity.Department;
 import com.cloudweb.oa.utils.SpringUtil;
-import org.apache.log4j.*;
+
+import java.util.List;
+import java.util.Vector;
 
 public class DeptChildrenCache {
     String parentCode;

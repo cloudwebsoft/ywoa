@@ -7,8 +7,11 @@ import com.cloudweb.oa.entity.*;
 import com.cloudweb.oa.service.*;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.Config;
+import com.redmoon.oa.pvg.RoleDb;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,36 +52,25 @@ public class UserCache extends ObjCache {
     @Autowired
     IDeptUserService deptUserService;
 
+    @Autowired
+    IPostUserService postUserService;
+
+    @Autowired
+    IUserRolePostService userRolePostService;
+
+    @Autowired
+    IPostService postService;
+
     public User getUser(String userName) {
         return (User)getObj(this, userName);
     }
 
     public List<Role> getRolesWithoutLock(String userName) throws CacheException {
         boolean isNotExist = false;
-        List<Role> list = (List) RMCache.getInstance().getFromGroup(ROLES_PREFIX + userName, group);
+        List<Role> list = (List<Role>) RMCache.getInstance().getFromGroup(ROLES_PREFIX + userName, group);
         if (null == list) {
-            // 取得用户所属的角色
-            list = roleService.getRolesOfUser(userName, true);
-            // 取得用户所属的用户组
-            List<Group> groupList = groupService.getGroupsOfUser(userName, false);
-            for (Group group : groupList) {
-                // 取得用户组所属的角色
-                List<GroupOfRole> gorList = groupOfRoleService.listByGroupCode(group.getCode());
-                // 判断用户组所属的角色是否已在list中，如果不在则加入
-                for (GroupOfRole groupOfRole : gorList) {
-                    boolean isFound = false;
-                    for (Role role : list) {
-                        if (role.getCode().equals(groupOfRole.getRoleCode())) {
-                            isFound = true;
-                            break;
-                        }
-                    }
-                    if (!isFound) {
-                        list.add(roleService.getRole(groupOfRole.getRoleCode()));
-                    }
-                }
-            }
-
+            // 取得用户所属的角色，除去member
+            list = roleService.getAllRolesOfUser(userName, true);
             if (list.size()==0) {
                 isNotExist = true;
                 // throw new RuntimeException("This data could not be empty. code=" + code);
@@ -143,10 +135,8 @@ public class UserCache extends ObjCache {
                     list = getRoles(userName);
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (CacheException e) {
-            e.printStackTrace();
+        } catch (InterruptedException | CacheException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                 distributedLock.unlock(getClass().getName(), indentifier);
@@ -179,7 +169,7 @@ public class UserCache extends ObjCache {
         try {
             list = (List<Group>) RMCache.getInstance().getFromGroup(GROUPS_PREFIX + userName, group);
         } catch (Exception e) {
-            log.error("getRoles:" + e.getMessage());
+            log.error("getGroups:" + e.getMessage());
         }
 
         if (null != list) {
@@ -209,10 +199,8 @@ public class UserCache extends ObjCache {
                     list = getGroups(userName);
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (CacheException e) {
-            e.printStackTrace();
+        } catch (InterruptedException | CacheException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                 distributedLock.unlock(getClass().getName(), indentifier);
@@ -230,36 +218,7 @@ public class UserCache extends ObjCache {
         boolean isNotExist = false;
         List<Group> groupList = (List) RMCache.getInstance().getFromGroup(GROUPS_PREFIX + userName, group);
         if (null == groupList) {
-            groupList = groupService.getGroupsOfUser(userName, true);
-            // 取用户所属的部门型的用户组
-            List<Group> deptGrouplist = groupService.listByIsDept(true);
-            for (Group group : deptGrouplist) {
-                boolean isOfGroup = false;
-                if (group.getIsIncludeSubDept()==1) {
-                    // 判断用户是否属于该部门型用户组，如果用户属于deptCode部门的子部门，则判定为属于该组
-                    if (deptUserService.isUserBelongToDept(userName, group.getDeptCode())) {
-                        isOfGroup = true;
-                    }
-                }
-                else {
-                    if (deptUserService.isUserOfDept(userName, group.getDeptCode())) {
-                        isOfGroup = true;
-                    }
-                }
-                if (isOfGroup) {
-                    boolean isFound = false;
-                    for (Group gp : groupList) {
-                        if (gp.getCode().equals(group.getCode())) {
-                            isFound = true;
-                            break;
-                        }
-                    }
-                    if (!isFound) {
-                        groupList.add(group);
-                    }
-                }
-            }
-
+            groupList = groupService.getAllGroupsOfUser(userName);
             if (groupList.size()==0) {
                 isNotExist = true;
                 // throw new RuntimeException("This data could not be empty. code=" + code);
@@ -298,7 +257,7 @@ public class UserCache extends ObjCache {
         try {
             pv = (String[]) RMCache.getInstance().getFromGroup(PRIVS_PREFIX + userName, group);
         } catch (Exception e) {
-            log.error("getRoles:" + e.getMessage());
+            log.error("getPrivs:" + e.getMessage());
         }
 
         if (null != pv) {
@@ -328,10 +287,8 @@ public class UserCache extends ObjCache {
                     pv = getPrivs(userName);
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (CacheException e) {
-            e.printStackTrace();
+        } catch (InterruptedException | CacheException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                 distributedLock.unlock(getClass().getName(), indentifier);
@@ -391,7 +348,7 @@ public class UserCache extends ObjCache {
         try {
             depts = (String[]) RMCache.getInstance().getFromGroup(ADMIN_DEPTS_PREFIX + userName, group);
         } catch (Exception e) {
-            log.error("getRoles:" + e.getMessage());
+            log.error("getAdminDepts:" + e.getMessage());
         }
 
         if (null != depts) {
@@ -421,10 +378,8 @@ public class UserCache extends ObjCache {
                     depts = getAdminDepts(userName);
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (CacheException e) {
-            e.printStackTrace();
+        } catch (InterruptedException | CacheException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                 distributedLock.unlock(getClass().getName(), indentifier);
@@ -500,5 +455,18 @@ public class UserCache extends ObjCache {
     @Override
     public Object getObjRaw(String key) {
         return userService.getUser(key);
+    }
+
+    public boolean isUserOfRole(String userName, String roleCode) {
+        if (roleCode.equals(RoleDb.CODE_MEMBER)) {
+            return true;
+        }
+        List<Role> list = getRoles(userName);
+        for (Role role : list) {
+            if (role.getCode().equals(roleCode)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

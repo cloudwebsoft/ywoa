@@ -15,10 +15,7 @@ public class HandleResourceViewExists extends InternalResourceView {
      */
     @Override
     public boolean checkResource(Locale locale) {
-        // System.out.println(this.getServletContext().getRealPath("/") + " " + super.getUrl());
-
         File file = new File(this.getServletContext().getRealPath("/") + getUrl());
-        System.out.println(this.getServletContext().getRealPath("/") + getUrl());
         return file.exists(); //判断页面是否存在
     }
 }

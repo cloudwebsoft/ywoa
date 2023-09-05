@@ -6,15 +6,20 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
-import com.cloudweb.oa.api.IModuleFieldSelectCtl;
-import com.cloudweb.oa.api.INestSheetCtl;
+import com.cloudweb.oa.api.*;
+import com.cloudweb.oa.service.FlowService;
+import com.cloudweb.oa.service.IFileService;
 import com.cloudweb.oa.service.MacroCtlService;
 import com.cloudweb.oa.service.WorkflowService;
+import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudweb.oa.utils.ThreadContext;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.android.Privilege;
+import com.redmoon.oa.base.IAttachment;
 import com.redmoon.oa.base.IFormMacroCtl;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.dept.DeptDb;
@@ -27,10 +32,13 @@ import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.stamp.StampDb;
 import com.redmoon.oa.stamp.StampPriv;
 import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.visual.FormUtil;
+import com.redmoon.oa.visual.FuncUtil;
+import com.redmoon.oa.visual.ModuleSetupDb;
+import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -68,6 +76,29 @@ public class FlowController {
     @Autowired
     private ThreadContext threadContext;
 
+    @Autowired
+    private IFileService fileService;
+
+    @Autowired
+    private I18nUtil i18nUtil;
+
+    @Autowired
+    private IWorkflowUtil workflowUtil;
+
+    @Autowired
+    private FlowService flowService;
+
+    @ApiOperation(value = "取得待办流程列表", notes = "取得待办流程列表", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "showyear", value = "年份", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "showmonth", value = "月份", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "op", value = "操作，搜索时为search", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "title", value = "标题", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "pagenum", value = "页数", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "pagesize", value = "每页条数", required = false, dataType = "Integer")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/doingorreturn", produces = {"application/json;charset=UTF-8;"})
     public String doingorreturn(@RequestParam(required = true) String skey,
@@ -87,11 +118,11 @@ public class FlowController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         String beginDate = "", endDate = "";
-        if (!showyear.equals("") && !showmonth.equals("")) {
+        if (!"".equals(showyear) && !"".equals(showmonth)) {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, StrUtil.toInt(showyear));
             cal.set(Calendar.MONTH, StrUtil.toInt(showmonth) - 1);
@@ -112,29 +143,29 @@ public class FlowController {
             sql += " or m.proxy=" + StrUtil.sqlstr(myname);
         }
         sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<> " + WorkflowDb.STATUS_DELETED + " and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
-        if (op.equals("search")) {
+        if ("search".equals(op)) {
             sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and f.status<>" + WorkflowDb.STATUS_DELETED + " and f.status<>" + WorkflowDb.STATUS_DISCARDED + " and (m.user_name=" + StrUtil.sqlstr(myname);
             if (isFlowProxy) {
                 sql += " or m.proxy=" + StrUtil.sqlstr(myname);
             }
             sql += ") and (is_checked=0 or is_checked=2) and sub_my_action_id=0";
-            if (!title.equals("")) {
+            if (!"".equals(title)) {
                 if (StrUtil.isNumeric(title)) {
                     sql += " and f.id=" + title;
                 } else {
                     sql += " and f.title like " + StrUtil.sqlstr("%" + title + "%");
                 }
             }
-            if (!beginDate.equals("")) {
+            if (!"".equals(beginDate)) {
                 sql += " and f.mydate>=" + SQLFilter.getDateStr(beginDate, "yyyy-MM-dd");
             }
-            if (!endDate.equals("")) {
+            if (!"".equals(endDate)) {
                 sql += " and f.mydate<" + SQLFilter.getDateStr(endDate, "yyyy-MM-dd");
             }
         }
 
         sql += " order by receive_date desc";
-        //System.out.println("sql = " + sql);
+        //LogUtil.getLog(getClass()).info("sql = " + sql);
         int curpage = pagenum; // 第几页
         ListResult lr;
         try {
@@ -170,7 +201,7 @@ public class FlowController {
                 JSONObject flow = new JSONObject();
                 flow.put("myActionId", String.valueOf(mad.getId()));
                 flow.put("flowId", String.valueOf(mad.getFlowId()));
-                flow.put("name", StringEscapeUtils.unescapeHtml(wfd.getTitle()));
+                flow.put("name", StringEscapeUtils.unescapeHtml3(wfd.getTitle()));
                 flow.put("status", WorkflowActionDb.getStatusName(mad.getActionStatus()));
                 flow.put("beginDate", DateUtil.format(wfd.getBeginDate(), "MM-dd HH:mm"));
                 flow.put("type", String.valueOf(lf.getType()));
@@ -180,14 +211,21 @@ public class FlowController {
             }
             result.put("flows", flows);
             json.put("result", result);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
+        } catch (JSONException | ErrMsgException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
 
+    @ApiOperation(value = "我参与的流程", notes = "取得我参与的流程列表", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "op", value = "操作，搜索时为search", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "title", value = "标题", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "pagenum", value = "页数", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "pagesize", value = "每页条数", required = false, dataType = "Integer")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/attend", produces = {"application/json;charset=UTF-8;"})
     public String attend(@RequestParam(required = true) String skey,
@@ -205,7 +243,7 @@ public class FlowController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -235,7 +273,7 @@ public class FlowController {
             }
         }
         sql += " order by flow_id desc";
-        //System.out.println("sql = " + sql);
+        //LogUtil.getLog(getClass()).info("sql = " + sql);
         int curpage = pagenum;   //第几页
         try {
             ListResult lr = wf.listResult(sql, curpage, pagesize);
@@ -245,8 +283,9 @@ public class FlowController {
             json.put("total", String.valueOf(total));
             Vector v = lr.getResult();
             Iterator ir = null;
-            if (v != null)
+            if (v != null) {
                 ir = v.iterator();
+            }
             JSONObject result = new JSONObject();
             result.put("count", String.valueOf(pagesize));
             MyActionDb mad = new MyActionDb();
@@ -263,7 +302,7 @@ public class FlowController {
 
                 JSONObject flow = new JSONObject();
                 flow.put("flowId", String.valueOf(wfd.getId()));
-                flow.put("name", StringEscapeUtils.unescapeHtml(wfd.getTitle()));
+                flow.put("name", StringEscapeUtils.unescapeHtml3(wfd.getTitle()));
                 flow.put("status", wfd.getStatusDesc());
                 flow.put("beginDate", DateUtil.format(wfd.getBeginDate(), "MM-dd HH:mm"));
                 flow.put("type", lf.getCode());
@@ -286,14 +325,14 @@ public class FlowController {
             result.put("flows", flows);
             json.put("result", result);
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
+        } catch (JSONException | ErrMsgException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
 
+    @ApiOperation(value = "取得@流程的详情（已废除）", notes = "取得@流程的详情（已废除）", httpMethod = "POST")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     public JSONArray getCwsWorkflowResultDetail(long flowId, long myActionId, String username) {
         JSONArray jsonArr = new JSONArray();
         UserDb userDb = new UserDb();
@@ -310,10 +349,9 @@ public class FlowController {
             try {
                 userDb = userDb.getUserDb(child_mad.getUserName());
                 String content = MyActionMgr.renderResultForMobile(child_mad);
-                obj.put("result", StringEscapeUtils.unescapeHtml(content));
+                obj.put("result", StringEscapeUtils.unescapeHtml3(content));
                 obj.put("photo", StrUtil.getNullStr(userDb.getPhoto()));
-                obj.put("readDate", DateUtil.format(child_mad.getReadDate(),
-                        "MM-dd HH:mm"));
+                obj.put("readDate", DateUtil.format(child_mad.getReadDate(), "MM-dd HH:mm"));
                 obj.put("userName", userDb.getRealName());
                 obj.put("gender", userDb.getGender());
                 obj.put("myActionId", child_mad.getId());
@@ -326,6 +364,12 @@ public class FlowController {
         return jsonArr;
     }
 
+    @ApiOperation(value = "处理流程页面", notes = "处理流程页面", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "myActionId", value = "待办记录的ID", required = false, dataType = "Long")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/dispose", produces = {"application/json;charset=UTF-8;"})
     public String dispose(@RequestParam(required = true) String skey, Long myActionId) {
@@ -340,6 +384,8 @@ public class FlowController {
         String username = privilege.getUserName(skey);
         boolean isProgress = false;
         WorkflowAnnexMgr workflowAnnexMgr = new WorkflowAnnexMgr();
+        FormDb fd = new FormDb();
+
         int progress = 0;
         String res = "0";
         String msg = "操作成功";
@@ -373,7 +419,7 @@ public class FlowController {
                 return json.toString();
             } else if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_TRANSFER) {
                 res = "-1";
-                msg = "	流程已指派，不需要再处理!";
+                msg = "	流程已转办，不需要再处理!";
                 json.put("res", res);
                 json.put("msg", msg);
                 return json.toString();
@@ -405,13 +451,12 @@ public class FlowController {
             boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
             MacroCtlMgr mm = new MacroCtlMgr();
 
-            FormDb fd = new FormDb();
             fd = fd.getFormDb(lf.getFormCode());
             hasAttach = fd.isHasAttachment();
             isProgress = fd.isProgress();
 
             FormDAO fdao = new FormDAO();
-            fdao = fdao.getFormDAO(wf.getId(), fd);
+            fdao = fdao.getFormDAOByCache(wf.getId(), fd);
 
             progress = fdao.getCwsProgress();
             Vector<FormField> v = fdao.getFields();
@@ -427,7 +472,7 @@ public class FlowController {
                     if ("module_field_select".equals(macroCode)) {
                         MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
                         IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
-                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        com.alibaba.fastjson.JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                         if (jsonObj != null) {
                             if (jsonObj.getBoolean("isRealTime")) {
                                 // 自动映射
@@ -441,7 +486,7 @@ public class FlowController {
                 }
             }
             if (isRealTime) {
-                fdao = fdao.getFormDAO(wf.getId(), fd);
+                fdao = fdao.getFormDAOByCache(wf.getId(), fd);
             }
 
             UserMgr um = new UserMgr();
@@ -476,6 +521,15 @@ public class FlowController {
                 }
             }
 
+            String strIsShowNextUsers = WorkflowActionDb.getActionProperty(wfp, wa.getInternalName(), "isShowNextUsers");
+            boolean isShowNextUsers = !"0".equals(strIsShowNextUsers);
+
+            String strIsBtnSaveShow = WorkflowActionDb.getActionProperty(wfp, wa.getInternalName(), "isBtnSaveShow");
+            boolean isBtnSaveShow = !"0".equals(strIsBtnSaveShow);
+
+            String btnAgreeName = WorkflowActionDb.getActionProperty(wfp, wa.getInternalName(), "btnAgreeName");
+            String btnRefuseName = WorkflowActionDb.getActionProperty(wfp, wa.getInternalName(), "btnRefuseName");
+
             // 取可写表单域
             String fieldWrite = StrUtil.getNullString(wa.getFieldWrite()).trim();
             String[] fds = fieldWrite.split(",");
@@ -491,7 +545,7 @@ public class FlowController {
             // 将不显示的字段加入fieldHide
             Iterator<FormField> ir = v.iterator();
             while (ir.hasNext()) {
-                FormField ff = (FormField) ir.next();
+                FormField ff = ir.next();
                 if (ff.getHide() == FormField.HIDE_EDIT || ff.getHide() == FormField.HIDE_ALWAYS) {
                     if ("".equals(fieldHide)) {
                         fieldHide = ff.getName();
@@ -512,6 +566,83 @@ public class FlowController {
             json.put("actionId", String.valueOf(actionId));
             json.put("myActionId", String.valueOf(myActionId));
             json.put("flowId", String.valueOf(flowId));
+            json.put("formCode", fdao.getFormCode());
+            json.put("isShowNextUsers", isShowNextUsers);
+            json.put("isBtnSaveShow", isBtnSaveShow);
+            com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
+            String textName = "";
+            if (wf.isStarted()) {
+                if (conf.getIsDisplay("FLOW_BUTTON_AGREE")) {
+                    if (btnAgreeName != null && !"".equals(btnAgreeName)) {
+                        textName = btnAgreeName;
+                    } else {
+                        textName = conf.getBtnName("FLOW_BUTTON_AGREE").startsWith("#") ? i18nUtil.get("agree") : conf.getBtnName("FLOW_BUTTON_AGREE");
+                    }
+                }
+            } else {
+                if (conf.getIsDisplay("FLOW_BUTTON_COMMIT")) {
+                    if (btnAgreeName != null && !"".equals(btnAgreeName)) {
+                        textName = btnAgreeName;
+                    } else {
+                        textName = conf.getBtnName("FLOW_BUTTON_COMMIT").startsWith("#") ? i18nUtil.get("submit") : conf.getBtnName("FLOW_BUTTON_COMMIT");
+                    }
+                }
+            }
+            json.put("btnAgreeName", textName);
+
+            boolean isReadOnly = wa.getKind()==WorkflowActionDb.KIND_READ;
+            String flag = wa.getFlag();
+            String text;
+            if (btnRefuseName!=null && !"".equals(btnRefuseName)) {
+                text = btnRefuseName;
+            }
+            else {
+                text = conf.getBtnName("FLOW_BUTTON_DISAGREE").startsWith("#") ? i18nUtil.get("refuse") : conf.getBtnName("FLOW_BUTTON_DISAGREE");
+            }
+            json.put("btnRefuseName", text);
+
+            // 退回按钮名称
+            text = conf.getBtnName("FLOW_BUTTON_RETURN").startsWith("#") ? i18nUtil.get("back") : conf.getBtnName("FLOW_BUTTON_RETURN");
+            json.put("btnReturnName", text);
+
+            json.put("isFlowReturnWithRemark", cfg.getBooleanProperty("isFlowReturnWithRemark"));
+
+            // 是否为审阅
+            json.put("isActionKindRead", isReadOnly);
+            // 审阅按钮的名称
+            json.put("btnReadName", conf.getBtnName("FLOW_BUTTON_CHECK").startsWith("#")?i18nUtil.get("review"):conf.getBtnName("FLOW_BUTTON_CHECK"));
+
+            json.put("isFlowStarted", wf.isStarted());
+
+            boolean isPlus = mad.getActionStatus() == WorkflowActionDb.STATE_PLUS;
+            int plusType;
+            boolean isPlusBefore = false;
+            boolean isMyPlus = false;
+            String plusDesc = "";
+            if (!"".equals(wa.getPlus())) {
+                com.alibaba.fastjson.JSONObject plusJson = com.alibaba.fastjson.JSONObject.parseObject(wa.getPlus());
+                plusType = plusJson.getIntValue("type");
+                isPlusBefore = plusType == WorkflowActionDb.PLUS_TYPE_BEFORE;
+                String from = plusJson.getString("from");
+                if (username.equals(from)) {
+                    isMyPlus = true;
+                    plusDesc = workflowService.getPlusDesc(plusJson);
+                }
+            }
+            // 是否为加签
+            boolean canPlus = false;
+            if (conf.getIsDisplay("FLOW_BUTTON_PLUS") && wfp.isPlus()) {
+                if (!isPlus) {
+                    canPlus = true;
+                }
+            }
+            json.put("canPlus", canPlus);
+
+            json.put("isPlus", isPlus);
+            json.put("isPlusBefore", isPlusBefore);
+            json.put("isMyPlus", isMyPlus);
+            json.put("plusDesc", plusDesc);
+
             String flowTypeName = lf.getName();
             json.put("flowTypeName", flowTypeName);
             WorkflowPredefineDb wfd = new WorkflowPredefineDb();
@@ -538,18 +669,24 @@ public class FlowController {
                 json.put("isSms", "false");
             }
             // 能否拒绝
-            json.put("canDecline", String.valueOf(wa.canDecline()));
-
-            Vector<WorkflowActionDb> returnv = wa.getLinkReturnActions();
-            boolean canReturn;
-            // 如果当前为发起节点则不能退回
-            if (wf.getStartActionId() == mad.getActionId()) {
-                canReturn = false;
-            } else {
-                canReturn = returnv.size() > 0
-                        || wfp.getReturnStyle() == WorkflowPredefineDb.RETURN_STYLE_FREE;
+            if (!isReadOnly) {
+                json.put("canDecline", String.valueOf(wa.canDecline()));
+            }
+            else {
+                json.put("canDecline", false);
             }
 
+            Vector<WorkflowActionDb> returnv = wa.getLinkReturnActions();
+            boolean canReturn = false;
+            if (!isReadOnly) {
+                // 如果当前为发起节点则不能退回
+                if (wf.getStartActionId() == mad.getActionId()) {
+                    canReturn = false;
+                } else {
+                    canReturn = returnv.size() > 0
+                            || wfp.getReturnStyle() == WorkflowPredefineDb.RETURN_STYLE_FREE;
+                }
+            }
             json.put("canReturn", String.valueOf(canReturn));
 
             json.put("url", "public/flow_dispose_do.jsp"); // 似乎已无用 20210706
@@ -562,40 +699,35 @@ public class FlowController {
             json.put("progress", progress);
 
             // fgf 20180814 显示控制
-            String viewJs = WorkflowUtil.doGetViewJSMobile(request, fd, fdao, userName, false);
+            String viewJs = workflowUtil.doGetViewJSMobile(request, fd, fdao, userName, false);
             json.put("viewJs", viewJs);
 
             // 判断删除按钮是否显示
-            boolean isReadOnly = false;
-            if (wa.getKind() == WorkflowActionDb.KIND_READ) {
-                isReadOnly = true;
-            }
             boolean canDel = false;
-            com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
             if (conf.getIsDisplay("FLOW_BUTTON_DEL")) {
-                String flag = wa.getFlag();
-                if (!isReadOnly && flag.length() >= 4 && flag.substring(3, 4).equals("1") && mad.getActionStatus() != WorkflowActionDb.STATE_RETURN) {
-                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
-                        canDel = true;
-                    }
+                if (WorkflowMgr.canDelFlowOnAction(request, wf, wa, mad)) {
+                    canDel = true;
                 }
             }
             json.put("canDel", canDel);
 
             // 结束流程标志
             boolean canFinishAgree = false;
-            if (conf.getIsDisplay("FLOW_BUTTON_FINISH")) {
-                String flag = wa.getFlag();
-                if (wf.isStarted() && flag.length() >= 12 && flag.substring(11, 12).equals("1")) {
-                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
-                        canFinishAgree = true;
+            if (!isReadOnly) {
+                if (conf.getIsDisplay("FLOW_BUTTON_FINISH")) {
+                    if (wf.isStarted() && flag.length() >= 12 && "1".equals(flag.substring(11, 12))) {
+                        if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
+                            canFinishAgree = true;
+                        }
                     }
                 }
             }
             json.put("canFinishAgree", canFinishAgree);
+            JSONArray arrSums = new JSONArray();
+            json.put("allSums", arrSums);
 
             while (ir.hasNext()) {
-                FormField ff = (FormField) ir.next();
+                FormField ff = ir.next();
                 String val = fdao.getFieldValue(ff.getName());
                 boolean finded = false;
                 for (int i = 0; i < len; ++i) {
@@ -663,14 +795,10 @@ public class FlowController {
                     ifmc.setIFormDAO(fdao);
 
                     // 如果值为null，则在json中put的时候，是无效的，不会被记录至json中
-                    controlText = StrUtil.getNullStr(mu.getIFormMacroCtl()
-                            .getControlText(privilege.getUserName(skey),
-                                    ff));
-                    val = StrUtil.getNullStr(mu.getIFormMacroCtl()
-                            .getControlValue(privilege.getUserName(skey),
-                                    ff));
+                    controlText = StrUtil.getNullStr(ifmc.getControlText(privilege.getUserName(skey), ff));
+                    val = StrUtil.getNullStr(ifmc.getControlValue(privilege.getUserName(skey), ff));
                     // 须放在此位置，因为在当前用户宏控件的getContextValue中更改了ff的值
-                    metaData = mu.getIFormMacroCtl().getMetaData(ff);
+                    metaData = ifmc.getMetaData(ff);
 
                     options = ifmc.getControlOptions(privilege.getUserName(skey), ff);
                     if (options != null && !"".equals(options)) {
@@ -697,10 +825,20 @@ public class FlowController {
                         if (jsonObj != null) {
                             field.put("desc", jsonObj);
                         }
+
+                        String destForm = jsonObj.getString("destForm");
+                        ModuleSetupDb msd = new ModuleSetupDb();
+                        msd = msd.getModuleSetupDb(destForm);
+                        FormDb fdNest = new FormDb();
+                        fdNest = fdNest.getFormDb(msd.getString("form_code"));
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put("formCode", msd.getString("form_code"));
+                        jsonObject.put("sums", FormUtil.getSums(fdNest, fd, String.valueOf(fdao.getId())));
+                        arrSums.put(jsonObject);
                     } else if ("module_field_select".equals(macroCode)) {
                         MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
                         IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
-                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        com.alibaba.fastjson.JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                         if (jsonObj != null) {
                             field.put("desc", jsonObj);
                         }
@@ -711,10 +849,13 @@ public class FlowController {
                     String[][] optionsArray = FormParser.getOptionsArrayOfSelect(fd, ff);
                     for (int i = 0; i < optionsArray.length; i++) {
                         String[] optionsItem = optionsArray[i];
-                        if (optionsItem != null && optionsItem.length == 2) {
+                        if (optionsItem[1].equals(val)) {
+                            controlText = optionsItem[0];
+                        }
+                        if (optionsItem.length == 2) {
                             JSONObject option = new JSONObject();
-                            option.put("value", optionsItem[0]);
-                            option.put("name", optionsItem[1]);
+                            option.put("value", optionsItem[1]);
+                            option.put("name", optionsItem[0]);
                             js.put(option);
                         }
                     }
@@ -731,7 +872,6 @@ public class FlowController {
                 }
                 String level = "";
                 if ("checkbox".equals(ff.getType())) {
-                    // level = "个人兴趣";
                     level = ff.getTitle();
                 }
                 field.put("options", js);
@@ -752,11 +892,15 @@ public class FlowController {
                 field.put("editable", String.valueOf(ff.isEditable()));
                 field.put("isHidden", String.valueOf(ff.isHidden()));
                 field.put("isNull", String.valueOf(ff.isCanNull()));
-                field.put("fieldType", ff.getFieldTypeDesc());
+                field.put("fieldType", ff.getFieldType());
                 field.put("macroCode", macroCode);
                 // 可传SQL控件条件中的字段
                 field.put("metaData", metaData);
                 field.put("isReadonly", ff.isReadonly());
+                // 表单域选择宏控件已经置入了desc
+                if (!field.has("desc")) {
+                    field.put("desc", ff.getDescription());
+                }
                 fields.put(field);
             }
 
@@ -765,10 +909,10 @@ public class FlowController {
             DocumentMgr dm = new DocumentMgr();
             Document doc = dm.getDocument(doc_id);
             if (doc != null) {
-                java.util.Vector<Attachment> attachments = doc.getAttachments(1);
-                Iterator<Attachment> irAtt = attachments.iterator();
+                java.util.Vector<IAttachment> attachments = doc.getAttachments(1);
+                Iterator<IAttachment> irAtt = attachments.iterator();
                 while (irAtt.hasNext()) {
-                    Attachment am = irAtt.next();
+                    IAttachment am = irAtt.next();
                     JSONObject file = new JSONObject();
                     boolean isPreview = false;
                     boolean isHtml = false;
@@ -854,7 +998,7 @@ public class FlowController {
 
                     // 标志位，能否选择用户
                     boolean canSelUser = wr.canUserSelUser(request, towa);
-                    // System.out.println(getClass() + " actionUserRealName=" +
+                    // LogUtil.getLog(getClass()).info(getClass() + " actionUserRealName=" +
                     // towa.getUserRealName() + " canSelUser=" + canSelUser);
                     user.put("canSelUser", String.valueOf(canSelUser));
                     user.put("isGoDown", String.valueOf(isStragegyGoDown));
@@ -889,7 +1033,9 @@ public class FlowController {
             res = "-1";
             msg = "JSON解析异常";
             log.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e1) {
+            // e1.printStackTrace();
             res = "-1";
             msg = e1.getMessage();
             log.error(e1.getMessage());
@@ -933,6 +1079,9 @@ public class FlowController {
                 json.put("msg", msg);
                 // 是否允许上传附件
                 json.put("hasAttach", hasAttach);
+
+                // 算式相关的字段
+                json.put("funcRelatedOnChangeFields", FuncUtil.doGetFieldsRelatedOnChangeMobile(fd));
             } catch (final JSONException e) {
                 log.error(e.getMessage());
             }
@@ -940,6 +1089,8 @@ public class FlowController {
         return json.toString();
     }
 
+    @ApiOperation(value = "取得@流程详情信息，暂无用", notes = "取得@流程详情信息，暂无用", httpMethod = "POST")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     public JSONArray getCwsWorkflowResultDetail(long flowId, String userName) {
         WorkflowAnnexMgr wfam = new WorkflowAnnexMgr();
         JSONArray jsonArr = new JSONArray();
@@ -957,7 +1108,7 @@ public class FlowController {
                 userDb = userDb.getUserDb(pmad.getUserName());
 
                 String content = MyActionMgr.renderResultForMobile(pmad);
-                obj.put("result", StringEscapeUtils.unescapeHtml(content));
+                obj.put("result", StringEscapeUtils.unescapeHtml3(content));
                 obj.put("readDate", DateUtil.format(pmad.getReadDate(), "MM-dd HH:mm"));
                 obj.put("userName", userDb.getRealName());
                 obj.put("photo", StrUtil.getNullStr(userDb.getPhoto()));
@@ -973,6 +1124,12 @@ public class FlowController {
         return jsonArr;
     }
 
+    @ApiOperation(value = "查看流程详情", notes = "查看流程详情", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "flowId", value = "流程ID", required = false, dataType = "Integer")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/modify", produces = {"application/json;charset=UTF-8;"})
     public String modify(@RequestParam(required = true) String skey, @RequestParam(required = true) Integer flowId) {
@@ -990,7 +1147,7 @@ public class FlowController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         MacroCtlUnit mu;
@@ -1012,7 +1169,7 @@ public class FlowController {
                     json.put("msg", "流程目录不存在");
                     return json.toString();
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -1022,7 +1179,7 @@ public class FlowController {
             isProgress = fd.isProgress();
 
             FormDAO fdao = new FormDAO();
-            fdao = fdao.getFormDAO(wf.getId(), fd);
+            fdao = fdao.getFormDAOByCache(wf.getId(), fd);
 
             // 表单域选择控件实时映射
             boolean isRealTime = false;
@@ -1032,7 +1189,7 @@ public class FlowController {
                     if ("module_field_select".equals(mu.getCode())) {
                         MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
                         IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
-                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                        com.alibaba.fastjson.JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                         if (jsonObj != null) {
                             if (jsonObj.getBoolean("isRealTime")) {
                                 // 自动映射
@@ -1046,7 +1203,7 @@ public class FlowController {
                 }
             }
             if (isRealTime) {
-                fdao = fdao.getFormDAO(wf.getId(), fd);
+                fdao = fdao.getFormDAOByCache(wf.getId(), fd);
             }
 
             progress = fdao.getCwsProgress();
@@ -1068,7 +1225,7 @@ public class FlowController {
             json.put("progress", progress);
 
             // fgf 20180814 显示控制
-            String viewJs = WorkflowUtil.doGetViewJSMobile(request, fd, fdao, userName, true);
+            String viewJs = workflowUtil.doGetViewJSMobile(request, fd, fdao, userName, true);
             json.put("viewJs", viewJs);
 
             WorkflowPredefineDb wfd = new WorkflowPredefineDb();
@@ -1079,7 +1236,7 @@ public class FlowController {
             boolean isLight = wfd.isLight();
             json.put("isLight", isLight);//判断时候是@liuchen
             if (isLight) {
-                if (flowId != null && !flowId.equals("")) {
+                if (flowId != null) {
                     JSONArray jsonArr = getCwsWorkflowResultDetail(flowId, userName);
                     json.put("lightDetail", jsonArr);
                 }
@@ -1138,8 +1295,11 @@ public class FlowController {
                                     break;
                                 }
                             } else {
-                                isShow = false;
-                                break;
+                                if (fdsHide[i].equals(ff.getName())) {
+                                    // 如果隐藏了嵌套表中的某个字段，则隐藏整个嵌套表
+                                    isShow = false;
+                                    break;
+                                }
                             }
                         }
 
@@ -1149,8 +1309,7 @@ public class FlowController {
                     }
                 }
 
-                // String val = ff.getValue();
-                String val = ff.convertToHtml();
+                String val = "";
                 // 用于当前用户宏控件判断如果为空，则不显示当前用户
                 ff.setEditable(false);
 
@@ -1161,12 +1320,17 @@ public class FlowController {
                 if (ff.getType().equals(FormField.TYPE_MACRO)) {
                     mu = mm.getMacroCtlUnit(ff.getMacroType());
                     if (mu != null) {
-                        val = mu.getIFormMacroCtl().getControlText(privilege.getUserName(skey), ff);
+                        IFormMacroCtl ifmc = mu.getIFormMacroCtl();
+                        ifmc.setIFormDAO(fdao);
+
+                        val = ifmc.converToHtml(request, ff, ff.getValue());
+
+                        String text = ifmc.getControlText(privilege.getUserName(skey), ff);
                         macroCode = mu.getCode();
-                        if (macroCode != null && !macroCode.equals("")) {
-                            if (macroCode.equals("macro_opinion") || macroCode.equals("macro_opinionex")) {
-                                if (!val.equals("")) {
-                                    jsonArr = new JSONArray(val);
+                        if (macroCode != null && !"".equals(macroCode)) {
+                            if ("macro_opinion".equals(macroCode) || "macro_opinionex".equals(macroCode)) {
+                                if (!"".equals(text)) {
+                                    jsonArr = new JSONArray(text);
                                 } else {
                                     jsonArr = new JSONArray();
                                 }
@@ -1181,29 +1345,44 @@ public class FlowController {
                                 } else {
                                     field.put("desc", ff.getDescription());
                                 }
-                            } else if (macroCode.equals("module_field_select")) {
+                            } else if ("module_field_select".equals(macroCode)) {
                                 MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
                                 IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
-                                JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
+                                com.alibaba.fastjson.JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
                                 if (jsonObj != null) {
                                     field.put("desc", jsonObj);
                                 } else {
                                     field.put("desc", ff.getDescription());
                                 }
+                            } else if ("macro_barcode".equals(macroCode)) {
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                IBarcodeCtl barcodeCtl = macroCtlService.getBarcodeCtl();
+                                field.put("image", barcodeCtl.getBracodeSteamBase64(barcodeCtl.getBarcodeStr(StrUtil.toInt(ff.getValue(), 0))));
+                            } else if ("macro_qrcode".equals(macroCode)) {
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                IQrcodeCtl qrcodeCtl = macroCtlService.getQrcodeCtl();
+                                field.put("image", qrcodeCtl.getQrcodeSteamBase64(qrcodeCtl.getQrcodeStr(ff), 150, 150));
                             }
                         }
                     }
+                } else {
+                    val = ff.convertToHtml();
                 }
                 field.put("title", rr.getString("title"));
                 field.put("code", ff.getName());
+
                 if (jsonArr != null) {
                     field.put("value", jsonArr);
                 } else {
-                    field.put("value", val);
+                    field.put("value", StrUtil.getNullStr(val));
                 }
+
+                // 以val表示值，因为value已用于显示值
+                field.put("val", StrUtil.getNullStr(ff.getValue()));
+
                 field.put("type", rr.getString("type"));
                 String level = "";
-                if (ff.getType().equals("checkbox")) {
+                if ("checkbox".equals(ff.getType())) {
                     // level = "个人兴趣";
                     level = ff.getTitle();
                 }
@@ -1232,7 +1411,7 @@ public class FlowController {
                     boolean isPreview = false;
                     boolean isHtml = false;
                     String ext = StrUtil.getFileExt(am.getDiskName());
-                    // System.out.println(getClass() + " ext=" + ext + " " + ext.equals("pdf") + " canOfficeFilePreview=" + canOfficeFilePreview + " canPdfFilePreview=" + canPdfFilePreview);
+                    // LogUtil.getLog(getClass()).info(getClass() + " ext=" + ext + " " + ext.equals("pdf") + " canOfficeFilePreview=" + canOfficeFilePreview + " canPdfFilePreview=" + canPdfFilePreview);
                     log.info(" ext=" + ext + " canOfficeFilePreview=" + canOfficeFilePreview + " isHtml=" + isHtml);
                     if (canOfficeFilePreview) {
                         if (ext.equals("doc") || ext.equals("docx") || ext.equals("xls") || ext.equals("xlsx")) {
@@ -1248,7 +1427,7 @@ public class FlowController {
                         isPreview = true;
                     }
 
-                    // System.out.println(getClass() + " ext=" + ext + " isHtml=" + isHtml);
+                    // LogUtil.getLog(getClass()).info(getClass() + " ext=" + ext + " isHtml=" + isHtml);
 
                     if (isPreview) {
                         if (isHtml) {
@@ -1256,7 +1435,7 @@ public class FlowController {
                             String htmlfile = s.substring(0, s.lastIndexOf(".")) + ".html";
                             java.io.File fileExist = new java.io.File(htmlfile);
 
-                            // System.out.println(getClass() + " " + htmlfile + " fileExist.exists()=" + fileExist.exists());
+                            // LogUtil.getLog(getClass()).info(getClass() + " " + htmlfile + " fileExist.exists()=" + fileExist.exists());
                             log.info("fileExist.exists()=" + fileExist.exists());
                             if (fileExist.exists()) {
                                 file.put("preview", "public/flow_att_preview.jsp?attachId=" + am.getId());
@@ -1278,13 +1457,18 @@ public class FlowController {
             result.put("files", files);
             json.put("result", result);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return json.toString();
     }
 
+    @ApiOperation(value = "取得流程类型列表（暂无用）", notes = "取得流程类型列表（暂无用）", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/getlist", produces = {"application/json;charset=UTF-8;"})
     public String getlist(@RequestParam(required = true) String skey) {
@@ -1298,7 +1482,7 @@ public class FlowController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -1341,532 +1525,67 @@ public class FlowController {
             result.put("parentNames", parentNames);
             json.put("result", result);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
 
+    @ApiOperation(value = "发起流程", notes = "发起流程", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "code", value = "流程类型编码", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "mutilDept", value = "所选的兼职部门的编码", required = false, dataType = "String")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/init", produces = {"application/json;charset=UTF-8;"})
-    public String init(@RequestParam(required = true) String skey, String code, Integer type, String mutilDept) {
+    public String init(@RequestParam(required = true) String skey, String code, String mutilDept) {
         JSONObject json = new JSONObject();
-        JSONArray fields = new JSONArray();
-        JSONObject result = new JSONObject();
         Privilege privilege = new Privilege();
         boolean re = privilege.Auth(skey);
-        String res = "0";
-        String msg = "操作成功";
         long startActionId = 0;
-        boolean hasAttach = true;
         try {
             if (re) {
-                res = "-2";
-                msg = "时间过期";
+                String res = "-2";
+                String msg = "时间过期";
                 json.put("res", res);
                 json.put("msg", msg);
                 return json.toString();
             }
-            privilege.doLogin(request, skey);
-            // 加入对默认标题的处理 fgf 2015-1-2
-            com.redmoon.oa.flow.Leaf lf = new com.redmoon.oa.flow.Leaf();
-            lf = lf.getLeaf(code);
-            com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-            String flowTitle = WorkflowMgr.makeTitle(request, pvg, lf);
-            MacroCtlMgr mm = new MacroCtlMgr();
-
-            WorkflowMgr wm = new WorkflowMgr();
-            if (type == Leaf.TYPE_FREE) {
-                startActionId = wm.initWorkflowFree(privilege
-                        .getUserName(skey), code, flowTitle, -1, 0);
-            } else {
-                startActionId = wm.initWorkflow(privilege
-                        .getUserName(skey), code, flowTitle, -1, 0);
-            }
-            MyActionDb mad = new MyActionDb();
-            mad = mad.getMyActionDb(startActionId);
-
-            long flowId = mad.getFlowId();
-            WorkflowDb wf = new WorkflowDb();
-            wf = wf.getWorkflowDb((int) flowId);
-
-            FormDb fd = new FormDb();
-            fd = fd.getFormDb(lf.getFormCode());
-            hasAttach = fd.isHasAttachment();
-
-            FormDAO fdao = new FormDAO();
-            fdao = fdao.getFormDAO(wf.getId(), fd);
-
-            // 先自动映射
-            Vector<FormField> v = fdao.getFields();
-            Iterator<FormField> ir = v.iterator();
-            while (ir.hasNext()) {
-                FormField ff = (FormField) ir.next();
-                if ("macro".equals(ff.getType())) {
-                    MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-                    if (mu == null) {
-                        log.error(
-                                "MactoCtl " + ff.getTitle() + "："
-                                        + ff.getMacroType() + " is not exist.");
-                        continue;
-                    }
-
-                    String macroCode = mu.getCode();
-                    if ("module_field_select".equals(macroCode)) {
-                        String strDesc = StrUtil.getNullStr(ff.getDescription());
-                        // 向下兼容
-                        if ("".equals(strDesc)) {
-                            strDesc = ff.getDefaultValueRaw();
-                        }
-
-                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
-                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
-                        strDesc = moduleFieldSelectCtl.formatJSONString(strDesc);
-                        try {
-                            JSONObject jsonField = new JSONObject(strDesc);
-                            String value = StrUtil.getNullStr(ff.getValue());
-                            if ("".equals(value) || value.equals(ff.getDefaultValueRaw()) || value.equals(ff.getDescription())) {
-                                if (json.has("requestParam") && !"".equals(json.getString("requestParam"))) {
-                                    // 来自于指定的参数名称
-                                    value = ParamUtil.get(request, json.getString("requestParam"));
-                                } else {
-                                    // 默认以字段名作为参数从request中获取
-                                    value = ParamUtil.get(request, ff.getName());
-                                }
-                                // 如果value中存在值，则说明需自动映射
-                                if (!"".equals(value)) {
-                                    moduleFieldSelectCtl.autoMap(request, (int) flowId, value, ff);
-                                }
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-
-            // 重新再载入一次，以免缓存问题
-            fdao.load();
-
-            UserMgr um = new UserMgr();
-            // 这段用来验证字段是否可写
-            WorkflowActionDb wa = new WorkflowActionDb();
-            int actionId = (int) mad.getActionId();
-            wa = wa.getWorkflowActionDb(actionId);
-            if (wa == null || !wa.isLoaded()) {
-                res = "-1";
-                msg = "流程中的相应动作不存在";
-                json.put("res", res);
-                json.put("msg", msg);
-                return json.toString();
-            }
-            // 取可写表单域
-            String fieldWrite = StrUtil.getNullString(wa.getFieldWrite()).trim();
-            String[] fds = fieldWrite.split(",");
-            int len = fds.length;
-
-            String userName = privilege.getUserName(skey);
-
-            // 自由流程根据用户所属的角色，得到可写表单域
-            if (lf.getType() == Leaf.TYPE_FREE) {
-                WorkflowPredefineDb wfpd = new WorkflowPredefineDb();
-                wfpd = wfpd.getPredefineFlowOfFree(wf.getTypeCode());
-
-                fds = wfpd.getFieldsWriteOfUser(wf, userName);
-                len = fds.length;
-            }
-
-            String fieldHide = StrUtil.getNullString(wa.getFieldHide()).trim();
-            // 将不显示的字段加入fieldHide
-            ir = v.iterator();
-            while (ir.hasNext()) {
-                FormField ff = (FormField) ir.next();
-                if (ff.getHide() == FormField.HIDE_EDIT || ff.getHide() == FormField.HIDE_ALWAYS) {
-                    if ("".equals(fieldHide)) {
-                        fieldHide = ff.getName();
-                    } else {
-                        fieldHide += "," + ff.getName();
-                    }
-                }
-            }
-            String[] fdsHide = fieldHide.split(",");
-            int lenHide = fdsHide.length;
-
-            MacroCtlUnit mu;
-            ir = v.iterator();
-            json.put("res", "0");
-            json.put("msg", "操作成功");
-            json.put("sender", um.getUserDb(wf.getUserName()).getRealName());
-            json.put("cwsWorkflowTitle", wf.getTitle());
-            json.put("actionId", String.valueOf(actionId));
-            json.put("myActionId", String.valueOf(startActionId));
-            json.put("flowId", String.valueOf(flowId));
-            json.put("url", "public/flow_dispose_do.jsp");
-
-            // fgf 20180814 显示控制
-            String viewJs = WorkflowUtil.doGetViewJSMobile(request, fd, fdao, userName, false);
-            json.put("viewJs", viewJs);
-
-            WorkflowPredefineDb wfd = new WorkflowPredefineDb();
-            wfd = wfd.getPredefineFlowOfFree(wf.getTypeCode());
-            boolean isLight = wfd.isLight();
-            json.put("isLight", isLight);// 判断时候是@liuchen
-            json.put("isFree", lf.getType() == Leaf.TYPE_FREE);
-
-            boolean canDel = false;
-            com.redmoon.oa.flow.FlowConfig conf = new com.redmoon.oa.flow.FlowConfig();
-            if (conf.getIsDisplay("FLOW_BUTTON_DEL")) {
-                String flag = wa.getFlag();
-                if (flag.length() >= 4 && flag.substring(3, 4).equals("1") && mad.getActionStatus() != WorkflowActionDb.STATE_RETURN) {
-                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
-                        canDel = true;
-                    }
-                }
-            }
-            json.put("canDel", canDel);
-
-            // 结束流程标志
-            boolean canFinishAgree = false;
-            if (conf.getIsDisplay("FLOW_BUTTON_FINISH")) {
-                String flag = wa.getFlag();
-                if (wf.isStarted() && flag.length() >= 12 && flag.substring(11, 12).equals("1")) {
-                    if (mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
-                        canFinishAgree = true;
-                    }
-                }
-            }
-            json.put("canFinishAgree", canFinishAgree);
-
-            // 遍历表单字段-------------------------------------------------
-            ir = v.iterator();
-            while (ir.hasNext()) {
-                FormField ff = (FormField) ir.next();
-
-                // 置可写表单域
-                boolean finded = false;
-                for (int i = 0; i < len; ++i) {
-                    if (ff.getName().equals(fds[i])) {
-                        finded = true;
-                        break;
-                    }
-                }
-                if (!(finded)) {
-                    ff.setEditable(false);
-                }
-
-                // 如果不是自由流程
-                if (lf.getType() != Leaf.TYPE_FREE) {
-                    // 置隐藏表单域
-                    finded = false;
-                    for (int i = 0; i < lenHide; ++i) {
-                        if (ff.getName().equals(fdsHide[i])) {
-                            finded = true;
-                            break;
-                        }
-                    }
-                    if (finded) {
-                        log.info(
-                                "field:" + ff.getTitle() + " is hidden.");
-                        ff.setHidden(true);
-                    }
-                }
-
-                JSONObject field = new JSONObject();
-                String desc = StrUtil.getNullStr(ff.getDescription());
-                field.put("title", ff.getTitle());
-                field.put("code", ff.getName());
-                field.put("desc", desc);
-
-                field.put("present", StrUtil.getNullStr(ff.getPresent()));
-                // 如果是计算控件，则取出精度和四舍五入属性
-                if (ff.getType().equals(FormField.TYPE_CALCULATOR)) {
-                    FormParser fp = new FormParser();
-                    String isroundto5 = fp.getFieldAttribute(fd, ff, "isroundto5");
-                    String digit = fp.getFieldAttribute(fd, ff, "digit");
-                    field.put("formula", ff.getDefaultValueRaw());
-                    field.put("isroundto5", isroundto5);
-                    field.put("digit", digit);
-                }
-                String options = "";
-                String macroType = "";
-                String controlText = "";
-                String controlValue = "";
-                JSONArray opinionArr = null;
-                JSONObject opinionVal = null;
-
-                String macroCode = "";
-
-                String metaData = "";
-
-                JSONArray js = new JSONArray();
-                if ("macro".equals(ff.getType())) {
-                    mu = mm.getMacroCtlUnit(ff.getMacroType());
-                    if (mu == null) {
-                        log.error("MactoCtl " + ff.getTitle() + "：" + ff.getMacroType() + " is not exist.");
-                        continue;
-                    }
-
-                    IFormMacroCtl ifmc = mu.getIFormMacroCtl();
-                    ifmc.setIFormDAO(fdao);
-
-                    macroCode = mu.getCode();
-
-                    macroType = mu.getIFormMacroCtl().getControlType();
-                    controlText = mu.getIFormMacroCtl().getControlText(
-                            privilege.getUserName(skey), ff);
-                    controlValue = mu.getIFormMacroCtl().getControlValue(
-                            privilege.getUserName(skey), ff);
-
-                    // 须放在此位置，因为在当前用户宏控件的getContextValue中更改了ff的值
-                    metaData = mu.getIFormMacroCtl().getMetaData(ff);
-
-                    options = ifmc.getControlOptions(privilege.getUserName(skey), ff);
-                    // options = options.replaceAll("\\\"", "");
-                    if (options != null && !"".equals(options)) {
-                        // options = options.replaceAll("\\\"", "");
-                        try {
-                            js = new JSONArray(options);
-                        } catch (JSONException e) {
-                            DebugUtil.e(getClass(), "execute", ff.getTitle() + " macro ctl's options cann't convert to JSONArray," + options);
-                        }
-                    }
-                } else {
-                    String fieldType = ff.getType();
-                    if (fieldType != null && !fieldType.equals("")) {
-                        if (fieldType.equals("DATE") || fieldType.equals("DATE_TIME")) {
-                            // 有可能已经通过表单域选择宏控件传值映射带过来了值
-                            if (ff.getValue() != null && !"".equals(ff.getValue())) {
-                                controlValue = ff.getValue();
-                            } else {
-                                controlValue = ff.getDefaultValueRaw();
-                            }
-                        } else {
-                            if (ff.getValue() != null && !"".equals(ff.getValue())) {
-                                controlValue = ff.getValue();
-                            } else {
-                                controlValue = ff.getDefaultValue();
-                            }
-                        }
-                    } else {
-                        controlValue = ff.getDefaultValue();
-                    }
-                }
-                // 判断是否为意见输入框
-                if (macroCode != null && !macroCode.equals("")) {
-                    if (macroCode.equals("macro_opinion") || macroCode.equals("macro_opinionex")) {
-                        if (controlText != null
-                                && !controlText.trim().equals("")) {
-                            opinionArr = new JSONArray(controlText);
-                        }
-                        if (controlValue != null
-                                && !controlValue.trim().equals("")) {
-                            opinionVal = new JSONObject(controlValue);
-                        }
-                    }
-
-                    if (macroCode.equals("nest_sheet") || macroCode.equals("nest_table") || macroCode.equals("macro_detaillist_ctl")) {
-                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
-                        INestSheetCtl ntc = macroCtlService.getNestSheetCtl();
-                        JSONObject jsonObj = ntc.getCtlDescription(ff);
-                        if (jsonObj != null) {
-                            field.put("desc", jsonObj);
-                        }
-                    } else if (macroCode.equals("module_field_select")) {
-                        MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
-                        IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
-                        JSONObject jsonObj = moduleFieldSelectCtl.getCtlDescription(ff);
-                        if (jsonObj != null) {
-                            field.put("desc", jsonObj);
-                        }
-                    }
-                }
-                field.put("type", ff.getType());
-                if (ff.getType().equals("select")) {
-                    // options = fp.getOptionsOfSelect(fd, ff);
-                    String[][] optionsArray = FormParser
-                            .getOptionsArrayOfSelect(fd, ff);
-                    for (int i = 0; i < optionsArray.length; i++) {
-                        String[] optionsItem = optionsArray[i];
-                        JSONObject option = new JSONObject();
-                        try {
-                            option.put("value", optionsItem[0]);
-                            option.put("name", optionsItem[1]);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        js.put(option);
-                    }
-                } else if (ff.getType().equals("radio")) {
-                    // options = fp.getOptionsOfSelect(fd, ff);
-                    String[] optionsArray = FormParser.getValuesOfInput(fd, ff);
-                    for (int i = 0; i < optionsArray.length; i++) {
-                        JSONObject option = new JSONObject();
-                        option.put("value", optionsArray[i]);
-                        option.put("name", optionsArray[i]);
-                        js.put(option);
-                    }
-                }
-                field.put("options", js);
-                field.put("text", controlText);
-                String level = "";
-                if (ff.getType().equals("checkbox")) {
-                    // level = "个人兴趣";
-                    level = ff.getTitle();
-                }
-                field.put("level", level);
-                if (macroType.equals("select") && desc.equals(OFFICE_EQUIPMENT)) {
-                    field.put("macroType", RELATE_SELECT);
-                } else {
-                    field.put("macroType", macroType);
-                }
-                field.put("editable", String.valueOf(ff.isEditable()));
-                field.put("isHidden", String.valueOf(ff.isHidden()));
-                field.put("isNull", String.valueOf(ff.isCanNull()));
-                field.put("fieldType", ff.getFieldTypeDesc());
-                if (opinionVal != null) {
-                    field.put("value", opinionVal);
-                } else {
-                    field.put("value", controlValue);
-                }
-                if (opinionArr != null && opinionArr.length() > 0) {
-                    field.put("text", opinionArr);
-                } else {
-                    field.put("text", controlText);
-                }
-                field.put("macroCode", macroCode);
-
-                // 可传SQL控件条件中的字段
-                field.put("metaData", metaData);
-                field.put("isReadonly", ff.isReadonly());
-
-                fields.put(field);
-            }
-            // 遍历表单字段---------------------------------------------------------
-
-            // 置异或发散
-            StringBuffer condBuf = new StringBuffer();
-            boolean flagXorRadiate = wa.isXorRadiate();
-            Vector vMatched = null;
-            if (flagXorRadiate) {
-                vMatched = WorkflowRouter.matchNextBranch(wa, privilege.getUserName(skey), condBuf, startActionId);
-                String conds = condBuf.toString();
-                boolean hasCond = conds.equals("") ? false : true; // 是否含有条件
-                if (hasCond) {
-                    flagXorRadiate = true;
-                } else {
-                    flagXorRadiate = false;
-                }
-
-            }
-            json.put("flagXorRadiate", String.valueOf(flagXorRadiate));
-            WorkflowRuler wr = new WorkflowRuler();
-            // 取得下一步提交的用户--------------------------------------------------
-            JSONArray users = new JSONArray();
-            Vector vto = wa.getLinkToActions();
-            Iterator toir = vto.iterator();
-            Iterator userir = null;
-            while (toir.hasNext()) {
-                WorkflowActionDb towa = (WorkflowActionDb) toir.next();
-                if (towa.getJobCode().equals(
-                        WorkflowActionDb.PRE_TYPE_USER_SELECT)) {
-                    JSONObject user = new JSONObject();
-                    user.put("actionTitle", towa.getTitle());
-                    user.put("roleName", towa.getJobName());
-                    user.put("internalname", towa.getInternalName());
-                    user.put("name", "WorkflowAction_" + towa.getId());
-                    user.put("value", WorkflowActionDb.PRE_TYPE_USER_SELECT);
-                    user.put("realName", "自选用户");
-                    user.put("isSelectable", "true");
-                    // 标志位，能否选择用户
-                    boolean canSelUser = wr.canUserSelUser(request, towa);
-                    user.put("canSelUser", String.valueOf(canSelUser));
-
-                    boolean isStragegyGoDown = towa.isStrategyGoDown(); // 是否为下达
-                    user.put("isGoDown", String.valueOf(isStragegyGoDown));
-
-                    users.put(user);
-                } else {
-                    WorkflowRouter workflowRouter = new WorkflowRouter();
-                    Vector vuser = workflowRouter.matchActionUser(request, towa, wa, false, mutilDept);
-                    userir = vuser.iterator();
-                    boolean isStrategySelectable = towa.isStrategySelectable();
-                    boolean isStrategySelected = towa.isStrategySelected();
-
-                    while (userir != null && userir.hasNext()) {
-                        UserDb ud = (UserDb) userir.next();
-                        JSONObject user = new JSONObject();
-                        user.put("actionTitle", towa.getTitle());
-                        user.put("roleName", towa.getJobName());
-                        user.put("internalname", towa.getInternalName());
-                        user.put("name", "WorkflowAction_" + towa.getId());
-                        user.put("value", ud.getName());
-                        user.put("realName", ud.getRealName());
-                        user.put("isSelectable", String.valueOf(isStrategySelectable));
-                        user.put("isSelected", String.valueOf(isStrategySelected));
-
-                        // 标志位，能否选择用户
-                        boolean canSelUser = wr.canUserSelUser(request, towa);
-                        user.put("canSelUser", String.valueOf(canSelUser));
-                        // System.out.println(getClass() +
-                        // " 3 actionUserRealName=" + towa.getUserRealName() +
-                        // " canSelUser=" + canSelUser);
-                        users.put(user);
-                    }
-                }
-            }
-            result.put("users", users);
         } catch (JSONException e) {
-            e.printStackTrace();
-            res = "-1";
-            msg = "JSON解析异常";
-            Logger.getLogger(getClass()).error(e.getMessage());
-        } catch (ErrMsgException e1) {
-            res = "-1";
-            msg = e1.getMessage();
-            Logger.getLogger(getClass()).error(e1.getMessage());
-        } catch (MatchUserException e2) {
-            res = "0";
-            msg = "手机端兼职处理";
-            String userName = privilege.getUserName(skey);
-            DeptUserDb dud = new DeptUserDb();
-            Vector vu = dud.getDeptsOfUser(userName);
-            Iterator irdu = vu.iterator();
-            JSONArray deptArr = new JSONArray();
-            try {
-                while (irdu.hasNext()) {
-                    DeptDb dept = (DeptDb) irdu.next();
-                    if (dept.isHide()) {
-                        continue;
-                    }
-                    String deptCode = dept.getCode();
-                    String name = dept.getName();
-                    if (!dept.getParentCode().equals(DeptDb.ROOTCODE) && !dept.getCode().equals(DeptDb.ROOTCODE)) {
-                        name = dept.getDeptDb(dept.getParentCode()).getName() + "->" + dept.getName();
-                    }
-                    JSONObject deptObj = new JSONObject();
-                    deptObj.put("name", name);
-                    deptObj.put("code", deptCode);
-                    deptArr.put(deptObj);
-                }
-                result.put("multiDepts", deptArr);
-            } catch (JSONException e) {
-                log.error(e2.getMessage());
-            }
-
-        } finally {
-            try {
-                json.put("res", res);
-                json.put("msg", msg);
-                result.put("fields", fields);
-                json.put("result", result);
-                json.put("hasAttach", hasAttach);
-
-            } catch (final JSONException e) {
-                log.error(e.getMessage());
-            }
+            LogUtil.getLog(getClass()).error(e);
         }
+        privilege.doLogin(request, skey);
+
+        // 加入对默认标题的处理 fgf 2015-1-2
+        com.redmoon.oa.flow.Leaf lf = new com.redmoon.oa.flow.Leaf();
+        lf = lf.getLeaf(code);
+        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+        String flowTitle = WorkflowMgr.makeTitle(request, pvg, lf);
+
+        WorkflowMgr wm = new WorkflowMgr();
+        if (lf.getType() == Leaf.TYPE_FREE) {
+            startActionId = wm.initWorkflowFree(privilege
+                    .getUserName(skey), code, flowTitle, -1, 0);
+        } else {
+            startActionId = wm.initWorkflow(privilege
+                    .getUserName(skey), code, flowTitle, -1, 0);
+        }
+
+        MyActionDb mad = new MyActionDb();
+        mad = mad.getMyActionDb(startActionId);
+
+        json = flowService.init(mad, mutilDept);
         return json.toString();
     }
 
+    @ApiOperation(value = "取得退回时可选择的节点列表", notes = "取得退回时可选择的节点列表", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "flowId", value = "流程ID", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "myActionId", value = "待办记录的ID", required = false, dataType = "Integer")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/getreturn", produces = {"application/json;charset=UTF-8;"})
     public String getreturn(@RequestParam(required = true) String skey, Integer flowId, Integer myActionId) {
@@ -1880,7 +1599,7 @@ public class FlowController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -1896,16 +1615,34 @@ public class FlowController {
             json.put("msg", "操作成功");
             JSONArray users = new JSONArray();
             if (wfp.getReturnStyle() == WorkflowPredefineDb.RETURN_STYLE_FREE) {
-
                 String sql = "select id from flow_my_action where flow_id="
-                        + flowId + " and is_checked<>" + MyActionDb.CHECK_STATUS_NOT + " order by receive_date asc";
+                        + flowId + " and is_checked<>" + MyActionDb.CHECK_STATUS_NOT + " and is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO + " order by receive_date asc";
                 MyActionDb mad = new MyActionDb();
                 Vector v = mad.list(sql);
+
+                // 如果之前曾经处理过本节点，则说明有可能当前是被退回
+                // 取得用户最早处理本节点的待办记录ID
+                long firstMyActionId = -1;
                 Iterator ir = v.iterator();
+                while (ir.hasNext()) {
+                    mad = (MyActionDb) ir.next();
+                    if (mad.getActionId() == actionId && mad.getChecker().equals(SpringUtil.getUserName())) {
+                        firstMyActionId = mad.getId();
+                    }
+                }
+
+                ir = v.iterator();
                 Map map = new HashMap();
                 WorkflowActionDb wa = new WorkflowActionDb();
                 while (ir.hasNext()) {
                     mad = (MyActionDb) ir.next();
+
+                    // 如果存在最早处理记录，则退回时，mad需小于最早记录的ID，即只能退回在最早记录之前处理的用户
+                    if (firstMyActionId != -1) {
+                        if (mad.getId() >= firstMyActionId) {
+                            continue;
+                        }
+                    }
 
                     // 防止用户重复
                     if (map.get(mad.getUserName()) == null) {
@@ -1937,12 +1674,8 @@ public class FlowController {
                 mad = mad.getMyActionDb(actionId);
                 wa = wa.getWorkflowActionDb((int) mad.getActionId());
 
-                Vector returnv = wa.getLinkReturnActions();
-
-                Iterator returnir = returnv.iterator();
-                while (returnir.hasNext()) {
-                    WorkflowActionDb returnwa = (WorkflowActionDb) returnir
-                            .next();
+                Vector<WorkflowActionDb> returnv = wa.getLinkReturnActions();
+                for (WorkflowActionDb returnwa : returnv) {
                     if (returnwa.getStatus() != WorkflowActionDb.STATE_IGNORED) {
                         JSONObject user = new JSONObject();
                         user.put("id", String.valueOf(returnwa.getId()));
@@ -1954,11 +1687,18 @@ public class FlowController {
             }
             json.put("users", users);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
 
+    @ApiOperation(value = "取得下一步处理用户", notes = "取得下一步处理用户", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "deptCode", value = "所选的兼职部门编码", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "myActionId", value = "待办记录的ID", required = false, dataType = "Integer")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/multiDept", produces = {"application/json;charset=UTF-8;"})
     public String multiDept(@RequestParam(required = true) String skey, String deptCode, Long myActionId) {
@@ -1998,11 +1738,8 @@ public class FlowController {
             WorkflowRuler wr = new WorkflowRuler();
             while (toir.hasNext()) {
                 WorkflowActionDb towa = (WorkflowActionDb) toir.next();
-                if (towa.getJobCode().equals(
-                        WorkflowActionDb.PRE_TYPE_USER_SELECT)
-                        || towa
-                        .getJobCode()
-                        .equals(WorkflowActionDb.PRE_TYPE_USER_SELECT_IN_ADMIN_DEPT)) {
+                if (towa.getJobCode().equals(WorkflowActionDb.PRE_TYPE_USER_SELECT)
+                        || towa.getJobCode().equals(WorkflowActionDb.PRE_TYPE_USER_SELECT_IN_ADMIN_DEPT)) {
                     JSONObject user = new JSONObject();
                     user.put("actionTitle", towa.getTitle());
                     user.put("roleName", towa.getJobName());
@@ -2019,7 +1756,7 @@ public class FlowController {
 
                     // 标志位，能否选择用户
                     boolean canSelUser = wr.canUserSelUser(request, towa);
-                    // System.out.println(getClass() + " actionUserRealName=" +
+                    // LogUtil.getLog(getClass()).info(getClass() + " actionUserRealName=" +
                     // towa.getUserRealName() + " canSelUser=" + canSelUser);
                     user.put("canSelUser", String.valueOf(canSelUser));
 
@@ -2041,8 +1778,7 @@ public class FlowController {
                         user.put("name", "WorkflowAction_" + towa.getId());
                         user.put("value", ud.getName());
                         user.put("realName", ud.getRealName());
-                        user.put("isSelectable", String
-                                .valueOf(isStrategySelectable));
+                        user.put("isSelectable", String.valueOf(isStrategySelectable));
 
                         // 标志位，能否选择用户
                         boolean canSelUser = wr.canUserSelUser(request, towa);
@@ -2076,6 +1812,16 @@ public class FlowController {
         return json.toString();
     }
 
+    @ApiOperation(value = "流程中添加回复", notes = "流程中添加回复", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "skey", value = "skey", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "flow_id", value = "流程ID", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "myActionId", value = "待办记录的ID", required = false, dataType = "Long"),
+            @ApiImplicitParam(name = "content", value = "回复内容", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "is_secret", value = "是否私密，1是，0否", required = false, dataType = "Integer"),
+            @ApiImplicitParam(name = "progress", value = "进度", required = false, dataType = "Integer"),
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/addReply", produces = {"application/json;charset=UTF-8;"})
     public String addReply(@RequestParam(required = true) String skey, Integer flow_id, Long myActionId, String content, Integer is_secret, Integer progress) {
@@ -2092,7 +1838,7 @@ public class FlowController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -2125,7 +1871,7 @@ public class FlowController {
                     // 进度为0的时候不更新
                     if (fd.isProgress() && progress > 0) {
                         com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
-                        fdao = fdao.getFormDAO(flow_id, fd);
+                        fdao = fdao.getFormDAOByCache(flow_id, fd);
                         fdao.setCwsProgress(progress);
                         fdao.save();
                     }
@@ -2151,7 +1897,7 @@ public class FlowController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -2159,13 +1905,12 @@ public class FlowController {
         return jReturn.toString();
     }
 
+    @ApiOperation(value = "下载文件", notes = "下载文件", httpMethod = "POST")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @RequestMapping("/getFile")
     public void getFile(HttpServletResponse response) throws IOException, ErrMsgException {
-        BufferedInputStream bis = null;
         BufferedOutputStream bos = null;
         try {
-            bos = new BufferedOutputStream(response.getOutputStream());
-
             String op = ParamUtil.get(request, "op");
             //下载全路径 ，下载标题
             String url = "";
@@ -2175,6 +1920,7 @@ public class FlowController {
             String userName = pri.getUserName(skey);
             if ("".equals(userName)) {
                 response.setContentType("text/html;charset=utf-8");
+                bos = new BufferedOutputStream(response.getOutputStream());
                 bos.write("skey不存在".getBytes(StandardCharsets.UTF_8));
                 return;
             }
@@ -2186,8 +1932,7 @@ public class FlowController {
                         StampDb sd = sp.getPersonalStamp(opinionName);
                         if (sd != null) {
                             title = sd.getImage();
-                            url = cn.js.fan.web.Global.getRealPath() + "/upfile/stamp/" + title;
-
+                            url = "/upfile/stamp/" + title;
                         }
                     }
                 }
@@ -2200,7 +1945,7 @@ public class FlowController {
                 doc = doc.getDocument(wf.getDocId());
                 Attachment att = doc.getAttachment(1, attId);
                 title = att.getName();
-                url = cn.js.fan.web.Global.getRealPath() + "/" + att.getVisualPath() + "/" + att.getDiskName();
+                url = att.getVisualPath() + "/" + att.getDiskName();
 
                 // 判断是否超出下载次数限制
                 AttachmentLogMgr alm = new AttachmentLogMgr();
@@ -2211,34 +1956,18 @@ public class FlowController {
                 AttachmentLogMgr.log(userName, flowId, attId, AttachmentLogDb.TYPE_DOWNLOAD);
             }
 
-            // 用下句会使IE在本窗口中打开文件
-            // response.setContentType(MIMEMap.get(StrUtil.getFileExt(att.getDiskName())));
-            // 使客户端直接下载，上句会使IE在本窗口中打开文件，下句也一样
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-disposition", "attachment; filename=" + StrUtil.GBToUnicode(title));
-            // 多番尝试，UTF8ToUnicode在mui.plus打开时也还是乱码
-            // response.setHeader("Content-disposition", "attachment; filename=" + StrUtil.Unicode2GB(title));
-
-            bis = new BufferedInputStream(new FileInputStream(url));
-
-            byte[] buff = new byte[2048];
-            int bytesRead;
-
-            while (-1 != (bytesRead = bis.read(buff, 0, buff.length))) {
-                bos.write(buff, 0, bytesRead);
-            }
+            fileService.download(response, title, url);
         } catch (final IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (bis != null) {
-                bis.close();
-            }
             if (bos != null) {
                 bos.close();
             }
         }
     }
 
+    @ApiOperation(value = "提交固定流程", notes = "提交固定流程", httpMethod = "POST")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/finishAction", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
     public String finishAction(HttpServletRequest request) {
@@ -2263,6 +1992,8 @@ public class FlowController {
         return json.toString();
     }
 
+    @ApiOperation(value = "提交自由流程", notes = "提交自由流程", httpMethod = "POST")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
     @ResponseBody
     @RequestMapping(value = "/flow/finishActionFree", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
     public String finishActionFree(HttpServletRequest request) {
@@ -2277,7 +2008,7 @@ public class FlowController {
             json.put("res", "-1");
             json.put("msg", e.getMessage());
             json.put("op", "");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             // 清缓存
             threadContext.remove();

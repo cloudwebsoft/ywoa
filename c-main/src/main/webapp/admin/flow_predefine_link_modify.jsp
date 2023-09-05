@@ -177,7 +177,7 @@ function getDepts() {
 }
 
 function openWinDepts() {
-	var ret = showModalDialog('../dept_multi_sel.jsp',window.self,'dialogWidth:520px;dialogHeight:350px;status:no;help:no;')
+	var ret = openWin('../dept_multi_sel.jsp', 520, 350);
 	if (ret==null)
 		return;
 	deptNames.value = "";
@@ -329,7 +329,7 @@ while (ir.hasNext()) {
       <br>	
       <span class="TableData">
       <input id="deptAddBtn" title="添加部门" onClick="openWinDepts()" type="button" value="添加部门" name="button">
-	  <input name="roleAddBtn" type="button" onClick="showModalDialog('../role_multi_sel.jsp?roleCodes=',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="添加角色">
+	  <input name="roleAddBtn" type="button" onClick="openWin('../role_multi_sel.jsp?', 526, 435)" value="添加角色">
       <input id=deptClearBtn title="清空部门" onClick="deptNames.value='';depts.value=''" type="button" value="清 空" name="button">
       <br>
       空表示除其它分支条件外的部门或角色</span></td>

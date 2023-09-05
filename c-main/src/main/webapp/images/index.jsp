@@ -1,14 +1,10 @@
 <%@ page contentType="text/html;charset=utf-8" %>
-<%@ page import="com.redmoon.forum.*" %>
-<%@ page import="com.redmoon.forum.ui.*" %>
 <%@ page import="cn.js.fan.web.*" %>
-<%@ page import="cn.js.fan.util.*" %>
 <%@ page import="java.io.*" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <!DOCTYPE html>
 <html>
 <head>
-    <title><lt:Label res="res.label.forum.user" key="emot_list"/></title>
+    <title>表情列表</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <script language=javascript>
         <!--
@@ -44,13 +40,13 @@
         <br></center>
     <%
         String path = Global.getRootPath() + "/forum/images/face/";
-        FileViewer fileViewer = new FileViewer(cn.js.fan.web.Global.realPath + "/forum/images/face/");
+        com.cloudweb.oa.utils.FileViewer fileViewer = new com.cloudweb.oa.utils.FileViewer(cn.js.fan.web.Global.realPath + "/forum/images/face/");
         fileViewer.init();
     %>
     <table style="border: solid 2px #bfcee3" width=80% cellpadding="0" cellspacing="0">
         <center>
             <tr style="background-color:#86C3F0;height:35px;color:white;font-weight:bold; ">
-                <td align=center><lt:Label res="res.label.forum.user" key="bbs_emot_list"/></td>
+                <td align=center>表情列表</td>
             <tr>
                 <td valign="center">
                     <table border="0" width="100%" cellspacing="0" cellpadding="0">
@@ -65,8 +61,7 @@
                                     String fileName = fileViewer.getFileName();
                         %>
                         <td class="borderClass1" onmouseout="this.className='borderClass1'" onmouseover="this.className='borderClass2'">
-                            &nbsp;<img style='cursor:hand' onClick="changeface('<%=fileName%>')" alt='<lt:Label res="res.label.forum.user" key="check_selected"/>'
-                                                                                                                                                   src="../forum/images/face/<%=fileViewer.getFileName()%>" width="32" height="32" border="0"/></td>
+                            &nbsp;<img style='cursor:hand' onClick="changeface('<%=fileName%>')" src="../forum/images/face/<%=fileViewer.getFileName()%>" width="32" height="32" border="0"/></td>
                         <%
                                     k++;
                                     if (k == 10) {
@@ -81,7 +76,7 @@
                     </table>
         </center>
     </table>
-    <p align=center><lt:Label res="res.label.forum.user" key="check_selected"/></p>
+    <p align=center>点击选定</p>
 </div>
 </body>
 </html>

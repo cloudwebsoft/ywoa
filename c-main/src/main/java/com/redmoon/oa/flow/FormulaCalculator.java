@@ -1,5 +1,7 @@
 package com.redmoon.oa.flow;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.*;
 
 /**
@@ -65,8 +67,6 @@ public class FormulaCalculator {
             startR = calRule.indexOf(")");
             calRule = calRule.substring(startR + 1, calRule.length());
         }
-        // System.out.println("rightBracket=" + rightBracket);
-
         return rightBracket;
     }
 
@@ -358,15 +358,11 @@ public class FormulaCalculator {
         FormulaCalculator fc = new FormulaCalculator(str);
         double r = fc.getResult();
         long interval = System.currentTimeMillis() - k;
-        System.out.println(str + "=" + r + " 用时：" + interval);
-        if (!"".equals(fc.lastError)) {
-            System.out.println(fc.lastError);
-        }
     }
 
     public static void log(String str) {
         if (debug) {
-            System.out.println(str);
+            LogUtil.getLog(FormulaCalculator.class).info(str);
         }
     }
 
@@ -405,12 +401,9 @@ public class FormulaCalculator {
             list.add(str.substring(prePos).trim());
         if (debug) {
             Iterator ir = list.iterator();
-            // System.out.print("getSymbolWithoutOperator:list=");
             while (ir.hasNext()) {
                 String s = (String) ir.next();
-                // System.out.print(s + " ");
             }
-            // System.out.println();
         }
         return list;
     }

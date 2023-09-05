@@ -8,13 +8,10 @@ import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
-import com.redmoon.oa.dept.DeptUserDb;
-import com.redmoon.oa.person.UserDb;
-import com.redmoon.oa.person.UserMgr;
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.enums.Enum;
-import org.apache.log4j.Logger;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -71,8 +68,8 @@ public class WXAddressCallBack {
                         try {
                             userService.delUsers(new String[]{_userId});
                         } catch (ResKeyException e) {
-                            Logger.getLogger(WXAddressCallBack.class.getName()).error("微信同步OA删除失败，"+e.getMessage());
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error("微信同步OA删除失败，"+e.getMessage());
+                            LogUtil.getLog(getClass()).error(e);
                         }
                     }else if(_changeType.equals(Enum.emChangeType.emUpdateUser)){//修改用户
                         _userDeptByWx.createUser(hashMap);
@@ -84,9 +81,9 @@ public class WXAddressCallBack {
                         IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
                         Department department = departmentService.getById(id);
                         try {
-                            departmentService.delWithChildren(department.getCode());
+                            departmentService.delWithChildren(department.getCode(), true);
                         } catch (ValidateException e) {
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
                         }
                     }else if(_changeType.equals(Enum.emChangeType.emUpdateParty)){
                         Integer _Id = StrUtil.toInt(hashMap.get("Id"),0);

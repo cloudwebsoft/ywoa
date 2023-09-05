@@ -10,6 +10,7 @@ import cn.js.fan.util.*;
 
 import java.sql.*;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormDAO;
 import com.redmoon.oa.flow.MyActionDb;
 import com.redmoon.oa.flow.WorkflowDb;
@@ -19,7 +20,6 @@ import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.*;
 
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
 /**
@@ -47,7 +47,6 @@ public class PlanMgr {
   int todayMonth;
   int todayDay;
   Privilege privilege = null;
-  Logger logger = Logger.getLogger( PlanMgr.class.getName() );
 
   public PlanMgr() {
     privilege = new Privilege();
@@ -129,29 +128,33 @@ public class PlanMgr {
       boolean isRemind = false;
       int id = Integer.parseInt(request.getParameter("id"));
       title = ParamUtil.get(request, "title");
-      if (title.equals(""))
+      if (title.equals("")) {
           errmsg += "标题不能为空！\\n";
+      }
       content = ParamUtil.get(request, "content");
-      if (content.equals(""))
+      if (content.equals("")) {
           errmsg += "内容不能为空！\\n";
-      mydate = ParamUtil.get(request, "mydate");
+      }
+      mydate = ParamUtil.get(request, "myDate");
       //mydate = mydate.replace("/", "-")+":00";
 		//time = ParamUtil.get(request, "time");
-		endDate = ParamUtil.get(request, "enddate");
+		endDate = ParamUtil.get(request, "endDate");
 
-		if (endDate.equals(""))
-			endDate = mydate;
+		if ("".equals(endDate)) {
+            endDate = mydate;
+        }
 		//if(!"".equals(endDate)){
 			//endDate = endDate.replace("/", "-")+":00";
 		//}else{
 			//endDate = mydate;
 		//}
 		
-      isRemind = ParamUtil.getBoolean(request, "isRemind", false);
-      int before = ParamUtil.getInt(request, "before");
+      isRemind = ParamUtil.getBoolean(request, "remind", false);
+      int before = ParamUtil.getInt(request, "before", 0);
       if (isRemind) {
-    	  if (before==0)
-    		  errmsg += "请选择提醒时间!\\n";
+    	  if (before==0) {
+              errmsg += "请选择提醒时间!\\n";
+          }
       }
       
       boolean isRemindBySMS = ParamUtil.getBoolean(request, "isToMobile", false);
@@ -165,10 +168,11 @@ public class PlanMgr {
           end = DateUtil.parse(endDate, "yyyy-MM-dd HH:mm:ss");
       }
       catch (Exception e) {
-          logger.error("create:" + e.getMessage());
+          LogUtil.getLog(getClass()).error("create:" + e.getMessage());
       }
-      if (d==null||end==null)
+      if (d==null||end==null) {
           errmsg += "日期格式错误！\\n";
+      }
 
       if (DateUtil.compare(d, end) == 1) {
     	  errmsg += "开始日期不能大于结束日期！\\n";
@@ -186,7 +190,7 @@ public class PlanMgr {
       pd.setMyDate(d);
       pd.setEndDate(end);
       pd.setUserName(privilege.getUser(request));
-      if (isRemind == true) {
+      if (isRemind) {
           pd.setRemind(isRemind);
           java.util.Date dt = DateUtil.addMinuteDate(d, -before);
           pd.setRemindDate(dt);
@@ -222,7 +226,7 @@ public class PlanMgr {
       endDate = ParamUtil.get(request, "enddate");
       endTime = ParamUtil.get(request, "endtime");
       isRemind = ParamUtil.getBoolean(request, "isRemind", false);
-      int before = ParamUtil.getInt(request, "before");
+      int before = ParamUtil.getInt(request, "before", 0);
       boolean isRemindBySMS = ParamUtil.getBoolean(request, "isToMobile", false);
       boolean isClosed = ParamUtil.getInt(request, "isClosed", 0) == 1;
       java.util.Date d = null;
@@ -232,7 +236,7 @@ public class PlanMgr {
           end = DateUtil.parse(endDate + " "+ endTime, "yyyy-MM-dd HH:mm:ss");
       }
       catch (Exception e) {
-          logger.error("create:" + e.getMessage());
+          LogUtil.getLog(getClass()).error("create:" + e.getMessage());
       }
       if (d==null||end==null)
           errmsg += "日期格式错误！\\n";
@@ -286,7 +290,6 @@ public class PlanMgr {
           //isRemind = "0";
       //int before = ParamUtil.getInt(request, "before");
       //boolean isRemindBySMS = ParamUtil.getBoolean(request, "isToMobile", false);
-      // System.out.print(id+"=====");
       content = ParamUtil.get(request, "content");
       if (content.equals(""))
           errmsg += "内容不能为空！\\n";
@@ -299,7 +302,7 @@ public class PlanMgr {
           remind = DateUtil.parse(remindDate + " " + remindTime, "yyyy-MM-dd HH:mm:ss");
       }
       catch (Exception e) {
-          logger.error("create:" + e.getMessage());
+          LogUtil.getLog(getClass()).error("create:" + e.getMessage());
       }
       if (start==null )
           errmsg += "日期格式错误！\\n";
@@ -333,30 +336,21 @@ public class PlanMgr {
 		boolean isRemind = false;
 
 		title = ParamUtil.get(request, "title");
-		if (title.equals(""))
-			errmsg += "标题不能为空！\\n";
+		if ("".equals(title)) {
+            errmsg += "标题不能为空！\n";
+        }
 		content = ParamUtil.get(request, "content");
-		if (content.equals(""))
-			errmsg += "内容不能为空！\\n";
-		mydate = ParamUtil.get(request, "mydate");
-		//mydate = mydate.replace("/", "-")+":00";
-		//time = ParamUtil.get(request, "time");
-		endDate = ParamUtil.get(request, "enddate");
-
-		//if (endDate.equals(""))
-			//endDate = mydate;
-		//if(!"".equals(endDate)){
-			//endDate = endDate.replace("/", "-")+":00";
-		//}else{
-			//endDate = mydate;
-		//}
-
-		//endTime = ParamUtil.get(request, "endtime");
-		isRemind = ParamUtil.getBoolean(request, "isRemind", false);
-		int before = ParamUtil.getInt(request, "before");
+		if ("".equals(content)) {
+            errmsg += "内容不能为空！\n";
+        }
+		mydate = ParamUtil.get(request, "myDate");
+		endDate = ParamUtil.get(request, "endDate");
+		isRemind = ParamUtil.getBoolean(request, "remind", false);
+		int before = ParamUtil.getInt(request, "before", 0);
 		if (isRemind) {
-			if (before == 0)
-				errmsg += "请选择提醒时间!\\n";
+			if (before == 0) {
+                errmsg += "请选择提醒时间!\n";
+            }
 		}
 	      
 		boolean isRemindBySMS = ParamUtil.getBoolean(request, "isToMobile", false);
@@ -370,21 +364,22 @@ public class PlanMgr {
 			d = DateUtil.parse(mydate, "yyyy-MM-dd HH:mm:ss");
 			end = DateUtil.parse(endDate, "yyyy-MM-dd HH:mm:ss");
 		} catch (Exception e) {
-			logger.error("create:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
 		}
-		if (d == null || end == null)
-			errmsg += "日期未填写或格式错误！\\n";
+		if (d == null || end == null) {
+            errmsg += "日期未填写或格式错误！\n";
+        }
 		
 		if (DateUtil.compare(d, end)==1) {
-			errmsg += "开始日期不能大于结束日期！\\n";
+			errmsg += "开始日期不能大于结束日期！\n";
 		}
 		
-		if (!errmsg.equals("")) {
+		if (!"".equals(errmsg)) {
 			throw new ErrMsgException(errmsg);
 		}
 
 		String userName = ParamUtil.get(request, "userName");
-		if (userName.equals("")) {
+		if ("".equals(userName)) {
 			userName = privilege.getUser(request);
 		}
 
@@ -416,7 +411,7 @@ public class PlanMgr {
 		pd.setMyDate(d);
 		pd.setEndDate(end);
 		pd.setUserName(userName);
-		if (isRemind == true) {
+		if (isRemind) {
 			pd.setRemind(isRemind);
 			java.util.Date dt = DateUtil.addMinuteDate(d, -before);
 			pd.setRemindDate(dt);
@@ -468,7 +463,7 @@ public class PlanMgr {
 			d = DateUtil.parse(mydate + " " + time, "yyyy-MM-dd HH:mm:ss");
 			end = DateUtil.parse(endDate + " " + endTime, "yyyy-MM-dd HH:mm:ss");
 		} catch (Exception e) {
-			logger.error("create:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
 		}
 		if (d == null || end == null)
 			errmsg += "日期未填写或格式错误！\\n";
@@ -540,7 +535,7 @@ public class PlanMgr {
           remind = DateUtil.parse(remindDate + " " + remindTime, "yyyy-MM-dd HH:mm:ss");
       }
       catch (Exception e) {
-          logger.error("create:" + e.getMessage());
+          LogUtil.getLog(getClass()).error("create:" + e.getMessage());
       }
       if (start==null )
           errmsg += "日期格式错误！\\n";
@@ -608,7 +603,7 @@ public class PlanMgr {
               }
           }
       } catch (SQLException e) {
-          logger.error("getPlanOfMonth:" + e.getMessage());
+          LogUtil.getLog(getClass()).error("getPlanOfMonth:" + e.getMessage());
       } finally {
           if (conn != null) {
               conn.close();
@@ -766,7 +761,7 @@ public class PlanMgr {
 			if (privilege.getUser(request).equals(pd.getMaker()) || privilege.canAdminUser(request, userName))
 				;
 			else
-				throw new ErrMsgException(SkinUtil.LoadString(request, "pvg_invalid"));				
+				throw new ErrMsgException(SkinUtil.LoadString(request, "pvg_invalid"));
 		}
 
 		return pd.del();
@@ -993,7 +988,6 @@ public class PlanMgr {
 			fdao = fdao.getFormDAO(id, fd);
 			String lxrId = fdao.getFieldValue("lxr");
 			fd = fd.getFormDb("sales_linkman");
-			// System.out.println(PlanMgr.class.getName() + " renderAction: pd.getActionData()=" + pd.getActionData() + " lxrId=" + lxrId);
 			fdao = fdao.getFormDAO(StrUtil.toLong(lxrId), fd);
 			// return "<a target='_blank' href='" + request.getContextPath() + "/visual/module_show.jsp?id=" + pd.getActionData() + "&action=&formCode=day_lxr&isShowNav=0'>点击查看</a>";			
 			return "<a href='javascript:;' onclick=\"addTab('行动', '" + request.getContextPath() + "/sales/customer_visit_list.jsp?customerId=" + fdao.getFieldValue("customer") + "')\">点击查看</a>";			
@@ -1012,22 +1006,22 @@ public class PlanMgr {
 				
 				if (pd.isClosed()) {
 					if (lf!=null && lf.getType()==com.redmoon.oa.flow.Leaf.TYPE_LIST) {
-						return "<a href='javascript:;' onclick=\"addTab('查看流程', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + wf.getId() + "')\">查看流程</a>";
+						return "<a href='javascript:;' onclick=\"addTab('查看流程', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + wf.getId() + "')\">查看流程</a>";
 					} else {
 						if (wpd.isLight()) {
 							return "<a href='javascript:;' onclick=\"addTab('查看流程', '" + request.getContextPath() + "/flow_dispose_light_show.jsp?flowId=" + wf.getId() + "')\">查看流程</a>";
 						} else {
-							return "<a href='javascript:;' onclick=\"addTab('查看流程', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + wf.getId() + "')\">查看流程</a>";
+							return "<a href='javascript:;' onclick=\"addTab('查看流程', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + wf.getId() + "')\">查看流程</a>";
 						}
 					}
 				} else {
 					if (lf!=null && lf.getType()==com.redmoon.oa.flow.Leaf.TYPE_LIST) {
-						return "<a href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flow_dispose.jsp?myActionId=" + pd.getActionData() + "')\">处理流程</a>";
+						return "<a href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flowDispose.do?myActionId=" + pd.getActionData() + "')\">处理流程</a>";
 					} else {
 						if (wpd.isLight()) {
 							return "<a href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flow_dispose_light.jsp?myActionId=" + pd.getActionData() + "')\">处理流程</a>";
 						} else {
-							return "<a href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flow_dispose_free.jsp?myActionId=" + pd.getActionData() + "')\">处理流程</a>";
+							return "<a href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flowDisposeFree.do?myActionId=" + pd.getActionData() + "')\">处理流程</a>";
 						}
 					}
 				}

@@ -6,6 +6,7 @@ import cn.js.fan.base.ObjectDb;
 import cn.js.fan.db.Conn;
 import cn.js.fan.db.PrimaryKey;
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -52,7 +53,7 @@ public class SMSDocumentDb extends ObjectDb {
             ps.setInt(1, docId);
             rowcount = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -88,7 +89,7 @@ public class SMSDocumentDb extends ObjectDb {
             ps.setInt(4, useCard?1:0);
             rowcount = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -122,7 +123,7 @@ public class SMSDocumentDb extends ObjectDb {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -155,7 +156,7 @@ public class SMSDocumentDb extends ObjectDb {
                 primaryKey.setValue(new Integer(docId));
                 objectCache.refreshSave(primaryKey);
             } catch (SQLException e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             } finally {
                 if (conn != null) {
                     conn.close();

@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class SQLFilter {
     public SQLFilter() {
@@ -49,11 +50,17 @@ public class SQLFilter {
      * @return String
      */
     public static String getCountSql(String sql) {
-        if (sql.indexOf(" union ")!=-1 || sql.indexOf(" join ")!=-1) {
+        if (sql.contains(" union ") || sql.contains(" join ")) {
             // 必须加上tmp别名，否则会报： Every derived table must have its own alias
             return "select count(*) from (" + sql + ") as myTmpTable";
         }
-    	
+
+        // 我的流程，存在子查询
+        // select distinct id from (select distinct f.id,m.id as mid from flow_my_action m force index (user_checked), flow f where m.flow_id=f.id and m.user_name='zs' and f.status>-10 and m.is_checked<9 order by m.id desc) tmp;
+    	if (sql.contains(" from (") || sql.contains(" from  (")) {
+            return "select count(*) from (" + sql + ") as myTmpTable";
+        }
+
         // query = "select distinct id from table where id=1";
     	// 注意sql语句中对于数据的处理会区分大小写，所以不能转换为小写
         String query = sql.toLowerCase();
@@ -66,11 +73,9 @@ public class SQLFilter {
             // DebugUtil.i(SQLFilter.class, "getCountSql", "sql语句中缺少from：" + sql);
             return "select count(*) from (" + sql + ") as mytable";
         }
-        String query_part = query.substring(begin, query.length()).trim();
-        String query_part_raw = sql.substring(begin, query.length()).trim();
-        
-        // System.out.println("query_part_raw=" + query_part_raw);
-        
+        String queryPart = query.substring(begin, query.length()).trim();
+        String queryPartRaw = sql.substring(begin, query.length()).trim();
+
         // 去除query_part中的order by 部分
         // 2010-8-15 不能直接去除order by，因为：
         // select * from (select user_name,change_date,row_number() over (partition by user_name order by change_date Desc) rank_no from archive_user_change) t where t.rank_no=1
@@ -81,24 +86,23 @@ public class SQLFilter {
 
         int d = -1;
 
-        d = query_part.lastIndexOf(" order by");
+        d = queryPart.lastIndexOf(" order by");
         if (d != -1) {
-            String temp = query_part.substring(d + " order by".length());
+            String temp = queryPart.substring(d + " order by".length());
             boolean canRemove = true;
-            if (temp.indexOf(" from ")!=-1) {
+            if (temp.contains(" from ")) {
                 canRemove = false;
-            } else if (temp.indexOf(" where ")!=-1) {
+            } else if (temp.contains(" where ")) {
                 canRemove = false;
             }
             if (canRemove) {
-                query_part = query_part.substring(0, d);
-                query_part_raw = query_part_raw.substring(0, d);
+                queryPart = queryPart.substring(0, d);
+                queryPartRaw = queryPartRaw.substring(0, d);
             }
         }
-        // System.out.println(query_part);
 
         // 2011-3-9 group by问题
-        // select count(*) from form_table_sales_order o, form_table_sales_ord_product p where o.id=p.cws_id group by p.cws_creator order by 1 desc
+        // select count(*) from ft_sales_order o, ft_sales_ord_product p where o.id=p.cws_id group by p.cws_creator order by 1 desc
         // 上句会取出多条记录，每条记录的值为group by 分组的count计数
         // 因此需滤除group by
         
@@ -106,40 +110,42 @@ public class SQLFilter {
         // select sum(score_value) as s, user_name from sq_score_log group by user_name order by s desc
         // 上句中的group by不能被过滤，否则会报Invalid use of group function
         
-        d = query_part.indexOf(" group by");
+        d = queryPart.indexOf(" group by");
         boolean isSimpleGroup = false;
         if (d != -1) {
-            String temp = query_part.substring(d + " group by".length());
+            String temp = queryPart.substring(d + " group by".length());
             String selectPart = query.substring(0, begin);
             boolean canRemove = true;
-            if (selectPart.indexOf(" sum(")!=-1) {
+            if (selectPart.contains(" sum(")) {
             	canRemove = false;
             }
             else {
-	            if (temp.indexOf(" from ")!=-1) {
+	            if (temp.contains(" from ")) {
                     canRemove = false;
-                } else if (temp.indexOf(" where ")!=-1) {
+                } else if (temp.contains(" where ")) {
                     canRemove = false;
                 }
 	            // 2011-11-17 select id from archive_user_info_instant where user_name in ((select user_name from archive_user_info_instant) intersect (select user_name from archive_studyinfo where end_date is not null and STUDY_TYPE=0 group by user_name having max(degree) = 1.0)) and working_state = 0 and substr(department,1,10) = '2320200016' order by department
-	            else if (temp.indexOf(" and ")!=-1) {
+	            else if (temp.contains(" and ")) {
                     canRemove = false;
                 } else {
-                    // select id from form_table_zs_xm_dupl t1 where t1.is_dupl=1 and 1=1 group by xm; // 如果去掉group by 数量可能会减少
+                    // select id from ft_zs_xm_dupl t1 where t1.is_dupl=1 and 1=1 group by xm; // 如果去掉group by 数量可能会减少
                     canRemove = false;
                     isSimpleGroup = true;
                 }
             }
             if (canRemove) {
-                query_part = query_part.substring(0, d);
-                query_part_raw = query_part_raw.substring(0, d);
+                queryPart = queryPart.substring(0, d);
+                queryPartRaw = queryPartRaw.substring(0, d);
             }
         }
 
         // 分析当query中存在有distinct的情况
         d = query.indexOf("distinct ");
+        int n = query.indexOf("(");
         String distinct = ""; //存放distinct中的域
-        if (d != -1) {
+        // 判断distinct前有没有(号，如果有，则说明distinct在子句中
+        if (d != -1 && n > d) {
             int nextspace = query.indexOf(" ", d + 9);
             if (nextspace > d) {
                 distinct = query.substring(d + 9, nextspace).trim();
@@ -164,7 +170,7 @@ public class SQLFilter {
         // task:当SQL语句为select id from plugin_exam_user_answer group by user_name having count(*)>=10 order by answer_time desc
         // 时，再用select count(*)或者select count(id)就不正确了
 
-        if (distinct.equals("")) {
+        if ("".equals(distinct)) {
         	// 下句当两个表联合查询，在sqlserver中时，结果始终为0，需要count select语句中的第一个字段
         	// query = "select count(*) " + query_part;
         	
@@ -172,19 +178,17 @@ public class SQLFilter {
             p = p + 6;
             
             String str = query.substring(p, begin).trim(); // 取出select的字段
-            
-            // System.out.println("SQLFilter str=" + str);
-            
+
             String[] ary = StrUtil.split(str, ",");
             
             boolean isSelectOnlySum = false;
             String f = ary[0].trim();
-            if (f.indexOf("sum(")!=-1) {
+            if (f.contains("sum(")) {
             	if (ary.length>1) {
             		f = ary[1].trim();
             	}
             	else {
-            		query = "select count(*) " + query_part_raw;
+            		query = "select count(*) " + queryPartRaw;
             		isSelectOnlySum = true;
             	}
             }
@@ -194,37 +198,33 @@ public class SQLFilter {
 	            if (q!=-1) {
 	            	f = ary[0].substring(0, q).trim();
 	            }
-	            if (f.indexOf("count(")!=-1) {            	
-	            	query = "select " + f + query_part_raw;
+	            if (f.contains("count(")) {
+	            	query = "select " + f + queryPartRaw;
 	            }
 	            else {
                     if (!isSimpleGroup) {
                         // 如果f为p.*，则select count(p.*) from ...会报错
-                        if (f.indexOf(".*")!=-1) {
+                        if (f.contains(".*")) {
                             f = "*";
                         }
-                        query = "select count(" + f + ") " + query_part_raw;
+                        query = "select count(" + f + ") " + queryPartRaw;
                     }
 	                else {
-                        query = "select count(*) from (select " + f + " " + query_part_raw + ") a";
+                        query = "select count(*) from (select " + f + " " + queryPartRaw + ") a";
                     }
 	            }
             }
         }
         else {
             if (!isSimpleGroup) {
-                query = "select count(distinct " + distinct + ") " + query_part_raw;
+                query = "select count(distinct " + distinct + ") " + queryPartRaw;
             }
             else {
-                // select distinct t1.id from form_table_zs_xm_dupl t1 where t1.unit_code='root' and 1=1 and t1.is_dupl=1 and t1.cws_status=1 group by xm
+                // select distinct t1.id from ft_zs_xm_dupl t1 where t1.unit_code='root' and 1=1 and t1.is_dupl=1 and t1.cws_status=1 group by xm
                 query = "select count(*) from (" + sql + ") as mytable";
             }
         }
-        
-        // System.out.println("cn.js.fan.db.SQLFilter:" + query);
-
         return query;
-
     }
 
     /**
@@ -368,8 +368,7 @@ public class SQLFilter {
 				return rr.getLong(1);
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(SQLFilter.class).error(e);
 		}
     	return -1;
     }
@@ -382,7 +381,7 @@ public class SQLFilter {
             sql = "select SCOPE_IDENTITY()";
         }
         else if (Global.db.equalsIgnoreCase(Global.DB_ORACLE)) {
-            sql = "SELECT sequence.currval FROM DUAL";
+            sql = "SELECT " + tableName + "_id.currval FROM DUAL";
         }
         else { // if (Global.db.equalsIgnoreCase(Global.DB_MYSQL)) {
             sql = "select last_insert_id() from " + tableName + " limit 1";
@@ -500,12 +499,18 @@ public class SQLFilter {
      * @return String
      */
     public static String concat(String cond, String opToken, String newCond) {
-        if (cond.equals("")) {
+        if ("".equals(cond)) {
             cond = newCond;
         }
         else {
             cond += " " + opToken + " " + newCond;
         }
         return cond;
+    }
+
+    public static void main(String[] args) {
+        String sql = "select t1.id from ft_prj_worker t1 where t1.id not in (select distinct worker from ft_prj_org_worker t100 where t100.status=1 and end_date>=now()) and end_time>=now() and 1=1 order by t1.id desc";
+        sql = getCountSql(sql);
+        // LogUtil.getLog(getClass()).info(sql);
     }
 }

@@ -34,8 +34,14 @@ public class MatchUserException extends Exception {
         if (type==TYPE_MULTIDEPT) {
             return "用户目前处于多个部门中，不支持关联到组织机构的自动匹配人员方式！";
         }
-        else
+        else {
             return "";
+        }
+    }
+
+    @Override
+    public String getMessage() {
+        return "请先选择部门";
     }
 
 }

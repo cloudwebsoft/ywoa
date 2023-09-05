@@ -1,5 +1,9 @@
 package com.redmoon.oa.flow.macroctl;
 
+import com.cloudweb.oa.cache.DeptUserCache;
+import com.cloudweb.oa.entity.DeptUser;
+import com.cloudweb.oa.service.IDeptUserService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
 import javax.servlet.http.HttpServletRequest;
 
@@ -10,6 +14,9 @@ import org.json.JSONObject;
 import com.redmoon.oa.flow.FormField;
 import com.redmoon.oa.person.UserDb;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
+
 import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
@@ -21,7 +28,12 @@ import cn.js.fan.web.Global;
  * 
  * <p>
  * Description:
- * isAll-显示全部用户，而不仅是本单位的用户, isBlank-默认显示空，而不是默认选择当前用户
+ * 默认显示本单位的用户
+ * isAllUnit - 显示全部单位的用户，不包括离职用户
+ * isAll-显示全部用户，包括离职用户
+ * isBlank-默认显示空，而不是默认选择当前用户
+ * isEmpty-默认為空
+ * isMyDept - 我的部门中的用户
  * </p>
  * 
  * <p>
@@ -39,11 +51,12 @@ public class UserSelectCtl extends AbstractMacroCtl {
 	public UserSelectCtl() {
 	}
 
+	@Override
 	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
 		String style = "";
 		if (!"".equals(ff.getCssWidth())) {
 			style = "style='width:" + ff.getCssWidth() + "'";
-		}		
+		}
 		String str = "";
 		str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' " + style + " title='" + ff.getTitle() + "'>";
 		str += "<option value=''>无</option>";
@@ -54,34 +67,53 @@ public class UserSelectCtl extends AbstractMacroCtl {
 		}
 
 		String[] descAry = StrUtil.split(desc, ",");
-		boolean isAll = false, isBlank = false;
+		boolean isAll = false, isBlank = false, isEmpty = false, isMyDept = false, isAllUnit = false;
 		if (descAry!=null) {
 			for (int i=0; i<descAry.length; i++) {
 				if ("isAll".equalsIgnoreCase(descAry[i].trim())) {
 					isAll = true;
-					continue;
+				} else if ("isAllUnit".equalsIgnoreCase(descAry[i].trim())) {
+					isAllUnit = true;
 				}
-				if ("isBlank".equalsIgnoreCase(descAry[i].trim())) {
+				else if ("isBlank".equalsIgnoreCase(descAry[i].trim())) {
 					isBlank = true;
+				}
+				else if ("isEmpty".equalsIgnoreCase(descAry[i].trim())) {
+					isEmpty = true;
+				} else if ("isMyDept".equalsIgnoreCase(descAry[i].trim())) {
+					isMyDept = true;
 				}
 			}
 		}
 
 		UserDb ud = new UserDb();
 		Privilege pvg = new Privilege();
-		Iterator ir;
-		if (!isAll) {
-			ir = ud.listUserOfUnit(pvg.getUserUnitCode(request)).iterator();
-		} else {
-			// 防止销售合同中销售员中可能有离职的人，而无法显示
-			String sql = "select name from users order by regDate desc";
-			ir = ud.list(sql).iterator();
+		Vector<UserDb> v = new Vector<>();
+		if (!isEmpty) {
+			if (isAllUnit) {
+				v = ud.list();
+			}
+			else if (isMyDept) {
+				DeptUserCache deptUserCache = SpringUtil.getBean(DeptUserCache.class);
+				List<DeptUser> list = deptUserCache.listByUserName(pvg.getUser(request));
+				if (list.size() > 0) {
+					DeptUser deptUser = list.get(0);
+					v = ud.listByDeptCode(deptUser.getDeptCode());
+				}
+			} else {
+				if (!isAll) {
+					v = ud.listUserOfUnit(pvg.getUserUnitCode(request));
+				} else {
+					// 防止如销售合同中销售员中可能有离职的人，而无法显示
+					v = ud.listAll();
+				}
+			}
 		}
 
 		String userName = pvg.getUser(request);
 		// 置为当前用户
-		while (ir.hasNext()) {
-			ud = (UserDb) ir.next();
+		for (UserDb userDb : v) {
+			ud = userDb;
 			if (!isBlank) {
 				if (userName.equals(ud.getName())) {
 					str += "<option selected value='" + ud.getName() + "'>"
@@ -90,8 +122,7 @@ public class UserSelectCtl extends AbstractMacroCtl {
 					str += "<option value='" + ud.getName() + "'>"
 							+ ud.getRealName() + "</option>";
 				}
-			}
-			else {
+			} else {
 				str += "<option value='" + ud.getName() + "'>"
 						+ ud.getRealName() + "</option>";
 			}
@@ -134,7 +165,7 @@ public class UserSelectCtl extends AbstractMacroCtl {
     public String getOuterHTMLOfElementsWithRAWValueAndHTMLValue(
 			HttpServletRequest request, FormField ff) {
 		// 检查如果没有赋值就赋予其当前用户名称
-		// System.out.println(getClass() + " ff.getValue()=" + ff.getValue());
+		// LogUtil.getLog(getClass()).info(getClass() + " ff.getValue()=" + ff.getValue());
 		if (StrUtil.getNullStr(ff.getValue()).equals("")) {
 			String desc = ff.getDescription();
 			if ("".equals(desc)) {
@@ -173,19 +204,20 @@ public class UserSelectCtl extends AbstractMacroCtl {
 	 * 
 	 * @return String
 	 */
+	@Override
 	public String getDisableCtlScript(FormField ff, String formElementId) {
 		String realName = "";
 		String val = StrUtil.getNullStr(ff.getValue());
-		if (!val.equals("")) {
+		if (!"".equals(val)) {
 			UserDb ud = new UserDb();
 			ud = ud.getUserDb(ff.getValue());
-			if (ud.isLoaded())
+			if (ud.isLoaded()) {
 				realName = ud.getRealName();
+			}
 		}
-		String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType()
-				+ "','" + realName + "','" + val + "');\n";
 
-		return str;
+		return "DisableCtl('" + ff.getName() + "', '" + ff.getType()
+				+ "','" + realName + "','" + val + "');\n";
 	}
 
 	/**
@@ -195,9 +227,10 @@ public class UserSelectCtl extends AbstractMacroCtl {
 	 *            FormField
 	 * @return String
 	 */
+	/*@Override
 	public String getReplaceCtlWithValueScript(FormField ff) {
 		String str = "var val='';\n";
-		if (ff.getValue() != null && !ff.getValue().equals("")) {
+		if (ff.getValue() != null && !"".equals(ff.getValue())) {
 			UserDb ud = new UserDb();
 			ud = ud.getUserDb(ff.getValue());
 			if (ud.isLoaded()) {
@@ -209,7 +242,7 @@ public class UserSelectCtl extends AbstractMacroCtl {
 		str += "ReplaceCtlWithValue('" + ff.getName() + "', '" + ff.getType()
 				+ "', val);\n";
 		return str;
-	}
+	}*/
 
 	public Object getValueForCreate(FormField ff) {
 		return ff.getValue();
@@ -226,8 +259,9 @@ public class UserSelectCtl extends AbstractMacroCtl {
 	 *            String 表单域的值
 	 * @return String
 	 */
+	@Override
 	public String converToHtml(HttpServletRequest request, FormField ff,
-			String fieldValue) {
+							   String fieldValue) {
 		String realName = fieldValue;
 		if (fieldValue != null && !fieldValue.equals("")) {
 			UserDb ud = new UserDb();
@@ -281,14 +315,17 @@ public class UserSelectCtl extends AbstractMacroCtl {
 		return str;
 	}
 
+	@Override
 	public String getControlType() {
 		return "select";
 	}
 
+	@Override
 	public String getControlValue(String userName, FormField ff) {
 		return StrUtil.getNullStr(ff.getValue());
 	}
 
+	@Override
 	public String getControlText(String userName, FormField ff) {
 		if (ff.getValue() == null || "".equals(ff.getValue())) {
 			return "";

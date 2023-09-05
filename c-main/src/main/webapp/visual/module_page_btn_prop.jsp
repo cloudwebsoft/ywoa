@@ -17,6 +17,8 @@
     }
 
     String formCode = msd.getString("form_code");
+    String pageType = ParamUtil.get(request, "pageType");
+    boolean isAddPage = ConstUtil.PAGE_TYPE_ADD.equals(pageType);
 %>
 <!DOCTYPE html>
 <html>
@@ -56,6 +58,10 @@
     } else if (btnId.equals(ConstUtil.BTN_PRINT)) {
         isSysBtn = true;
     } else if (btnId.equals(ConstUtil.BTN_OK)) {
+        isSysBtn = true;
+    } else if (btnId.equals(ConstUtil.BTN_CLOSE)) {
+        isSysBtn = true;
+    } else if (btnId.equals(ConstUtil.BTN_BACK)) {
         isSysBtn = true;
     }
     String strDisNone = isSysBtn?" style='display:none' ":"";
@@ -97,7 +103,7 @@
             <td align="left"><input id="enabled" name="enabled" type="checkbox" checked/>
             </td>
         </tr>
-        <tr>
+        <tr style="display:<%=isAddPage?"none":""%>">
             <td align="center">条件
             </td>
             <td align="left"><img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
@@ -153,7 +159,7 @@
                 </div>
             </td>
         </tr>
-        <tr>
+        <tr style="display:<%=isAddPage?"none":""%>">
             <td align="center">角色
             </td>
             <td align="left"><textarea title="为空则表示角色不限，均可以看见此按钮" id="roleDescs" name="roleDescs" style="width:100%; height:80px" readonly></textarea>

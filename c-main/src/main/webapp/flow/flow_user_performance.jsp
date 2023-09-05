@@ -100,8 +100,6 @@ for (int i=0; i<=11; i++) {
 	int d = DateUtil.getDayCount(y, i);
 	cal.set(y,i,1,0,0,0);
 	cal2.set(y,i,d,23,59,59);
-	// System.out.println(getClass() + " cal=" + DateUtil.format(cal, "yyyy-MM-dd HH:mm:ss"));
-	// System.out.println(getClass() + " cal=" + DateUtil.format(cal2, "yyyy-MM-dd HH:mm:ss"));
 	ResultIterator ri = jt.executeQuery(sql, new Object[]{myname, cal.getTime(), cal2.getTime()});
 	double perf = 0.0;
 	if (ri.hasNext()) {

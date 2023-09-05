@@ -10,13 +10,16 @@ import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.entity.DeptUser;
 import com.cloudweb.oa.entity.Group;
 import com.cloudweb.oa.entity.Role;
 import com.cloudweb.oa.entity.User;
+import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudweb.oa.vo.UserVO;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptMgr;
 import com.redmoon.oa.dept.DeptUserDb;
@@ -198,7 +201,7 @@ public class UserDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("listResult:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listResult:" + e.getMessage());
             throw new ErrMsgException("Db error.");
         } finally {
             conn.close();
@@ -207,6 +210,15 @@ public class UserDb extends ObjectDb {
         lr.setResult(result);
         lr.setTotal(total);
         return lr;
+    }
+
+    /**
+     * 列出全部用户，含已离职用户
+     * @return
+     */
+    public Vector<UserDb> listAll() {
+        String sql = "select name from users order by regDate desc";
+        return list(sql);
     }
 
     @Override
@@ -269,6 +281,7 @@ public class UserDb extends ObjectDb {
         ud.setDingding(user.getDingding());
         ud.setOrders(user.getOrders());
         ud.setLastLogin(DateUtil.asDate(user.getLastLogin()));
+        ud.setOpenId(user.getOpenId());
         ud.setLoaded(true);
         return ud;
     }
@@ -285,6 +298,21 @@ public class UserDb extends ObjectDb {
         Vector<UserDb> v = new Vector<>();
         for (User user : list) {
             v.addElement(getFromUser(user, new UserDb()));
+        }
+        return v;
+    }
+
+    /**
+     * 列出部门中的用户
+     * @param deptCode
+     * @return
+     */
+    public Vector<UserDb> listByDeptCode(String deptCode) {
+        IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
+        List<DeptUser> list = deptUserService.listByDeptCode(deptCode);
+        Vector<UserDb> v = new Vector<>();
+        for (DeptUser user : list) {
+            v.addElement(getUserDb(user.getUserName()));
         }
         return v;
     }
@@ -331,8 +359,7 @@ public class UserDb extends ObjectDb {
      * @param mobile String
      * @return boolean
      */
-    public final boolean create(String name, String realName, String pwd,
-                                String mobile, String unitCode, int isPass) {
+    public final boolean create(String name, String realName, String pwd, String mobile, String unitCode, int isPass) {
         boolean re = false;
         IUserService userService = SpringUtil.getBean(IUserService.class);
         UserVO userVO = new UserVO();
@@ -345,32 +372,39 @@ public class UserDb extends ObjectDb {
             try {
                 pwdMD5 = SecurityUtil.MD5(pwd);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             userVO.setPwd(pwdMD5);
             userVO.setMobile(mobile);
             userVO.setUnitCode(unitCode);
             userVO.setIsPass(isPass);
+            userVO.setLoginName(name);
+
+            this.name = name;
+            this.realName = realName;
+            this.pwdRaw = pwd;
+            this.pwdMD5 = pwdMD5;
+            this.mobile = mobile;
+            this.unitCode = unitCode;
+            this.setIsPass(isPass);
+            this.setValid(1);
 
             re = userService.create(userVO);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
+        } catch (IOException | ErrMsgException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
 
     /**
-     * 用于导入用户
+     * 用于导入或同步用户
      * @param name String
      * @param realName String
      * @param pwd String
      * @param mobile String
      * @return boolean
      */
-    public final boolean create(String name, String realName, String pwd,
-                                String mobile, String unitCode) {
+    public final boolean create(String name, String realName, String pwd, String mobile, String unitCode) {
         return create(name, realName, pwd, mobile, unitCode, CHECK_PASSED_YES);
     }
 
@@ -437,11 +471,11 @@ public class UserDb extends ObjectDb {
         IUserService userService = SpringUtil.getBean(IUserService.class);
         boolean re = false;
         try {
-            re = userService.delUsers(new String[]{name});
-        } catch (ResKeyException e) {
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
+//            com.cloudweb.oa.cache.UserCache userCache = SpringUtil.getBean(com.cloudweb.oa.cache.UserCache.class);
+//            User user = userCache.getUser(name);
+            re = userService.delUsers(new String[]{String.valueOf(id)});
+        } catch (ResKeyException | ErrMsgException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -751,7 +785,7 @@ public class UserDb extends ObjectDb {
     }
 
     public UserDb getUserDb(String name) {
-        this.name = name;
+        // this.name = name;
         com.cloudweb.oa.cache.UserCache userCache = SpringUtil.getBean(com.cloudweb.oa.cache.UserCache.class);
         User user = userCache.getUser(name);
         return getFromUser(user, new UserDb());
@@ -832,6 +866,7 @@ public class UserDb extends ObjectDb {
         roleMember.setMsgSpaceQuota(ConstUtil.QUOTA_NOT_SET);
         roleMember.setDiskQuota(ConstUtil.QUOTA_NOT_SET);
         roleMember.setDescription("全部用户");
+        roleMember.setStatus(true);
 
         RoleDb rd = new RoleDb();
         RoleDb[] roles = new RoleDb[list.size() + 1];
@@ -1033,4 +1068,15 @@ public class UserDb extends ObjectDb {
     public void setOrders(int orders) {
         this.orders = orders;
     }
+
+    public String getOpenId() {
+        return openId;
+    }
+
+    public void setOpenId(String openId) {
+        this.openId = openId;
+    }
+
+    private String openId;
+
 }

@@ -191,7 +191,7 @@ while (ir.hasNext()) {
 	  if (isExpired) {%>
         <img src="../images/flow/expired.png" align="absmiddle" alt="<lt:Label res='res.flow.Flow' key='timeOut'/>" />
         <%}%>      
-      &nbsp;&nbsp;<a title="<%=wfd.getTitle()%>" href="javascript:;" onclick="addTab('<%=wfd.getTitle()%>', 'flow_modify.jsp?flowId=<%=wfd.getId()%>&actionId=<%=mad.getActionId()%>')"><%=StrUtil.getLeft(wfd.getTitle(), 40)%></a></td>
+      &nbsp;&nbsp;<a title="<%=wfd.getTitle()%>" href="javascript:;" onclick="addTab('<%=wfd.getTitle()%>', 'flowShowPage.do?flowId=<%=wfd.getId()%>&actionId=<%=mad.getActionId()%>')"><%=StrUtil.getLeft(wfd.getTitle(), 40)%></a></td>
       <td align="center"><%=DateUtil.format(mad.getReceiveDate(), "yy-MM-dd HH:mm")%> </td>
       <td align="center"><%=DateUtil.format(mad.getCheckDate(), "yy-MM-dd HH:mm")%> </td>
       <td align="center"><%=DateUtil.format(mad.getExpireDate(), "yy-MM-dd HH:mm")%></td>
@@ -199,7 +199,7 @@ while (ir.hasNext()) {
       <td align="left"><%=um.getUserDb(mad.getUserName()).getRealName()%></td>
       <td align="left"><%=userRealName%></td>
       <td align="center" class="<%=WorkflowActionDb.getStatusClass(mad.getActionStatus())%>"><%=WorkflowActionDb.getStatusName(mad.getActionStatus())%>	  </td>
-      <td align="center"><a href="javascript:;" onclick="addTab('<%=wfd.getTitle()%>', 'flow_modify.jsp?flowId=<%=wfd.getId()%>&actionId=<%=mad.getActionId()%>')"><lt:Label res="res.flow.Flow" key="show"/></a></td>
+      <td align="center"><a href="javascript:;" onclick="addTab('<%=wfd.getTitle()%>', 'flowShowPage.do?flowId=<%=wfd.getId()%>&actionId=<%=mad.getActionId()%>')"><lt:Label res="res.flow.Flow" key="show"/></a></td>
     </tr>
     <%}%>
   </tbody>

@@ -9,7 +9,6 @@
 <%@ page import="com.redmoon.oa.visual.*" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.*"%>
-<%@ taglib uri="/WEB-INF/tlds/HelpDocTag.tld" prefix="help" %>
 <%
 String op = ParamUtil.get(request, "op");
 String code = ParamUtil.get(request, "code");
@@ -55,6 +54,9 @@ switch (eventType) {
 	case "see":
 		scriptStr = StrUtil.getNullStr(msd.getScript("see"));
 		break;
+	case "preProcess":
+		scriptStr = StrUtil.getNullStr(msd.getScript("preProcess"));
+		break;
 	default:
 		scriptStr = StrUtil.getNullStr(msd.getScript("del"));
 		break;
@@ -82,10 +84,13 @@ switch (eventType) {
 	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+	<script src="../js/layui/layui.js" charset="utf-8"></script>
 </head>
 <body style="padding:0px; margin:0px">
 <div class="form-inline form-group text-center">
 	<select id="eventType" name="eventType" onchange="onEventTypeChange()" class="form-control">
+		<option value="preProcess">预处理事件</option>
 		<option value="validate">验证事件</option>
 		<option value="see">查看事件</option>
 		<option value="create">添加事件</option>
@@ -100,7 +105,6 @@ o("eventType").value = "<%=eventType%>";
 </script>
 <input type="button" onclick="saveScript()" value="保存" class="btn btn-default" />
 <input type="button" value="设计器" class="btn btn-default" onclick="openIdeWin()" />
-<help:HelpDocTag id="717" type="content" size="100"></help:HelpDocTag>
 </div>
 <textarea id="content" style="display:none"><%=scriptStr %></textarea>
 <pre id="editor"></pre>
@@ -147,7 +151,7 @@ function saveScript() {
 		},
 		success: function(data, status){
 			data = $.parseJSON(data);
-			jAlert(data.msg, "提示");
+			layer.msg(data.msg);
 		},
 		complete: function(XMLHttpRequest, status){
 			//HideLoading();

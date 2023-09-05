@@ -37,10 +37,8 @@ public class BMapUtil {
         double t2 = Math.cos(lat_a / PK) * Math.sin(lng_a / PK) * Math.cos(lat_b / PK) * Math.sin(lng_b / PK);  
         double t3 = Math.sin(lat_a / PK) * Math.sin(lat_b / PK);  
   
-        double tt = Math.acos(t1 + t2 + t3);  
-  
-        System.out.println("两点间的距离：" + 6366000 * tt + " 米");  
-        return 6366000 * tt;  
+        double tt = Math.acos(t1 + t2 + t3);
+        return 6366000 * tt;
     }  
 
     /** 
@@ -63,7 +61,7 @@ public class BMapUtil {
         s = s * EARTH_RADIUS;  
         s = Math.round(s * 10000) / 10000;  
         double ss = s * 1.0936132983377;  
-        System.out.println("两点间的距离是：" + s + "米" + "," + (int) ss + "码");  
+        // LogUtil.getLog(getClass()).info("两点间的距离是：" + s + "米" + "," + (int) ss + "码");
     }
     
 	public static void main(String[] args) {  

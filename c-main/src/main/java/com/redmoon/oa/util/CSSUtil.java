@@ -1,13 +1,19 @@
 package com.redmoon.oa.util;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import cn.js.fan.security.SecurityUtil;
+import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.utils.JarFileUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.ResourceUtils;
 import org.w3c.css.sac.InputSource;
 import org.w3c.dom.css.*;
 
@@ -40,8 +46,7 @@ public class CSSUtil {
 		try {
 			 sheet = parser.parseStyleSheet(source, null, null);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 	/**
@@ -92,7 +97,7 @@ public class CSSUtil {
 		try {
 			css = cssparser.parseStyleSheet(new InputSource(URIPath), null, null);
 		} catch (IOException e) {
-			System.out.println("解析css文件异常:" + e);
+			LogUtil.getLog(CSSUtil.class).error(e);
 			return al;
 		}
 		/*
@@ -134,16 +139,19 @@ public class CSSUtil {
 		return al;
 	}
 
-	public static ArrayList getFontBefores() {
+	public static ArrayList<String> getFontBefores() {
 		ArrayList<String> al = new ArrayList<String>();
-		String path = Global.getRealPath() + "lte/css/font-awesome.min.css";
-		String URIPath = "file:///" + path;
+		String path = "static/css/font-awesome.min.css";
+		InputSource inputSource = getInputSource(path);
+		if (inputSource == null) {
+			return al;
+		}
 		CSSOMParser cssparser = new CSSOMParser();
-		CSSStyleSheet css = null;
+		CSSStyleSheet css;
 		try {
-			css = cssparser.parseStyleSheet(new InputSource(URIPath), null, null);
+			css = cssparser.parseStyleSheet(inputSource, null, null);
 		} catch (IOException e) {
-			System.out.println("解析css文件异常:" + e);
+			LogUtil.getLog(CSSUtil.class).error(e);
 			return al;
 		}
 		/*
@@ -151,13 +159,6 @@ public class CSSUtil {
 		  content: "\f015";
 		}
 		*/
-		String cont = "";
-		try {
-			cont = FileUtil.ReadFile(path);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		if (css != null) {
 			CSSRuleList cssrules = css.getCssRules();
 			for (int i = 0; i < cssrules.getLength(); i++) {
@@ -179,16 +180,72 @@ public class CSSUtil {
 		return al;
 	}
 
-	public static ArrayList getFontBefore() {
+	public static InputSource getInputSource(String path) {
+		URL url = JarFileUtil.class.getClassLoader().getResource(path);
+		if (url == null) {
+			LogUtil.getLog(CSSUtil.class).warn("getInputSource basePath: " + path + " is not exist.");
+			return null;
+		}
+		if ("jar".equals(url.getProtocol())) {
+			// jar包读取
+			try {
+				if (path.startsWith("/")) {
+					path = path.substring(1);
+				}
+				Resource resource = new PathMatchingResourcePatternResolver().getResource(ResourceUtils.CLASSPATH_URL_PREFIX + "BOOT-INF/classes/" + path);
+
+				// return new InputSource(resource.getURL().getFile());
+				return new InputSource(new InputStreamReader(resource.getInputStream()));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			return new InputSource("file://" + url.getFile());
+		}
+	}
+
+	public static InputStream getInputStream(String path) {
+		URL url = JarFileUtil.class.getClassLoader().getResource(path);
+		if (url == null) {
+			LogUtil.getLog(CSSUtil.class).warn("getInputSource basePath: " + path + " is not exist.");
+			return null;
+		}
+		if ("jar".equals(url.getProtocol())) {
+			// jar包读取
+			try {
+				if (path.startsWith("/")) {
+					path = path.substring(1);
+				}
+				Resource resource = new PathMatchingResourcePatternResolver().getResource(ResourceUtils.CLASSPATH_URL_PREFIX + "BOOT-INF/classes/" + path);
+
+				// return new InputSource(resource.getURL().getFile());
+				return resource.getInputStream();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			try {
+				return url.openStream();
+			} catch (IOException e) {
+				LogUtil.getLog(CSSUtil.class).warn(e);
+			}
+		}
+		return null;
+	}
+
+	public static ArrayList<String[]> getFontBefore() {
 		ArrayList<String[]> al = new ArrayList<String[]>();
-		String path = Global.getRealPath() + "lte/css/font-awesome.min.css";
-		String URIPath = "file:///" + path;
+		String path = "static/css/font-awesome.min.css";
+		InputSource inputSource = getInputSource(path);
+		if (inputSource == null) {
+			return al;
+		}
 		CSSOMParser cssparser = new CSSOMParser();
 		CSSStyleSheet css = null;
 		try {
-			css = cssparser.parseStyleSheet(new InputSource(URIPath), null, null);
+			css = cssparser.parseStyleSheet(inputSource, null, null);
 		} catch (IOException e) {
-			System.out.println("解析css文件异常:" + e);
+			LogUtil.getLog(CSSUtil.class).error(e);
 			return al;
 		}
 		/*
@@ -196,13 +253,8 @@ public class CSSUtil {
 		  content: "\f015";
 		}
 		*/
-		String cont = "";
-		try {
-			cont = FileUtil.ReadFile(path);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		String cont = FileUtil.readFile(getInputStream(path), "utf-8");
+
 		if (css != null) {
 			CSSRuleList cssrules = css.getCssRules();
 			for (int i = 0; i < cssrules.getLength(); i++) {
@@ -220,7 +272,7 @@ public class CSSUtil {
 						ary[0] = selector;
 						CSSStyleDeclaration styles = cssrule.getStyle();
 						for (int j = 0, n = styles.getLength(); j < n; j++) {
-							if (styles.item(j).equalsIgnoreCase("content")) {
+							if ("content".equalsIgnoreCase(styles.item(j))) {
 								// 无法读取content的内容，读出的为空
 								// String prop = styles.getPropertyValue(styles.item(j));
 								int p = cont.indexOf(selector);
@@ -231,7 +283,6 @@ public class CSSUtil {
 								}
 								int q = cont.indexOf("}", p+1);
 								String prop = cont.substring(p+1, q);
-								// System.out.println(CSSUtil.class + " prop=" + prop);
 								ary[1] = prop;
 								break;
 							}
@@ -269,7 +320,7 @@ public class CSSUtil {
 			css = cssparser.parseStyleSheet(new InputSource(URIPath), null,
 					null);
 		} catch (IOException e) {
-			System.out.println("解析css文件异常:" + e);
+			LogUtil.getLog(CSSUtil.class).error(e);
 		}
 		if (css != null) {
 			CSSRuleList cssrules = css.getCssRules();
@@ -277,28 +328,19 @@ public class CSSUtil {
 				CSSRule rule = cssrules.item(i);
 				if (rule instanceof CSSStyleRule) {
 					CSSStyleRule cssrule = (CSSStyleRule) rule;
-					// System.out.println("cssrule.getCssText:" + cssrule.getCssText());
-					// System.out.println("cssrule.getSelectorText:" + cssrule.getSelectorText());
-					
 					String selector = cssrule.getSelectorText();
 					if (selector.indexOf("div.fbutton")!=-1) {
-						System.out.println("selector:" + selector);
-						
 						CSSStyleDeclaration styles = cssrule.getStyle();
 						for (int j = 0, n = styles.getLength(); j < n; j++) {
-							System.out.println(styles.item(j) + ":"
+							LogUtil.getLog(CSSUtil.class).info(styles.item(j) + ":"
 									+ styles.getPropertyValue(styles.item(j)));
 						}
 					}
 
 				} else if (rule instanceof CSSImportRule) {
 					CSSImportRule cssrule = (CSSImportRule) rule;
-					System.out.println(cssrule.getHref());
 				}
 			}
 		}
-
 	}
-
-	
 }

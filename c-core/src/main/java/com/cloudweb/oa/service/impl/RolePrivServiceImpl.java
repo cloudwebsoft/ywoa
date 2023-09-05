@@ -48,7 +48,11 @@ public class RolePrivServiceImpl extends ServiceImpl<RolePrivMapper, RolePriv> i
         QueryWrapper<RolePriv> qw = new QueryWrapper<>();
         qw.eq("roleCode", roleCode);
         qw.eq("priv", priv);
-        return remove(qw);
+        boolean re = remove(qw);
+        if (re) {
+            refreshRoleUserAuthority(roleCode);
+        }
+        return re;
     }
 
     @Override
@@ -92,6 +96,24 @@ public class RolePrivServiceImpl extends ServiceImpl<RolePrivMapper, RolePriv> i
             }
         }
 
+        refreshRoleUserAuthority(roleCode);
+        return true;
+    }
+
+    @Override
+    public boolean create(String roleCode, String priv) {
+        RolePriv rolePriv = new RolePriv();
+        rolePriv.setPriv(priv);
+        rolePriv.setRoleCode(roleCode);
+        boolean re = rolePriv.insert();
+        if (re) {
+            refreshRoleUserAuthority(roleCode);
+        }
+        return re;
+    }
+
+    @Override
+    public void refreshRoleUserAuthority(String roleCode) {
         if (ConstUtil.ROLE_MEMBER.equals(roleCode)) {
             List<User> list = userService.listAll();
             for (User user : list) {
@@ -105,7 +127,5 @@ public class RolePrivServiceImpl extends ServiceImpl<RolePrivMapper, RolePriv> i
                 userAuthorityService.refreshUserAuthority(userOfRole.getUserName());
             }
         }
-
-        return true;
     }
 }

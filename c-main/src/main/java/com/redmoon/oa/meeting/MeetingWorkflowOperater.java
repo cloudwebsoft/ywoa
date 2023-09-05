@@ -4,7 +4,6 @@ import com.redmoon.oa.fileark.plugin.base.*;
 import cn.js.fan.util.*;
 import com.redmoon.oa.flow.WorkflowDb;
 import com.redmoon.oa.flow.WorkflowActionDb;
-import org.apache.log4j.Logger;
 
 /**
  * <p>Title: </p>
@@ -20,7 +19,6 @@ import org.apache.log4j.Logger;
  */
 public class MeetingWorkflowOperater implements IPluginWorkflowOperater {
     WorkflowDb wfd;
-    Logger logger = Logger.getLogger(this.getClass().getName());
 
     public MeetingWorkflowOperater(int flowId) {
         wfd = new WorkflowDb();

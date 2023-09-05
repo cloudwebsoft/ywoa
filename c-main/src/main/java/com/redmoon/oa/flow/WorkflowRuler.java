@@ -45,7 +45,7 @@ public class WorkflowRuler {
         String flag = wa.getFlag();
         int len = flag.length();
         if (len >= 2) {
-            if (flag.substring(1, 2).equals("0")) {
+            if ("0".equals(flag.substring(1, 2))) {
                 return false;
             }
         }

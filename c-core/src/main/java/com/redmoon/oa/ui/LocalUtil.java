@@ -6,13 +6,12 @@ import com.cloudweb.oa.entity.UserSetup;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.pvg.Privilege;
-import org.apache.log4j.Logger;
+import com.redmoon.oa.sms.QxtMasMobileMsgUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Locale;
 
 public class LocalUtil {
-	static Logger logger = Logger.getLogger(LocalUtil.class.getName());
     public static final String OA_SESSION_LOCALE = "oa_locale";
     static final String resName = "res.common";
     
@@ -32,8 +31,8 @@ public class LocalUtil {
             str = rb.get(key);
         }
         catch (Exception e) {
-            logger.error("LoadString: resource=" + resource + " key=" + key + " " + e.getMessage());
-            e.printStackTrace();
+            com.cloudwebsoft.framework.util.LogUtil.getLog(LocalUtil.class).error("LoadString: resource=" + resource + " key=" + key + " " + e.getMessage());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(LocalUtil.class).error(e);
         }
         return str;
     }

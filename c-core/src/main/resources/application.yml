@@ -1,27 +1,30 @@
 server:
   servlet:
     context-path: /oa
-  port: 8888
+    session:
+      #session过期时间5小时
+      timeout: PT5H
+  port: 8096
   #绑定ip地址,只能由设置的地址进入访问
   #address=172.0.0.1
-  tomcat:
-    max-threads: 6
-    min-spare-threads: 3
-    accept-count: 10
-    max-connections: 1000
-    connection-timeout: 10000
-    basedir: D:/Tomcat
-    accesslog:
-      buffered: true
-      directory: D:/Tomcat/logs
-      enabled: true
-      file-date-format: .yyyy-MM-dd
-      pattern: common
-      prefix: access_log
-      rename-on-rotate: false
-      request-attributes-enabled: false
-      rotate: true
-      suffix: .log
+#  tomcat:
+#    max-threads: 6
+#    min-spare-threads: 3
+#    accept-count: 10
+#    max-connections: 1000
+#    connection-timeout: 10000
+#    #basedir: d:/Tomcat9
+#    accesslog:
+#      buffered: true
+#      #directory: d:/Tomcat9/logs
+#      enabled: true
+#      file-date-format: .yyyy-MM-dd
+#      pattern: common
+#      prefix: access_log
+#      rename-on-rotate: false
+#      request-attributes-enabled: false
+#      rotate: true
+#      suffix: .log
 
 #暴露actuator接口，用于refresh配置文件，重新加载druid
 management:
@@ -43,16 +46,21 @@ management:
     redis:
       enabled: false
 
-mybatis:
-  mapper-locations: classpath*:com/cloudweb/oa/mapper/xml/*.xml
-  refresh-mapper: true
-  type-aliases-package: com.cloudweb.oa.entity
-  configuration:
-    # 开启驼峰
-    map-underscore-to-camel-case: true
-    default-fetch-size: 500
-    default-statement-timeout: 80
+#mybatis:
+#  mapper-locations: classpath*:com/cloudweb/oa/mapper/xml/*.xml
+#  refresh-mapper: true
+#  type-aliases-package: com.cloudweb.oa.entity
+#  configuration:
+#    # 开启驼峰
+#    map-underscore-to-camel-case: true
+#    default-fetch-size: 500
+#    default-statement-timeout: 80
 mybatis-plus:
+  global-config:
+    db-config:
+      insert-strategy: NOT_NULL
+      update-strategy: NOT_NULL
+      select-strategy: NOT_EMPTY
   # 此处有坑 单模块加载也需要配置*(classpath 紧挨着的星) 解决自定义SQL无法执行
   mapper-locations: classpath*:com/cloudweb/oa/mapper/xml/*.xml
   type-aliases-package: com.cloudweb.oa.entity
@@ -75,6 +83,7 @@ spring:
       # 上传多个文件最大值,50Mb,默认10Mb
       max-request-size: 1024MB
       resolve-lazily: true
+
 #  datasource:
 #    url: jdbc:mysql://localhost:3311/redmoonoa?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=CONVERT_TO_NULL&useSSL=false&serverTimezone=Asia/Shanghai
 #    username: root
@@ -88,7 +97,7 @@ spring:
 #      suffix: .jsp
     pathmatch:
       use-suffix-pattern: false
-      use-registered-suffix-pattern: true #使支持.do
+      use-registered-suffix-pattern: true #使支持 .do
     contentnegotiation:
       favor-path-extension: false
     throw-exception-if-no-handler-found: true
@@ -103,6 +112,30 @@ spring:
   #  jndi-name: jdbc/oa #用于润乾报表，有问题
   aop:
     auto: true #启动aop配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    #参数意义：
+    #JsonInclude.Include.ALWAYS       默认
+    #JsonInclude.Include.NON_DEFAULT   属性为默认值不序列化
+    #JsonInclude.Include.NON_EMPTY     属性为 空（””） 或者为 NULL 都不序列化
+    #JsonInclude.Include.NON_NULL      属性为NULL  不序列化
+    default-property-inclusion: ALWAYS
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+  # sql 版本控制配置
+  flyway:
+    enabled: false
+    encoding: UTF-8
+    clean-disabled: true
+    locations: classpath:db/migration
+    # sql文件命名规范：V版本号__描述.sql，例：V1.0__creat_db.sql
+    sql-migration-prefix: V  # V代表版本迁移，U代表撤销迁移，R代表可重复迁移
+    sql-migration-separator: __   # 分隔符：固定由两个下划线 __ 组成
+    sql-migration-suffixes: .sql  # 后缀
+    validate-on-migrate: true     # 执行迁移时是否自动调用验证
+    baseline-on-migrate: true     # 迁移非空模式时是否自动调用基线
 http:
   encoding:
     charset: UTF-8
@@ -119,14 +152,18 @@ pagehelper:
   returnPageInfo: true
   pageSizeZero: false #pageSize=0 返回所有
   params: count=countSql
-#logging:
-#  level:
-#    org:
-#      springframework: TRACE
-#    com: TRACE
 #wechat:
 #  appId: wx4ebafe57ddfbf523
 #  appSecret: 40370bd3f8a133626e6712b13bef5dc1
 #  url:
 #    accessToken: https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
 #    apiTicket: https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi
+jwt:
+  #http请求头
+  header: Authorization
+  #token起始标识
+  start-with: Bearer
+  #秘钥
+  secret-key: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKiuOGSVzac1HH5x3cboD0KapCayatw4G6W59E9Vez6fwix2g5hUFmzRknoZiDREuAXkVi1MqAiQ7Wf8MqqPDvsCAwEAAQ==
+  #过期时间 单位/秒 5天
+  validate-second: 432000

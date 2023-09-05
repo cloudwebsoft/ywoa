@@ -9,7 +9,7 @@ import javax.servlet.http.*;
 import cn.js.fan.util.*;
 import cn.js.fan.util.file.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: 支持断点续传</p>
@@ -24,8 +24,6 @@ import org.apache.log4j.*;
  * @version 1.0
  */
 public class UploadDdxc {
-    public Logger logger = Logger.getLogger(UploadDdxc.class.getName());
-
     public long maxFileSize = 1024 * 600;  // 默认为600M
 
     // 在JDK1.5中已经出现concurrentmap比下面的方式，更利于高效同步
@@ -80,7 +78,7 @@ public class UploadDdxc {
                 throw new ErrMsgException(fu.getErrMessage());
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
         }
         return fu;
     }
@@ -88,11 +86,11 @@ public class UploadDdxc {
     public String op(HttpServletRequest request, FileUpload fu) throws ErrMsgException {
         String uploadType = fu.getFieldValue("uploadType");
         if (uploadType == null) {
-            logger.error("want uploadType");
+            LogUtil.getLog(getClass()).error("want uploadType");
             Enumeration enu = fu.getFields();
             while (enu.hasMoreElements()) {
                 String key = (String)enu.nextElement();
-                logger.info("op: key=" + key + " value=" + fu.fields.get(key));
+                LogUtil.getLog(getClass()).info("op: key=" + key + " value=" + fu.fields.get(key));
             }
             return "want uploadType";
         }
@@ -140,7 +138,6 @@ public class UploadDdxc {
      */
     public String ReceiveUploadFileHeader(HttpServletRequest request, FileUpload fu) throws ErrMsgException {
         // 检查总的上传文件是否已达到最大值，如果是则reap，reap后如果还是最大值，则抛出异常
-        // System.out.println("ReceiveUploadFileHeader v size=" + uploadFileInfos.size());
         if (uploadFileInfos.size()>=Global.maxUploadingFileCount)
             return file_count_exceed_max;
 
@@ -151,7 +148,7 @@ public class UploadDdxc {
 
         String clientFilePath = fu.getFieldValue("clientFilePath");
         if (debug)
-            logger.info("clientFilePath=" + clientFilePath);
+            LogUtil.getLog(getClass()).info("clientFilePath=" + clientFilePath);
         String filepath;
         if (visualPath.equals(""))
             filepath = fu.getFieldValue("filepath");
@@ -165,7 +162,7 @@ public class UploadDdxc {
         ufi.setFileName(FileUtil.getFileName(clientFilePath));
 
         uploadFileInfos.put(fileId, ufi);
-        // logger.info("ReceiveUploadFileHeader fileId=" + fileId);
+        // LogUtil.getLog(getClass()).info("ReceiveUploadFileHeader fileId=" + fileId);
         return file_header_ok;
     }
 
@@ -186,7 +183,7 @@ public class UploadDdxc {
         // 记录于UploadFileInfo中
         UploadFileInfo ufi = (UploadFileInfo) uploadFileInfos.get(fileId);
         if (ufi == null) {
-            logger.error("ReceiveUploadThreadHeader fileId=" + fileId);
+            LogUtil.getLog(getClass()).error("ReceiveUploadThreadHeader fileId=" + fileId);
             throw new ErrMsgException(
                     "There are no file header for this thread.");
         }
@@ -198,7 +195,7 @@ public class UploadDdxc {
             if (!(file.exists()))
                 file.createNewFile(); // 如果文件不存在，创建此文件
         } catch (IOException e) {
-            logger.error("创建块文件失败！" + e.getMessage());
+            LogUtil.getLog(getClass()).error("创建块文件失败！" + e.getMessage());
         }
         return thread_header_ok;
     }
@@ -230,7 +227,7 @@ public class UploadDdxc {
             File file = new File(tmpPath);
             // 长度不相等，说明上传过程中出错！要求客户端重新再传
             if (length != file.length()) {
-                logger.error("segment length=" + length + " tmp file length=" + file.length());
+                LogUtil.getLog(getClass()).error("segment length=" + length + " tmp file length=" + file.length());
                 throw new ErrMsgException("segment error");
             }
             // 追加数据至fileId文件的blockId块
@@ -260,7 +257,7 @@ public class UploadDdxc {
                 rf.close();  // 关闭文件流
                 tmpFile.delete(); // 删除上传得到的临时文件
             } catch (IOException e) {
-                logger.error("ReceiveUploadThreadFileSegment: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("ReceiveUploadThreadFileSegment: " + e.getMessage());
             }
         } else
             throw new ErrMsgException("want file");
@@ -275,7 +272,7 @@ public class UploadDdxc {
             throw new ErrMsgException("want fileId");
 
         UploadFileInfo ufi = (UploadFileInfo) uploadFileInfos.get(fileId);
-        // logger.info("ReceiveUploadFileFinished:" + ufi.getFilePath() + " ---- " + ufi.getClientFilePath());
+        // LogUtil.getLog(getClass()).info("ReceiveUploadFileFinished:" + ufi.getFilePath() + " ---- " + ufi.getClientFilePath());
         if (ufi == null)
                 throw new ErrMsgException("want thread header");
         // 在UploadFIleInfo指定的保存位置写入文件
@@ -283,11 +280,11 @@ public class UploadDdxc {
         try {
             // 创建文件块
             File file = new File(fullSavePath);
-            // logger.info("fullSavePath" + fullSavePath);
+            // LogUtil.getLog(getClass()).info("fullSavePath" + fullSavePath);
             if (!(file.exists()))
                 file.createNewFile(); // 如果文件不存在，创建此文件
         } catch (IOException e) {
-            logger.error("ReceiveUploadFileFinished:" + StrUtil.trace(e) + " fullSavePath=" + fullSavePath);
+            LogUtil.getLog(getClass()).error("ReceiveUploadFileFinished:" + StrUtil.trace(e) + " fullSavePath=" + fullSavePath);
         }
 
         ufi.setState(ufi.state_finished);
@@ -299,10 +296,10 @@ public class UploadDdxc {
             String blockPath = fu.getTmpPath() +
                                ufi.getBlockName(uti.getBlockId());
             if (debug) {
-                logger.info(uti.getFileId() + " begin=" + uti.getBegin() +
+                LogUtil.getLog(getClass()).info(uti.getFileId() + " begin=" + uti.getBegin() +
                             " end=" + uti.getEnd());
-                logger.info("fullSavePath=" + fullSavePath + " fu.getRealPath()=" + fu.getRealPath());
-                logger.info("blockPath=" + blockPath);
+                LogUtil.getLog(getClass()).info("fullSavePath=" + fullSavePath + " fu.getRealPath()=" + fu.getRealPath());
+                LogUtil.getLog(getClass()).info("blockPath=" + blockPath);
             }
             FileUtil.appendFile(fullSavePath, blockPath);
             // 删除上传线程产生的临时文件

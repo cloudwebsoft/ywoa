@@ -59,7 +59,7 @@ public class OACalendarMgr extends QObjectMgr {
         java.util.Date dt = (java.util.Date)pck.getValue("oa_date");
 		int weekDay = OACalendarDb.getDayOfWeek(DateUtil.getYear(dt), DateUtil.getMonth(dt), DateUtil.getDay(dt));
 
-        pck.setValue("week_day", "星期几", new Integer(weekDay));
+        pck.setValue("week_day", "星期几", weekDay);
         
         try {
             re = qObjectDb.create(pck);

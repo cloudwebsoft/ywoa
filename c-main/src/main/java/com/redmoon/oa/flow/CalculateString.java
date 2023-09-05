@@ -42,30 +42,25 @@ public class CalculateString {
      */
     public void caculate() {
         while (isEnd(str)) {
-            // System.out.println("str: " + str);
             p2 = str.indexOf(")");
-            // System.out.println("p2=" + p2);
             if (p2 != -1) {
                 s = str.substring(0, p2);
                 p1 = s.lastIndexOf("(");
-                System.out.println("p1=" + p1);
                 s = str.substring(p1 + 1, p2);
-                if (!s.equals("")) {
-                    System.out.println("s=" + s);
+                if (!"".equals(s)) {
                     s = this.caculateNumber(s);
-                    System.out.println("s number=" + s);
-                    if (p2 == (str.length() - 1))
+                    if (p2 == (str.length() - 1)) {
                         str = str.substring(0, p1) + s;
-                    else
+                    } else {
                         str = str.substring(0, p1) + s + str.substring(p2 + 1);
+                    }
                 } else {
                     str = str.substring(0, p1) + str.substring(p2 + 1);
-                    System.out.println(str);
                 }
-            } else
+            } else {
                 str = this.caculateNumber(str);
+            }
         }
-        System.out.println("The result is: " + str);
     }
 
     /**
@@ -113,24 +108,24 @@ public class CalculateString {
                     s1 = ss.substring(0, p3);
                     s2 = ss.substring(p3 + 1, p4);
                 }
-                System.out.println("s1 = " + s1);
-                System.out.println("s2 = " + s2);
+
                 d1 = Double.parseDouble(s1);
                 d2 = Double.parseDouble(s2);
-                if (c == '+')
+                if (c == '+') {
                     d3 = d1 + d2;
-                else if (c == '-')
+                } else if (c == '-') {
                     d3 = d1 - d2;
-                if (p4 == 0)
-                    ss = new Double(d3).toString();
-                else
-                    ss = new Double(d3).toString() + ss.substring(p4);
-                System.out.println("ss = " + ss);
+                }
+                if (p4 == 0) {
+                    ss = Double.toString(d3);
+                } else {
+                    ss = Double.toString(d3) + ss.substring(p4);
+                }
             } else {
-                if (ss.indexOf("*") == -1) {
+                if (!ss.contains("*")) {
                     c = '/';
                     p4 = ss.indexOf("/");
-                } else if (ss.indexOf("/") == -1) {
+                } else if (!ss.contains("/")) {
                     c = '*';
                     p4 = ss.indexOf("*");
                 } else if (ss.indexOf("*") > ss.indexOf("/")) {
@@ -171,8 +166,6 @@ public class CalculateString {
                     s2 = ss.substring(p4 + 1);
                 else
                     s2 = ss.substring(p4 + 1, p5);
-                System.out.println("s1 = " + s1 + " p3=" + p3 + " p4=" + p4);
-                System.out.println("s2 = " + s2 + " p4=" + p4 + " p5=" + p5);
                 d1 = Double.parseDouble(s1);
                 d2 = Double.parseDouble(s2);
                 if (c == '*')
@@ -184,11 +177,10 @@ public class CalculateString {
                 else if (p3 == 0 && p5 != 0)
                     ss = new Double(d3).toString() + ss.substring(p5);
                 else if (p3 != 0 && p5 == 0)
-                    ss = ss.substring(0, p3 + 1) + new Double(d3).toString();
+                    ss = ss.substring(0, p3 + 1) + Double.toString(d3);
                 else if (p3 != 0 && p5 != 0)
-                    ss = ss.substring(0, p3 + 1) + new Double(d3).toString() +
+                    ss = ss.substring(0, p3 + 1) + Double.toString(d3) +
                          ss.substring(p5);
-                System.out.println("ss = " + ss);
             }
         }
         return ss;
@@ -200,12 +192,10 @@ public class CalculateString {
      * @return boolean
      */
     private boolean isEnd(String str) {
-        if (str.indexOf("(") != -1 || str.indexOf(")") != -1 ||
-            str.indexOf("+", 1) != -1
-            || str.indexOf("-", 1) != -1 || str.indexOf("*", 1) != -1 ||
-            str.indexOf("/", 1) != -1)
-            return true;
-        return false;
+        return str.contains("(") || str.contains(")") ||
+                str.indexOf("+", 1) != -1
+                || str.indexOf("-", 1) != -1 || str.indexOf("*", 1) != -1 ||
+                str.indexOf("/", 1) != -1;
     }
 
     /**
@@ -225,7 +215,6 @@ public class CalculateString {
      */
     private void clear() {
         str = str.replaceAll(" ", "");
-        System.out.println("The sentence is: " + str);
     }
 
     /**
@@ -241,8 +230,6 @@ public class CalculateString {
                 a != '6' && a != '7' && a != '8' && a != '9' && a != '+' &&
                 a != '-' &&
                 a != '*' && a != '/' && a != '(' && a != ')' && a != '.') {
-                System.out.println("Invalid sentence!");
-                System.exit(0);
             }
             if (a == '(')
                 left++;
@@ -250,7 +237,6 @@ public class CalculateString {
                 right++;
         }
         if (left != right) {
-            System.out.println("Invalid sentence!");
             // System.exit(0);
         }
 
@@ -282,7 +268,7 @@ public class CalculateString {
                     } else {
                         myStr = myStr.replaceAll("\\[", "(");
                         myStr = myStr.replaceAll("\\]", ")");
-                        System.out.println("有未关闭的右括号！位置在 " + myStr.substring(0, i+1));
+                        LogUtil.getLog(getClass()).info("有未关闭的右括号！位置在 " + myStr.substring(0, i+1));
                         isRightFormat = false;
                     }
                 }
@@ -291,22 +277,18 @@ public class CalculateString {
             if (stack.size() > 0) {
                 myStr = myStr.replaceAll("\\[", "(");
                 myStr = myStr.replaceAll("\\]", ")");
-                System.out.println("有未关闭的左括号！位置在 " + myStr.substring(0, ((Integer)stack.getLast()).intValue()+1));
+                LogUtil.getLog(getClass()).info("有未关闭的左括号！位置在 " + myStr.substring(0, ((Integer)stack.getLast()).intValue()+1));
                 break;
             }
         }
-        System.out.println("myStr=" + myStr);
-
     }
 
     public static void main(String args[]) {
     	String str1 = "{\"sourceForm\":\"sales_customer\", \"destForm\":\"access_control\", \"filter\":\"customer like {$@client}\", \"maps\":[{\"sourceField\": \"customer\", \"destField\":\"c\"},{\"sourceField\": \"address\", \"destField\":\"description\"}]}";
         try {
 			JSONObject json = new JSONObject(str1);
-			System.out.println(json.getString("sourceForm"));
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(CalculateString.class).error(e);
 		}
     	
     	String url = "http://anotherbug.blog.chinajavaworld.com/entry/4545/0/";
@@ -320,7 +302,7 @@ public class CalculateString {
         Pattern pat = Pattern.compile(patStr,Pattern.CASE_INSENSITIVE);
         Matcher matcher = pat.matcher(url);
         if (matcher.find())
-            System.out.println(matcher.group());
+            LogUtil.getLog(CalculateString.class).info(matcher.group());
 
         if (true)
             return;
@@ -352,9 +334,9 @@ public class CalculateString {
             */
             boolean re = ((Boolean) bsh.get("re")).booleanValue();
 
-            System.out.println("re=" + re + " " + StrUtil.escape("转账"));
+            LogUtil.getLog(CalculateString.class).info("re=" + re + " " + StrUtil.escape("转账"));
         } catch (EvalError ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(CalculateString.class).error(ex);
         }
 
 
@@ -368,7 +350,7 @@ public class CalculateString {
         long k = System.currentTimeMillis();
         cs.caculate();
         long interval = System.currentTimeMillis() - k;
-        System.out.println(" 用时：" + interval);
+        LogUtil.getLog(CalculateString.class).info(" 用时：" + interval);
 
         String scriptStr = "{$电话}==\"phone\" && {$电脑}>3";
         Pattern p = Pattern.compile(
@@ -378,7 +360,7 @@ public class CalculateString {
         StringBuffer sb = new StringBuffer();
         while (m.find()) {
             String fieldTitle = m.group(1);
-            System.out.println(fieldTitle);
+            LogUtil.getLog(CalculateString.class).info(fieldTitle);
         }
     }
 }

@@ -6,7 +6,7 @@
 <%@ page import="java.util.*"%>
 <%@ page import="java.sql.*"%>
 <%@ page import="cn.js.fan.security.*"%>
-<%@ page import="com.redmoon.forum.util.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%!
 	String connname = Global.getDefaultDB();
 
@@ -108,14 +108,11 @@
 
                 sql_insert = "insert into " + tableName + " (" + columns +
                              ") values (" + columnValues + ")";
-                System.out.println("sql_insert:" + sql_insert);
+                LogUtil.getLog(getClass()).info("sql_insert:" + sql_insert);
                 while (rs.next()) {
                     pstmt_ora = conn_ora.prepareStatement(sql_insert);
                     int i = 0;
                     while (i < rowCount) {
-                        // System.out.println(v.elementAt(i) + " " + columnType[i] +
-                        //                   " = " + rs.getString(i + 1));
-
                         // tinyint(1)在getString()后得到的为布尔值true或false
                         if (columnType[i] == java.sql.Types.VARCHAR) {
                             pstmt_ora.setString(i + 1, rs.getString(i + 1));
@@ -158,8 +155,8 @@
             conn_ora.commit();
         } catch (SQLException e) {
             conn_ora.rollback();
-            System.out.println(e.getMessage());
-            throw new ErrMsgException(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
+            throw new ErrMsgException(e.getMessage());
         } finally {
             if (rs != null) {
                 try {

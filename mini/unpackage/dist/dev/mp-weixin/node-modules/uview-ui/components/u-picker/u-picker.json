@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "u-popup": "/node-modules/uview-ui/components/u-popup/u-popup"
+  },
+  "component": true
+}

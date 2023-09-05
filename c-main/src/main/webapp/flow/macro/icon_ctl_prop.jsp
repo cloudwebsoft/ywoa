@@ -2,6 +2,10 @@
 <%@ page import="com.redmoon.oa.ui.SkinMgr" %>
 <%@ page import="cn.js.fan.util.StrUtil" %>
 <%@ page import="cn.js.fan.web.Global" %>
+<%@ page import="com.cloudweb.oa.utils.JarFileUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <!DOCTYPE html>
 <html>
@@ -64,19 +68,17 @@
         <td width="8%" height="42" align="center">图标</td>
         <td width="23%" align="left">
             <%
-                com.redmoon.forum.ui.FileViewer fileViewer = new com.redmoon.forum.ui.FileViewer(Global.getAppPath(request) + "images/icons/");
-                fileViewer.init();
+                JarFileUtil jarFileUtil = SpringUtil.getBean(JarFileUtil.class);
+                List<String> list = new ArrayList<>();
+                jarFileUtil.loadFiles("static/images/symbol", "", list);
             %>
             <select id="icon" name="icon" class="js-example-templating js-states form-control">
                 <option value="">无</option>
                 <%
-                    while(fileViewer.nextFile()){
-                        if (fileViewer.getFileName().lastIndexOf("gif") != -1 || fileViewer.getFileName().lastIndexOf("jpg") != -1 || fileViewer.getFileName().lastIndexOf("png") != -1 || fileViewer.getFileName().lastIndexOf("bmp") != -1) {
-                            String fileName = fileViewer.getFileName();
+                    for (String fileName : list) {
                 %>
-                <option value="<%=fileName%>" style="background-image: url('<%=SkinMgr.getSkinPath(request)%>/icons/prompt/<%=fileName%>');"><%=fileName %></option>
+                <option value="<%=fileName%>" style="background-image: url('<%=request.getContextPath()%>/static/images/symbol/<%=fileName%>');"><%=fileName %></option>
                 <%
-                        }
                     }
                 %>
             </select>
@@ -165,21 +167,22 @@
 
     var mapPrompt = new Map();
     <%
-    fileViewer.init();
-    while(fileViewer.nextFile()) {
-      if (fileViewer.getFileName().lastIndexOf("gif") != -1 || fileViewer.getFileName().lastIndexOf("jpg") != -1 || fileViewer.getFileName().lastIndexOf("png") != -1 || fileViewer.getFileName().lastIndexOf("bmp") != -1) {
-        String fileName = fileViewer.getFileName();
-      %>
-    mapPrompt.put('<%=fileName%>', '<%=request.getContextPath()%>/images/icons/<%=fileName%>');
+    for (String fileName : list) {
+    %>
+    mapPrompt.put('<%=fileName%>', '<%=fileName%>');
     <%
-      }
     }
     %>
 
     function formatStatePrompt(state) {
         if (!state.id) { return state.text; }
+        var name = state.text;
+        var p = name.lastIndexOf("/");
+        if (p!=-1) {
+            name = name.substring(p+1);
+        }
         var $state = $(
-            '<span><img src="' + mapPrompt.get(state.text).value + '" class="img-flag" /> ' + state.text + '</span>'
+            '<span><img src="../../showImgInJar.do?path=' + mapPrompt.get(state.text).value + '" class="img-flag" /> ' + name + '</span>'
         );
         return $state;
     };

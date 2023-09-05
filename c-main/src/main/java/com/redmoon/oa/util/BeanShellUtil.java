@@ -3,6 +3,7 @@ package com.redmoon.oa.util;
 import bsh.EvalError;
 import bsh.Interpreter;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.FormField;
@@ -106,7 +107,8 @@ public class BeanShellUtil {
                         v = "0";
                     }
                     sb.append("$" + ff.getName() + "=" + v + ";");
-                } else {
+                }
+                else {
                     String val = fdao.getFieldValue(ff.getName());
                     // val = val.replaceAll("\"", "\\\\\""); // "全球能源企业250强" 替换后变成了 \\"全球能源企业250强\\"，但依然会导致脚本运行报错
                     val = val.replaceAll("\"", "'");
@@ -134,7 +136,15 @@ public class BeanShellUtil {
                     } else {
                         sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + ";");
                     }
-                } else {
+                }
+                else if (FormField.TYPE_CHECKBOX.equals(ff.getType())) {
+                    String v = fdao.getFieldValue(ff.getName());
+                    if (v == null || "".equals(v)) {
+                        v = "0";
+                    }
+                    sb.append("$" + ff.getName() + "=" + v + ";");
+                }
+                else {
                     String val = fdao.getFieldValue(ff.getName());
                     // val = val.replaceAll("\"", "\\\\\""); // "全球能源企业250强" 替换后变成了 \\"全球能源企业250强\\"，但依然会导致脚本运行报错
                     val = val.replaceAll("\"", "'");
@@ -197,8 +207,17 @@ public class BeanShellUtil {
                     if (v == -65536) {
                         // LogUtil.getLog(getClass()).info(ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + " v=" + v);
                         sb.append("$" + ff.getName() + "=-65536;");
-                    } else {
-                        sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + ";");
+                    }
+                    else if (fType == FormField.FIELD_TYPE_LONG) {
+                        // 默认类型是 int，如果值为长整型，如：622908573055651012，如果末尾不加L就会报错：Error or number too big for integer type
+                        sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + "L;");
+                    }
+                    else if (fType == FormField.FIELD_TYPE_FLOAT) {
+                        // 如果浮点常量不带后缀，则默认为双精度常量
+                        sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + "F;");
+                    }
+                    else if (fType == FormField.FIELD_TYPE_DOUBLE || fType == FormField.FIELD_TYPE_PRICE) {
+                        sb.append("$" + ff.getName() + "=" + fdao.getFieldValue(ff.getName()) + "D;");
                     }
                 } else {
                     String val = fdao.getFieldValue(ff.getName());
@@ -215,11 +234,11 @@ public class BeanShellUtil {
 	public static void main(String[] args) {
 		String str22 = "String str = \"it is\r\n goto\";";
 		
-		str22 += "System.out.println(str);";
+		str22 += "LogUtil.getLog(getClass()).info(str);";
 		
 		str22 = str22.replaceAll("\\r\\n", "\\\\r\\\\n");
-		// System.out.println(str);
-		str22 += "System.out.println(str);";
+		// LogUtil.getLog(getClass()).info(str);
+		str22 += "LogUtil.getLog(getClass()).info(str);";
 		
 		str22 = "date=\"2014-01-10\";fkfs=\"\";sgdh=\"\";clxqb=\"\";hjryj=\"\";picker=\"admin\";ysbspyj=\"\";cgjlspyj=\"\";cwbfzrsp=\"\";add_button=\"\";contact_no=\"\";project_name=\"5\";provide_name=\"1\";contact_money=\"\";manager_comment=\"11          管理员   2014-01-10 13:47:48\";project_comment=\"\";flowId=6460;";
 
@@ -227,8 +246,7 @@ public class BeanShellUtil {
         try {
 			bsh.eval(str22);
 		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(BeanShellUtil.class).error(e);
 		}
 	}
 }

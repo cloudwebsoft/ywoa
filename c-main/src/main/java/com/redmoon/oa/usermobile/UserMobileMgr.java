@@ -2,14 +2,13 @@ package com.redmoon.oa.usermobile;
 
 import java.sql.SQLException;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserSetupMgr;
 
 public class UserMobileMgr {
@@ -31,9 +30,8 @@ public class UserMobileMgr {
 		try {
 			flag = userMobileDb.create(jt, new Object[]{userName,deviceId,client,status});
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
 			flag = false;
-			Logger.getLogger(UserMobileMgr.class).error(e.getMessage());
+			LogUtil.getLog(UserMobileMgr.class).error(e.getMessage());
 		}
 		return flag;
 	}
@@ -52,7 +50,7 @@ public class UserMobileMgr {
 		} catch (ResKeyException e) {
 			// TODO Auto-generated catch block
 			flag = false;
-			Logger.getLogger(UserMobileMgr.class).error(e.getMessage());
+			LogUtil.getLog(UserMobileMgr.class).error(e.getMessage());
 		}
 		return flag;
 	}
@@ -74,7 +72,7 @@ public class UserMobileMgr {
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			flag = false;
-			Logger.getLogger(UserMobileMgr.class).error(e.getMessage());
+			LogUtil.getLog(UserMobileMgr.class).error(e.getMessage());
 		}
 		return flag;
 	}
@@ -98,7 +96,7 @@ public class UserMobileMgr {
 			}
 		} catch (SQLException e) {
 			flag = false;
-			Logger.getLogger(UserSetupMgr.class).error(e.getMessage());
+			LogUtil.getLog(UserSetupMgr.class).error(e.getMessage());
 		}
 		return flag;
 	}
@@ -133,7 +131,7 @@ public class UserMobileMgr {
 			}
 		} catch (SQLException e) {
 			flag = false;
-			Logger.getLogger(UserSetupMgr.class).error(e.getMessage());
+			LogUtil.getLog(UserSetupMgr.class).error(e.getMessage());
 		}
 		return flag;
 	}

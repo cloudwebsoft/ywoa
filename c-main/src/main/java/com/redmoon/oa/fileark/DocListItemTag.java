@@ -1,14 +1,13 @@
 package com.redmoon.oa.fileark;
 
 import javax.servlet.jsp.tagext.*;
-import org.apache.log4j.Logger;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.util.DateUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class DocListItemTag extends BodyTagSupport{
     DocBlockIterator ir;
     String field;
-    Logger logger = Logger.getLogger(DocListItemTag.class.getName());
     String mode = "simple";// 显示模式
     int length = -1;
     /**
@@ -20,7 +19,6 @@ public class DocListItemTag extends BodyTagSupport{
 
     /**
      * put your documentation comment here
-     * @param para
      */
     public void setField (String field) {
         this.field = field;
@@ -45,7 +43,7 @@ public class DocListItemTag extends BodyTagSupport{
             ir = dlt.ir;
         }
         else {
-            logger.error("get iterator failed!");
+            LogUtil.getLog(getClass()).error("get iterator failed!");
         }
         return  EVAL_BODY_BUFFERED;//SKIP_BODY;跳过body在mode=detail时会出错
     }
@@ -57,10 +55,10 @@ public class DocListItemTag extends BodyTagSupport{
     public int doEndTag () {
         try {
             if (field!=null && ir!=null && ir.hasNext()) {
-               // logger.info("field=" + field + " ir=" + ir);
+               // LogUtil.getLog(getClass()).info("field=" + field + " ir=" + ir);
                Document doc = (Document) ir.next();
                if (doc==null) {
-                   logger.info("doc=null");
+                   LogUtil.getLog(getClass()).info("doc=null");
                    return EVAL_PAGE;
                }
                String body = "";
@@ -74,7 +72,7 @@ public class DocListItemTag extends BodyTagSupport{
                }
                else {
                    BodyContent bc = getBodyContent();
-                   //logger.info(bc.getString());
+                   //LogUtil.getLog(getClass()).info(bc.getString());
                    body = bc.getString();
                    String t = doc.getTitle();
                    if (length!=-1)
@@ -106,8 +104,7 @@ public class DocListItemTag extends BodyTagSupport{
                pageContext.getOut().print(body);
             }
         } catch (Exception e) {
-            logger.error("doEndTag: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return  EVAL_PAGE;
     }

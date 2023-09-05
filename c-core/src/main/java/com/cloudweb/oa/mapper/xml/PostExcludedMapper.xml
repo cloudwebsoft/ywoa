@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.PostExcludedMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.PostExcluded">
+        <id column="id" property="id" />
+        <result column="post_id" property="postId" />
+        <result column="post_id_excluded" property="postIdExcluded" />
+        <result column="create_date" property="createDate" />
+        <result column="creator" property="creator" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, post_id, post_id_excluded, create_date, creator
+    </sql>
+
+</mapper>

@@ -59,18 +59,28 @@ DocLogDb dld = new DocLogDb();
 DocAttachmentLogDb dd = new DocAttachmentLogDb();
 
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title>查看日志</title>
 	<link rel="stylesheet" href="<%=request.getContextPath()%>/js/bootstrap/css/bootstrap.min.css"/>
+	<style>
+		.search-form input,select {
+			vertical-align:middle;
+		}
+		.search-form input:not([type="radio"]):not([type="button"]):not([type="checkbox"]) {
+			width: 80px;
+			line-height: 20px; /*否则输入框的文字会偏下*/
+		}
+		.cond-title {
+			margin: 0 5px;
+		}
+	</style>
 	<%@ include file="../inc/nocache.jsp" %>
 	<script type="text/javascript" src="../inc/common.js"></script>
 	<script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
-	    <script src="../js/jquery-1.9.1.min.js"></script>
-    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+	<script src="../js/jquery-migrate-1.2.1.min.js"></script>
 	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
@@ -228,7 +238,7 @@ if (totalpages==0) {
 	<table id="searchTable" width="100%" border="0" cellpadding="0" cellspacing="0">
 		<tr>
 			<td width="48%" height="30" align="left">
-			<form action="doc_log_list.jsp?type=<%=type %>" method="get">
+			<form action="doc_log_list.jsp?type=<%=type %>" class="search-form" method="get">
 			<input id="op" name="op" value="search" type="hidden" />
 			<input id="type" name="type" value="<%=type %>" type="hidden" />
 			&nbsp;&nbsp;
@@ -270,8 +280,6 @@ while(iterator.hasNext()) {
 	if(type.equals("doc")||"".equals(type)){
 		dldb = (DocLogDb)iterator.next();
 		user = user.getUserDb(dldb.getUserName());
-		// System.out.println(getClass() + " " + dldb.getDoc_id());
-		// System.out.println(getClass() + " id=" + dldb.getId());
 		doc = doc.getDocument(dldb.getDoc_id());
 		if (doc==null)
 			doc = new Document();

@@ -7,6 +7,7 @@
 <%@page import="java.io.*"%>
 <%@page import="java.net.*"%>
 <%@ page import="java.nio.charset.StandardCharsets" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 String priv = "read";
 if (!privilege.isUserPrivValid(request, priv)) {
@@ -46,7 +47,7 @@ try {
 	}
 
 } catch(final IOException e) {
-	System.out.println( "IOException: " + e );
+	LogUtil.getLog(getClass()).error(e);
 } finally {
 	if (bis != null)
 		bis.close();

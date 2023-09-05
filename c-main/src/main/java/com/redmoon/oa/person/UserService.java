@@ -6,13 +6,13 @@ import java.sql.ResultSet;
 import cn.js.fan.security.SecurityUtil;
 import javax.servlet.http.*;
 import java.sql.SQLException;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
 
 public class UserService {
   boolean debug = true;
-  Logger logger = Logger.getLogger(UserService.class.getName());
 
   public UserService() {
   }
@@ -40,7 +40,7 @@ public class UserService {
       }
     }
     catch (Exception e) {
-      System.out.println("Authenticate exception: " + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     finally {
       try {
@@ -69,7 +69,7 @@ public class UserService {
       }
     }
     catch (Exception e) {
-      System.out.print(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     finally {
       if (rs!=null) {
@@ -107,7 +107,7 @@ public class UserService {
         isfriend = true;
     }
     catch (SQLException e) {
-      logger.error("AddFriend error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error("AddFriend error:" + e.getMessage());
     }
     finally {
       try {
@@ -128,7 +128,7 @@ public class UserService {
         rowcount = conn.executeUpdate(sql);
     }
     catch(SQLException e) {
-        logger.error( e.getMessage() );
+        LogUtil.getLog(getClass()).error( e.getMessage() );
     }
     finally {
         if ( conn!=null ) {
@@ -180,7 +180,7 @@ public class UserService {
         }
     }
     catch( SQLException e) {
-        logger.error( e.getMessage() );
+        LogUtil.getLog(getClass()).error( e.getMessage() );
     }
     finally {
         if ( conn!=null ) {
@@ -276,7 +276,7 @@ public class UserService {
       Password = SecurityUtil.MD5(Password);
     }
     catch (Exception e) {
-      logger.error(e.getMessage());
+      LogUtil.getLog(getClass()).error(e.getMessage());
     }
 
     Conn conn = new Conn(Global.getDefaultDB());
@@ -289,7 +289,7 @@ public class UserService {
       }
     }
     catch (SQLException e) {
-      System.out.println("regist exception: " + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     finally {
       try {
@@ -335,7 +335,7 @@ public class UserService {
         conn.commit();
     }
     catch (SQLException e) {
-      logger.error(e.getMessage());
+      LogUtil.getLog(getClass()).error(e.getMessage());
       isvalid = false;
     }
     finally {
@@ -365,7 +365,7 @@ public class UserService {
         isexist = false;
     }
     catch (SQLException e) {
-      logger.error("isRegNameExist error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error("isRegNameExist error:" + e.getMessage());
     }
     finally {
       try {
@@ -393,7 +393,7 @@ public class UserService {
       }
     }
     catch (SQLException e) {
-      logger.error("getDepartmentID error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error("getDepartmentID error:" + e.getMessage());
     }
     finally {
       if (rs != null) {
@@ -426,7 +426,7 @@ public class UserService {
         isexist = false;
     }
     catch (SQLException e) {
-      logger.error("isUserExist error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error("isUserExist error:" + e.getMessage());
     }
     finally {
       try {
@@ -521,7 +521,7 @@ public class UserService {
         MD5pwd = SecurityUtil.MD5(Password);
     }
     catch (Exception e) {
-      System.out.println(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
 
     if (Password.equals(""))
@@ -596,7 +596,7 @@ public class UserService {
             try {
                 SHA_Pwd = SecurityUtil.SHA_BASE64_24(email_pwd); //james中默认密码为12345678
             } catch (Exception e) {
-                logger.error("SHA:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("SHA:" + e.getMessage());
             }
             //如果邮箱已设
             if (isMailSeted.equals("y")) {
@@ -629,7 +629,7 @@ public class UserService {
         }
     }
     catch( SQLException e) {
-        logger.error( e.getMessage() );
+        LogUtil.getLog(getClass()).error( e.getMessage() );
     }
     finally {
         if ( conn!=null ) {
@@ -710,7 +710,7 @@ public class UserService {
         MD5pwd = SecurityUtil.MD5(Password);
     }
     catch (Exception e) {
-      System.out.println(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
 
     if (Password.equals(""))
@@ -762,7 +762,7 @@ public class UserService {
         rowcount = conn.executeUpdate(sql);
     }
     catch( SQLException e) {
-        logger.error( e.getMessage() );
+        LogUtil.getLog(getClass()).error( e.getMessage() );
     }
     finally {
         if ( conn!=null ) {
@@ -815,7 +815,7 @@ public class UserService {
       pwd = SecurityUtil.SHA_BASE64_24(newpwd);
     }
     catch (Exception e) {
-      logger.error("modUserEmailPwd:"+e.getMessage());
+      LogUtil.getLog(getClass()).error("modUserEmailPwd:"+e.getMessage());
     }
     String sql = "update users set pwdRaw="+StrUtil.sqlstr(newpwd)+",pwdHash="+StrUtil.sqlstr(pwd)+" where username="+StrUtil.sqlstr(email_name);
     Conn conn = null;
@@ -829,7 +829,7 @@ public class UserService {
             r = false;
     }
     catch( Exception e ) {
-        logger.error( e.getMessage() );
+        LogUtil.getLog(getClass()).error( e.getMessage() );
     }
     finally {
         if (conn != null) {

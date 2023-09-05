@@ -48,9 +48,6 @@ if (!dept.equals("")) {
 }
 else
 	return;
-// System.out.println("ddd flowTypeCode=" + flowTypeCode);
-// System.out.println("fieldWrite=" + fieldWrite);
-// System.out.println("fieldText=" + fieldText);
 %>
 <script>
 window.parent.setDeptName("<%=deptName%>");

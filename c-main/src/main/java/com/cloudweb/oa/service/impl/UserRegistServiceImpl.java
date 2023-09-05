@@ -15,8 +15,6 @@ public class UserRegistServiceImpl implements UserRegistService {
 	@Override
 	public User loginCheck(User user) {
 		User u = userDao.findUserByUserName(user.getName());
-		System.out.println("id=" + u.getId() + ",  userName=" + u.getName()
-				+ ", password=" + u.getPassword());
 		if (user.getPassword().equals(u.getPassword())) {
 			return u;
 		} else {
@@ -31,8 +29,6 @@ public class UserRegistServiceImpl implements UserRegistService {
 			userDao.register(user);
 			return true;
 		} else {
-			System.out.println("id=" + u.getId() + ",  userName=" + u.getName()
-					+ ", password=" + u.getPassword());
 			return false;
 		}
 	}

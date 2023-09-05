@@ -13,49 +13,46 @@ package com.redmoon.oa.security;
  * @version 1.0
  */
 
-import java.net.*;
-
-import cn.js.fan.util.*;
-import org.apache.log4j.*;
-import cn.js.fan.cache.jcs.RMCache;
+import cn.js.fan.util.StrUtil;
+import cn.js.fan.util.XMLProperties;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
-import org.jdom.input.SAXBuilder;
-import java.io.FileInputStream;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.JDOMException;
+import org.jdom.input.SAXBuilder;
+import org.xml.sax.InputSource;
+
+import java.io.IOException;
+import java.io.StringReader;
 
 public class Config {
-    private XMLProperties properties;
-    private final String CONFIG_FILENAME = "config_security.xml";
-    private Document doc = null;
-    private Element root = null;
-    private String cfgpath;
 
-    Logger logger;
+    private XMLProperties properties;
+    private Element root = null;
 
     public static Config cfg = null;
 
-    private static Object initLock = new Object();
+    private static final Object initLock = new Object();
 
     public Config() {
     }
 
-    public void init() {
-        logger = Logger.getLogger(Config.class.getName());
-        URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
-        cfgpath = cfgURL.getFile();
-        cfgpath = URLDecoder.decode(cfgpath);
-        properties = new XMLProperties(cfgpath);
+    public XMLProperties getProperties() {
+        return properties;
+    }
 
-        SAXBuilder sb = new SAXBuilder();
+    public void init() {
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
-            doc = sb.build(fin);
+            ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+            String xml = configUtil.getXml("config_security");
+
+            SAXBuilder sb = new SAXBuilder();
+            Document doc = sb.build(new InputSource(new StringReader(xml)));
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-            LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
-        } catch (java.io.IOException e) {
+            properties = new XMLProperties("config_security", doc, true);
+        } catch (JDOMException | IOException e) {
             LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
         }
     }
@@ -75,12 +72,12 @@ public class Config {
     }
 
     public String getProperty(String name) {
-    	String str = "";
-    	try{
-    		str = StrUtil.getNullStr(properties.getProperty(name));
-    	}catch(Exception e){
-    		e.printStackTrace();
-    	}
+        String str = "";
+        try {
+            str = StrUtil.getNullStr(properties.getProperty(name));
+        } catch (Exception e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
         return str;
     }
 
@@ -94,8 +91,7 @@ public class Config {
     }
 
     public boolean getBooleanProperty(String name) {
-        String p = getProperty(name);
-        return p.equals("true");
+        return "true".equals(getProperty(name));
     }
 
     public void setProperty(String name, String value) {
@@ -106,27 +102,25 @@ public class Config {
     public String getProperty(String name, String childAttributeName,
                               String childAttributeValue) {
         return StrUtil.getNullStr(properties.getProperty(name, childAttributeName,
-                                      childAttributeValue));
+                childAttributeValue));
     }
 
     public String getProperty(String name, String childAttributeName,
                               String childAttributeValue, String subChildName) {
         return StrUtil.getNullStr(properties.getProperty(name, childAttributeName,
-                                      childAttributeValue, subChildName));
+                childAttributeValue, subChildName));
     }
 
     public void setProperty(String name, String childAttributeName,
                             String childAttributeValue, String value) {
-        properties.setProperty(name, childAttributeName, childAttributeValue,
-                               value);
+        properties.setProperty(name, childAttributeName, childAttributeValue, value);
         refresh();
     }
 
     public void setProperty(String name, String childAttributeName,
                             String childAttributeValue, String subChildName,
                             String value) {
-        properties.setProperty(name, childAttributeName, childAttributeValue,
-                               subChildName, value);
+        properties.setProperty(name, childAttributeName, childAttributeValue, subChildName, value);
         refresh();
     }
 
@@ -136,6 +130,7 @@ public class Config {
 
     /**
      * 判断是否强制修改初始密码
+     *
      * @return boolean
      */
     public boolean isForceChangeInitPassword() {
@@ -145,11 +140,14 @@ public class Config {
     public boolean isForceChangeWhenWeak() {
         return getBooleanProperty("password.isForceChangeWhenWeak");
     }
+
     public int getStrenthLevelMin() {
         return getIntProperty("password.strenthLevelMin");
     }
+
     /**
      * 取得初始密码
+     *
      * @return String
      */
     public String getInitPassword() {
@@ -158,6 +156,7 @@ public class Config {
 
     /**
      * 是否防暴力破解
+     *
      * @return boolean
      */
     public boolean isDefendBruteforceCracking() {
@@ -166,9 +165,19 @@ public class Config {
 
     /**
      * 是否记住用户名
+     *
      * @return boolean
      */
     public boolean isRememberUserName() {
         return getBooleanProperty("isRememberUserName");
+    }
+
+    /**
+     * 框架页允许的地址
+     *
+     * @return String
+     */
+    public String getFrameAllowFrom() {
+        return getProperty("frameAllowFrom");
     }
 }

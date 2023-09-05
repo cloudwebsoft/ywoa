@@ -3,7 +3,6 @@
 				 cn.js.fan.db.*,
 				 cn.js.fan.util.*,
 				 cn.js.fan.web.*,
-				 com.redmoon.forum.*,
 				 org.jdom.*,
                  java.util.*"
 %>
@@ -21,7 +20,7 @@ License lic = License.getInstance();
     <div align="left"><b>欢迎您使用<%=com.redmoon.oa.Config.getInstance().get("enterprise")%><%=cfg.get("oa.version")%> PostGreSql版本</b></div>
     <hr size="0">
 <%
-cfg = new XMLConfig(application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml", true, "iso-8859-1");
+cfg = new XMLConfig("proxool.xml", false, "iso-8859-1");
 Element root, driverProp,  e_user=null, e_pwd=null, e_driverclass=null;
 String user="", pwd="", url="", ip="", database="", port="", maximum_connection_count="", dirverclass="";
 List list;

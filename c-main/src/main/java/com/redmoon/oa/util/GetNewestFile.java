@@ -10,6 +10,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.tools.Pdf2htmlEXUtil;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipOutputStream;
 
@@ -56,7 +58,7 @@ public class GetNewestFile {
 	}
 
 	/**
-	 * @param String
+	 * @param
 	 */
 	public static void getNewestDoc(String filePathSrc) {
 		File fSrc = new File(filePathSrc);
@@ -67,7 +69,7 @@ public class GetNewestFile {
 		String filePathDes = dstpath
 				+ filePathSrc.substring(index + separator.length());
 		if (!fSrc.exists()) {
-			System.out.println(filePathSrc + " does not exist!");
+			LogUtil.getLog(GetNewestFile.class).error(filePathSrc + " does not exist!");
 			return;
 		}
 		File[] files = fSrc.listFiles();
@@ -78,8 +80,7 @@ public class GetNewestFile {
 						|| files[i].getPath().startsWith(srcpath + "oabiz")
 						|| files[i].getPath().startsWith(srcpath + "oamail")
 						|| files[i].getPath().startsWith(srcpath + "mvc")
-						|| files[i].getPath().startsWith(srcpath + "exam")
-						|| files[i].getPath().startsWith(srcpath + "clouddisk")) {
+						|| files[i].getPath().startsWith(srcpath + "exam")) {
 					getNewestDoc(files[i].getPath());
 				}
 			} else {
@@ -225,17 +226,16 @@ public class GetNewestFile {
 			zos.setEncoding("GBK");
 			zos.setComment("The updated decision");
 			zipFile(inFile, zos, "");
-			System.out.println("success");
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LogUtil.getLog(GetNewestFile.class).error(e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LogUtil.getLog(GetNewestFile.class).error(e);
 		} finally {
 			if (zos != null) {
 				try {
 					zos.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					LogUtil.getLog(GetNewestFile.class).error(e);
 				}
 			}
 		}
@@ -254,7 +254,6 @@ public class GetNewestFile {
 			deleteFile(inFile.getPath() + ".rar");
 		}
 		getNewestDoc(srcpath);
-		System.out.println("success");
 	}
 
 	/**

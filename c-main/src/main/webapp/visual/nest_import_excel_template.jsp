@@ -18,6 +18,7 @@
 <%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
 <%@ page import="com.cloudweb.oa.api.INestTableCtl" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
     String priv = "read";
@@ -36,7 +37,7 @@
     JSONObject json = null;
     int formViewId = -1;
     FormField nestField = null;
-    if (!nestFieldName.equals("")) {
+    if (!"".equals(nestFieldName)) {
         FormDb parentFd = new FormDb();
         parentFd = parentFd.getFormDb(parentFormCode);
         nestField = parentFd.getFormField(nestFieldName);
@@ -110,8 +111,11 @@
     OutputStream os = response.getOutputStream();
 
     try {
-        File file = new File(Global.realPath + "visual/template/blank.xls");
-        Workbook wb = Workbook.getWorkbook(file);
+        /*File file = new File(Global.realPath + "visual/template/blank.xls");
+        Workbook wb = Workbook.getWorkbook(file);*/
+        ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+        InputStream inputStream = configUtil.getFile("templ/blank.xls");
+        Workbook wb = Workbook.getWorkbook(inputStream);
 
         WorkbookSettings settings = new WorkbookSettings();
         settings.setWriteAccess(null);
@@ -127,7 +131,7 @@
         for (int i=0; i<len; i++) {
             String fieldName = fields[i];
             String title = "´´½¨Õß";
-            if (!fieldName.equals("cws_creator")) {
+            if (!"cws_creator".equals(fieldName)) {
                 title = fd.getFieldTitle(fieldName);
             }
 

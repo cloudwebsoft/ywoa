@@ -13,11 +13,10 @@
 <%@ page import="cn.js.fan.db.*"%>
 <%@ page import="java.sql.*"%>
 <%
-String rootpath = request.getContextPath();
 String op = ParamUtil.get(request, "op");
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>编辑表单</title>
@@ -83,8 +82,9 @@ if (op.equals("edit")) {
 		RoleMgr roleMgr = new RoleMgr();		  
 		String[] roleAry = StrUtil.split(frd.getString("roles"), ",");
 		int ulen = 0;
-		if (roleAry!=null)
-			ulen = roleAry.length;
+		if (roleAry!=null) {
+            ulen = roleAry.length;
+        }
 		
 		String roleCode, desc;
 		String roleCodes = "";
@@ -94,20 +94,22 @@ if (op.equals("edit")) {
 			rd = rd.getRoleDb(roleAry[i]);
 			roleCode = rd.getCode();
 			desc = rd.getDesc();
-			if (roleCodes.equals(""))
-				roleCodes += roleCode;
-			else
-				roleCodes += "," + roleCode;
-			if (descs.equals(""))
-				descs += desc;
-			else
-				descs += "," + desc;
+			if (roleCodes.equals("")) {
+                roleCodes += roleCode;
+            } else {
+                roleCodes += "," + roleCode;
+            }
+			if (descs.equals("")) {
+                descs += desc;
+            } else {
+                descs += "," + desc;
+            }
 		}			  
 	  %>
-        <textarea name=roleDescs cols="40" rows="3"><%=descs%></textarea>
+        <textarea name=roleDescs cols="60" rows="3"><%=descs%></textarea>
         <input name="roles" type=hidden value="<%=roleCodes%>" />      
       	<br />
-        <input name="button2" class="btn" type="button" onClick="showModalDialog('../role_multi_sel.jsp?roleCodes=' + o('roles').value + '&unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="选择角色">
+        <input name="button2" class="btn" type="button" onclick="openWin('../role_multi_sel.jsp?roleCodes=' + o('roles').value + '&unitCode=<%=privilege.getUserUnitCode(request)%>', 640, 480)" value="选择角色">
       </td>
     </tr>
     <tr>
@@ -123,7 +125,6 @@ if (op.equals("edit")) {
 					users = aryusers[i];
 					UserDb ud = new UserDb();
 					ud = ud.getUserDb(aryusers[i]);
-					// System.out.print(getClass() + " aryusers=" + aryusers + " aryusers[" + i + "]=" + aryusers[i]);
 					userRealNames = ud.getRealName();
 				}
 				else {
@@ -163,7 +164,7 @@ if (op.equals("edit")) {
 				<option value="<%=tableName%>">
 				<%=tableName%>
                 <%
-				if (tableName.toUpperCase().startsWith("FORM_TABLE_")) {
+				if (tableName.toUpperCase().startsWith("ft_")) {
 					String formCode = FormDb.getCodeByTableName(tableName);
 					fd = fd.getFormDb(formCode);
 					if (fd.isLoaded()) {
@@ -289,7 +290,7 @@ if (op.equals("edit")) {
 function openWinUsers() {
 	selUserNames = form1.users.value;
 	selUserRealNames = form1.userRealNames.value;
-	showModalDialog('../user_multi_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:600px;dialogHeight:480px;status:no;help:no;')
+    openWin('../user_multi_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600);
 }
 
 

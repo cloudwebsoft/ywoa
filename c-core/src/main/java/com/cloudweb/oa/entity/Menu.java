@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
+import java.util.List;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -104,4 +106,28 @@ public class Menu extends Model<Menu> {
         return this.code;
     }
 
+    @TableField(exist = false)
+    private List<Menu> children;
+
+    @TableField(exist = false)
+    private Boolean isLeaf;
+
+    Boolean outerLink;
+
+    Boolean cachable;
+
+    /**
+     * 组件地址
+     */
+    private String component;
+
+    /**
+     * 是否前端菜单，0前后端 1后端 2前端
+     */
+    private int front;
+
+    /**
+     * 所属应用的编码
+     */
+    private String applicationCode;
 }

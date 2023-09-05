@@ -1,15 +1,13 @@
 package com.redmoon.oa.fileark;
 
-import java.net.URL;
-import java.net.HttpURLConnection;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import cn.js.fan.util.net.TrackBack;
-import org.apache.log4j.Logger;
-import java.util.regex.Pattern;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.regex.Matcher;
-import cn.js.fan.util.ErrMsgException;
-import javax.servlet.ServletContext;
+import java.util.regex.Pattern;
 
 /**
  * <p>Title: </p>
@@ -24,7 +22,6 @@ import javax.servlet.ServletContext;
  * @version 1.0
  */
 public class GatherUtil {
-    Logger logger = Logger.getLogger(GatherUtil.class.getName());
 
     public GatherUtil() {
     }
@@ -56,7 +53,7 @@ public class GatherUtil {
             huc.disconnect();
         }
         catch (Exception e) {
-            logger.error("gather: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("gather: " + e.getMessage());
         }
         return str;
     }
@@ -105,7 +102,7 @@ public class GatherUtil {
         // 提取今日的天气
         if (matcher.find()) {
             str = matcher.group(0);
-            logger.info("str=" + str);
+
             str = str.replaceAll("/weathericons", "http://weather.china.com.cn/weathericons");
             str = str.replaceAll("/city", "http://weather.china.com.cn/city");
             // 替换表格宽度

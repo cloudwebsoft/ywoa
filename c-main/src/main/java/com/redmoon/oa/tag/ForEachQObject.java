@@ -131,7 +131,6 @@ public class ForEachQObject extends SimpleTagSupport {
 			if (b.startsWith("\"") && b.endsWith("\"")) {
 				b = b.substring(1, b.length()-1);
 			}			
-			// System.out.println(fieldName + " v=" + v + " a=" + a + " b=" + b);
 			String val = String.valueOf(qo.get(fieldName));
 			if (v.equals(val)) {
 				val = a;

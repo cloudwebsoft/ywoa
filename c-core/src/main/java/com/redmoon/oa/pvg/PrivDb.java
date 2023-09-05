@@ -3,6 +3,7 @@ package com.redmoon.oa.pvg;
 import java.sql.*;
 import java.util.*;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.kernel.License;
 
 import cn.js.fan.base.*;
@@ -23,17 +24,14 @@ public class PrivDb extends ObjectDb {
     int orders;
 
     static String[] privs = {"admin", "admin.user", "admin.backup", "email",
-                            "admin.fourm", "admin.forum.message", "read",
-                            "workplan"};
+                            "read", "workplan"};
 
     public static final String PRIV_ADMIN = privs[0];
     public static final String PRIV_USER = privs[1];
     public static final String PRIV_BACKUP = privs[2];
     public static final String PRIV_EMAIL = privs[3];
-    public static final String PRIV_FORUM = privs[4];
-    public static final String PRIV_FORUM_MESSAGE = privs[5]; // 好象没什么用处
-    public static final String PRIV_READ = privs[6];
-    public static final String PRIV_WORKPLAN = privs[7];
+    public static final String PRIV_READ = privs[4];
+    public static final String PRIV_WORKPLAN = privs[5];
     
     /**
      * 默认型
@@ -144,7 +142,7 @@ public class PrivDb extends ObjectDb {
                 rc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -171,7 +169,7 @@ public class PrivDb extends ObjectDb {
                 rc.refreshSave(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -204,7 +202,7 @@ public class PrivDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();

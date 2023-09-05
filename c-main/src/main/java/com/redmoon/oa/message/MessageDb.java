@@ -13,19 +13,18 @@ package com.redmoon.oa.message;
 import cn.js.fan.base.ObjectDb;
 import cn.js.fan.db.*;
 import cn.js.fan.security.ThreeDesUtil;
-import cn.js.fan.util.DateUtil;
-import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.RandomSecquenceCreator;
-import cn.js.fan.util.StrUtil;
+import cn.js.fan.util.*;
 import cn.js.fan.util.file.FileUtil;
 import cn.js.fan.web.Global;
 import com.alibaba.fastjson.JSONArray;
 import com.cloudweb.oa.entity.User;
+import com.cloudweb.oa.service.IFileService;
 import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.GtPushUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.service.message.MsgService;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
@@ -35,21 +34,19 @@ import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.notice.NoticeDb;
 import com.redmoon.oa.person.*;
+import com.redmoon.oa.security.SecurityUtil;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.DesktopMgr;
 import com.redmoon.oa.ui.DesktopUnit;
 import com.redmoon.oa.ui.IDesktopUnit;
-import com.redmoon.oa.workplan.WorkPlanDb;
 import com.redmoon.oa.xmpp.MessageUtil;
 import com.redmoon.weixin.mgr.WXMessageMgr;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -182,7 +179,6 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      */
     public static final String ACTION_FLOW_DISPOSE = "flow_dispose";
     public static final String ACTION_FLOW_SHOW = "flow_show";
-    public static final String ACTION_WORKPLAN = "workplan";
 
     public static final String ACTION_NOTICE = "notice";
 
@@ -231,17 +227,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      */
     public int getCountMsg(String receiver, String sql) {
         JdbcTemplate jt = new JdbcTemplate();
-        ResultIterator ri = null;
+        ResultIterator ri;
         int result = 0;
         try {
             ri = jt.executeQuery(sql, new Object[]{receiver});
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord) ri.next();
+                ResultRecord rr = ri.next();
                 result = rr.getInt(1);
                 return result;
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return 0;
     }
@@ -272,8 +268,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     public String getPageList(HttpServletRequest request, UserDesktopSetupDb uds) {
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
-        String url = du.getPageList();
-        return url;
+        return du.getPageList();
     }
 
     /**
@@ -281,15 +276,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      */
     @Override
     public String display(HttpServletRequest request, UserDesktopSetupDb uds) {
-        com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.
-                Privilege();
-
-        // System.out.println("PlanDb.java display sql=" + sql);
+        com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
         String url = du.getPageShow();
         String str = "";
-        //int count = uds.getCount();
 
         String sql = "select id from oa_message where receiver=" +
                 StrUtil.sqlstr(privilege.getUser(request)) +
@@ -301,8 +292,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         try {
             wflr = listResult(sql, 1, uds.getCount());
         } catch (ErrMsgException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         Iterator msgir = wflr.getResult().iterator();
         // Iterator msgir = list(sql, 1, count - 1).iterator();
@@ -378,7 +368,6 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         this.fileUpload = mf.getFileUpload();
         this.sender = sender;
         String[] ary = receiver.split(",");
-        // logger.info("create:toUser=" + receiver);
 
         int len = ary.length;
         UserMgr um = new UserMgr();
@@ -390,8 +379,8 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             }
         }
 
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        boolean isLarkUsed = cfg.get("isLarkUsed").equals("true");
+        com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+        boolean isLarkUsed = "true".equals(cfg.get("isLarkUsed"));
 
         if (this.isSent == 1) {
             int sendMsgId = 0;
@@ -403,15 +392,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             }
             this.box = MessageDb.INBOX;
             for (int i = 0; i < len; i++) {
-                // System.out.println(getClass() + " ary[" + i + "]=" + ary[i] + " box=" + box);
-/*                if (id == 0) { // 之前如果未create
-                    create(ary[i], mf.fileUpload);
-                } else {
-                    create(ary[i], mf.fileUpload, sendMsgId);
-                }*/
                 create(ary[i], mf.fileUpload, sendMsgId);
-
-                // System.out.println(getClass() + " isLarkUsed=" + isLarkUsed + " receiver=" + receiver);
                 if (isLarkUsed) {
                     MessageUtil mu = new MessageUtil();
                     mu.send(sender, ary[i], title);
@@ -419,155 +400,6 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             }
         }
         return true;
-    }
-
-
-    //通过手机端发送内部消息
-    public boolean AddMsgByMobile(String sender, String receiver, String title, String content, File[] files, String[] uploadFileNames) throws ErrMsgException {
-
-        this.sender = sender;
-        this.title = title;
-        this.content = content;
-        this.receiversAll = receiver;
-        this.receiversjs = receiver;
-        String[] ary = receiver.split(",");
-        // logger.info("create:toUser=" + receiver);
-
-        int len = ary.length;
-        UserMgr um = new UserMgr();
-        for (int i = 0; i < len; i++) {
-            // 检查用户是否存在
-            UserDb user = um.getUserDb(ary[i]);
-            if (!user.isLoaded()) {
-                throw new ErrMsgException("用户" + ary[i] + "不存在！");
-            }
-        }
-        if (this.isSent == 1) {
-            for (int i = 0; i < len; i++) {
-                // System.out.println(getClass() + " ary[" + i + "]=" + ary[i] +
-                // " box=" + box);
-                //create(ary[i], mf.fileUpload);
-                sendMsgBysender(ary[i], files, uploadFileNames);
-            }
-        }
-        return true;
-    }
-
-    //通过手机端发送内部消息存储进发件箱
-    public boolean AddMsgByMobile(String sender, String title, String content, File[] files, String[] uploadFileNames) throws ErrMsgException {
-        this.sender = sender;
-        this.title = title;
-        this.content = content;
-        if (this.isSent == 1) {
-            //手机上传时未设置是否保存发件箱，因此在此默认保存发件箱，如需改则加参数
-            this.box = MessageDb.OUTBOX;
-            sendMsgBysender("", files, uploadFileNames);
-        }
-        return true;
-    }
-
-    /**
-     * 用于手机端发送消息
-     */
-    public boolean sendMsgBysender(String receiver, File[] files, String[] uploadFileNames)
-            throws ErrMsgException {
-
-        //指定发件人，收件人，标题，内容
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        boolean re = false;
-
-        Conn conn = null;
-        try {
-            conn = new Conn(connname);
-            PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
-            id = (int) SequenceManager.nextID(SequenceManager.OA_MESSAGE);
-            ps.setInt(1, id);
-            ps.setString(2, title);
-            ps.setString(3, content);
-            ps.setString(4, sender);
-            ps.setString(5, receiver);
-            ps.setInt(6, type);
-            ps.setString(7, "");
-            java.util.Date curDate = new java.util.Date();
-            ps.setTimestamp(8, new Timestamp(curDate.getTime()));
-            ps.setInt(9, box);
-            ps.setString(10, receiversAll);
-            ps.setInt(11, 1);
-            ps.setTimestamp(12, new Timestamp(curDate.getTime()));
-            ps.setInt(13, 0);
-            ps.setInt(14, 0);
-            ps.setString(15, action);
-            ps.setString(16, actionType);
-            ps.setString(17, actionSubType);
-            ps.setString(18, receiverscs);
-            ps.setString(19, receiversms);
-            ps.setString(20, receiversjs);
-            ps.setInt(21, sendMsgId);
-            re = conn.executePreUpdate() == 1 ? true : false;
-
-            MessageCache mc = new MessageCache(this);
-            mc.refreshNewCountOfReceiver(receiver);
-            mc.refreshCreate();
-
-            if (files != null) {
-                FileOutputStream out;
-                // 置保存路径
-                Calendar cal = Calendar.getInstance();
-                String year = "" + (cal.get(Calendar.YEAR));
-                String month = "" + (cal.get(Calendar.MONTH) + 1);
-
-                String vpath = cfg.get("file_message") + "/" + year
-                        + "/" + month + "/";
-                String path = Global.getRealPath() + vpath;
-                File file_path = new File(path);
-                if (!file_path.exists()) { // 创建文件夹
-                    file_path.mkdirs();
-                }
-                String real_path = file_path.getPath();
-                Attachment att = new Attachment();
-
-                for (int i = 0; i < files.length; i++) {
-                    out = new FileOutputStream(real_path + "\\"
-                            + uploadFileNames[i]);
-
-                    FileInputStream in = new FileInputStream(files[i]);
-                    int size = in.available(); // 文件大小
-
-                    byte buffer[] = new byte[1024 * 10];
-                    int length = 0;
-                    while ((length = in.read(buffer)) > 0) {
-                        out.write(buffer, 0, length);
-                    }
-                    out.close();
-
-                    att.setMsgId(id);
-                    att.setName(uploadFileNames[i]);
-                    att.setDiskName(uploadFileNames[i]);
-                    att.setVisualPath(vpath);
-                    att.setSize(size);
-                    att.create();
-                }
-            }
-
-            if (re) {
-                // 发送短信
-                IMsgUtil imu = SMSFactory.getMsgUtil();
-                if (imu != null) {
-                    UserDb ud = new UserDb();
-                    ud = ud.getUserDb(receiver);
-                    imu.send(ud, content, sender);
-                }
-            }
-        } catch (Exception e) {
-            logger.error("sendSysMsg: " + e.getMessage());
-            throw new ErrMsgException("数据库操作错误！");
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-        return re;
     }
 
     /**
@@ -579,14 +411,12 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      * @return
      * @throws ErrMsgException
      */
-    public boolean AddDraftMsg(ServletContext application,
-                               HttpServletRequest request, String sender) throws ErrMsgException {
+    public boolean AddDraftMsg(ServletContext application, HttpServletRequest request, String sender) throws ErrMsgException {
         MessageForm mf = new MessageForm(application, request, this);
         mf.checkCreate();
         this.fileUpload = mf.getFileUpload();
         this.sender = sender;
         this.box = MessageDb.DRAFT;
-
         create("", mf.fileUpload);
         return true;
     }
@@ -615,19 +445,19 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      * @return
      */
     public boolean delMsgBySenderDustbin(String[] ids) {
-
         int len = ids.length;
         String str = "";
-        for (int i = 0; i < len; i++)
-            if (str.equals(""))
-                str += ids[i];
-            else
-                str += "," + ids[i];
+        for (String s : ids) {
+            if ("".equals(str)) {
+                str += s;
+            } else {
+                str += "," + s;
+            }
+        }
         str = "(" + str + ")";
         String sql = "select id from oa_message where id in " + str;
-        Conn conn = null;
+        Conn conn = new Conn(connname);
         try {
-            conn = new Conn(connname);
             ResultSet rs = conn.executeQuery(sql);
             if (rs != null) {
                 MessageCache mc = new MessageCache(this);
@@ -641,42 +471,12 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
                 mc.refreshList();
             }
-        } catch (Exception e) {
-            logger.error("delMsg:" + e.getMessage());
-            try {
-                throw new ErrMsgException("删除消息失败！");
-            } catch (ErrMsgException e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
-            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
-//    	boolean flag = false;
-//    	JdbcTemplate jt = new JdbcTemplate();
-//    	  int len = ids.length;
-//          String str = "";
-//          for (int i = 0; i < len; i++)
-//              if (str.equals(""))
-//                  str += ids[i];
-//              else
-//                  str += "," + ids[i];
-//          str = "(" + str + ")";
-//          String sql = "UPDATE oa_message SET is_sender_dustbin = 1 AND isreaded=1 WHERE id IN "+str;
-//          try {
-//			int result = jt.executeUpdate(sql);
-//			if(result == 1){
-//				flag = true;
-//			}
-//		} catch (SQLException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//         return flag;
     }
 
 
@@ -687,30 +487,28 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     public boolean delMsg(String[] ids) throws ErrMsgException {
         int len = ids.length;
         String str = "";
-        for (int i = 0; i < len; i++)
-            if (str.equals(""))
-                str += ids[i];
-            else
-                str += "," + ids[i];
+        for (String s : ids) {
+            if ("".equals(str)) {
+                str += s;
+            } else {
+                str += "," + s;
+            }
+        }
         str = "(" + str + ")";
         String sql = "select id from oa_message where id in " + str;
-        Conn conn = null;
+        Conn conn = new Conn(connname);
         try {
-            conn = new Conn(connname);
             ResultSet rs = conn.executeQuery(sql);
             if (rs != null) {
                 while (rs.next()) {
                     getMessageDb(rs.getInt(1)).del();
                 }
             }
-        } catch (Exception e) {
-            logger.error("delMsg:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("删除消息失败！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
     }
@@ -726,16 +524,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     public boolean doDustbin(String[] ids, boolean isDel) throws ErrMsgException {
         int len = ids.length;
         String str = "";
-        for (int i = 0; i < len; i++)
-            if (str.equals(""))
+        for (int i = 0; i < len; i++) {
+            if ("".equals(str)) {
                 str += ids[i];
-            else
+            } else {
                 str += "," + ids[i];
+            }
+        }
         str = "(" + str + ")";
         String sql = "select id from oa_message where id in " + str;
-        Conn conn = null;
+        Conn conn = new Conn(connname);
         try {
-            conn = new Conn(connname);
             ResultSet rs = conn.executeQuery(sql);
             if (rs != null) {
                 MessageCache mc = new MessageCache(this);
@@ -750,14 +549,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
                 mc.refreshList();
             }
-        } catch (Exception e) {
-            logger.error("delMsg:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("删除消息失败！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
     }
@@ -774,19 +570,18 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         int len = ids.length;
         String str = "";
         for (int i = 0; i < len; i++) {
-            if (str.equals("")) {
+            if ("".equals(str)) {
                 str += ids[i];
             } else {
                 str += "," + ids[i];
             }
 
-            MessageDb messageDb = (MessageDb) getMessageDb(Integer.valueOf(str));
+            MessageDb messageDb = (MessageDb) getMessageDb(Integer.parseInt(ids[i]));
             String sender = messageDb.getSender();
             String receiver = messageDb.getReceiver();
             String sql = "select id from oa_message where ((sender =  '" + sender + "' and receiver = '" + receiver + "') or (sender = '" + receiver + "' and receiver = '" + sender + "')) and is_dustbin = 0 and is_sender_dustbin = 0";
-            Conn conn = null;
+            Conn conn = new Conn(connname);
             try {
-                conn = new Conn(connname);
                 ResultSet rs = conn.executeQuery(sql);
                 if (rs != null) {
                     MessageCache mc = new MessageCache(this);
@@ -799,16 +594,12 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                     }
                     mc.refreshList();
                 }
-            } catch (Exception e) {
-                logger.error("delMsg:" + e.getMessage());
+            } catch (SQLException e) {
+                LogUtil.getLog(getClass()).error(e);
                 throw new ErrMsgException("删除消息失败！");
             } finally {
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
-
         }
         return true;
     }
@@ -823,7 +614,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      */
     @Override
     public IMessage getMessageDb(int id) {
-        return (IMessage) getObjectDb(new Integer(id));
+        return (IMessage) getObjectDb(id);
     }
 
     @Override
@@ -856,6 +647,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         return ip;
     }
 
+    @Override
     public int getType() {
         return type;
     }
@@ -866,7 +658,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     }
 
     @Override
-    public Vector getAttachments() {
+    public Vector<Attachment> getAttachments() {
         return attachments;
     }
 
@@ -928,45 +720,34 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     @Override
     public boolean create(String toUser, FileUpload fu) throws ErrMsgException {
         // 检查接收者邮箱容量大小是否足够
-        Vector v = fu.getFiles();
-        FileInfo fi = null;
+        FileInfo fi;
         long allSize = 0;
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
-            fi = (FileInfo) ir.next();
+        Vector<FileInfo> v = fu.getFiles();
+        for (FileInfo fileInfo : v) {
+            fi = fileInfo;
             allSize += fi.getSize();
-        }
-        // 网络硬盘文件
-        String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-        if (netdiskFiles != null) {
-            com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-            for (int i = 0; i < netdiskFiles.length; i++) {
-                att = att.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-                allSize += att.getSize();
-            }
         }
 
         // 邮箱附件
         String[] mailFiles = fu.getFieldValues("mailFiles");
         if (mailFiles != null) {
-            for (int i = 0; i < mailFiles.length; i++) {
-                com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFiles[i]));
+            for (String mailFile : mailFiles) {
+                com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFile));
                 allSize += att.getFileSize();
             }
         }
 
         UserSetupDb usd = new UserSetupDb();
         usd = usd.getUserSetupDb(sender);
-        if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed())
+        if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed()) {
             throw new ErrMsgException("您的空间不足，无法存入！");
+        }
 
         String action = StrUtil.getNullStr(fu.getFieldValue("action"));
 
-        Conn conn = null;
-        boolean re = false;
-        // logger.info("create:toUser=" + toUser);
+        Conn conn = new Conn(connname);
+        boolean re;
         try {
-            conn = new Conn(connname);
             PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
             id = (int) SequenceManager.nextID(SequenceManager.OA_MESSAGE);
             ps.setInt(1, id);
@@ -992,7 +773,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(19, receiversms);
             ps.setString(20, receiversjs);
             ps.setInt(21, sendMsgId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MessageCache mc = new MessageCache(this);
             // mc.refreshNewCountOfReceiver(receiver); // 20071124 revise
@@ -1000,14 +781,6 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             mc.refreshCreate();
 
             if (re) {
-                // 本方法仅用于存入发件箱或草稿箱，所以无需发送手机推送或微信端消息
-                //add by lichao 手机端消息推送
-/*                SendNotice se = new SendNotice();
-                se.PushNoticeSingleByToken(toUser, title, content, id);*/
-
-                // WXMessageMgr wxMessageMgr = new WXMessageMgr();
-                // wxMessageMgr.sendTextMessage(receiver, title + "\r\n" + content, action, WXMessageMgr.MESSAGE_TYPE_ENMU.MSG);
-
                 // 置保存路径
                 Calendar cal = Calendar.getInstance();
                 String year = "" + (cal.get(Calendar.YEAR));
@@ -1015,58 +788,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
                 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
                 String vpath = cfg.get("file_message") + "/" + year + "/" + month + "/";
-                String filepath = fu.getRealPath() + vpath;
 
-                // 处理网络硬盘文件
-                // String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-                if (netdiskFiles != null) {
-                    com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-                    for (int i = 0; i < netdiskFiles.length; i++) {
-                        att = att.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-
-                        String file_netdisk = cfg.get("file_netdisk");
-                        String fullPath = Global.getRealPath() + file_netdisk + "/" + att.getVisualPath() + "/" + att.getDiskName();
-
-                        String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-                        String newFullPath = filepath + "/" + newName;
-
-                        File f = new File(filepath);
-                        if (!f.isDirectory())
-                            f.mkdirs();
-
-                        // System.out.println(getClass() + " " + fullPath);
-                        // System.out.println(getClass() + " " + newFullPath);
-
-                        FileUtil.CopyFile(fullPath, newFullPath);
-                        Attachment att2 = new Attachment();
-                        //att.setFullPath(filepath + fi.getDiskName());
-                        att2.setMsgId(id);
-                        att2.setName(att.getName());
-                        att2.setDiskName(newName);
-                        att2.setVisualPath(vpath);
-                        att2.setSize(att.getSize());
-                        re = att2.create();
-                    }
-                }
-
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
                 // 处理邮箱附件
                 if (mailFiles != null) {
-                    for (int i = 0; i < mailFiles.length; i++) {
-                        com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFiles[i]));
+                    for (String mailFile : mailFiles) {
+                        com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFile));
 
                         String fullPath = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
-
                         String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-                        String newFullPath = filepath + "/" + newName;
+                        fileService.write(fullPath, vpath, newName);
 
-                        File f = new File(filepath);
-                        if (!f.isDirectory())
-                            f.mkdirs();
-
-                        // System.out.println(getClass() + " " + fullPath);
-                        // System.out.println(getClass() + " " + newFullPath);
-
-                        FileUtil.CopyFile(fullPath, newFullPath);
                         Attachment att2 = new Attachment();
                         att2.setMsgId(id);
                         att2.setName(att.getName());
@@ -1079,13 +811,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
                 // 处理附件
                 if (fu.getRet() == FileUpload.RET_SUCCESS) {
-                    fu.setSavePath(filepath);
-                    // 使用随机名称写入磁盘
-                    fu.writeFile(true);
                     v = fu.getFiles();
-                    ir = v.iterator();
-                    while (ir.hasNext()) {
-                        fi = (FileInfo) ir.next();
+                    for (FileInfo fileInfo : v) {
+                        fi = fileInfo;
+                        fileService.write(fi, vpath);
+
                         Attachment att = new Attachment();
                         //att.setFullPath(filepath + fi.getDiskName());
                         att.setMsgId(id);
@@ -1100,14 +830,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 usd.setMsgSpaceUsed(usd.getMsgSpaceUsed() + allSize);
                 usd.save();
             }
-        } catch (Exception e) {
-            logger.error("create: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作错误！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -1117,54 +844,44 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      */
     public boolean create(String toUser, FileUpload fu, int sendId) throws ErrMsgException {
         // 检查接收者邮箱容量大小是否足够
-        Vector v = fu.getFiles();
         FileInfo fi = null;
         long allSize = 0;
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
-            fi = (FileInfo) ir.next();
+        Vector<FileInfo> v = fu.getFiles();
+        for (FileInfo fileInfo : v) {
+            fi = fileInfo;
             allSize += fi.getSize();
-        }
-        // 网络硬盘文件
-        String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-        if (netdiskFiles != null) {
-            com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-            for (int i = 0; i < netdiskFiles.length; i++) {
-                att = att.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-                allSize += att.getSize();
-            }
         }
 
         // 邮箱附件
         String[] mailFiles = fu.getFieldValues("mailFiles");
         if (mailFiles != null) {
-            for (int i = 0; i < mailFiles.length; i++) {
-                com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFiles[i]));
+            for (String mailFile : mailFiles) {
+                com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFile));
                 allSize += att.getFileSize();
             }
         }
 
         UserSetupDb usd = new UserSetupDb();
-        if (!toUser.equals("")) {
+        if (!"".equals(toUser)) {
             usd = usd.getUserSetupDb(toUser);
-            if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed())
+            if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed()) {
                 throw new ErrMsgException("接收者的空间不足，无法发送！");
+            }
         } else {
             usd = usd.getUserSetupDb(sender);
-            if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed())
+            if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed()) {
                 throw new ErrMsgException("您的空间不足，无法存入！");
+            }
         }
 
         String action = StrUtil.getNullStr(fu.getFieldValue("action"));
-        if (action == null || action.equals("")) {
+        if ("".equals(action)) {
             action = "send_id=" + sendId;
         }
 
-        Conn conn = null;
-        boolean re = false;
-        // logger.info("create:toUser=" + toUser);
+        Conn conn = new Conn(connname);
+        boolean re;
         try {
-            conn = new Conn(connname);
             PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
             id = (int) SequenceManager.nextID(SequenceManager.OA_MESSAGE);
             ps.setInt(1, id);
@@ -1190,7 +907,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(19, receiversms);
             ps.setString(20, receiversjs);
             ps.setInt(21, sendId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MessageCache mc = new MessageCache(this);
             // mc.refreshNewCountOfReceiver(receiver); // 20071124 revise
@@ -1217,58 +934,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
                 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
                 String vpath = cfg.get("file_message") + "/" + year + "/" + month + "/";
-                String filepath = fu.getRealPath() + vpath;
 
-                // 处理网络硬盘文件
-                // String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-                if (netdiskFiles != null) {
-                    com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-                    for (int i = 0; i < netdiskFiles.length; i++) {
-                        att = att.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-
-                        String file_netdisk = cfg.get("file_netdisk");
-                        String fullPath = Global.getRealPath() + file_netdisk + "/" + att.getVisualPath() + "/" + att.getDiskName();
-
-                        String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-                        String newFullPath = filepath + "/" + newName;
-
-                        File f = new File(filepath);
-                        if (!f.isDirectory())
-                            f.mkdirs();
-
-                        // System.out.println(getClass() + " " + fullPath);
-                        // System.out.println(getClass() + " " + newFullPath);
-
-                        FileUtil.CopyFile(fullPath, newFullPath);
-                        Attachment att2 = new Attachment();
-                        //att.setFullPath(filepath + fi.getDiskName());
-                        att2.setMsgId(id);
-                        att2.setName(att.getName());
-                        att2.setDiskName(newName);
-                        att2.setVisualPath(vpath);
-                        att2.setSize(att.getSize());
-                        re = att2.create();
-                    }
-                }
-
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
                 // 处理邮箱附件
                 if (mailFiles != null) {
-                    for (int i = 0; i < mailFiles.length; i++) {
-                        com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFiles[i]));
+                    for (String mailFile : mailFiles) {
+                        com.redmoon.oa.emailpop3.Attachment att = new com.redmoon.oa.emailpop3.Attachment(StrUtil.toInt(mailFile));
 
                         String fullPath = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
-
                         String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-                        String newFullPath = filepath + "/" + newName;
+                        fileService.write(fullPath, vpath, newName);
 
-                        File f = new File(filepath);
-                        if (!f.isDirectory())
-                            f.mkdirs();
-
-                        // System.out.println(getClass() + " " + fullPath);
-                        // System.out.println(getClass() + " " + newFullPath);
-
-                        FileUtil.CopyFile(fullPath, newFullPath);
                         Attachment att2 = new Attachment();
                         att2.setMsgId(id);
                         att2.setName(att.getName());
@@ -1281,15 +957,12 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
                 // 处理附件
                 if (fu.getRet() == FileUpload.RET_SUCCESS) {
-                    fu.setSavePath(filepath);
-                    // 使用随机名称写入磁盘
-                    fu.writeFile(true);
                     v = fu.getFiles();
-                    ir = v.iterator();
-                    while (ir.hasNext()) {
-                        fi = (FileInfo) ir.next();
+                    for (FileInfo fileInfo : v) {
+                        fi = fileInfo;
+                        fileService.write(fi, vpath);
+
                         Attachment att = new Attachment();
-                        //att.setFullPath(filepath + fi.getDiskName());
                         att.setMsgId(id);
                         att.setName(fi.getName());
                         att.setDiskName(fi.getDiskName());
@@ -1302,14 +975,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 usd.setMsgSpaceUsed(usd.getMsgSpaceUsed() + allSize);
                 usd.save();
             }
-        } catch (Exception e) {
-            logger.error("create: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作错误！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -1325,9 +995,8 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         String[] ary = StrUtil.split(action, "\\|");
         if (ary!=null) {
             int len = ary.length;
-            Map map = null;
             if (len >= 1) {
-                map = new LinkedHashMap();
+                Map map = new LinkedHashMap();
                 for (int i = 0; i < len; i++) {
                     String[] pair = ary[i].split("=");
                     if (pair.length == 2) {
@@ -1414,15 +1083,14 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(19, receiversms);
             ps.setString(20, receiversjs);
             ps.setInt(21, sendMsgId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MessageCache mc = new MessageCache(this);
             mc.refreshNewCountOfReceiver(receiver);
             mc.refreshCreate();
 
             if (re) {
-                boolean isLarkUsed = cfg.get("isLarkUsed").equals("true");
-                // System.out.println(getClass() + " isLarkUsed=" + isLarkUsed + " receiver=" + receiver);
+                boolean isLarkUsed = "true".equals(cfg.get("isLarkUsed"));
                 if (isLarkUsed) {
                     MessageUtil mu = new MessageUtil();
                     mu.send(MessageUtil.USER_SYSTEM, receiver, title);
@@ -1454,8 +1122,8 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("sendSysMsg: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("sendSysMsg: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1482,9 +1150,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
         JdbcTemplate jt = new JdbcTemplate(new com.cloudwebsoft.framework.db.Connection(cn.js.fan.web.Global.getDefaultDB()));
         try {
-            for (int i = 0; i < len; i++) {
-                String receiver = users[i];
-
+            for (String receiver : users) {
                 String sql = "insert into oa_message (id,title,content,sender,receiver,type,";
                 sql += "ip,rq,box,receivers_all,is_sent,send_time,receipt_state,";
                 sql += "msg_level,action,action_type,action_sub_type,receivers_cs,";
@@ -1494,7 +1160,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 sql += id + "," + StrUtil.sqlstr(title) + "," + StrUtil.sqlstr(content) + ",";
                 sql += StrUtil.sqlstr(SENDER_SYSTEM) + "," + StrUtil.sqlstr(receiver) + ",";
                 sql += TYPE_SYSTEM + "," + StrUtil.sqlstr("") + ",";
-                java.util.Date curDate = new java.util.Date();
+                Date curDate = new Date();
                 sql += SQLFilter.getDateStr(DateUtil.format(curDate, "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss") + ",";
                 sql += 0 + "," + StrUtil.sqlstr(receiversAll) + ",1,";
                 sql += SQLFilter.getDateStr(DateUtil.format(curDate, "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss") + ",";
@@ -1508,7 +1174,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             }
             jt.executeBatch();
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return 0;
         }
 
@@ -1516,16 +1182,15 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         WXMessageMgr wxMessageMgr = new WXMessageMgr();
         SendNotice se = new SendNotice();
         com.redmoon.weixin.Config cfgWx = com.redmoon.weixin.Config.getInstance();
-        boolean isLarkUsed = cfg.get("isLarkUsed").equals("true");
+        boolean isLarkUsed = "true".equals(cfg.get("isLarkUsed"));
 
-        for (int i = 0; i < len; i++) {
-            receiver = users[i];
+        for (String user : users) {
+            receiver = user;
 
             MessageCache mc = new MessageCache(this);
             mc.refreshNewCountOfReceiver(receiver);
             mc.refreshCreate();
 
-            // System.out.println(getClass() + " isLarkUsed=" + isLarkUsed + " receiver=" + receiver);
             if (isLarkUsed) {
                 MessageUtil mu = new MessageUtil();
                 mu.send(MessageUtil.USER_SYSTEM, receiver, title);
@@ -1558,8 +1223,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
         boolean re = false;
 
-        boolean isLarkUsed = cfg.get("isLarkUsed").equals("true");
-        // System.out.println(getClass() + " isLarkUsed=" + isLarkUsed + " receiver=" + receiver);
+        boolean isLarkUsed = "true".equals(cfg.get("isLarkUsed"));
         if (isLarkUsed) {
             MessageUtil mu = new MessageUtil();
             mu.send(MessageUtil.USER_SYSTEM, receiver, title);
@@ -1578,9 +1242,8 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             msgService.sendMsg(receiver, title, action, MsgService.MESSAGE_TYPE_ENMU.FLOW);
         }
 
-        Conn conn = null;
+        Conn conn = new Conn(connname);
         try {
-            conn = new Conn(connname);
             PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
             id = (int) SequenceManager.nextID(SequenceManager.OA_MESSAGE);
             ps.setInt(1, id);
@@ -1605,19 +1268,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(19, receiversms);
             ps.setString(20, receiversjs);
             ps.setInt(21, sendMsgId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MessageCache mc = new MessageCache(this);
             mc.refreshNewCountOfReceiver(receiver);
             mc.refreshCreate();
-        } catch (Exception e) {
-            logger.error("sendSysMsg: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("sendSysMsg: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作错误！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -1626,7 +1287,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     public ObjectDb getObjectDb(Object primaryKeyValue) {
         MessageCache uc = new MessageCache(this);
         primaryKey.setValue(primaryKeyValue);
-        return (MessageDb) uc.getObjectDb(primaryKey);
+        return uc.getObjectDb(primaryKey);
     }
 
     /**
@@ -1638,7 +1299,6 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      * @return
      */
     public boolean del(String userName, String actionType, String actionId) {
-        // String action = "action=" + MessageDb.ACTION_PAPER_DISTRIBUTE + "|paperId=" + paperId;
         if (actionType.equals(ACTION_PAPER_DISTRIBUTE)) {
             String action = "action=" + ACTION_PAPER_DISTRIBUTE + "|paperId=" + actionId;
             String sql = "select id from oa_message where receiver=" + StrUtil.sqlstr(userName) + " and action=" + StrUtil.sqlstr(action);
@@ -1661,46 +1321,42 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         try {
             PreparedStatement ps = conn.prepareStatement(QUERY_DEL);
             ps.setInt(1, id);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             if (re) {
                 MessageCache mc = new MessageCache(this);
                 mc.refreshDel(primaryKey);
                 mc.refreshNewCountOfReceiver(receiver);
             }
-        } catch (Exception e) {
-            logger.error("del:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         if (re) {
             // 删除附件
             long allSize = 0;
             if (attachments != null) {
-                Iterator ir = attachments.iterator();
-                while (ir.hasNext()) {
-                    Attachment att = (Attachment) ir.next();
+                for (Object attachment : attachments) {
+                    Attachment att = (Attachment) attachment;
                     allSize += att.getSize();
                     att.del();
                 }
             }
 
-            if (re) {
-                // 更新用户的磁盘已用空间
-                UserSetupDb usd = new UserSetupDb();
-                if (receiver.equals(""))
-                    usd = usd.getUserSetupDb(sender);
-                else
-                    usd = usd.getUserSetupDb(receiver);
-                usd.setMsgSpaceUsed(usd.getMsgSpaceUsed() - allSize);
-                usd.save();
+            // 更新用户的磁盘已用空间
+            UserSetupDb usd = new UserSetupDb();
+            if ("".equals(receiver)) {
+                usd = usd.getUserSetupDb(sender);
+            } else {
+                usd = usd.getUserSetupDb(receiver);
             }
+            usd.setMsgSpaceUsed(usd.getMsgSpaceUsed() - allSize);
+            usd.save();
 
             MessageCache uc = new MessageCache(this);
-            primaryKey.setValue(new Integer(id));
+            primaryKey.setValue(id);
             uc.refreshDel(primaryKey);
 
         }
@@ -1771,7 +1427,6 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(4, title);
             ps.setString(5, content);
             ps.setString(6, receiversAll);
-            // LogUtil.getLog(getClass()).info("sendTime=" + sendTime);
             java.util.Date st = DateUtil.parse(sendTime, "yyyy-MM-dd HH:mm");
             if (st != null) {
                 ps.setTimestamp(7, new Timestamp(st.getTime()));
@@ -1787,18 +1442,16 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(13, receiversms);
             ps.setString(14, receiversjs);
             ps.setInt(15, id);
-            re = conn.executePreUpdate() == 1 ? true : false;
-        } catch (Exception e) {
-            logger.error("save:" + StrUtil.trace(e));
+            re = conn.executePreUpdate() == 1;
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("save:" + StrUtil.trace(e));
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         if (re) {
             MessageCache uc = new MessageCache(this);
-            primaryKey.setValue(new Integer(id));
+            primaryKey.setValue(id);
             uc.refreshSave(primaryKey);
             uc.refreshNewCountOfReceiver(receiver);
         }
@@ -1816,7 +1469,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     @Override
     public synchronized void load() {
         Conn conn = new Conn(connname);
-        ResultSet rs = null;
+        ResultSet rs;
         try {
             PreparedStatement pstmt = conn.prepareStatement(QUERY_LOAD);
             pstmt.setInt(1, id);
@@ -1829,7 +1482,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 rq = DateUtil.format(rs.getTimestamp(5), "yyyy-MM-dd HH:mm");
                 ip = rs.getString(6);
                 type = rs.getInt(7);
-                readed = rs.getInt(8) == 1 ? true : false;
+                readed = rs.getInt(8) == 1;
                 box = rs.getInt(9);
                 receiversAll = rs.getString(10);
                 isSent = rs.getInt(11);
@@ -1840,18 +1493,18 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 dustbin = rs.getInt(16) == 1;
                 actionType = StrUtil.getNullStr(rs.getString(17));
                 actionSubType = StrUtil.getNullStr(rs.getString(18));
-                senderDustbin = rs.getInt(19) == 1 ? true : false;
-                receiverscs = rs.getString(20);
-                receiversms = rs.getString(21);
-                receiversjs = rs.getString(22);
+                senderDustbin = rs.getInt(19) == 1;
+                receiverscs = StrUtil.getNullStr(rs.getString(20));
+                receiversms = StrUtil.getNullStr(rs.getString(21));
+                receiversjs = StrUtil.getNullStr(rs.getString(22));
                 sendMsgId = rs.getInt(23);
                 loaded = true;
 
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
 
                 String LOAD_DOCUMENT_ATTACHMENTS =
                         "SELECT id FROM oa_message_attach WHERE msgId=? order by orders";
-                attachments = new Vector();
+                attachments = new Vector<>();
                 pstmt = conn.prepareStatement(LOAD_DOCUMENT_ATTACHMENTS);
                 pstmt.setInt(1, id);
                 rs = conn.executePreQuery();
@@ -1863,13 +1516,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                     }
                 }
             }
-        } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -1879,7 +1530,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     }
 
     @Override
-    public void setAttachments(Vector attachments) {
+    public void setAttachments(Vector<Attachment> attachments) {
         this.attachments = attachments;
     }
 
@@ -1892,69 +1543,34 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      * 取得某用户的新消息
      */
     @Override
-    public Vector getNewMsgsOfUser(String userName) {
-        Vector v = new Vector();
-        Conn conn = new Conn(connname);
-        ResultSet rs = null;
+    public Vector<IMessage> getNewMsgsOfUser(String userName) {
+        Vector<IMessage> v = new Vector<>();
         try {
-            // 2013-06-08 fgf 只取上次刷新时间之后的新消息，这样可使消息只提醒一次
-            UserSetupDb usd = new UserSetupDb();
-            usd = usd.getUserSetupDb(userName);
+            com.cloudweb.oa.cache.UserSetupCache userSetupCache = SpringUtil.getBean(com.cloudweb.oa.cache.UserSetupCache.class);
+            Date d = userSetupCache.getLastMsgNotifyTimeByCache(userName);
+            String dateStr = DateUtil.format(d, "yyyy-MM-dd HH:mm:ss");
 
-            // String sql = "select id from oa_message where receiver=? and isreaded=0 and box=" + INBOX + " and is_sent=1";
-            //String dateStr = DateUtil.format(usd.getLastMsgNotifyTime(), "yyyy-MM-dd HH:mm:ss");
-            Date today = DateUtil.parse(DateUtil.format(new Date(),
-                    "yyyy-MM-dd")
-                    + " 00:00:00", "yyyy-MM-dd HH:mm:ss");
-            String dateStr = "";
-
-            if (usd != null && usd.isLoaded()) {
-                Date lastNotifyTime = usd.getLastMsgNotifyTime();
-
-                if (lastNotifyTime != null) {
-                    dateStr = DateUtil.format(
-                            today.before(lastNotifyTime) ? today : lastNotifyTime,
-                            "yyyy-MM-dd HH:mm:ss");
-                }
-            } else {
-                logger.error("usd is null!");
+            String sql = "select id from oa_message where receiver=" + SQLFilter.sqlstr(userName) + " and isreaded=0 and box=" + INBOX + " and is_sent=1 and send_time>" + SQLFilter.getDateStr(dateStr, "yyyy-MM-dd HH:mm:ss");
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = jt.executeQuery(sql, 1, 10);
+            while (ri.hasNext()) {
+                ResultRecord rr = ri.next();
+                IMessage md = getMessageDb(rr.getInt(1));
+                v.addElement(md);
             }
 
-            // System.out.println("getNewMsgsOfUser usd.getLastMsgNotifyTime()=" + usd.getLastMsgNotifyTime());
-
-            String sql = "select id from oa_message where receiver=? and isreaded=0 and box=" + INBOX + " and is_sent=1 and send_time>" + SQLFilter.getDateStr(dateStr, "yyyy-MM-dd HH:mm:ss");
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, userName);
-            rs = conn.executePreQuery();
-            if (rs != null) {
-                while (rs.next()) {
-                    IMessage md = getMessageDb(rs.getInt(1));
-                    // System.out.println("getNewMsgsOfUser id=" + rs.getInt(1));
-                    v.addElement(md);
-                }
-            }
-
-            usd.setLastMsgNotifyTime(new java.util.Date());
-            usd.save();
-
-            // System.out.println("getNewMsgsOfUser save()=" + usd.getLastMsgNotifyTime());
-
-        } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            userSetupCache.setLastMsgNotifyTimeByCache(userName);
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }
 
     @Override
     public Attachment getAttachment(int attId) {
-        Iterator ir = getAttachments().iterator();
-        while (ir.hasNext()) {
-            Attachment at = (Attachment) ir.next();
+        for (Object o : getAttachments()) {
+            Attachment at = (Attachment) o;
             if (at.getId() == attId) {
                 return at;
             }
@@ -1969,20 +1585,19 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     public boolean TransmitMsg(ServletContext application, HttpServletRequest request, String sender, int msgId) throws ErrMsgException {
         MessageForm mf = new MessageForm(application, request, this);
         mf.checkTransmit();
-        if (this.title == null || this.title.equals("") || this.content == null
-                || this.content.equals("") || this.receiver == null
-                || this.receiver.equals("")) {
+        if (this.title == null || "".equals(this.title) || this.content == null
+                || "".equals(this.content) || this.receiver == null
+                || "".equals(this.receiver)) {
             mf.checkCreate();
         }
         this.sender = sender;
         String[] ary = receiver.split(",");
-        int len = ary.length;
         UserMgr um = new UserMgr();
-        for (int i = 0; i < len; i++) {
+        for (String value : ary) {
             // 检查用户是否存在
-            UserDb user = um.getUserDb(ary[i]);
+            UserDb user = um.getUserDb(value);
             if (!user.isLoaded()) {
-                throw new ErrMsgException("用户" + ary[i] + "不存在！");
+                throw new ErrMsgException("用户" + value + "不存在！");
             }
         }
         int sendId = 0;
@@ -1992,11 +1607,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             sendId = id;
         }
         this.box = MessageDb.INBOX;
-        for (int i = 0; i < len; i++) {
+        for (String s : ary) {
             if (sendId == 0) {
-                transmit(ary[i], msgId);
+                transmit(s, msgId);
             } else {
-                transmit(ary[i], msgId, sendId);
+                transmit(s, msgId, sendId);
             }
         }
         return true;
@@ -2014,17 +1629,15 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
         // 检查接收者邮箱容量大小是否足够
         long allSize = 0;
-        Vector v = md.getAttachments();
+        Vector<Attachment> v = md.getAttachments();
         if (v.size() > 0) {
-            Iterator ir = v.iterator();
-            while (ir.hasNext()) {
-                Attachment att = (Attachment) ir.next();
+            for (Attachment att : v) {
                 allSize += att.getSize();
             }
         }
 
         UserSetupDb usd = new UserSetupDb();
-        if (toUser.equals("")) {
+        if ("".equals(toUser)) {
             usd = usd.getUserSetupDb(sender);
             // 发件箱的情况,不需要记录send_id
             if (action != null && action.equals("send_id=" + msgId)) {
@@ -2033,17 +1646,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         } else {
             usd = usd.getUserSetupDb(toUser);
             // 收件箱的情况,需要记录send_id
-            if (action == null || action.equals("")) {
+            if (action == null || "".equals(action)) {
                 action = "send_id=" + msgId;
             }
         }
-        if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed())
+        if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed()) {
             throw new ErrMsgException("接收者的空间不足，无法发送！");
+        }
 
-        Conn conn = null;
-        boolean re = false;
+        Conn conn = new Conn(connname);
+        boolean re;
         try {
-            conn = new Conn(connname);
             PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
 
             id = (int) SequenceManager.nextID(SequenceManager.OA_MESSAGE);
@@ -2072,28 +1685,24 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(19, receiversms);
             ps.setString(20, receiversjs);
             ps.setInt(21, sendMsgId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MessageCache mc = new MessageCache(this);
             mc.refreshNewCountOfReceiver(receiver);
             mc.refreshCreate();
 
             if (re) {
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
                 v = md.getAttachments();
                 if (v.size() > 0) {
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        Attachment att = (Attachment) ir.next();
+                    for (Attachment att : v) {
                         String fullPath = Global.realPath + att.getVisualPath() + "/" + att.getDiskName();
                         String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
 
-                        String newFullPath = Global.realPath + att.getVisualPath() + "/" + newName;
-                        FileUtil.CopyFile(fullPath, newFullPath);
+                        fileService.write(fullPath, att.getVisualPath(), newName);
 
                         Attachment att2 = new Attachment();
-                        // att2.setFullPath(newFullPath);
                         att2.setMsgId(id);
-                        // att2.setFullPath(fullPath);
                         att2.setName(att.getName());
                         att2.setDiskName(newName);
                         att2.setVisualPath(att.getVisualPath());
@@ -2106,15 +1715,12 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                     usd.save();
                 }
             }
-        } catch (Exception e) {
-            logger.error("transmit: " + e.getMessage());
-            e.printStackTrace();
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("transmit: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作错误！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -2131,17 +1737,15 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
         // 检查接收者邮箱容量大小是否足够
         long allSize = 0;
-        Vector v = md.getAttachments();
+        Vector<Attachment> v = md.getAttachments();
         if (v.size() > 0) {
-            Iterator ir = v.iterator();
-            while (ir.hasNext()) {
-                Attachment att = (Attachment) ir.next();
+            for (Attachment att : v) {
                 allSize += att.getSize();
             }
         }
 
         UserSetupDb usd = new UserSetupDb();
-        if (toUser.equals("")) {
+        if ("".equals(toUser)) {
             usd = usd.getUserSetupDb(sender);
             // 发件箱的情况,不需要记录send_id
             if (action != null && action.equals("send_id=" + sendId)) {
@@ -2150,17 +1754,17 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         } else {
             usd = usd.getUserSetupDb(toUser);
             // 收件箱的情况,需要记录send_id
-            if (action == null || action.equals("")) {
+            if (action == null || "".equals(action)) {
                 action = "send_id=" + sendId;
             }
         }
-        if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed())
+        if (usd.getMsgSpaceUsed() + allSize > usd.getMsgSpaceAllowed()) {
             throw new ErrMsgException("接收者的空间不足，无法发送！");
+        }
 
-        Conn conn = null;
-        boolean re = false;
+        Conn conn = new Conn(connname);
+        boolean re;
         try {
-            conn = new Conn(connname);
             PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
 
             id = (int) SequenceManager.nextID(SequenceManager.OA_MESSAGE);
@@ -2189,28 +1793,23 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             ps.setString(19, receiversms);
             ps.setString(20, receiversjs);
             ps.setInt(21, sendId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MessageCache mc = new MessageCache(this);
             mc.refreshNewCountOfReceiver(receiver);
             mc.refreshCreate();
 
             if (re) {
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
                 v = md.getAttachments();
                 if (v.size() > 0) {
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        Attachment att = (Attachment) ir.next();
+                    for (Attachment att : v) {
                         String fullPath = Global.realPath + att.getVisualPath() + "/" + att.getDiskName();
                         String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-
-                        String newFullPath = Global.realPath + att.getVisualPath() + "/" + newName;
-                        FileUtil.CopyFile(fullPath, newFullPath);
+                        fileService.write(fullPath, att.getVisualPath(), newName);
 
                         Attachment att2 = new Attachment();
-                        // att2.setFullPath(newFullPath);
                         att2.setMsgId(id);
-                        // att2.setFullPath(fullPath);
                         att2.setName(att.getName());
                         att2.setDiskName(newName);
                         att2.setVisualPath(att.getVisualPath());
@@ -2223,34 +1822,30 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                     usd.save();
                 }
             }
-        } catch (Exception e) {
-            logger.error("transmit: " + e.getMessage());
-            e.printStackTrace();
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("transmit: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作错误！");
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
 
     public boolean canDoReturn(String userName, int sendId) {
-        JdbcTemplate jt = new JdbcTemplate();
-        ResultIterator ri = null;
         String sql = "select isreaded from oa_message where sender="
                 + StrUtil.sqlstr(userName) + " and action="
                 + StrUtil.sqlstr("send_id=" + sendId) + " and box="
                 + MessageDb.INBOX;
         boolean canDoReturn = true;
         try {
-            ri = jt.executeQuery(sql);
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = jt.executeQuery(sql);
             if (!ri.hasNext()) {
                 canDoReturn = false;
             } else {
                 while (ri.hasNext()) {
-                    ResultRecord rr = (ResultRecord) ri.next();
+                    ResultRecord rr = ri.next();
                     if (rr.getInt(1) == 1) {
                         canDoReturn = false;
                         break;
@@ -2258,9 +1853,8 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("listToUser: " + e.getMessage());
-        } finally {
-            jt.close();
+            LogUtil.getLog(getClass()).error("listToUser: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return canDoReturn;
     }
@@ -2275,7 +1869,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             re = jt.executeUpdate(sql) >= 1;
 
         } catch (SQLException e) {
-            logger.error("listToUser: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("listToUser: " + e.getMessage());
         } finally {
             jt.close();
         }
@@ -2306,11 +1900,10 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      * @return
      */
     public static String toHtml(String str) {
-        if (str == null || str.equals("")) {
+        if (str == null || "".equals(str)) {
             return "";
         }
-        java.lang.StringBuffer buf = new java.lang.StringBuffer(
-                str.length() + 6);
+        StringBuilder buf = new StringBuilder(str.length() + 6);
         char ch = ' ';
         for (int i = 0; i < str.length(); i++) {
             ch = str.charAt(i);
@@ -2331,7 +1924,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
      * @return
      */
     public String renderAction(HttpServletRequest request) {
-        if (action.equals("")) {
+        if ("".equals(action)) {
             return "";
         }
 
@@ -2342,11 +1935,11 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
         // 兼容6.0前旧版本
         int len = ary.length;
-        Map map = null;
+        Map<String, String> map = null;
         if (len >= 1) {
-            map = new HashMap();
-            for (int i = 0; i < len; i++) {
-                String[] pair = ary[i].split("=");
+            map = new HashMap<>();
+            for (String s : ary) {
+                String[] pair = s.split("=");
                 if (pair.length == 2) {
                     map.put(pair[0], pair[1]);
                 }
@@ -2355,7 +1948,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
 
         String myaction = "";
         if (map != null) {
-            myaction = StrUtil.getNullStr((String) map.get("action"));
+            myaction = StrUtil.getNullStr(map.get("action"));
             if ("".equals(myaction)) {
                 myaction = actionType;
             }
@@ -2363,145 +1956,130 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
             myaction = actionType;
         }
 
-        if (myaction.equals(ACTION_FLOW_DISPOSE)) {
-            String strMyActionId;
-            if (map != null) {
-                strMyActionId = (String) map.get("myActionId");
-            } else {
-                strMyActionId = action;
-            }
-
-            long myActionId = StrUtil.toLong(strMyActionId, -1);
-            MyActionDb mad = new MyActionDb();
-            mad = mad.getMyActionDb(myActionId);
-            if (mad == null || !mad.isLoaded()) {
-                return "<span style='color:red'>当前流程已删除</span>";
-            }
-
-            WorkflowMgr wfm = new WorkflowMgr();
-            WorkflowDb wf = wfm.getWorkflowDb((int) mad.getFlowId());
-
-            if (wf == null || wf.getDocId() == -1) {
-                return "<span style='color:red'>当前流程已删除</span>";
-            } else {
-                com.redmoon.oa.flow.Leaf lf = new com.redmoon.oa.flow.Leaf();
-                lf = lf.getLeaf(wf.getTypeCode());
-
-                if (lf.getType() == com.redmoon.oa.flow.Leaf.TYPE_LIST) {
-                    return "<a href='javascript:;' onclick=\"addTab('" + wf.getTitle().replaceAll("\r\n", "").trim() + "', '" + request.getContextPath() + "/flow_dispose.jsp?myActionId=" + myActionId + "')\">点击处理流程</a>";
+        switch (myaction) {
+            case ACTION_FLOW_DISPOSE: {
+                String strMyActionId;
+                if (map != null) {
+                    strMyActionId = map.get("myActionId");
                 } else {
-                    WorkflowPredefineDb wpd = new WorkflowPredefineDb();
-                    wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());
-                    if (wpd.isLight()) {
-                        return "<a href='javascript:;' onclick=\"addTab('" + wf.getTitle().replaceAll("\r\n", "").trim() + "', '" + request.getContextPath() + "/flow_dispose_light.jsp?myActionId=" + myActionId + "')\">点击处理流程</a>";
+                    strMyActionId = action;
+                }
+
+                long myActionId = StrUtil.toLong(strMyActionId, -1);
+                MyActionDb mad = new MyActionDb();
+                mad = mad.getMyActionDb(myActionId);
+                if (mad == null || !mad.isLoaded()) {
+                    return "<span style='color:red'>当前流程已删除</span>";
+                }
+
+                WorkflowMgr wfm = new WorkflowMgr();
+                WorkflowDb wf = wfm.getWorkflowDb((int) mad.getFlowId());
+
+                if (wf == null || wf.getDocId() == -1) {
+                    return "<span style='color:red'>当前流程已删除</span>";
+                } else {
+                    Leaf lf = new Leaf();
+                    lf = lf.getLeaf(wf.getTypeCode());
+
+                    if (lf.getType() == Leaf.TYPE_LIST) {
+                        return "<a href='javascript:;' onclick=\"addTab('" + wf.getTitle().replaceAll("\r\n", "").trim() + "', '" + request.getContextPath() + "/flowDispose.do?myActionId=" + myActionId + "')\">点击处理流程</a>";
                     } else {
-                        return "<a href='javascript:;' onclick=\"addTab('" + wf.getTitle().replaceAll("\r\n", "").trim() + "', '" + request.getContextPath() + "/flow_dispose_free.jsp?myActionId=" + myActionId + "')\">点击处理流程</a>";
+                        WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+                        wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());
+                        if (wpd.isLight()) {
+                            return "<a href='javascript:;' onclick=\"addTab('" + wf.getTitle().replaceAll("\r\n", "").trim() + "', '" + request.getContextPath() + "/flow_dispose_light.jsp?myActionId=" + myActionId + "')\">点击处理流程</a>";
+                        } else {
+                            return "<a href='javascript:;' onclick=\"addTab('" + wf.getTitle().replaceAll("\r\n", "").trim() + "', '" + request.getContextPath() + "/flowDisposeFree.do?myActionId=" + myActionId + "')\">点击处理流程</a>";
+                        }
                     }
                 }
             }
-        } else if (myaction.equals(ACTION_FLOW_SHOW)) {
-            String strFlowId;
-            if (map != null) {
-                strFlowId = (String) map.get("flowId");
-            } else {
-                strFlowId = action;
-            }
-            WorkflowMgr wfm = new WorkflowMgr();
-            WorkflowDb wf = wfm.getWorkflowDb(StrUtil.toInt(strFlowId));
-
-            if (wf == null || wf.getDocId() == -1) {
-                return "<span style='color:red'>当前流程已删除</span>";
-            } else {
-                com.redmoon.oa.sso.Config config = new com.redmoon.oa.sso.Config();
-                String desKey = config.get("key");
-                // 以flowId作为值加密
-                String visitKey = cn.js.fan.security.ThreeDesUtil.encrypt2hex(desKey, String.valueOf(wf.getId()));
-
-                WorkflowPredefineDb wpd = new WorkflowPredefineDb();
-                wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());
-                if (wpd.isLight()) {
-                    return "<a href='javascript:;' onclick=\"addTab('" + StrUtil.toHtml(wf.getTitle()) + "', '" + request.getContextPath() + "/flow_dispose_light_show.jsp?flowId=" + strFlowId + "&visitKey=" + visitKey + "')\">点击查看流程处理过程</a>";
+            case ACTION_FLOW_SHOW: {
+                String strFlowId;
+                if (map != null) {
+                    strFlowId = map.get("flowId");
                 } else {
-                    return "<a href='javascript:;' onclick=\"addTab('" + StrUtil.toHtml(wf.getTitle()) + "', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + strFlowId + "&visitKey=" + visitKey + "')\">点击查看流程处理过程</a>";
+                    strFlowId = action;
                 }
-            }
-        } else if (myaction.equals(ACTION_WORKPLAN)) {
-            String strId;
-            if (map != null) {
-                strId = (String) map.get("id");
-            } else {
-                strId = action;
-            }
-            WorkPlanDb wpd = new WorkPlanDb();
-            wpd = wpd.getWorkPlanDb(StrUtil.toInt(strId));
+                WorkflowMgr wfm = new WorkflowMgr();
+                WorkflowDb wf = wfm.getWorkflowDb(StrUtil.toInt(strFlowId));
 
-            if (wpd == null || !wpd.isLoaded()) {
-                return "<span style='color:red'>当前工作计划已删除</span>";
-            } else {
-                return "<a href='javascript:;' onclick=\"addTab('" + wpd.getTitle() + "', '" + request.getContextPath() + "/workplan/workplan_show.jsp?id=" + strId + "')\">点击查看计划</a>";
-            }
-        } else if (myaction.equals(ACTION_PLAN)) {
-            String strId;
-            if (map != null) {
-                strId = (String) map.get("id");
-            } else {
-                strId = action;
-            }
-            PlanDb pd = new PlanDb();
-            pd = pd.getPlanDb(StrUtil.toInt(strId));
-            if (pd == null || !pd.isLoaded()) {
-                return "<span style='color:red'>当前日程安排已删除</span>";
-            } else {
-                return "<a href='javascript:;' onclick=\"addTab('" + pd.getTitle() + "', '" + request.getContextPath() + "/plan/plan_show.jsp?id=" + strId + "')\">点击查看日程安排</a>";
-            }
-        } else if (myaction.equals(ACTION_PAPER_DISTRIBUTE)) {
-            String paperId;
-            if (map != null) {
-                paperId = (String) map.get("paperId");
-            } else {
-                paperId = action;
-            }
-            PaperDistributeDb pdd = new PaperDistributeDb();
-            pdd = pdd.getPaperDistributeDb(StrUtil.toInt(paperId));
-            if (pdd == null || !pdd.isLoaded()) {
-                return "<span style='color:red'>当前收文已删除</span>";
-            } else {
-                String pdTitle = "发文";
-                try {
-                    pdTitle = pdd.getString("title");
-                } catch (Exception e) {
+                if (wf == null || wf.getDocId() == -1) {
+                    return "<span style='color:red'>当前流程已删除</span>";
+                } else {
+                    com.redmoon.oa.sso.Config config = new com.redmoon.oa.sso.Config();
+                    String desKey = config.get("key");
+                    // 以flowId作为值加密
+                    String visitKey = ThreeDesUtil.encrypt2hex(desKey, String.valueOf(wf.getId()));
+
+                    WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+                    wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());
+                    if (wpd.isLight()) {
+                        return "<a href='javascript:;' onclick=\"addTab('" + StrUtil.toHtml(wf.getTitle()) + "', '" + request.getContextPath() + "/flow_dispose_light_show.jsp?flowId=" + strFlowId + "&visitKey=" + visitKey + "')\">点击查看流程处理过程</a>";
+                    } else {
+                        return "<a href='javascript:;' onclick=\"addTab('" + StrUtil.toHtml(wf.getTitle()) + "', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + strFlowId + "&visitKey=" + visitKey + "')\">点击查看流程处理过程</a>";
+                    }
                 }
-                return "<a href='javascript:;' onclick=\"addTab('" + pdTitle + "', '" + request.getContextPath() + "/paper/paper_show.jsp?paperId=" + paperId + "')\">点击查看</a>";
             }
-        } else if (myaction.equals(ACTION_MODULE_SHOW)) {
-            //actionSubType传入formcode,action传入id
-            return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/visual/module_show.jsp?id=" + action + "&code=" + actionSubType + "&parentId=" + action + "')\">点击查看</a>";
-        } else if (myaction.equals(ACTION_MODULE_EDIT)) {
-            return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/visual/module_edit.jsp?id=" + action + "&code=" + actionSubType + "&formCode=" + actionSubType + "&parentId=" + action + "')\">点击查看</a>";
-        } else if (myaction.equals(ACTION_WORKLOG)) {
-            return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/ymoa/showWorkLogById.action?workLogId=" + action + "')\">点击查看</a>";
-        }
-        else if (myaction.equals(ACTION_FILEARK_NEW)) {
-            return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/doc_show.jsp?id=" + action + "')\">点击查看</a>";
-        }
-        else if (myaction.equals(ACTION_NOTICE)) {
-            NoticeDb nd = new NoticeDb(StrUtil.toLong(action, -1));
-            if (nd == null || !nd.isLoaded()) {
-                return "<span style='color:red'>当前通知公告已删除</span>";
-            } else {
-                return "<a href='javascript:;' onclick=\"addTab('" + nd.getTitle() + "', '" + request.getContextPath() + "/notice/show.do?id=" + action + "&isShow=1')\">点击查看</a>";
+            case ACTION_PLAN: {
+                String strId;
+                if (map != null) {
+                    strId = (String) map.get("id");
+                } else {
+                    strId = action;
+                }
+                PlanDb pd = new PlanDb();
+                pd = pd.getPlanDb(StrUtil.toInt(strId));
+                if (pd == null || !pd.isLoaded()) {
+                    return "<span style='color:red'>当前日程安排已删除</span>";
+                } else {
+                    return "<a href='javascript:;' onclick=\"addTab('" + pd.getTitle() + "', '" + request.getContextPath() + "/plan/plan_show.jsp?id=" + strId + "')\">点击查看日程安排</a>";
+                }
             }
-        }
-        else {
-            // 向下兼容
-            String strId = StrUtil.getNullStr((String) map.get("noticeId"));
-            if (!strId.equals("")) {
-                NoticeDb nd = new NoticeDb(StrUtil.toLong(strId));
-                if (nd == null || !nd.isLoaded()) {
+            case ACTION_PAPER_DISTRIBUTE:
+                String paperId;
+                if (map != null) {
+                    paperId = map.get("paperId");
+                } else {
+                    paperId = action;
+                }
+                PaperDistributeDb pdd = new PaperDistributeDb();
+                pdd = pdd.getPaperDistributeDb(StrUtil.toInt(paperId));
+                if (pdd == null || !pdd.isLoaded()) {
+                    return "<span style='color:red'>当前收文已删除</span>";
+                } else {
+                    String pdTitle = pdd.getString("title");
+                    return "<a href='javascript:;' onclick=\"addTab('" + pdTitle + "', '" + request.getContextPath() + "/paper/paper_show.jsp?paperId=" + paperId + "')\">点击查看</a>";
+                }
+            case ACTION_MODULE_SHOW:
+                //actionSubType传入formcode,action传入id
+                String visitKeyShow = SecurityUtil.makeVisitKey(action);
+                return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/visual/moduleShowPage.do?id=" + action + "&code=" + actionSubType + "&parentId=" + action + "&visitKey=" + visitKeyShow + "')\">点击查看</a>";
+            case ACTION_MODULE_EDIT:
+                return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/visual/moduleEditPage.do?id=" + action + "&code=" + actionSubType + "&formCode=" + actionSubType + "&parentId=" + action + "')\">点击查看</a>";
+            case ACTION_WORKLOG:
+                return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/ymoa/showWorkLogById.action?workLogId=" + action + "')\">点击查看</a>";
+            case ACTION_FILEARK_NEW:
+                return "<a href='javascript:;' onclick=\"addTab('查看', '" + request.getContextPath() + "/doc_show.jsp?id=" + action + "')\">点击查看</a>";
+            case ACTION_NOTICE:
+                NoticeDb nd = new NoticeDb(StrUtil.toLong(action, -1));
+                if (!nd.isLoaded()) {
                     return "<span style='color:red'>当前通知公告已删除</span>";
                 } else {
-                    return "<a href='javascript:;' onclick=\"addTab('" + nd.getTitle() + "', '" + request.getContextPath() + "/notice/show.do?id=" + strId + "&isShow=1')\">点击查看</a>";
+                    return "<a href='javascript:;' onclick=\"addTab('" + nd.getTitle() + "', '" + request.getContextPath() + "/notice/show.do?id=" + action + "&isShow=1')\">点击查看</a>";
                 }
+            default: {
+                // 向下兼容
+                String strId = StrUtil.getNullStr(map.get("noticeId"));
+                if (!"".equals(strId)) {
+                    nd = new NoticeDb(StrUtil.toLong(strId));
+                    if (!nd.isLoaded()) {
+                        return "<span style='color:red'>当前通知公告已删除</span>";
+                    } else {
+                        return "<a href='javascript:;' onclick=\"addTab('" + nd.getTitle() + "', '" + request.getContextPath() + "/notice/show.do?id=" + strId + "&isShow=1')\">点击查看</a>";
+                    }
+                }
+                break;
             }
         }
         return "";
@@ -2531,22 +2109,18 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         }
         String sql = "select id from oa_message where receiver=" + StrUtil.sqlstr(userName) + " and action=" + action + " and isreaded=0 and box=" + MessageDb.INBOX;
         JdbcTemplate jt = new JdbcTemplate();
-        ResultIterator ri = null;
         try {
-            ri = jt.executeQuery(sql);
+            ResultIterator ri = jt.executeQuery(sql);
             while (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord) ri.next();
+                ResultRecord rr = ri.next();
                 int mId = rr.getInt(1);
                 MessageDb md = new MessageDb(mId);
                 md.setReaded(true);
                 md.save();
             }
         } catch (SQLException e) {
-            logger.error("setUserNoticeReaded: " + e.getMessage());
-        } finally {
-            if (jt != null) {
-                jt.close();
-            }
+            LogUtil.getLog(getClass()).error("setUserNoticeReaded: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -2557,13 +2131,13 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         } else {
             sql += " and is_dustbin=1";
         }
-        if (action.equals("search")) {
+        if ("search".equals(action)) {
             if (!"".equals(what)) {
-                if (kind.equals("title")) {
+                if ("title".equals(kind)) {
                     sql += " and title like " + StrUtil.sqlstr("%" + what + "%");
-                } else if (kind.equals("content")) {
+                } else if ("content".equals(kind)) {
                     sql += " and content like " + StrUtil.sqlstr("%" + what + "%");
-                } else if (kind.equals("notreaded")) {
+                } else if ("notreaded".equals(kind)) {
                     sql += " and box=" + MessageDb.INBOX + " and isreaded=0 and (content like " + StrUtil.sqlstr("%" + what + "%") + "or title like " + StrUtil.sqlstr("%" + what + "%") + ")";
                 }
             }
@@ -2572,20 +2146,20 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
                 sql += " and action_type=" + StrUtil.sqlstr(actionType);
             }
         }
-        if (orderBy.equals("")) {
+        if ("".equals(orderBy)) {
             // sql += " order by isreaded asc,rq desc";
             sql += " order by rq desc";
         } else {
-            if (orderBy.equals("byTitle")) {
+            if ("byTitle".equals(orderBy)) {
                 sql += " order by title";
-            } else if (orderBy.equals("bySender")) {
+            } else if ("bySender".equals(orderBy)) {
                 sql += " order by sender";
-            } else if (orderBy.equals("byDate")) {
+            } else if ("byDate".equals(orderBy)) {
                 sql += " order by rq";
             } else {
                 sql += " order by " + orderBy;
             }
-            if (sort.equals("asc")) {
+            if ("asc".equals(sort)) {
                 sql += " asc";
             } else {
                 sql += " desc";
@@ -2638,7 +2212,7 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
         return summary;
     }
 
-    private Vector attachments;
+    private Vector<Attachment> attachments;
 
     private String summary;
 
@@ -2650,11 +2224,130 @@ public class MessageDb extends ObjectDb implements IMessage, IDesktopUnit {
     @Override
     public String getSenderPortrait() {
         if (SENDER_SYSTEM.equals(sender)) {
-            return "img_show.jsp?path=images/sys_user.png";
+            return "images/sys_user.png";
         }
         IUserService userService = SpringUtil.getBean(IUserService.class);
         User user = userService.getUser(sender);
         IUserSetupService userSetupService = SpringUtil.getBean(IUserSetupService.class);
         return userSetupService.getPortrait(user);
+    }
+
+    public String getListSql(HttpServletRequest request, String userName) {
+        String what = ParamUtil.get(request, "what");
+        String action = ParamUtil.get(request, "action");
+        String orderBy = ParamUtil.get(request, "orderBy");
+        String order = ParamUtil.get(request, "order");
+        String kind = ParamUtil.get(request, "kind");
+        if ("".equals(kind)) {
+            kind = "title";
+        }
+        String sql = "select id from oa_message where is_sent=1 and receiver=" + StrUtil.sqlstr(userName) + " and box=" + MessageDb.INBOX + " and is_dustbin=0 and type<>10";
+        if ("search".equals(action)) {
+            if ("title".equals(kind)) {
+                sql += " and title like " + StrUtil.sqlstr("%" + what + "%");
+            } else if ("content".equals(kind)) {
+                sql += " and content like " + StrUtil.sqlstr("%" + what + "%");
+            } else if ("sender".equals(kind)) {
+                sql += " and sender in (select name from users where realname like " + StrUtil.sqlstr("%" + what + "%") + ")";
+            } else {
+                sql += " and box=" + MessageDb.INBOX + " and isreaded=0 and (content like " + StrUtil.sqlstr("%" + what + "%") + "or title like " + StrUtil.sqlstr("%" + what + "%") + ")";
+            }
+        }
+        if ("".equals(orderBy)) {
+            sql += " order by rq desc";
+        } else {
+            if ("byTitle".equals(orderBy)) {
+                sql += " order by title";
+            } else if ("bySender".equals(orderBy)) {
+                sql += " order by sender";
+            } else if ("byDate".equals(orderBy)) {
+                sql += " order by send_time";
+            } else {
+                sql += " order by " + orderBy;
+            }
+            if ("asc".equals(order)) {
+                sql += " asc";
+            } else {
+                sql += " desc";
+            }
+        }
+        return sql;
+    }
+
+    public String getListRecycleSql(HttpServletRequest request, String userName) {
+        int is_sys = ParamUtil.getInt(request, "is_sys", 0);
+        String op = ParamUtil.get(request, "op");
+        String action = ParamUtil.get(request, "action");
+        String orderBy = ParamUtil.get(request, "orderBy");
+        String order = ParamUtil.get(request, "order");
+        String kind = ParamUtil.get(request, "kind");
+        if ("".equals(kind)) {
+            kind = "title";
+        }
+        String what = ParamUtil.get(request, "what");
+        String sql = "";
+        if (is_sys == 1) {
+            sql = "select id from oa_message where ( (is_sent=1 and receiver=" + StrUtil.sqlstr(userName) + " and box=" + MessageDb.INBOX + " and is_dustbin=1 and type = " + MessageDb.TYPE_SYSTEM + " ) OR ( box =" + MessageDb.OUTBOX + " and sender =" + StrUtil.sqlstr(userName) + " and is_sender_dustbin=1  and type = " + MessageDb.TYPE_SYSTEM + ") ) ";
+        } else {
+            sql = "select id from oa_message where ( (is_sent=1 and receiver=" + StrUtil.sqlstr(userName) + " and box=" + MessageDb.INBOX + " and is_dustbin=1 and type <> " + MessageDb.TYPE_SYSTEM + " ) OR ( box =" + MessageDb.OUTBOX + " and sender =" + StrUtil.sqlstr(userName) + " and is_sender_dustbin=1  and type <> " + MessageDb.TYPE_SYSTEM + ") ) ";
+        }
+
+        if ("search".equals(action)) {
+            if ("title".equals(kind)) {
+                sql += " and title like " + StrUtil.sqlstr("%" + what + "%");
+            } else if ("content".equals(kind)) {
+                sql += " and content like " + StrUtil.sqlstr("%" + what + "%");
+            } else if ("sender".equals(kind)) {
+                sql += " and sender in (select name from users where realname like " + StrUtil.sqlstr("%" + what + "%") + ")";
+            } else if ("notreaded".equals(kind)) {
+                sql += " and box=" + MessageDb.INBOX + " and isreaded=0 and (content like " + StrUtil.sqlstr("%" + what + "%") + " or title like " + StrUtil.sqlstr("%" + what + "%") + ")";
+            }
+        }
+        if ("".equals(orderBy)) {
+            sql += " order by rq desc";
+        } else {
+            if ("byTitle".equals(orderBy)) {
+                sql += " order by title";
+            } else if ("bySender".equals(orderBy)) {
+                sql += " order by sender";
+            } else if ("byDate".equals(orderBy)) {
+                sql += " order by send_time";
+            } else if ("byBox".equals(orderBy)) {
+                sql += " order by box";
+            } else {
+                sql += " order by " + orderBy;
+            }
+            if ("asc".equals(order)) {
+                sql += " asc";
+            } else {
+                sql += " desc";
+            }
+        }
+        return sql;
+    }
+
+    public String getListDraftSql(String userName) {
+        return "select id from oa_message where sender=" + cn.js.fan.util.StrUtil.sqlstr(userName) + " and box=" + MessageDb.DRAFT + " and is_sender_dustbin=0 order by rq desc";
+    }
+
+    public String getListOutBoxSql(HttpServletRequest request, String userName) {
+        String op = ParamUtil.get(request, "op");
+        String kind = ParamUtil.get(request, "kind");
+        if ("".equals(kind)) {
+            kind = "title";
+        }
+        String what = ParamUtil.get(request, "what");
+        String sql = "select id from oa_message where sender=" + StrUtil.sqlstr(userName) + " and box=" + MessageDb.OUTBOX + " and is_sender_dustbin = 0";
+        if ("search".equals(op) && !"".equals(what)) {
+            if ("receiver".equals(kind)) {
+                sql = "select distinct m.send_msg_id from oa_message m, users u where m.receiver=u.name and u.realname like " + StrUtil.sqlstr("%" + what + "%") + " and m.sender=" + StrUtil.sqlstr(userName) + " and m.box=" + MessageDb.INBOX;
+            } else if ("title".equals(kind)) {
+                sql += " and title like " + StrUtil.sqlstr("%" + what + "%");
+            } else {
+                sql += " and content like " + StrUtil.sqlstr("%" + what + "%");
+            }
+        }
+        sql += " order by rq desc";
+        return sql;
     }
 }

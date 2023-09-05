@@ -9,6 +9,7 @@ import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.Config;
 import com.redmoon.dingding.domain.BaseDdObj;
 import com.redmoon.dingding.domain.DdUser;
@@ -56,7 +57,7 @@ public class EventChangeService extends BaseService {
             _httpPost.httpPost(BaseDdObj.class, regCallbackDto);
             _flag = true;
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(EventChangeService.class).error(e);
         }
         return _flag;
     }
@@ -85,7 +86,7 @@ public class EventChangeService extends BaseService {
         try {
             _http.httpGet(BaseDdObj.class);
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(EventChangeService.class).error(e);
         }
         return _flag;
     }
@@ -248,12 +249,12 @@ public class EventChangeService extends BaseService {
                     IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
                     for (Integer id : deptIds) {
                         Department department = departmentService.getById(id);
-                        departmentService.delWithChildren(department.getCode());
+                        departmentService.delWithChildren(department.getCode(), true);
                     }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(EventChangeService.class).error(e);
         }
     }
 }

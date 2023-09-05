@@ -1,15 +1,6 @@
 package com.redmoon.oa.ui.menu;
 
-import java.sql.*;
-import javax.servlet.http.*;
-import cn.js.fan.db.*;
-import cn.js.fan.security.*;
-import cn.js.fan.util.*;
-import cn.js.fan.web.*;
-import org.apache.log4j.*;
 import java.util.Vector;
-import java.util.Iterator;
-import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  *
@@ -39,7 +30,7 @@ public class Directory {
         return leaf.getLeaf(code);
     }
 
-    public Vector getChildren(String code) throws ErrMsgException {
+    public Vector getChildren(String code) {
     	if ("-1".equals(code)) {
     		Leaf leaf = new Leaf();
     		leaf.setCode("-1");

@@ -13,8 +13,9 @@
 <%@ include file="../inc/nocache.jsp"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege" />
 <%
-if (!privilege.isUserPrivValid(request, "admin"))
+if (!privilege.isUserPrivValid(request, "admin")) {
 	return;
+}
 
 PieChart c2 = new PieChart(); // 饼图
 
@@ -32,19 +33,10 @@ if (realPath.indexOf(":")==1) {
 		isCloud = true;
 		totalSpace = cfg.getIntProperty("diskSpace") / 1024; // G
 	}
-		
-	String sql = "select sum(file_size) from netdisk_document_attach";
+
+	String sql = "select sum(file_size) from oa_message_attach";
 	JdbcTemplate jt = new JdbcTemplate();
 	ResultIterator ri = jt.executeQuery(sql);
-	int netdiskSize = 0;
-	if (ri.hasNext()) {
-		ResultRecord rr = (ResultRecord)ri.next();
-		netdiskSize = rr.getInt(1);
-		c2.addSlice((int)netdiskSize/1024000000, "网盘" + NumberUtil.round(netdiskSize/1024000000, 2) + "G"); // 增加一块
-	}
-	
-	sql = "select sum(file_size) from oa_message_attach";
-	ri = jt.executeQuery(sql);
 	int msgSpace = 0;
 	if (ri.hasNext()) {
 		ResultRecord rr = (ResultRecord)ri.next();
@@ -71,7 +63,7 @@ if (realPath.indexOf(":")==1) {
 	}	
 	
 	if (!isCloud) {
-		double usedSpace = (double)(totalSpace*1024000000-file.getFreeSpace()-netdiskSize-msgSpace - flowFileSize - docFileSize)/1024000000;
+		double usedSpace = (double)(totalSpace*1024000000-file.getFreeSpace()-msgSpace - flowFileSize - docFileSize)/1024000000;
 		c2.addSlice((int)usedSpace, "其它" + NumberUtil.round(usedSpace, 2) + "G"); // 增加一块
 	}
 	
@@ -79,7 +71,7 @@ if (realPath.indexOf(":")==1) {
 		c2.addSlice((int)freeSpace, "可用" + NumberUtil.round(freeSpace, 2) + "G"); // 增加一块 
 	}
 	else {
-		double remainSpace = (double)(totalSpace*1024000000 - netdiskSize - msgSpace - flowFileSize - docFileSize)/1024000000;
+		double remainSpace = (double)(totalSpace*1024000000 - msgSpace - flowFileSize - docFileSize)/1024000000;
 		c2.addSlice((int)freeSpace, "可用" + NumberUtil.round(remainSpace, 2) + "G"); // 增加一块 
 	}
 	

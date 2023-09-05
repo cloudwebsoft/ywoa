@@ -10,6 +10,7 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.pvg.*;
@@ -75,7 +76,7 @@ public class StampPriv extends ObjectDbA {
      * @param userName
      * @return
      */
-    public Vector getStampsOfUser(String userName) {
+    public Vector<StampDb> getStampsOfUser(String userName) {
     	UserDb user = new UserDb();
     	user = user.getUserDb(userName);
     	RoleDb[] roles = user.getRoles();
@@ -84,25 +85,22 @@ public class StampPriv extends ObjectDbA {
     	if (roles!=null) {
     		int len = roles.length;
         	String rstr = "";
-    		for (int i=0; i<len; i++) {
-    			RoleDb rd = roles[i];
-    			if (rstr.equals("")) {
-    				rstr = StrUtil.sqlstr(rd.getCode());
-    			}
-    			else {
-    				rstr += "," + StrUtil.sqlstr(rd.getCode());
-    			}
-    		}
+            for (RoleDb rd : roles) {
+                if ("".equals(rstr)) {
+                    rstr = StrUtil.sqlstr(rd.getCode());
+                } else {
+                    rstr += "," + StrUtil.sqlstr(rd.getCode());
+                }
+            }
     		sql += " or (name in (" + rstr + ") and priv_type=" + TYPE_ROLE + ")";
     	}
     	
-    	Vector v = new Vector();
+    	Vector<StampDb> v = new Vector<>();
     	StampDb sd = new StampDb();
-    	Iterator ir = list(sql).iterator();
-    	while (ir.hasNext()) {
-    		StampPriv sp = (StampPriv)ir.next();
-    		v.addElement(sd.getStampDb(sp.getStampId()));
-    	}
+        for (Object o : list(sql)) {
+            StampPriv sp = (StampPriv) o;
+            v.addElement(sd.getStampDb(sp.getStampId()));
+        }
     	return v;
     }
     
@@ -125,7 +123,7 @@ public class StampPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getStampPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getStampPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -184,7 +182,7 @@ public class StampPriv extends ObjectDbA {
                 loaded = true;
             }
         } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -236,7 +234,7 @@ public class StampPriv extends ObjectDbA {
             ps.setInt(6, id);
             r = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         }
         return r == 1 ? true : false;
     }
@@ -320,7 +318,7 @@ public class StampPriv extends ObjectDbA {
 
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error("add:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("add:" + e.getMessage());
             throw new ErrMsgException("请检查是否有重复项存在！");
         }
         finally {
@@ -337,7 +335,7 @@ public class StampPriv extends ObjectDbA {
         try {
         	sp = new StampPriv(id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return sp;
     }
@@ -351,7 +349,7 @@ public class StampPriv extends ObjectDbA {
             ps.setInt(1, stampId);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -365,7 +363,7 @@ public class StampPriv extends ObjectDbA {
             ps.setInt(1, id);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -415,7 +413,7 @@ public class StampPriv extends ObjectDbA {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {
@@ -449,7 +447,7 @@ public class StampPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -481,7 +479,7 @@ public class StampPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -541,8 +539,7 @@ public class StampPriv extends ObjectDbA {
             }
         }
         catch (SQLException e) {
-            com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(StampPriv.class).error(e);
         }
         return v;
     }      

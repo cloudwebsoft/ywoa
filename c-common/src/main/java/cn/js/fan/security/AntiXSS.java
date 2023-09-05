@@ -3,6 +3,7 @@ package cn.js.fan.security;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.oro.text.regex.MalformedPatternException;
 import org.apache.oro.text.regex.PatternCompiler;
 import org.apache.oro.text.regex.PatternMatcher;
@@ -90,7 +91,7 @@ public class AntiXSS {
             return stripAllowScriptAccess(stripProtocol(stripCssExpression(
                     stripAsciiAndHex(stripEvent(stripScriptTag(content, isGet))))));
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(AntiXSS.class).error(e);
             return null;
         }
     }
@@ -120,9 +121,7 @@ public class AntiXSS {
 	                    Perl5Compiler.CASE_INSENSITIVE_MASK);
             }
             catch(MalformedPatternException e) {
-            	System.out.println(AntiXSS.class + " pattern=" + "(<[^>]*)("
-	                    + events[i] + ")([^>]*>)");
-            	e.printStackTrace();
+                LogUtil.getLog(AntiXSS.class).error(e);
             }
             if (null != p) {
                 content = Util.substitute(matcher, p, new Perl5Substitution(
@@ -165,7 +164,7 @@ public class AntiXSS {
             content = sb.toString();
         }
 
-        // System.out.println("content=" + content);
+        // LogUtil.getLog(getClass()).info("content=" + content);
 
         // 禁止onclick事件时，标签img除外，但不允许出现location字符，当
         patternStr = "([^>]*)onclick\\s*?=((\")?(.*?)(\")?.*?>?)";
@@ -204,7 +203,7 @@ public class AntiXSS {
                         Matcher m = pat.matcher(imgTag);
                         if (m.find()) {
                             String imgUrl = m.group(1).replaceAll("\"|'", "");
-                            // System.out.println(getClass() + " imgUrl=" + imgUrl);
+                            // LogUtil.getLog(getClass()).info(getClass() + " imgUrl=" + imgUrl);
 
                             // 取出open(...)中的参数
                             patString =
@@ -216,7 +215,7 @@ public class AntiXSS {
                             m = pat.matcher(imgTag);
                             if (m.find()) {
                                 String param = m.group(2).replaceAll("\"|'", "");
-                                // System.out.println("param=" + param);
+                                // LogUtil.getLog(getClass()).info("param=" + param);
 
                                 if (imgUrl.indexOf(param)!=-1) {
                                     isSrcEqualsOpenParam = true;
@@ -505,7 +504,7 @@ public class AntiXSS {
 //                    Perl5Compiler.CASE_INSENSITIVE_MASK);
 //        if (null != p) {
 //            content = Util.substitute(matcher, p, new Perl5Substitution("$1$3"), content, Util.SUBSTITUTE_ALL);
-//            System.out.println(content);
+//            LogUtil.getLog(getClass()).info(content);
 //        }
 
         content = "http://180.101.236.31:9000/admin/organize/organize.jsp?type=list%0Aalert%28154%29%2F%2F";
@@ -515,14 +514,14 @@ public class AntiXSS {
 //                Perl5Compiler.CASE_INSENSITIVE_MASK);
 //        if (null != p) {
 //            content = Util.substitute(matcher, p, new Perl5Substitution("$1$3"), content, Util.SUBSTITUTE_ALL);
-//            System.out.println(content);
+//            LogUtil.getLog(getClass()).info(content);
 //        }
 
         /*content = "admin/organize/organize.jsp?type=list\neval(/ale/.source+/rt/.source+/(15)/.source);";
         Pattern pattern = Pattern.compile("(\n)(.*?)(eval\\()", Pattern.CASE_INSENSITIVE);
         Matcher m = pattern.matcher(content);
         content = m.replaceAll("");
-        System.out.println(content);*/
+        LogUtil.getLog(getClass()).info(content);*/
 
         /*content = "http://localhost:8093/tzcj/visual/module_list.jsp?xmmc=1234' alert(1843) '&xmmc_cond=0&xmjd_cond=1&xmjd=%E5%B7%B2%E6%B3%A8%E5%86%8C%E9%A1%B9%E7%9B%AE&lcq=00040012&lcq_cond=0&nlrq=00040012&nlrq_cond=0&op=search&code=zs_xmlz&menuItem=1&mainCode=";
         Pattern p = Pattern.compile("(' *)(.*?)( *')", Pattern.CASE_INSENSITIVE);
@@ -535,7 +534,6 @@ public class AntiXSS {
         Pattern p = Pattern.compile("\\+(.*?)\\+", Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(content);
         content = m.replaceAll("");
-        System.out.println(content);
 
         content = "userName\"+alert(1159)+\"";
         p = Pattern.compile("\\+(.*?)\\+", Pattern.CASE_INSENSITIVE);
@@ -546,14 +544,11 @@ public class AntiXSS {
         p = Pattern.compile("\\-(.*?)\\(.*?\\)\\-", Pattern.CASE_INSENSITIVE);
         m = p.matcher(content);
         content = m.replaceAll("");
-        System.out.println(content);
 
         content = "visual/nest_sheet_view.jsp?formCode=zs_tzf_nest&op=edit&cwsId=29883\n257+{toString:alert}+&flowId=81990&mainId=29883";
         p = Pattern.compile("\\+(.*?)\\{.*?\\}\\+", Pattern.CASE_INSENSITIVE);
         m = p.matcher(content);
         content = m.replaceAll("");
-
-        System.out.println(content);
 
         if (true) {
             return;
@@ -582,7 +577,7 @@ public class AntiXSS {
         m = p.matcher(content);
         content = m.replaceAll("");
 
-        System.out.println(content);
+        LogUtil.getLog(AntiXSS.class).info(content);
         if (true) {
             return;
         }
@@ -592,7 +587,7 @@ public class AntiXSS {
         m = p.matcher(content);
         content = m.replaceAll("");
 
-        System.out.println(content);
+        LogUtil.getLog(AntiXSS.class).info(content);
         if (true) {
             return;
         }
@@ -639,7 +634,7 @@ public class AntiXSS {
         m = p.matcher(content);
         content = m.replaceAll("");
 
-        System.out.println(content);
+        LogUtil.getLog(AntiXSS.class).info(content);
 
         if (true) {
             return;
@@ -654,12 +649,12 @@ public class AntiXSS {
                     Perl5Compiler.CASE_INSENSITIVE_MASK);
         }
         catch(MalformedPatternException e) {
-        	e.printStackTrace();
+        	LogUtil.getLog(getClass()).error(e);
         }*/
     	
     	content = "aa'+alert(123)+'";
     	
-    	System.out.println(stripScriptTag(content));
+    	LogUtil.getLog(AntiXSS.class).info(stripScriptTag(content));
     }
 
 }

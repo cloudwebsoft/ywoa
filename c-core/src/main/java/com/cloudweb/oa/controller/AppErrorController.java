@@ -1,6 +1,9 @@
 package com.cloudweb.oa.controller;
 
+import cn.js.fan.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.pojo.AppErrorResponseEntity;
+import com.redmoon.oa.pvg.Privilege;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
@@ -22,6 +25,7 @@ import java.util.Map;
 @Slf4j
 public class AppErrorController implements ErrorController {
     private static final String ERROR_PATH = "/error";
+    private static final String ERROR_PATH_REST = "/error/rest";
 
     // 如果没有MyErrorAttributes，则默认将会autowired DefaultErrorAttributes，但在外部Tomcat中如果没有MyErrorAttributes则会报错
     @Autowired
@@ -35,7 +39,7 @@ public class AppErrorController implements ErrorController {
     /**
      * Web页面错误处理
      */
-    @RequestMapping(value = ERROR_PATH, produces = "text/html")
+    @RequestMapping(value = ERROR_PATH, produces = MediaType.TEXT_HTML_VALUE)
     public String handlePathError(HttpServletRequest request, HttpServletResponse response) {
         int status = response.getStatus();
         ServletWebRequest servletWebRequest = new ServletWebRequest(request);
@@ -54,7 +58,7 @@ public class AppErrorController implements ErrorController {
     /**
      * Json/XML等错误的处理
      */
-    @RequestMapping(value = ERROR_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = ERROR_PATH_REST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     // @ExceptionHandler(value = {Exception.class})
     public AppErrorResponseEntity handleError(HttpServletRequest request) {
@@ -62,7 +66,32 @@ public class AppErrorController implements ErrorController {
         Map<String, Object> map = this.errorAttributes.getErrorAttributes(servletWebRequest, true);
         int status = getStatus(request);
         log.error((String)map.get("trace"));
-        return AppErrorResponseEntity.init(status, String.valueOf(map.getOrDefault("message", "Unknown error.")));
+
+        String type = (String)request.getAttribute("type");
+        // 来自于ProtectFilter
+        if ("protect".equals(type)) {
+            String kind = (String)request.getAttribute("kind");
+            String param = (String)request.getAttribute("param");
+            String sourceUrl = (String)request.getAttribute("sourceUrl");
+            String value = (String)request.getAttribute("value");
+
+            Privilege privilege = new Privilege();
+            String info = "";
+            if ("XSS".equals(kind)) {
+                com.redmoon.oa.LogUtil.log(privilege.getUser(request), StrUtil.getIp(request), com.redmoon.oa.LogDb.TYPE_HACK, "XSS " + sourceUrl + " " + param + "=" + value);
+                info = "XSS攻击：参数 " + param + "，已记录！";
+            } else if ("CSRF".equals(kind)) {
+                com.redmoon.oa.LogUtil.log(privilege.getUser(request), StrUtil.getIp(request), com.redmoon.oa.LogDb.TYPE_HACK, "CSRF " + sourceUrl + " " + param + "=" + value);
+                info = "CSRF攻击：参数 " + param + "，已记录！";
+            } else if ("SQLInject".equals(kind)) {
+                com.redmoon.oa.LogUtil.log(privilege.getUser(request), StrUtil.getIp(request), com.redmoon.oa.LogDb.TYPE_HACK, "SQL_INJ " + sourceUrl + " " + param + "=" + value);
+                info = "SQL注入：参数 " + param + "，已记录！";
+            }
+            return AppErrorResponseEntity.init(AppErrorResponseEntity.Status.PROTECT.getCode(), info);
+        }
+        else {
+            return AppErrorResponseEntity.init(status, String.valueOf(map.getOrDefault("message", "Unknown error.")));
+        }
     }
 
     private int getStatus(HttpServletRequest request) {

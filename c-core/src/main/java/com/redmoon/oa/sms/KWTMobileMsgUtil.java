@@ -5,10 +5,6 @@ import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 
 import com.redmoon.oa.person.*;
-
-import org.apache.log4j.*;
-
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Vector;
@@ -30,8 +26,6 @@ import java.sql.*;
  * @version 1.0
  */
 public class KWTMobileMsgUtil implements IMsgUtil {
-    Logger logger = Logger.getLogger(KWTMobileMsgUtil.class.getName());
-
     public synchronized void increaseTailAddr() {
     }
 
@@ -66,7 +60,6 @@ public class KWTMobileMsgUtil implements IMsgUtil {
         //int id = ssrd.getId();
         // re = sendSMS(msgText, user.getMobile(), "1", ""+id, "vip", "9");
         // if (re) {
-        //System.out.println(this.getClass().getName()+"调用的send（UserDb）方法");
         String[] contexts = divContext(msgText);
         for(int i = 0; i < contexts.length; i ++){
             ssrd.setUserName(sender);
@@ -118,9 +111,8 @@ public class KWTMobileMsgUtil implements IMsgUtil {
 	    	rs.close();
 	    	stmt.close();
 	    	conn.close();
-	    	
 		} catch (Exception e) {
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}finally {
 			if (conn1 != null) {
 				conn1.close();
@@ -147,7 +139,6 @@ public class KWTMobileMsgUtil implements IMsgUtil {
         SMSSendRecordDb ssrd = new SMSSendRecordDb();
         //int id = ssrd.getId();
         // re = sendSMS(msgText, mobile, "1", ""+id, "vip", "9");
-        //System.out.println(this.getClass().getName()+"调用的send（mobile）方法");
             // 记录发送的短信
         String[] contexts = divContext(msgText);
         for(int i = 0; i < contexts.length; i ++){
@@ -182,7 +173,6 @@ public class KWTMobileMsgUtil implements IMsgUtil {
 		UserDb user = new UserDb(userName);
 
         String exNumber = StrUtil.PadString(user.getId()+"",'0',4,true) ;
-        //System.out.println(exNumber);
         //int id = Integer.parseInt(StrUtil.PadString(ssrd.getUserName(),'0',4,true));
         return sendSMS(msg, mobile, "1", ""+id, "vip", exNumber);
     }
@@ -232,8 +222,7 @@ public class KWTMobileMsgUtil implements IMsgUtil {
 	    	stmt.close();
 	    	conn.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
    
         return true;
@@ -251,7 +240,6 @@ public class KWTMobileMsgUtil implements IMsgUtil {
         //int id = ssrd.getId();
         // re = sendSMS(msgText, user.getMobile(), "1", ""+id, "vip", "9");
         // if (re){
-        //System.out.println(this.getClass().getName()+"调用的send（UserDb）方法");
         String[] contexts = divContext(content);
         for(int i = 0; i < contexts.length; i ++){
             ssrd.setUserName(sender);
@@ -276,7 +264,7 @@ public class KWTMobileMsgUtil implements IMsgUtil {
         SMSSendRecordDb ssrd = new SMSSendRecordDb();
         //int id = ssrd.getId();
         // re = sendSMS(msgText, mobile, "1", ""+id, "vip", "9");
-        //System.out.println(this.getClass().getName()+"调用的send（mobile）方法");
+        //LogUtil.getLog(getClass()).info(this.getClass().getName()+"调用的send（mobile）方法");
             // 记录发送的短信
         String[] contexts = divContext(content);
         for(int i = 0; i < contexts.length; i ++){

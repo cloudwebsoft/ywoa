@@ -206,14 +206,10 @@ public class NoticeAttachmentDb implements Serializable {
         try {
             pstmt = conn.prepareStatement(LOAD);
             pstmt.setLong(1, id);
-            // System.out.println("attach id=" + id);
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
-//String LOAD = "SELECT notice_id, name, diskname, visualpath, orders FROM oa_notice_attach WHERE id=?";
                 noticeId = rs.getLong(1);
                 name = rs.getString(2);
-                // System.out.println("attach name=" + name);
-                // System.out.println("attach fullPath=" + fullPath);
                 diskName = rs.getString(3);
                 visualPath = rs.getString(4);
                 orders = rs.getInt(5);
@@ -226,7 +222,9 @@ public class NoticeAttachmentDb implements Serializable {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {

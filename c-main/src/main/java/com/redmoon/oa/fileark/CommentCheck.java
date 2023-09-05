@@ -5,7 +5,8 @@ import cn.js.fan.security.SecurityUtil;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ErrMsgException;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.IPUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class CommentCheck extends AbstractCheck {
     int id;
@@ -14,8 +15,6 @@ public class CommentCheck extends AbstractCheck {
     String content;
     String ip;
     int doc_id;
-
-    Logger logger = Logger.getLogger(CommentCheck.class.getName());
 
     public CommentCheck() {
     }
@@ -78,7 +77,7 @@ public class CommentCheck extends AbstractCheck {
     }
 
     public String chkIp(HttpServletRequest request) {
-        ip = request.getRemoteAddr();
+        ip = IPUtil.getRemoteAddr(request);
         return ip;
     }
 
@@ -87,7 +86,7 @@ public class CommentCheck extends AbstractCheck {
             doc_id = ParamUtil.getInt(request, "doc_id");
         }
         catch (ErrMsgException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw e;
         }
         return doc_id;

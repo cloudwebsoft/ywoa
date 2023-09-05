@@ -1,12 +1,14 @@
 package com.redmoon.oa.emailpop3;
 
+import cn.js.fan.db.Conn;
+import cn.js.fan.web.Global;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
-import java.io.*;
-import java.sql.*;
-
-import cn.js.fan.db.*;
-import cn.js.fan.web.*;
-import org.apache.log4j.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Attachment {
     int id;
@@ -20,7 +22,6 @@ public class Attachment {
 
     String LOAD = "SELECT emailId, name, fullpath, diskname, visualpath, orders, file_size FROM email_attach WHERE id=?";
     String SAVE = "update email_attach set emailId=?, name=?, fullpath=?, diskname=?, visualpath=?, orders=? WHERE id=?";
-    Logger logger = Logger.getLogger(Attachment.class.getName());
 
     public Attachment() {
         connname = Global.getDefaultDB();
@@ -28,8 +29,9 @@ public class Attachment {
 
     public Attachment(int id) {
         connname = Global.getDefaultDB();
-        if (connname.equals(""))
-            logger.info("Attachment:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("Attachment:默认数据库名为空！");
+        }
         this.id = id;
         loadFromDb();
     }
@@ -48,15 +50,13 @@ public class Attachment {
             pstmt.setString(5, visualPath);
             pstmt.setInt(6, orders);
             pstmt.setLong(7, fileSize);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -68,21 +68,20 @@ public class Attachment {
         try {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
             return false;
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
+
         // 删除文件
-        File fl = new File(Global.getRealPath() + visualPath + "/" + diskName);
-        fl.delete();
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
+        fileService.del(visualPath, diskName);
+
         return re;
     }
 
@@ -98,15 +97,13 @@ public class Attachment {
             pstmt.setString(5, visualPath);
             pstmt.setInt(6, orders);
             pstmt.setInt(7, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -190,14 +187,11 @@ public class Attachment {
         try {
             pstmt = conn.prepareStatement(LOAD);
             pstmt.setInt(1, id);
-            // System.out.println("attach id=" + id);
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 emailId = rs.getInt(1);
                 name = rs.getString(2);
-                // System.out.println("attach name=" + name);
                 fullPath = rs.getString(3);
-                // System.out.println("attach fullPath=" + fullPath);
                 diskName = rs.getString(4);
                 visualPath = rs.getString(5);
                 orders = rs.getInt(6);
@@ -205,18 +199,14 @@ public class Attachment {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
                 } catch (Exception e) {}
-                rs = null;
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 

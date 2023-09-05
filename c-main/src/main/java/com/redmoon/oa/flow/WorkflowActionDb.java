@@ -1,12 +1,14 @@
 package com.redmoon.oa.flow;
 
 import cn.js.fan.db.Conn;
-import cn.js.fan.db.ResultIterator;
-import cn.js.fan.db.ResultRecord;
-import cn.js.fan.util.*;
+import cn.js.fan.util.DateUtil;
+import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.NumberUtil;
+import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
 import com.cloudweb.oa.api.IWorkflowHelper;
+import com.cloudweb.oa.api.IWorkflowScriptUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.aop.Pointcut.MethodNamePointcut;
 import com.cloudwebsoft.framework.aop.ProxyFactory;
@@ -17,7 +19,8 @@ import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.dept.DeptUserDb;
-import com.redmoon.oa.flow.macroctl.*;
+import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
+import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
 import com.redmoon.oa.flow.strategy.IStrategy;
 import com.redmoon.oa.flow.strategy.StrategyMgr;
 import com.redmoon.oa.flow.strategy.StrategyUnit;
@@ -32,7 +35,6 @@ import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sys.DebugUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -66,21 +68,48 @@ import java.util.*;
  */
 public class WorkflowActionDb implements Serializable {
     String connname = "";
-    final String INSERT = "insert into flow_action (id,flow_id,isStart,reason,status,title,userName,internal_name,office_color_index,userRealName,jobCode,jobName,proxyJobCode,proxyJobName,proxyUserName,proxyUserRealName,resultValue,fieldWrite,taskId,dept,flag,nodeMode,mydate,strategy,item1,item2,is_msg) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?," + RESULT_VALUE_NOT_ACCESSED + ",?,?,?,?,?,?,?,?,?,?)";
+
+    public static final int RESULT_VALUE_AGGREE = 1;
+    public static final int RESULT_VALUE_DISAGGREE = -1;
+    public static final int RESULT_VALUE_CONTINUE = 2; // 继续
+    public static final int RESULT_VALUE_NOT_ACCESSED = -2; // 未处理
+    public static final int RESULT_VALUE_RETURN = 3; // 返回
+    public static final int RESULT_VALUE_TO_RETUNER = 4; // 直送
+    public static final int RESULT_VALUE_READED = 5; // 审阅
+
+    static final String INSERT = "insert into flow_action (id,flow_id,isStart,reason,status,title,userName,internal_name,office_color_index,userRealName,jobCode,jobName,proxyJobCode,proxyJobName,proxyUserName,proxyUserRealName,resultValue,fieldWrite,taskId,dept,flag,nodeMode,mydate,strategy,item1,item2,is_msg) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?," + RESULT_VALUE_NOT_ACCESSED + ",?,?,?,?,?,?,?,?,?,?)";
     final String LOAD = "select id,flow_id,isStart,reason,status,title,userName,internal_name,office_color_index,userRealName,jobCode,jobName,proxyJobCode,proxyJobName,proxyUserName,proxyUserRealName,result,checkDate,resultValue,checkUserName,fieldWrite,taskId,dept,flag,nodeMode,strategy,item1,item2,plus,date_delayed,can_distribute,is_msg from flow_action where id=?";
     final String SAVE = "update flow_action set flow_id=?,isStart=?,reason=?,status=?,title=?,userName=?,office_color_index=?,userRealName=?,jobCode=?,jobName=?,proxyJobCode=?,proxyJobName=?,proxyUserName=?,proxyUserRealName=?,result=?,checkDate=?,resultValue=?,checkUserName=?,fieldWrite=?,taskId=?,dept=?,flag=?,nodeMode=?,strategy=?,item1=?,item2=?,plus=?,date_delayed=?,can_distribute=?,is_msg=? where id=?";
     private String userRealName = "-1";
     final String DELETE = "delete from flow_action where id=?";
 
+    /**
+     * 未处理
+     */
     public static final int STATE_NOTDO = 0;
+    /**
+     * 忽略/跳过
+     */
     public static final int STATE_IGNORED = 1;
+    /**
+     * 正在办理
+     */
     public static final int STATE_DOING = 2;
+    /**
+     * 被退回
+     */
     public static final int STATE_RETURN = 3;
+    /**
+     * 已处理
+     */
     public static final int STATE_FINISHED = 4;
+    /**
+     * 已放弃
+     */
     public static final int STATE_DISCARDED = -1;
 
     /**
-     * 指派
+     * 转办
      */
     public static final int STATE_TRANSFERED = 5;
     /**
@@ -102,14 +131,6 @@ public class WorkflowActionDb implements Serializable {
      * 被延迟
      */
     public static final int STATE_DELAYED = 9;
-    
-    public static final int RESULT_VALUE_AGGREE = 1;
-    public static final int RESULT_VALUE_DISAGGREE = -1;
-    public static final int RESULT_VALUE_CONTINUE = 2; // 继续
-    public static final int RESULT_VALUE_NOT_ACCESSED = -2; // 未处理
-    public static final int RESULT_VALUE_RETURN = 3; // 返回
-    public static final int RESULT_VALUE_TO_RETUNER = 4; // 直送
-    public static final int RESULT_VALUE_READED = 5; // 审阅
 
     /**
      * 自选用户
@@ -162,9 +183,11 @@ public class WorkflowActionDb implements Serializable {
 
     public static final int NODE_MODE_ROLE = 0; // 表示userName中记录的是role
     public static final int NODE_MODE_USER = 1; // 表示userName中记录的是user
+    public static final int NODE_MODE_POST = 4; // 表示userName中记录的是职位
 
     public static final int NODE_MODE_ROLE_SELECTED = 2; // 表示角色已被选择，人员被确定
     public static final int NODE_MODE_USER_SELECTED = 3; // 表示用户已被选择，人员被确定
+    public static final int NODE_MODE_POST_SELECTED = 5; // 表示职位已被选择，人员被确定
 
     public static final int DIRECTION_DOWN = 0;
     public static final int DIRECTION_PARALLEL_MYDEPT =1; // 本部门及平行部门
@@ -318,7 +341,7 @@ public class WorkflowActionDb implements Serializable {
         isStart = 0;
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            Logger.getLogger(getClass()).info("Directory:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名为空！");
         }
     }
 
@@ -341,7 +364,7 @@ public class WorkflowActionDb implements Serializable {
         if (!beforeChangeStatusFree(request, wf, checkUserName, newstatus, reason, myActionId)) {
             return false;
         }
-        // Logger.getLogger(getClass()).info("changeStatus userName=" + getUserName() + " roleName=" + getJobName() + " status desc=" + getStatusName());
+        // LogUtil.getLog(getClass()).info("changeStatus userName=" + getUserName() + " roleName=" + getJobName() + " status desc=" + getStatusName());
 
         MyActionDb mad = new MyActionDb();
         mad = mad.getMyActionDb(myActionId);
@@ -422,7 +445,7 @@ public class WorkflowActionDb implements Serializable {
 
         setStatus(newstatus);
 
-        // Logger.getLogger(getClass()).info("changeStatus: userRealName=" + getUserRealName() + " jobName=" + getJobName() + " statusName=" + getStatusName());
+        // LogUtil.getLog(getClass()).info("changeStatus: userRealName=" + getUserRealName() + " jobName=" + getJobName() + " statusName=" + getStatusName());
         boolean re = save();
         if (re) {
             // 如果本action为start即开始节点，并且被打回，则置流程状态为未开始
@@ -545,7 +568,7 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (JSONException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         // 检查加签人员是否已处理完毕，加签人员应不能打回操作
         if (plusUsers == null) {
@@ -640,12 +663,10 @@ public class WorkflowActionDb implements Serializable {
 
                 } else {
                     // 全部加签人员处理完毕，则给原处理者发待办通知
-                    Vector v = mad.getPlusMyActionDbs(mad.getActionId());
-                    LogUtil.getLog(getClass()).info("v.size()=" + v.size());
-                    Iterator ir = v.iterator();
                     boolean isPlusFinished = true;
-                    while (ir.hasNext()) {
-                        MyActionDb mad2 = (MyActionDb) ir.next();
+                    Vector v = mad.getPlusMyActionDbs(mad.getActionId());
+                    for (Object o : v) {
+                        MyActionDb mad2 = (MyActionDb) o;
                         LogUtil.getLog(getClass()).info("mad2.getCheckStatus()=" + mad2.getCheckStatus());
 
                         if (mad2.getCheckStatus() == MyActionDb.CHECK_STATUS_NOT) {
@@ -670,9 +691,8 @@ public class WorkflowActionDb implements Serializable {
                 }
 
                 Vector v = mad.getPlusMyActionDbs(mad.getActionId());
-                Iterator ir = v.iterator();
-                while (ir.hasNext()) {
-                    MyActionDb mad2 = (MyActionDb) ir.next();
+                for (Object o : v) {
+                    MyActionDb mad2 = (MyActionDb) o;
                     if (mad2.getCheckStatus() == MyActionDb.CHECK_STATUS_NOT) {
                         return true;
                     }
@@ -694,9 +714,8 @@ public class WorkflowActionDb implements Serializable {
                 } else if (plusMode == PLUS_MODE_ONE) { // 如果有一人处理完毕即继续流转
                     // 删除其它的加签MyActionDb
                     Vector v = mad.getPlusMyActionDbs(mad.getActionId());
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        MyActionDb mad2 = (MyActionDb) ir.next();
+                    for (Object o : v) {
+                        MyActionDb mad2 = (MyActionDb) o;
                         if (!mad2.getUserName().equals(mad.getUserName())) {
                             mad2.del();
                         }
@@ -704,9 +723,8 @@ public class WorkflowActionDb implements Serializable {
                 } else {
                     // 全部加签人员尚未处理完毕，则退出
                     Vector v = mad.getPlusMyActionDbs(mad.getActionId());
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        MyActionDb mad2 = (MyActionDb) ir.next();
+                    for (Object o : v) {
+                        MyActionDb mad2 = (MyActionDb) o;
                         if (mad2.getCheckStatus() == MyActionDb.CHECK_STATUS_NOT) {
                             return true;
                         }
@@ -722,9 +740,9 @@ public class WorkflowActionDb implements Serializable {
                                                       WorkflowActionDb.STATE_PLUS, getFlowId());
                     wf.sendNotifyMsgAndEmail(request, newmad, sendmail);
                 } else {
-                    for (int i = 0; i < plusUsers.length; i++) {
-                        MyActionDb newmad = wf.notifyUser(plusUsers[i], new java.util.Date(), mad.getId(), privAction, this,
-                                                          WorkflowActionDb.STATE_PLUS, getFlowId());
+                    for (String plusUser : plusUsers) {
+                        MyActionDb newmad = wf.notifyUser(plusUser, new Date(), mad.getId(), privAction, this,
+                                WorkflowActionDb.STATE_PLUS, getFlowId());
                         wf.sendNotifyMsgAndEmail(request, newmad, sendmail);
                     }
                 }
@@ -732,9 +750,8 @@ public class WorkflowActionDb implements Serializable {
             } else if (plusType == WorkflowActionDb.PLUS_TYPE_CONCURRENT) { // 并签
                 // 如果其它加签人员没有处理完毕，则退出
                 Vector v = mad.getPlusMyActionDbs(mad.getActionId());
-                Iterator ir = v.iterator();
-                while (ir.hasNext()) {
-                    MyActionDb mad2 = (MyActionDb) ir.next();
+                for (Object o : v) {
+                    MyActionDb mad2 = (MyActionDb) o;
                     if (mad2.getCheckStatus() == MyActionDb.CHECK_STATUS_NOT) {
                         return true;
                     }
@@ -783,20 +800,18 @@ public class WorkflowActionDb implements Serializable {
             WorkflowActionDb wa = new WorkflowActionDb();
             wa = wa.getWorkflowActionDb((int) mad.getActionId());
             String strategy = wa.getStrategy();
-            Logger.getLogger(getClass()).info("changeStatus:strategy=" + strategy);
+            LogUtil.getLog(getClass()).info("changeStatus:strategy=" + strategy);
             if (!"".equals(strategy)) {
                 StrategyMgr sm = new StrategyMgr();
                 StrategyUnit su = sm.getStrategyUnit(strategy);
-                Logger.getLogger(getClass()).info("changeStatus:su=" + su);
+                LogUtil.getLog(getClass()).info("changeStatus:su=" + su);
                 if (su != null) {
                     IStrategy ist = su.getIStrategy();
                     ist.onActionFinished(request, wf, mad);
                 }
             }
         }
-
-        Logger.getLogger(getClass()).info("changeStatus: newstatus=" + newstatus + " status=" + status);
-
+        
         // 如果更改动作的状态为完成，则置审批时间
         if (newstatus == STATE_FINISHED) {
             setCheckDate(new java.util.Date());
@@ -808,7 +823,7 @@ public class WorkflowActionDb implements Serializable {
 
             // 检查当节点上的被选人员有多人时，判断每个人是否都已处理完毕
             String[] users = StrUtil.split(userName, ",");
-            Logger.getLogger(getClass()).info("changeStatus: userName=" + userName);
+            LogUtil.getLog(getClass()).info("changeStatus: userName=" + userName);
             int len = (users == null ? 0 : users.length);
             boolean canFinish = false;
             // len==1的情况不能考虑，因为可能有加签，此时userName只有1个用户，而实际上还有加签的待办记录存在
@@ -822,14 +837,14 @@ public class WorkflowActionDb implements Serializable {
                 else {
                     newstatus = status; // 恢复为以前的状态
                 }
-                Logger.getLogger(getClass()).info("changeStatus: isAllUserOfActionChecked=" + canFinish);
+                LogUtil.getLog(getClass()).info("changeStatus: isAllUserOfActionChecked=" + canFinish);
             }
-            Logger.getLogger(getClass()).info("changeStatus: canFinish=" + canFinish);
+            LogUtil.getLog(getClass()).info("changeStatus: canFinish=" + canFinish);
             if (canFinish) {
                 setStatus(newstatus);
             }
         }
-        // 如果是指派后返回给了原指派者，则两者是在同一节点上，返回后节点状态应为STATE_DOING
+        // 如果是转办后返回给了原转办者，则两者是在同一节点上，返回后节点状态应为STATE_DOING
         else if (newstatus==STATE_NOTDO && status==STATE_RETURN) {
             if (returnIds==null || returnIds.length==0) {
                 throw new ErrMsgException("请选择将要返回的用户！");
@@ -837,7 +852,7 @@ public class WorkflowActionDb implements Serializable {
             
             // 手机端发过来的，有时好象会带有换行符，所以要trim
             /*int returnId = Integer.parseInt(returnIds[0].trim());
-            Logger.getLogger(getClass()).info("changeStatus: returnId=" + returnId + " id=" + id);
+            LogUtil.getLog(getClass()).info("changeStatus: returnId=" + returnId + " id=" + id);
             if (returnId == id) {
             	// 不需要再赋值，因为已经是STATE_RETURN
             	 newstatus = STATE_RETURN;
@@ -863,10 +878,10 @@ public class WorkflowActionDb implements Serializable {
             }
         }
 
-        Logger.getLogger(getClass()).info("changeStatus: userRealName=" + getUserRealName() + " jobName=" + getJobName() + " statusName=" + getStatusName());
+        LogUtil.getLog(getClass()).info("changeStatus: userRealName=" + getUserRealName() + " jobName=" + getJobName() + " statusName=" + getStatusName());
         
         boolean re = save();
-        Logger.getLogger(getClass()).info("changeStatus: re=" + re);
+        LogUtil.getLog(getClass()).info("changeStatus: re=" + re);
         if (re) {
             // 如果本节点为即开始节点，并且被打回，则置流程状态为未开始
             if (newstatus==STATE_RETURN && getIsStart()==1) {
@@ -880,7 +895,7 @@ public class WorkflowActionDb implements Serializable {
             WorkflowCacheMgr wcm = new WorkflowCacheMgr();
             wcm.refreshList();
 
-            Logger.getLogger(getClass()).info("changeStatus: newstatus=" + newstatus);
+            LogUtil.getLog(getClass()).info("changeStatus: newstatus=" + newstatus);
 
             // 流程状态改变后
             wf = wf.getWorkflowDb(wf.getId());
@@ -1022,7 +1037,6 @@ public class WorkflowActionDb implements Serializable {
      */
     public boolean isStrategyGoDown() {
     	String strategy = getStrategy();
-    	// System.out.println(getClass() + " " + getTitle() + " " + strategy);
         if (!strategy.equals("")) {
             StrategyMgr sm = new StrategyMgr();
             StrategyUnit su = sm.getStrategyUnit(strategy);
@@ -1055,39 +1069,38 @@ public class WorkflowActionDb implements Serializable {
     }
 
     /**
-     * 置节点上的用户，用于当跳过节点匹配时
+     * 置节点上的用户，用于当跳过节点或批量处理匹配时
      * @param wad WorkflowActionDb
      * @param v Vector 用户UserDb
      */
-    public static void setActionUserOnMatch(WorkflowActionDb wad, Vector v) throws ErrMsgException {
-        String uNames = "", uRealNames = "";
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
-            UserDb user = (UserDb)ir.next();
+    public static void setActionUserOnMatch(WorkflowActionDb wad, Vector<UserDb> v) throws ErrMsgException {
+        StringBuilder uNames = new StringBuilder();
+        StringBuilder uRealNames = new StringBuilder();
+        for (UserDb user : v) {
             if (!user.isLoaded()) {
-            	continue;
+                continue;
             }
             String userRealName = user.getRealName();
-            if (uNames.equals("")) {
-                uNames = user.getName();
-                uRealNames = userRealName;
+            if ("".equals(uNames.toString())) {
+                uNames = new StringBuilder(user.getName());
+                uRealNames = new StringBuilder(userRealName);
             } else {
-                uNames += "," + user.getName();
-                uRealNames += "," + userRealName;
+                uNames.append(",").append(user.getName());
+                uRealNames.append(",").append(userRealName);
             }
         }
 
-        wad.setUserName(uNames);
-        wad.setUserRealName(uRealNames);
+        wad.setUserName(uNames.toString());
+        wad.setUserRealName(uRealNames.toString());
         // 为了便于用户在选错后再选，会出现多次匹配的问题
-        if (wad.getNodeMode() == NODE_MODE_ROLE ||
-            wad.getNodeMode() ==
-            WorkflowActionDb.NODE_MODE_ROLE_SELECTED) {
-            wad.setNodeMode(WorkflowActionDb.
-                            NODE_MODE_ROLE_SELECTED);
-        } else {
-            wad.setNodeMode(WorkflowActionDb.
-                            NODE_MODE_USER_SELECTED);
+        if (wad.getNodeMode() == NODE_MODE_ROLE || wad.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE_SELECTED) {
+            wad.setNodeMode(WorkflowActionDb.NODE_MODE_ROLE_SELECTED);
+        }
+        else if (wad.getNodeMode() == NODE_MODE_POST || wad.getNodeMode() == WorkflowActionDb.NODE_MODE_POST_SELECTED) {
+            wad.setNodeMode(WorkflowActionDb.NODE_MODE_POST_SELECTED);
+        }
+        else {
+            wad.setNodeMode(WorkflowActionDb.NODE_MODE_USER_SELECTED);
         }
         wad.save();
     }
@@ -1118,13 +1131,18 @@ public class WorkflowActionDb implements Serializable {
      */
     public boolean canDecline() {
     	if (flag.length()>=9) {
-    		if (flag.substring(8, 9).equals("1"))
-    			return true;
-    		else
-    			return false;
-    	}
-    	else
-    		return true;
+            return flag.substring(8, 9).equals("1");
+    	} else {
+            return true;
+        }
+    }
+
+    /**
+     * 能否放弃
+     * @return
+     */
+    public boolean canDiscard() {
+        return flag.length() >= 3 && "1".equals(flag.substring(2, 3));
     }
     
     /**
@@ -1179,31 +1197,38 @@ public class WorkflowActionDb implements Serializable {
      */
     public boolean canEditAttachment() {
     	if (flag.length()>=10) {
-    		if (flag.substring(9, 10).equals("1"))
-    			return true;
-    		else
-    			return false;
-    	}
-    	else
-    		return true;
+            return flag.substring(9, 10).equals("1");
+    	} else {
+            return true;
+        }
     }
     
     /**
-     * 能否定稿，即接受修订
+     * 能否套红
      * 20130720 fgf
      * @return
      */
     public boolean canReceiveRevise() {
     	if (flag.length()>=11) {
-    		if (flag.substring(10, 11).equals("1"))
-    			return true;
-    		else
-    			return false;
+            return "1".equals(flag.substring(10, 11));
     	}
-    	else
-    		return true;
-    }    
-    
+    	else {
+            return false;
+        }
+    }
+
+    /**
+     * 能否盖章
+     * @return
+     */
+    public boolean canSeal() {
+        if (flag.length()>=15) {
+            return "1".equals(flag.substring(14, 15));
+        } else {
+            return false;
+        }
+    }
+
     /**
      * 能否删除附件
      * 20130720 fgf
@@ -1211,13 +1236,11 @@ public class WorkflowActionDb implements Serializable {
      */
     public boolean canDelAttachment() {
     	if (flag.length()>=6) {
-    		if (flag.substring(5, 6).equals("1"))
-    			return true;
-    		else
-    			return false;
+            return flag.substring(5, 6).equals("1");
     	}
-    	else
-    		return true;
+    	else {
+            return true;
+        }
     }     
 
     /**
@@ -1225,18 +1248,15 @@ public class WorkflowActionDb implements Serializable {
      * @return boolean
      */
     public boolean isXorAggregate() {
-        Vector vfrom = getLinkFromActions();
+        Vector<WorkflowActionDb> vfrom = getLinkFromActions();
         boolean flagXorAggregate = false;
         if (flag.length() >= 8) {
-            if (flag.substring(7, 8).equals("1")) {
+            if ("1".equals(flag.substring(7, 8))) {
                 flagXorAggregate = true;
             }
         }
 
-        if (flagXorAggregate && vfrom.size() > 1) {
-            return true;
-        }
-        return false;
+        return flagXorAggregate && vfrom.size() > 1;
     }
 
     /**
@@ -1279,11 +1299,8 @@ public class WorkflowActionDb implements Serializable {
         }
         */
 
-        // System.out.println(getClass() + " " + nextwa.getTitle() + " nextwa.getUserName()=" + nextwa.getUserName() + " isNextActionSingle=" + isNextActionSingle);
-
         // 如果下一节点只有一个，且被忽略，并且节点上未选择用户
         if (nextwa.getStatus()==WorkflowActionDb.STATE_IGNORED && isNextActionSingle) {
-            // System.out.println(getClass() + " " + nextwa.getTitle() + " nextwa.getJobName()=" + nextwa.getJobName() + " nextwa.getUserName()=" + nextwa.getUserName());
             /* 如果用户为空，有可能是因为节点被跳过，在没有跳过功能前，这里是为了防止没有选择用户
             if (nextwa.getUserName().equals("")) {
                 if (nextwa.getJobCode().equals(PRE_TYPE_USER_SELECT))
@@ -1298,113 +1315,109 @@ public class WorkflowActionDb implements Serializable {
 
         LogUtil.getLog(getClass()).info("checkActionUser: getJobCode=" + nextwa.getJobCode() + " getJobName=" + nextwa.getJobName() + " getUserName=" + nextwa.getUserName());
 
-        // 如果下一节点未被忽略，且节点上未选择用户
-        if (nextwa.getUserName().equals("") && nextwa.getStatus()!=WorkflowActionDb.STATE_IGNORED) {
-            if (nextwa.getJobCode().equals(PRE_TYPE_USER_SELECT) || nextwa.getJobCode().equals(PRE_TYPE_USER_SELECT_IN_ADMIN_DEPT)) {
-            	if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
-            		throw new ErrMsgException("请先选择下一节点上的办理用户！");
-            	}
-            } else {
-                // throw new ErrMsgException("请先选择角色编码为" + nextwa.getJobCode() +
-                //                          "的节点上的用户！");
-                // 如果节点上能够匹配到用户，则报异常，匹配不到，则有可能会自动跳过
-                Vector vt = null;
-                String errMsg = "";
-                try {
-                    String deptOfUserWithMultiDept = getDeptOfUserWithMultiDept(request);
-                    WorkflowRouter workflowRouter = new WorkflowRouter();
-                    vt = workflowRouter.matchActionUser(request, nextwa, curAction, false, deptOfUserWithMultiDept);
-                }
-                catch (MatchUserException e) {
-                    ////////// 允许用户处于多个部门，流转时让其自行选择
-                    throw new ErrMsgException("请选择您所在的部门！");
-                }
-                catch (ErrMsgException ex1) {
-                    // ex1.printStackTrace();
-                    // 匹配时报异常，说明匹配有问题，比如：当关联组织机构时，节点中有多个人员，无法关联
-                    // 或者当用户处于多个部门中，而没有在flow_dispose.jsp中选择部门便提交，此时deptOfUserWithMultiDept为空字符串(而不是null)，matchActionUser便会报异常
-                    errMsg = ex1.getMessage();
-                }
-                if (!errMsg.equals("")) {
-                    throw new ErrMsgException("匹配用户出错：" + errMsg + "！");
-                }
-
-                LogUtil.getLog(getClass()).info("checkActionUser: getJobCode=" + nextwa.getJobCode() +
-                                                " getJobName=" + nextwa.getJobName() + " getUserName=" +
-                                                    nextwa.getUserName());
-
-                if (nextwa.getJobCode().startsWith(PRE_TYPE_FIELD_USER)) {
-                    // 在checkActionUser之前已经保存了表单，所以需在此再次匹配
-                    if (vt.size()==0) {
-                    	// 如果无用户跳过，或者用户之前处理过，则跳过
-                    	if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
-                            throw new ErrMsgException("请填写" + nextwa.getJobName());
-                        }
+        // 如果节点上未选择用户
+        if (StrUtil.isEmpty(nextwa.getUserName())) {
+            // 如果未被忽略，或者是虽然被忽略，但下一节点为异步聚合，则需检查是否选择了用户
+            if (nextwa.getStatus()!=WorkflowActionDb.STATE_IGNORED || (nextwa.getStatus()==WorkflowActionDb.STATE_IGNORED && nextwa.isXorAggregate())) {
+                if (nextwa.getJobCode().equals(PRE_TYPE_USER_SELECT) || nextwa.getJobCode().equals(PRE_TYPE_USER_SELECT_IN_ADMIN_DEPT)) {
+                    if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
+                        throw new ErrMsgException("请先选择下一节点上的办理用户！");
                     }
-                    else {
-                        String uNames = "";
-                        String uRealNames = "";
-                        Iterator ir = vt.iterator();
-                        while (ir.hasNext()) {
-                            UserDb user = (UserDb)ir.next();
-                            if (uNames.equals("")) {
-                                uNames = user.getName();
-                                uRealNames = user.getRealName();
-                            }
-                            else {
-                                uNames += "," + user.getName();
-                                uRealNames += "," + user.getRealName();
-                            }
-                        }
-                        nextwa.setUserName(uNames);
-                        nextwa.setUserRealName(uRealNames);
-                        nextwa.save();
+                } else {
+                    // throw new ErrMsgException("请先选择角色编码为" + nextwa.getJobCode() +
+                    //                          "的节点上的用户！");
+                    // 如果节点上能够匹配到用户，则报异常，匹配不到，则有可能会自动跳过
+                    Vector vt = null;
+                    String errMsg = "";
+                    try {
+                        String deptOfUserWithMultiDept = getDeptOfUserWithMultiDept(request);
+                        WorkflowRouter workflowRouter = new WorkflowRouter();
+                        vt = workflowRouter.matchActionUser(request, nextwa, curAction, false, deptOfUserWithMultiDept);
+                    } catch (MatchUserException e) {
+                        ////////// 允许用户处于多个部门，流转时让其自行选择
+                        throw new ErrMsgException("请选择您所在的部门！");
+                    } catch (ErrMsgException ex1) {
+                        // ex1.printStackTrace();
+                        // 匹配时报异常，说明匹配有问题，比如：当关联组织机构时，节点中有多个人员，无法关联
+                        // 或者当用户处于多个部门中，而没有在flow_dispose.jsp中选择部门便提交，此时deptOfUserWithMultiDept为空字符串(而不是null)，matchActionUser便会报异常
+                        errMsg = ex1.getMessage();
                     }
-                }
-                else {
-                    // 如果vt.size()==1，则表示匹配到了一个用户，则WorkflowActionDb中的用户会被填充
-                    // 匹配到了多个用户，则说明在flow_dipose.jsp页面上没有选择用户
-                    
-                	// 如果当前节点为子流程，则当节点上存在多个人员时，nextwa.getUserName()可以为空
-                	if (curAction.getKind() == WorkflowActionDb.KIND_SUB_FLOW) {
-                	
-                	}
-                	else {
-	                	if (vt != null && vt.size() != 0 && vt.size() != 1) {
+                    if (!errMsg.equals("")) {
+                        throw new ErrMsgException("匹配用户出错：" + errMsg + "！");
+                    }
+
+                    LogUtil.getLog(getClass()).info("checkActionUser: getJobCode=" + nextwa.getJobCode() +
+                            " getJobName=" + nextwa.getJobName() + " getUserName=" +
+                            nextwa.getUserName());
+
+                    if (nextwa.getJobCode().startsWith(PRE_TYPE_FIELD_USER)) {
+                        // 在checkActionUser之前已经保存了表单，所以需在此再次匹配
+                        if (vt.size() == 0) {
+                            // 如果无用户跳过，或者用户之前处理过，则跳过
+                            if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
+                                throw new ErrMsgException("请填写" + nextwa.getJobName());
+                            }
+                        } else {
+                            String uNames = "";
+                            String uRealNames = "";
+                            Iterator ir = vt.iterator();
+                            while (ir.hasNext()) {
+                                UserDb user = (UserDb) ir.next();
+                                if (uNames.equals("")) {
+                                    uNames = user.getName();
+                                    uRealNames = user.getRealName();
+                                } else {
+                                    uNames += "," + user.getName();
+                                    uRealNames += "," + user.getRealName();
+                                }
+                            }
+                            nextwa.setUserName(uNames);
+                            nextwa.setUserRealName(uRealNames);
+                            nextwa.save();
+                        }
+                    } else {
+                        // 如果vt.size()==1，则表示匹配到了一个用户，则WorkflowActionDb中的用户会被填充
+                        // 匹配到了多个用户，则说明在flow_dipose.jsp页面上没有选择用户
+
+                        // 如果当前节点为子流程，则当节点上存在多个人员时，nextwa.getUserName()可以为空
+                        if (curAction.getKind() == WorkflowActionDb.KIND_SUB_FLOW) {
+
+                        } else {
+                            if (vt != null && vt.size() != 0 && vt.size() != 1) {
 	                        /*Iterator ir = vt.iterator();
 	                        while (ir.hasNext()) {
 	                            UserDb user = (UserDb) ir.next();
 	                            LogUtil.getLog(getClass()).info("checkActionUser:" + user.getName() + "  " +
 	                                                            user.getRealName());
 	                        }*/
-	                        if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
-                                // 如果nextwa中无用户，而此方法中matchActionUser又得到了用户，说明在flow_dipose.jsp页面上没有选择用户
-	                        	throw new ErrMsgException("请先选择用户！");
-	                        }
-	                    }
-	                	else {
-	                	     // 如果vt的size为0
-                            if (vt.size()==0) {
                                 if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
-                                    // 检查限定部门表单域是否未选择
-                                    String deptField = StrUtil.getNullStr(WorkflowActionDb.getActionProperty(wpd, nextwa.getInternalName(), "deptField"));
-                                    if (!"".equals(deptField)) {
-                                        Leaf lf = new Leaf();
-                                        lf = lf.getLeaf(wf.getTypeCode());
-                                        FormDb fd = new FormDb();
-                                        fd = fd.getFormDb(lf.getFormCode());
-                                        FormDAO fdao = new FormDAO();
-                                        fdao = fdao.getFormDAO(flowId, fd);
-                                        String deptFieldVal = StrUtil.getNullStr(fdao.getFieldValue(deptField));
-                                        if ("".equals(deptFieldVal)) {
-                                            throw new ErrMsgException("请选择" + fdao.getFormField(deptField).getTitle());
+                                    // 如果nextwa中无用户，而此方法中matchActionUser又得到了用户，说明在flow_dipose.jsp页面上没有选择用户
+                                    throw new ErrMsgException("请先选择用户！");
+                                }
+                            } else {
+                                // 如果vt的size为0
+                                if (vt.size() == 0) {
+                                    if (nextwa.getIgnoreType() == IGNORE_TYPE_NOT) {
+                                        // 检查限定部门表单域是否未选择
+                                        String deptField = StrUtil.getNullStr(WorkflowActionDb.getActionProperty(wpd, nextwa.getInternalName(), "deptField"));
+                                        if (!"".equals(deptField)) {
+                                            Leaf lf = new Leaf();
+                                            lf = lf.getLeaf(wf.getTypeCode());
+                                            FormDb fd = new FormDb();
+                                            fd = fd.getFormDb(lf.getFormCode());
+                                            FormDAO fdao = new FormDAO();
+                                            fdao = fdao.getFormDAO(flowId, fd);
+                                            String deptFieldVal = StrUtil.getNullStr(fdao.getFieldValue(deptField));
+                                            if ("".equals(deptFieldVal)) {
+                                                throw new ErrMsgException("请选择" + fdao.getFormField(deptField).getTitle());
+                                            }
                                         }
+                                        throw new ErrMsgException("请选择处理用户！");
                                     }
-                                    throw new ErrMsgException("请选择处理用户！");
                                 }
                             }
                         }
-                	}
+                    }
                 }
             }
         }
@@ -1449,7 +1462,7 @@ public class WorkflowActionDb implements Serializable {
                                    new java.util.Date(), myActionId, this,
                                    wapriv, STATE_RETURN,
                                    (long) wf.getId());
-                     Logger.getLogger(getClass()).info("beforeChangeStatus:" + wapriv.getUserRealName());
+                     LogUtil.getLog(getClass()).info("beforeChangeStatus:" + wapriv.getUserRealName());
                      addTmpUserNameActived(mad);
                  }
              }
@@ -1461,14 +1474,14 @@ public class WorkflowActionDb implements Serializable {
         // 检查下一节点是否为 $userSelect
         LogUtil.getLog(getClass()).info("beforeChangeStatus: newstatus=" + newstatus);
         if (newstatus == STATE_FINISHED) {
-            Logger.getLogger(getClass()).info("beforeChangeStatus: " + checkUserName + "finished!");
+            LogUtil.getLog(getClass()).info("beforeChangeStatus: " + checkUserName + " finished!");
             // 如果本结点为发散结点，则置所有的未被跳过的to结点为DOING
-            Vector v = getLinkToActions();
+            Vector<WorkflowActionDb> v = getLinkToActions();
             boolean isNextActionSingle = v.size()==1;
-            Iterator ir = v.iterator();
+            Iterator<WorkflowActionDb> ir = v.iterator();
             if (isNextActionSingle) {
             	if (ir.hasNext()) {
-	            	WorkflowActionDb wa = (WorkflowActionDb) ir.next();
+	            	WorkflowActionDb wa = ir.next();
 	            	if (wa.getIgnoreType() == IGNORE_TYPE_NOT && (!wa.getJobCode().startsWith("$") && wa.getUserName().equals(""))) {
 	            		throw new ErrMsgException("请选择用户！");
 	            	}
@@ -1479,13 +1492,13 @@ public class WorkflowActionDb implements Serializable {
 	            boolean isContersign = true;
 	            // 判断是否为会签,会签就是同一个节点发散至多人再汇聚至同一个节点
 	            while (ir.hasNext()) {
-	            	WorkflowActionDb wa = (WorkflowActionDb) ir.next();
-	            	Vector tv = wa.getLinkToActions();
+	            	WorkflowActionDb wa = ir.next();
+	            	Vector<WorkflowActionDb> tv = wa.getLinkToActions();
 	            	if (tv.size() > 1) {
 	            		isContersign = false;
 	            		break;
 	            	}
-	            	if (internalName.equals("")) {
+	            	if ("".equals(internalName)) {
 	            		internalName = wa.getInternalName();
 	            	} else {
 	            		if (!internalName.equals(wa.getInternalName())) {
@@ -1498,7 +1511,7 @@ public class WorkflowActionDb implements Serializable {
 	            boolean isUserChecked = true;
 	            ir = v.iterator();
 	            while (ir.hasNext()) {
-	                WorkflowActionDb wa = (WorkflowActionDb) ir.next();
+	                WorkflowActionDb wa = ir.next();
 	                if (v.size()==1) {
 	                    // 如果没有分支线，且节点为被忽略状态，节点是聚合节点，则临时置其状态为未处理，以便于在checkAction的时候能够对其进行处理
 	                    // 如：当前节点用户有兼职，则在flow_dispose.jsp中matchActionUser的时候，先抛出异常让其选部门，然后提交时，下一节点还未匹配到用户，会此处如果不置为未处理状态，就会被跳过
@@ -1512,9 +1525,9 @@ public class WorkflowActionDb implements Serializable {
 	                }
 	
 	                // 检查myAction中的用户是否合法
-	                Logger.getLogger(getClass()).info("beforeChangeStatus: begin checkActionUser!");
+	                LogUtil.getLog(getClass()).info("beforeChangeStatus: begin checkActionUser!");
 	                // 下一节点处理人为空且发散且不是会签
-	                if (wa.getUserName().equals("") && !isContersign && !isNextActionSingle) {
+	                if ("".equals(wa.getUserName()) && !isContersign) {
 	                	// 如果当前节点为条件分支节点且下一节点未跳过,则判断用户
 	                	if (this.isXorRadiate()) {
 	                		if (wa.getIgnoreType() != IGNORE_TYPE_NOT) {
@@ -1534,7 +1547,7 @@ public class WorkflowActionDb implements Serializable {
 	                	}
 	                } else {
 	                    checkActionUser(request, wa, this, isNextActionSingle);
-	                    if (!isContersign && !isNextActionSingle && !this.isXorRadiate()) {
+	                    if (!isContersign && !this.isXorRadiate()) {
 	                    	isUserChecked = true;
 	            			break;
 	                    }
@@ -1552,7 +1565,7 @@ public class WorkflowActionDb implements Serializable {
                 || (status==STATE_DOING && newstatus == STATE_NOTDO)
                 || (status==STATE_RETURN && newstatus==STATE_NOTDO)) {
             // 如果本结点是聚合结点则不能被打回
-            Vector vfrom = getLinkFromActions();
+            Vector<WorkflowActionDb> vfrom = getLinkFromActions();
             if (vfrom.size()==0) {
                 throw new ErrMsgException("本节点是开始结点，不能进行返回操作！");
             }
@@ -1565,10 +1578,9 @@ public class WorkflowActionDb implements Serializable {
             if (!isXorReturn()) {
                 // 如果节点不是聚合节点且当前节点有兄弟节点,则将其所有的兄弟节点都置为STATE_NOTDO
                 if (vfrom.size() == 1) {
-                    WorkflowActionDb previousAction = (WorkflowActionDb) vfrom.get(0);
-                    Vector vto = previousAction.getLinkToActions();
-                    for (int i = 0; i < vto.size(); i++) {
-                        WorkflowActionDb siblingAction = (WorkflowActionDb) vto.get(i);
+                    WorkflowActionDb previousAction = vfrom.get(0);
+                    Vector<WorkflowActionDb> vto = previousAction.getLinkToActions();
+                    for (WorkflowActionDb siblingAction : vto) {
                         if (this.id == siblingAction.getId()) {
                             continue;
                         }
@@ -1578,12 +1590,12 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
 
-            int len = returnIds.length;
+            MyActionDb mad = new MyActionDb();
             LogUtil.getLog(getClass()).info("beforeChangeStatus returnIds len=" + returnIds.length);
             // 已退定为返回时只能返回给一个节点，所以此处的循环其实已无用
-            for (int i = 0; i < len; i++) {
+            for (String s : returnIds) {
                 // 手机端发过来的，有时好象会带有换行符，所以要trim
-                int returnId = Integer.parseInt(returnIds[i].trim());
+                int returnId = Integer.parseInt(s.trim());
                 // 找到被打回的节点
                 WorkflowActionDb waPriv = getWorkflowActionDb(returnId);
                 // 更改被打回节点的状态，置其为被打回
@@ -1594,10 +1606,8 @@ public class WorkflowActionDb implements Serializable {
                 // 如果未设为异步退回
                 if (!isXorReturn()) {
                     // 打回时，需使与被返回节点相连的分支线上正处理的其它节点变为未处理状态，已处理的节点不变维持原状
-                    Vector v = waPriv.getLinkToActions();
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        WorkflowActionDb wad = (WorkflowActionDb) ir.next();
+                    Vector<WorkflowActionDb> v = waPriv.getLinkToActions();
+                    for (WorkflowActionDb wad : v) {
                         if (wad.getId() != waPriv.getId() && wad.getStatus() == WorkflowActionDb.STATE_DOING) {
                             wad.setStatus(WorkflowActionDb.STATE_NOTDO);
                             wad.save();
@@ -1606,7 +1616,25 @@ public class WorkflowActionDb implements Serializable {
                 }
 
                 // 通知用户办理
-                String[] users = StrUtil.split(waPriv.getUserName(), ",");
+                // 20221206 此处应取得实际办理者，因为可能存在如：只需其中一人办理 的情况
+                List<MyActionDb> listChecked = mad.listByActionRealyChecked(waPriv.getId());
+                for (MyActionDb myActionDb : listChecked) {
+                    if (!StrUtil.isEmpty(myActionDb.getProxyUserName())) {
+                        mad = wf.notifyUser(myActionDb.getProxyUserName(),
+                                new Date(), myActionId, this,
+                                waPriv, STATE_RETURN,
+                                wf.getId());
+                    } else {
+                        mad = wf.notifyUser(myActionDb.getUserName(),
+                                new Date(), myActionId, this,
+                                waPriv, STATE_RETURN,
+                                wf.getId());
+                    }
+                    LogUtil.getLog(getClass()).info("beforeChangeStatus:" + waPriv.getUserRealName());
+                    addTmpUserNameActived(mad);
+                }
+
+                /*String[] users = StrUtil.split(waPriv.getUserName(), ",");
                 int userslen = (users == null ? 0 : users.length);
                 for (int n = 0; n < userslen; n++) {
                     MyActionDb mad = wf.notifyUser(users[n],
@@ -1615,7 +1643,7 @@ public class WorkflowActionDb implements Serializable {
                             wf.getId());
                     Logger.getLogger(getClass()).info("beforeChangeStatus:" + waPriv.getUserRealName());
                     addTmpUserNameActived(mad);
-                }
+                }*/
             }
         }
         return true;
@@ -1850,6 +1878,50 @@ public class WorkflowActionDb implements Serializable {
         return workflowHelper.fromString(this, str, isCheck);
     }
 
+    public void createAddBatch(PreparedStatement pstmt) {
+        this.id = (int) SequenceManager.nextID(SequenceManager.OA_WORKFLOW_ACTION);
+        try {
+            pstmt.setInt(1, id);
+            pstmt.setInt(2, flowId);
+            pstmt.setInt(3, isStart);
+            if (reason==null || "".equals(reason)) {
+                reason = " "; // 适应SQLSERVER
+            }
+            pstmt.setString(4, reason);
+            pstmt.setInt(5, status);
+            pstmt.setString(6, title);
+            pstmt.setString(7, userName);
+            pstmt.setString(8, internalName);
+            pstmt.setInt(9, officeColorIndex);
+            pstmt.setString(10, userRealName);
+            pstmt.setString(11, jobCode);
+            pstmt.setString(12, jobName);
+            pstmt.setString(13, "" + direction);
+            pstmt.setString(14, rankCode);
+            pstmt.setString(15, rankName);
+            pstmt.setString(16, relateRoleToOrganization?"1":"0");
+            if (fieldWrite==null || "".equals(fieldWrite)) {
+                fieldWrite = " "; // 适应SQLSERVER
+            }
+            pstmt.setString(17, fieldWrite);
+            pstmt.setInt(18, taskId);
+            if (dept==null || "".equals(dept)) {
+                dept = " "; // 适应SQLSERVER
+            }
+            pstmt.setString(19, dept);
+            pstmt.setString(20, flag);
+            pstmt.setInt(21, nodeMode);
+            pstmt.setTimestamp(22, new Timestamp((new java.util.Date()).getTime()));
+            pstmt.setString(23, strategy);
+            pstmt.setString(24, item1);
+            pstmt.setString(25, item2);
+            pstmt.setInt(26, msg?1:0);
+            pstmt.addBatch();
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+    }
+
     public boolean create() {
         Conn conn = new Conn(connname);
         this.id = (int) SequenceManager.nextID(SequenceManager.OA_WORKFLOW_ACTION);
@@ -1870,7 +1942,6 @@ public class WorkflowActionDb implements Serializable {
             pstmt.setString(10, userRealName);
             pstmt.setString(11, jobCode);
             pstmt.setString(12, jobName);
-            // System.out.println("create jobName=" + jobName);
             pstmt.setString(13, "" + direction);
             pstmt.setString(14, rankCode);
             pstmt.setString(15, rankName);
@@ -1896,8 +1967,8 @@ public class WorkflowActionDb implements Serializable {
                 return true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("create:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1969,7 +2040,7 @@ public class WorkflowActionDb implements Serializable {
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                Logger.getLogger(getClass()).error("流程动作id= " + id + " 在数据库中未找到.");
+                LogUtil.getLog(getClass()).error("流程动作id= " + id + " 在数据库中未找到.");
                 LogUtil.getLog(getClass()).trace(new Exception());
             } else {
                 this.id = rs.getInt(1);
@@ -2013,8 +2084,8 @@ public class WorkflowActionDb implements Serializable {
                 loaded = true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("load:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -2088,13 +2159,10 @@ public class WorkflowActionDb implements Serializable {
                 return true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
             return false;
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return false;
     }
@@ -2121,22 +2189,10 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("onWorkflowDiscarded:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("onWorkflowDiscarded:" + e.getMessage());
             return false;
         } finally {
-            if (rs!=null) {
-                try {rs.close();} catch (Exception e) {}
-                rs = null;
-            }
-            if (pstmt!=null) {
-                try {pstmt.close();} catch (Exception e) {}
-                pstmt = null;
-            }
-
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
     }
@@ -2164,13 +2220,10 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("onWorkflowManualFinish:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("onWorkflowManualFinish:" + e.getMessage());
             return false;
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
     }
@@ -2179,44 +2232,66 @@ public class WorkflowActionDb implements Serializable {
      * 取得流程中的所有action节点
      * @return Vector
      */
-    public Vector getActionsOfFlow(int flowId) {
-        Vector v = new Vector();
-        String sql =
-                "select id from flow_action where flow_id=?";
+    public Vector<WorkflowActionDb> getActionsOfFlow(int flowId) {
+        Vector<WorkflowActionDb> v = new Vector<>();
+        String sql = "select id from flow_action where flow_id=? order by id asc";
         Conn conn = new Conn(connname);
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        PreparedStatement pstmt;
+        ResultSet rs;
         try {
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, flowId);
             rs = conn.executePreQuery();
             if (rs == null) {
-                Logger.getLogger(getClass()).info("getActions:流程id= " + id + " 中的动作在数据库中未找到.");
+                LogUtil.getLog(getClass()).info("getActions:流程id= " + id + " 中的动作在数据库中未找到.");
             } else {
                 WorkflowActionMgr wam = new WorkflowActionMgr();
                 while (rs.next()) {
-                    int actionid = rs.getInt(1);
-                    v.addElement(wam.getWorkflowActionDb(actionid));
+                    int actionId = rs.getInt(1);
+                    v.addElement(wam.getWorkflowActionDb(actionId));
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getActions:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getActions:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return v;
     }
 
+    /**
+     * 取得流程中的所有已结束的action节点
+     * @return Vector
+     */
+    public List<WorkflowActionDb> getActionsFinishedOfFlow(int flowId) {
+        List<WorkflowActionDb> list = new ArrayList<>();
+        WorkflowActionMgr wam = new WorkflowActionMgr();
+        String sql = "select id from flow_action where flow_id=? and status=" + STATE_FINISHED + " order by id desc";
+        Conn conn = new Conn(connname);
+        PreparedStatement pstmt;
+        ResultSet rs;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, flowId);
+            rs = conn.executePreQuery();
+            while (rs.next()) {
+                int actionId = rs.getInt(1);
+                list.add(wam.getWorkflowActionDb(actionId));
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("getActions:" + e.getMessage());
+        } finally {
+            conn.close();
+        }
+        return list;
+    }
 
     /**
      * 取得流程中的所有被延时的action节点
      * @return Vector
      */
-    public Vector getActionsDelayedOfFlow(int flowId) {
-        Vector v = new Vector();
+    public Vector<WorkflowActionDb> getActionsDelayedOfFlow(int flowId) {
+        Vector<WorkflowActionDb> v = new Vector<>();
         String sql =
                 "select id from flow_action where flow_id=? and status=?";
         Conn conn = new Conn(connname);
@@ -2228,7 +2303,7 @@ public class WorkflowActionDb implements Serializable {
             pstmt.setInt(2, STATE_DELAYED);
             rs = conn.executePreQuery();
             if (rs == null) {
-                Logger.getLogger(getClass()).info("getActionsDelayedOfFlow:流程id= " + id + " 中的动作在数据库中未找到.");
+                LogUtil.getLog(getClass()).info("getActionsDelayedOfFlow:流程id= " + id + " 中的动作在数据库中未找到.");
             } else {
                 WorkflowActionMgr wam = new WorkflowActionMgr();
                 while (rs.next()) {
@@ -2237,12 +2312,10 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getActions:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getActions:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return v;
     }
@@ -2252,10 +2325,9 @@ public class WorkflowActionDb implements Serializable {
      * 取得流程中的所有结束节点
      * @return Vector
      */
-    public Vector getEndActionsOfFlow(int flowId) {
-        Vector v = new Vector();
-        String sql =
-                "select id from flow_action where flow_id=? and item1='1'";
+    public Vector<WorkflowActionDb> getEndActionsOfFlow(int flowId) {
+        Vector<WorkflowActionDb> v = new Vector<>();
+        String sql = "select id from flow_action where flow_id=? and item1='1'";
         Conn conn = new Conn(connname);
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -2264,7 +2336,7 @@ public class WorkflowActionDb implements Serializable {
             pstmt.setInt(1, flowId);
             rs = conn.executePreQuery();
             if (rs == null) {
-                Logger.getLogger(getClass()).error("getEndActionsOfFlow:流程id= " + id + " 中的动作在数据库中未找到.");
+                LogUtil.getLog(getClass()).error("getEndActionsOfFlow:流程id= " + id + " 中的动作在数据库中未找到.");
             } else {
                 WorkflowActionMgr wam = new WorkflowActionMgr();
                 while (rs.next()) {
@@ -2273,12 +2345,10 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getEndActionsOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getEndActionsOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return v;
     }
@@ -2341,8 +2411,8 @@ public class WorkflowActionDb implements Serializable {
             }
             return re;
         } catch (SQLException e) {
-            e.printStackTrace();
-            Logger.getLogger(getClass()).error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -2370,8 +2440,7 @@ public class WorkflowActionDb implements Serializable {
      */
     public MyActionDb getNextActionDoingWillBeCheckedByUserSelf(String userName) {
         MyActionDb mad = new MyActionDb();
-        mad = mad.getMyActionDbOfFlowDoingByUser(flowId, userName);
-        return mad;
+        return mad.getMyActionDbOfFlowDoingByUser(flowId, userName);
     }
 
     /**
@@ -2437,7 +2506,7 @@ public class WorkflowActionDb implements Serializable {
             if (nextwa.isCanPrivUserModifyDelayDate()) {
                 WorkflowParams wparam = (WorkflowParams) request.getAttribute("workflowParams");
                 FileUpload fu = wparam.getFileUpload();
-                isDelayed = StrUtil.getNullStr(fu.getFieldValue("isDelayed")).equals("1");
+                isDelayed = "1".equals(StrUtil.getNullStr(fu.getFieldValue("isDelayed")));
                 if (isDelayed) {
                     timeDelayedValue = StrUtil.toInt(fu.getFieldValue("timeDelayedValue"), 0);
                     if (timeDelayedValue==0) {
@@ -2502,7 +2571,7 @@ public class WorkflowActionDb implements Serializable {
         */
 
        // 保存有兼职时所选择的部门，比如：当关联开始节点时，需保存开始节点人员有兼职时，所选择的部门
-       if (deptOfUserWithMultiDept!=null && !deptOfUserWithMultiDept.equals("")) {
+       if (deptOfUserWithMultiDept!=null && !"".equals(deptOfUserWithMultiDept)) {
            dept = deptOfUserWithMultiDept;
            save();
        }
@@ -2512,10 +2581,18 @@ public class WorkflowActionDb implements Serializable {
 
         // 如果未匹配到用户，则自动跳过该节点
         if (users == null) {
-            WorkflowActionDb nwa = autoPassActionNoUserMatched(request, myActionId, this, nextwa, deptOfUserWithMultiDept);
+            WorkflowActionDb nextActionToActive = nextwa;
+            WorkflowActionDb nwa = autoPassActionNoUserMatched(request, myActionId, this, nextwa, deptOfUserWithMultiDept, false);
             // 如果连续存在未匹配到用户的节点，则继续跳过
             while (nwa != null) {
-                nwa = autoPassActionNoUserMatched(request, myActionId, this, nwa, deptOfUserWithMultiDept);
+                nextActionToActive = nwa;
+                nwa = autoPassActionNoUserMatched(request, myActionId, this, nwa, deptOfUserWithMultiDept, false);
+            }
+
+            if (nwa == null) {
+                // 运行激活事件
+                IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+                workflowScriptUtil.runActiveScript(request, wf, myActionId, nextActionToActive, false);
             }
         } else {
             if (nextwa.getKind()==WorkflowActionDb.KIND_SUB_FLOW) {
@@ -2531,14 +2608,24 @@ public class WorkflowActionDb implements Serializable {
                     }
                     nextwa.setStatus(STATE_DOING);
                     nextwa.save();
+
+                    // 运行激活事件
+                    IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+                    workflowScriptUtil.runActiveScript(request, wf, myActionId, nextwa, false);
                 }
 
                 MyActionDb myActionDb = new MyActionDb();
                 myActionDb = myActionDb.getMyActionDb(myActionId);
                 MyActionDb privMyActionDb = myActionDb.getMyActionDb(myActionDb.getPrivMyActionId());
+
+                WorkflowActionDb curAction = new WorkflowActionDb();
+                curAction = curAction.getWorkflowActionDb((int)myActionDb.getActionId());
+
                 // 如果下一节点为异步提交模式
-                if (nextwa.isXorFinish()) {
-                    // 如果是当前待办记录是被之前的处理者退回，则下一节点只生成退回者的待办记录
+                // if (nextwa.isXorFinish()) {
+                // 20220812 改为如果本节点为异步提交模式
+                if (curAction.isXorFinish()) {
+                    // 如果当前待办记录是被下一节点的处理者退回，则下一节点只生成退回者的待办记录
                     if (privMyActionDb.getCheckStatus() == MyActionDb.CHECK_STATUS_RETURN && privMyActionDb.getActionId()==nextwa.getId()) {
                         MyActionDb mad = wf.notifyUser(privMyActionDb.getUserName(),
                                 new Date(),
@@ -2548,10 +2635,18 @@ public class WorkflowActionDb implements Serializable {
                         addTmpUserNameActived(mad);
                     }
                     else {
-                        for (String user : users) {
+                        // 20220718改为取当前用户所选的下一节点上的人员（原来取的是节点上匹配到的所有人员数组users)，注意users中为节点上已匹配到的全部人员，前者为后者的子集
+                        // 当角色关联且上一节点存在多个用户，会匹配到多人，但跟当前用户相关联的只有其中的一部分
+                        // 如：角色关联，下行，当前节点为副局长，下一节点为处长，按原来的实现逻辑，当某一副局长提交后，所有处长都会收到待办记录
+                        WorkflowParams workflowParams = (WorkflowParams)request.getAttribute("workflowParams");
+                        FileUpload fu = workflowParams.getFileUpload();
+                        String[] aryUsers = fu.getFieldValues("WorkflowAction_" + nextwa.getId());
+                        // List<String> curSelUserList = Arrays.asList(aryUsers);
+                        for (String user : aryUsers) {
                             // 下一节点为异步提交时，如果该节点上的用户已经有过待办记录，则不再重复生成，如发散分支上的其他节点
                             boolean canNotify = true;
-                            if (MyActionDb.isNotifyExistOnAction(flowId, user, nextwa.getId())) {
+                            MyActionDb nextUserMyActionDb = MyActionDb.getMyActionDbByAction(flowId, user, nextwa.getId());
+                            if (nextUserMyActionDb != null) {
                                 canNotify = false;
                             }
 
@@ -2562,6 +2657,16 @@ public class WorkflowActionDb implements Serializable {
                                         nextwa, STATE_DOING,
                                         wf.getId());
                                 addTmpUserNameActived(mad);
+                            }
+                            else {
+                                // 注释掉，因为异步提交不可能出现这样的情况
+                                // 如果当前用户选择了该用户，判断下一节点上的待办如果不是当前用户提交的，则修改待办记录中的priv_myaction_id为当前用户的待办记录
+                                /*if (curSelUserList.contains(user)) {
+                                    if (nextUserMyActionDb.getPrivMyActionId() != myActionId) {
+                                        nextUserMyActionDb.setPrivMyActionId(myActionId);
+                                        nextUserMyActionDb.save();
+                                    }
+                                }*/
                             }
                         }
                     }
@@ -2596,7 +2701,7 @@ public class WorkflowActionDb implements Serializable {
      */
     public boolean canDevliveToNextAction(WorkflowActionDb nextwa) {
     	// 20161025 fgf 解决多重聚合的问题
-        Vector vfrom = nextwa.getLinkFromActions();
+        Vector<WorkflowActionDb> vfrom = nextwa.getLinkFromActions();
 
         // 如果下一结点不是聚合结点，则向下转交
         boolean re = true;
@@ -2608,11 +2713,11 @@ public class WorkflowActionDb implements Serializable {
                     flagXorAggregate = true;
                 }
             }
-            Logger.getLogger(getClass()).info("canDevliveToNextAction: flagXorAggregate=" + flagXorAggregate);
+            LogUtil.getLog(getClass()).info("canDevliveToNextAction: flagXorAggregate=" + flagXorAggregate);
             if (!flagXorAggregate) {
                 for (Object o : vfrom) {
                     WorkflowActionDb wfa = (WorkflowActionDb) o;
-                    Logger.getLogger(getClass()).info("wfa.getJobName()=" + wfa.getJobName() + " status=" +
+                    LogUtil.getLog(getClass()).info("wfa.getJobName()=" + wfa.getJobName() + " status=" +
                             wfa.getStatusName());
                     if (!(wfa.getStatus() == WorkflowActionDb.STATE_FINISHED ||
                             wfa.getStatus() == WorkflowActionDb.STATE_IGNORED)) {
@@ -2660,12 +2765,11 @@ public class WorkflowActionDb implements Serializable {
                                         myActionId);
                     // 通知用户办理
                     String[] users = StrUtil.split(nextwa.getUserName(), ",");
-                    int len = users.length;
-                    for (int n = 0; n < len; n++) {
-                        mad = wf.notifyUser(users[n],
-                                            new java.util.Date(), myActionId, this,
-                                            nextwa, STATE_DOING,
-                                            (long) wf.getId());
+                    for (String user : users) {
+                        mad = wf.notifyUser(user,
+                                new Date(), myActionId, this,
+                                nextwa, STATE_DOING,
+                                wf.getId());
                         addTmpUserNameActived(mad);
                     }
 
@@ -2673,7 +2777,7 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
 
-            Logger.getLogger(getClass()).info("afterChangeStatus:" + getUserName() + " finished!");
+            LogUtil.getLog(getClass()).info("afterChangeStatus:" + getUserName() + " finished!");
 
             // 检查所有结束节点是否都已完成
             boolean isDoFinished = false;
@@ -2700,24 +2804,24 @@ public class WorkflowActionDb implements Serializable {
             }
 
             // 如果本结点为发散结点
-            Vector v = getLinkToActions();
+            Vector<WorkflowActionDb> v = getLinkToActions();
 
             LogUtil.getLog(getClass()).info("afterChangeStatus: v.size=" + v.size() + " isDoFinished=" + isDoFinished);
 
             if (v.size() > 1) {
-                Iterator ir = v.iterator();
                 ArrayList<WorkflowActionDb> selectedActions = new ArrayList<WorkflowActionDb>();
+                Iterator<WorkflowActionDb> ir = v.iterator();
                 while (ir.hasNext()) {
-                	WorkflowActionDb nextwa = (WorkflowActionDb) ir.next();
+                	WorkflowActionDb nextwa = ir.next();
                     nextwa = new WorkflowActionDb(nextwa.getId());
-                    if (!nextwa.getUserName().equals("")) {
+                    if (!"".equals(nextwa.getUserName())) {
                     	selectedActions.add(nextwa);
                     	continue;
                     }
                 }
                 ir = v.iterator();
                 while (ir.hasNext()) {
-                    WorkflowActionDb nextwa = (WorkflowActionDb) ir.next();
+                    WorkflowActionDb nextwa = ir.next();
                     // 因为在处理一条分支的时候，可能会对分支的汇聚节点产生影响，所以不能通过缓存取
                     nextwa = new WorkflowActionDb(nextwa.getId());
                     // 如果下一节点没有被跳过且不是正处理状态（因为其它分支可能会激活汇聚节点）
@@ -2726,7 +2830,24 @@ public class WorkflowActionDb implements Serializable {
 
                     LogUtil.getLog(getClass()).info("afterChangeStatus: nextwa.getStatus()=" + nextwa.getStatus() + " title=" + nextwa.getTitle() + " userName=" + nextwa.getUserName());
 
-                    if (nextwa.getStatus()!=WorkflowActionDb.STATE_IGNORED && nextwa.getStatus()!=WorkflowActionDb.STATE_DOING) {
+                    boolean canDelive = true;
+                    if (nextwa.getStatus() == WorkflowActionDb.STATE_DOING) {
+                        canDelive = false;
+                    } else if (nextwa.getStatus() == WorkflowActionDb.STATE_IGNORED) {
+                        // 20221201 如果分支被忽略，但nextwa为聚合节点，那么也可以走该分支，否则流程将走不下去，如果不是聚合节点，则不能再往下走
+                        Vector<WorkflowActionDb> vFrom = nextwa.getLinkFromActions();
+                        if (vFrom.size() > 1) {
+                            // 20220112如果当前待办记录中的action有条件分支，说明nextwa所在分支不满足条件，则不能往下走，详见：2022011201
+                            WorkflowActionDb curAction = nextwa.getWorkflowActionDb((int)mad.getActionId());
+                            if (curAction.isXorRadiate()) {
+                                canDelive = false;
+                            }
+                        }
+                        else if (vFrom.size() == 1) {
+                            canDelive = false;
+                        }
+                    }
+                    if (canDelive) {
                         boolean isFinished = canDevliveToNextAction(nextwa);
                         LogUtil.getLog(getClass()).info("afterChangeStatus: " + nextwa.getTitle() + " jobName=" + nextwa.getJobName() + " isFinished=" + isFinished);
                         if (isFinished) {
@@ -2734,7 +2855,7 @@ public class WorkflowActionDb implements Serializable {
                         	if (!"".equals(nextwa.getUserName()) || selectedActions.isEmpty()) {
                         		deliverToNextAction(request, wf, nextwa, myActionId, getDeptOfUserWithMultiDept(request));
                         	} 
-                        	else if (nextwa.getIgnoreType() == WorkflowActionDb.IGNORE_TYPE_USER_ACCESSED_BEFORE && nextwa.getUserName().equals("")) {
+                        	else if (nextwa.getIgnoreType() == WorkflowActionDb.IGNORE_TYPE_USER_ACCESSED_BEFORE && "".equals(nextwa.getUserName())) {
                         		// 无用户或用户之前处理过则跳过，当用户之前处理过时，在mactchActionUser时，会过滤掉已处理过的用户，action中的userName仍为空
                         		deliverToNextAction(request, wf, nextwa, myActionId, getDeptOfUserWithMultiDept(request));                        		
                         	}
@@ -2744,25 +2865,44 @@ public class WorkflowActionDb implements Serializable {
                         		toIgnore = true;
                         	}
                             if (toIgnore) {
+                                WorkflowMgr wfm = new WorkflowMgr();
                             	/*
                             	 * 有问题,后期调整
                         		for (WorkflowActionDb selectedAction : selectedActions) {
-        	                    	WorkflowMgr wfm = new WorkflowMgr();
         	                    	WorkflowActionDb endAction = wfm.getRelationOfTwoActions(nextwa, selectedAction);
         	                    	wfm.ignoreBranch(nextwa, endAction);
                             	}*/
+                                // 20220606 忽略当前分支
+                                wfm.ignoreBranch(nextwa, null);
+                            }
+                        }
+                    }
+                    else {
+                        if (nextwa.getStatus() == WorkflowActionDb.STATE_DOING) {
+                            // 20220812 如果本节点是异步提交
+                            if (isXorFinish()) {
+                                deliverToNextAction(request, wf, nextwa, myActionId, getDeptOfUserWithMultiDept(request));
                             }
                         }
                     }
                 }
             } else if (v.size() == 1) { // 如果本结点不是发散结点
-                WorkflowActionDb nextwa = (WorkflowActionDb) v.get(0);
+                WorkflowActionDb nextwa = v.get(0);
                 boolean isFinished = canDevliveToNextAction(nextwa);
                 LogUtil.getLog(getClass()).info("afterChangeStatus: isFinished=" + isFinished);
                 if (isFinished) {
                     deliverToNextAction(request, wf, nextwa, myActionId, getDeptOfUserWithMultiDept(request));
+                    // 20220720判断流程是否未结束，因为如果本节点为辅助角色且为结束节点，而其它节点都已处理完毕，那么在autoPassActionNoUserMatched跳过本节点时，
+                    // 已经调用过了doWorkflowFinished，所以此处需加判断，当流程未结束时才可以去检查流程是否需要作结束处理
+                    wf = wf.getWorkflowDb(wf.getId()); // 因为在deliverToNextAction的autoPassActionNoUserMatched可能改变了流程状态，所以这儿需重新获取
+                    if (wf.getStatus()!=WorkflowDb.STATUS_FINISHED) {
+                        // 20220112 将deliverToNextAction中自动跳过时检查流程是否节点已全部处理完毕移至此处
+                        if (wf.checkStatusFinished()) {
+                            doWorkflowFinished(request, wf);
+                        }
+                    }
                 }
-            } else if (v.size() == 0) {
+            } else {
                 // 无下一结点，如果检查更改流程中的各个节点的状态都为已完成，则置流程状态为已完成
             	if (!isDoFinished) {
             	    // 如果流程未结束
@@ -2785,7 +2925,9 @@ public class WorkflowActionDb implements Serializable {
             // 异步提交后，后续节点只要是没被忽略的，都提交，即便该节点的状态为正在处理中
             Vector<WorkflowActionDb> v = getLinkToActions();
             if (isXorFinish()) {
-                if (v.size() == 1) { // 如果本结点不是发散结点
+                // 如果本结点不是发散结点
+                // 20220812 改为支持发散节点
+                // if (v.size() == 1) {
                     for (WorkflowActionDb nextwa : v) {
                         if ("".equals(nextwa.getUserName())) {
                             continue;
@@ -2794,7 +2936,7 @@ public class WorkflowActionDb implements Serializable {
                             deliverToNextAction(request, wf, nextwa, myActionId, getDeptOfUserWithMultiDept(request));
                         }
                     }
-                }
+                // }
             }
             else {
                 // @task:如果当非下达模式时，如上一节点有多人处理，有人先选择了下一节点的用户，而上一节点中后来审批的人去掉了勾选的用户，则此处会产生垃圾数据
@@ -2853,16 +2995,19 @@ public class WorkflowActionDb implements Serializable {
     }
 
     /**
-     * 跳过未匹配到用户的节点，如果是发散节点，条件匹配成功则继续，否则则无法跳过，返回null
+     * 跳过未匹配到用户的节点，如果是条件分支，则匹配成功即继续，否则则无法跳过，返回null
      * 如果在本方法中匹配到用户，则激活该节点
+     * 注意如果发散节点被跳过，则当其不是条件分支时，匹配到人员的分支线都会被激活，如果多个分支线上没有匹配到人员，则只有最后被处理的分支线才能接着被跳过
      * @param myActionId long 正在处理的MyActionDb的ID
      * @param myAction WorkflowActionDb 当前节点，对应myActionId处理的节点
      * @param nextActionToPass WorkflowActionDb 下一个将被跳过的节点
+     * @param isJob boolean 是否来自于调度执行
      * @return WorkflowActionDb curAction的下一节点如果匹配不到用户，则返回该节点，否则返回null
      */
-    public WorkflowActionDb autoPassActionNoUserMatched(HttpServletRequest request, long myActionId, WorkflowActionDb myAction, WorkflowActionDb nextActionToPass, String deptOfUserWithMultiDept) throws ErrMsgException {
+    public WorkflowActionDb autoPassActionNoUserMatched(HttpServletRequest request, long myActionId, WorkflowActionDb myAction, WorkflowActionDb nextActionToPass, String deptOfUserWithMultiDept, boolean isJob) throws ErrMsgException {
         // 如果不允许跳过
         if (nextActionToPass.getIgnoreType()==IGNORE_TYPE_NOT) {
+            LogUtil.getLog(getClass()).info("autoPassActionNoUserMatched:" + nextActionToPass.getJobName() + " 不允许被跳过");
             return null;
         }
 
@@ -2876,7 +3021,7 @@ public class WorkflowActionDb implements Serializable {
             ex3.printStackTrace();
         }
 
-        // 如果流程未结束，当前被跳过节点是结束节点，或者流程所有节点已结束，则使流程状态变为已完成
+        // 如果流程未结束，当前被跳过节点是结束节点（如：辅助角色），或者流程所有节点已结束，则使流程状态变为已完成
         WorkflowDb wf = new WorkflowDb();
         wf = wf.getWorkflowDb(nextActionToPass.getFlowId());
         boolean isNeedFinish = false;
@@ -2887,39 +3032,36 @@ public class WorkflowActionDb implements Serializable {
             }
             else {
                 // 检查流程中的节点是否都已完成
-                if (wf.checkStatusFinished()) {
+                // 20220112 注释掉，因为后面可能会连续跳过（或者多起点时），但当前检查所有节点可能都已完成或忽略，故将下面的代码移至afterChangeStatus中当v.size()==1时
+                /*if (wf.checkStatusFinished()) {
                     isNeedFinish = true;
-                }
+                }*/
             }
         }
         if (isNeedFinish) {
             doWorkflowFinished(request, wf);
         }
 
-        // 取得后续节点，如果有多条分支，则退出
-        // 如果是发散节点，带有条件分支，则如果跳过该节点时，匹配到了分支线（条件分支有且仅有一条符合条件，不会出现多条的情况），则
-        Vector v = nextActionToPass.getLinkToActions();
+        // 如果是发散节点，带有条件分支，则如果跳过该节点时，匹配到了分支线（条件分支有且仅有一条符合条件，不会出现多条的情况）
+        Vector<WorkflowActionDb> v = nextActionToPass.getLinkToActions();
         if (v.size() > 1) {
-            // return null;
             LogUtil.getLog(getClass()).info("autoPassActionNoUserMatched:v.size=" + v.size());
             // 如果是异或发散节点，则先匹配分支
             // if (myAction.isXorRadiate()) {
             if (nextActionToPass.isXorRadiate()) {
-                Vector vMatched = WorkflowRouter.matchNextBranch(nextActionToPass, myAction.getUserName(), new StringBuffer(), myActionId);
+                Vector<WorkflowLinkDb> vMatched = WorkflowRouter.matchNextBranch(nextActionToPass, myAction.getUserName(), new StringBuffer(), myActionId);
                 // LogUtil.getLog(getClass()).info("autoPassActionNoUserMatched:wld=" + wld);
                 if (vMatched.size()>0) {
                     WorkflowMgr wfm = new WorkflowMgr();
-                    Iterator irMatched = vMatched.iterator();
-                    while (irMatched.hasNext()) {
-                        WorkflowLinkDb wld = (WorkflowLinkDb)irMatched.next();
+                    for (WorkflowLinkDb wld : vMatched) {
                         // 置分支线
                         wfm.setXorRadiateNextBranch(nextActionToPass, wld.getTo());
 
                         WorkflowActionDb toBranchAct = wld.getToAction();
                         LogUtil.getLog(getClass()).info(
                                 "autoPassActionNoUserMatched:toBranchAct=" +
-                                toBranchAct.getTitle());
-                        v.clear();
+                                        toBranchAct.getTitle());
+                        v.clear(); // TODO: 不应该清除????? 如果清除那只能保留匹配到的最后一个分支线
                         v.addElement(toBranchAct);
                         // 匹配到了分支线才允许跳过
                         // return vt;
@@ -2927,9 +3069,6 @@ public class WorkflowActionDb implements Serializable {
                 } else {
                     return null;
                 }
-            }
-            else {
-
             }
         }
 
@@ -2942,12 +3081,12 @@ public class WorkflowActionDb implements Serializable {
         proxyFactory.addAdvisor(adv);
         imsg = (IMessage) proxyFactory.getProxy();
 
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
-            WorkflowActionDb nextwa = (WorkflowActionDb) ir.next();
+        // 20220705 增加，用于记录将要被跳过的节点，注意只能记录一个分支，@TODO 将来需扩展能支持多个分支
+        WorkflowActionDb nextWaToPass = null;
 
-            // @task:待测，检查后续节点的入度，如果为非异或聚合，则检查聚合节点前面的节点是否均已办理完毕
-            Vector vfrom = nextwa.getLinkFromActions();
+        for (WorkflowActionDb nextwa : v) {
+            // 检查后续节点的入度，如果为非异或聚合，则检查聚合节点前面的节点是否均已办理完毕
+            Vector<WorkflowActionDb> vfrom = nextwa.getLinkFromActions();
             boolean isFinished = true;
             boolean flagXorAggregate = false;
             if (nextwa.getFlag().length() >= 8) {
@@ -2956,12 +3095,10 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
 
-            Logger.getLogger(getClass()).info("autoPassActionNoUserMatched:flagXorAggregate=" + flagXorAggregate);
+            LogUtil.getLog(getClass()).info("autoPassActionNoUserMatched:flagXorAggregate=" + flagXorAggregate);
 
             if (!flagXorAggregate) {
-                Iterator irFrom = vfrom.iterator();
-                while (irFrom.hasNext()) {
-                    WorkflowActionDb wfa = (WorkflowActionDb) irFrom.next();
+                for (WorkflowActionDb wfa : vfrom) {
                     if (wfa.getStatus() == WorkflowActionDb.STATE_FINISHED || wfa.getStatus() == WorkflowActionDb.STATE_IGNORED) {
                         ;
                     } else {
@@ -2971,30 +3108,31 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
 
-            Logger.getLogger(getClass()).info("autoPassActionNoUserMatched:isFinished=" + isFinished);
+            LogUtil.getLog(getClass()).info("autoPassActionNoUserMatched:isFinished=" + isFinished);
 
             if (isFinished) {
                 // 匹配节点上的用户
-                Vector vt = null;
+                Vector<UserDb> vt = null;
                 try {
                     WorkflowRouter workflowRouter = new WorkflowRouter();
-					vt = workflowRouter.matchActionUser(request, nextwa, myAction, false, deptOfUserWithMultiDept);
-				} catch (MatchUserException e) {
-					e.printStackTrace();
-					throw new ErrMsgException(e.getMessage());
-				}
-
-                // 如果未匹配到用户，则返回
-                // 如果同时激活多个后续节点（待跳过节点为发散节点），则如遇到某一个用户匹配不到的情况，则会继续向后匹配，而其它节点却不会被激活
-                if (vt.size()==0) {
-                    return nextwa;
+                    vt = workflowRouter.matchActionUser(request, nextwa, myAction, false, deptOfUserWithMultiDept);
+                } catch (MatchUserException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                    throw new ErrMsgException(e.getMessage());
                 }
-                
+
+                // 如果未匹配到用户，则继续处理下一节点
+                // 如果同时激活多个后续节点（待跳过节点为发散节点），则如遇到某一个用户匹配不到的情况，则会继续向后匹配，而其它节点却不会被激活
+                if (vt.size() == 0) {
+                    nextWaToPass = nextwa;
+                    continue;
+                }
+
                 if (vt.size() == 1) {
-                	UserDb ud = (UserDb) vt.get(0);
-                	if (ud.getName().equals(PRE_TYPE_USER_SELECT)) {
-                		return nextwa;
-                	}
+                    UserDb ud = vt.get(0);
+                    if (ud.getName().equals(PRE_TYPE_USER_SELECT)) {
+                        return nextwa;
+                    }
                 }
 
                 // 如果有用户，则激活后续节点
@@ -3002,7 +3140,7 @@ public class WorkflowActionDb implements Serializable {
                 try {
                     nextwa.save();
                 } catch (ErrMsgException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
 
                 String t = SkinUtil.LoadString(null, "res.module.flow", "msg_user_actived_title");
@@ -3011,7 +3149,10 @@ public class WorkflowActionDb implements Serializable {
                 c = c.replaceFirst("\\$flowTitle", wf.getTitle());
                 c = c.replaceFirst("\\$fromUser", myAction.getUserRealName());
                 String c_sms = c;
-                c += WorkflowMgr.getFormAbstractTable(wf);
+                if (!isJob) {
+                    // WorkflowAutoDeliverJob中调用本方法时，SpringUtil.getRequest会报错
+                    c += WorkflowMgr.getFormAbstractTable(wf);
+                }
 
                 Config cfg = new Config();
                 boolean flowNotifyByEmail = cfg.getBooleanProperty("flowNotifyByEmail");
@@ -3030,26 +3171,24 @@ public class WorkflowActionDb implements Serializable {
                     }
                 }
 
-                Iterator ir2 = vt.iterator();
-                while (ir2.hasNext()) {
-                    UserDb user = (UserDb) ir2.next();
+                for (UserDb user : vt) {
                     if (!user.isLoaded()) {
-                    	continue;
+                        continue;
                     }
-                    MyActionDb nextMad = wf.notifyUser(user.getName(), new java.util.Date(),
-                                  myActionId, nextActionToPass,
-                                  nextwa,
-                                  WorkflowActionDb.STATE_DOING,
-                                  (long) wf.getId());
+                    MyActionDb nextMad = wf.notifyUser(user.getName(), new Date(),
+                            myActionId, nextActionToPass,
+                            nextwa,
+                            WorkflowActionDb.STATE_DOING,
+                            wf.getId());
                     // 发送给后续节点通知处理短信
                     try {
                         MessageDb md = new MessageDb();
                         String action = "action=" +
-                                        MessageDb.ACTION_FLOW_DISPOSE +
-                                        "|myActionId=" + nextMad.getId();
-                        if (imsg != null)
+                                MessageDb.ACTION_FLOW_DISPOSE +
+                                "|myActionId=" + nextMad.getId();
+                        if (imsg != null) {
                             imsg.sendSysMsg(user.getName(), t, c_sms, action);
-                        else {
+                        } else {
                             md.sendSysMsg(user.getName(), t, c, action);
                         }
 
@@ -3058,30 +3197,27 @@ public class WorkflowActionDb implements Serializable {
 
                             UserMgr um = new UserMgr();
                             user = um.getUserDb(nextMad.getUserName());
-                            if (!user.getEmail().equals("")) {
+                            if (!"".equals(user.getEmail())) {
                                 action = "userName=" + user.getName() + "|" + "myActionId=" + nextMad.getId();
                                 action = cn.js.fan.security.ThreeDesUtil.
-                                         encrypt2hex(
-                                                 ssoCfg.getKey(), action);
+                                        encrypt2hex(
+                                                ssoCfg.getKey(), action);
                                 String fc = c + "<BR />>>&nbsp;<a href='" +
-                                        Global.getFullRootPath(request) +
-                                        "/public/flow_dispose.jsp?action=" +
-                                        action +
+                                        WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                                         "' target='_blank'>请点击此处办理</a>";
                                 sendmail.initMsg(user.getEmail(),
-                                                 senderName, t, fc, true);
+                                        senderName, t, fc, true);
                                 sendmail.send();
                                 sendmail.clear();
                             }
                         }
-
                     } catch (ErrMsgException ex2) {
                         ex2.printStackTrace();
                     }
                 }
             }
         }
-        return null;
+        return nextWaToPass;
     }
 
     /**
@@ -3097,7 +3233,7 @@ public class WorkflowActionDb implements Serializable {
                                      int newstatus, long myActionId) throws ErrMsgException  {
         // 如果状态被置为已完成
         if (newstatus == STATE_FINISHED) {
-            Logger.getLogger(getClass()).info("afterChangeStatus:" + getUserName() + " finished!");
+            LogUtil.getLog(getClass()).info("afterChangeStatus:" + getUserName() + " finished!");
             // 检查所有结束节点是否都已完成
             if (wf.checkEndActionsStatusFinished()) {
                 wf.changeStatus(request, WorkflowDb.STATUS_FINISHED, this);
@@ -3160,7 +3296,7 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getLinkToActoins:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getLinkToActoins:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -3197,8 +3333,8 @@ public class WorkflowActionDb implements Serializable {
                     }
                 }
             } catch (SQLException e) {
-                Logger.getLogger("getLinkReturnActions:" + getClass()).error(e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 conn.close();
             }
@@ -3231,8 +3367,8 @@ public class WorkflowActionDb implements Serializable {
                     }
                 }
             } catch (SQLException e) {
-                Logger.getLogger("getLinkReturnActions:" + getClass()).error(e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 conn.close();
             }
@@ -3276,8 +3412,8 @@ public class WorkflowActionDb implements Serializable {
                 ret.addElement(getWorkflowActionDbByInternalName(from, flowId));
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -3308,7 +3444,7 @@ public class WorkflowActionDb implements Serializable {
                 return getWorkflowActionDb(id);
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getWorkflowActionDbByTitle:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getWorkflowActionDbByTitle:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -3332,8 +3468,8 @@ public class WorkflowActionDb implements Serializable {
                 return getWorkflowActionDb(id);
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getWorkflowActionDbByInternalName:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getWorkflowActionDbByInternalName:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -3431,7 +3567,7 @@ public class WorkflowActionDb implements Serializable {
                 v.addElement(getWorkflowActionDb(rs.getInt(1)));
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listCheckedActionOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listActionsOfFlow:" + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -3439,10 +3575,8 @@ public class WorkflowActionDb implements Serializable {
                 } catch (Exception e) {}
                 rs = null;
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
+            conn = null;
         }
         return v;
     }
@@ -3453,12 +3587,12 @@ public class WorkflowActionDb implements Serializable {
      * @return WorkflowActionDb
      */
     public WorkflowActionDb getStartAction(int flowId) {
-        Vector v = new Vector();
+        Vector<WorkflowActionDb> v = new Vector<>();
         // 如果有多个未被忽略的，则可能是误做了多个开始节点，比如：用在了串签中，所以在SQL语句中加了根据status倒排，未处理的伪开始节点状态为0，肯定排在后面
         String sql = "select id from flow_action where flow_id=? and isStart=1 and status<>" + STATE_IGNORED + " order by status desc";
         Conn conn = new Conn(connname);
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        PreparedStatement pstmt;
+        ResultSet rs;
         try {
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, flowId);
@@ -3467,12 +3601,9 @@ public class WorkflowActionDb implements Serializable {
                 return getWorkflowActionDb(rs.getInt(1));
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listCheckedActionOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listCheckedActionOfFlow:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return null;
     }
@@ -3493,7 +3624,7 @@ public class WorkflowActionDb implements Serializable {
                 v.addElement(getWorkflowActionDb(rs.getInt(1)));
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listCheckedActionOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listCheckedActionOfFlow:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -3525,9 +3656,9 @@ public class WorkflowActionDb implements Serializable {
 
     public static final int NOTASK = -1;
 
-    private Vector tmpUserNameActived;
+    private Vector<MyActionDb> tmpUserNameActived;
 
-    public Vector getTmpUserNameActived() {
+    public Vector<MyActionDb> getTmpUserNameActived() {
         return tmpUserNameActived;
     }
 
@@ -3645,10 +3776,11 @@ public class WorkflowActionDb implements Serializable {
         RoleDb[] rds = curActionUser.getRoles();
         int len = 0;
         int r = -2;
-        if (rds != null)
+        if (rds != null) {
             len = rds.length;
-        else
+        } else {
             return r;
+        }
         r = -1;
 
         for (int i = 0; i < len; i++) {
@@ -3758,7 +3890,7 @@ public class WorkflowActionDb implements Serializable {
         try {
             subFlowTypeCode = json.getString("subFlowTypeCode");
         } catch (JSONException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
             throw new ErrMsgException(ex.getMessage());
         }
 
@@ -3840,8 +3972,7 @@ public class WorkflowActionDb implements Serializable {
                 action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
                         ssoCfg.getKey(), action);
                 fc += "<BR />>>&nbsp;<a href='" +
-                        Global.getFullRootPath(request) +
-                        "/public/flow_dispose.jsp?action=" + action +
+                        WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                         "' target='_blank'>请点击此处办理</a>";
                 sendmail.initMsg(user.getEmail(),
                                  senderName,
@@ -3929,7 +4060,7 @@ public class WorkflowActionDb implements Serializable {
                     		nestFdTo = nestFdTo.getFormDb(nestFormCodeTo);
                     		com.redmoon.oa.visual.FormDAO fdaoNestTo = new com.redmoon.oa.visual.FormDAO(nestFdTo);
                     		
-                    		String sql = "select id from form_table_" + nestFormCodeFrom + " where cws_id=" + pfdao.getId();	
+                    		String sql = "select id from ft_" + nestFormCodeFrom + " where cws_id='" + pfdao.getId() + "'";
                     		com.redmoon.oa.visual.FormDAO fdaoFrom = new com.redmoon.oa.visual.FormDAO();
                     		Iterator ir = fdaoFrom.list(nestFormCodeFrom, sql).iterator();
                     		while (ir.hasNext()) {
@@ -3947,7 +4078,7 @@ public class WorkflowActionDb implements Serializable {
                     			}
                     			
                     			fdaoNestTo.setFlowId(subWf.getId());	
-                    			fdaoNestTo.setCwsId("" + sfdao.getId());
+                    			fdaoNestTo.setCwsId(String.valueOf(sfdao.getId()));
                     			fdaoNestTo.setCreator(fdaoFrom.getCreator());
                     			fdaoNestTo.setUnitCode(sfdao.getUnitCode());
                     			fdaoNestTo.setCwsQuoteId((int)fdaoFrom.getId());
@@ -3961,7 +4092,7 @@ public class WorkflowActionDb implements Serializable {
                     sfdao.setFieldValue(jfield, pfdao.getFieldValue(pfield));
                 }
             } catch (JSONException | SQLException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
         return sfdao.save();
@@ -4035,7 +4166,7 @@ public class WorkflowActionDb implements Serializable {
                     		nestFdTo = nestFdTo.getFormDb(nestFormCodeTo);
                     		com.redmoon.oa.visual.FormDAO fdaoNestTo = new com.redmoon.oa.visual.FormDAO(nestFdTo);
                     		
-                    		String sql = "select id from form_table_" + nestFormCodeFrom + " where cws_id=" + sfdao.getId();	
+                    		String sql = "select id from ft_" + nestFormCodeFrom + " where cws_id='" + sfdao.getId() + "'";
                     		com.redmoon.oa.visual.FormDAO fdaoFrom = new com.redmoon.oa.visual.FormDAO();
                     		Iterator ir = fdaoFrom.list(nestFormCodeFrom, sql).iterator();
                     		while (ir.hasNext()) {
@@ -4052,7 +4183,7 @@ public class WorkflowActionDb implements Serializable {
                     			}
                     			
                     			fdaoNestTo.setFlowId(parentWf.getId());	
-                    			fdaoNestTo.setCwsId("" + pfdao.getId());
+                    			fdaoNestTo.setCwsId(String.valueOf(pfdao.getId()));
                     			fdaoNestTo.setCreator(fdaoFrom.getCreator());
                     			fdaoNestTo.setUnitCode(pfdao.getUnitCode());
                     			fdaoNestTo.setCwsQuoteId((int)fdaoFrom.getId());
@@ -4067,7 +4198,7 @@ public class WorkflowActionDb implements Serializable {
                 }            
                 
             } catch (JSONException | SQLException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
         return pfdao.save();
@@ -4100,8 +4231,8 @@ public class WorkflowActionDb implements Serializable {
                 }
             }
         } catch (IOException | JDOMException | JSONException ex) {
-            ex.printStackTrace();
-        } /** @todo Handle this exception */
+            LogUtil.getLog(getClass()).error(ex);
+        }
         return null;
     }
     
@@ -4127,18 +4258,13 @@ public class WorkflowActionDb implements Serializable {
                 Element e = (Element) ir.next();
                 // LogUtil.getLog("WorkflowActionDb").info("getActionProperty: internalName=" + e.getAttribute("internalName").getValue());
                 if (e.getAttribute("internalName").getValue().equals(internalName)) {
-                    String prop = e.getChildText(property);
-                    return prop;
-                    // System.out.println("subFlowTypeCode = " + jobj.get("subFlowTypeCode"));
-                    // System.out.println("toSubMap = " + jobj.get("toSubMap"));
-                    // JSONObject json = jobj.getJSONObject("toSubMap");
-                    // System.out.println("parentField = " + json.get("parentField"));
+                    return e.getChildText(property);
                 }
             }
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(WorkflowActionDb.class).error(ex);
         } catch (JDOMException ex) {
-            // ex.printStackTrace();
+            // LogUtil.getLog(getClass()).error(ex);
             DebugUtil.i(WorkflowActionDb.class, "getActionProperty", ex.getMessage());
         }
         return null;
@@ -4178,9 +4304,33 @@ public class WorkflowActionDb implements Serializable {
                 Collections.sort(v, ct);
             }
         } catch (ErrMsgException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(WorkflowActionDb.class).error(ex);
         }
         return v;
+    }
+
+    public boolean ignoreActions(WorkflowDb wf, List<WorkflowActionDb> actionsToIngore) {
+        if (actionsToIngore.size() == 0) {
+            return false;
+        }
+        String sql = "update flow_action set status=" + STATE_IGNORED + " where id=";
+        JdbcTemplate jt = new JdbcTemplate();
+        try {
+            WorkflowActionCacheMgr wacm = new WorkflowActionCacheMgr();
+            for (WorkflowActionDb wad : actionsToIngore) {
+                jt.addBatch(sql + wad.getId());
+                wacm.refreshSave(wad.getId());
+                wf.renewWorkflowString(wad, false);
+            }
+            jt.executeBatch();
+            wf.setRenewed(true);
+            wf.save();
+            LogUtil.getLog(getClass()).info("ignoreActions: renewWorkflowString flowId=" + wf.getId());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+
+        return true;
     }
 
     public double getAveragePerformance() {
@@ -4287,4 +4437,8 @@ public class WorkflowActionDb implements Serializable {
      * 流程提交时，是否发送消息提醒
      */
     private boolean msg = true;
+
+    public static String getINSERT() {
+        return INSERT;
+    }
 }

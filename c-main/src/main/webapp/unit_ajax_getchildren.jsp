@@ -5,12 +5,11 @@
 <%@ page import="cn.js.fan.db.*" %>
 <%@ page import="cn.js.fan.util.*" %>
 <%@ page import="cn.js.fan.web.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title><lt:Label res="res.label.cms.dir" key="content"/></title>
+<title>取单位的孩子节点</title>
 <LINK href="default.css" type=text/css rel=stylesheet>
 <script>
 function findObj(theObj, theDoc) {

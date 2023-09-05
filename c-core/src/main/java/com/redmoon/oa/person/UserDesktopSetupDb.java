@@ -120,7 +120,7 @@ public class UserDesktopSetupDb extends ObjectDb {
                 userDesktopItemCache.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -148,7 +148,7 @@ public class UserDesktopSetupDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -191,7 +191,7 @@ public class UserDesktopSetupDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -226,7 +226,7 @@ public class UserDesktopSetupDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -332,7 +332,7 @@ public class UserDesktopSetupDb extends ObjectDb {
             jt.executeUpdate(sql, new Object[] {new Long(portalId)});
         }
         catch (Exception e) {
-            logger.error("deleteDesktopOfUser:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("deleteDesktopOfUser:" + e.getMessage());
         }
     }
 
@@ -379,7 +379,7 @@ public class UserDesktopSetupDb extends ObjectDb {
             UserDesktopSetupCache udsc = new UserDesktopSetupCache(this);
             udsc.refreshList();
         } catch (SQLException e) {
-            logger.error("initDesktopOfUser:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("initDesktopOfUser:" + e.getMessage());
         }
     }
 
@@ -387,7 +387,6 @@ public class UserDesktopSetupDb extends ObjectDb {
      * 将管理员桌面上的某项复制至所有其它用户的桌面
      * 在运用门户后,已弃用
      * @deprecated
-     * @param id int
      */
     public void copyToAllOtherUsersDesktop(String userName) {
         UserDb ud = new UserDb();
@@ -423,7 +422,6 @@ public class UserDesktopSetupDb extends ObjectDb {
     
     /**
      * 將系統門戶的桌面項覆製到其他用戶的門戶桌面上
-     * @param userName
      */
     public void copyToUsersDesktop() {
         UserDb ud = new UserDb();

@@ -4,6 +4,7 @@ import java.io.File;
 
 import cn.js.fan.web.Global;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.fileark.Document;
 
 /**
@@ -19,8 +20,6 @@ public class Pdf2htmlEXUtil {
      *            pdf2htmlEX.exe文件路径
      * @param pdfFile
      *            pdf文件绝对路径
-     * @param [destDir] 生成的html文件存放路径
-     * @param htmlName
      *            生成的html文件名称
      * @return
      */
@@ -29,7 +28,6 @@ public class Pdf2htmlEXUtil {
         if (!(exeFilePath != null && !"".equals(exeFilePath) && pdfFile != null
                 && !"".equals(pdfFile) && htmlFileName != null && !""
                     .equals(htmlFileName))) {
-            System.out.println("传递的参数有误！");
             return false;
         }
         
@@ -56,7 +54,6 @@ public class Pdf2htmlEXUtil {
                 command.append(".html");
         }
         try {
-            System.out.println("Command：" + command.toString());
             Process p = rt.exec(command.toString());
             StreamGobbler errorGobbler = new StreamGobbler(p.getErrorStream(),
                     "ERROR");
@@ -72,7 +69,7 @@ public class Pdf2htmlEXUtil {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(Pdf2htmlEXUtil.class).error(e);
         }
         return false;
     }
@@ -82,7 +79,7 @@ public class Pdf2htmlEXUtil {
             String htmlFileName) {
         if (!(pdfFile != null && !"".equals(pdfFile) && htmlFileName != null && !""
                 .equals(htmlFileName))) {
-            System.out.println("传递的参数有误！");
+            LogUtil.getLog(Pdf2htmlEXUtil.class).error("传递的参数有误！");
             return false;
         }
         Runtime rt = Runtime.getRuntime();
@@ -102,7 +99,6 @@ public class Pdf2htmlEXUtil {
                 command.append(".html");
         }
         try {
-            System.out.println("Command：" + command.toString());
             Process p = rt.exec(command.toString());
             StreamGobbler errorGobbler = new StreamGobbler(p.getErrorStream(),
                     "ERROR");
@@ -118,7 +114,7 @@ public class Pdf2htmlEXUtil {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(Pdf2htmlEXUtil.class).error(e);
         }
         return false;
     }
@@ -182,18 +178,14 @@ public class Pdf2htmlEXUtil {
      * @Description: 
      * @param filepath 原始文件的完整路径
      */
-    public static void del(String filepath){
-    	com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-    	boolean canPdfFilePreview = cfg.getBooleanProperty("canPdfFilePreview");
-    	if (canPdfFilePreview) {    	
-	    	String htmlfile=filepath.substring(0,filepath.lastIndexOf("."))+".html";
-	    	File htmlFile=new File(htmlfile);
-	    	if(htmlFile.exists()){
-	    		if(htmlFile.isFile()){
-	    			htmlFile.delete();
-	    		}
-	    	}
-    	}
+    public static void del(String filepath) {
+        String htmlfile=filepath.substring(0,filepath.lastIndexOf("."))+".html";
+        File htmlFile=new File(htmlfile);
+        if(htmlFile.exists()){
+            if(htmlFile.isFile()){
+                htmlFile.delete();
+            }
+        }
     }
     
     // (注意pdf2htmlEX.exe文件不要单独copy出来用,

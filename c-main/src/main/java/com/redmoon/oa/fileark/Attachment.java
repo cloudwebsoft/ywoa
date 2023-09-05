@@ -1,24 +1,21 @@
 package com.redmoon.oa.fileark;
 
-import java.io.File;
-import java.sql.*;
-import java.util.List;
-import java.util.Vector;
-
-import cn.js.fan.db.Conn;
-import cn.js.fan.db.ListResult;
-import cn.js.fan.db.ResultIterator;
-import cn.js.fan.db.ResultRecord;
-import cn.js.fan.db.SQLFilter;
-import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
-
+import cn.js.fan.db.*;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
-
+import cn.js.fan.web.Global;
+import com.cloudweb.oa.api.IObsService;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
+
+import java.io.File;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Vector;
 
 public class Attachment implements java.io.Serializable {
     int id;
@@ -51,7 +48,6 @@ public class Attachment implements java.io.Serializable {
 
     String LOAD = "SELECT doc_id, name, fullpath, diskname, visualpath, orders, page_num, downloadCount, upload_date, file_size, ext, is_embedded, is_title_image FROM document_attach WHERE id=?";
     String SAVE = "update document_attach set doc_id=?, name=?, fullpath=?, diskname=?, visualpath=?, orders=?, page_num=?, downloadCount=?,is_title_image=? WHERE id=?";
-    transient Logger logger = Logger.getLogger(Attachment.class.getName());
 
     public Attachment() {
         connname = Global.getDefaultDB();
@@ -59,8 +55,8 @@ public class Attachment implements java.io.Serializable {
 
     public Attachment(int id) {
         connname = Global.getDefaultDB();
-        if (connname.equals("")) {
-            logger.info("Attachment:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("Attachment:默认数据库名为空！");
         }
         this.id = id;
         loadFromDb();
@@ -68,8 +64,8 @@ public class Attachment implements java.io.Serializable {
 
     public Attachment(int orders, int docId, int pageNum) {
         connname = Global.getDefaultDB();
-        if (connname.equals("")) {
-            logger.info("Attachment:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("Attachment:默认数据库名为空！");
         }
         this.orders = orders;
         this.docId = docId;
@@ -99,15 +95,13 @@ public class Attachment implements java.io.Serializable {
             pstmt.setString(11, ext);
             pstmt.setInt(12, embedded?1:0);
             pstmt.setInt(13, titleImage?1:0);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -119,7 +113,7 @@ public class Attachment implements java.io.Serializable {
         try {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
             pstmt.close();
             // 更新其后的附件的orders
             sql = "update document_attach set orders=orders-1 where doc_id=? and page_num=? and orders>? and is_title_image=?";
@@ -131,16 +125,15 @@ public class Attachment implements java.io.Serializable {
             conn.executePreUpdate();
         }
         catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
+
         // 删除文件
-        File fl = new File(Global.getRealPath() + visualPath + "/" + diskName);
-        fl.delete();
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
+        fileService.del(getVisualPath(), getDiskName());
         return re;
     }
 
@@ -159,17 +152,15 @@ public class Attachment implements java.io.Serializable {
             pstmt.setInt(8, downloadCount);
             pstmt.setInt(9, titleImage?1:0);
             pstmt.setInt(10, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         finally {
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(docId);
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -196,9 +187,9 @@ public class Attachment implements java.io.Serializable {
 			boolean findDirect = false;
 			boolean isNextId = false;
 			while (ri.hasNext()) {
-				ResultRecord rr = (ResultRecord) ri.next();
+				ResultRecord rr = ri.next();
 				int id = rr.getInt(1);
-				if (arrow.equals("left")) {
+				if ("left".equals(arrow)) {
 					// id与当前预览id一致时
 					if (attId == id) {
 						if (index == 0) {
@@ -242,7 +233,7 @@ public class Attachment implements java.io.Serializable {
 				}
 			}
 		} catch (Exception e) {
-			logger.error("showLeftImg:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("showLeftImg:" + e.getMessage());
 		} finally {
 			jt.close();
 		}
@@ -261,8 +252,8 @@ public class Attachment implements java.io.Serializable {
         return this.docId;
     }
 
-    public void setDocId(int di) {
-        this.docId = di;
+    public void setDocId(int id) {
+        this.docId = id;
     }
 
     public String getName() {
@@ -331,9 +322,9 @@ public class Attachment implements java.io.Serializable {
 
     /**
      * 获取附件
-     * @param docId
-     * @param name
-     * @return
+     * @param docId 文章ID
+     * @param name  名称
+     * @return 附件实例
      */
     public Attachment getAttachmentByName(int docId, String name) {
         String sql = "select id from document_attach where doc_id=? and name=?";
@@ -345,7 +336,7 @@ public class Attachment implements java.io.Serializable {
                 return new Attachment(rr.getInt(1));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return null;
     }
@@ -375,18 +366,14 @@ public class Attachment implements java.io.Serializable {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
-                rs = null;
+                } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -413,18 +400,14 @@ public class Attachment implements java.io.Serializable {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
-                rs = null;
+                } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
     
@@ -438,14 +421,11 @@ public class Attachment implements java.io.Serializable {
             re = conn.executePreUpdate()==1?true:false;
         }
         catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
             return false;
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         // 对某些情况不需要删除的将pageNum置为0
         if (pageNum != 1) {
@@ -473,7 +453,6 @@ public class Attachment implements java.io.Serializable {
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 total = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -482,20 +461,22 @@ public class Attachment implements java.io.Serializable {
 
             if (ps!=null) {
                 ps.close();
-                ps = null;
             }
 
             // 防止受到攻击时，curPage被置为很大，或者很小
             int totalpages = (int) Math.ceil((double) total / pageSize);
-            if (curPage > totalpages)
+            if (curPage > totalpages) {
                 curPage = totalpages;
-            if (curPage <= 0)
+            }
+            if (curPage <= 0) {
                 curPage = 1;
+            }
 
             ps = conn.prepareStatement(sql);
 
-            if (total != 0)
+            if (total != 0) {
                 conn.setMaxRows(curPage * pageSize); // 尽量减少内存的使用
+            }
 
             rs = conn.executePreQuery();
             if (rs == null) {
@@ -513,20 +494,16 @@ public class Attachment implements java.io.Serializable {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listResult:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("listResult:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (Exception e) {}
-                rs = null;
+                } catch (Exception e) {LogUtil.getLog(getClass()).error(e);}
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         lr.setResult(result);
@@ -556,7 +533,6 @@ public class Attachment implements java.io.Serializable {
     		ResultSet rs = conn.executeQuery(sql);
     		if (rs != null && rs.next()) {
                 i = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -564,12 +540,9 @@ public class Attachment implements java.io.Serializable {
             }
 			
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+    	    conn.close();
         }
     	return i;
     }
@@ -592,7 +565,6 @@ public class Attachment implements java.io.Serializable {
     		ResultSet rs = conn.executeQuery(sql);
     		if (rs != null && rs.next()) {
                 i = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -600,12 +572,9 @@ public class Attachment implements java.io.Serializable {
             }
 			
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+    	    conn.close();
         }
     	return i;
     }
@@ -627,7 +596,7 @@ public class Attachment implements java.io.Serializable {
 				return rr.getInt(1);
 			}			
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return -1;
@@ -652,8 +621,7 @@ public class Attachment implements java.io.Serializable {
                 }
             }
         } catch (SQLException e) {
-            LogUtil.getLog(getClass()).error("getFirstImagePathOfDoc:" +
-                                             e.getMessage());
+            LogUtil.getLog(getClass()).error("getFirstImagePathOfDoc:" + e.getMessage());
         }
         return null;
     }

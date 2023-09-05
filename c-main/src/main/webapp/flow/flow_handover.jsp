@@ -6,8 +6,8 @@
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.pvg.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>流程移交</title>
@@ -166,14 +166,14 @@ if (op.equals("handover")) {
       <td align="left">
       	<input id="oldUserName" name="oldUserName" type="hidden" />
       	<input id="oldUserRealName" name="oldUserRealName" readonly="readonly" />
-        <input class="btn" type="button" onclick="javascript:curObj=o('oldUserName');curObjShow=o('oldUserRealName');showModalDialog('../user_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')" value="选择用户" /></td>
+        <input class="btn" type="button" onclick="javascript:curObj=o('oldUserName');curObjShow=o('oldUserRealName');openWin('../user_sel.jsp', 800, 600)" value="选择用户" /></td>
     </tr>
     <tr>
       <td align="center">移交给</td>
       <td align="left">
       	<input id="newUserName" name="newUserName" type="hidden" />
       	<input id="newUserRealName" name="newUserRealName" readonly="readonly" />
-   	  <input class="btn" type="button" onclick="javascript:curObj=o('newUserName');curObjShow=o('newUserRealName');showModalDialog('../user_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')" value="选择用户" /></td>
+   	  <input class="btn" type="button" onclick="javascript:curObj=o('newUserName');curObjShow=o('newUserRealName');openWin('../user_sel.jsp', 800, 600)" value="选择用户" /></td>
     </tr>
     <tr>
       <td align="center">日期</td>

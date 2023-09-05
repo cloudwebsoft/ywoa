@@ -1,0 +1,17 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<div class="tabs1Box" th:fragment="nav(myUserName, flowPerformanceDisplay, item)">
+    <div id="tabs1">
+        <ul>
+            <li id="menu1" th:attr="class=${item} eq 1 ? 'current':''"><a th:href="@{'/flow/flowListPage.do?displayMode=2&userName=' + ${myUserName}}" th:inline="text"><span>[[#{iInFlow}]]</span></a></li>
+            <li id="menu2" th:attr="class=${item} eq 2 ? 'current':''"><a th:href="@{'/flow/flowListPage.do?displayMode=3&userName=' + ${myUserName}}" th:inline="text"><span>[[#{initiatedFlow}]]</span></a></li>
+            <li id="menu3" style="display: none" th:attr="class=${item} eq 3 ? 'current':''"><a th:href="@{'/flow/flow_list_done.jsp?&userName=' + ${myUserName}}" th:inline="text"><span>[[#{handleRecord}]]</span></a></li>
+            <li id="menu4" th:if="${flowPerformanceDisplay}" th:attr="class=${item} eq 4 ? 'current':''"><a th:href="@{'/flow/flow_user_performance.jsp?&userName=' + ${myUserName}}" th:inline="text"><span>[[#{achievements}]]</span></a></li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

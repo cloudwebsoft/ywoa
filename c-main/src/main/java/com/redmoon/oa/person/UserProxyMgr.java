@@ -122,7 +122,7 @@ public class UserProxyMgr {
                             try {
                                 md.sendSysMsg(upd.getString("proxy"), t, c);
                             } catch (ErrMsgException ex) {
-                                ex.printStackTrace();
+                                LogUtil.getLog(getClass()).error(ex);
                             }
                         }
 

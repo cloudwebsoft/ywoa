@@ -36,14 +36,14 @@ public class DeptMultiSelectCtl extends AbstractMacroCtl {
         String str = "";
         String deptNames = "";
         String v = StrUtil.getNullStr(ff.getValue());
-        if(!v.equals("")){
+        if(!"".equals(v)){
             DeptDb dd = new DeptDb();
 
             String[] fields = v.split(",");
             for (String deptCode:fields) {
                 dd = dd.getDeptDb(deptCode);
                 String deptName = dd.getName();
-                if (deptNames.equals("")){
+                if ("".equals(deptNames)){
                     deptNames = deptName;
                 }else{
                     deptNames += "," + deptName;
@@ -98,7 +98,7 @@ public class DeptMultiSelectCtl extends AbstractMacroCtl {
     @Override
     public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
         String v = StrUtil.getNullStr(fieldValue);
-        if(!v.equals("")){
+        if(!"".equals(v)){
             DeptDb dd = new DeptDb();
             StringBuffer deptNames = new StringBuffer();
             String[] fields = v.split(",");
@@ -120,35 +120,39 @@ public class DeptMultiSelectCtl extends AbstractMacroCtl {
      * @param ff FormField
      * @return String
      */
+    @Override
     public String getReplaceCtlWithValueScript(FormField ff) {
         String v = "";
-        if (ff.getValue() != null && !ff.getValue().equals("")) {
+        if (ff.getValue() != null && !"".equals(ff.getValue())) {
             DeptDb dd = new DeptDb();
         	String[] ary = StrUtil.split(ff.getValue(), ",");
-        	for (int i=0; i<ary.length; i++) {
-                dd = dd.getDeptDb(ary[i]);       
-                if ("".equals(v))
-                	v = dd.getName();
-                else
-                	v += "," + dd.getName();
-        	}            
+            for (String s : ary) {
+                dd = dd.getDeptDb(s);
+                if ("".equals(v)) {
+                    v = dd.getName();
+                } else {
+                    v += "," + dd.getName();
+                }
+            }
         }
         String str = "$('#" + ff.getName() + "_btn').hide();\n";
         return str + "ReplaceCtlWithValue('" + ff.getName() + "_realshow', '" + ff.getType() + "','" + v + "');\n";
      }    
     
+    @Override
     public String getDisableCtlScript(FormField ff, String formElementId) {
         String realName = "";
-        if (ff.getValue() != null && !ff.getValue().equals("")) {
+        if (ff.getValue() != null && !"".equals(ff.getValue())) {
         	String[] ary = StrUtil.split(ff.getValue(), ",");
             DeptDb dd = new DeptDb();
-	       	for (int i=0; i<ary.length; i++) {
-	           dd = dd.getDeptDb(ary[i]);       
-	           if ("".equals(realName))
-	               	realName = dd.getName();
-	           else
-	               	realName += "," + dd.getName();
-	       	}             
+            for (String s : ary) {
+                dd = dd.getDeptDb(s);
+                if ("".equals(realName)) {
+                    realName = dd.getName();
+                } else {
+                    realName += "," + dd.getName();
+                }
+            }
         }
 
         String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +

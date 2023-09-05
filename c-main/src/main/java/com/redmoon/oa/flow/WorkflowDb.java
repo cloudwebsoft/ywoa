@@ -8,10 +8,19 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.cloudweb.oa.api.IModuleFieldSelectCtl;
 import com.cloudweb.oa.api.IWorkflowHelper;
+import com.cloudweb.oa.api.IWorkflowScriptUtil;
+import com.cloudweb.oa.api.IWorkflowUtil;
+import com.cloudweb.oa.entity.PostUser;
 import com.cloudweb.oa.service.FormArchiveService;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.service.IPostUserService;
+import com.cloudweb.oa.service.MacroCtlService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.IPUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
@@ -42,7 +51,6 @@ import com.redmoon.oa.ui.IDesktopUnit;
 import com.redmoon.oa.ui.LocalUtil;
 import com.redmoon.oa.util.BeanShellUtil;
 import com.redmoon.oa.visual.SQLBuilder;
-import org.apache.log4j.Logger;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -57,10 +65,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.sql.*;
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
+import java.sql.Date;
+import java.util.*;
 
 public class WorkflowDb implements Serializable,IDesktopUnit {
     String connname;
@@ -153,8 +159,8 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
     private java.util.Date mydate;
 
     final String INSERT = "insert into flow (id, type_code, title, userName, jobCode, resultValue, return_back, mydate, project_id, unit_code, flow_level, parent_action_id,status,form_archive_id) values (?,?,?,?,?," + WorkflowActionDb.RESULT_VALUE_NOT_ACCESSED + ",?,?,?,?,?,?," + STATUS_NONE + ",?)";
-    final String LOAD = "select type_code,title,doc_id,userName,flow_string,status,resultValue,checkUserName,mydate,remark,return_back,BEGIN_DATE,END_DATE,project_id,unit_code,flow_level,parent_action_id,locker,del_user,del_date,is_renewed,img_visual_path,is_alter,alter_time,alter_user,flow_json,form_archive_id from flow where id=?";
-    final String SAVE = "update flow set type_code=?,title=?,doc_id=?,userName=?,flow_string=?,status=?,resultValue=?,checkUserName=?,remark=?,return_back=?,BEGIN_DATE=?,END_DATE=?,project_id=?,flow_level=?,parent_action_id=?,locker=?,del_user=?,del_date=?,is_renewed=?,img_visual_path=?,is_alter=?,alter_time=?,alter_user=?,flow_json=?,form_archive_id=? where id=?";
+    final String LOAD = "select type_code,title,doc_id,userName,flow_string,status,resultValue,checkUserName,mydate,remark,return_back,BEGIN_DATE,END_DATE,project_id,unit_code,flow_level,parent_action_id,locker,del_user,del_date,is_renewed,img_visual_path,is_alter,alter_time,alter_user,flow_json,form_archive_id,intervenor,intervene_time from flow where id=?";
+    final String SAVE = "update flow set type_code=?,title=?,doc_id=?,userName=?,flow_string=?,status=?,resultValue=?,checkUserName=?,remark=?,return_back=?,BEGIN_DATE=?,END_DATE=?,project_id=?,flow_level=?,parent_action_id=?,locker=?,del_user=?,del_date=?,is_renewed=?,img_visual_path=?,is_alter=?,alter_time=?,alter_user=?,flow_json=?,form_archive_id=?,intervenor=?,intervene_time=? where id=?";
     final String DELETE = "delete from flow where id=?";
 
     /**
@@ -179,7 +185,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
     public static final int STATUS_REFUSED = -2;
 
     /**
-     * 流程尚未发起，将会在一天后被调度删除
+     * 流程未生效，尚未发起，将会在一天后被调度删除
      */
     public static final int STATUS_NONE = -10;
     
@@ -208,8 +214,9 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         id = -1;
         docId = -1;
         connname = Global.getDefaultDB();
-        if (connname.equals(""))
-            Logger.getLogger(getClass()).info("Directory:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名为空！");
+        }
     }
 
     /**
@@ -252,17 +259,17 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 WorkflowCacheMgr wcm = new WorkflowCacheMgr();
                 wcm.refreshCreate();
 
+                pstmt.close();
+
                 // 为流程创建默认监控人员，即流程的创建者本身（监控人员暂时无效）
-                if (pstmt!=null) {
-                    pstmt.close();
-                    pstmt = null;
-                }
-                String sql = "insert into flow_monitor (flowId, userName, flowCreateDate) values (?, ?, ?)";
+                /*String sql = "insert into flow_monitor (flowId, userName, flowCreateDate) values (?, ?, ?)";
                 pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, id);
                 pstmt.setString(2, userName);
                 pstmt.setTimestamp(3, new Timestamp(new java.util.Date().getTime()));
                 conn.executePreUpdate();
+                */
+
                 conn.commit();
 
                 // 为其创建流程文档，文档中存放表单
@@ -272,23 +279,23 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 FormDb fd = new FormDb();
                 fd = fd.getFormDb(lf.getFormCode());
                 doc.setFlowId(id);
-                boolean re = doc.create(typeCode, title, fd.getContent(), 0, "", "", userName, Document.NOTEMPLATE, userName);
+                // boolean re = doc.create(typeCode, title, fd.getContent(), 0, "", "", userName, Document.NOTEMPLATE, userName);
+                boolean re = doc.create(typeCode, title, "", 0, "", "", userName, Document.NOTEMPLATE, userName);
                 if (re) {
                     WorkflowDb wfd = getWorkflowDb(id);
                     wfd.setDocId(doc.getID());
                     wfd.save();
                 }
                 else {
-                    Logger.getLogger(getClass()).error("create: Create document failed.");
+                    LogUtil.getLog(getClass()).error("create: Create document failed.");
                 }
 
                 //  为流程创建一条空表单记录，记录中存储的为表单域的默认值
                 FormDAO fdao = new FormDAO(id, fd);
-                Iterator ir = fd.getFields().iterator();
-                while (ir.hasNext()) {
-                    FormField ff = (FormField)ir.next();
+                for (FormField ff : fd.getFields()) {
                     ff.setValue(ff.getDefaultValue());
                 }
+                fdao.setFlowTypeCode(typeCode);
                 fdao.setFields(fd.getFields()); // 设置默认值
                 fdao.setUnitCode(unitCode);
                 fdao.setCreator(userName);
@@ -296,10 +303,10 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 re = fdao.create();
                 if (re) {
                     // 为嵌套表单宏控件创建空表单记录
-                    ir = fd.getFields().iterator();
+                    Iterator<FormField> ir = fd.getFields().iterator();
                     MacroCtlMgr mm = new MacroCtlMgr();
                     while (ir.hasNext()) {
-                        FormField macroField = (FormField) ir.next();
+                        FormField macroField = ir.next();
                         if (macroField.getType().equals(FormField.TYPE_MACRO)) {
                             MacroCtlUnit mu = mm.getMacroCtlUnit(macroField.getMacroType());
                             if (mu!=null) {
@@ -317,13 +324,9 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             }
         } catch (SQLException e) {
             conn.rollback();
-            Logger.getLogger(getClass()).error("create:" + e.getMessage());
-            // System.out.println("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return false;
     }
@@ -343,7 +346,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                Logger.getLogger(getClass()).error("流程id= " + id +
+                LogUtil.getLog(getClass()).error("流程id= " + id +
                              " 在数据库中未找到.");
             } else {
                 this.typeCode = rs.getString(1);
@@ -387,16 +390,13 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 alterUser = StrUtil.getNullStr(rs.getString(25));
                 flowJson = StrUtil.getNullStr(rs.getString(26));
                 formArchiveId = rs.getLong(27);
+				intervenor = StrUtil.getNullStr(rs.getString(28));
+                interveneTime = rs.getTimestamp(29);
                 loaded = true;
 
-                if (rs!=null) {
-                    rs.close();
-                    rs = null;
-                }
-                if (pstmt!=null) {
-                    pstmt.close();
-                    pstmt = null;
-                }
+                rs.close();
+                pstmt.close();
+
                 // 获取监控人员
                 String sql = "select userName from flow_monitor where flowId=?";
                 pstmt = conn.prepareStatement(sql);
@@ -412,12 +412,9 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -478,6 +475,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         String ua = request.getHeader("User-Agent");
         mad.setOs(UserAgentParser.getOS(ua));
         mad.setBrowser(UserAgentParser.getBrowser(ua));
+        mad.setClusterNo(Global.getInstance().getClusterNo());
 
         mad.onWorkflowManualFinished(id, userName, isFinishAgree);
 
@@ -561,7 +559,14 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             pstmt.setString(23, alterUser);
             pstmt.setString(24, flowJson);
             pstmt.setLong(25, formArchiveId);
-            pstmt.setInt(26, id);
+            pstmt.setString(26, intervenor);
+            if (interveneTime == null) {
+                pstmt.setTimestamp(27, null);
+            }
+            else {
+                pstmt.setTimestamp(27, new Timestamp(interveneTime.getTime()));
+            }
+            pstmt.setInt(28, id);
             int r = pstmt.executeUpdate();
             if (r == 1) {
                 // 更新缓存
@@ -570,8 +575,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 return true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("save:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -683,7 +687,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 try {
                     fdao.save();
                 } catch (ErrMsgException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -734,56 +738,58 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                
                // 置表單標志位已完成
                fdao.setStatus(cwsStatus);
-               try {
-            	   fdao.save();
-			   } catch (ErrMsgException e) {
-					// TODO Auto-generated catch block
-					LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-					e.printStackTrace();
-			   }
+               fdao.save();
 			   
 			   	// 置所有嵌套表的记录的cws_status
 		        MacroCtlMgr mm = new MacroCtlMgr();
-		        Iterator ir = fdao.getFields().iterator();
-		        while (ir.hasNext()) {
-		            FormField macroField = (FormField) ir.next();
-		            if (macroField.getType().equals(FormField.TYPE_MACRO)) {
-		                MacroCtlUnit mu = mm.getMacroCtlUnit(macroField.getMacroType());
+                for (FormField macroField : fdao.getFields()) {
+                    if (macroField.getType().equals(FormField.TYPE_MACRO)) {
+                        MacroCtlUnit mu = mm.getMacroCtlUnit(macroField.getMacroType());
+                        if (mu == null) {
+                            DebugUtil.e(getClass(), macroField.getTitle() + "宏控件类型", macroField.getMacroType() + "不存在");
+                            continue;
+                        }
+                        if ("module_field_select".equals(mu.getCode())) {
+                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                            IModuleFieldSelectCtl moduleFieldSelectCtl = macroCtlService.getModuleFieldSelectCtl();
+                            com.alibaba.fastjson.JSONObject jsonDesc = moduleFieldSelectCtl.getCtlDescription(macroField);
+                            boolean isAgainst = jsonDesc.getBoolean("isAgainst");
+                            // 冲抵表单域选择宏控件所选的那条记录
+                            if (status==STATUS_FINISHED && isAgainst) {
+                                FormDAO.updateFlagForModuleFieldSelectCtl(jsonDesc, macroField);
+                            }
+                        } else if (mu.getNestType() != MacroCtlUnit.NEST_TYPE_NONE) {
+                            String formCode = macroField.getDescription();
+                            boolean isAgainst = false;
+                            String sourceForm = "";
+                            try {
+                                String defaultVal = StrUtil.decodeJSON(formCode);
+                                JSONObject json = new JSONObject(defaultVal);
+                                formCode = json.getString("destForm");
+                                sourceForm = json.getString("sourceForm");
+                                // 是否冲抵
+                                if (json.has("isAgainst")) {
+                                    isAgainst = "1".equals(json.getString("isAgainst"));
+                                }
+                            } catch (JSONException e) {
+                                LogUtil.getLog(getClass()).info("changeStatus:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + macroField.getDefaultValueRaw());
+                                LogUtil.getLog(getClass()).error(e);
+                            }
 
-		                if (mu!=null && mu.getNestType() != MacroCtlUnit.NEST_TYPE_NONE) {
-							String formCode = macroField.getDescription();
-							boolean isAgainst = false;
-							String sourceForm = "";
-							try {
-								String defaultVal = StrUtil.decodeJSON(formCode);
-								JSONObject json = new JSONObject(defaultVal);
-								formCode = json.getString("destForm");
-								
-								sourceForm = json.getString("sourceForm");
-								
-								// 是否冲抵
-								isAgainst = "1".equals(json.getString("isAgainst"));
-							} catch (JSONException e) {
-								// TODO Auto-generated catch block
-								// e.printStackTrace();
-								LogUtil.getLog(getClass()).info("changeStatus:" + formCode + " is old version before 20131123. ff.getDefaultValueRaw()=" + macroField.getDefaultValueRaw());
-							}				            
-				            
-							FormDAO.updateStatus(formCode, fdaoId, cwsStatus);
-							
-							if (status==STATUS_FINISHED && isAgainst) {
-								FormDAO.updateFlag((int)fdao.getId(), sourceForm, formCode, 1);
-							}
-		                }
-		            }
-		        }
-    	       
-               LogUtil.getLog(getClass()).info("changeStatus: script=" + script);
+                            FormDAO.updateStatus(formCode, fdaoId, cwsStatus);
+
+                            if (status == STATUS_FINISHED && isAgainst) {
+                                FormDAO.updateFlag((int) fdao.getId(), sourceForm, formCode, 1);
+                            }
+                        }
+                    }
+                }
 
 		        // 干预流程时，会用到isCallEvent
 		        boolean isCallEvent = ParamUtil.getBoolean(request, "isCallEvent", true);
-		        if (isCallEvent) {
-                    if (script != null && !"".equals(script.trim())) {
+                LogUtil.getLog(getClass()).info("changeStatus: runFinishScript isCallEvent=" + isCallEvent);
+                if (isCallEvent) {
+                    if (!StrUtil.isEmpty(script)) {
                         runFinishScript(request, wfd, fdao, lastAction, script, false);
                     }
 
@@ -800,9 +806,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                                 wfm.writeBack(wfd, lf, flowFinish);
                             }
                         } catch (Exception e) {
-                            LogUtil.getLog(getClass()).error("parse writeProp field error");
-                            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
                         }
                     }
 
@@ -815,88 +819,11 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                             Element root = docu.getRootElement();
                             Element flowFinish = root.getChild("flowFinish");
                             if (flowFinish != null) {
-                                String dbSource = flowFinish.getChildText("dbSource");
-                                String writeBackTable = flowFinish.getChildText("writeBackForm");
-                                StringBuilder sb = new StringBuilder("");                                     //用于拼接回写字段
-                                StringBuilder cond = new StringBuilder("");                                //用于拼接条件字段
-                                List writeBackFieldList = flowFinish.getChildren("writeBackField");
-                                Element condition = flowFinish.getChild("condition");
-                                List conditionFieldList = null;
-                                Iterator conditionIr = null;
-                                if (condition != null) {
-                                    conditionFieldList = condition.getChildren("conditionField");
-                                }
-                                if (conditionFieldList != null) {
-                                    conditionIr = conditionFieldList.iterator();
-                                }
-                                while (conditionIr != null && conditionIr.hasNext()) {                         //解析条件字段
-                                    Element conditionField = (Element) conditionIr.next();
-                                    String conditionFieldName = conditionField.getAttributeValue("fieldName");
-
-                                    int fieldType = WorkflowUtil.getColumnType(dbSource, writeBackTable, conditionFieldName);
-
-                                    String beginBracket = conditionField.getAttributeValue("beginBracket");
-                                    String endBracket = conditionField.getAttributeValue("endBracket");
-                                    String compare = conditionField.getChildText("compare");
-                                    String compareVal = conditionField.getChildText("compareVal");
-
-                                    if (fieldType == FormField.FIELD_TYPE_TEXT || fieldType == FormField.FIELD_TYPE_VARCHAR || fieldType == FormField.FIELD_TYPE_DATE) {
-                                        compareVal = SQLFilter.sqlstr(compareVal);
-                                    }
-
-                                    String logical = conditionField.getChildText("logical");
-                                    cond.append(" ").append(beginBracket).append(" ").append(conditionFieldName).append(" ").append(compare).append(" ").append(compareVal).append(" ").append(endBracket).append(" ").append(logical);
-                                }
-                                String condString = cond.toString();
-                                Iterator writeBackFieldIr = null;
-                                if (writeBackFieldList != null) {
-                                    writeBackFieldIr = writeBackFieldList.iterator();
-                                }
-                                while (writeBackFieldIr != null && writeBackFieldIr.hasNext()) {            //解析回写字段
-                                    Element writeBackField = (Element) writeBackFieldIr.next();
-                                    String writeBackFieldStr = writeBackField.getAttributeValue("fieldName");
-                                    String writeBackMathStr = writeBackField.getChildText("writeBackMath");
-                                    sb.append(writeBackFieldStr).append(" = ").append(writeBackMathStr).append(",");
-                                }
-                                String setField = sb.toString();
-                                if (!"".equals(setField)) {
-                                    WorkflowMgr wMgr = new WorkflowMgr();
-                                    setField = setField.substring(0, setField.lastIndexOf(","));
-                                    String sql = "update " + writeBackTable + " set " + setField;
-                                    if (!"".equals(condString)) {
-                                        condString = condString.substring(0, condString.lastIndexOf(" "));
-                                        sql += " where " + condString;
-                                    }
-                                    sql = wMgr.parseWriteBackDbField(sql);            //过滤{}，用于回写值
-                                    if (condString.indexOf("{$nest.") == -1) {
-                                        sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), sql, wfd.getId());     //过滤{$}，用于条件值
-                                        JdbcTemplate jt = new JdbcTemplate(dbSource);
-                                        jt.executeUpdate(sql);
-                                    } else {
-                                        // 取得当前主表中的子表中对应字段的值，并赋予
-                                        List ary = wMgr.parseAndSetNestFieldValue(lf.getFormCode(), sql, wfd.getId());     //过滤{$}，用于条件值
-                                        if (ary.size() == 0) {
-                                            LogUtil.getLog(getClass()).error("parseAndSetNestFieldValue error");
-                                        } else {
-                                            JdbcTemplate jt = new JdbcTemplate(dbSource);
-                                            for (int i = 0; i < ary.size(); i++) {
-                                                sql = wMgr.parseAndSetMainFieldValue(lf.getFormCode(), (String) ary.get(i), wfd.getId());     //过滤{$}，用于条件值
-                                                jt.addBatch(sql);
-                                            }
-                                            jt.executeBatch();
-                                        }
-                                    }
-                                }
+                                IWorkflowUtil workflowUtil = SpringUtil.getBean(IWorkflowUtil.class);
+                                workflowUtil.writeBackDb(wfd, lf, flowFinish);
                             }
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                            LogUtil.getLog(getClass()).error("parse writeProp field error:" + e.getMessage());
-                            throw new ErrMsgException(e.getMessage());
-                        } catch (JDOMException e) {
-                            e.printStackTrace();
-                            throw new ErrMsgException(e.getMessage());
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        } catch (SQLException | JDOMException | IOException e) {
+                            LogUtil.getLog(getClass()).error(e);
                             throw new ErrMsgException(e.getMessage());
                         }
                     }
@@ -929,38 +856,8 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
      * @return
      */
    	public BSHShell runFinishScript(HttpServletRequest request, WorkflowDb wfd, FormDAO fdao, WorkflowActionDb lastAction, String script, boolean isTest) throws ErrMsgException {
-	   	BSHShell bs = new BSHShell();
-
-	   	StringBuffer sb = new StringBuffer();
-		BeanShellUtil.setFieldsValue(fdao, sb);
-
-        // 赋值给用户
-        // sb.append("flowId=" + wfd.getId() + ";");
-		sb.append("int flowId=" + wfd.getId() + ";");
-
-		bs.set(ConstUtil.SCENE, ConstUtil.SCENE_FLOW_ON_FINISH);
-
-		Privilege pvg = new Privilege();
-		// 当调中调用了WorkflowDb.changeStatus时，request为null
-		if (request!=null) {
-            bs.set("userName", pvg.getUser(request));
-        }
-		else {
-		    bs.set("userName", "");
-        }
-		bs.set("lastAction", lastAction);
-		bs.set("fdao", fdao);
-		MyActionDb firstMyActionDb = new MyActionDb();
-		firstMyActionDb = firstMyActionDb.getFirstMyActionDbOfFlow(wfd.getId());
-		bs.set("firstMyAction", firstMyActionDb);
-		bs.set("wf", wfd);
-		bs.set("request", request);
-		
-        bs.eval(BeanShellUtil.escape(sb.toString()));
-
-		bs.eval(script);
-
-    	return bs;	
+        IWorkflowScriptUtil workflowScriptUtil = SpringUtil.getBean(IWorkflowScriptUtil.class);
+        return workflowScriptUtil.runFinishScript(request, wfd, fdao, lastAction, script, isTest);
    	}    
 
     public String getTypeCode() {
@@ -1058,6 +955,25 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         return v;
     }
 
+    public Vector<WorkflowLinkDb> getLinksFromString(String str) throws ErrMsgException {
+        if (!str.startsWith("paper")) {
+            return null;
+        }
+        String[] ary = str.split("\\r\\n");
+        int len = ary.length;
+
+        Vector<WorkflowLinkDb> v = new Vector<>();
+        for (int i = 1; i < len; i++) {
+            WorkflowLinkDb wl = new WorkflowLinkDb();
+            wl.setFlowId(id);
+            boolean re = wl.fromString(ary[i]);
+            if (re) {
+                v.addElement(wl);
+            }
+        }
+        return v;
+    }
+
     /**
      * 从str创建流程中的action及link
      * @param str String
@@ -1065,10 +981,12 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
      * @throws ErrMsgException
      */
     public long createFromString(String str, String flowJson) throws ErrMsgException {
+        long t = System.currentTimeMillis();
         long starterMyActionId = -1;
 
         if (!str.startsWith("paper")) {
-            return starterMyActionId;
+            throw new ErrMsgException("流程图错误：" + str);
+            // return starterMyActionId;
         }
         
         this.flowString = str;
@@ -1089,49 +1007,114 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 errMsg += e.getMessage() + "\\r\\n";
             }
         }
-        if (!errMsg.equals("")) {
+        if (!"".equals(errMsg)) {
             throw new ErrMsgException(errMsg);
         }
 
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "createFromString 合法性校驗", (System.currentTimeMillis() - t) + " ms");
+        }
+
         // 20101017用以记录发起节点ID
+        Map<String, WorkflowActionDb> actionMap = new HashMap<>();
+        List<WorkflowLinkDb> linkList = new ArrayList<>();
         int startActionId = -1;
+        int actionCount = 0;
+        int linkCount = 0;
         for (int i = 1; i < len; i++) {
             WorkflowActionDb wa = new WorkflowActionDb();
             wa.setFlowId(id);
             boolean re = wa.fromString(ary[i], true);
 
             if (re) {
-                boolean r = wa.create();
-                if (!r) {
-                    Logger.getLogger(getClass()).error("createFromString:从字符串创建动作失败！");
-                }
+                actionCount++;
+                actionMap.put(wa.getInternalName(), wa);
             }
             else {
                 WorkflowLinkDb wl = new WorkflowLinkDb();
                 wl.setFlowId(id);
                 if (wl.fromString(ary[i])) {
-                    boolean r = wl.create();
-                    if (!r) {
-                        Logger.getLogger(getClass()).error("createFromString:从字符串创建连接失败！");
-                    }
+                    linkCount++;
+                    linkList.add(wl);
                 }
             }
         }
+
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "createFromString 創建節點和連線", (System.currentTimeMillis() - t) + " ms");
+        }
         
         // 201610 fgf 取得所有的起始节点，并匹配得到第一个符合条件的节点
-        Vector v = getActions();
-        Iterator ir = v.iterator();
         String errMsgStarter = "";
-        WorkflowLinkDb wl = new WorkflowLinkDb();
-                
-        Vector vStart = new Vector();
-        Vector vStartMatched = new Vector();
 
+        Vector<String> vStart = new Vector<>();
+        Vector<WorkflowActionDb> vStartMatched = new Vector<>();
+
+        JSONObject flowJsonObject = null;
+        try {
+            flowJsonObject = new JSONObject(flowJson);
+        } catch (JSONException e) {
+            LogUtil.getLog(getClass()).error(e);
+            flowJsonObject = new JSONObject();
+        }
+
+        int inDegree = 0;
+        try {
+            JSONObject states = flowJsonObject.getJSONObject("states");
+            Iterator irJson = states.keys();
+            while (irJson.hasNext()) {
+                String key = (String) irJson.next();
+                JSONObject jsonAction = states.getJSONObject(key);
+                inDegree = jsonAction.getInt("inDegree");
+                if (inDegree == 0) {
+                    vStart.addElement(key);
+                    WorkflowActionDb wad = actionMap.get(key);
+
+                    // 判断是否满足条件
+                    boolean re = false;
+                    String jobCode = wad.getJobCode();
+                    if (jobCode.equals(WorkflowActionDb.PRE_TYPE_SELF)) {
+                        // 本人的優先級最低
+                        // re = true; // waStart = wad;
+                        try {
+                            re = checkStarterSelf(wad, userName);
+                        } catch (ErrMsgException e) {
+                            errMsgStarter += e.getMessage() + "\r\n";
+                        }
+                    }
+                    else {
+                        try {
+                            re = checkStarter(wad, userName);
+                        }
+                        catch (ErrMsgException e) {
+                            errMsgStarter += e.getMessage() + "\r\n";
+                        }
+                    }
+                    // 如满足，则置其为起始节点
+                    if (re) {
+                        vStartMatched.addElement(wad);
+                    }
+                    else {
+                        if (wad.getIsStart() != 0) {
+                            wad.setIsStart(0);
+                            wad.save();
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+
+        /* 20230622 本機通過flowJson判斷入度為1后優化后快了近0.3秒，服务器上似乎区别不大
+        Vector<WorkflowActionDb> v = getActions();
+        Iterator<WorkflowActionDb> ir = v.iterator();
+        WorkflowLinkDb wl = new WorkflowLinkDb();
         // 2016 fgf 20161127 如果多个起点满足条件，则按指定用户的节点优先，如果有多个起点的角色满足条件，则走其中角色最大的那个起点
         while (ir.hasNext()) {
-        	WorkflowActionDb wad = (WorkflowActionDb)ir.next();
-        	int c = wl.getFromLinkCount(wad);
-        	if (c==0) {
+        	WorkflowActionDb wad = ir.next();
+            // 如果入度为0，或者是发起节点（有可能是循环的情况，其入度不为0）
+        	if (wad.getIsStart()==1 || wl.getFromLinkCount(wad)==0) {
     			vStart.addElement(wad);
         		
         		// 判断是否满足条件
@@ -1159,87 +1142,89 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         			vStartMatched.addElement(wad);
         		}
         		else {
-                    wad.setIsStart(0);
-                    wad.save();    			
+        		    if (wad.getIsStart() != 0) {
+                        wad.setIsStart(0);
+                        wad.save();
+                    }
         		}
         	}
+        }*/
+
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "createFromString 找出可能匹配的开始节点", (System.currentTimeMillis() - t) + " ms");
         }
         
         WorkflowActionDb waStart = null;
         int orderStart = -100000;
         
         // 从满足条件的多起点中，找出角色最大的那个作为发起节点
-        Iterator irStart = vStartMatched.iterator();
-        while (irStart.hasNext()) {
-        	WorkflowActionDb wad = (WorkflowActionDb)irStart.next();
-	        int rOrder = -1;        	
-    		// 检查节点上的多个角色的大小，取得角色最大的那个order        
-    	   	if (wad.getNodeMode()==WorkflowActionDb.NODE_MODE_ROLE || wad.getNodeMode()==WorkflowActionDb.NODE_MODE_ROLE_SELECTED) {
-    	         String[] prearyrole = StrUtil.split(wad.getJobCode(), ",");
-    	         int prelen = 0;
-    	         if (prearyrole!=null) {
-                     prelen = prearyrole.length;
-                 }
-    	         for (int m=0; m<prelen; m++) {
-    		         RoleDb rd = new RoleDb();
-    	        	 rd = rd.getRoleDb(prearyrole[m]);
-    	        	 if (rd!=null) {
-    	        		 if (rOrder < rd.getOrders()) {
-    	        			 rOrder = rd.getOrders();
-    	        		 }
-    	        	 }
-    	         }
-    	   	}
-    	   	else {
-        		String jobCode = wad.getJobCode();
+        for (WorkflowActionDb wad : vStartMatched) {
+            int rOrder = -1;
+            // 检查节点上的多个角色的大小，取得角色最大的那个order
+            if (wad.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE || wad.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE_SELECTED) {
+                String[] prearyrole = StrUtil.split(wad.getJobCode(), ",");
+                int prelen = 0;
+                if (prearyrole != null) {
+                    prelen = prearyrole.length;
+                }
+                for (int m = 0; m < prelen; m++) {
+                    RoleDb rd = new RoleDb();
+                    rd = rd.getRoleDb(prearyrole[m]);
+                    if (rd != null) {
+                        if (rOrder < rd.getOrders()) {
+                            rOrder = rd.getOrders();
+                        }
+                    }
+                }
+            } else {
+                String jobCode = wad.getJobCode();
                 if (jobCode.equals(WorkflowActionDb.PRE_TYPE_SELF)) {
                     // 如果限定了部门
                     if (!"".equals(wad.getDept())) {
                         rOrder = -999;
-                    }
-                    else {
+                    } else {
                         rOrder = -1000;
                     }
+                } else {
+                    // 如果预先定义的是当前用户
+                    waStart = wad;
+                    break;
                 }
-                else {
-                	// 如果预先定义的是当前用户
-                	waStart = wad;
-                	break;
-                }
-    	   	}
-    	   	
-   	       	// 取得较大角色的那个节点
-    	   	if (orderStart < rOrder) {
-       			waStart = wad;
-       			orderStart = rOrder;
-       		}
+            }
+
+            // 取得较大角色的那个节点
+            if (orderStart < rOrder) {
+                waStart = wad;
+                orderStart = rOrder;
+            }
         }
-        
+
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "createFromString 匹配開始節點", (System.currentTimeMillis() - t) + " ms");
+        }
+
         // 如果流程尚未开始，而动作节点为开始节点，则将节点的状态置为正处理状态
         if (waStart!=null) {
-            irStart = vStart.iterator();
-            while (irStart.hasNext()) {
-            	WorkflowActionDb wd = (WorkflowActionDb)irStart.next();
-            	if (!wd.equals(waStart)) {
-		            // 忽略无法被匹配的起点分支
-					WorkflowMgr wm = new WorkflowMgr();
-					wm.ignoreBranch(wd, null);
-            	}
+            // 创建开始节点
+            waStart.create();
+
+            WorkflowInitThread workflowInitThread = new WorkflowInitThread(this, vStart, waStart, actionMap, linkList);
+            workflowInitThread.start();
+            /*List<WorkflowActionDb> actionsToIgnore = new ArrayList<>();
+            for (WorkflowActionDb wd : vStart) {
+                if (!wd.equals(waStart)) {
+                    // 忽略无法被匹配的起点分支
+                    WorkflowMgr wm = new WorkflowMgr();
+                    wm.ignoreBranch(wd, null, actionsToIgnore);
+                }
             }
-			
-        	boolean re = true;
-    		/*String jobCode = waStart.getJobCode();
-            if (jobCode.equals(WorkflowActionDb.PRE_TYPE_SELF)) {        	
-	    		try {
-	    			re = checkStarterSelf(waStart, userName);
-	    		}
-	    		catch (ErrMsgException e) {
-	    			errMsgStarter += e.getMessage() + "\r\n";
-	    			re = false;
-	    		}
-            }*/
-    		
-        	if (re && !isStarted()) {
+            wachk.ignoreActions(this, actionsToIgnore);*/
+
+            if (Global.getInstance().isDebug()) {
+                DebugUtil.i(getClass(), "createFromString ignoreActions", (System.currentTimeMillis() - t) + " ms");
+            }
+
+        	if (!isStarted()) {
                 // 动作状态出现改变，需要renewWorkflowString
         		waStart.setStatus(WorkflowActionDb.STATE_DOING);
         		waStart.setIsStart(1);
@@ -1253,14 +1238,27 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
 
                 startActionId = waStart.getId();
         	}
-        }        
+        }
+
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "createFromString notifyUser", (System.currentTimeMillis() - t) + " ms");
+        }
 
         if (startActionId!=-1) {
             WorkflowActionDb startAction = wachk.getWorkflowActionDb(startActionId);
             renewWorkflowString(startAction, false);
         }
         else {
+            if ("".equals(errMsgStarter)) {
+                if (vStartMatched.size() == 0) {
+                    errMsgStarter = "未匹配到开始节点";
+                }
+            }
         	throw new ErrMsgException(errMsgStarter);
+        }
+
+        if (Global.getInstance().isDebug()) {
+            DebugUtil.i(getClass(), "createFromString renewWorkflowString", (System.currentTimeMillis() - t) + " ms");
         }
 
         return starterMyActionId;
@@ -1337,14 +1335,13 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
 
         if (flowNotifyByEmail) {
             UserDb user = um.getUserDb(mad.getUserName());
-            if (!user.getEmail().equals("")) {
+            if (!"".equals(user.getEmail())) {
                 action = "userName=" + user.getName() + "|" +
                          "myActionId=" + mad.getId();
                 action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(
                         ssoCfg.getKey(), action);
                 fc += "<BR />>>&nbsp;<a href='" +
-                        Global.getFullRootPath(request) +
-                        "/public/flow_dispose.jsp?action=" + action +
+                        WorkflowUtil.getJumpUrl(WorkflowUtil.OP_FLOW_PROCESS, action) +
                         "' target='_blank'>请点击此处办理</a>";
                 sendmail.initMsg(user.getEmail(),
                                  senderName,
@@ -1437,7 +1434,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
 	        String flowActionPlan = cfg.get("flowActionPlan");
 	        String flowActionPlanContent = cfg.get("flowActionPlanContent");
 	        PlanDb pd = new PlanDb();
-	        String hhh = getTitle();
 	        pd.setTitle(StrUtil.format(flowActionPlan, new Object[]{getTitle().replace("$", "\\$")}));
 	        UserMgr um = new UserMgr();
 	        UserDb user = um.getUserDb(getUserName());
@@ -1472,7 +1468,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -1511,7 +1507,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
 
             int startid = getStartActionId();
             if (startid == -1) {
-                Logger.getLogger(getClass()).error("start:未找到流程中的开始动作！startId=-1");
+                LogUtil.getLog(getClass()).error("start:未找到流程中的开始动作！startId=-1");
                 return false;
             }
 
@@ -1527,7 +1523,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                                 "", resultValue, myActionId)) {
                 return true;
             } else {
-                Logger.getLogger(getClass()).error("start:更新action状态时出错！");
+                LogUtil.getLog(getClass()).error("start:更新action状态时出错！");
                 return false;
             }
         }
@@ -1568,7 +1564,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 }
                 else {
                     // if (wa.isStart==1) {
-                        // 检查发起人是否合法，因增加多起点功能，所以注释掉 fgf 20160924
+                        // 检查发起人是否合法，因增加多起点功能，所以注释掉 20160924
                     	// checkStarter(wa, curUserName);
                     // }
                 }
@@ -1653,9 +1649,9 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                  }
              }
              if (!isValidRole) {
+            	 /*20180127如果多起点，就乱了，所以不允許admin可以发起任意流程
             	 Leaf lf = new Leaf();
             	 lf = lf.getLeaf(typeCode);
-            	 /*20180127如果多起點，就亂了，所以不允許admin可以發起任意流程
             	 // 调试模式下admin可以发起任意流程
             	 if (lf.isDebug() && curUserName.equals(UserDb.ADMIN)) {
             		 isValidRole = true;
@@ -1685,7 +1681,34 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
              wa.setUserRealName(ud.getRealName());
              wa.setNodeMode(WorkflowActionDb.NODE_MODE_ROLE_SELECTED);
              renewWorkflowString(wa, false);
-         } else {
+         }
+    	 else if (wa.getNodeMode()==WorkflowActionDb.NODE_MODE_POST) {
+             // 判断用户是否为此岗位
+             String[] postIds = StrUtil.split(wa.getJobCode(), ",");
+             boolean isValid = false;
+             if (postIds != null) {
+                 IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+                 for (String id : postIds) {
+                     int postId = StrUtil.toInt(id, -1);
+                     PostUser postUser = postUserService.getPostUser(curUserName, postId);
+                     if (postUser != null) {
+                         isValid = true;
+                         break;
+                     }
+                 }
+             }
+             if (!isValid) {
+                 throw new ErrMsgException("发起人职位非法！只有 " + wa.getJobName() + " 才能发起！");
+             }
+
+             UserDb ud = new UserDb();
+             ud = ud.getUserDb(curUserName);
+             wa.setUserName(curUserName);
+             wa.setUserRealName(ud.getRealName());
+             wa.setNodeMode(WorkflowActionDb.NODE_MODE_ROLE_SELECTED);
+             renewWorkflowString(wa, false);
+         }
+    	 else {
              String[] aryuser = StrUtil.split(wa.getJobCode(), ",");
              int aryuserlen = 0;
              if (aryuser!=null) {
@@ -1729,49 +1752,61 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         WorkflowPredefineDb wpd = new WorkflowPredefineDb();
         wpd = wpd.getDefaultPredefineFlow(getTypeCode());
 
-        WorkflowDb wf = new WorkflowDb();
-        java.util.Vector v = getActionsFromString(wpd.getFlowString());
-    	java.util.Iterator ir = v.iterator();
-    	while (ir.hasNext()) {
-    		WorkflowActionDb wa = (WorkflowActionDb)ir.next();
-    		WorkflowActionDb wad = wa.getWorkflowActionDbByInternalName(wa.getInternalName(), id);
+        java.util.Vector<WorkflowActionDb> v = getActionsFromString(wpd.getFlowString());
+        for (WorkflowActionDb wa : v) {
+            WorkflowActionDb wad = wa.getWorkflowActionDbByInternalName(wa.getInternalName(), id);
             if (wad == null) {
                 // 跳过新建的节点
                 continue;
             }
-    		wad.setTitle(wa.getTitle());
-    		wad.setJobCode(wa.getJobCode());
-    		wad.setJobName(wa.getJobName());
-    		wad.setRelateRoleToOrganization(wa.isRelateRoleToOrganization());
-    		wad.setFieldWrite(wa.getFieldWrite());
-    		wad.setFlag(wa.getFlag());
-    		wad.setNodeMode(wa.getNodeMode());
-    		wad.setDept(wa.getDept());
-    		wad.setItem1(wa.getItem1());
-    		wad.setDirection(wa.getDirection());
-    		wad.setItem2(wa.getItem2());
-    		wad.setMsg(wa.isMsg());
-    		wad.setStrategy(wa.getStrategy());
-    		boolean re = wad.save();
+            wad.setTitle(wa.getTitle());
+            wad.setJobCode(wa.getJobCode());
+            wad.setJobName(wa.getJobName());
+            wad.setRelateRoleToOrganization(wa.isRelateRoleToOrganization());
+            wad.setFieldWrite(wa.getFieldWrite());
+            wad.setFlag(wa.getFlag());
+            wad.setNodeMode(wa.getNodeMode());
+            wad.setDept(wa.getDept());
+            wad.setItem1(wa.getItem1());
+            wad.setDirection(wa.getDirection());
+            wad.setItem2(wa.getItem2());
+            wad.setMsg(wa.isMsg());
+            wad.setStrategy(wa.getStrategy());
+            wad.save();
+        }
 
-    		if (re) {
-                wf = wf.getWorkflowDb(wad.getFlowId());
-                // 向下兼容
-                if (wf.getFormArchiveId() == ConstUtil.FORM_ARCHIVE_NONE) {
-                    FormDb fd = new FormDb();
-                    fd = fd.getFormDb(lf.getFormCode());
-                    DocContent docContent = wf.getDocument().getDocContent(1);
-                    docContent.setContent(fd.getContent());
-                    docContent.save();
-                }
-                else {
-                    FormArchiveService formArchiveService = SpringUtil.getBean(FormArchiveService.class);
-                    IFormDAO fdao = formArchiveService.getCurFormArchiveOrInit(lf.getFormCode());
-                    wf.setFormArchiveId(fdao.getId());
-                    wf.save();
-                }
+        java.util.Vector<WorkflowLinkDb> vl = getLinksFromString(wpd.getFlowString());
+        for (WorkflowLinkDb wl : vl) {
+            WorkflowLinkDb wld = wl.getWorkflowLinkDb(id, wl.getFrom(), wl.getTo());
+            if (wld == null) {
+                // 跳过新建的连线
+                continue;
             }
-    	}
+            wld.setExpireHour(wl.getExpireHour());
+            wld.setExpireAction(wl.getExpireAction());
+            wld.setCondDesc(wl.getCondDesc());
+            wld.setCondType(wl.getCondType());
+            wld.setIsSpeedup(wl.getIsSpeedup());
+            wld.setSpeedupDate(wl.getSpeedupDate());
+            wld.setTitle(wl.getTitle());
+            wld.save();
+        }
+
+        WorkflowDb wf = new WorkflowDb();
+        wf = wf.getWorkflowDb(id);
+        // 向下兼容
+        if (wf.getFormArchiveId() == ConstUtil.FORM_ARCHIVE_NONE) {
+            FormDb fd = new FormDb();
+            fd = fd.getFormDb(lf.getFormCode());
+            DocContent docContent = wf.getDocument().getDocContent(1);
+            docContent.setContent(fd.getContent());
+            docContent.save();
+        } else {
+            FormArchiveService formArchiveService = SpringUtil.getBean(FormArchiveService.class);
+            IFormDAO fdao = formArchiveService.getCurFormArchiveOrInit(lf.getFormCode());
+            wf.setFormArchiveId(fdao.getId());
+            wf.save();
+        }
     }
 
     /**
@@ -1847,7 +1882,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 total = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -1889,7 +1923,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listUserAttended:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listUserAttended:" + e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
@@ -1931,7 +1965,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 total = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -1971,7 +2004,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listMonitored:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listMonitored:" + e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
@@ -1994,7 +2027,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
     /**
      * 取出全部信息置于result中
      */
-    public Vector list(String sql) {
+    public Vector<WorkflowDb> list(String sql) {
         ResultSet rs = null;
         Conn conn = new Conn(connname);
         Vector result = new Vector();
@@ -2035,7 +2068,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             rs = conn.executePreQuery();
             if (rs != null && rs.next()) {
                 total = rs.getInt(1);
-                // System.out.println("total=" + total);
             }
             if (rs != null) {
                 rs.close();
@@ -2082,7 +2114,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("listResult:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listResult:" + e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
@@ -2127,7 +2159,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 return rr.getInt(1);
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(WorkflowDb.class).error(ex);
         }
         return 0;
     }
@@ -2157,7 +2189,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         Iterator ir = v.iterator();
         while (ir.hasNext()) {
             wad = (WorkflowActionDb) ir.next();
-            // System.out.println(getClass() + " title=" + wad.getTitle() + " getItem1=" + wad.getItem1());
             /*
             if (wad.getStatus() == wad.STATE_DOING ||
                 wad.getStatus() == wad.STATE_NOTDO ||
@@ -2167,7 +2198,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             */
             // 20180127 fgf 加入如果爲被忽略的狀態
             if (wad.getStatus() == WorkflowActionDb.STATE_FINISHED) {// || wad.getStatus()==WorkflowActionDb.STATE_IGNORED) {
-                // System.out.println(getClass() + " checkEndActionsStatusFinished title=" + wad.getTitle());
                 return true;
             }
         }
@@ -2183,7 +2213,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         Iterator ir = v.iterator();
         while (ir.hasNext()) {
             WorkflowActionDb wad = (WorkflowActionDb)ir.next();
-            // System.out.println("WorkflowDb.java checkStatusFinished: " + wad.getUserRealName() + "--" + wad.getJobName() + "--" + wad.getStatusName());
             if (wad.getStatus()==WorkflowActionDb.STATE_DOING || wad.getStatus()==WorkflowActionDb.STATE_NOTDO || wad.getStatus()==WorkflowActionDb.STATE_RETURN) {
                 return false;
             }
@@ -2195,7 +2224,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
      * 取得流程中的所有action节点
      * @return Vector
      */
-    public Vector getActions() {
+    public Vector<WorkflowActionDb> getActions() {
         WorkflowActionDb wad = new WorkflowActionDb();
         return wad.getActionsOfFlow(id);
     }
@@ -2218,7 +2247,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             pstmt.setString(2, user);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                Logger.getLogger(getClass()).error("流程动作flow_id= " + id + " username=" + user +
+                LogUtil.getLog(getClass()).error("流程动作flow_id= " + id + " username=" + user +
                              " 在数据库中未找到.");
             } else {
                 int actionId = rs.getInt(1);
@@ -2226,7 +2255,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 return wa.getWorkflowActionDb(actionId);
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -2259,21 +2288,15 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             return -1;
         FileInfo fi = (FileInfo)v.get(0);
 
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
+        fileService.write(fi, fdao.getVisualPath());
+
         if (fi.getExt().equals("wps"))
-            fi.setDiskName(FileUpload.getRandName() + ".wps");
+            fi.setDiskName(fi.getDiskName() + ".wps");
         else if (fi.getExt().equals("docx"))
-            fi.setDiskName(FileUpload.getRandName() + ".docx");
+            fi.setDiskName(fi.getDiskName() + ".docx");
         else
-            fi.setDiskName(FileUpload.getRandName() + ".doc");
-
-        String fullPath = Global.getRealPath() + fdao.getVisualPath() + "/" + fi.getDiskName();
-
-        // System.out.println(getClass() + " fullPath=" + fullPath);
-        File f = new File(Global.getRealPath() + fdao.getVisualPath());
-        if (!f.isDirectory())
-            f.mkdirs();
-
-        fi.writeToPath(fullPath);
+            fi.setDiskName(fi.getDiskName() + ".doc");
 
         String lockUser = StrUtil.getNullStr(TheBean.getFieldValue("lockUser"));
 
@@ -2281,7 +2304,6 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         att.setDocId(docId);
         // att.setName(fi.getName()); // WebOffice控件不支持utf-8
         att.setName(getTitle() + ".doc");
-        att.setFullPath(fullPath);
         att.setDiskName(fi.getDiskName());
         att.setVisualPath(fdao.getVisualPath());
         att.setPageNum(1);
@@ -2294,11 +2316,13 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
 
         att.setOrders(orders);
         att.setFieldName("");
+        att.setFlowId(id);
 
-        if (att.create())
-            return att.getId();
-        else
+        if (att.create()) {
+            return (int)att.getId();
+        } else {
             return -1;
+        }
     }
 
     /**
@@ -2325,10 +2349,11 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             throw new ErrMsgException("取文件" + docId + "的附件" + fileId + "时，未找到！");
         }
 
-        Vector v = TheBean.getFiles();
-        if (v.size()==0)
+        Vector<FileInfo> v = TheBean.getFiles();
+        if (v.size()==0) {
             return false;
-        FileInfo fi = (FileInfo)v.get(0);
+        }
+        FileInfo fi = v.get(0);
 
         att.setSize(fi.getSize());
         boolean re = att.save();
@@ -2336,67 +2361,11 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
         	// 保存模板类型
         	doc.setTemplateId(templateId);
         	doc.updateTemplateId();
-	        if (fi.writeToPath(cn.js.fan.web.Global.getRealPath() + "/" + att.getVisualPath() + "/" + att.getDiskName()))
-	            return true;
-	        else
-	            return false;
+            return fi.writeToPath(Global.getRealPath() + "/" + att.getVisualPath() + "/" + att.getDiskName());
         }
         else {
         	return false;
         }
-    }
-
-    /**
-     * 初始化流程时用以上传新建文档
-     * @param TheBean FileUploadBean
-     * @return boolean
-     * @throws ErrMsgException
-     */
-    public boolean addNewDocument(ServletContext application, FileUpload TheBean) throws
-            ErrMsgException {
-        Vector v = TheBean.getFiles();
-        if (v.size() == 0)
-            return false;
-        String strdocId = StrUtil.getNullStr(TheBean.getFieldValue("doc_id"));
-
-        int docId = Integer.parseInt(strdocId);
-
-        Calendar cal = Calendar.getInstance();
-        String year = "" + (cal.get(cal.YEAR));
-        String month = "" + (cal.get(cal.MONTH) + 1);
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        String filepath = cfg.get("file_flow") + "/" + year + "/" + month;
-        String tempAttachFilePath = Global.getRealPath() + filepath +
-                                    "/";
-        TheBean.setSavePath(tempAttachFilePath);
-
-        FileInfo fi = (FileInfo) v.get(0);
-        fi.write(TheBean.getSavePath(), true);
-
-        Document doc = new Document();
-        doc = doc.getDocument(docId);
-        int orders = doc.getAttachments(1).size() + 1;
-
-        String sql =
-                "insert into flow_document_attach (fullpath,doc_id,name,diskname,visualpath,page_num,orders) values (" +
-                StrUtil.sqlstr(TheBean.getSavePath() + fi.getDiskName()) + "," + docId + "," +
-                StrUtil.sqlstr(fi.getName()) +
-                "," + StrUtil.sqlstr(fi.getDiskName()) + "," +
-                StrUtil.sqlstr(filepath) + ",1," + orders + ")";
-        Conn conn = new Conn(connname);
-        try {
-            conn.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            Logger.getLogger(getClass()).error("addNewDocument:" + e.getMessage());
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-        return true;
-
     }
 
     /**
@@ -2405,7 +2374,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
      */
     public boolean isStarted() {
         if (true) {
-            return status > STATUS_NOT_STARTED?true:false;
+            return status > STATUS_NOT_STARTED;
         }
 
         String sql =
@@ -2418,7 +2387,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                Logger.getLogger(getClass()).info("流程id= " + id +
+                LogUtil.getLog(getClass()).info("流程id= " + id +
                             " 的开始项在数据库中未找到.");
             } else {
                 int status = rs.getInt(1);
@@ -2426,7 +2395,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                     return true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("isStarted:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isStarted:" + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -2460,12 +2429,12 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                     wd.del();
                 }
                 catch (ErrMsgException e) {
-                    Logger.getLogger(getClass()).error("delWorkflowDbOfType:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("delWorkflowDbOfType:" + e.getMessage());
                 }
                 i++;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -2551,7 +2520,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
             }
         } catch (SQLException e) {
             conn.rollback();
-            Logger.getLogger(getClass()).error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
             if (pstmt!=null) {
                 try {
@@ -2602,7 +2571,7 @@ public class WorkflowDb implements Serializable,IDesktopUnit {
                 rs = null;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return;
         } finally {
             if (rs!=null) {
@@ -2641,7 +2610,7 @@ public void delLinks() {
             }
         }
     } catch (SQLException e) {
-        Logger.getLogger(getClass()).error(e.getMessage());
+        LogUtil.getLog(getClass()).error(e.getMessage());
     } finally {
         if (rs != null) {
             try {
@@ -2704,7 +2673,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                     boolean r = wa.create();
                     newAddActions.addElement(wa); // 记录下新加节点
                     if (!r)
-                        Logger.getLogger(getClass()).error("modifyFlowString:从字符串创建动作失败！");
+                        LogUtil.getLog(getClass()).error("modifyFlowString:从字符串创建动作失败！");
                 }
                 else {
                     // 节点已存在，则不作处理，以免丢失数据库中存储的taskID等信息，这些信息在flowString中并未保存
@@ -2731,7 +2700,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 if (wl.fromString(ary[i])) {
                     boolean r = wl.create();
                     if (!r) {
-                        Logger.getLogger(getClass()).error("modifyFlowString:从字符串创建连接失败！");
+                        LogUtil.getLog(getClass()).error("modifyFlowString:从字符串创建连接失败！");
                     }
                 }
             }
@@ -2766,8 +2735,6 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
 
         boolean returnBack = ParamUtil.getBoolean(request, "returnBack", false);
         setReturnBack(returnBack);
-        // System.out.println("WorkflowDb.java modifyFlowString: returnBack=" + returnBack);
-
         boolean re = save();
 
         if (re) {
@@ -2788,7 +2755,6 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 }
                 if (isPrivActionsFinished) {
                     // 激活新加入的节点
-                    // System.out.println("WorkflowDb.java modifyFlowString: w1.userName=" + w1.getUserName() + " statusName=" + w1.getStatusName());
                     w1.changeStatus(request, this, w1.getCheckUserName(),
                                     w1.getStatus(), w1.getReason(),
                                     w1.getResult(), w1.getResultValue(), -1);
@@ -2820,12 +2786,8 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 ir = wa.getLinkToActions().iterator();
                 while (ir.hasNext()) {
                     w1 = (WorkflowActionDb) ir.next();
-                    // System.out.println("WorkflowDb.java modifyFlowString: linkto w1.userName=" + w1.getUserName() + " w1.statusName=" + w1.getStatusName());
-
                     if (w1.getStatus() == w1.STATE_DOING || w1.getStatus()==w1.STATE_FINISHED) {
                         // 新加入节点之后的节点的状态为正处理或已完成，则将其置为未处理
-                        // System.out.println("WorkflowDb.java modifyFlowString: linkto w1.userName=" + w1.getUserName());
-
                         w1.setStatus(w1.STATE_NOTDO);
                         w1.save();
                     }
@@ -2867,7 +2829,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                     WorkflowActionDb wa_db = new WorkflowActionDb();
                     wa_db = wa_db.getWorkflowActionDbByInternalName(wa.getInternalName(), id);
                     if (wa_db==null) {
-                        Logger.getLogger(getClass()).error("modifyActionByFlowString:在数据库中未找到action " + wa.getJobName() + "！");
+                        LogUtil.getLog(getClass()).error("modifyActionByFlowString:在数据库中未找到action " + wa.getJobName() + "！");
                     }
                     else {
                         // 对比节点，如果更新了用户名
@@ -2984,45 +2946,45 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
     public String getSqlDoing(HttpServletRequest request) {
         Privilege privilege = new Privilege();
         String op = ParamUtil.get(request, "op");
-        String typeCode;
-        if ("search".equals(op)) {
-            typeCode = ParamUtil.get(request, "f.typeCode");
-        }
-        else {
-            typeCode = ParamUtil.get(request, "typeCode");
-        }
+        String typeCode = ParamUtil.get(request, "typeCode");
         String myname = ParamUtil.get(request, "userName"); // userName为指定的人员
-        if (myname.equals("")) {
+        if ("".equals(myname)) {
             myname = privilege.getUser(request);
         }
-        String title = ParamUtil.getParam(request, "f.title");
-        String starter = ParamUtil.getParam(request, "f.starter");
-        String by = ParamUtil.get(request, "f.by");
-        String fromDate = ParamUtil.get(request, "f.fromDate");
-        String toDate = ParamUtil.get(request, "f.toDate");
-        String orderBy = ParamUtil.get(request, "orderBy");
+        String title = ParamUtil.getParam(request, "title");
+        String starter = ParamUtil.getParam(request, "starter");
+        String by = ParamUtil.get(request, "by");
+        String fromDate = ParamUtil.get(request, "fromDate");
+        String toDate = ParamUtil.get(request, "toDate");
+        String orderBy = ParamUtil.get(request, "field");
         int actionStatus = ParamUtil.getInt(request, "actionStatus", -1);
         boolean hasFormCol = false;
-        if (orderBy.equals("")) {
+        if ("".equals(orderBy)) {
             orderBy = "m.receive_date";
         } else {
             if ("m.receive_date".equals(orderBy) || "f.id".equals(orderBy)
                     || "f.flow_level".equals(orderBy) || "f.title".equals(orderBy) || "f.type_code".equals(orderBy)
-                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy)) {
+                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy) || "f.begin_date".equals(orderBy)) {
                 ;
             } else {
                 orderBy = "t1." + orderBy;
                 hasFormCol = true;
             }
         }
-        String sort = ParamUtil.get(request, "sort");
-        if (sort.equals("")) {
+        String sort = ParamUtil.get(request, "order");
+        if ("ascend".equals(sort)) {
+            sort = "asc";
+        }
+        else if ("descend".equals(sort)) {
+            sort = "desc";
+        }
+        if ("".equals(sort)) {
             sort = "desc";
         }
 
         String formConds = "";
         String formTable = "";
-        if (!"".equals(typeCode)) {
+        if (!"".equals(typeCode) && !Leaf.CODE_ROOT.equals(typeCode)) {
             Leaf leaf = new Leaf();
             leaf = leaf.getLeaf(typeCode);
             FormDb fd = new FormDb();
@@ -3037,47 +2999,31 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         String sql;
         if ("".equals(formConds) && !hasFormCol) {
             if (!"".equals(starter)) {
-                sql = "select m.id from flow_my_action m, flow f, users u where m.flow_id=f.id and f.userName=u.name and f.status<>" + WorkflowDb.STATUS_NONE + " and (m.user_name=" + StrUtil.sqlstr(myname);
-                if (isFlowProxy) {
-                    sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                }
-                sql += ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
+                sql = "select m.id from flow_my_action m, flow f, users u where m.flow_id=f.id and f.userName=u.name and f.status<>" + WorkflowDb.STATUS_NONE + " and m.user_name=" + StrUtil.sqlstr(myname) + " and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
             }
             else {
-                sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and (m.user_name=" + StrUtil.sqlstr(myname);
-                if (isFlowProxy) {
-                    sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                }
-                sql += ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
+                sql = "select m.id from flow_my_action m, flow f where m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and m.user_name=" + StrUtil.sqlstr(myname) + " and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
             }
         }
         else {
             if (!"".equals(starter)) {
-                sql = "select m.id from flow_my_action m, flow f, users u, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and f.userName=u.name and f.status<>" + WorkflowDb.STATUS_NONE + " and (m.user_name=" + StrUtil.sqlstr(myname);
-                if (isFlowProxy) {
-                    sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                }
-                sql += ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
+                sql = "select m.id from flow_my_action m, flow f, users u, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and f.userName=u.name and f.status<>" + WorkflowDb.STATUS_NONE + " and m.user_name=" + StrUtil.sqlstr(myname) + " and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
             }
             else {
-                sql = "select m.id from flow_my_action m, flow f, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and (m.user_name=" + StrUtil.sqlstr(myname);
-                if (isFlowProxy) {
-                    sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                }
-                sql += ") and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
+                sql = "select m.id from flow_my_action m, flow f, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and f.status<>" + WorkflowDb.STATUS_NONE + " and m.user_name=" + StrUtil.sqlstr(myname) + " and (is_checked=0 or is_checked=2) and sub_my_action_id=" + MyActionDb.SUB_MYACTION_ID_NONE;
             }
         }
 
-        if (!typeCode.equals("")) {
+        if (!"".equals(typeCode) && !Leaf.CODE_ROOT.equals(typeCode)) {
             sql += " and f.type_code=" + StrUtil.sqlstr(typeCode);
         }
 
-        if (op.equals("search")) {
-            if (by.equals("title")) {
-                if (!title.equals("")) {
+        if ("search".equals(op)) {
+            if ("title".equals(by)) {
+                if (!"".equals(title)) {
                     sql += " and f.title like " + StrUtil.sqlstr("%" + title + "%");
                 }
-            } else if (by.equals("flowId")) {
+            } else if ("flowId".equals(by)) {
                 if (!StrUtil.isNumeric(title)) {
                     String str = LocalUtil.LoadString(request, "res.flow.Flow", "mustNumber");
                     LogUtil.getLog(getClass()).error("getSqlDoing:" + str);
@@ -3085,10 +3031,10 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                     sql += " and f.id=" + title;
                 }
             }
-            if (!fromDate.equals("")) {
+            if (!"".equals(fromDate)) {
                 sql += " and f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd");
             }
-            if (!toDate.equals("")) {
+            if (!"".equals(toDate)) {
                 java.util.Date d = DateUtil.parse(toDate, "yyyy-MM-dd");
                 d = DateUtil.addDate(d, 1);
                 String toDate2 = DateUtil.format(d, "yyyy-MM-dd");
@@ -3101,15 +3047,25 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 sql += " and m.action_status=" + actionStatus;
             }
 
-            if (!formConds.equals("")) {
+            if (!"".equals(formConds)) {
                 sql += " and " + formConds;
             }
         }
 
         sql += " and f.status<>" + WorkflowDb.STATUS_DELETED + " and f.status<>" + WorkflowDb.STATUS_DISCARDED;
-        sql += " order by " + orderBy + " " + sort;
 
-        // System.out.println(getClass() + " getSqlDoning:" + sql);
+        if (isFlowProxy) {
+            String sqlProxy = sql.replace("m.user_name=" + StrUtil.sqlstr(myname), "m.proxy=" + StrUtil.sqlstr(myname));
+            sql = "select * from (" + sql + ") tb1 union select * from (" + sqlProxy + ") tb2";
+            int p = orderBy.indexOf(".");
+            if (p!=-1) {
+                orderBy = orderBy.substring(p + 1);
+            }
+            sql += " order by " + orderBy + " " + sort;
+        }
+        else {
+            sql += " order by " + orderBy + " " + sort;
+        }
         return sql;
     }
 
@@ -3121,41 +3077,42 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
     public String getSqlAttend(HttpServletRequest request) {
         Privilege privilege = new Privilege();
         String myname = ParamUtil.get(request, "userName"); // userName为指定的人员
-        if(myname.equals("")) {
+        if("".equals(myname)) {
             myname = privilege.getUser(request);
         }
         String op = ParamUtil.get(request, "op");
-        String typeCode;
-        if ("search".equals(op)) {
-            typeCode = ParamUtil.get(request, "f.typeCode");
-        }
-        else {
-            typeCode = ParamUtil.get(request, "typeCode");
-        }
-        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
-        String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.getParam(request, "f.title");
-        String fromDate = ParamUtil.get(request, "f.fromDate");
-        String toDate = ParamUtil.get(request, "f.toDate");
-        int status = ParamUtil.getInt(request, "f.status", 1000);
+        String typeCode = ParamUtil.get(request, "typeCode");
+        String starter = ParamUtil.getParam(request, "starter"); // 发起人
+        String by = ParamUtil.get(request, "by");
+        String title = ParamUtil.getParam(request, "title");
+        String fromDate = ParamUtil.get(request, "fromDate");
+        String toDate = ParamUtil.get(request, "toDate");
+        int status = ParamUtil.getInt(request, "status", 1000);
 
-        String orderBy = ParamUtil.get(request, "orderBy");
+        String orderBy = ParamUtil.get(request, "field");
         boolean hasFormCol = false;
-        if (orderBy.equals(""))
-            orderBy = "f.id";
-        else {
+        if ("".equals(orderBy)) {
+            orderBy = "m.id";
+        } else {
             if ("f.id".equals(orderBy)
                     || "f.flow_level".equals(orderBy) || "f.title".equals(orderBy) || "f.type_code".equals(orderBy)
-                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy))
+                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy) || "f.begin_date".equals(orderBy) || "f.end_date".equals(orderBy)) {
                 ;
-            else {
+            } else {
                 orderBy = "t1." + orderBy;
                 hasFormCol = true;
             }
         }
-        String sort = ParamUtil.get(request, "sort");
-        if (sort.equals(""))
+        String sort = ParamUtil.get(request, "order");
+        if ("ascend".equals(sort)) {
+            sort = "asc";
+        }
+        else if ("descend".equals(sort)) {
             sort = "desc";
+        }
+        if ("".equals(sort)) {
+            sort = "desc";
+        }
 
         String formTable = "";
         String formConds = "";
@@ -3170,78 +3127,47 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         }
 
         Config cfg = Config.getInstance();
+        // 是否启用代理
         boolean isFlowProxy = cfg.getBooleanProperty("isFlowProxy");
 
         String sql;
         if (Global.db.equals(Global.DB_MYSQL)) {
             if ("".equals(formConds) && !hasFormCol) {
                 if (!"".equals(starter)) {
-                    sql = "select distinct m.flow_id from flow_my_action m use index(userName,proxy,flow_id), flow f, users u where m.flow_id=f.id and f.userName=u.name and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m force index (user_checked), flow f, users u where m.flow_id=f.id and f.userName=u.name and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 } else {
-                    sql = "select distinct m.flow_id from flow_my_action m use index(userName,proxy,flow_id), flow f where m.flow_id=f.id and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m force index (user_checked), flow f where m.flow_id=f.id and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 }
             } else {
                 if (!"".equals(starter)) {
-                    sql = "select distinct m.flow_id from flow_my_action m use index(userName,proxy,flow_id), flow f, users u, " + formTable + " t1 where f.id=t1.flowId and f.userName=u.name and m.flow_id=f.id and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m force index (user_checked), flow f, users u, " + formTable + " t1 where f.id=t1.flowId and f.userName=u.name and m.flow_id=f.id and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 } else {
-                    sql = "select distinct m.flow_id from flow_my_action m use index(userName,proxy,flow_id), flow f, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m force index (user_checked), flow f, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 }
             }
         }
         else {
             if ("".equals(formConds) && !hasFormCol) {
                 if (!"".equals(starter)) {
-                    sql = "select distinct m.flow_id from flow_my_action m, flow f, users u where m.flow_id=f.id and f.userName=u.name and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m, flow f, users u where m.flow_id=f.id and f.userName=u.name and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 } else {
-                    sql = "select distinct m.flow_id from flow_my_action m, flow f where m.flow_id=f.id and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m, flow f where m.flow_id=f.id and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 }
             } else {
                 if (!"".equals(starter)) {
-                    sql = "select distinct m.flow_id from flow_my_action m, flow f, users u, " + formTable + " t1 where f.id=t1.flowId and f.userName=u.name and m.flow_id=f.id and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m, flow f, users u, " + formTable + " t1 where f.id=t1.flowId and f.userName=u.name and m.flow_id=f.id and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 } else {
-                    sql = "select distinct m.flow_id from flow_my_action m, flow f, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and (m.user_name=" + StrUtil.sqlstr(myname);
-                    if (isFlowProxy) {
-                        sql += " or m.proxy=" + StrUtil.sqlstr(myname);
-                    }
-                    sql += ") and f.status<>" + WorkflowDb.STATUS_NONE + " and m.is_checked<>" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
+                    sql = "select distinct f.id from flow_my_action m, flow f, " + formTable + " t1 where f.id=t1.flowId and m.flow_id=f.id and m.user_name=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE + " and m.is_checked<" + MyActionDb.CHECK_STATUS_WAITING_TO_DO; // 等待前一节点结束
                 }
             }
         }
 
-        if (!typeCode.equals("")) {
+        if (!"".equals(typeCode)) {
             sql += " and f.type_code=" + StrUtil.sqlstr(typeCode);
         }
 
-        if (op.equals("search")) {
-            if (!title.equals("")) {
+        if ("search".equals(op)) {
+            if (!"".equals(title)) {
                 if ("flowId".equals(by)) {
                     sql += " and f.id = " + StrUtil.sqlstr(title);
                 }
@@ -3250,14 +3176,14 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 }
             }
 
-            if (!fromDate.equals("") && !toDate.equals("")) {
+            if (!"".equals(fromDate) && !"".equals(toDate)) {
                 java.util.Date d = DateUtil.parse(toDate, "yyyy-MM-dd");
                 d = DateUtil.addDate(d, 1);
                 String toDate2 = DateUtil.format(d, "yyyy-MM-dd");
                 sql += " and (f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd") + " and f.BEGIN_DATE<" + SQLFilter.getDateStr(toDate2, "yyyy-MM-dd") + ")";
-            } else if (!fromDate.equals("")) {
+            } else if (!"".equals(fromDate)) {
                 sql += " and f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd");
-            } else if (fromDate.equals("") && !toDate.equals("")) {
+            } else if (!"".equals(toDate)) {
                 sql += " and f.BEGIN_DATE<=" + SQLFilter.getDateStr(toDate, "yyyy-MM-dd");
             }
 
@@ -3269,56 +3195,74 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 sql += " and u.realname like " + StrUtil.sqlstr("%" + starter + "%");
             }
 
-            if (!formConds.equals("")) {
+            if (!"".equals(formConds)) {
                 sql += " and " + formConds;
             }
         }
-        // 如果未指定status，则过滤掉已删除的
-        if (true || sql.indexOf("f.status=")==-1) {
-            sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
+
+        // 已通过 f.status>WorkflowDb.STATUS_NONE排除掉
+        // 过滤掉已删除的
+        // sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
+
+        // 在select语句中加入orderBy字段
+        if (!"f.id".equals(orderBy) && !"id".equals(orderBy)) {
+            int p = sql.indexOf(" f.id ");
+            String prefix = sql.substring(0, p);
+            String suffix = sql.substring(p + " f.id ".length());
+            sql = prefix + " f.id," + orderBy + " as cws_somefield " + suffix;
         }
 
-        sql += " order by " + orderBy + " " + sort;
+        if (isFlowProxy) {
+            String sqlProxy = sql.replace("m.user_name=" + StrUtil.sqlstr(myname), "m.proxy=" + StrUtil.sqlstr(myname));
+            sql = "select * from (" + sql + ") tb1 union select * from (" + sqlProxy + ") tb2";
+            int p = orderBy.indexOf(".");
+            if (p!=-1) {
+                orderBy = orderBy.substring(p + 1);
+            }
+            sql += " order by " + orderBy + " " + sort;
+        }
+        else {
+            sql += " order by " + orderBy + " " + sort;
+
+            // 在上面根据order by在select中加入m.id会导致出现重复记录，故此需再过滤
+            if ("m.id".equals(orderBy)) {
+                sql = "select distinct id from (" + sql + ") tmp";
+            }
+        }
         return sql;
     }
 
     public String getSqlFavorite(HttpServletRequest request) {
         Privilege privilege = new Privilege();
         String myname = ParamUtil.get(request, "userName"); // userName为指定的人员
-        if(myname.equals("")) {
+        if("".equals(myname)) {
             myname = privilege.getUser(request);
         }
         String op = ParamUtil.get(request, "op");
-        String typeCode;
-        if ("search".equals(op)) {
-            typeCode = ParamUtil.get(request, "f.typeCode");
-        }
-        else {
-            typeCode = ParamUtil.get(request, "typeCode");
-        }
-        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
-        String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.getParam(request, "f.title");
-        String fromDate = ParamUtil.get(request, "f.fromDate");
-        String toDate = ParamUtil.get(request, "f.toDate");
-        int status = ParamUtil.getInt(request, "f.status", 1000);
+        String typeCode = ParamUtil.get(request, "typeCode");
+        String starter = ParamUtil.getParam(request, "starter"); // 发起人
+        String by = ParamUtil.get(request, "by");
+        String title = ParamUtil.getParam(request, "title");
+        String fromDate = ParamUtil.get(request, "fromDate");
+        String toDate = ParamUtil.get(request, "toDate");
+        int status = ParamUtil.getInt(request, "status", 1000);
 
         String orderBy = ParamUtil.get(request, "orderBy");
         boolean hasFormCol = false;
-        if (orderBy.equals(""))
+        if ("".equals(orderBy)) {
             orderBy = "v.flow_id";
-        else {
-            if ("v.flow_id".equals(orderBy) || "f.id".equals(orderBy)
-                    || "f.flow_level".equals(orderBy) || "f.title".equals(orderBy) || "f.type_code".equals(orderBy)
-                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy))
+        } else {
+            if ("v.flow_id".equals(orderBy) || "id".equals(orderBy)
+                    || "flow_level".equals(orderBy) || "title".equals(orderBy) || "type_code".equals(orderBy)
+                    || "userName".equals(orderBy) || "mydate".equals(orderBy) || "status".equals(orderBy) || "begin_date".equals(orderBy)) {
                 ;
-            else {
+            } else {
                 orderBy = "t1." + orderBy;
                 hasFormCol = true;
             }
         }
         String sort = ParamUtil.get(request, "sort");
-        if (sort.equals("")) {
+        if ("".equals(sort)) {
             sort = "desc";
         }
 
@@ -3349,12 +3293,12 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             }
         }
 
-        if (!typeCode.equals("")) {
+        if (!"".equals(typeCode)) {
             sql += " and f.type_code=" + StrUtil.sqlstr(typeCode);
         }
 
-        if (op.equals("search")) {
-            if (!title.equals("")) {
+        if ("search".equals(op)) {
+            if (!"".equals(title)) {
                 if ("flowId".equals(by)) {
                     sql += " and f.id = " + StrUtil.sqlstr(title);
                 }
@@ -3363,14 +3307,14 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 }
             }
 
-            if (!fromDate.equals("") && !toDate.equals("")) {
+            if (!"".equals(fromDate) && !"".equals(toDate)) {
                 java.util.Date d = DateUtil.parse(toDate, "yyyy-MM-dd");
                 d = DateUtil.addDate(d, 1);
                 String toDate2 = DateUtil.format(d, "yyyy-MM-dd");
                 sql += " and (f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd") + " and f.BEGIN_DATE<" + SQLFilter.getDateStr(toDate2, "yyyy-MM-dd") + ")";
-            } else if (!fromDate.equals("")) {
+            } else if (!"".equals(fromDate)) {
                 sql += " and f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd");
-            } else if (fromDate.equals("") && !toDate.equals("")) {
+            } else if (!"".equals(toDate)) {
                 sql += " and f.BEGIN_DATE<=" + SQLFilter.getDateStr(toDate, "yyyy-MM-dd");
             }
 
@@ -3381,16 +3325,16 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
             }
 
-            if (!formConds.equals("")) {
+            if (!"".equals(formConds)) {
                 sql += " and " + formConds;
             }
         }
-        if (sql.indexOf("f.status")==-1) {
+        if (!sql.contains("f.status")) {
             sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
         }
 
         sql += " order by " + orderBy + " " + sort;
-        // System.out.println(getClass() + " " + sql);
+        // LogUtil.getLog(getClass()).info(getClass() + " " + sql);
         return sql;
     }
 
@@ -3402,40 +3346,40 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
     public String getSqlMine(HttpServletRequest request) {
         Privilege privilege = new Privilege();
         String myname = ParamUtil.get(request, "userName"); // userName为指定的人员
-        if(myname.equals("")) {
+        if("".equals(myname)) {
             myname = privilege.getUser(request);
         }
         String op = ParamUtil.get(request, "op");
-        String typeCode;
-        if ("search".equals(op)) {
-            typeCode = ParamUtil.get(request, "f.typeCode");
-        }
-        else {
-            typeCode = ParamUtil.get(request, "typeCode");
-        }
-        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
-        String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.getParam(request, "f.title");
-        String fromDate = ParamUtil.get(request, "f.fromDate");
-        String toDate = ParamUtil.get(request, "f.toDate");
-        int status = ParamUtil.getInt(request, "f.status", 1000);
+        String typeCode = ParamUtil.get(request, "typeCode");
+        String starter = ParamUtil.getParam(request, "starter"); // 发起人
+        String by = ParamUtil.get(request, "by");
+        String title = ParamUtil.getParam(request, "title");
+        String fromDate = ParamUtil.get(request, "fromDate");
+        String toDate = ParamUtil.get(request, "toDate");
+        int status = ParamUtil.getInt(request, "status", 1000);
 
-        String orderBy = ParamUtil.get(request, "orderBy");
+        String orderBy = ParamUtil.get(request, "field");
         boolean hasFormCol = false;
-        if (orderBy.equals(""))
-            orderBy = "f.mydate";
-        else {
+        if ("".equals(orderBy)) {
+            orderBy = "mydate";
+        } else {
             if ("f.id".equals(orderBy)
                     || "f.flow_level".equals(orderBy) || "f.title".equals(orderBy) || "f.type_code".equals(orderBy)
-                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy))
+                    || "f.userName".equals(orderBy) || "f.mydate".equals(orderBy) || "f.status".equals(orderBy) || "f.begin_date".equals(orderBy)|| "f.end_date".equals(orderBy)) {
                 ;
-            else {
+            } else {
                 orderBy = "t1." + orderBy;
                 hasFormCol = true;
             }
         }
-        String sort = ParamUtil.get(request, "sort");
-        if (sort.equals("")) {
+        String sort = ParamUtil.get(request, "order");
+        if ("ascend".equals(sort)) {
+            sort = "asc";
+        }
+        else if ("descend".equals(sort)) {
+            sort = "desc";
+        }
+        if ("".equals(sort)) {
             sort = "desc";
         }
 
@@ -3453,25 +3397,25 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
         String sql;
         if ("".equals(formConds) && !hasFormCol) {
             if (!"".equals(starter)) {
-                sql = "select f.id from flow f, users u where f.userName=u.name and f.userName=" + StrUtil.sqlstr(myname) + " and f.status<>" + WorkflowDb.STATUS_NONE;
+                sql = "select f.id from flow f, users u where f.userName=u.name and f.userName=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE;
             } else {
-                sql = "select f.id from flow f where f.userName=" + StrUtil.sqlstr(myname) + " and f.status<>" + WorkflowDb.STATUS_NONE;
+                sql = "select f.id from flow f where f.userName=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE;
             }
         }
         else {
             if (!"".equals(starter)) {
-                sql = "select f.id from flow f, users u, " + formTable + " t1 where f.id=t1.flowId and f.userName=u.name and f.userName=" + StrUtil.sqlstr(myname) + " and f.status<>" + WorkflowDb.STATUS_NONE;
+                sql = "select f.id from flow f, users u, " + formTable + " t1 where f.id=t1.flowId and f.userName=u.name and f.userName=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE;
             } else {
-                sql = "select f.id from flow f, " + formTable + " t1 where f.id=t1.flowId and f.userName=" + StrUtil.sqlstr(myname) + " and f.status<>" + WorkflowDb.STATUS_NONE;
+                sql = "select f.id from flow f, " + formTable + " t1 where f.id=t1.flowId and f.userName=" + StrUtil.sqlstr(myname) + " and f.status>" + WorkflowDb.STATUS_NONE;
             }
         }
 
-        if (!typeCode.equals("")) {
+        if (!"".equals(typeCode)) {
             sql += " and f.type_code=" + StrUtil.sqlstr(typeCode);
         }
 
-        if (op.equals("search")) {
-            if (!title.equals("")) {
+        if ("search".equals(op)) {
+            if (!"".equals(title)) {
                 if ("flowId".equals(by)) {
                     sql += " and f.id = " + StrUtil.sqlstr(title);
                 }
@@ -3480,34 +3424,31 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 }
             }
 
-            if (!fromDate.equals("") && !toDate.equals("")) {
+            if (!"".equals(fromDate) && !"".equals(toDate)) {
                 java.util.Date d = DateUtil.parse(toDate, "yyyy-MM-dd");
                 d = DateUtil.addDate(d, 1);
                 String toDate2 = DateUtil.format(d, "yyyy-MM-dd");
                 sql += " and (f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd") + " and f.BEGIN_DATE<" + SQLFilter.getDateStr(toDate2, "yyyy-MM-dd") + ")";
-            } else if (!fromDate.equals("")) {
+            } else if (!"".equals(fromDate)) {
                 sql += " and f.BEGIN_DATE>=" + SQLFilter.getDateStr(fromDate, "yyyy-MM-dd");
-            } else if (fromDate.equals("") && !toDate.equals("")) {
+            } else if (!"".equals(toDate)) {
                 sql += " and f.BEGIN_DATE<=" + SQLFilter.getDateStr(toDate, "yyyy-MM-dd");
             }
 
             if (status != 1000) {
                 sql += " and f.status=" + status;
             }
-            else {
-                sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
-            }
 
-            if (!formConds.equals("")) {
+            if (!"".equals(formConds)) {
                 sql += " and " + formConds;
             }
         }
-        if (true || sql.indexOf("f.status")==-1) {
-            sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
-        }
+
+        // > WorkfowDb.STATUS_NONE 已排除被删除的状态
+        // sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
 
         sql += " order by " + orderBy + " " + sort;
-        // System.out.println(getClass() + " " + sql);
+        // LogUtil.getLog(getClass()).info(getClass() + " " + sql);
         return sql;
     }
 
@@ -3518,23 +3459,17 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
      */
     public String getSqlSearch(HttpServletRequest request) {
         String op = ParamUtil.get(request, "op");
-        String typeCode;
-        if ("search".equals(op)) {
-            typeCode = ParamUtil.get(request, "f.typeCode");
-        }
-        else {
-            typeCode = ParamUtil.get(request, "typeCode");
-        }
-        String starter = ParamUtil.getParam(request, "f.starter"); // 发起人
-        String by = ParamUtil.get(request, "f.by");
-        String title = ParamUtil.getParam(request, "f.title");
-        String fromDate = ParamUtil.get(request, "f.fromDate");
-        String toDate = ParamUtil.get(request, "f.toDate");
-        int status = ParamUtil.getInt(request, "f.status", 1000);
+        String typeCode = ParamUtil.get(request, "typeCode");
+        String starter = ParamUtil.getParam(request, "starter"); // 发起人
+        String by = ParamUtil.get(request, "by");
+        String title = ParamUtil.getParam(request, "title");
+        String fromDate = ParamUtil.get(request, "fromDate");
+        String toDate = ParamUtil.get(request, "toDate");
+        int status = ParamUtil.getInt(request, "status", 1000);
 
-        String orderBy = ParamUtil.get(request, "orderBy");
+        String orderBy = ParamUtil.get(request, "field");
         boolean hasFormCol = false;
-        if (orderBy.equals("")) {
+        if ("".equals(orderBy)) {
             orderBy = "f.id";
         } else {
             if ("f.id".equals(orderBy)
@@ -3546,20 +3481,38 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 hasFormCol = true;
             }
         }
-        String sort = ParamUtil.get(request, "sort");
-        if (sort.equals("")) {
+        String sort = ParamUtil.get(request, "order");
+        if ("ascend".equals(sort)) {
+            sort = "asc";
+        }
+        else if ("descend".equals(sort)) {
+            sort = "desc";
+        }
+        if ("".equals(sort)) {
             sort = "desc";
         }
 
+        String formTable = "";
+        String formConds = "";
         Leaf leaf = new Leaf();
-        leaf = leaf.getLeaf(typeCode);
-        FormDb fd = new FormDb();
-        fd = fd.getFormDb(leaf.getFormCode());
-        String formTable = FormDb.getTableName(fd.getCode());
+        if (!"".equals(typeCode)) {
+            leaf = leaf.getLeaf(typeCode);
+            if (leaf == null) {
+                throw new ErrMsgException("流程类型: " + typeCode + " 不存在");
+            }
+            if (leaf.getType() != Leaf.TYPE_NONE) {
+                FormDb fd = new FormDb();
+                fd = fd.getFormDb(leaf.getFormCode());
+                if (!fd.isLoaded()) {
+                    throw new ErrMsgException("表单: " + leaf.getFormCode() + " 不存在");
+                }
+                formTable = FormDb.getTableName(fd.getCode());
+                formConds = getConds(request, leaf, fd);
+            }
+        }
 
         String sql;
 
-        String formConds = getConds(request, leaf, fd);
         // 如果没有配置表单字段条件
         if ("".equals(formConds) && !hasFormCol) {
             if (!"".equals(starter)) {
@@ -3568,7 +3521,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             else {
                 sql = "select f.id from flow f where f.status<>" + WorkflowDb.STATUS_NONE;
             }
-            if (!typeCode.equals("") && !typeCode.equals(Leaf.CODE_ROOT)) {
+            if (!"".equals(typeCode) && !typeCode.equals(Leaf.CODE_ROOT)) {
                 if (leaf.getLayer() == 2) {
                     // 取出所有的下级节点的记录
                     if (!"".equals(starter)) {
@@ -3591,7 +3544,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             else {
                 sql = "select f.id from flow f, " + formTable + " t1 where f.id=t1.flowId and f.status<>" + WorkflowDb.STATUS_NONE;
             }
-            if (!typeCode.equals("") && !typeCode.equals(Leaf.CODE_ROOT)) {
+            if (!"".equals(typeCode) && !typeCode.equals(Leaf.CODE_ROOT)) {
                 if (leaf.getLayer() == 2) { // 如果是分类节点
                     if (!"".equals(starter)) {
                         // 取出所有的下级节点的记录
@@ -3609,8 +3562,8 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             }
         }
 
-        if (op.equals("search")) {
-            if (!title.equals("")) {
+        if ("search".equals(op)) {
+            if (!"".equals(title)) {
                 if ("flowId".equals(by)) {
                     sql += " and f.id = " + StrUtil.sqlstr(title);
                 }
@@ -3619,7 +3572,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 }
             }
 
-            if (!fromDate.equals("") && !toDate.equals("")) {
+            if (!"".equals(fromDate) && !toDate.equals("")) {
                 java.util.Date d = DateUtil.parse(toDate, "yyyy-MM-dd");
                 d = DateUtil.addDate(d, 1);
                 String toDate2 = DateUtil.format(d, "yyyy-MM-dd");
@@ -3648,7 +3601,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             sql += " and f.status<>" + WorkflowDb.STATUS_DELETED;
         }
         sql += " order by " + orderBy + " " + sort;
-        // System.out.println(getClass() + " " + sql);
+        // LogUtil.getLog(getClass()).info(getClass() + " " + sql);
         return sql;
     }
 
@@ -3672,7 +3625,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 String condFields = (String) json.get("fields");
                 fields = StrUtil.split(condFields, ",");
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -3688,7 +3641,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
                 try {
                     ff = (FormField) ff.clone();
                 } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
                 vt.addElement(ff);
             }
@@ -3906,12 +3859,13 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
     }
 
     public static String getLevelDesc(int level) {
-        if (level==LEVEL_IMPORTANT)
+        if (level==LEVEL_IMPORTANT) {
             return "重要";
-        else if (level==LEVEL_URGENT)
+        } else if (level==LEVEL_URGENT) {
             return "紧急";
-        else
+        } else {
             return "普通";
+        }
     }
 
     public boolean isMonitor(String userName) {
@@ -3940,7 +3894,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             }
         }
         catch (SQLException e) {
-            Logger.getLogger(getClass()).error("delMonitor:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("delMonitor:" + e.getMessage());
         }
         finally {
             if (ps!=null) {
@@ -3975,7 +3929,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             }
         }
         catch (SQLException e) {
-            Logger.getLogger(getClass()).error("addMonitor:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("addMonitor:" + e.getMessage());
         }
         finally {
             if (ps!=null) {
@@ -4071,7 +4025,7 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
             }
 
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return false;
     }
@@ -4113,4 +4067,23 @@ public boolean modifyFlowString(HttpServletRequest request, String newstring) th
      */
     private long formArchiveId;
 
+
+    public String getIntervenor() {
+        return intervenor;
+    }
+
+    public void setIntervenor(String intervenor) {
+        this.intervenor = intervenor;
+    }
+
+    public java.util.Date getInterveneTime() {
+        return interveneTime;
+    }
+
+    public void setInterveneTime(java.util.Date interveneTime) {
+        this.interveneTime = interveneTime;
+    }
+
+    private String intervenor;
+    private java.util.Date interveneTime;
 }

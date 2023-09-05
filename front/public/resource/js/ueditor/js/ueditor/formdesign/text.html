@@ -1,0 +1,451 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>文本框</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="leipi.style.css">
+    <script type="text/javascript" src="../dialogs/internal.js"></script>
+    <script type="text/javascript">
+        /* Thank you by
+        http://www.alt-tag.com/blog/2006/02/ie-dom-bugs/ */
+        function createElement(type, name) {
+            var element = null;
+            try {
+                element = document.createElement('<' + type + ' name="' + name + '">');
+            } catch (e) {
+            }
+            if (element == null) {
+                element = document.createElement(type);
+                element.name = name;
+            }
+            return element;
+        }
+    </script>
+</head>
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th width="50%">控件字段&nbsp;<span class="label label-important">*</span></th>
+            <th><span>控件名称&nbsp;</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <th><input type="text" id="orgname" placeholder="必填项"></th>
+            <th><input type="text" id="orgtitle" placeholder="必填项"></th>
+        </tr>
+        <tr>
+            <th><span>默认值</span></th>
+            <th>必填项</th>
+        </tr>
+        <tr>
+            <td><input type="text" id="orgvalue" placeholder="无则不填"></td>
+            <td>
+                <input id="canNull" name="canNull" type="checkbox" value="0"/>
+            </td>
+        </tr>
+        <tr>
+            <th><span>数据类型</span></th>
+            <th><span>长度/大小</span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="orgtype" onchange="orgtypeOnChange()">
+                    <option value="0">字符串型</option>
+                    <option value="1">文本型</option>
+                    <option value="2">整型</option>
+                    <option value="3">长整型</option>
+                    <option value="4">布尔型</option>
+                    <option value="5">浮点型</option>
+                    <option value="6">双精度型</option><!--
+                <option value="7">日期型</option>
+                <option value="8">日期时间型</option>
+                -->
+                    <option value="9">价格型</option>
+                </select>
+                <script>
+                    function orgtypeOnChange() {
+                        if (!oNode) {
+                            if ($G('orgtype').value >= 2) {
+                                $G('maxV').value = '';
+                            } else {
+                                $G('maxV').value = '100';
+                            }
+                        }
+                    }
+                </script>
+            </td>
+            <td>
+                <select id="minT" name="minT" style="width:60px">
+                    <option value="d=">>=</option>
+                    <option value="d">></option>
+                    <option value="=">=</option>
+                </select>
+                <input id="minV" name="minV" type="text" style="width:40px">
+                <select id="maxT" name="maxT" style="width:60px">
+                    <option value="x="><=</option>
+                    <option value="x"><</option>
+                </select>
+                <input id="maxV" name="maxV" type="text" value="100" style="width:40px">
+
+                <select id="orgalign" style="display:none">
+                    <option value="left">左对齐</option>
+                    <option value="center">居中对齐</option>
+                    <option value="right">右对齐</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>
+                <span>
+                    格式
+                </span>
+            </th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="format">
+                    <option value=""></option>
+                    <option value="0">千分位</option>
+                    <option value="1">百分比</option>
+                </select>
+                <br/>
+                （需与价格型联用）
+            </td>
+            <td>
+            </td>
+        </tr>
+        <tr>
+            <th>
+                <span>
+                    长&nbsp;&nbsp;X&nbsp;&nbsp;宽
+                    <span style="display: none">&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;字体大小</span>
+                </span>
+            </th>
+            <th><span style="display: none">可见性</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>
+                X
+                <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/>
+                <span style="display: none">
+                &
+                <input id="orgfontsize" type="text" value="" class="input-small span1" placeholder="auto"/> px
+                </span>
+            </td>
+            <td>
+                <label class="checkbox inline"><input id="orghide" name="orghide" type="checkbox"/>隐藏</label>
+            </td>
+        </tr>
+        <tr>
+            <th><span>只读</span></th>
+            <th><span>只读类型</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1"/>
+            </td>
+            <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span>提示</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
+                <textarea id="tip" name="tip" style="width:250px; height:100px"></textarea>
+            </td>
+            <td>
+            </td>
+        </tr>
+    </table>
+</div>
+<script type="text/javascript">
+    var oNode = null, thePlugins = 'text';
+    window.onload = function () {
+        if (UE.plugins[thePlugins].editdom) {
+            oNode = UE.plugins[thePlugins].editdom;
+
+            var gValue = oNode.getAttribute('value');
+            if (gValue)
+                gValue = gValue.replace(/&quot;/g, "\"");
+            var gName = oNode.getAttribute('name').replace(/&quot;/g, "\"");
+            var gTitle = oNode.getAttribute('title').replace(/&quot;/g, "\"");
+            var gHidden = oNode.getAttribute('orghide');
+            var gFontSize = oNode.getAttribute('orgfontsize');
+            var gAlign = oNode.getAttribute('orgalign');
+            var gWidth = oNode.getAttribute('orgwidth');
+            var gHeight = oNode.getAttribute('orgheight');
+
+            var gType = oNode.getAttribute('fieldType');
+            var gCanNull = oNode.getAttribute("canNull");
+            var gMinT = oNode.getAttribute("minT");
+            var gMinV = oNode.getAttribute("minV");
+            var gMaxT = oNode.getAttribute("maxT");
+            var gMaxV = oNode.getAttribute("maxV");
+            var gTip = oNode.getAttribute("tip");
+            if (gTip == null) {
+                gTip = '';
+            }
+
+            var isReadOnly = oNode.getAttribute("readonly");
+            if (isReadOnly != null) {
+                $G('isReadOnly').checked = true;
+            } else {
+                $G('isReadOnly').checked = false;
+            }
+
+            var gReadOnlyType = oNode.getAttribute("readOnlyType");
+            if (gReadOnlyType == null) {
+                gReadOnlyType = '';
+            }
+            $G('readOnlyType').value = gReadOnlyType;
+
+            var gFormat = oNode.getAttribute("format");
+
+            gValue = gValue == null ? '' : gValue;
+            gTitle = gTitle == null ? '' : gTitle;
+            gFormat = gFormat == null ? '' : gFormat;
+            $G('orgvalue').value = gValue;
+            $G('orgname').value = gName;
+            $G('orgtitle').value = gTitle;
+            if (gHidden == '1') {
+                $G('orghide').checked = true;
+            }
+            $G('orgfontsize').value = gFontSize;
+            $G('orgwidth').value = gWidth;
+            $G('orgheight').value = gHeight;
+            $G('orgalign').value = gAlign;
+            $G('orgtype').value = gType;
+
+            $G('orgname').setAttribute("readonly", true);
+            $G('orgtype').setAttribute("disabled", true);
+            if (gCanNull == 0) {
+                $G('canNull').checked = true;
+            } else {
+                $G('canNull').checked = false;
+            }
+
+            if (gMinT) {
+                $G('minT').value = gMinT;
+                $G('minV').value = gMinV;
+                $G('maxT').value = gMaxT;
+                $G('maxV').value = gMaxV;
+            }
+            $G('tip').value = gTip;
+            $G('format').value = gFormat;
+        }
+    }
+    dialog.oncancel = function () {
+        if (UE.plugins[thePlugins].editdom) {
+            delete UE.plugins[thePlugins].editdom;
+        }
+    };
+    dialog.onok = function () {
+        var gName = $G('orgname').value.replace(/\"/g, "&quot;");
+        if (gName == '') {
+            alert('请输入控件字段');
+            return false;
+        }
+        // var gTitle=$G('orgtitle').value.replace(/\"/g,"&quot;");
+        var gTitle = $G('orgtitle').value;
+        if (gTitle == '') {
+            alert('请输入控件名称');
+            return false;
+        }
+
+        // 不需要转义
+        // var gValue=$G('orgvalue').value.replace(/\"/g,"&quot;");
+        var gValue = $G('orgvalue').value;
+        var gFontSize = $G('orgfontsize').value;
+        var gAlign = $G('orgalign').value;
+        var gWidth = $G('orgwidth').value;
+        var gHeight = $G('orgheight').value;
+
+        var gType = $G('orgtype').value;
+        var gCanNull = $G('canNull').checked ? 0 : 1;
+        var gMinT = $G('minT').value;
+        var gMinV = $G('minV').value;
+        var gMaxT = $G('maxT').value;
+        var gMaxV = $G('maxV').value;
+        var gTip = $G('tip').value;
+        var gReadOnlyType = $G('readOnlyType').value;
+        var gFormat = $G('format').value;
+
+        // 字符串型字段的字数最大为21845，相当于：最大长度65532字节/3
+        // 此处将边界值设为20000，是考虑到还有其它字段，如果一个表中的字段总长度超长会报错，表一行最多支持65535字符(不包括text等)
+        if (gType == 0) {
+            if (gMinV >= 20000) {
+                alert('最小长度不能超过20000');
+                return false;
+            }
+            if (gMinV != '' && gMaxV != '') {
+                if (parseInt(gMinV) > parseInt(gMaxV)) {
+                    alert('最小长度不能大于最大长度');
+                    return false;
+                }
+            }
+
+            if (gMaxV == '') {
+                alert('请输入最大长度');
+                return false;
+            } else if (gMaxV > 20000) {
+                alert('最大长度不能超过20000');
+                return false;
+            }
+        }
+
+        if (!oNode) {
+            try {
+                oNode = createElement('input', gName);
+                oNode.setAttribute('type', 'text');
+                oNode.setAttribute('title', gTitle);
+                oNode.setAttribute('value', gValue);
+
+                oNode.setAttribute('cwsPlugins', thePlugins);
+                if ($G('orghide').checked) {
+                    oNode.setAttribute('orghide', 1);
+                } else {
+                    oNode.setAttribute('orghide', 0);
+                }
+                if (gFontSize != '') {
+                    oNode.style.fontSize = gFontSize + 'px';
+                    //style += 'font-size:' + gFontSize + 'px;';
+                    oNode.setAttribute('orgfontsize', gFontSize);
+                }
+                if (gAlign != '') {
+                    //style += 'text-align:' + gAlign + ';';
+                    oNode.style.textAlign = gAlign;
+                    oNode.setAttribute('orgalign', gAlign);
+                }
+                if (gWidth != '') {
+                    oNode.style.width = gWidth + 'px';
+                    // style += 'width:' + gWidth + 'px;';
+                    oNode.setAttribute('orgwidth', gWidth);
+                }
+                if (gHeight != '') {
+                    oNode.style.height = gHeight + 'px';
+                    // style += 'height:' + gHeight + 'px;';
+                    oNode.setAttribute('orgheight', gHeight);
+                }
+
+                if (gType != '') {
+                    oNode.setAttribute('fieldType', gType);
+                }
+
+                oNode.setAttribute("canNull", gCanNull);
+                oNode.setAttribute("minT", gMinT);
+                oNode.setAttribute("minV", gMinV);
+                oNode.setAttribute("maxT", gMaxT);
+                oNode.setAttribute("maxV", gMaxV);
+
+                if ($G('isReadOnly').checked) {
+                    oNode.setAttribute("readonly", "readonly");
+                } else {
+                    oNode.removeAttribute("readonly");
+                }
+
+                // if (gFormat != '') {
+                    oNode.setAttribute('format', gFormat);
+                // }
+
+                oNode.setAttribute("tip", gTip);
+                oNode.setAttribute("readOnlyType", gReadOnlyType);
+                // oNode.setAttribute('style',style );
+                // oNode.style.cssText=style;//ie7
+                editor.execCommand('insertHtml', oNode.outerHTML);
+            } catch (e) {
+                console.log(e);
+                try {
+                    editor.execCommand('error');
+                } catch (e) {
+                    alert('控件异常！');
+                }
+                return false;
+            }
+        } else {
+            oNode.setAttribute('title', gTitle);
+            oNode.setAttribute('value', gValue);
+            if ($G('orghide').checked) {
+                oNode.setAttribute('orghide', 1);
+            } else {
+                oNode.setAttribute('orghide', 0);
+            }
+            if (gFontSize != '') {
+                //oNode.style.fontSize = gFontSize+ 'px';
+                oNode.setAttribute('orgfontsize', gFontSize);
+            } else {
+                //oNode.style.fontSize = '';
+                oNode.setAttribute('orgfontsize', '');
+            }
+            if (gAlign != '') {
+                //oNode.style.textAlign = gAlign;
+                oNode.setAttribute('orgalign', gAlign);
+            } else {
+                oNode.setAttribute('orgalign', '');
+            }
+            if (gWidth != '') {
+                oNode.style.width = gWidth + 'px';
+                oNode.setAttribute('orgwidth', gWidth);
+            } else {
+                oNode.style.width = '';
+                oNode.setAttribute('orgwidth', '');
+            }
+            if (gHeight != '') {
+                oNode.style.height = gHeight + 'px';
+                oNode.setAttribute('orgheight', gHeight);
+            } else {
+                oNode.style.height = '';
+                oNode.setAttribute('orgheight', '');
+            }
+
+            /*
+            if( gType != '' ) {
+                oNode.setAttribute('fieldType',gType );
+            }else{
+                oNode.setAttribute('fieldType', '');
+            }
+            */
+
+            oNode.setAttribute("canNull", gCanNull);
+            oNode.setAttribute("minT", gMinT);
+            oNode.setAttribute("minV", gMinV);
+            oNode.setAttribute("maxT", gMaxT);
+            oNode.setAttribute("maxV", gMaxV);
+
+            if ($G('isReadOnly').checked) {
+                oNode.setAttribute("readonly", "readonly");
+            } else {
+                oNode.removeAttribute("readonly");
+            }
+
+            // if (gFormat != '') {
+                oNode.setAttribute('format', gFormat);
+            // }
+
+            oNode.setAttribute("tip", gTip);
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
+
+            delete UE.plugins[thePlugins].editdom;
+        }
+    };
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.base.IFormValidator;
 import com.redmoon.oa.flow.FormDAO;
@@ -49,10 +50,10 @@ public class JoinFormValidator implements IFormValidator  {
 		fdao.load();
 		String photo = fdao.getFieldValue("picture");
 		String personNo = fdao.getFieldValue("person_no");
-		String sql = "update form_table_personbasic set photo='" + photo
+		String sql = "update ft_personbasic set photo='" + photo
 				+ "' where flowid =" + wf.getId() + " ";
 		if (wf.getStatus() == WorkflowDb.STATUS_FINISHED) {
-			sql = "update form_table_personbasic set person_no="
+			sql = "update ft_personbasic set person_no="
 					+ StrUtil.sqlstr(personNo) + ", zzqk='在职', photo='" + photo
 					+ "' where flowid =" + wf.getId() + " ";
 		}
@@ -61,7 +62,7 @@ public class JoinFormValidator implements IFormValidator  {
 		try {
 			r = jte.executeUpdate(sql);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 
@@ -78,7 +79,7 @@ public class JoinFormValidator implements IFormValidator  {
 	}
 	
     public boolean isPersonNoExist(String personNo) {
-    	String sql = "select id from form_table_personbasic where person_no=?";
+    	String sql = "select id from ft_personbasic where person_no=?";
     	JdbcTemplate jt = new JdbcTemplate();
     	try {
 			ResultIterator ri = jt.executeQuery(sql, new Object[]{personNo});
@@ -86,8 +87,7 @@ public class JoinFormValidator implements IFormValidator  {
 				return true;
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     	return false;
     }	

@@ -164,6 +164,12 @@ public class User extends Model<User> {
 
     private LocalDateTime lastLogin;
 
+    private String openId;
+
+    private String unionId;
+
+    private String loginName;
+
     @Override
     protected Serializable pkVal() {
         return this.id;

@@ -10,6 +10,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.entity.Group;
 import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.utils.ResponseUtil;
+import com.cloudweb.oa.vo.Result;
+import com.redmoon.oa.android.CloudConfig;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.person.UserLevelDb;
 import com.redmoon.oa.person.UserLevelMgr;
@@ -214,16 +216,19 @@ public class ConfigController {
         JSONArray jsonAry = new JSONArray();
         for (Element e : elements) {
             String name = e.getName();
-            if (!name.equals("FLOW_BUTTON_ATTENTION") && !name.equals("FLOW_BUTTON_NETDISKFILE") &&
-                    !name.equals("FLOW_BUTTON_TRANSFER") && !name.equals("FLOW_BUTTON_PLUS") && !name.equals("FLOW_BUTTON_DOC") &&
-                    !name.equals("FLOW_BUTTON_CANCEL_ATTENTION") && !name.equals("FLOW_BUTTON_ALTER") &&
-                    !name.equals("FLOW_BUTTON_SUSPEND") && !name.equals("FLOW_BUTTON_DISCARD") && !name.equals("FLOW_BUTTON_LINKPROJECT")) {
+            if (!name.startsWith("FLOW_BUTTON_")) {
                 continue;
             }
+            /*if (!name.equals("FLOW_BUTTON_ATTENTION") &&
+                    !name.equals("FLOW_BUTTON_TRANSFER") && !name.equals("FLOW_BUTTON_PLUS") && !name.equals("FLOW_BUTTON_DOC") &&
+                    !name.equals("FLOW_BUTTON_CANCEL_ATTENTION") && !name.equals("FLOW_BUTTON_ALTER") &&
+                    !name.equals("FLOW_BUTTON_SUSPEND") && !name.equals("FLOW_BUTTON_DISCARD")) {
+                continue;
+            }*/
 
             JSONObject json = new JSONObject();
 
-            json.put("name", e.getName());
+            json.put("name", name);
             json.put("value", e.getValue());
             json.put("title", StrUtil.getNullStr(e.getAttributeValue("title")));
             json.put("isDisplay", StrUtil.getNullStr(e.getAttributeValue("isDisplay")));
@@ -427,5 +432,41 @@ public class ConfigController {
         com.redmoon.oa.sms.SMSFactory.init();
         com.redmoon.oa.sms.SMSFactory.getMsgUtil();
         return responseUtil.getResultJson(true).toString();
+    }
+
+    @PreAuthorize("hasAnyAuthority('admin')")
+    @RequestMapping(value = "/configDeveloper")
+    public String configDeveloper(Model model) throws ValidateException {
+        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+        CloudConfig cfg = CloudConfig.getInstance();
+        model.addAttribute("developers", cfg.getDevelopers());
+        return "th/admin/config_developer";
+    }
+
+    @PreAuthorize("hasAnyAuthority('admin')")
+    @RequestMapping(value = "/modifyDeveloper", produces = {"text/html;charset=UTF-8;", "application/json;"})
+    @ResponseBody
+    public String modifyDeveloper(@RequestParam(required = true)String userName, @RequestParam(required = true)String userSecret) throws ValidateException {
+        CloudConfig cfg = CloudConfig.getInstance();
+        boolean re = cfg.modifyDeveloper(userName, userSecret);
+        return responseUtil.getResultJson(re).toString();
+    }
+
+    @PreAuthorize("hasAnyAuthority('admin')")
+    @RequestMapping(value = "/delDeveloper", produces = {"text/html;charset=UTF-8;", "application/json;"})
+    @ResponseBody
+    public String delDeveloper(@RequestParam(required = true)String userName) throws ValidateException {
+        CloudConfig cfg = CloudConfig.getInstance();
+        boolean re = cfg.delDeveloper(userName);
+        return responseUtil.getResultJson(re).toString();
+    }
+
+    @PreAuthorize("hasAnyAuthority('admin')")
+    @RequestMapping(value = "/addDeveloper", produces = {"text/html;charset=UTF-8;", "application/json;"})
+    @ResponseBody
+    public String addDeveloper(@RequestParam(required = true)String userName, @RequestParam(required = true)String userSecret) throws ValidateException {
+        CloudConfig cfg = CloudConfig.getInstance();
+        boolean re = cfg.addDeveloper(userName, userSecret);
+        return responseUtil.getResultJson(re).toString();
     }
 }

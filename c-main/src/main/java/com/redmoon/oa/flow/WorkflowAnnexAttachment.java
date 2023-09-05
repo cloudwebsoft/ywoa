@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import cn.js.fan.db.*;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
@@ -31,8 +33,9 @@ public class WorkflowAnnexAttachment implements java.io.Serializable {
 
     public WorkflowAnnexAttachment(long id) {
         connname = Global.getDefaultDB();
-        if (connname.equals(""))
+        if (connname.equals("")) {
             LogUtil.getLog(getClass()).error("Attachment:默认数据库名为空！");
+        }
         this.id = id;
         loadFromDb();
     }
@@ -53,26 +56,19 @@ public class WorkflowAnnexAttachment implements java.io.Serializable {
             pstmt.setLong(6, id);
             pstmt.setTimestamp(7, new Timestamp(new java.util.Date().getTime()));
             pstmt.setLong(8, size);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
             LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         }
         finally {
-            if (conn!=null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
 
     public String getAttachmentUrl(HttpServletRequest request) {
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        String vpath = cfg.get("file_flow");
-        String attachmentBasePath = Global.getRootPath() + "/" +
-                                    vpath + "/";
-        return attachmentBasePath + visualPath + "/" + diskName;
+        return request.getContextPath() + "/flow/downloadAnnexAttachment.do?id=" + id;
     }
 
     /**
@@ -92,29 +88,29 @@ public class WorkflowAnnexAttachment implements java.io.Serializable {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }
     
     /**
      * 获取流程所以的附加信息的附件
-     * @param annexId long
+     * @param flowId 流程ID
      * @return Vector
      */
-    public Vector getAllAttachments(int flowId) {
-        Vector v = new Vector();
+    public Vector<WorkflowAnnexAttachment> getAllAttachments(int flowId) {
+        Vector<WorkflowAnnexAttachment> v = new Vector<>();
         String sql = "select f.id from flow_annex_attach f,flow_annex a where annex_id=a.id and a.flow_id=? order by f.add_date desc";
         try {
             JdbcTemplate jt = new JdbcTemplate();
-            ResultIterator ri = jt.executeQuery(sql, new Object[] {new Long(flowId)});
+            ResultIterator ri = jt.executeQuery(sql, new Object[] {(long) flowId});
             while (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
+                ResultRecord rr = ri.next();
                 v.addElement(new WorkflowAnnexAttachment(rr.getLong(1)));
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }
@@ -127,15 +123,15 @@ public class WorkflowAnnexAttachment implements java.io.Serializable {
         String sql = "select id from flow_annex_attach where annex_id=? order by add_date desc";
         try {
             JdbcTemplate jt = new JdbcTemplate();
-            ResultIterator ri = jt.executeQuery(sql, new Object[] {new Long(annexId)});
+            ResultIterator ri = jt.executeQuery(sql, new Object[] {annexId});
             while (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
+                ResultRecord rr = ri.next();
                 WorkflowAnnexAttachment wfaa = new WorkflowAnnexAttachment(rr.getLong(1));
                 wfaa.del();
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -146,21 +142,17 @@ public class WorkflowAnnexAttachment implements java.io.Serializable {
         try {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setLong(1, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
             LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         // 删除文件
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        String vpath = cfg.get("file_flow");
-        File fl = new File(Global.realPath + vpath + "/" + visualPath + "/" + diskName);
-        fl.delete();
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
+        fileService.del(visualPath, diskName);
 
         return re;
     }
@@ -177,15 +169,13 @@ public class WorkflowAnnexAttachment implements java.io.Serializable {
             pstmt.setInt(5, orders);
             pstmt.setInt(6, downloadCount);
             pstmt.setLong(7, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
         }
         catch (SQLException e) {
             LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         return re;
     }

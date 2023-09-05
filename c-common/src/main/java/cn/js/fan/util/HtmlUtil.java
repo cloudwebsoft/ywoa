@@ -72,7 +72,6 @@ public class HtmlUtil {
         int idx1 = content.lastIndexOf('<');
         int idx2 = content.lastIndexOf('>');
         // 如果截取时，未取到 > ，则继续往前取，直到取到为止
-        // System.out.println("MsgUtil.java getAbstract: idx1=" + idx1 + " idx2=" + idx2);
         if ((idx2 == -1 && idx1 >= 0) || (idx1 > idx2)) {
             String ct3 = htmlStr;
             int idx3 = ct3.indexOf('>', idx1);
@@ -123,7 +122,6 @@ public class HtmlUtil {
                     String ext = StrUtil.getFileExt(url).toLowerCase();
                     // 如果地址完整
                     if (ext.equals("gif") || ext.equals("png") || ext.equals("jpg") || ext.equals("jpeg") || ext.equals("bmp")) {
-                        // System.out.println("MsgUtil.java getAbstract:" + imagenode.toHtml() + " url=" + imagenode.getImageURL());
                         if (imagenode.getImageURL().startsWith("http"))
                             ; // line = "<div align=center>" + imagenode.toHtml() + "</div>";
                         else if (imagenode.getImageURL().startsWith("/")) {
@@ -137,7 +135,6 @@ public class HtmlUtil {
                                 SkinUtil.LoadString(request,
                                  "res.cn.js.fan.util.StrUtil",
                                     "click_open_win") + " onload=\"javascript:if(this.width>screen.width-333) this.width=screen.width-333\"></a></div><BR>";
-                        // System.out.println(line);
                     }
                 }
                 if (isTrimEmpty(line))
@@ -193,7 +190,6 @@ public class HtmlUtil {
                         if (!(textnode.getParent() instanceof StyleTag)) {
                             line = textnode.getText();
                         }
-                        // System.out.println(HtmlUtil.class + " line1=" + line);
                     }
                     else {
                         line = textnode.getText();
@@ -203,17 +199,12 @@ public class HtmlUtil {
                     TableTag tableTag = (TableTag) anode;
                     line = tableTag.toPlainTextString(); //得到表格的内容
                 }
-                /*
-                else if (anode instanceof StyleTag) {
-                    System.out.println(HtmlUtil.class + " " + ((StyleTag)anode).toPlainTextString());
-                }
-                */
 
                 str += line;
             }
         }
         catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(HtmlUtil.class).error(e);
         }
         return str;
     }

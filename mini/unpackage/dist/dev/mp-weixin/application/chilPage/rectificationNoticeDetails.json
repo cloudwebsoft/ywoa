@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "详情",
+  "usingComponents": {
+    "uni-forms": "/components/uni-forms/uni-forms",
+    "uni-forms-item": "/components/uni-forms-item/uni-forms-item",
+    "u-input": "/node-modules/uview-ui/components/u-input/u-input",
+    "u-rate": "/node-modules/uview-ui/components/u-rate/u-rate",
+    "u-checkbox-group": "/node-modules/uview-ui/components/u-checkbox-group/u-checkbox-group",
+    "u-checkbox": "/node-modules/uview-ui/components/u-checkbox/u-checkbox"
+  }
+}

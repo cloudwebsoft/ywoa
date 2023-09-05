@@ -35,13 +35,18 @@ import jxl.write.WritableWorkbook;
  * @author not attributable
  * @version 1.0 
  */
-public class LogUtil {  
+public class LogUtil {
+    public static final String USER_NONE = "user_none";
+
     public LogDb getLogDb(int id) {
         LogDb ld = new LogDb();
         return ld.getLogDb(id);
     }
 
     public static boolean log(String userName, String ip, int type, String action) {
+        if (userName==null) {
+            userName = USER_NONE;
+        }
         LogDb ld = new LogDb();
         ld.setUserName(userName);
         ld.setIp(ip);
@@ -52,8 +57,7 @@ public class LogUtil {
     }
 
     public static String get(HttpServletRequest request, String resProp) {
-        return SkinUtil.LoadString(request, "res.module.log",
-                                           resProp);
+        return SkinUtil.LoadString(request, "res.module.log", resProp);
     }
     
     public static String format(HttpServletRequest request, String resKey, Object[] objs) {
@@ -171,7 +175,7 @@ public class LogUtil {
             wwb.write();
             wwb.close();
         } catch (Exception e) {
-            System.out.println(e.toString());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(LogUtil.class).error(e);
         }
     }    
     

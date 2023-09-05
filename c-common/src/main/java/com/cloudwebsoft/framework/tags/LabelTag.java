@@ -1,7 +1,7 @@
 package com.cloudwebsoft.framework.tags;
 
 import cn.js.fan.web.SkinUtil;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.BodyTagSupport;
@@ -20,8 +20,6 @@ import javax.servlet.jsp.tagext.BodyTagSupport;
  */
 
 public class LabelTag extends BodyTagSupport {
-
-    Logger logger = Logger.getLogger(LabelTag.class.getName());
 
     public LabelTag() {
     }
@@ -47,7 +45,7 @@ public class LabelTag extends BodyTagSupport {
                 str = SkinUtil.LoadString((HttpServletRequest)pageContext.getRequest(), res, key);
             pageContext.getOut().print(str);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return EVAL_PAGE;
     }

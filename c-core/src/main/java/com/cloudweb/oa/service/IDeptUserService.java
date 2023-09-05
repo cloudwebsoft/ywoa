@@ -44,4 +44,6 @@ public interface IDeptUserService extends IService<DeptUser> {
     void syncUnit();
 
     ListResult listBySearch(String op, String realName, String mobile, String email, String depts, String phone, String orderField, int curPage, int pageSize);
+
+    List<DeptUser> listAllByDeptCode(String deptCode);
 }

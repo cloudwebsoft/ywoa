@@ -91,13 +91,14 @@ public class Properties extends java.util.Properties {
         return outBuffer.toString();
     }
 
+    @Override
     public synchronized void store(OutputStream out, String header) throws
             IOException {
         BufferedWriter awriter;
         awriter = new BufferedWriter(new OutputStreamWriter(out, charset));
-        System.out.println("store charset=" + charset);
-        if (header != null)
+        if (header != null) {
             writeln(awriter, "#" + header);
+        }
         writeln(awriter, "#" + new Date().toString());
         for (Enumeration e = keys(); e.hasMoreElements(); ) {
             String key = (String) e.nextElement();
@@ -109,7 +110,6 @@ public class Properties extends java.util.Properties {
              */
             // val = saveConvert(val, false);
             val = new String(val.getBytes("8859_1"), charset);
-            // System.out.println("store val=" + val);
             writeln(awriter, key + "=" + val);
         }
         awriter.flush();

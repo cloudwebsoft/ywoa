@@ -4,6 +4,7 @@ import cn.js.fan.util.ErrMsgException;
 import com.cloudweb.oa.entity.UserOfRole;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -43,4 +44,10 @@ public interface IUserOfRoleService extends IService<UserOfRole> {
     boolean update(UserOfRole userOfRole);
 
     boolean isRoleOfDept(String userName, String roleCode, String deptCode);
+
+    int create(UserOfRole userOfRole);
+
+    boolean create(String userName, String roleCode);
+
+    boolean del(String userName, String roleCode);
 }

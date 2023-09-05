@@ -18,7 +18,8 @@ import com.redmoon.mail.MyAuthenticator;
  */
 public class SimpleMailSender  extends AbstractSender {
 
-	protected Message populateCommonInfo(MailSenderInfo mailInfo)
+	@Override
+    protected Message populateCommonInfo(MailSenderInfo mailInfo)
 			throws MessagingException {
 		// 判断是否需要身份认证
 		Properties p = System.getProperties();

@@ -10,7 +10,6 @@ import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.ui.Skin;
 import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.oa.visual.ModulePrivDb;
-import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspWriter;
@@ -18,7 +17,6 @@ import java.util.Iterator;
 import java.util.Vector;
 
 public class DirectoryView {
-    Logger logger = Logger.getLogger(Leaf.class.getName());
     Leaf rootLeaf;
     Vector UprightLineNodes = new Vector(); //用于显示竖线
     HttpServletRequest request;
@@ -56,8 +54,7 @@ public class DirectoryView {
         }
     }
 
-    public void ShowLeafAsOptionToString(StringBuffer sb, Leaf leaf, int rootlayer)
-                  throws Exception {
+    public void ShowLeafAsOptionToString(StringBuffer sb, Leaf leaf, int rootlayer) {
         String code = leaf.getCode();
         String name = leaf.getName();
         int layer = leaf.getLayer();
@@ -81,8 +78,9 @@ public class DirectoryView {
         Directory dir = new Directory();
         Vector children = dir.getChildren(leaf.getCode());
         int size = children.size();
-        if (size == 0)
+        if (size == 0) {
             return;
+        }
 
         int i = 0;
         Iterator ri = children.iterator();
@@ -93,13 +91,14 @@ public class DirectoryView {
     }
 
     // 显示根结点为leaf的树
-    public void ShowDirectoryAsOptionsToString(StringBuffer sb, Leaf leaf, int rootlayer) throws Exception {
+    public void ShowDirectoryAsOptionsToString(StringBuffer sb, Leaf leaf, int rootlayer) {
         ShowLeafAsOptionToString(sb, leaf, rootlayer);
         Directory dir = new Directory();
         Vector children = dir.getChildren(leaf.getCode());
         int size = children.size();
-        if (size == 0)
+        if (size == 0) {
             return;
+        }
 
         int i = 0;
         Iterator ri = children.iterator();
@@ -135,8 +134,9 @@ public class DirectoryView {
         Directory dir = new Directory();
         Vector children = dir.getChildren(leaf.getCode());
         int size = children.size();
-        if (size == 0)
+        if (size == 0) {
             return;
+        }
 
         int i = 0;
         Iterator ri = children.iterator();
@@ -193,8 +193,7 @@ public class DirectoryView {
                     if (!"".equals(desc)) {
                         desc = "(" + desc + ")";
                     }
-					// System.out.println("getJson: code=" + child.getCode() + " name=" + child.getName() + "  lic.isPlatformSrc()=" + lic.isPlatformSrc());
-					
+
 					if (child.getCode().equals(ConstUtil.MENU_ITEM_SALES)) {
 				        if (!lic.isPlatformSrc()) {
                             continue;
@@ -241,7 +240,6 @@ public class DirectoryView {
 	            if (lp.getType()==ModulePrivDb.TYPE_ROLE) {
 	            	if (lp.getName().equals(RoleDb.CODE_MEMBER)) {
 	            		if (lp.getSee() == 1 || lp.getManage()==1) {
-	            			// System.out.println(getClass() + " " + lp.getName() + " " + moduleCode);
 	            			return true;
 	            		}	            		
 	            	}

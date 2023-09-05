@@ -93,21 +93,21 @@ public class BrowserTool {
         String ucOther = "Mozilla/5.0 (Linux; U; Android 6.0; zh-CN; HUAWEI MT7-CL00 Build/HuaweiMT7-CL00) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 UCBrowser/10.10.3.810 U3/0.8.0 Mobile Safari/534.30";
         
         BrowserTool b=new BrowserTool();
-        System.out.println(b.checkBrowse(ie9));
-        System.out.println(b.checkBrowse(ie8));
-        System.out.println(b.checkBrowse(ie7));
-        System.out.println(b.checkBrowse(ie6));
-        System.out.println(b.checkBrowse(aoyou));
-        System.out.println(b.checkBrowse(qq));
-        System.out.println(b.checkBrowse(green));
-        System.out.println(b.checkBrowse(se360));
-        System.out.println(b.checkBrowse(chrome));
-        System.out.println(b.checkBrowse(safari));
-        System.out.println(b.checkBrowse(fireFox));
-        System.out.println(b.checkBrowse(opera));
-        System.out.println(b.checkBrowse(other));
-        System.out.println(b.checkBrowse(uc));
-        System.out.println(b.checkBrowse(ucOther));
+        /*LogUtil.getLog(getClass()).info(b.checkBrowse(ie9));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(ie8));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(ie7));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(ie6));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(aoyou));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(qq));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(green));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(se360));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(chrome));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(safari));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(fireFox));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(opera));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(other));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(uc));
+        LogUtil.getLog(getClass()).info(b.checkBrowse(ucOther));*/
     }
      
 }

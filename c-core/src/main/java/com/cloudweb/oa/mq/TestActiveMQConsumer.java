@@ -16,6 +16,7 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.Test;
@@ -83,7 +84,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
                 connection.start();
             }
         } catch (JMSException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return null;
         }
         return connection;
@@ -117,7 +118,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
                 try {
                     session = connection.createSession(transacted, acknowledgeMode);
                 } catch (JMSException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                     return null;
                 }
             }
@@ -166,7 +167,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
                     destination = session.createQueue(subject);
                 }
             } catch (JMSException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
                 return null;
             }
         }
@@ -183,7 +184,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
             replyProducer = session.createProducer(null);
             replyProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         } catch (JMSException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return replyProducer;
     }
@@ -199,7 +200,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
         try {
             consumer = session.createConsumer(destination);
         } catch (JMSException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return consumer;
     }
@@ -213,7 +214,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
 
                 String msg = txtMsg.getText();
                 int length = msg.length();
-                System.out.println("[" + this.getName() + "] Received: '" + msg+ "' (length " + length + ")");
+                LogUtil.getLog(getClass()).info("[" + this.getName() + "] Received: '" + msg+ "' (length " + length + ")");
             }
 
             if (message.getJMSReplyTo() != null) {
@@ -223,8 +224,8 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
             }
             message.acknowledge();
         } catch (JMSException e) {
-            System.out.println("[" + this.getName() + "] Caught: " + e);
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).info("[" + this.getName() + "] Caught: " + e);
+            LogUtil.getLog(getClass()).error(e);
         } finally {
 
         }
@@ -242,7 +243,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
         try {
             consumer.setMessageListener(this);
         } catch (JMSException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -264,7 +265,7 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
                 }
             }
             if (running <= 0) {
-                System.out.println("All threads completed their work");
+                LogUtil.getLog(getClass()).info("All threads completed their work");
                 break;
             }
         }
@@ -292,15 +293,15 @@ public class TestActiveMQConsumer extends Thread implements MessageListener {
             if (message instanceof TextMessage) {
                 TextMessage textMessage = (TextMessage) message;
                 String text = textMessage.getText();
-                System.out.println("Received: " + text);
+                LogUtil.getLog(getClass()).info("Received: " + text);
             } else {
-                System.out.println("Received: " + message);
+                LogUtil.getLog(getClass()).info("Received: " + message);
             }
             consumer.close();
             session.close();
             connection.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 }

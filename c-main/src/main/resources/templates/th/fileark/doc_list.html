@@ -1,0 +1,1456 @@
+﻿<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>文档列表</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css/message/document_search.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}"/>
+    <link href="../lte/css/font-awesome.css?v=4.4.0" rel="stylesheet">
+    <style>
+        i {
+            margin-right: 5px;
+        }
+        .upfile-image-box {
+            display: inline-block;
+            width: 160px;
+            height: 130px;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            border: 1px dashed #ff0005;
+            background: #f8f8f8;
+            position: relative;
+            overflow: hidden;
+            margin: 10px
+        }
+
+        .upload-image-box-db {
+            border: 1px dashed #00CC00;
+        }
+
+        .upfile-cover {
+            position: absolute;
+            z-index: 1;
+            top: 0px;
+            width: 158px;
+            height: 128px;
+            background-color: rgba(0, 0, 0, .1);
+            display: none;
+            cursor: pointer;
+        }
+
+        .upfile-cover .btn-bar {
+            width: 100%;
+            height: 30px;
+            background-color: #eee;
+            opacity: 60%;
+        }
+
+        .upfile-cover .btn-bar .btn-del {
+            color: red;
+            padding: 1px 10px;
+            /*background-color: #faffbd;
+            border: 1px solid #faffbd;
+            border-radius: 3px;*/
+            font-size: 18px;
+            float: right;
+        }
+
+        .upfile-image-box:hover .upfile-cover {
+            display: block;
+        }
+
+        .upfile-image-box img {
+            width: 158px;
+            height: 128px;
+        }
+
+        .upfile-image-desc {
+            width: 158px;
+            height: 128px;
+            text-align: center;
+        }
+
+        .upfile-image-desc img {
+            margin-top: 40px;
+            width: 32px;
+            height: 32px;
+        }
+
+        .upfile-box {
+            display: inline-block;
+            width: 158px;
+            height: 130px;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            border: 1px dashed darkgray;
+            background: #f8f8f8;
+            position: relative;
+            overflow: hidden;
+            margin: 10px;
+        }
+
+        .upfile-box-tip {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .upfile-box-tip span {
+            font-size: 40px;
+        }
+
+        .upfile-ctrl {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #F4E2C9;
+        }
+
+        .file-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .ui-dialog-content input[type=file] {
+            height: 100% !important;
+        }
+
+        .ui-dialog .ui-dialog-content {
+            padding-left: 20px !important;
+        }
+
+        /*使按钮居中*/
+        .ui-dialog .ui-dialog-buttonpane button {
+            margin-right: 25% !important;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            z-index: 1801;
+            top: 45%;
+            left: 45%;
+            width: 100%;
+            margin: auto;
+            height: 100%;
+        }
+
+        .SD_overlayBG2 {
+            background: #FFFFFF;
+            filter: alpha(opacity=20);
+            -moz-opacity: 0.20;
+            opacity: 0.20;
+            z-index: 1500;
+        }
+
+        .treeBackground {
+            display: none;
+            position: absolute;
+            top: -2%;
+            left: 0%;
+            width: 100%;
+            margin: auto;
+            height: 200%;
+            background-color: #EEEEEE;
+            z-index: 1800;
+            -moz-opacity: 0.8;
+            opacity: .80;
+            filter: alpha(opacity=80);
+        }
+
+        td[data-field="operate"] a {
+            margin-right: 10px;
+        }
+    </style>
+    <link type="text/css" rel="stylesheet" href="showDialog/showDialog.css"/>
+    <link type="text/css" rel="stylesheet" href="showDialog/document.css"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+</head>
+<body>
+<div id="treeBackground" class="treeBackground"></div>
+<div id='loading' class='loading'><img src='../images/loading.gif'/></div>
+
+<th:block th:if="${#lists.size(aryKind) > 0}">
+<div class="tabs1Box">
+    <div id="tabs1">
+        <ul>
+            <li id="menu">
+                <a th:href="'docListPage.jsp?[(${dirCode})]=' + ${dirCode}"><span>全部</span></a>
+            </li>
+            <li th:each="json : ${aryKind}" th:id="'menu' + ${dirKind.kind}">
+                <a th:href="'docListPage.do?dirCode=' + ${dirCode} + '&kind=' + ${json.kind}"><span>[(${json.kindName})]</span></a>
+            </li>
+        </ul>
+    </div>
+</div>
+<script th:inline="javascript">
+    o("menu[(${kind})]").className = "current";
+</script>
+</th:block>
+
+    <div id="search_div" style="display:none;overflow:auto">
+        <form class="search-form">
+        <input type="hidden" name="clickTimes" id="clickTimes" value="0"/>
+        <div class="document_cont" id="document_cont">
+            <h1 id="doc_h1"><img th:src="@{${skinPath} + '/images/document_icon1.png'}" width="37" height="25" id="searchImg"/>搜索条件</h1>
+            <div class="document_sch" id="document_sch">
+                <div class="document_sch_title" id="document_sch_title">请输入搜索条件：</div>
+                <ul id="doc_search">
+                    <li id="doc_name">文档名称：<input name="title" id="title" type="text" /></li>
+                    <li id="doc_author">
+                        作&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;者：<input name="author" id="author" type="text"/>
+                    </li>
+                    <li id="doc_content">文档内容：<input name="content" id="content" type="text"/>
+                    </li>
+                    <li id="doc_keywords">关&nbsp;键&nbsp;词：&nbsp;<input name="keywords1" id="keywords1" type="text"/></li>
+
+                    <li th:if="!${isDraftBox}" id="doc_examine">
+                        状&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;态：
+                        <select id="examine1" name="examine1" style="width:170px;">
+                            <option value="-1" selected>不限</option>
+                            <option th:if="${canExamine}" th:value="${EXAMINE_NOT}">未审核</option>
+                            <option th:value="${EXAMINE_PASS}">已通过</option>
+                            <option th:if="${canExamine}" th:value="${EXAMINE_NOTPASS}">未通过</option>
+                        </select>
+                    </li>
+
+                    <li th:if="${isDraftBox}" id="doc_examine">
+                        状&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;态：草稿<input name="examine1" th:value="${EXAMINE_DRAFT}" type="hidden"/>
+                    </li>
+
+                    <script th:inline="javascript">
+                        o("examine1").value = "[(${examine1})]";
+                    </script>
+                    <th:block th:switch="${isRoot}">
+                        <li th:case="true" id="doc_kind">类&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;别：
+                            <select id="kind1" name="kind1" style="width:170px;">
+                                <option value="">无</option>
+                                <option th:each="json : ${aryFilearkKind}" th:value="${json.value}">[(${json.name})]</option>
+                            </select>
+                        </li>
+                        <input th:case="*" id="kind1" name="kind1" type="hidden" th:value="${kind1}"/>
+                    </th:block>
+                    <li id="doc_directory">
+                        所在目录：
+                        <th:block th:switch="${isDraftBox}">
+                            <th:block th:case="true">草稿箱</th:block>
+                            <th:block th:case="*">
+                                <input id="directory" th:value="${dirName}" style="width:120px"/>
+                                &nbsp;<a href="javascript:;" onclick="selDept()">选择</a>
+                            </th:block>
+                        </th:block>
+                    </li>
+                </ul>
+            </div>
+            <div id="displayId">
+                <a th:if="${!isDraftBox}" id="afBtn" href="javascript:;" style="text-decoration: none">
+                    <span style="margin-left:8px;">高级选项</span>
+                    &nbsp;<img id="afBtnImg" th:src="@{${skinPath} + '/images/af_arrow_down.png'}"/></a>
+                <div class="document_sch" id="document_sch_1" style="display:none;">
+                    <div class="document_sch_title" id="document_sch_title_1">附件类型：</div>
+                    <div id="doc_file">
+                        <ul class="document_sch_ul" id="document_sch_ul">
+                            <li id="doc_png">
+                                <input type="checkbox" name="checkbox_png" id="checkbox_png" value="png"/>&nbsp;PNG
+                            </li>
+                            <li id="doc_gif">
+                                <input type="checkbox" name="checkbox_gif" id="checkbox_gif" value="gif"/>&nbsp;GIF
+                            </li>
+                            <li id="doc_pdf">
+                                <input type="checkbox" name="checkbox_pdf" id="checkbox_pdf" value="pdf"/>&nbsp;PDF
+                            </li>
+                            <li id="doc_xlsx">
+                                <input type="checkbox" name="checkbox_xlsx" id="checkbox_xlsx" value="xlsx"/>&nbsp;XLSX
+                            </li>
+                        </ul>
+                        <ul class="document_sch_ul" id="document_sch_ul_1">
+                            <li id="doc_ppt">
+                                <input type="checkbox" name="checkbox_ppt" id="checkbox_ppt" value="ppt"/>&nbsp;PPT
+                            </li>
+                            <li id="doc_zip">
+                                <input type="checkbox" name="checkbox_zip" id="checkbox_zip" value="zip"/>&nbsp;ZIP
+                            </li>
+                            <li id="doc_doc">
+                                <input type="checkbox" name="checkbox_doc" id="checkbox_doc" value="doc"/>&nbsp;DOC
+                            </li>
+                            <li id="doc_txt">
+                                <input type="checkbox" name="checkbox_txt" id="checkbox_txt" value="txt"/>&nbsp;TXT
+                            </li>
+                        </ul>
+                    </div>
+                    <div style="display:inline-block"><p id="doc_text">指定后缀：
+                        <input name="ext" id="ext" type="text" onclick="clearAlter()" onblur="onBlurEvent()" style="width:150px;"/></p></div>
+                </div>
+                <div class="document_sch" id="document_sch_2" style="display:none;">
+                    <div class="document_sch_title" id="document_sch_title_2">修改时间：</div>
+                    <ul id="doc_time">
+                        <li id="doc_radio_1">
+                            <input type="radio" name="dateType" id="radio_1" value="1" checked/>&nbsp;不记得
+                        </li>
+                        <li id="doc_radio_2">
+                            <input type="radio" name="dateType" id="radio_2" value="2"/>&nbsp;上个星期
+                        </li>
+                        <li id="doc_radio_3">
+                            <input type="radio" name="dateType" id="radio_3" value="3"/>&nbsp;上个月
+                        </li>
+                        <li id="doc_radio_4">
+                            <input type="radio" name="dateType" id="radio_4" value="4"/>&nbsp;去年一年内
+                        </li>
+                        <li id="doc_radio_5">
+                            <input type="radio" name="dateType" id="radio_5" value="5"/>&nbsp;指定时间<br/>
+                            从 <input type="text" id="fromDate" name="fromDate" size="10" style="width:100px;"/>
+
+                            到 <input type="text" id="toDate" name="toDate" size="10" style="width:100px;"/>
+                        </li>
+                    </ul>
+                </div>
+                <div class="document_sch" id="document_sch_3" style="display:none;">
+                    <div class="document_sch_title" id="document_sch_title_3">附件大小：</div>
+                    <ul id="doc_size">
+                        <li id="doc_size1">
+                            <input type="radio" name="docSize" id="doc_size_1" value="1" checked/>&nbsp;不记得
+                        </li>
+                        <li id="doc_size2">
+                            <input type="radio" name="docSize" id="doc_size_2" value="2"/>&nbsp;小于等于10M
+                        </li>
+                        <li id="doc_size3">
+                            <input type="radio" name="docSize" id="doc_size_3" value="3"/>&nbsp;大于10M并且小于等于50M
+                        </li>
+                        <li id="doc_size4">
+                            <input type="radio" name="docSize" id="doc_size_4" value="4"/>&nbsp;大于50M
+                        </li>
+                    </ul>
+                </div>
+                <div class="document_sch_p" id="document_sch_p">
+                    <input type="submit" id="search" class="btn btn-default" value="搜索" style="margin-right:10px;"/>
+                    <input type="button" id="reset" class="btn btn-default" onclick="reSet()" value="重置"/>
+                    <input type="hidden" name="op" value="search"/>
+                    <input type="hidden" id="dirCodeSearch" name="dirCode" th:value="${dirCode}"/>
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+    <div class="upload_sel" id="upload_sel" style="display:none">
+        <input type="hidden" name="clickTimes1" id="clickTimes1" value="0"/>
+        <ul>
+            <li id="liUpload" style="margin-top: 10px">
+                <a href="javascript:void(0)">普通</a>
+            </li>
+            <li class="speed-upload" style="text-align:center;" id="liWebedit">
+                <a href="javascript:void(0)">极速</a>
+            </li>
+        </ul>
+    </div>
+
+    <table class="layui-hide" id="table_list" lay-filter="table_list"></table>
+    <script type="text/html" id="toolbar_list">
+        <div class="layui-btn-container">
+            <button th:if="${isBtnAddShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="add" title="增加"><i class="fa fa-plus-circle"></i>增加</button>
+            <button th:if="${isBtnEditShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-orange" lay-event="edit" title="修改"><i class="fa fa-pencil"></i>修改</button>
+            <button th:if="${isBtnDelShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-red" lay-event="del" title="删除"><i class="layui-icon layui-icon-delete"></i>删除</button>
+            <th:block th:if="${canExamine}">
+                <button th:if="${isBtnDelShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="pass" title="通过"><i class="fa fa-check-circle"></i>通过</button>
+                <button th:if="${isBtnDelShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="unpass" title="未过"><i class="fa fa-minus-circle"></i>未过</button>
+                <button th:if="${isBtnDelShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="stat" title="统计"><i class="fa fa-bar-chart"></i>统计</button>
+            </th:block>
+            <button th:if="${isBtnZipShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="zip" title="打包"><i class="fa fa-file-zip-o"></i>打包</button>
+            <button th:if="${isDraftBox}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="publish" title="发布"><i class="fa fa-book"></i>发布</button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary layui-border-green btn-search" lay-event="search" title="搜索"><i class="fa fa-search"></i>搜索</button>
+            <button th:if="${isBtnMoveShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="move" title="迁移"><i class="fa fa-share-square-o"></i>迁移</button>
+            <button th:if="${isBtnUploadShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="upload" title="上传"><i class="fa fa-level-up"></i>上传</button>
+            <button th:if="${isBtnFulltextSearch}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="fulltextSearch" title="全文检索"><i class="fa fa-search-plus"></i>全文检索</button>
+            <button th:if="${isBtnAllShow}" class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="all" title="全部"><i class="fa fa-folder-o"></i>全部</button>
+        </div>
+    </script>
+    <script type="text/html" id="operateBar">
+        <a class="layui-btn layui-btn-xs" lay-event="show">查看</a>
+    </script>
+
+<form name="addForm" enctype="multipart/form-data">
+    <table width="33%" border="0" cellspacing="0" cellpadding="0" name="ctlTable" id="ctlTable" style="height: 150px; font-size: 15px; position: fixed; top: 200px; left: 200px; display: none; z-index: -100">
+        <tbody>
+        <tr>
+            <td class='SD_upload'></td>
+            <td class='SD_upload'></td>
+            <td class='SD_upload'></td>
+        </tr>
+        <tr>
+            <td class='SD_upload'></td>
+            <td id='upload_container'>
+                <h3 id='upload_title'>
+                    极速上传
+                </h3>
+                <div id='SD_button'>
+                    <div class='SD_button'>
+                        <a onclick="window_remove()">关闭</a>
+                    </div>
+                </div>
+                <a href='javascript:;' id='upload_close' title='关闭'></a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</form>
+<div id="uploadDialog" style="display: none">
+    <form id="formUpload" type="post">
+        <div class="img-preview-box">
+            <div class="upfile-box">
+                <input type="file" class="upfile-ctrl" id="titleImage" name="titleImage" multiple/>
+                <div class="upfile-box-tip">
+                    <span>+</span>
+                    <p>点击或拖拽到“+”<br/>上传文件</p>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<link rel="stylesheet" href="../js/soul-table/soulTable.css" media="all">
+<script src="../js/layui/layui.js" charset="utf-8"></script>
+<script src="../js/jquery.xmlext.js"></script>
+<script language=JavaScript src='showDialog/showDialog.js'></script>
+<script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+<script language=JavaScript src='formpost.js'></script>
+<script src="../js/Sortable.js"></script>
+<script th:inline="javascript">
+    var contextPath= [[@{/}]];
+    var idsSelected;
+
+    var tableData;
+    layui.config({
+        base: '../js/',   // 第三方模块所在目录
+        // version: 'v1.6.2' // 插件版本号
+    }).extend({
+        soulTable: 'soul-table/soulTable',
+        tableChild: 'soul-table/tableChild',
+        tableMerge: 'soul-table/tableMerge',
+        tableFilter: 'soul-table/tableFilter',
+        excel: 'soul-table/excel',
+    });
+
+    layui.use(['table', 'soulTable'], function () {
+        var table = layui.table;
+        var soulTable = layui.soulTable;
+
+        table.render({
+            elem: '#table_list'
+            , toolbar: '#toolbar_list'
+            , defaultToolbar: ['filter', 'print'/*, 'exports', {
+				title: '提示'
+				,layEvent: 'LAYTABLE_TIPS'
+				,icon: 'layui-icon-tips'
+			}*/]
+            , drag: {toolbar: true}
+            , method: 'post'
+            , url: 'docList.do'
+            , where: {
+                dirCode: '[(${dirCode})]',
+                examine1: [(${examine1})]
+            }
+            , cols: [
+                [{ type: 'checkbox', fixed: 'left' }
+                [# th:if="!${parentCode eq ''} or ${isDraftBox}"]
+                    , { field: 'dirName', align: 'left', width: 86, title: '目录', sort: true }
+                [/]
+                    , { field: 'icon', width: 60, title: '类型', sort: false, align: 'center' }
+                    , { field: 'title', width: 410, title: '标题', sort: false }
+                    , { field: 'author', width: 110, title: '发布者', sort: false }
+                    , { field: 'createDate', width: 112, title: '创建日期', sort: false }
+                    , { field: 'modifiedDate', width: 112, title: '修改日期', sort: false }
+                    , { field: 'status', width: 80, title: '状态', sort: false }
+                    , { field: 'operate', fixed: 'right', title: '操作', width: 200 }
+                ]
+            ]
+            , id: 'tableList'
+            , page: true
+            , unresize: false
+            , limit: 50
+            , height: 'full-68'
+            , parseData: function (res) { //将原始数据解析成 table 组件所规定的数据
+                return {
+                    "code": res.errCode, //解析接口状态
+                    "msg": res.msg, //解析提示文本
+                    "count": res.total, //解析数据长度
+                    "data": res.data //解析数据列表
+                };
+            }
+            , done: function (res, curr, count) {
+                tableData = res.data;
+                soulTable.render(this);
+
+                // 必须要通过jQuery绑定click，如果直接通过onclick事件addTab，则左侧树形菜单中的链接在addTab后将无法点击
+                $("a[linkType='doc']").click(function(e) {
+                    e.preventDefault();
+                    addTab($(this).attr('doc-title'), 'doc_show.jsp?id=' + $(this).data('id'));
+                })
+
+                $("a[linkType='priv']").click(function(e) {
+                    e.preventDefault();
+                    addTabPriv($(this).data('id'), $(this).attr('title'), $(this).attr('dirCode'), $(this).attr('dirName'));
+                })
+
+                $("a[linkType='log']").click(function(e) {
+                    e.preventDefault();
+                    addTabLog($(this).data('id'), $(this).attr('title'));
+                })
+
+                $("a[linkType='view']").click(function(e) {
+                    e.preventDefault();
+                    addTab($(this).attr('doc-title'), $(this).attr('viewPage'));
+                })
+            }
+        });
+
+        // 行工具栏事件
+        table.on('tool(table_list)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'show') {
+                addTab('通知公告', 'notice/show.do?id=' + data.id);
+            }
+        });
+
+        // 头工具栏事件
+        table.on('toolbar()', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch (obj.event) {
+                case 'add':
+                    window.location.href = '../[(${pageUrl})]?op=add&dir_code=[(${dirCode})]&dir_name=[(${dirName})]&kind=[(${kind})]';
+                    break;
+                case 'edit':
+                    var ids = '' + getIds(checkStatus);
+                    if (ids == '') {
+                        layer.msg('请选择记录', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+
+                    if (ids.indexOf(',') != -1) {
+                        layer.msg('只能选择一条记录', {
+                            offset: '6px'
+                        })
+                        return;
+                    }
+
+                    var canExamine = [(${canExamine})];
+                    var isDraftBox = [(${isDraftBox})];
+                    if (!isDraftBox && !canExamine) {
+                        if (data[0].status == [(${EXAMINE_NOT})]) {
+                            layer.msg("文章正在审核中，不能编辑！");
+                            return;
+                        }
+                    }
+
+                    var data = checkStatus.data;
+                    var attachId = data[0].attId;
+                    var isFile = attachId!=-1;
+                    var hiddenTitle = data[0].docTitle;
+
+                    if (isFile == "2") {
+                        if (hiddenTitle.indexOf(".xls") != -1 || hiddenTitle.indexOf(".xlsx") != -1 || hiddenTitle.indexOf(".doc") != -1 || hiddenTitle.indexOf(".docx") != -1 || hiddenTitle.indexOf(".ppt") != -1 || hiddenTitle.indexOf(".pptx") != -1 || hiddenTitle.indexOf(".wps") != -1) {
+                            editdoc(ids, attachId);
+                        } else {
+                            layer.msg("该文件不能编辑");
+                        }
+                    } else {
+                        addTab("编辑文档", contextPath + "[(${pageUrl})]?op=edit&id=" + ids + "&dir_code=[(${dirCode})]");
+                    }
+                    break;
+                case 'del':
+                    var ids = getIds(checkStatus);
+                    if (ids == '') {
+                        layer.msg('请选择记录', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+
+                    layer.confirm('您确定要删除么？', {icon: 3, title: '提示'}, function (index) {
+                        $.ajax({
+                            type: "post",
+                            url: "delBatch.do",
+                            data: {
+                                ids: ids
+                            },
+                            dataType: "html",
+                            beforeSend: function (XMLHttpRequest) {
+                                $("body").showLoading();
+                            },
+                            success: function (data, status) {
+                                data = $.parseJSON(data);
+                                layer.msg(data.msg, {
+                                    offset: '6px'
+                                });
+                                if (data.ret == 1) {
+                                    refresh();
+                                }
+                            },
+                            complete: function (XMLHttpRequest, status) {
+                                $("body").hideLoading();
+                            },
+                            error: function (XMLHttpRequest, textStatus) {
+                                // 请求出错处理
+                                alert(XMLHttpRequest.responseText);
+                            }
+                        });
+                        layer.close(index);
+                    });
+                    break;
+                case 'move':
+                    idsSelected = getIds(checkStatus);
+                    if (idsSelected == '') {
+                        layer.msg('请选择记录', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+
+                    openWin("../fwebedit_left_choose.jsp?op=changeDir", 640, 480);
+                    break;
+                case 'publish':
+                    var ids = getIds(checkStatus);
+                    if (ids == '') {
+                        layer.msg('请选择记录', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+                    layer.confirm('您确定要发布么？', {icon: 3, title: '提示'}, function (index) {
+                        $.ajax({
+                            type: "post",
+                            url: "publish.do",
+                            data: {
+                                ids: ids
+                            },
+                            dataType: "html",
+                            beforeSend: function (XMLHttpRequest) {
+                                $('body').showLoading();
+                            },
+                            success: function (data, status) {
+                                data = $.parseJSON(data);
+                                layer.msg(data.msg);
+                                if (data.ret == 1) {
+                                    refresh();
+                                }
+                            },
+                            complete: function (XMLHttpRequest, status) {
+                                $('body').hideLoading();
+                            },
+                            error: function (XMLHttpRequest, textStatus) {
+                                // 请求出错处理
+                                alert(XMLHttpRequest.responseText);
+                            }
+                        });
+                    })
+                    break;
+                case 'pass':
+                    var ids = getIds(checkStatus);
+                    layer.confirm('您确定要通过么？', {icon: 3, title: '提示'}, function (index) {
+                        $.ajax({
+                            type: "post",
+                            url: "passExamine.do",
+                            data: {
+                                ids: ids,
+                                sendMessage: 1
+                            },
+                            dataType: "html",
+                            beforeSend: function (XMLHttpRequest) {
+                                $('body').showLoading();
+                            },
+                            success: function (data, status) {
+                                data = $.parseJSON(data);
+                                layer.msg(data.msg);
+                                if (data.ret == 1) {
+                                    refresh();
+                                }
+                            },
+                            complete: function (XMLHttpRequest, status) {
+                                $('body').hideLoading();
+                            },
+                            error: function (XMLHttpRequest, textStatus) {
+                                // 请求出错处理
+                                alert(XMLHttpRequest.responseText);
+                            }
+                        });
+                    });
+                    break;
+                case 'unpass':
+                    var ids = getIds(checkStatus);
+                    layer.confirm('您确定要不通过么？', {icon: 3, title: '提示'}, function (index) {
+                        $.ajax({
+                            type: "post",
+                            url: "unpassExamine.do",
+                            data: {
+                                ids: ids,
+                                sendMessage: 1
+                            },
+                            dataType: "html",
+                            beforeSend: function (XMLHttpRequest) {
+                                $('body').showLoading();
+                            },
+                            success: function (data, status) {
+                                data = $.parseJSON(data);
+                                layer.msg(data.msg);
+                                if (data.ret == 1) {
+                                    refresh();
+                                }
+                            },
+                            complete: function (XMLHttpRequest, status) {
+                                $('body').hideLoading();
+                            },
+                            error: function (XMLHttpRequest, textStatus) {
+                                // 请求出错处理
+                                alert(XMLHttpRequest.responseText);
+                            }
+                        });
+                    });
+                    break;
+                case 'all':
+                    window.location.href = "docListPage.do?parentCode=[(${parentCode})]";
+                    break;
+                case 'search':
+                    showDiv();
+                    break;
+                case 'fulltextSearch':
+                    window.location.href = "full_text_search_list.jsp";
+                    break;
+                case 'upload':
+                    showDivUpload();
+                    break;
+                case 'zip':
+                    var ids = getIds(checkStatus);
+                    addTabZip(ids);
+                    break;
+                case 'stat':
+                    addTab('统计', 'fileark/fileark_stat_year.jsp?dirCode=[(${dirCode})]');
+                    break;
+            }
+        });
+
+        function getIds(checkStatus) {
+            var data = checkStatus.data;
+            if (data.length == 0) {
+                return '';
+            }
+
+            var ids = '';
+            for (var i in data) {
+                var json = data[i];
+                if (ids == '') {
+                    ids = json.id;
+                } else {
+                    ids += ',' + json.id;
+                }
+            }
+            return ids;
+        }
+
+        $('#search').on('click', function (e) {
+            e.preventDefault();
+            table.reload('tableList', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                , where: $('.search-form').serializeJsonObject()
+            }, 'data');
+        });
+
+        // 监听表格排序问题
+        table.on('sort()', function (obj) { //注：sort lay-filter="对应的值"
+            table.reload('tableList', { //testTable是表格容器id
+                initSort: obj // 记录初始排序，如果不设的话，将无法标记表头的排序状态。 layui 2.1.1 新增参数
+                , where: {
+                    orderBy: obj.field //排序字段
+                    , sort: obj.type //排序方式
+                }
+            });
+        });
+    });
+
+    $.fn.serializeJsonObject = function () {
+        var json = {};
+        var form = this.serializeArray();
+        $.each(form, function () {
+            if (json[this.name]) {
+                if (!json[this.name].push) {
+                    json[this.name] = [json[this.name]];
+                }
+                json[this.name].push();
+            } else {
+                json[this.name] = this.value || '';
+            }
+        });
+        return json;
+    }
+
+    var isLeftMenuShow = true;
+
+    function closeLeftMenu() {
+        if (isLeftMenuShow) {
+            window.parent.setCols("0,*");
+            isLeftMenuShow = false;
+            btnName.innerHTML = "打开菜单";
+        } else {
+            window.parent.setCols("200,*");
+            isLeftMenuShow = true;
+            btnName.innerHTML = "关闭菜单";
+        }
+    }
+
+    function addEventListeners(ele, type, callback) {
+        try {  // Chrome、FireFox、Opera、Safari、IE9.0及其以上版本
+            ele.addEventListener(type, callback, false);
+        } catch (e) {
+            try {  // IE8.0及其以下版本
+                ele.attachEvent('on' + type, callback);
+            } catch (e) {  // 早期浏览器
+                ele['on' + type] = callback;
+            }
+        }
+    }
+
+    $(function () {
+        addEventListeners(document, 'click', function(e) {
+            e = e || window.event;
+            var dom = e.srcElement || e.target;
+            try {
+                if (dom.id == "" && dom.className != "search" && dom.parentNode.id == "" && dom.parentNode.className.indexOf("daysrow") == -1 && dom.parentNode.className.indexOf("hilite") == -1 && dom.parentNode.className != "button" && dom.parentNode.className != "daynames" && dom.parentNode.className != "footrow" && dom.className != "title" && (dom.parentNode.className != "" && dom.parentNode.className != "xdsoft_mounthpicker" && dom.parentNode.className != "xdsoft_label xdsoft_year" && dom.parentNode.className != "xdsoft_label xdsoft_month" && dom.parentNode.className != "xdsoft_datetimepicker xdsoft_noselect ")) {
+                    document.getElementById("search_div").style.display = "none";
+                    document.getElementById("clickTimes").value = "0";
+                }
+            } catch (e) {
+            }
+
+            try {
+                if (dom.id == "" && dom.parentNode.id == "") {
+                    document.getElementById("upload_sel").style.display = "none";
+                    document.getElementById("clickTimes1").value = "0";
+                }
+            } catch (e) {
+            }
+        })
+    });
+
+    //重置数据
+    function reSet() {
+        o("title").value = "";
+        o("author").value = "";
+        o("content").value = "";
+        o("directory").value = "";
+        o("ext").value = "多个用逗号分隔";
+        o("fromDate").value = "";
+        o("toDate").value = "";
+        o("keywords1").value = "";
+        var objects = document.getElementsByTagName("input");
+        for (var i = 0; i < objects.length; i++) {
+            if (objects[i].type == 'radio' || objects[i].type == 'checkbox') {
+                objects[i].checked = "";
+            }
+        }
+
+        o("radio_1").checked = "checked";
+        o("doc_size_1").checked = "checked";
+    }
+
+    // 极速上传未开始， 直接点击关闭
+    function window_remove() {
+        $("#ctlTable").hide();
+        $(".loading").css({"display": "none"});
+        $(".treeBackground").css({"display": "none"});
+        $(".treeBackground").removeClass("SD_overlayBG2");
+    }
+
+    function onAddFile(index, fileName, filePath, fileSize, modifyDate) {
+
+    }
+
+    function clearAlter() {
+        var ext = o("ext").value;
+        if (ext == "多个用逗号分隔") {
+            o("ext").value = "";
+        }
+    }
+
+    function onBlurEvent() {
+        var ext = o("ext").value;
+        if (ext == "") {
+            o("ext").value = "多个用逗号分隔";
+        }
+    }
+
+    function searchSubmit() {
+        form.submit();
+    }
+
+    function addTabLog(id, title) {
+        addTab(title + " 日志", "fileark/doc_log.jsp?id=" + id + "&title=" + encodeURI(title));
+    }
+
+    function addTabPriv(id, title, dir_code, dir_name) {
+        addTab("管理权限", "fileark/doc_priv_m.jsp?doc_id=" + id + "&title=" + encodeURI(title) + "&dir_code=" + encodeURI(dir_code) + "&dir_name=" + encodeURI(dir_name));
+    }
+
+    function addTabZip(ids) {
+        if (ids == "") {
+            layer.msg("请选择一条记录！", {
+                offset: '6px'
+            });
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "downloadValidate.do",
+            contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+            data: {
+                ids: ids
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == 2) {
+                    window.open("zipFile.do?ids=" + ids);
+                } else if (data.ret == 0) {
+                    $.toaster({
+                        "priority": "info",
+                        "message": data.msg
+                    });
+                } else {
+                    jConfirm(data.msg + '\n您确定要打包下载么？', '提示', function (r) {
+                        if (r) {
+                            window.open("zipFile.do?ids=" + ids);
+                        }
+                    });
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                jAlert(XMLHttpRequest.responseText, "提示");
+            }
+        });
+    }
+
+    function onReload() {
+        window.location.reload();
+    }
+
+    function showDiv() {
+        var times = document.getElementById("clickTimes").value;
+        if (times == 0) {
+            $("#search_div").show();
+            document.getElementById("search_div").style.left = ($(".btn-search").offset().left - 6) + "px";
+            document.getElementById("search_div").style.top = ($(".btn-search").offset().top + 40) + "px";
+            document.getElementById("clickTimes").value = "1";
+        } else {
+            $("#search_div").hide();
+            document.getElementById("clickTimes").value = "0";
+        }
+    }
+
+    function showDivUpload() {
+        if (!isIE()) {
+            showUploadDialog();
+            return;
+        }
+        var times1 = document.getElementById("clickTimes1").value;
+        if (times1 == 0) {
+            $("#upload_sel").show();
+            document.getElementById("upload_sel").style.left = $("#dd").offset().left + "px";
+            document.getElementById("clickTimes1").value = "1";
+        } else {
+            $("#upload_sel").hide();
+            document.getElementById("clickTimes1").value = "0";
+        }
+    }
+
+    $(function () {
+        var ext = o("ext").value;
+        if (ext == "") {
+            o("ext").value = "多个用逗号分隔";
+        }
+
+        $("#afBtn").click(function () {
+            if ($(this).html().indexOf("down") == -1) {
+                $('#afBtnImg')[0].src = contextPath + "[(${skinPath})]/images/af_arrow_down.png";
+                $('#document_sch_3').hide();
+                $('#document_sch_2').hide();
+                $('#document_sch_1').hide();
+                document.getElementById("search_div").style.height = "355px";
+            } else {
+                $('#afBtnImg')[0].src = contextPath + "[(${skinPath})]/images/af_arrow_up.png";
+                $('#document_sch_1').show();
+                $('#document_sch_2').show();
+                $('#document_sch_3').show();
+                document.getElementById("search_div").style.height = "470px";
+            }
+        });
+        $("#afBtn_1").click(function () {
+            if ($(this).html().indexOf("down") != -1) {
+                $('#afBtnImg_1')[0].src = contextPath + "[(${skinPath})]/images/af_arrow_up.png";
+                $('#doc_time').show();
+            } else {
+                $('#afBtnImg_1')[0].src = contextPath + "[(${skinPath})]/images/af_arrow_down.png";
+                $('#doc_time').hide();
+            }
+        });
+        $("#afBtn_2").click(function () {
+            if ($(this).html().indexOf("down") != -1) {
+                $('#afBtnImg_2')[0].src = contextPath + "[(${skinPath})]/images/af_arrow_up.png";
+                $('#doc_size').show();
+            } else {
+                $('#afBtnImg_2')[0].src = contextPath + "[(${skinPath})]/images/af_arrow_down.png";
+                $('#doc_size').hide();
+            }
+        });
+
+        $('#liUpload').click(function () {
+            showUploadDialog();
+        });
+
+        //极速上传
+        $('.speed-upload').live("click", function () {
+            $("#ctlTable").css({"display": "block", "top": "150px", "z-index": "1800"});
+            $("#webedit").css({"height": "85px"});
+            $(".treeBackground").addClass("SD_overlayBG2");
+            $("#treeBackground").css({"display": "block"});
+        });
+        // 极速上传取消按钮
+        $("#SD_cancel,#upload_close").bind("click", function () {
+            window_remove();
+            //sd_closeWindow();
+        });
+
+        $('#toDate').datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d',
+            formatDate: 'Y/m/d'
+        });
+
+        $('#fromDate').datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d',
+            formatDate: 'Y/m/d'
+        });
+    });
+
+    /**
+     * 迁移
+     * @param code
+     * @param name
+     */
+    function selectNode(code, name) {
+        if (code == '0') {
+            jAlert("请选择目录!", "提示");
+            return;
+        }
+        if (code == '[(${dirCode})]') {
+            jAlert("请选择其他目录!", "提示");
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "changeDir.do",
+            contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+            data: {
+                ids: idsSelected,
+                dirCode: "[(${dirCode})]",
+                newDirCode: code
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == 1) {
+                    layer.msg(data.msg, {
+                        // icon: 1,
+                        offset: '6px',
+                        time: 2000 // 2秒关闭（如果不配置，默认是3秒）
+                    }, function() {
+                        window.location.href = "docListPage.do?dirCode=" + code;
+                    });
+                } else if (data.ret == 0) {
+                    layer.msg(data.msg);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                $('body').hideLoading();
+                jAlert(XMLHttpRequest.responseText, "提示");
+            }
+        });
+    }
+
+    //置顶
+    function isTop(level, id) {
+        jConfirm("您确定要置顶吗？", "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "setOnTop.do",
+                    contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                    data: {
+                        id: id,
+                        level: level
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        if (data.ret == 1) {
+                            jAlert(data.msg, '提示', function () {
+                                window.location.reload();
+                            });
+                        } else if (data.ret == 0) {
+                            jAlert(data.msg, '提示');
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        $('body').hideLoading();
+                        jAlert(XMLHttpRequest.responseText, "提示");
+                    }
+                });
+            }
+        })
+    }
+
+    //取消置顶
+    function noTop(id) {
+        jConfirm("您确实要取消置顶吗？", "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "setOnTop.do",
+                    contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                    data: {
+                        id: id,
+                        level: 0
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        if (data.ret == 1) {
+                            jAlert(data.msg, '提示', function () {
+                                window.location.reload();
+                            });
+                        } else if (data.ret == 0) {
+                            jAlert(data.msg, '提示');
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        $('body').hideLoading();
+                        jAlert(XMLHttpRequest.responseText, "提示");
+                    }
+                });
+            }
+        })
+    }
+
+    //编辑文件
+    function editdoc(doc_id, file_id) {
+        openWin("fileark_ntko_edit.jsp?docId=" + doc_id + "&attachId=" + file_id + "&isRevise=0", 1024, 768);
+    }
+
+    // 下载文件
+    function downLoadDoc(doc_id, file_id) {
+        $.ajax({
+            type: "post",
+            url: "downloadValidate.do",
+            contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+            data: {
+                ids: doc_id
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == 2) {
+                    window.open("download.do?pageNum=1&id=" + doc_id + "&attachId=" + file_id + "&op=download");
+                } else if (data.ret == 0) {
+                    $.toaster({
+                        "priority": "info",
+                        "message": data.msg
+                    });
+                } else {
+                    jConfirm(data.msg + '\n您确定要下载么？', '提示', function (r) {
+                        if (r) {
+                            window.open("download.do?pageNum=1&id=" + doc_id + "&attachId=" + file_id + "&op=download");
+                        }
+                    });
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                jAlert(XMLHttpRequest.responseText, "提示");
+            }
+        });
+    }
+
+    function selDept() {
+        openWin("../fwebedit_left_choose.jsp?op=search", 300, 400, "yes");
+    }
+
+    function shareToQQGroups(id, title) {
+        jConfirm('您确定要分享至QQ群么？', '提示', function (r) {
+            if (r) {
+                $.ajax({
+                    type: "post",
+                    url: "../public/robot/shareToQQGroups.do",
+                    data: {
+                        id: id
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        jAlert(data.msg, "提示");
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            }
+        });
+    }
+
+    $(function () {
+        if (!isIE()) {
+            $('#liWebedit').hide();
+        }
+    });
+
+
+    var dropFiles = [];
+
+    // 实现多图上传预览功能
+    $(function () {
+        function showImgList(fileList) {
+            // 添加时间戳
+            var dateTime = new Date().getTime();
+            for (var i = 0; i < fileList.length; i++) {
+                var picHtml = "<div class='upfile-image-box' title='" + fileList[i].name + "'><img class='upfile-image' id='img_" + dateTime + "_" + fileList[i].name + "'/><div class='upfile-cover'><div class='btn-bar'><span class='btn-del'>×</span></div></div></div>";
+                $(".img-preview-box").append(picHtml);
+
+                var imgObjPreview = document.getElementById("img_" + dateTime + "_" + fileList[i].name);
+                var $img = $(imgObjPreview);
+                if (fileList[i]) {
+                    var file = fileList[i];
+                    var p = file.name.indexOf(".");
+                    var ext = file.name.substr(p + 1).toLowerCase();
+                    if (ext == "gif" || ext == "jpg" || ext == "bmp" || ext == "jpeg" || ext == "png") {
+                        imgObjPreview.style.display = 'block';
+                        imgObjPreview.src = window.URL.createObjectURL(fileList[i]);
+                    } else {
+                        $img.after("<div class='upfile-image-desc'><img src='../images/file.png'/><div>" + file.name + "</div></div>");
+                        $img.hide();
+                    }
+                    $img.attr('img_type', file.type);
+                    $img.attr('img_size', file.size);
+                    $img.attr('img_name', file.name);
+                    $img.attr('img_lastModified', file.lastModified);
+                }
+            }
+        }
+
+        $('.upfile-box').on('dragover', '.upfile-ctrl', function (e) {
+            e.stopPropagation();
+            // 阻止浏览器默认打开文件的操作
+            e.preventDefault();
+
+            window.event.dataTransfer.dropEffect = 'copy';
+        });
+
+        $('.upfile-box').on("drop", '.upfile-ctrl', function (e) {
+            e.stopPropagation();
+            // 阻止浏览器默认打开文件的操作
+            e.preventDefault();
+
+            var fileList = window.event.dataTransfer.files;
+
+            for (var i = 0; i < fileList.length; i++) {
+                var json = {"name": fileList[i].name, "file": fileList[i], "lastModified": fileList[i].lastModified, "size": fileList[i].size, "type": fileList[i].type};
+                dropFiles.push(json);
+            }
+
+            showImgList(fileList);
+        });
+
+        $(".upfile-ctrl").change(function (e) {
+            var fileList = $(this)[0].files;
+            for (var i = 0; i < fileList.length; i++) {
+                var json = {"name": fileList[i].name, "file": fileList[i], "lastModified": fileList[i].lastModified, "size": fileList[i].size, "type": fileList[i].type};
+                dropFiles.push(json);
+            }
+            showImgList(fileList);
+        });
+
+        // 拖动排序
+        Sortable.create($(".img-preview-box")[0], {
+            animation: 150, // 动画参数
+            onAdd: function (evt) {   //拖拽时候添加有新的节点的时候发生该事件
+                // console.log('onAdd:', [evt.item, evt.from]);
+            },
+            onUpdate: function (evt) {  //拖拽更新节点位置发生该事件
+                // console.log('onUpdate:', [evt.item, evt.from]);
+            },
+            onRemove: function (evt) {   //删除拖拽节点的时候触发该事件
+                // console.log('onRemove:', [evt.item, evt.from]);
+            },
+            onStart: function (evt) {  //开始拖拽出发该函数
+                // console.log('onStart:', [evt.item, evt.from]);
+            },
+            onSort: function (evt) {  //发生排序发生该事件
+                // console.log('onSort:', [evt.item, evt.from]);
+            },
+            onEnd: function (evt) { //拖拽完毕之后发生该事件
+                //  console.log('onEnd:', [evt.item, evt.from]);
+                var ary = [];
+                $(".upfile-image-box").each(function () {
+                    var $img = $(this).find('.upfile-image');
+                    for (i = 0; i < dropFiles.length; i++) {
+                        var f = dropFiles[i];
+                        if (f.name == $img.attr('img_name') && f.type == $img.attr('img_type') && ('' + f.size) == $img.attr('img_size') && ('' + f.lastModified) == $img.attr('img_lastmodified')) {
+                            ary.push(f);
+                        }
+                    }
+                });
+                dropFiles = ary;
+            }
+        });
+
+        // 删除
+        $(".img-preview-box").on("click", ".btn-del", function () {
+            // 删除文件
+            var $img = $(this).parents(".upfile-image-box").find('.upfile-image');
+            $(this).parents(".upfile-image-box").remove();
+            var ary = [];
+            for (i = 0; i < dropFiles.length; i++) {
+                var f = dropFiles[i];
+                if (!(f.name == $img.attr('img_name') && f.type == $img.attr('img_type') && ('' + f.size) == $img.attr('img_size') && ('' + f.lastModified) == $img.attr('img_lastmodified'))) {
+                    ary.push(f);
+                }
+            }
+            dropFiles = ary;
+            // console.log(dropFiles);
+        });
+    });
+
+    function showUploadDialog() {
+        $("#uploadDialog").dialog({
+            modal: true,
+            bgiframe: true,
+            width: 800,
+            height: 600,
+            title: "上传文件",
+            closeText: "关闭",
+            buttons: {
+                "上传": function () {
+                    $('.ui-button').attr("disabled", true);
+
+                    var f = document.createElement("form");
+                    var formData = new FormData(f);
+                    for (var i = 0; i < dropFiles.length; i++) {
+                        formData.append("file" + i, dropFiles[i].file);
+                    }
+
+                    $.ajax({
+                        url: 'uploadBatch.do?dirCode=[(${dirCode})]',
+                        type: 'post',
+                        data: formData,
+                        async: true,
+                        // 下面三个参数要指定，如果不指定，会报一个JQuery的错误
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        dataType: "html",
+                        beforeSend: function (XMLHttpRequest) {
+                            $('body').showLoading();
+                        },
+                        success: function (data) {
+                            var data = $.parseJSON($.trim(data));
+                            if (data.ret == "0") {
+                                jAlert(data.msg, "提示");
+                                $('.ui-button').attr("disabled", false);
+                            } else {
+                                jAlert(data.msg, "提示", function () {
+                                    window.location.reload();
+                                });
+                            }
+                        },
+                        complete: function (XMLHttpRequest, status) {
+                            $('body').hideLoading();
+                        },
+                        error: function (returndata) {
+                            $('body').hideLoading();
+                            $('.ui-button').attr("disabled", false);
+                            alert(returndata);
+                        }
+                    });
+                },
+                "取消": function () {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    }
+
+    // 刷新
+    function doQuery() {
+        refresh();
+    }
+
+    function refresh() {
+        layui.table.reload('tableList');
+    }
+</script>
+</body>
+</html>

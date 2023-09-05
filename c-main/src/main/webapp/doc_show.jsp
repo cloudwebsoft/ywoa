@@ -10,6 +10,8 @@
 <%@ page import="com.redmoon.oa.basic.*" %>
 <%@ page import="java.io.*" %>
 <%@ page import="org.apache.commons.lang3.StringUtils" %>
+<%@ page import="java.util.Vector" %>
+<%@ page import="java.util.Iterator" %>
 <%
     com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
 
@@ -52,6 +54,7 @@
     <title>查看文章</title>
     <link href="lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <link rel="stylesheet" href="js/bootstrap/css/bootstrap.min.css"/>
     <style>
         .docImg {
             max-width: 500px;
@@ -154,6 +157,9 @@
     <script type="text/javascript" src="js/goToTop/goToTop.js"></script>
     <link type="text/css" rel="stylesheet" href="js/goToTop/goToTop.css"/>
 
+    <link type="text/css" rel="stylesheet" href="js/flexslider/flexslider.css" />
+    <script type="text/javascript" src="js/flexslider/jquery.flexslider.js"></script>
+
     <link href="js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
     <script type="text/javascript" src="js/jquery-showLoading/jquery.showLoading.js"></script>
     <script type="text/javascript" src="js/jquery.toaster.js"></script>
@@ -167,8 +173,8 @@
     <script type="text/javascript" charset="utf-8" src="ueditor/js/ueditor/lang/zh-cn/zh-cn.js?2023"></script>
 
     <script src="inc/livevalidation_standalone.js"></script>
-    <script src="netdisk/showDialog/showDialog.js"></script>
-    <link type="text/css" rel="stylesheet" href="netdisk/showDialog/showDialog.css"/>
+    <script src="fileark/showDialog/showDialog.js"></script>
+    <link type="text/css" rel="stylesheet" href="fileark/showDialog/showDialog.css"/>
 
     <link type="text/css" rel="stylesheet" href="ueditor/js/ueditor/third-party/video-js/video-js.css"/>
     <script type="text/javascript" src="ueditor/js/ueditor/third-party/video-js/video.js"></script>
@@ -180,7 +186,6 @@
     <script type="text/javascript" src="js/syntaxhighlighter/scripts/shBrushXml.js"></script>
     <script type="text/javascript" src="js/syntaxhighlighter/scripts/shBrushJScript.js"></script>
     <script type="text/javascript" src="js/syntaxhighlighter/scripts/shBrushJava.js"></script>
-    <script src="<%=request.getContextPath()%>/fileark/doc_show_js.jsp?id=<%=id%>"></script>
     <%
         if (lf!=null && !lf.isCopyable()) {
     %>
@@ -348,6 +353,7 @@
                     $('#btnEdit').click(function(e) {
                         e.preventDefault();
                         addTab('<%=doc.getTitle()%>', '<%=pageUrl%>?op=edit&id=<%=doc.getID()%>&dir_code=<%=StrUtil.UrlEncode(doc.getDirCode())%>&dir_name=<%=StrUtil.UrlEncode(lf.getName())%>');
+                        return false;
                     });
                 })
             </script>
@@ -435,7 +441,35 @@
                 </td>
             </tr>
         </table>
+
         <%
+            Vector<Attachment> titleImages = doc.getTitleImages(1);
+            if (titleImages.size() > 0) {
+        %>
+        <div style="margin: 20px 0 10px 0; text-align: center">
+            <div id="flexslider" class="flexslider" style="width:450px; height: 320px; margin:0 auto; overflow: hidden">
+                <ul class="slides">
+                    <%
+                        for (Attachment att : titleImages) {
+                            String vPath = request.getContextPath() + "/" + att.getVisualPath() + "/" + att.getDiskName();
+                            String imgLink = "showImg.do?path=" + vPath;
+                    %>
+                    <li>
+                        <div>
+                            <a href="javascript:;" onclick="addTab('图片', '<%=imgLink%>')">
+                                <img title="<%=att.getName()%>" src="<%=vPath%>" align="absmiddle"/>
+                            </a>
+                        </div>
+                    </li>
+                    <%
+                        }
+                    %>
+                </ul>
+            </div>
+        </div>
+        <%
+            }
+
             java.util.Vector attachments = doc.getAttachments(pageNum);
             java.util.Iterator ir = attachments.iterator();
             String str = "";
@@ -574,7 +608,7 @@
                             TANGER_OCX = document.getElementById('TANGER_OCX');
                             TANGER_OCX.IsUseUTF8Data = true;
 
-                            TANGER_OCX.OpenFromURL("fileark/getfile.jsp?docId=<%=doc.getId()%>&attachId=<%=am.getId()%>", true);
+                            TANGER_OCX.OpenFromURL("fileark/getFile.do?docId=<%=doc.getId()%>&attachId=<%=am.getId()%>", true);
 
                             // 禁用右键菜单
                             TANGER_OCX.ActiveDocument.CommandBars("Text").Enabled = false;
@@ -627,7 +661,7 @@
             }
 
             boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
-            StringBuffer ids = new StringBuffer();
+            StringBuilder ids = new StringBuilder();
             boolean canDownload = lp.canUserDownLoad(privilege.getUser(request)) && dp.canUserDownload(request, id);
             boolean hasNotOnlyEmbeddedAtt = false;
             if (doc != null) {
@@ -640,7 +674,7 @@
                     }
                     hasNotOnlyEmbeddedAtt = true;
                     Attachment att = doc.getAttachment(pageNum, am.getId());
-                    StrUtil.concat(ids, String.valueOf(att.getId()), ",");
+                    StrUtil.concat(ids, ",", String.valueOf(att.getId()));
                     String s = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
                     String htmlfile = s.substring(0, s.lastIndexOf(".")) + ".html";
                     File fileExist = new File(htmlfile);
@@ -687,14 +721,10 @@
                     &nbsp;&nbsp;<a href="javascript:;" onclick="showImg(<%=doc.getID()%>,<%=am.getId()%>);">图片预览</a>
                     <%
                         }
-                        if (isOffice) {
-                    %>
-                    &nbsp;&nbsp;<a target=_blank href="fileark/fileark_ntko_show.jsp?pageNum=<%=pageNum%>&docId=<%=doc.getID()%>&attachId=<%=am.getId()%>">查看</a>
-                    <%
-                        }
+
                         if (isPdf) {
                     %>
-                    &nbsp;&nbsp;<a target=_blank href="fileark/pdf_js/viewer.html?file=<%=request.getContextPath()+"/"+am.getVisualPath()+"/"+am.getDiskName()%>">查看</a>
+                    &nbsp;&nbsp;<a target=_blank href="fileark/pdf_js/viewer.html?file=<%=request.getContextPath()+"/"+am.getVisualPath()+"/"+am.getDiskName()%>">预览</a>
                     <%
                         }
                     } else {
@@ -790,7 +820,12 @@
                     success: function (data, status) {
                         data = $.parseJSON(data);
                         if (data.ret == 2) {
-                            window.open("zip_getfile.jsp?id=<%=id%>");
+                            // ret=2表示无验证脚本
+                            jConfirm('您确定要打包下载么？', '提示', function (r) {
+                                if (r) {
+                                    window.open("fileark/zipFile.do?id=<%=id%>");
+                                }
+                            });
                         } else if (data.ret == 0) {
                             $.toaster({
                                 "priority": "info",
@@ -799,7 +834,7 @@
                         } else {
                             jConfirm(data.msg + '\n您确定要打包下载么？', '提示', function (r) {
                                 if (r) {
-                                    window.open("zip_getfile.jsp?id=<%=id%>");
+                                    window.open("fileark/zipFile.do?id=<%=id%>");
                                 }
                             });
                         }
@@ -827,7 +862,6 @@
                     <%
                         }
                     %>
-                    <!--<img height="15" src="images/question.gif" width="19" align="absMiddle"><a target="_blank" href="jump.jsp?fromWhere=oa&toWhere=forum">提出问题</a>-->
                 </td>
             </tr>
             </tbody>
@@ -849,7 +883,6 @@
                                 || privilege.isUserPrivValid(request,
                                 PrivDb.PRIV_ADMIN)) {
                     %>
-
                     &nbsp;&nbsp;[<a href="javascript:;" onclick="delComment(<%=id%>,<%=cmt.getId()%>)">删除</a>]
                     <%
                         }
@@ -937,7 +970,7 @@
                 </tr>
                 <tr>
                     <td align="center">
-                        <input id="btnComment" type="button" class="mybtn" value="确定"/>
+                        <input id="btnComment" type="button" class="btn btn-default" value="确定"/>
                     </td>
                 </tr>
                 <tr>
@@ -1003,9 +1036,8 @@
     function showImg(docId, attId) {
         $.ajax({
             type: "post",
-            url: "doc_show_do.jsp",
+            url: "fileark/getImgForShow.do",
             data: {
-                "op": "showImg",
                 "docId": docId,
                 "attId": attId
             },
@@ -1051,7 +1083,7 @@
         $(".showImg_Next").live("click", function () {
             var arrow = $(this).attr("value");
             var isImgSearch = $(this).attr("isImgSearch");
-            showImgNext("doc_show_do.jsp", arrow, isImgSearch);
+            showImgNext(arrow, isImgSearch);
         });
 
         $('#remark').find('input').each(function () {
@@ -1096,10 +1128,10 @@
         })
     }
 
-    function showImgNext(url, arrow, isImgSearch) {
+    function showImgNext(arrow, isImgSearch) {
         $.ajax({
             type: "post",
-            url: url,
+            url: "fileark/getNextImgForShow.do",
             data: {
                 "op": "showNextImg",
                 "attId": ImgId,
@@ -1333,6 +1365,18 @@
         SyntaxHighlighter.config.bloggerMode = true;
         SyntaxHighlighter.config.stripBrs = true;
         SyntaxHighlighter.all();
+
+        $("#flexslider").flexslider({
+            animation: "slide",
+            controlNav: true,
+            slideshow: true,
+            directionNav: true,
+            pauseOnAction: false,
+            // pauseOnHover: true,
+            slideshowSpeed: 5000,
+            start: function (slider) {
+            }
+        });
     });
 </script>
 </html>

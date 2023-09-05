@@ -1,14 +1,14 @@
 package com.cloudweb.oa.cache;
 
 import cn.js.fan.cache.jcs.RMCache;
-import com.cloudweb.oa.base.AbstractFormDaoCache;
-import com.cloudweb.oa.base.ObjCache;
+import com.cloudweb.oa.base.AbstractVisualFormDaoCache;
 import com.cloudweb.oa.service.FormArchiveService;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.visual.FormDAO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.util.concurrent.locks.Lock;
@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Component
-public class FormArchiveCache extends AbstractFormDaoCache {
+public class FormArchiveCache extends AbstractVisualFormDaoCache {
 
     @Autowired
     FormArchiveService formArchiveService;
@@ -66,7 +66,7 @@ public class FormArchiveCache extends AbstractFormDaoCache {
                 return formDAO;
             }
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return null;
         }
     }

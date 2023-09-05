@@ -73,11 +73,11 @@ public class RoleDb extends ObjectDb {
      * @param unitCode String
      * @return Vector
      */
-    public Vector getRolesOfUnit(String unitCode) {
+    public Vector<RoleDb> getRolesOfUnit(String unitCode) {
         return getRolesOfUnit(unitCode, false);
     }
     
-    public Vector getRolesOfUnit(String unitCode, boolean isWithSystem) {
+    public Vector<RoleDb> getRolesOfUnit(String unitCode, boolean isWithSystem) {
         IRoleService roleService = SpringUtil.getBean(IRoleService.class);
         List<Role> list = roleService.getRolesOfUnit(unitCode, isWithSystem);
 
@@ -88,7 +88,7 @@ public class RoleDb extends ObjectDb {
         }
 
         return v;
-    }    
+    }
 
     public String getCode() {
         return code;
@@ -160,7 +160,7 @@ public class RoleDb extends ObjectDb {
     }
 
     public RoleDb getRoleDb(String code) {
-        this.code = code;
+        // this.code = code;
         com.cloudweb.oa.cache.RoleCache roleCache = SpringUtil.getBean(com.cloudweb.oa.cache.RoleCache.class);
         Role role = roleCache.getRole(code);
         return getFromRole(role, new RoleDb());
@@ -180,11 +180,12 @@ public class RoleDb extends ObjectDb {
         rd.setRankCode(role.getRankCode());
         rd.setType(role.getRoleType());
         rd.setDeptManager(deptManager = "1".equals(role.getIsDeptManager()));
+        rd.setStatus(role.getStatus());
         rd.setLoaded(true);
         return rd;
     }
 
-    public Vector getAllUserOfRole() {
+    public Vector<UserDb> getAllUserOfRole() {
         return getAllUserOfRole(true);
     }
 
@@ -193,7 +194,7 @@ public class RoleDb extends ObjectDb {
      * @param isWithGroupUser boolean 是否包含用户组属该角色的用户
      * @return Vector
      */
-    public Vector getAllUserOfRole(boolean isWithGroupUser) {
+    public Vector<UserDb> getAllUserOfRole(boolean isWithGroupUser) {
         IRoleService roleService = SpringUtil.getBean(IRoleService.class);
         List<User> list = roleService.getAllUserOfRole(code, isWithGroupUser);
         Vector<UserDb> v = new Vector<>();
@@ -201,7 +202,6 @@ public class RoleDb extends ObjectDb {
         for (User user : list) {
             v.addElement(ud.getUserDb(user.getName()));
         }
-
         return v;
     }
 
@@ -285,6 +285,14 @@ public class RoleDb extends ObjectDb {
     private String rankCode = "";
     
     private boolean deptManager = true;
-    
 
+    public boolean getStatus() {
+        return status;
+    }
+
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
+
+    private boolean status = true;
 }

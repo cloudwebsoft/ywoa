@@ -2,7 +2,6 @@ package com.redmoon.oa.sms;
 
 import javax.servlet.http.*;
 import cn.js.fan.util.*;
-import org.apache.log4j.*;
 import com.redmoon.oa.pvg.Privilege;
 
 /**
@@ -18,7 +17,6 @@ import com.redmoon.oa.pvg.Privilege;
  * @version 1.0
  */
 public class SMSSendRecordMgr {
-    Logger logger = Logger.getLogger(SMSSendRecordMgr.class.getName());
 
     public SMSSendRecordMgr() {
     }
@@ -83,7 +81,6 @@ public class SMSSendRecordMgr {
         }
 
         sql += con;
-        // System.out.println("SMSSendRecordMgr.java sql=" + sql);
         return sql;
     }
 

@@ -2,27 +2,26 @@ package com.cloudweb.oa.filter;
 
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.FileUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.sys.DebugUtil;
-import org.apache.log4j.Logger;
-import org.springframework.core.annotation.Order;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.*;
-import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 
 /**
  * 跨站请求伪造过滤器
  */
-@WebFilter(urlPatterns = "/*", filterName = "csrfFilter")
-@Order(4)
+//@WebFilter(urlPatterns = "/*", filterName = "csrfFilter")
+//@Order(4)
+@Slf4j
 public class CsrfFilter implements Filter {
-    private static final Logger logger = Logger.getLogger(CsrfFilter.class);
-
     // 白名单
     private List<String> whiteUrls;
 
@@ -31,9 +30,9 @@ public class CsrfFilter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) {
         // 读取文件
-        String path = CsrfFilter.class.getResource("/").getFile();
-        whiteUrls = readFile(path + "csrf_white.txt");
-        size = null == whiteUrls ? 0 : whiteUrls.size();
+        ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+        whiteUrls = FileUtil.read(configUtil.getFile("csrf_white.txt"));
+        size = whiteUrls.size();
     }
 
     @Override
@@ -71,7 +70,7 @@ public class CsrfFilter implements Filter {
                 }
             }
         } catch (Exception e) {
-            logger.error("doFilter", e);
+            log.error("doFilter", e);
         }
         chain.doFilter(request, response);
     }
@@ -80,7 +79,6 @@ public class CsrfFilter implements Filter {
     public static boolean validate(String referer, String serverName) {
         // 链接来源地址
         // DebugUtil.i("CsrfFilter", "validate", "refer is "+referer + " serverName is " + request.getServerName());
-        // System.out.println("serverName is"+request.getServerName());
         if (referer == null || !referer.contains(serverName)) {
             return false;
         }
@@ -108,7 +106,7 @@ public class CsrfFilter implements Filter {
             }
 
             for (String urlTemp : whiteUrls) {
-                if (refHost.indexOf(urlTemp.toLowerCase()) > -1) {
+                if (refHost.contains(urlTemp.toLowerCase())) {
                     return true;
                 }
             }
@@ -120,40 +118,9 @@ public class CsrfFilter implements Filter {
     public void destroy() {
     }
 
-    private List<String> readFile(String fileName) {
-        List<String> list = new ArrayList<String>();
-        BufferedReader reader = null;
-        FileInputStream fis = null;
-        try {
-            File f = new File(fileName);
-            if (f.isFile() && f.exists()) {
-                fis = new FileInputStream(f);
-                reader = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!"".equals(line)) {
-                        list.add(line);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("readFile", e);
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException e) {
-                logger.error("InputStream关闭异常", e);
-            }
-            try {
-                if (fis != null) {
-                    fis.close();
-                }
-            } catch (IOException e) {
-                logger.error("FileInputStream关闭异常", e);
-            }
-        }
-        return list;
+    public void refresh() {
+        ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+        whiteUrls = FileUtil.read(configUtil.getFile("csrf_white.txt"));
+        size = whiteUrls.size();
     }
 }

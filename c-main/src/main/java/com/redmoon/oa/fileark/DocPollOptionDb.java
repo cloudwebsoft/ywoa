@@ -35,11 +35,9 @@ public class DocPollOptionDb extends QObjectDb {
     }
 
     public boolean save(JdbcTemplate jt, Object[] params) throws SQLException {
-        // System.out.println(getClass() + " save2 msgId=" + getLong("msg_id") + " orders=" + getInt("orders") + " primaryKey=" + primaryKey);
-
         boolean re = super.save(jt, params);
         long msgId = getLong("doc_id");
-        // System.out.println(getClass() + " save3 msgId=" + getLong("msg_id") + " orders=" + getInt("orders") + " primaryKey=" + primaryKey);
+        // LogUtil.getLog(getClass()).info(getClass() + " save3 msgId=" + getLong("msg_id") + " orders=" + getInt("orders") + " primaryKey=" + primaryKey);
         try {
             RMCache.getInstance().remove(OPTS + msgId, cacheGroup);
         }

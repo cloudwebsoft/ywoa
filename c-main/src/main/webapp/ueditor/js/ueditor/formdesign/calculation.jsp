@@ -31,6 +31,10 @@
     <link href="../../../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
     <script type="text/javascript" src="../../../../js/jquery-showLoading/jquery.showLoading.js"></script>
 
+    <script src="../../../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../../../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../../../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+
     <script type="text/javascript">
         function createElement(type, name) {
             var element = null;
@@ -82,27 +86,62 @@
             </td>
         </tr>
         <tr>
-            <th><span>小数点后位数</span></th>
             <th><span>四舍五入</span></th>
+            <th><span>小数点后位数</span></th>
         </tr>
         <tr>
             <td>
-                <input type="text" id="orgDigit" value="2">
+                <input id="isRoundTo5" name="isRoundTo5" checked type="checkbox" value="0"/>
             </td>
             <td>
-                <input id="isRoundTo5" name="isRoundTo5" checked type="checkbox" value="0"/>
+                <input type="text" id="orgDigit" value="2">(需与四舍五入联用）
+            </td>
+        </tr>
+        <tr>
+            <th><span>格式</span></th>
+            <th><span>无穷大 / NaN 时显示值</span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="format">
+                    <option value=""></option>
+                    <option value="0">千分位</option>
+                </select>
+                <br/>
+                （需与价格型联用）
+            </td>
+            <td>
+				<input id="valForInfinity" name="valForInfinity" type="text" style="width:50px" title="无穷大时显示"/>&nbsp;/&nbsp;
+				<input id="valForNaN" name="valForNaN" type="text" style="width:50px" title="NaN时显示（即0/0时）"/>
             </td>
         </tr>
         <tr>
             <th><span>必填项</span></th>
-            <th><span>只读</span></th>
+            <th><span></span></th>
         </tr>
         <tr>
             <td>
                 <input id="canNull" name="canNull" type="checkbox" value="0" checked/>
             </td>
             <td>
-                <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1"/>
+            </td>
+        </tr>
+        <tr>
+            <th><span>只读</span></th>
+            <th><span>只读类型</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="isReadOnlyShow" name="isReadOnlyShow" disabled checked type="checkbox" value="1"/>
+                <input style="display:none" id="isReadOnly" name="isReadOnly" checked type="checkbox" value="1"/>
+            </td>
+            <td>
+                <select id="readOnlyType" disabled>
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
             </td>
         </tr>
         <tr>
@@ -116,28 +155,22 @@
             <td>&nbsp;</td>
         </tr>
         <tr>
-            <th><span>&nbsp;&nbsp;&nbsp;&nbsp;长&nbsp;&nbsp;X&nbsp;&nbsp;宽</span></th>
-            <th></th>
+            <th><span>&nbsp;&nbsp;&nbsp;&nbsp;长&nbsp;&nbsp;<span style="display: none">X&nbsp;&nbsp;宽</span></span></th>
+            <th><span>大小</span></th>
         </tr>
         <tr>
             <td>
                 <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>
+                <select id="unit" style="width:60px">
+                    <option value="px" selected>px</option>
+                    <option value="%">%</option>
+                </select>
+                <span style="display:none">
                 X
                 <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/>
-                <span style="display:none">
-                &
+                    &
                 <input id="orgfontsize" type="text" value="" class="input-small span1" placeholder="auto"/> px
 				</span>
-            </td>
-            <td>
-            </td>
-        </tr>
-        <tr style="display:none">
-            <th><span>可见性</span></th>
-            <th><span>长度/大小</span></th>
-        </tr>
-        <tr style="display:none">
-            <td><label class="checkbox inline"><input id="orghide" type="checkbox"/> 隐藏 </label>
             </td>
             <td>
                 <select id="minT" name="minT" style="width:60px">
@@ -156,6 +189,17 @@
                     <option value="center">居中对齐</option>
                     <option value="right">右对齐</option>
                 </select>
+            </td>
+        </tr>
+        <tr style="display: none">
+            <th></th>
+            <th><span style="display:none">可见性</span></th>
+        </tr>
+        <tr style="display: none">
+            <td>
+
+            </td>
+            <td><label style="display:none" class="checkbox inline"><input id="orghide" type="checkbox"/> 隐藏 </label>
             </td>
         </tr>
     </table>
@@ -221,6 +265,13 @@
             var gFontSize = oNode.getAttribute('orgfontsize');
             var gAlign = oNode.getAttribute('orgalign');
             var gWidth = oNode.getAttribute('orgwidth');
+            var gUnit = 'px';
+            if (gWidth.endsWith('%')) {
+                gUnit = '%';
+                gWidth = gWidth.substring(0, gWidth.length - 1);
+            } else if (gWidth.endsWith('px')) {
+                gWidth = gWidth.substring(0, gWidth.length - 2);
+            }
             var gHeight = oNode.getAttribute('orgheight');
 
             var gCanNull = oNode.getAttribute("canNull");
@@ -230,16 +281,24 @@
             var gMaxV = oNode.getAttribute("maxV");
             var gDigit = oNode.getAttribute("digit");
             var gRoundTo5 = oNode.getAttribute("isRoundTo5");
+            var gFormat = oNode.getAttribute("format");
+            var gValForInfinity = oNode.getAttribute("valForInfinity");
+            var gValForNaN = oNode.getAttribute("valForNaN");
 
-            var isReadOnly = oNode.getAttribute("readonly");
+            /*var isReadOnly = oNode.getAttribute("readonly");
             if (isReadOnly != null) {
                 $G('isReadOnly').checked = true;
             } else {
                 $G('isReadOnly').checked = false;
-            }
+            }*/
+
             var gTip = oNode.getAttribute("tip");
             if (gTip == null) {
                 gTip = '';
+            }
+            var gReadOnlyType = oNode.getAttribute("readOnlyType");
+            if (gReadOnlyType == null) {
+                gReadOnlyType = '';
             }
 
             var gFormCode = oNode.getAttribute("formCode");
@@ -259,13 +318,13 @@
             $G('orgname').setAttribute("readonly", true);
             $G('orgfontsize').value = gFontSize;
             $G('orgwidth').value = gWidth;
+            $G('unit').value = gUnit;
             $G('orgheight').value = gHeight;
             $G('orgalign').value = gAlign;
             $G('orgDigit').value = gDigit;
             if (gRoundTo5 == 1) {
                 $G('isRoundTo5').checked = true;
-            }
-            else {
+            } else {
                 $G('isRoundTo5').checked = false;
             }
             if (gCanNull == 0) {
@@ -276,6 +335,16 @@
             $G('tip').value = gTip;
             $G('formCode').value = gFormCode;
             $G('formCodeShow').innerHTML = gFormCode;
+            $G('readOnlyType').value = gReadOnlyType;
+            $G('format').value = gFormat;
+            $G('minT').value = gMinT;
+            $G('maxT').value = gMaxT;
+            $G('maxV').value = gMaxV;
+            $G('minV').value = gMinV;
+            gValForInfinity = gValForInfinity == null ? '' : gValForInfinity;
+            $G('valForInfinity').value = gValForInfinity;
+            gValForNaN = gValForNaN == null ? '' : gValForNaN;
+            $G('valForNaN').value = gValForNaN;
         }
 
         $("#orgFormula").click(function () {
@@ -457,8 +526,7 @@
             if (gFormCode == null || gFormCode == '') {
                 gFormCode = '';
                 $G('formCodeShow').innerHTML = '';
-            }
-            else {
+            } else {
                 $G('formCode').value = gFormCode;
                 $G('formCodeShow').innerHTML = gFormCode;
             }
@@ -515,6 +583,7 @@
         var gAlign = $G('orgalign').value;
         var gWidth = $G('orgwidth').value;
         var gHeight = $G('orgheight').value;
+        var gUnit = $G('unit').value;
 
         var gCanNull = $G('canNull').checked ? 0 : 1;
         var gMinT = $G('minT').value;
@@ -525,6 +594,10 @@
         var gFormCode = $G('formCode').value;
         var gRoundTo5 = $G('isRoundTo5').checked ? 1 : 0;
         var gTip = $G('tip').value;
+        var gReadOnlyType = $G('readOnlyType').value;
+        var gFormat = $G('format').value;
+        var gValForInfinity = $G('valForInfinity').value;
+        var gValForNaN = $G('valForNaN').value;
 
         if (!oNode) {
             try {
@@ -547,9 +620,11 @@
                     oNode.setAttribute('orgalign', gAlign);
                 }
                 if (gWidth != '') {
-                    oNode.style.width = gWidth + 'px';
-                    //style += 'width:' + gWidth + 'px;';
-                    oNode.setAttribute('orgwidth', gWidth);
+                    oNode.style.width = gWidth + gUnit;
+                    oNode.setAttribute('orgwidth', gWidth + gUnit);
+                } else {
+                    oNode.style.width = '';
+                    oNode.setAttribute('orgwidth', '');
                 }
                 if (gHeight != '') {
                     oNode.style.height = gHeight + 'px';
@@ -578,8 +653,15 @@
                     oNode.removeAttribute("readonly");
                 }
                 oNode.setAttribute("tip", gTip);
+                oNode.setAttribute("readOnlyType", gReadOnlyType);
 
                 oNode.setAttribute("formCode", gFormCode);
+                // if (gFormat != '') {
+                    oNode.setAttribute('format', gFormat);
+                // }
+
+			oNode.setAttribute('valForInfinity', gValForInfinity);
+			oNode.setAttribute('valForNaN', gValForNaN);
                 editor.execCommand('insertHtml', oNode.outerHTML);
             } catch (e) {
                 try {
@@ -612,14 +694,14 @@
                 oNode.setAttribute('orgalign', '');
             }
             if (gWidth != '') {
-                oNode.style.width = gWidth+ 'px';
-                oNode.setAttribute('orgwidth', gWidth);
+                oNode.style.width = gWidth + gUnit;
+                oNode.setAttribute('orgwidth', gWidth + gUnit);
             } else {
                 oNode.style.width = '';
                 oNode.setAttribute('orgwidth', '');
             }
             if (gHeight != '') {
-                oNode.style.height = gHeight+ 'px';
+                oNode.style.height = gHeight + 'px';
                 oNode.setAttribute('orgheight', gHeight);
             } else {
                 //oNode.style.height = '';
@@ -632,14 +714,24 @@
             oNode.setAttribute("digit", gDigit);
             oNode.setAttribute("isRoundTo5", gRoundTo5);
             oNode.setAttribute("tip", gTip);
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
             oNode.setAttribute("formCode", gFormCode);
-
+            oNode.setAttribute("minT", gMinT);
+            oNode.setAttribute("minV", gMinV);
+            oNode.setAttribute("maxT", gMaxT);
+            oNode.setAttribute("maxV", gMaxV);
             if ($G('isReadOnly').checked) {
                 oNode.setAttribute("readonly", "readonly");
             } else {
                 oNode.removeAttribute("readonly");
             }
 
+            // if (gFormat != '') {
+                oNode.setAttribute('format', gFormat);
+            // }
+
+		oNode.setAttribute('valForInfinity', gValForInfinity);
+		oNode.setAttribute('valForNaN', gValForNaN);
             delete UE.plugins[thePlugins].editdom;
         }
     };

@@ -36,7 +36,17 @@
         MACRO_EMAIL: "macro_email_ctl",
         MACRO_MOBILE: "macro_mobile_ctl",
         MACRO_IDCARD: "macro_idcard_ctl",
-        MACRO_WRITEPAD: "macro_writepad_ctl"
+        MACRO_WRITEPAD: "macro_writepad_ctl",
+        MACRO_RATY: "macro_raty",
+        MACRO_ATTACHMENT: "macro_attachment",
+        MACRO_MODULE_FIELD_SELECT: "module_field_select",
+        MACRO_BARCODE: "macro_barcode",
+        MACRO_QRCODE: "macro_qrcode",
+        MACRO_LOCATION_MARK_CTL: "macro_location_mark_ctl",
+        MACRO_UPLOADER_CTL: "macro_uploader_ctl",
+	    MACRO_PROVINCE_SELECT: "macro_province_select",
+        MACRO_CITY_SELECT: "macro_city_select",
+        MACRO_CURRENT_UNIT: "macro_current_unit",
     };
 
     var MACRO_TYPE = {
@@ -60,7 +70,7 @@
             this.options = $.extend(true, this.default, options);
             skey = this.options.skey;
         },
-        initForms: function (actionId, flowId, fields, formCode) { // 流程字段content
+        initForms: function (actionId, flowId, fields, formCode, data) { // 流程字段content
             var self = this;
             var formSelector = jQuery(self.options.formSelector);
             $.each(fields, function (index, item) {
@@ -86,7 +96,6 @@
                 var editable = false;
                 if ("isNull" in item) {
                     isNull = item.isNull == "true" ? true : false;
-
                 }
                 if ("isCanNull" in item) {
                     isNull = item.isCanNull;
@@ -101,6 +110,7 @@
                 if ("isReadonly" in item) {
                     isReadonly = item.isReadonly;
                 }
+
                 var divContent = "";
                 var row_class = "mui-input-row";
                 if (type == FIELD_TYPE.SELECT || macroType == FIELD_TYPE.SELECT) {
@@ -116,13 +126,18 @@
                     _dataIsNull = false;
                     title += "<span style='color:red;'>*</span>";
                 }
-                divContent += '<div class="' + row_class + '" id="row_' + code + '" data-code="' + code + '" data-isNull=' + _dataIsNull + '>';
+                divContent += '<div class="' + row_class + '" id="row_' + code + '" data-code="' + code + '" data-isNull=' + _dataIsNull + ' data-fieldtype=' + item.fieldType + '>';
                 divContent += '	<label>' + title + '</label>';
-                if (type == FIELD_TYPE.TEXT || macroType == FIELD_TYPE.TEXT) {
+                // SQL宏控件的macroType为select
+                if (type == FIELD_TYPE.TEXT || macroType == FIELD_TYPE.TEXT || macroCode == MACRO_CODE.MACRO_SQL) {
                     if (macroCode == MACRO_CODE.MACRO_CURRENT_USER) {// 当前用户
                         divContent += '<input type="hidden" name="' + code + '" id="' + code + '" value="' + value + '"><input type="text" value="' + text + '"  readonly="readonly" />'
-            						macro_currentuser_arr.push(item);
-                    } else if (macroCode == MACRO_CODE.LOWERTOUPPER) {
+                        macro_currentuser_arr.push(item);
+                    }
+                    else if (macroCode == MACRO_CODE.MACRO_CURRENT_UNIT) {
+                        divContent += '<input type="hidden" name="' + code + '" id="' + code + '" value="' + value + '"><input type="text" value="' + text + '"  readonly="readonly" />'
+                    }
+                    else if (macroCode == MACRO_CODE.LOWERTOUPPER) {
                         var readonly = editable ? "" : "readonly";
                         divContent += '	<input type="text" name="' + code + '" id="' + code + '" value="' + value + '" class="mui-input-clear" lowerFieldCode="' +
                             desc + '" title="大小写转换" ' + readonly + ' />'
@@ -150,7 +165,8 @@
                             }
                         }
                         divContent += '<span class="mui-btn mui-btn-primary nestSheetSelect" parentModuleCode="' + moduleCode + '" cwsId="' + cwsId + '" pageType="' + pageType + '" destForm="' + destForm + '" sourceForm="' + sourceForm + '" flowId=' + flowId + ' actionId=' + actionId + ' code="' + code + '" parentFields="' + parentFields + '" editable="' + editable + '" style="margin: 5px;" >查看</span>';
-                    } else if (macroCode == MACRO_CODE.MACRO_SIGN) {
+                    }
+                    else if (macroCode == MACRO_CODE.MACRO_SIGN) {
                         var clear_class = editable ? "mui-input-clear" : "";
                         var readonly = "readonly";
                         divContent += '	<input type="text" name="' + code + '" id="' + code + '" value="' + value + '"';
@@ -166,7 +182,7 @@
                         var imgUrl = item.metaData;
                         if (imgUrl != "") {
                             var ext = imgUrl.substring(imgUrl.lastIndexOf(".") + 1).toLowerCase();
-                            divContent += "<img id='" + code + "_img' style='widht:160px' link='../../public/img_show.jsp?path=" + imgUrl + "' ext='" + ext + "' src='../../public/img_show.jsp?path=" + imgUrl + "' />";
+                            divContent += "<img id='" + code + "_img' style='widht:160px' link='../../public/showImg.do?path=" + imgUrl + "' ext='" + ext + "' src='../../public/showImg.do?path=" + imgUrl + "' />";
                         }
                         divContent += "</div>";
                         if (editable && !isReadonly) {
@@ -174,11 +190,12 @@
                         }
                     }
                     else if (macroCode == MACRO_CODE.MACRO_SQL) {
+                        console.log('item', item);
                         var clear_class = editable ? "mui-input-clear" : "";
                         var readonly = editable ? "" : "readonly";
                         divContent += '	<input type="text" name="' + code + '" id="' + code + '" value="' + value + '" class="' + clear_class + '" ' + readonly + ' />';
-                        macro_sql_arr.push(item);
-                    } else {
+                    }
+                    else {
                         // fieldType 价格型
                         var fieldType = item.fieldType;
                         var clear_class = editable ? "mui-input-clear" : "";
@@ -186,7 +203,8 @@
                         if (isReadonly) {
                             readonly = "readonly";
                         }
-                        if (fieldType == "价格型" && value == "") {
+                        if (fieldType == 9 && value == '') {
+                        // if (fieldType == "价格型" && value == "") {
                             divContent += '	<input type="text"  name="' + code + '" id="' + code + '" value="0.00" class="' + clear_class + '" ' + readonly + ' />';
                         } else {
                             divContent += '	<input type="text"  name="' + code + '" id="' + code + '" value="' + value + '" class="' + clear_class + '" ' + readonly + ' />';
@@ -197,8 +215,8 @@
                     var formula = item.formula;
                     var digit = item.digit;
                     var isroundto5 = item.isroundto5;
-                    var formCode = item.present;
-                    divContent += '	<input type="text" isroundto5="' + isroundto5 + '" digit="' + digit + '" kind="CALCULATOR" formula="' + formula + '" formCode="' + formCode + '" name="' + code + '" id="' + code + '" value="' + value + '" class="' + clear_class + '"/> ';
+                    var present = item.present;
+                    divContent += '	<input type="text" isroundto5="' + isroundto5 + '" digit="' + digit + '" kind="CALCULATOR" readonly formula="' + formula + '" formCode="' + present + '" name="' + code + '" id="' + code + '" value="' + value + '" class="' + clear_class + '"/> ';
                 } else if (type == FIELD_TYPE.DATE_TIME || type == FIELD_TYPE.DATE) {
                     var options = type == FIELD_TYPE.DATE_TIME ? "{}" : '{"type":"date"}';
                     var icon_class = type == FIELD_TYPE.DATE_TIME ? "iconfont icon-naozhong" : "iconfont icon-rili";
@@ -213,8 +231,20 @@
                     divContent += "</div>";
                 } else if (type == FIELD_TYPE.SELECT || macroType == FIELD_TYPE.SELECT) {
                     var options = item.options;
-                    if (editable && !isReadonly) {
-                        divContent += "<select name='" + code + "' id='" + code + "'>"
+                    if (editable) {
+                        if (macroCode == MACRO_CODE.MACRO_PROVINCE_SELECT) {
+                            divContent += "<select name='" + code + "' id='" + code + "' onchange=\"ajaxShowCityCountry(this.value, '')\""
+                        }
+                        else if (macroCode == MACRO_CODE.MACRO_CITY_SELECT) {
+                            divContent += "<select name='" + code + "' id='" + code + "' onchange=\"ajaxShowCityCountry('', this.value)\""
+                        }
+                        else {
+                            divContent += "<select name='" + code + "' id='" + code + "'";
+                        }
+                        if (isReadonly) {
+                            divContent += " onfocus='this.defaultIndex=this.selectedIndex;' onchange='this.selectedIndex=this.defaultIndex;' ";
+                        }
+                        divContent += ">";
                         $.each(options, function (s_index, s_item) {
                             var o_text = '';
                             var o_val = '';
@@ -244,7 +274,7 @@
                 } else if (type == FIELD_TYPE.CHECKBOX) {
                     var disabled = (editable && !isReadonly) ? "" : "disabled";
                     var checked = "1" == value ? "checked" : "";
-                    divContent += '<input name="' + code + '" id="' + code + '" value="' + value + '" type="checkbox" ' + checked + ' ' + disabled + '/>';
+                    divContent += '<input name="' + code + '" id="' + code + '" value="1" type="checkbox" ' + checked + ' ' + disabled + '/>';
                     divContent += "</div>";
                 } else if (type == FIELD_TYPE.TEXTAREA || macroType == FIELD_TYPE.TEXTAREA) {
                     var readonly = editable ? "" : "readonly";
@@ -300,14 +330,37 @@
                         if ("value" in s_item) {
                             o_val = s_item.value;
                         }
+                        console.log(o_text, o_val, value);
                         var checked = o_val == value ? "checked" : "";
                         divContent += '<div class="' + mui_class + '">'
-                        divContent += '<label>' + o_text + '</label><input name="' + code + '" id="' + code + '" type="radio" value="' + o_val + '"   ' + checked + ' ' + disabled + ' />'
+                        divContent += '<label>' + o_text + '</label><input name="' + code + '" id="' + code + '" type="radio" value="' + o_val + '" ' + checked + ' ' + disabled + ' />'
                         divContent += '</div>'
                     })
+                }
+                else if (macroCode == MACRO_CODE.MACRO_ATTACHMENT) {
+                    var clear_class = editable ? "mui-input-clear" : "";
+                    var readonly = editable ? "" : "readonly";
+                    if (editable) {
+                        divContent += '	<input type="file" name="' + code + '" id="' + code + '" value="' + value + '" class="' + clear_class + '" ' + readonly + ' style="margin-top:15px" />';
+                    }
+                } else if (macroCode == MACRO_CODE.MACRO_BARCODE) {
+                    var readonly = editable ? "" : "readonly";
+                    if (editable) {
+                        divContent += '	<input type="text" name="' + code + '" id="' + code + '" value="' + value + '" class="mui-input-clear" ' + readonly + ' />';
+                    }
+                } else if (macroCode == MACRO_CODE.MACRO_QRCODE) {
+                    var readonly = editable ? "" : "readonly";
+                    if (editable) {
+                        divContent += '	<input type="text" name="' + code + '" id="' + code + '" value="' + value + '" class="mui-input-clear" ' + readonly + ' />';
+                    }
                 } else if (macroType == MACRO_TYPE.MACRO_USER_SELECT_TYPE) {
                     if (macroCode == MACRO_CODE.MACRO_USER_SELECT_WIN) {
-                        divContent += '<input type="hidden" name="' + code + '" id="' + code + '" value="' + value + '">';
+                        var json = $.parseJSON(item.desc);
+                        var desc = '';
+                        if (json != null) {
+                            desc = JSON.stringify(item.desc);
+                        }
+                        divContent += '<input type="hidden" name="' + code + '" id="' + code + '" value="' + value + '" desc=\'' + desc + '\' macroCode="' + MACRO_CODE.MACRO_USER_SELECT_WIN + '">';
                         divContent += '<input type="text" value="' + text + '" id="' + code + '_realshow" class="input-icon" readonly="readonly" />'
                         if (editable) {
                             divContent += '<span class="mui-btn mui-btn-primary user-select-win" code=\'' + code + '\' style="margin: 5px;" >选择</span>';
@@ -333,11 +386,21 @@
                     divContent += '<input type="text" id="' + code + '_realshow" value="' + text + '" readonly/>';
                     divContent += '<input type="hidden" name="' + code + '" id="' + code + '" value="' + value + '" />';
                     if (editable && !isReadonly) {
+                        // 选择
                         divContent += '<span class="mui-btn mui-btn-primary moduleSelect" desc=\'' + desc + '\' code=\'' + code + '\' style="margin: 5px;" >选择</span>';
                     }
+                    else {
+                        // 查看
+                        divContent += '<span class="mui-btn mui-btn-primary module-field-select" data-sourceformcode="' + item.desc.sourceFormCode + '" data-val="' + item.value + '">查看</span>';
+                    }
                 } else if (macroType == MACRO_TYPE.MACRO_LOCATION) {
+                    var _arr = value.split(",");
+                    var _text = "";
+                    if (_arr.length == 3) {
+                        _text = _arr[2];
+                    }
                     // console.info(item);
-                    divContent += '<input type="text" id="' + code + '_realshow" value="' + text + '" readonly class="input-icon" />';
+                    divContent += '<input type="text" id="' + code + '_realshow" value="' + _text + '" readonly class="input-icon" />';
                     divContent += '<input type="hidden" name="' + code + '" id="' + code + '" value="' + value + '" />';
                     divContent += '<a><span class="mui-icon mui-icon-paperplane icon-location" data-code="' + code + '" data-val = "' + value + '"></span></a>'
                     if (editable) {
@@ -368,19 +431,48 @@
                         });
                     }
                 } else if (macroType==MACRO_TYPE.MACRO_TYPE_IMAGE) {
-                    divContent += '<input id="' + code + '" name="' + code + '" type="hidden" value="' + value + '"/>';
-                    // 如果不含有小数点，说明不是文件名，而是默认值，如200,200，表示限定的宽高值
-                    if (value!="" && value.indexOf(".")!=-1) {
-                        var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
-                        divContent += "<img class='attFile' link='../../public/img_show.jsp?path=" + value + "' ext='" + ext + "' src='../../public/img_show.jsp?path=" + value + "' style='width:96%' />";
+                    console.log('marcoCode=' + macroCode);
+                    if (macroCode == MACRO_CODE.MACRO_RATY) {
+                        divContent += "<span id='" + code + "_raty' style='margin-top: 15px; display: block; float: left'></span>";
+
+                        var rootPath = self.getContextPath();
+                        var ratyProp = {
+                            number: 5,
+                            path: rootPath + '/images/rate',
+                            cancelHint: '取消',
+                            hintList: ['一星级', '二星级', '三星级', '四星级', '五星级'],
+                            hintList: ['one-star', 'two-star', 'three-star', 'fore-star', 'five-star']
+                        };
+                        if (isReadonly) {
+                            ratyProp.readOnly = true;
+                        }
+                        ratyProp.start = value;
+
+                        jQuery(function () {
+                            window.setTimeout(function() {
+                                console.log(ratyProp);
+                                console.log('code=' + code);
+                                jQuery('#' + code + '_raty').raty(ratyProp);
+                                console.log(jQuery('#' + code + '_raty-score').attr('name'));
+                                jQuery('#' + code + '_raty-score').attr('name', code);
+                            }, 10);
+                        });
                     }
-                    var isOnlyCamera = false;
-                    if (desc.indexOf('{')==0) {
-                        var descJson = $.parseJSON(desc);
-                        isOnlyCamera = descJson.isOnlyCamera;
-                    }
-                    if (editable && !isReadonly) {
-                        divContent += '<span class="mui-btn mui-btn-primary capture_btn" captureFieldName="' + code + '" isOnlyCamera="' + isOnlyCamera + '" style="margin: 5px;" >照片</span>';
+                    else {
+                        divContent += '<input id="' + code + '" name="' + code + '" type="hidden" value="' + value + '"/>';
+                        // 如果不含有小数点，说明不是文件名，而是默认值，如200,200，表示限定的宽高值
+                        if (value!="" && value.indexOf(".")!=-1) {
+                            var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
+                            divContent += "<img class='attFile' link='../../public/showImg.do?path=" + value + "' ext='" + ext + "' src='../../public/showImg.do?path=" + value + "' style='width:96%' />";
+                        }
+                        var isOnlyCamera = false;
+                        if (desc.indexOf('{')==0) {
+                            var descJson = $.parseJSON(desc);
+                            isOnlyCamera = descJson.isOnlyCamera;
+                        }
+                        if (editable && !isReadonly) {
+                            divContent += '<span class="mui-btn mui-btn-primary capture_btn" captureFieldName="' + code + '" isOnlyCamera="' + isOnlyCamera + '" style="margin: 5px;" >照片</span>';
+                        }
                     }
                 }
                 else if (macroType==MACRO_TYPE.MACRO_TYPE_WRITEPAD) {
@@ -388,7 +480,7 @@
                     divContent += '<div id="pad_' + code + '">';
                     if (value!="") {
                         var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
-                        divContent += "<img id='" + code + "_img' class='attFile' link='../../public/img_show.jsp?path=" + value + "' ext='" + ext + "' src='../../public/img_show.jsp?path=" + value + "' />";
+                        divContent += "<img id='" + code + "_img' class='attFile' link='../../public/showImg.do?path=" + value + "' ext='" + ext + "' src='../../public/showImg.do?path=" + value + "' />";
                     }
                     divContent += "</div>";
                     if (editable && !isReadonly) {
@@ -405,12 +497,25 @@
                 }
             });
 
-            self.bindEvent();
+            self.bindEvent(formCode);
             if (macro_sql_arr.length > 0) {
                 macroSqlInit(flowId, skey, macro_sql_arr, formCode);
             }
             if (macro_currentuser_arr.length>0) {
                 macroCurrentUserInit(flowId, skey, macro_currentuser_arr, formCode);
+            }
+
+            console.log('initForms data', data);
+            if (data) {
+                // 绑定跟算式相关字段的change事件
+                var funcRelatedOnChangeFields = data.funcRelatedOnChangeFields;
+                if (funcRelatedOnChangeFields) {
+                    for (var k in funcRelatedOnChangeFields) {
+                        var json = funcRelatedOnChangeFields[k];
+                        console.log('funcRelatedOnChangeFields json', json);
+                        bindFuncFieldRelateChangeEvent(json.formCode, json.field, json.relateFields);
+                    }
+                }
             }
         },
         initAtStep: function (annex) {
@@ -499,15 +604,16 @@
 
             jQuery(".mui-content").on("tap", ".attFile", function () {
                 var url = jQuery(this).attr("link");
-                /*var ext = jQuery(this).attr("ext");
+                var ext = jQuery(this).attr("ext");
                 if (ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp") {
                     var w=0, h=0;
                     if (this.tagName=="IMG") { // 图像宏控件
                         w = jQuery(this).width();
                         h = jQuery(this).height();
                     }
-                    self.showImg(url, w, h); // photoswipe显示不出图片，原因不明，故弃用
-                }*/
+                    self.showImg(url, w, h);
+                    return;
+                }
 
                 if (mui.os.plus) {
                     var btnArray = ['是', '否'];
@@ -579,9 +685,12 @@
             });
 
             if (data.viewJs) {
-                ul.append('<div id="viewJsBox" class="mui-input-row" style="display:none"></div>');
-                jQuery('#viewJsBox').html(data.viewJs);
+                // ul.append('<div id="viewJsBox" class="mui-input-row" style="display:none"></div>');
+                // jQuery('#viewJsBox').html(data.viewJs);
                 // console.log(data.viewJs);
+                var s0 = document.createElement('script');
+                s0.text = data.viewJs;
+                document.body.appendChild(s0);
             }
 
             if ("isProgress" in data) {
@@ -619,7 +728,6 @@
                 var title = item.title;
                 var type = item.type;
                 var value = item.value;
-                var type = item.type;
                 var macroCode = item.macroCode;
                 var code = item.code;
                 if (macroCode == MACRO_CODE.MACRO_NEST_SHEET || macroCode == MACRO_CODE.MACRO_NEST_TABLE) {
@@ -677,26 +785,51 @@
                     li += ' </div>'
                     li += ' </div>';
                     li += '</li>';
-                } else if (macroCode == MACRO_CODE.MACRO_LOCATION_CTL) {
-                    var _arr = new Array(); // 定义一数组
-                    _arr = value.split(","); // 字符分割
-                    var _text = "";
-                    if (_arr.length == 3) {
-                        _text = _arr[2];
+                }
+                else if (macroCode == MACRO_CODE.MACRO_MODULE_FIELD_SELECT) {
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + title + '</span>';
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-3">';
+                    li += '     ' + value;
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-2"><span class="mui-btn mui-btn-primary module-field-select" data-sourceformcode="' + item.desc.sourceFormCode + '" data-val="' + item.val + '">查看</span></div>'
+                    li += ' </div>';
+                    li += '</li>';
+                }
+                else if (macroCode == MACRO_CODE.MACRO_IMAGE) {
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + title + '</span>';
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
+                    li += '     <img class="attFile" link="../../public/showImg.do?path=' + value + '" ext="' + ext + '" style="width:96%" src="../../public/showImg.do?path=' + value + '"/>';
+                    li += ' </div>'
+                    li += ' </div>';
+                    li += '</li>';
+                }
+                else if (macroCode == MACRO_CODE.MACRO_UPLOADER_CTL) {
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-10">';
+                    if (value) {
+                        var ary = eval(value);
+                        for (var k in ary) {
+                            var json = ary[k];
+                            li += '<div class="mui-col-xs-4" style="float: left; padding-left: 5px">';
+                            li += '<img class="attFile" style="height: 80px" link="../../public/showImg.do?path=' + json.visualPath + '/' + json.diskName + '" ext="' + json.ext + '" style="width:96%" src="../../public/showImg.do?path=' + json.visualPath + '/' + json.diskName + '"/>';
+                            li += '</div>';
+                        }
                     }
-
-                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
-                    li += ' <div class="mui-table">';
-                    li += ' <div class="mui-table-cell mui-col-xs-5">';
-                    li += ' <span class="mui-h5">' + title + '</span>';
-                    li += ' </div>'
-                    li += ' <div class="mui-table-cell mui-col-xs-5">';
-                    li += ' <span class="mui-h5">' + _text + '</span>'
-                    li += ' <a><span class="mui-icon mui-icon-paperplane icon-location" data-code="' + code + '" data-val = "' + value + '"></span></a>'
                     li += ' </div>'
                     li += ' </div>';
                     li += '</li>';
-                } else if (macroCode == MACRO_CODE.MACRO_IMAGE) {
+                }
+                else if (macroCode == MACRO_CODE.MACRO_WRITEPAD) {
                     li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
                     li += ' <div class="mui-table">';
                     li += ' <div class="mui-table-cell mui-col-xs-5">';
@@ -704,19 +837,7 @@
                     li += ' </div>'
                     li += ' <div class="mui-table-cell mui-col-xs-5">';
                     var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
-                    li += '     <img class="attFile" link="../../public/img_show.jsp?path=' + value + '" ext="' + ext + '" style="width:96%" src="../../public/img_show.jsp?path=' + value + '"/>';
-                    li += ' </div>'
-                    li += ' </div>';
-                    li += '</li>';
-                } else if (macroCode == MACRO_CODE.MACRO_WRITEPAD) {
-                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
-                    li += ' <div class="mui-table">';
-                    li += ' <div class="mui-table-cell mui-col-xs-5">';
-                    li += ' <span class="mui-h5">' + title + '</span>';
-                    li += ' </div>'
-                    li += ' <div class="mui-table-cell mui-col-xs-5">';
-                    var ext = value.substring(value.lastIndexOf(".") + 1).toLowerCase();
-                    li += '     <img class="attFile" link="../../public/img_show.jsp?path=' + value + '" ext="' + ext + '" style="width:96%" src="../../public/img_show.jsp?path=' + value + '"/>';
+                    li += '     <img class="attFile" link="../../public/showImg.do?path=' + value + '" ext="' + ext + '" style="width:96%" src="../../public/showImg.do?path=' + value + '"/>';
                     li += ' </div>'
                     li += ' </div>';
                     li += '</li>';
@@ -746,6 +867,49 @@
                     li += ' </div>';
                     li += '</li>';
                 }
+                else if (macroCode == MACRO_CODE.MACRO_BARCODE) {
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + title + '</span>';
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += '     <img style="width:96%" src="' + item.image + '"/>';
+                    li += ' </div>'
+                    li += ' </div>';
+                    li += '</li>';
+                }
+                else if (macroCode == MACRO_CODE.MACRO_QRCODE) {
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + title + '</span>';
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += '     <img style="width:96%" src="' + item.image + '"/>';
+                    li += ' </div>'
+                    li += ' </div>';
+                    li += '</li>';
+                }
+                else if (macroCode == MACRO_CODE.MACRO_LOCATION_CTL || macroCode == MACRO_CODE.MACRO_LOCATION_MARK_CTL) {
+                    var _arr = value.split(",");
+                    var _text = value;
+                    if (_arr.length == 3) {
+                        _text = _arr[2];
+                    }
+
+                    li += ' <li class="mui-table-view-cell" id="row_' + code + '">';
+                    li += ' <div class="mui-table">';
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + title + '</span>';
+                    li += ' </div>'
+                    li += ' <div class="mui-table-cell mui-col-xs-5">';
+                    li += ' <span class="mui-h5">' + _text + '</span>'
+                    li += ' <a><span class="mui-icon mui-icon-paperplane icon-location" data-code="' + code + '" data-val = "' + value + '"></span></a>'
+                    li += ' </div>'
+                    li += ' </div>';
+                    li += '</li>';
+                }
                 else {
                     li = self.initItemCommonLi(title, value, code);
                 }
@@ -758,6 +922,9 @@
             });
             $(".mui-table-view-cell").on("tap", ".nestSheetSelect", function () {
                 openNestSheet(this, skey);
+            });
+            $(".mui-table-view-cell").on("tap", ".module-field-select", function () {
+                openModuleShow(this, skey);
             });
         },
         flowInitFiles: function (files, isShowPage) {
@@ -797,36 +964,30 @@
                 _ul += '<a class="mui-btn mui-btn-yellow att_download">下载</a>';
                 _ul += '</div>';
                 _ul += '<div class="mui-slider-handle">';
-                _ul += '<a class="attFile" ext="' + ext + '" href="javascript:;" link="../../' + _url + '" target="_blank" >';
+                _ul += '<a class="attFile" ext="' + ext + '" href="javascript:;" link="../../' + _url + '" >';
                 _ul += '<img class="mui-media-object mui-pull-left" src="../images/file/' + _imgUrl + '" />';
-                _ul += '	<div class="mui-media-body">';
+                _ul += '<div class="mui-media-body">';
                 _ul += _name;
                 _ul += '</div>';
                 _ul += '</a>';
                 _ul += '</div>';
                 _ul += '</li>';
             });
-            _ul += '</ul>';
             return _ul;
-
         },
         bindFileDel: function () {
             var self = this;
             var skey = self.options.skey;
+
             $(".mui-content").on('tap', '.att_del', function (event) {
                 var elem = this;
                 var li = elem.parentNode.parentNode;
                 var fId = li.getAttribute("fId");//判断是否是新增
                 var btnArray = ['确认', '取消'];
                 var isFlow = jQuery(this).attr("isFlow");
+                console.log('fId=' + fId);
+                var isImgBox = elem.getAttribute("isImgBox");
 
-                /*	if(fId != "0"){
-                        $.toast("无法删除!");
-                        setTimeout(function() {
-                         $.swipeoutClose(li);
-                     }, 0);
-                        return;
-                    }*/
                 mui.confirm('确认删除该条记录？', '提示', btnArray, function (e) {
                     setTimeout(function () {
                         $.swipeoutClose(li);
@@ -835,7 +996,7 @@
                         if (fId != "0") {
                             // console.log("isFlow=" + isFlow);
                             mui.get("../../public/android/module/attDel",
-                                {"skey": skey, "id": fId, "flow": isFlow}, function (data) {
+                                {"skey": skey, "id": fId, "isFlow": isFlow}, function (data) {
                                     var res = data.res;
                                     var msg = data.msg;
                                     if (res == "0") {
@@ -845,17 +1006,23 @@
                                         if (_pLen == 0) {
                                             jQuery(".att_ul").remove();
                                         }
-
                                     } else {
                                         $.toast(msg);
                                     }
-
                                 }, "json");
-
                         } else {
-                            li.parentNode.removeChild(li);
-                            var _index = jQuery(li).index() - 1;
+                            var _index;
+                            console.log("isImgBox=" + isImgBox);
+                            if (isImgBox == "true") {
+                                // 如果是点击了预览图片框的删除按钮
+                                _index = jQuery(li).index() - 1;
+                                console.log("_index=" + _index);
+                            }
+                            else {
+                                _index = jQuery(li).index() - 1;
+                            }
                             blob_arr.splice(_index, 1);
+                            li.parentNode.removeChild(li);
                             var _pLen = jQuery(".att_li").length;
                             if (_pLen == 0) {
                                 jQuery(".att_ul").remove();
@@ -924,7 +1091,7 @@
             return y + '-' + m + '-' + d;
         },
 
-        bindEvent: function () {
+        bindEvent: function (formCode) {
             var self = this;
             var content = self.element;
             var formSelector = self.options.formSelector;
@@ -967,6 +1134,9 @@
             $(formSelector).on("tap", ".moduleSelect", function () {
                 openModuleField(this, skey);
             });
+            $(formSelector).on("tap", ".module-field-select", function () {
+                openModuleShow(this, skey);
+            });
             $(formSelector).on("tap", ".dept-select-win", function () {
                 openDeptWin(this);
             });
@@ -993,6 +1163,7 @@
                         w = jQuery(this).width();
                         h = jQuery(this).height();
                     }
+                    console.log('url', url);
                     self.showImg(url, w, h);
                 } else {
                     if (mui.os.plus) {
@@ -1038,6 +1209,7 @@
             lowerToUpper();// 大小写金额转换
             initCalculator();// 计算控件初始化
             onIdCardChange(); // 绑定身份证变化事件
+            onUserSelectWinChange(formCode); // 绑定用户选择窗体宏控件的变化以进行映射
         },
         showImg: function (path, width, height) {
             var w = 964, h = 1024;
@@ -1048,7 +1220,7 @@
             var openPhotoSwipe = function () {
                 var pswpElement = jQuery('.pswp')[0];
                 var items = [{
-                    // src格式为../../public/img_show.jsp?path="+encodeURI(path),
+                    // src格式为../../public/showImg.do?path="+encodeURI(path),
                     src: path,
                     w: w,
                     h: h

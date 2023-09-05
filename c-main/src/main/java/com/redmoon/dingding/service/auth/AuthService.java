@@ -1,6 +1,7 @@
 package com.redmoon.dingding.service.auth;
 
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.request.OapiGettokenRequest;
 import com.dingtalk.api.response.OapiGettokenResponse;
@@ -23,29 +24,30 @@ public class AuthService {
 
     /**
      * 获得accessToken
+     *
      * @return
      */
-    public static String getAccessToken(){
+    public static String getAccessToken() {
         String _accessToken = "";
         try {
             long curTime = System.currentTimeMillis();
             OaSysVerMgr oaSysVerMgr = new OaSysVerMgr();
             oaSysVerMgr = oaSysVerMgr.getOaSysVer();
-            String _oldAccToken = null;
-            Date _oldAccTokenTime = null;
-            if(oaSysVerMgr!=null){
-                _oldAccToken = oaSysVerMgr.getDd_accesstoken();
-                _oldAccTokenTime = oaSysVerMgr.getDd_accesstoken_time();
+            String oldAccToken = null;
+            Date oldAccTokenTime = null;
+            if (oaSysVerMgr != null) {
+                oldAccToken = oaSysVerMgr.getDd_accesstoken();
+                oldAccTokenTime = oaSysVerMgr.getDd_accesstoken_time();
             }
-            if (_oldAccToken == null ||_oldAccToken.equals("") || _oldAccTokenTime == null || curTime - _oldAccTokenTime.getTime() >= cacheTime){
-                Config _config = Config.getInstance();
-                String _corpId = _config.getCropId();
-                String _corpSecret = _config.getCropSecret();
-                HttpHelper _http = new HttpHelper();
+            if (oldAccToken == null || "".equals(oldAccToken) || oldAccTokenTime == null || curTime - oldAccTokenTime.getTime() >= cacheTime) {
+                Config config = Config.getInstance();
+                String corpId = config.getCropId();
+                String corpSecret = config.getCropSecret();
+                HttpHelper http = new HttpHelper();
 
-                // 2018-12-17 钉钉改为通过appkey及appsecret获取access_token
-                String appkey = _config.getProperty("appkey");
-                String appsecret = _config.getProperty("appsecret");
+                // 2018-12-17 钉钉改为通过appkey及appsecret1获取access_token
+                String appkey = config.getProperty("appkey");
+                String appsecret = config.getProperty("appsecret");
                 if (!"".equals(appkey)) {
                     DefaultDingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/gettoken");
                     OapiGettokenRequest request = new OapiGettokenRequest();
@@ -53,31 +55,29 @@ public class AuthService {
                     request.setAppsecret(appsecret);
                     request.setHttpMethod("GET");
                     OapiGettokenResponse response = client.execute(request);
-                    if (response.getErrcode()==0) {
+                    if (response.getErrcode() == 0) {
                         _accessToken = response.getAccessToken();
-                    }
-                    else {
+                    } else {
                         DebugUtil.log(AuthService.class, "getAccessToken", response.getErrmsg());
                         return "";
                     }
-                }
-                else {
-                    _http.url = String.format("https://oapi.dingtalk.com/gettoken?corpid=%s&corpsecret=%s", _corpId, _corpSecret);
-                    AccessTokenDto _accessTokenDto = _http.httpGet(AccessTokenDto.class);
-                    if(_accessTokenDto != null){
-                        _accessToken = _accessTokenDto.access_token;
+                } else {
+                    http.url = String.format("https://oapi.dingtalk.com/gettoken?corpid=%s&corpsecret=%s", corpId, corpSecret);
+                    AccessTokenDto accessTokenDto = http.httpGet(AccessTokenDto.class);
+                    if (accessTokenDto != null) {
+                        _accessToken = accessTokenDto.access_token;
                     }
                 }
 
-                if(oaSysVerMgr == null){
+                if (oaSysVerMgr == null) {
                     oaSysVerMgr = new OaSysVerMgr();
                 }
-                oaSysVerMgr.updateDingDingAccToken(_accessToken,new Date());
-            }else{
-                _accessToken = _oldAccToken;
+                oaSysVerMgr.updateDingDingAccToken(_accessToken, new Date());
+            } else {
+                _accessToken = oldAccToken;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(AuthService.class).error(e);
         }
         return _accessToken;
     }
@@ -85,9 +85,10 @@ public class AuthService {
     /**
      * 获得jsApiTicket
      * 企业在使用JSAPI时，需要先获取jsapi_ticket生成签名数据，并将最终签名用的部分字段及签名结果返回到H5中，JS API底层将通过这些数据判断H5是否有权限使用JS API。
+     *
      * @return
      */
-    public static String getJsapiTicket(){
+    public static String getJsapiTicket() {
         String _ticket = "";
         try {
             long curTime = System.currentTimeMillis();
@@ -95,29 +96,30 @@ public class AuthService {
             oaSysVerMgr = oaSysVerMgr.getOaSysVer();
             String _oldTicket = null;
             Date _oldTicketTime = null;
-            if(oaSysVerMgr!=null){
+            if (oaSysVerMgr != null) {
                 _oldTicket = oaSysVerMgr.getDd_jspapi_ticket();
                 _oldTicketTime = oaSysVerMgr.getDd_jspapi_ticket_time();
             }
-            if (_oldTicket == null ||_oldTicket.equals("") || _oldTicketTime == null || curTime - _oldTicketTime.getTime() >= cacheTime){
+            if (_oldTicket == null || "".equals(_oldTicket) || _oldTicketTime == null || curTime - _oldTicketTime.getTime() >= cacheTime) {
                 HttpHelper _http = new HttpHelper("https://oapi.dingtalk.com/get_jsapi_ticket?type=jsapi&");
                 JsapiTicketDto _jspApiTick = _http.httpGet(JsapiTicketDto.class);
-                if(_jspApiTick!=null){
+                if (_jspApiTick != null) {
                     _ticket = _jspApiTick.ticket;
                 }
-                oaSysVerMgr.updateDingDingTicket(_ticket,new Date());
-            }else{
+                oaSysVerMgr.updateDingDingTicket(_ticket, new Date());
+            } else {
                 _ticket = _oldTicket;
             }
 
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(AuthService.class).error(e);
         }
-        return  _ticket;
+        return _ticket;
     }
 
     /**
      * 签名
+     *
      * @param ticket
      * @param nonceStr
      * @param timeStamp
@@ -144,8 +146,8 @@ public class AuthService {
     public static String getConfig(HttpServletRequest request) {
         String urlString = request.getRequestURL().toString();
         String queryString = request.getQueryString();
-        Config _config = Config.getInstance();
-        String _corpId = _config.getCropId();
+        Config config = Config.getInstance();
+        String corpId = config.getCropId();
         String queryStringEncode = null;
         String url;
         if (queryString != null) {
@@ -160,16 +162,16 @@ public class AuthService {
         String signedUrl = url;
         String ticket = null;
         String signature = null;
-        String agentid = _config.getProperty("flowAgentId");
+        String agentid = config.getProperty("flowAgentId");
         try {
             AuthService.getAccessToken();
             ticket = AuthService.getJsapiTicket();
             signature = AuthService.sign(ticket, nonceStr, timeStamp, signedUrl);
 
         } catch (DdException e) {
+            LogUtil.getLog(AuthService.class).error(e);
         }
-        String configValue = "{jsticket:'" + ticket + "',signature:'" + signature + "',nonceStr:'" + nonceStr + "',timeStamp:'"
-                + timeStamp + "',corpId:'" + _corpId + "',agentid:'" + agentid + "'}";
-        return configValue;
+        return "{jsticket:'" + ticket + "',signature:'" + signature + "',nonceStr:'" + nonceStr + "',timeStamp:'"
+                + timeStamp + "',corpId:'" + corpId + "',agentid:'" + agentid + "'}";
     }
 }

@@ -5,12 +5,11 @@ import java.util.*;
 import javax.servlet.jsp.tagext.*;
 
 import cn.js.fan.util.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class DirListItemTag extends BodyTagSupport {
     Iterator ri;
     String field;
-    Logger logger = Logger.getLogger(DirListItemTag.class.getName());
     int length = -1;
 
     /**
@@ -22,7 +21,6 @@ public class DirListItemTag extends BodyTagSupport {
 
     /**
      * put your documentation comment here
-     * @param para
      */
     public void setField (String field) {
         this.field = field;
@@ -47,7 +45,7 @@ public class DirListItemTag extends BodyTagSupport {
             ri = rit.ir;
         }
         else {
-            logger.error("get resultsets failed!");
+            LogUtil.getLog(getClass()).error("get resultsets failed!");
         }
         return EVAL_BODY_BUFFERED;
     }
@@ -60,7 +58,7 @@ public class DirListItemTag extends BodyTagSupport {
         try {
             if (ri!=null && ri.hasNext()) {
                Leaf lf = (Leaf) ri.next();
-               // logger.info("doEndTag lf=" + lf + " mode=" + mode + " field=" + field);
+               // LogUtil.getLog(getClass()).info("doEndTag lf=" + lf + " mode=" + mode + " field=" + field);
                String body = "";
                if (mode==null || !mode.equals("detail")) {
                    if (field!=null) {
@@ -81,7 +79,7 @@ public class DirListItemTag extends BodyTagSupport {
               }
                else {
                    BodyContent bc = getBodyContent();
-                   // logger.info(bc.getString());
+                   // LogUtil.getLog(getClass()).info(bc.getString());
                    body = bc.getString();
                    String t = lf.getName();
                    if (length!=-1)
@@ -95,8 +93,8 @@ public class DirListItemTag extends BodyTagSupport {
                pageContext.getOut().print(body);
             }
         } catch (Exception e) {
-            logger.error("doEndTag:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("doEndTag:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return  EVAL_PAGE;
     }

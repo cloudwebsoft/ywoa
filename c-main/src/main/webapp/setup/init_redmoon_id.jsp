@@ -8,6 +8,7 @@
 <%@ page import="cn.js.fan.db.ResultIterator" %>
 <%@ page import="cn.js.fan.db.ResultRecord" %>
 <%@ page import="com.redmoon.oa.sys.SysUtil" %>
+<%@ page import="com.baomidou.mybatisplus.core.toolkit.StringUtils" %>
 <%
     String op = request.getParameter("op");
     String tableName = request.getParameter("formName");
@@ -47,11 +48,12 @@
             int s = 0;
             String tableId = "id";
             for (int i = 0; i < len; i++) {
-                if (tables[i][0].equals(tableName)) {
+                if (tables[i][0]!=null && tables[i][0].equals(tableName)) {
                     cmsId = i;
                     s++;
-                    if (tables[i][2] != null)
+                    if (tables[i][2] != null) {
                         tableId = tables[i][2];
+                    }
                 }
             }
             if (s == 0) {
@@ -89,8 +91,8 @@
     }
     SequenceManager.init();
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>redmoonid初始化</title>
@@ -101,12 +103,12 @@
 <table cellSpacing="0" cellPadding="0" width="100%">
     <tbody>
     <tr>
-        <td class="tdStyle_1">redmoonid初始化</td>
+        <td class="tdStyle_1">自增长ID初始化</td>
     </tr>
     </tbody>
 </table>
 
-<form name="form1" id="form1" method="get" action="?op=start">
+<form name="form1" id="form1" method="get" action="?op=start" style="margin-top: 10px">
     <input type="hidden" name="op" value="start"/>
     <input type="hidden" name="formName" value=""/>
     <input type="hidden" name="nowId" value=""/>
@@ -125,11 +127,12 @@
                 int mid = 0;
                 int nid = 0;
                 String tableId2 = "id";
-                if (!tables[k][0].equals("")) {
+                if (!StringUtils.isEmpty(tables[k][0])) {
                     tName = tables[k][0];
                     tId = k;
-                    if (tables[k][2] != null)
+                    if (tables[k][2] != null) {
                         tableId2 = tables[k][2];
+                    }
                     String sql2 = "select max(" + tableId2 + ") from " + tName;
                     // System.out.println(getClass() + " " + sql2);
                     JdbcTemplate jtl = new JdbcTemplate();
@@ -165,8 +168,9 @@
             <td><%=k%>
                 <%
                     boolean isValid = true;
-                    if (nid < mid)
+                    if (nid < mid) {
                         isValid = false;
+                    }
                 %>
             </td>
             <td <%=!isValid ? "style='color:red'" : ""%>>

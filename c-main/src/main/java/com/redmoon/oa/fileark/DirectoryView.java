@@ -4,7 +4,6 @@ import cn.js.fan.util.StrUtil;
 import java.util.Vector;
 import javax.servlet.jsp.JspWriter;
 import java.util.Iterator;
-import org.apache.log4j.Logger;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.HttpServletRequest;
 
@@ -13,7 +12,6 @@ import com.redmoon.oa.fileark.plugin.base.IPluginUI;
 import com.redmoon.oa.pvg.Privilege;
 
 public class DirectoryView {
-    Logger logger = Logger.getLogger(Leaf.class.getName());
     public Leaf rootLeaf;
     public Vector UprightLineNodes = new Vector(); //用于显示竖线
     protected HttpServletRequest request;
@@ -78,7 +76,7 @@ public class DirectoryView {
 
         if (!isLastChild) {
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -87,7 +85,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -95,7 +93,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -113,7 +111,7 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
+                        //LogUtil.getLog(getClass()).info("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -236,9 +234,9 @@ public class DirectoryView {
         String description = leaf.getDescription();
 
         if (!isLastChild) {
-            // System.out.println("get leaf brother" + leaf.getName());
+            // LogUtil.getLog(getClass()).info("get leaf brother" + leaf.getName());
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -247,7 +245,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count > 0) { // =0的也计入的话会在树底端的结点产生多余竖线
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -255,7 +253,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -273,7 +271,7 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
+                        //LogUtil.getLog(getClass()).info("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -381,9 +379,9 @@ public class DirectoryView {
         String description = leaf.getDescription();
 
         if (!isLastChild) {
-            // System.out.println("get leaf brother" + leaf.getName());
+            // LogUtil.getLog(getClass()).info("get leaf brother" + leaf.getName());
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -392,7 +390,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count > 0) { // =0的也计入的话会在树底端的结点产生多余竖线
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -400,7 +398,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = leaf.getCode();
 
@@ -498,14 +496,15 @@ public class DirectoryView {
         out.println("  </td></tr></tbody></table>");
     }
 
-    void ShowLeafAsOption(JspWriter out, Leaf leaf, int rootlayer)
-                  throws Exception {
-    	if (!leaf.isShow())
-    		return;
+    void ShowLeafAsOption(JspWriter out, Leaf leaf, int rootlayer, boolean isAllShow) throws Exception {
+        if (!isAllShow && !leaf.isShow()) {
+            return;
+        }
     	
     	LeafPriv lp = new LeafPriv(leaf.getCode());
-    	if (!lp.canUserSee(request))
-    		return;
+    	if (!lp.canUserSee(request)) {
+            return;
+        }
     	
         String code = leaf.getCode();
         String name = leaf.getName();
@@ -516,34 +515,48 @@ public class DirectoryView {
             blank += "　";
         }
         if (leaf.getChildCount()>0) {
-            if (leaf.getType()==leaf.TYPE_LIST || leaf.getType()==leaf.TYPE_DOCUMENT)
+            if (leaf.getType()==Leaf.TYPE_LIST || leaf.getType()==Leaf.TYPE_DOCUMENT) {
                 out.print("<option value='" + code + "' style='COLOR: #0005ff'>" + blank + "╋ " + name + "</option>");
-            else
+            } else {
                 out.print("<option value='not'>" + blank + "╋ " + name + "</option>");
+            }
         }
         else {
-            if (leaf.getType()==leaf.TYPE_LIST || leaf.getType()==leaf.TYPE_DOCUMENT)
+            if (leaf.getType()==Leaf.TYPE_LIST || leaf.getType()==Leaf.TYPE_DOCUMENT) {
                 out.print("<option value=\"" + code + "\" style='COLOR: #0005ff'>" + blank + "├『" + name +
                       "』</option>");
-            else
+            } else {
                 out.print("<option value='not'>" + blank + "├『" + name +
                       "』</option>");
+            }
         }
     }
 
-    // 显示根结点为leaf的树
     public void ShowDirectoryAsOptions(JspWriter out, Leaf leaf, int rootlayer) throws Exception {
-        ShowLeafAsOption(out, leaf, rootlayer);
+        ShowDirectoryAsOptions(out, leaf, rootlayer, false);
+    }
+
+    /**
+     * 显示根结点为leaf的树
+     * @param out
+     * @param leaf
+     * @param rootlayer
+     * @param isAllShow 是否显示全部节点，含不启用的节点
+     * @throws Exception
+     */
+    public void ShowDirectoryAsOptions(JspWriter out, Leaf leaf, int rootlayer, boolean isAllShow) throws Exception {
+        ShowLeafAsOption(out, leaf, rootlayer, isAllShow);
         Directory dir = new Directory();
         Vector children = dir.getChildren(leaf.getCode());
         int size = children.size();
-        if (size == 0)
+        if (size == 0) {
             return;
+        }
 
         Iterator ri = children.iterator();
         while (ri.hasNext()) {
             Leaf childlf = (Leaf) ri.next();
-            ShowDirectoryAsOptions(out, childlf, rootlayer);
+            ShowDirectoryAsOptions(out, childlf, rootlayer, isAllShow);
         }
     }
 
@@ -632,7 +645,7 @@ public class DirectoryView {
 
         if (!isLastChild) {
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
+            // LogUtil.getLog(getClass()).info("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -641,7 +654,7 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
+                    // LogUtil.getLog(getClass()).info(leaf.getCode() + " layer=" + layer +
                     //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
@@ -649,7 +662,7 @@ public class DirectoryView {
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -667,7 +680,7 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
+                        //LogUtil.getLog(getClass()).info("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -762,7 +775,7 @@ public class DirectoryView {
         String code = leaf.getCode();
         String name = leaf.getName();
 
-        // System.out.println(code + " childcount=" + childcount);
+        // LogUtil.getLog(getClass()).info(code + " childcount=" + childcount);
         String cls;
         if (leaf.getChildCount()>0)
         	cls = "folder";
@@ -805,7 +818,7 @@ public class DirectoryView {
         	if (pu!=null) {
         		IPluginUI ipu = pu.getUI(request);
         		
-        		// System.out.println(getClass() + " ipu.getViewPage()=" + ipu.getViewPage());
+        		// LogUtil.getLog(getClass()).info(getClass() + " ipu.getViewPage()=" + ipu.getViewPage());
         		
         		page = rootPath + "/" + ipu.getViewPage() + "?id=" + leaf.getDocID();
         	}
@@ -825,12 +838,14 @@ public class DirectoryView {
     }
     
     public String getDirAsOption(HttpServletRequest request, Leaf leaf, int rootlayer) {
-    	if (!leaf.isShow())
-    		return "";
+    	if (!leaf.isShow()) {
+            return "";
+        }
     	
     	LeafPriv lp = new LeafPriv(leaf.getCode());
-    	if (!lp.canUserSee(request))
-    		return "";
+    	if (!lp.canUserSee(request)) {
+            return "";
+        }
     	
         String outStr = "";
         String code = leaf.getCode();

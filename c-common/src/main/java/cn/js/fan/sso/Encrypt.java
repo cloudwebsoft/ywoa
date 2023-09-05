@@ -1,6 +1,7 @@
 package cn.js.fan.sso;
 
 import cn.js.fan.security.SecurityUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class Encrypt {
   String key = "@#45^&*3";
@@ -19,7 +20,7 @@ public class Encrypt {
       r = SecurityUtil.encode2hex(info.getBytes(), bkey);
     }
     catch (java.lang.Exception e) {
-      System.out.println("encodeinfo:" + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     return r;
   }
@@ -33,7 +34,7 @@ public class Encrypt {
         return s.split(",");//分割后依次为nick,pwd,privurl
     }
     catch (java.lang.Exception e) {
-        System.out.println("DES decode error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     return null;
   }

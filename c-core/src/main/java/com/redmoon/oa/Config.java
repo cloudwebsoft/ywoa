@@ -12,51 +12,42 @@ package com.redmoon.oa;
 
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.util.XMLProperties;
-import org.jdom.*;
-import org.jdom.output.*;
-import org.jdom.input.*;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.jdom.Attribute;
+import org.jdom.Document;
+import org.jdom.Element;
+import org.jdom.JDOMException;
+import org.jdom.input.SAXBuilder;
+import org.xml.sax.InputSource;
 
-import java.io.*;
-import java.net.URL;
-
-import org.apache.log4j.Logger;
-
-import java.net.URLDecoder;
+import java.io.IOException;
+import java.io.StringReader;
 
 public class Config {
-    boolean debug = true;
-    final String configxml = "config.xml";
-    String xmlpath = "";
     Document doc = null;
     Element root = null;
-    Logger logger = Logger.getLogger(Config.class.getName());
 
     private static XMLProperties properties = null;
     public static Config cfg = null;
-    private static Object initLock = new Object();
+    private static final Object initLock = new Object();
 
     public Config() {
         init();
     }
 
     public void init() {
-        URL confURL = getClass().getResource("/" + configxml);
-        xmlpath = confURL.getFile();
-        xmlpath = URLDecoder.decode(xmlpath);
-        if (properties==null) {
-            properties = new XMLProperties(xmlpath);
-        }
-
-        SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(xmlpath);
-            doc = sb.build(fin);
+            ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+            String xml = configUtil.getXml("config");
+
+            SAXBuilder sb = new SAXBuilder();
+            doc = sb.build(new InputSource(new StringReader(xml)));
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-            e.printStackTrace();
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
+            properties = new XMLProperties("config", doc, true);
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -73,6 +64,14 @@ public class Config {
     public static void reload() {
         cfg = null;
         properties = null;
+    }
+
+    public boolean isRoleSwitchable() {
+        return getBooleanProperty("isRoleSwitchable");
+    }
+
+    public boolean isDeptSwitchable() {
+        return getBooleanProperty("isDeptSwitchable");
     }
 
     public Element getRootElement() {
@@ -115,11 +114,11 @@ public class Config {
     }
 
     public boolean getBoolean(String name) {
-        return get(name).equals("true");
+        return "true".equals(get(name));
     }
 
     public boolean getBooleanProperty(String name) {
-        return get(name).equals("true");
+        return "true".equals(get(name));
     }
 
     public boolean put(String name, String value) {
@@ -133,17 +132,13 @@ public class Config {
     }
 
     public void writemodify() {
-        String indent = "    ";
-        Format format = Format.getPrettyFormat();
-        format.setIndent(indent);
-        format.setEncoding("utf-8");
-        XMLOutputter outp = new XMLOutputter(format);
-        try {
-            FileOutputStream fout = new FileOutputStream(xmlpath);
-            outp.output(doc, fout);
-            fout.close();
-        } catch (java.io.IOException e) {
-        }
+        ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+        configUtil.putXml("config", doc);
+
         reload();
+    }
+
+    public String getKey() {
+        return cfg.get("key");
     }
 }

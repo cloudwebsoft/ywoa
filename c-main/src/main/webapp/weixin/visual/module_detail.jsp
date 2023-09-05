@@ -9,6 +9,8 @@
         return;
     }
     String formCode = msd.getString("form_code");
+    // 通过uniapp的webview载入
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE HTML>
 <html>
@@ -128,6 +130,7 @@
 <%
     String skey = ParamUtil.get(request, "skey");
     int id = ParamUtil.getInt(request, "id", 0);
+    boolean isTab = ParamUtil.getBoolean(request, "isTab", true);
 %>
 <body>
 <header class="mui-bar mui-bar-nav">
@@ -184,9 +187,25 @@
     // 会导致pullRefresh初始化失败
     // mui.init();
 
+    var isUniWebview = <%=isUniWebview%>;
     if(!mui.os.plus) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
+    }
+    else {
+        // 如果是通过uniapp的webview载入
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
+
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        if (isUniWebview) {
+            mui.init({
+                keyEventBind: {
+                    backbutton: false // 关闭back按键监听
+                }
+            });
+        }
     }
 
     mui.ready(function () {
@@ -205,7 +224,8 @@
             "skey": skey,
             "moduleCode": moduleCode,
             "id": id,
-            "ulSelector": "#formDetail"
+            "ulSelector": "#formDetail",
+            "isTab": <%=isTab%>
         };
         var content = document.querySelector('.mui-content');
         window.ModuleForm = new mui.ModuleForm(content, options);

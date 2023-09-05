@@ -45,14 +45,17 @@ function delEmpty(){
         }
     }
 }
-//upload
+
+//
+// upload
 function initUpload() {
 	var local = 'zh';
-	if (document.getElementById('uploadJs'))
-		local = document.getElementById('uploadJs').getAttribute('local');
+	if (document.getElementById('uploadJs')) {
+        local = document.getElementById('uploadJs').getAttribute('local');
+    }
 	if (local == 'en'){
 		document.write("<div class=\"upload\"><span style='float:left;margin-top:-3px;'>Upload</span><a id=\"upfilePanelHidden\" href=\"javascript:void(0);\"></a></div>");
-	}else if (local == 'zh'){
+	} else if (local == 'zh'){
 		document.write("<div class=\"upload\"><span style='float:left;margin-top:-3px;'>添加文件</span><a id=\"upfilePanelHidden\" href=\"javascript:void(0);\"></a></div>");
 	}
 	

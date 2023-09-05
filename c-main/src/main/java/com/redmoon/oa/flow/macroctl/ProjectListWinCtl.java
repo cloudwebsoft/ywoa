@@ -5,7 +5,7 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -139,8 +139,8 @@ public class ProjectListWinCtl extends AbstractMacroCtl {
 
     public String getControlOptions(String userName, FormField ff) {
     	//查询我参与的项目并且未完成
-    	String sql = "select id from form_table_project order by id desc";
-    	//String sql = "SELECT P.id FROM form_table_project p,form_table_project_members m WHERE p.id=m.cws_id and p.status = 0 and m.prj_user=?";
+    	String sql = "select id from ft_project order by id desc";
+    	//String sql = "SELECT P.id FROM ft_project p,ft_project_members m WHERE p.id=m.cws_id and p.status = 0 and m.prj_user=?";
     	JSONArray selects = new JSONArray();
     	FormDAO fdao = new FormDAO();
     	Vector vector;
@@ -158,11 +158,9 @@ public class ProjectListWinCtl extends AbstractMacroCtl {
 				}
 			}
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(ProjectListWinCtl.class).error(e.getMessage());
+			LogUtil.getLog(ProjectListWinCtl.class).error(e.getMessage());
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(ProjectListWinCtl.class).error(e.getMessage());
+			LogUtil.getLog(ProjectListWinCtl.class).error(e.getMessage());
 		}
     	
         return selects.toString();
@@ -176,11 +174,11 @@ public class ProjectListWinCtl extends AbstractMacroCtl {
     	Privilege prv = new Privilege();
     	String curUser = prv.getUser(request);
     	//查询我参与的项目并且未完成
-    	String sql = "select id from form_table_project p where exists (select cws_id from form_table_project_members where prj_user=" 
+    	String sql = "select id from ft_project p where exists (select cws_id from ft_project_members where prj_user="
     		+ SQLFilter.sqlstr(curUser)
     		+ "and p.id=cws_id) or cws_creator=" + StrUtil.sqlstr(curUser)	
     		+ " order by id desc";
-    	//String sql = "SELECT P.id FROM form_table_project p,form_table_project_members m WHERE p.id=m.cws_id and p.status = 0 and m.prj_user=?";
+    	//String sql = "SELECT P.id FROM ft_project p,ft_project_members m WHERE p.id=m.cws_id and p.status = 0 and m.prj_user=?";
     	StringBuffer str = new StringBuffer();
 	    str.append("<select id='" + ff.getName() + "' name='" + ff.getName() + "'>");
 	    str.append("<option value='' >不限</option>");
@@ -202,7 +200,7 @@ public class ProjectListWinCtl extends AbstractMacroCtl {
 			}
 		} catch (ErrMsgException e) {
 			// TODO Auto-generated catch block
-			Logger.getLogger(ProjectListWinCtl.class).error(e.getMessage());
+			LogUtil.getLog(ProjectListWinCtl.class).error(e.getMessage());
 		} 
 		str.append("</select>");
         return str.toString();

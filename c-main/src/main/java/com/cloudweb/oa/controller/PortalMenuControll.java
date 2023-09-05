@@ -3,6 +3,7 @@ package com.cloudweb.oa.controller;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.ui.PortalMenuDb;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,7 +32,7 @@ public class PortalMenuControll {
         try {
             re = pmd.del();
         } catch (ResKeyException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         try {
             if (re) {
@@ -42,7 +43,7 @@ public class PortalMenuControll {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -59,7 +60,7 @@ public class PortalMenuControll {
                 json.put("ret", "0");
                 json.put("msg", "标识不能为空！");
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             return json.toString();
         }
@@ -73,7 +74,7 @@ public class PortalMenuControll {
             try {
                 re = pmd.save();
             } catch (ResKeyException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         try {
@@ -85,7 +86,7 @@ public class PortalMenuControll {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }

@@ -1,0 +1,2999 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>流程处理</title>
+    <meta name="renderer" content="ie-stand"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="js/jquery-contextmenu/jquery.contextMenu.min.css">
+    <link rel="stylesheet" href="js/layui/css/layui.css" media="all">
+    <link href="lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <style>
+        .main-content {
+            margin: 5px 30px;
+        }
+
+        .spanNextUser {
+            font-size: 12px;
+        }
+
+        .checkerUser {
+            width: 120px;
+            display: block;
+            float: left;
+        }
+
+        input,textarea {
+            outline:none;
+        }
+
+        input[readonly] {
+            background-color: #ddd;
+        }
+
+        select[readonly] {
+            background-color: #ddd;
+        }
+
+        textarea[readonly] {
+            background-color: #ddd;
+        }
+
+        .span-next-user input {
+            margin-right: 5px !important;
+        }
+        /*条件匹配对话框中，使checkbox与人员姓名在同一水平位置*/
+        .ui-dialog-content input[type="checkbox"] {
+            height: 10px;
+        }
+        .match-info {
+            margin: 10px;
+            color: #1392e9;
+        }
+        .match-multi-dept {
+            margin: 10px;
+            clear: both;
+        }
+        .match-multi-dept span,input {
+            margin-right:10px;
+        }
+        .match-delayed {
+            margin: 10px;
+            clear: both;
+        }
+        .match-dept-arrow {
+            margin: 0 5px;
+            font-family: '宋体';
+        }
+
+        #loading {
+            position: fixed;
+            z-index: 400;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #595758;
+            background-color: #ffffff;
+        }
+
+        .pager {
+            margin: 3px 0px;
+        }
+
+        .tabDiv {
+            min-height: 100%;
+            _height: 100%;
+            height: 100%;
+            padding-top: 10px;
+        }
+
+        #divAnnex table td {
+            padding: 0 0 10px 0;
+        }
+
+        #formQueryBox {
+            margin-bottom: 10px;
+        }
+    </style>
+    <script src="inc/common.js"></script>
+    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/jquery-migrate-1.2.1.min.js"></script>
+
+    <link rel="stylesheet" href="js/poshytip/tip-yellowsimple/tip-yellowsimple.css" type="text/css" />
+    <script type="text/javascript" src="js/poshytip/jquery.poshytip.js"></script>
+
+    <script src="inc/livevalidation_standalone.js"></script>
+    <script src="js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link href="js/select2/select2.css" rel="stylesheet"/>
+    <script src="js/select2/select2.js"></script>
+    <script src="js/select2/i18n/zh-CN.js"></script>
+    <link rel="stylesheet" type="text/css" href="js/MyPaging/MyPaging.css">
+    <script src="js/MyPaging/MyPaging.js"></script>
+    <link rel="stylesheet" href="js/bootstrap/css/bootstrap.min.css"/>
+    <script src="js/BootstrapMenu.min.js"></script>
+    <script src="js/layui/layui.js" charset="utf-8"></script>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}"/>
+    <script src="js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="js/datepicker/jquery.datetimepicker.css"/>
+    <script src="js/datepicker/jquery.datetimepicker.js"></script>
+    <script src="js/jquery.bgiframe.js"></script>
+    <script src="js/fixheadertable/jquery.fixheadertable.js"></script>
+    <link rel="stylesheet" media="screen" href="js/fixheadertable/base.css"/>
+    <script src="js/jquery.form.js"></script>
+    <link href="js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script type="text/javascript" src="js/activebar2.js"></script>
+    <script src="inc/flow_dispose.jsp"></script>
+    <script src="inc/flow_js.jsp"></script>
+    <script src="inc/map.js"></script>
+    <script src="inc/ajax_getpage.jsp"></script>
+    <script th:src="@{'flow/form_js/form_js_' + ${formCode} + '.jsp?pageType=flow&flowId=' + ${flowId} + '&myActionId=' + ${myActionId} + '&userName=' + ${myUserName} + '&random=' + ${random}}"></script>
+    <script src="js/tabpanel/Toolbar.js" type="text/javascript"></script>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/Toolbar.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/Toolbar_flow.css'}"/>
+    <script type="text/javascript" src="js/goToTop/goToTop.js"></script>
+    <link type="text/css" rel="stylesheet" href="js/goToTop/goToTop.css"/>
+    <script type="text/javascript" src="js/jquery.toaster.flow.js"></script>
+    <script type="text/javascript" src="js/appendGrid/jquery.appendGrid-1.5.1.js"></script>
+    <link type="text/css" rel="stylesheet" href="js/appendGrid/jquery.appendGrid-1.5.1.css"/>
+    <script id='uploadJs' src="inc/upload.js" th:attr="local=${isEn}?'en':'zh'"></script>
+
+    <link type="text/css" rel="stylesheet" href="skin/common/macro_detaillist_ctl.css"/>
+    <link href="flowstyle.css" rel="stylesheet" type="text/css"/>
+    <link href="js/simplesidebar/simplesidebar.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="js/simplesidebar/jquery.simplesidebar.js"></script>
+    <script th:inline="javascript">
+        window.document.onkeydown = function () {
+            if (event.keyCode == 13 && event.srcElement.type != 'button' && event.srcElement.type != 'submit' && event.srcElement.type != 'reset' && event.srcElement.type != 'textarea' && event.srcElement.type != '') {
+                event.keyCode = 9;
+            }
+        }
+
+        // 设置选项卡标题
+        $(document).ready(function () {
+            setActiveTabTitle("[(${activeTabTitle})]");
+            // 初始化datetimepicker
+            SetNewDate();
+        });
+
+        var toolbar;
+
+        function setradio(myitem, v) {
+            var radioboxs = document.all.item(myitem);
+            if (radioboxs != null) {
+                for (i = 0; i < radioboxs.length; i++) {
+                    if (radioboxs[i].type == "radio") {
+                        if (radioboxs[i].value == v)
+                            radioboxs[i].checked = true;
+                    }
+                }
+            }
+        }
+
+        var hasCond = false;
+        var action = "[(${action})]";
+
+        function SubmitResult(isAfterSaveformvalueBeforeXorCondSelect) {
+            if (hasCond && !isAfterSaveformvalueBeforeXorCondSelect) {
+                // 先ajax保存表单，然后再ajax弹出对话框选择用户，然后才交办
+                flowForm.op.value = "saveformvalueBeforeXorCondSelect";
+
+                if (o('flowForm').onsubmit) {
+                    if (o('flowForm').onsubmit()) {
+                        $('#flowForm').submit();
+                    } else {
+                        toolbar.setDisabled(1, false);
+                        $('#bodyBox').hideLoading();
+                    }
+                } else
+                    $('#flowForm').submit();
+
+                return;
+            }
+
+            // 如果是自动存档节点，则先保存表单，然后回到此页面，在onload的时候再FinishActoin
+            [# th:switch="${isAutoSaveArchive}"]
+                [# th:case="true"]
+                flowForm.op.value = "AutoSaveArchiveNodeCommit";
+                [/]
+                [# th:case="*"]
+                flowForm.op.value = 'finish';
+                [/]
+            [/]
+
+            // 置为空，否则当取XorNextActionInternalNames时，通过getCheckboxValue("XorActionSelected")会出现重复，因为spanNextUser中已经有了
+            $("#dlg").html('');
+            getXorSelect();
+
+            var re = true;
+            try {
+                // 在嵌套表格页面中，定义了onsubmit方法，20121124该方法已改用jquery
+                re = flowForm.onsubmit();
+            } catch (e) {
+            }
+
+            if (re) {
+                if (isAfterSaveformvalueBeforeXorCondSelect) {
+                    o("isAfterSaveformvalueBeforeXorCondSelect").value = "" + isAfterSaveformvalueBeforeXorCondSelect;
+                }
+                $("#flowForm").submit();
+            } else {
+                toolbar.setDisabled(1, false);
+                $('#bodyBox').hideLoading();
+            }
+        }
+
+        function saveDraft() {
+            var fields = lv_cwsWorkflowResult.formObj.fields;
+            // 取消验证
+            LiveValidation.cancelValidate(lv_cwsWorkflowResult.formObj.fields);
+
+            if (o('flowForm').fireEvent) {
+                o('op').value = "saveformvalue";
+                if (o('flowForm').onsubmit) {
+                    toolbar.setDisabled(0, true);
+                    $('#bodyBox').showLoading();
+                    $('#flowForm').submit();
+                } else
+                    $('#flowForm').submit();
+            } else if (document.createEvent) {
+                o('op').value = "saveformvalue";
+                if (o('flowForm').onsubmit()) {
+                    toolbar.setDisabled(0, true);
+                    $('#bodyBox').showLoading();
+                    $('#flowForm').submit();
+                }
+                /*
+                // livevalidation只支持onsubmit方式
+                // DOM2标准注册方式以及IE的注册方式attachEvent中，onsubmit方法是不存在的
+                var ev = document.createEvent('HTMLEvents');
+                ev.initEvent('submit', false, true);
+                o('flowForm').dispatchEvent(ev);
+                */
+            }
+
+            // 恢复验证
+            LiveValidation.restoreValidate(fields);
+        }
+
+        // 退回
+        function returnFlow() {
+            [# th:if="${isFlowReturnWithRemark}"]
+                if (o("cwsWorkflowResult").value == "") {
+                    layer.msg('[(#{note})]', {
+                        offset: '6px'
+                    });
+                    o("cwsWorkflowResult").focus();
+                    return;
+                }
+            [/]
+
+            // 退回时验证数据合法性
+            try {
+                // 在form_js_formCode.jsp中写此方法
+                var r = checkOnReturnBack();
+                if (r != "") {
+                    layer.msg(r, {
+                        offset: '6px'
+                    });
+                    return;
+                }
+            } catch (e) {
+            }
+
+            var isReturnStyleFree = [(${isReturnStyleFree})];
+            if (isReturnStyleFree) {
+                $.ajax({
+                    type: "post",
+                    url: "flow/returnAction.do",
+                    data: {
+                        actionId: "[(${actionId})]",
+                        flowId: "[(${flowId})]"
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('#bodyBox').showLoading();
+                    },
+                    success: function (data, status) {
+                        o("spanLoad").innerHTML = "";
+
+                        data = $.parseJSON(data);
+                        var str = '';
+                        var len = data.result.length;
+                        for (var i = 0; i < len; i++) {
+                            var json = data.result[i];
+                            str += '<div class="return-users">';
+                            str += '<input type="radio" name="returnId" style="vertical-align:bottom" value="' + json.returnId + '" ' + json.checked + ' />';
+                            str += '<span>&nbsp;' + json.actionTitle + ":&nbsp;" + json.userRealName;
+                            str += '&nbsp;' + json.checkDate + '</span>';
+                            str += '</div>';
+                        }
+                        $("#dlg").html(str);
+                        var $radios = $("#dlg").find("input[type='radio']");
+                        if ($radios.length == 1) {
+                            $radios[0].checked = true;
+                        }
+
+                        $("#dlg").dialog({
+                            title: '[(#{returnUser})]', modal: true,
+                            buttons: {
+                                '[(#{cancel})]': function () {
+                                    $(this).dialog("close");
+                                },
+                                '[(#{sure})]': function () {
+                                    // 必须要用clone，否则checked属性在IE9、chrome中会丢失
+                                    // o("dlgReturn").innerHTML = $("#dlg").html();
+
+                                    layer.confirm('[(#{isReturn})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                                        // 因为radio是成组的，所以不能直接用$("#dlgReturn").html($("#dlg").clone())
+                                        // 某一组radio只会有一个被选中，所以这里可能会导致第一次选中返回时报请选择用户，而刷新以后，再选择用户返回就可以了
+                                        var tmp = $("#dlg").clone().html();
+                                        $("#dlgReturn").html(tmp);
+                                        // IE11中在clone时，会丢失checked属性，在此重新赋予
+                                        $("#dlg").find("input").each(function () {
+                                            var obj = $(this);
+                                            $("input:radio", o("dlgReturn")).each(function () {
+                                                if (obj.attr("value") == this.value) {
+                                                    if (obj.attr("checked") == "checked") {
+                                                        this.setAttribute("checked", "checked");
+                                                    }
+                                                }
+                                            });
+                                        });
+
+
+                                        $("#dlg").html('');
+
+                                        flowForm.op.value = 'return';
+
+                                        var fields = lv_cwsWorkflowResult.formObj.fields;
+                                        // 取消验证
+                                        LiveValidation.cancelValidate(lv_cwsWorkflowResult.formObj.fields);
+
+                                        if (o('flowForm').onsubmit) {
+                                            if (o('flowForm').onsubmit()) {
+                                                $('#flowForm').submit();
+                                            } else {
+                                                layer.msg('[(#{formNotPass})])]', {
+                                                    offset: '6px'
+                                                });
+                                            }
+                                        } else
+                                            $('#flowForm').submit();
+
+                                        // 恢复验证
+                                        LiveValidation.restoreValidate(fields);
+                                    });
+                                    $(this).dialog("close");
+                                }
+                            },
+                            closeOnEscape: true,
+                            draggable: true,
+                            resizable: true,
+                            width: 500
+                        });
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('#bodyBox').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        layer.msg(XMLHttpRequest.responseText, {
+                            offset: '6px'
+                        });
+                    }
+                });
+            }
+            else {
+                $("#dlg").html(o("dlgReturn").innerHTML);
+                $("#dlg").dialog({
+                    title: '[(#{returnUser})]', modal: true,
+                    buttons: {
+                        '[(#{cancel})]': function () {
+                            $(this).dialog("close");
+                        },
+                        '[(#{sure})]': function () {
+                            $("#dlgReturn").html($("#dlg").clone());
+
+                            // IE11中在clone时，会丢失checked属性，在此重新赋予
+                            if (isIE11) {
+                                $("#dlg").find("input").each(function () {
+                                    var obj = $(this);
+                                    $("input:radio", o("dlgReturn")).each(function () {
+                                        if (obj.attr("value") == this.value) {
+                                            if (obj.attr("checked") == "checked") {
+                                                this.setAttribute("checked", "checked");
+                                            }
+                                        }
+                                    });
+                                });
+                            }
+
+                            layer.confirm('[(#{isReturn})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                                flowForm.op.value = 'return';
+
+                                $('#bodyBox').showLoading();
+
+                                var fields = lv_cwsWorkflowResult.formObj.fields;
+                                // 取消验证
+                                LiveValidation.cancelValidate(lv_cwsWorkflowResult.formObj.fields);
+
+                                if (o('flowForm').onsubmit) {
+                                    if (o('flowForm').onsubmit()) {
+                                        $('#flowForm').submit();
+                                    } else {
+                                        layer.msg('[(#{formNotPass})]', {
+                                            offset: '6px'
+                                        });
+                                    }
+                                } else {
+                                    $('#flowForm').submit();
+                                }
+
+                                // 恢复验证
+                                LiveValidation.restoreValidate(fields);
+                            })
+                            $(this).dialog("close");
+                        }
+                    },
+                    closeOnEscape: true,
+                    draggable: true,
+                    resizable: true,
+                    width: 500
+                });
+            }
+        }
+
+        function read(isAfterSaveformvalueBeforeXorCondSelect) {
+            flowForm.op.value = "read";
+
+            if (o('flowForm').onsubmit) {
+                if (o('flowForm').onsubmit()) {
+                    $('#flowForm').submit();
+                } else {
+                    toolbar.setDisabled(0, false);
+                    $('#bodyBox').hideLoading();
+                }
+            } else
+                $('#flowForm').submit();
+        }
+
+        function manualFinish() {
+            $('body').showLoading();
+
+            // 如果是自动存档节点，则先保存表单，然后回到此页面，在onload的时候再FinishActoin
+            [# th:switch="${isAutoSaveArchive}"]
+                [# th:case="true"]
+                    flowForm.op.value = "AutoSaveArchiveNodeManualFinish";
+                [/]
+                [# th:case="*"]
+                    if (o("cwsWorkflowResult").value == "") {
+                        layer.msg('[(#{note})]', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+                    flowForm.op.value = "manualFinish";
+                [/]
+            [/]
+
+            var re = true;
+            try {
+                re = flowForm.onsubmit();
+            } catch (e) {
+            }
+            if (re) {
+                $("#flowForm").submit();
+            }
+        }
+
+        function manualFinishAgree() {
+            layer.confirm('[(#{endFlowAgree})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                flowForm.op.value = "manualFinishAgree";
+                var re = true;
+                try {
+                    re = flowForm.onsubmit();
+                } catch (e) {
+                }
+                if (re) {
+                    $("#flowForm").submit();
+                }
+            })
+        }
+
+        function toRetuner() {
+            layer.confirm('[(#{isDirectBack})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                o("flowAction").value = "toRetuner";
+                SubmitResult();
+            })
+        }
+
+        function discard() {
+            layer.confirm('[(#{isDiscard})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                $.ajax({
+                    type: "post",
+                    url: "flow/discard.do",
+                    data: {
+                        flowId: '[(${flowId})]'
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        if (data.res == 0) {
+                            $.toaster({
+                                "priority": "info",
+                                "message": data.msg
+                            });
+                        } else {
+                            layer.msg(data.msg, {
+                                // icon: 1,
+                                offset: '6px',
+                                time: 2000 // 2秒关闭（如果不配置，默认是3秒）
+                            }, function () {
+                                window.location.href = 'flow/flowListPage.do?displayMode=1';
+                            });
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        layer.alert(XMLHttpRequest.responseText);
+                    }
+                });
+            })
+        }
+
+        function del() {
+            layer.confirm('[(#{isDeleteFlow})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                $.ajax({
+                    type: "post",
+                    url: "flow/del.do",
+                    data: {
+                        flowId: "[(${flowId})]"
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        if (data.ret == "0") {
+                            layer.msg(data.msg, {
+                                offset: '6px'
+                            });
+                        } else {
+                            layer.alert(data.msg, {
+                                yes: function() {
+                                    closeActiveTab();
+                                }
+                            });
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        layer.msg(XMLHttpRequest.responseText, {
+                            offset: '6px'
+                        });
+                    }
+                });
+            })
+        }
+
+        function manage() {
+            var title = '[(${flowTitle})]';
+            addTab(title, 'admin/flow_predefine_frame.jsp?flowTypeCode=[(${flowTypeCode})]');
+        }
+
+        function SubmitNotDelive() {
+            // 如果本节点是异或聚合，办理完毕，但不转交
+            layer.confirm('[(#{isCompleted})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                $.ajax({
+                    type: "post",
+                    url: "flow/setFinishAndNotDelive.do",
+                    data: {
+                        myActionId: "[(${myActionId})]",
+                        actionId: "[(${actionId})]"
+                    },
+                    dataType: "html",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        data = $.parseJSON(data);
+                        if (data.ret == "0") {
+                            layer.msg(data.msg, {
+                                offset: '6px'
+                            });
+                        } else {
+                            layer.msg(data.msg, {
+                                // icon: 1,
+                                offset: '6px',
+                                time: 2000 // 2秒关闭（如果不配置，默认是3秒）
+                            }, function() {
+                                window.location.href = "flow/flowListPage.do?displayMode=1";
+                            });
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        layer.alert(XMLHttpRequest.responseText);
+                    }
+                });
+            });
+        }
+
+        // 审批文件，并作痕迹保留
+        function ReviseByUserColor(user, colorindex, doc_id, file_id) {
+            [# th:switch="${isStartNode}"]
+                [# th:case="true"]
+                openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=[(${flowId})]&actionId=[(${actionId})]&doc_id=" + doc_id + "&isRevise=1", 1024, 768);
+                [/]
+                [# th:case="*"]
+                openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=[(${flowId})]&actionId=[(${actionId})]&doc_id=" + doc_id + "&isRevise=0", 1024, 768);
+                [/]
+            [/]
+        }
+
+        function saveArchive(flowId, actionId) {
+            openWin("flow_doc_archive_save.jsp?op=saveFromFlow&flowId=" + flowId + "&actionId=" + actionId, 800, 600);
+        }
+
+        function saveArchiveGov(flowId, actionId) {
+            openWin("visual/moduleAddPage.do?formCode=archive_files&flowId=" + flowId + "&actionId=" + actionId, 800, 600);
+        }
+
+        var disDepts = "";
+        var disNames = "";
+
+        function getDepts() {
+            return disDepts;
+        }
+
+        function distributeDoc(flowId) {
+            openWin("paper/paper_distribute.jsp?flowId=" + flowId + "&actionId=[(${actionId})]&myActionId=[(${myActionId})]", 800, 600);
+        }
+
+        var curUserSelectActionId;
+
+        function OpenModifyWin(internalName, actionId, isXor, curActionId) {
+            curUserSelectActionId = actionId;
+            if (!curActionId) {
+                curActionId = -1;
+            }
+            openWin('flow_action_modify.jsp?actionId=' + actionId + '&isXor=' + isXor + '&curActionId=' + curActionId, 800, 600)
+        }
+
+        function getXorSelect() {
+            o("XorNextActionInternalNames").value = getCheckboxValue("XorActionSelected");
+        }
+
+        function switchProcessList() {
+            if (o("imgSwitchProcess") == null) {
+                return;
+            }
+            if (o("imgSwitchProcess").src.indexOf("show.png") != -1) {
+                $("#processListTab").show();
+                o("imgSwitchProcess").src = "images/hide.png";
+                $("#spanSwitchProcess").html('&nbsp;&nbsp;[(#{collapse})]"/>');
+                o("imgSwitchProcess").alt = '[(#{flowProcess})]';
+                o("imgSwitchProcess").title = '[(#{flowProcess})]';
+            } else {
+                $("#processListTab").hide();
+                o("imgSwitchProcess").src = "images/show.png";
+                $("#spanSwitchProcess").html('&nbsp;&nbsp;[(#{expansion})]');
+                o("imgSwitchProcess").alt = '[(#{displayProcess})]';
+                o("imgSwitchProcess").title = '[(#{displayProcess})]';
+            }
+        }
+
+        $(function () {
+            switchProcessList();
+
+            $(window).goToTop({
+                showHeight: 1,//设置滚动高度时显示
+                speed: 500 //返回顶部的速度以毫秒为单位
+            });
+        });
+    </script>
+</head>
+<body>
+<div id="loading">
+    <img src="images/loading.gif" alt="loading.." style="margin-top:50px"/>
+</div>
+<div id="bodyBox" class="form-inline">
+    <div id="toolbar" class="toolbar-box"></div>
+    <div id="tipPhrase"></div>
+    <script th:inline="javascript">
+        $(function() {
+            $.ajax({
+                type: "post",
+                url: "inc/tip_phrase.jsp",
+                data: {},
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    $('#tipPhrase').html(data);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    //请求出错处理
+                    layer.alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    </script>
+    <form id="flowForm" name="flowForm" action="flow/finishAction.do" method="post" enctype="multipart/form-data">
+        <div>
+            <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="main flow-user">
+                <tr>
+                    <td align="left">
+                        <span id="spanNextUser" class="span-next-user" th:attr="style=${isNotShowNextUsers} ? 'display:none':''"></span>
+                        <!--提醒是否为加签-->
+                        <th:block th:if="${isPlus}">
+                        <div style="margin-top:10px">
+                            <img src="images/alert.gif" align="absmiddle"/>&nbsp;
+                            [(#{plusing})]
+                            <th:block th:if="${isPlusBefore}">
+                            ，[(#{completedPlus})]
+                            </th:block>
+                        </div>
+                        </th:block>
+                    </td>
+                    <td width="30%" align="right" style="font-size:12px; font-weight:normal">
+                        <th:block th:if="${isMyActionExpire}">
+                            <img src="images/clock.png" align="absmiddle"/>&nbsp;&nbsp;[(#{expirationDate})]：[[${expirationDate}]]
+                        </th:block>
+                        <span th:attr="style=${isActionSendMsg} ? '':'display:none'">
+                            <th:block th:if="${isUseSms}">
+                            <input id="isToMobile" name="isToMobile" value="true" type="checkbox" th:checked="${flowAutoSMSRemind}" />
+                            [(#{sms})]
+                            </th:block>
+
+                            <input id="isUseMsg" name="isUseMsg" value="true" type="checkbox" th:checked="${flowAutoMsgRemind}" />
+                            [(#{message})]&nbsp;&nbsp; <span id="spanLoad"></span>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <input name="flowAction" type="hidden"/>
+        <div style="text-align:left; padding:0 5px; margin-bottom:10px; color:#888888;margin-top:5px;">
+            <th:block th:switch="${isFlowLevelDisplay} and !${isFlowStarted}">
+                <th:block th:case="true">
+                    <input name="cwsWorkflowLevel" type="radio" th:value="${LEVEL_NORMAL}" checked/><img style="margin-left: 5px" src="images/general.png" align="absmiddle"/>&nbsp;[(#{ordi})]
+                    <input name="cwsWorkflowLevel" type="radio" th:value="${LEVEL_IMPORTANT}"/><img style="margin-left: 5px" src="images/important.png" align="absmiddle"/>&nbsp;[(#{impor})]
+                    <input name="cwsWorkflowLevel" type="radio" th:value="${LEVEL_URGENT}"/><img style="margin-left: 5px" src="images/urgent.png" align="absmiddle"/>&nbsp;[(#{emergent})]
+                    <script th:inline="javascript">
+                        setRadioValue("cwsWorkflowLevel", "[(${level})]");
+                    </script>
+                </th:block>
+                <th:block th:case="*">
+                    [(${levelImg})]
+                </th:block>
+            </th:block>
+
+            <lable style="">&nbsp; ID：[[${flowId}]]&nbsp;</lable>
+            &nbsp;[(#{tit})]：
+            <th:block th:switch="${isFlowStarted}">
+                <th:block th:case="true">
+                    [[${flowTitle}]]
+                    <input type="hidden" id="cwsWorkflowTitle" name="cwsWorkflowTitle" th:value="${flowTitle}" style="width:200px;"/>&nbsp;&nbsp;
+                </th:block>
+                <th:block th:case="*">
+                    <input id="cwsWorkflowTitle" name="cwsWorkflowTitle" th:value="${flowTitle}" th:readonly="${isFlowTitleReadonly}" style="border:1px solid #cccccc; color:#888888;width:200px;" size="40"/>&nbsp;
+                </th:block>
+            </th:block>
+            [(#{organ})]：[(${starterRealName})]
+            <th:block th:if="${isFlowStarted}">
+                &nbsp;[(#{organDate})]： [(${#dates.format(beginDate, 'yyyy-MM-dd')})]
+            </th:block>
+            <th:block th:switch="${isFlowFinished}">
+                <th:block th:case="true">
+                    <th:block th:if="${isReactive}">
+                        &nbsp;&nbsp;<span style="color: red;" title="[(#{alteringTitle})]">
+                        [(#{altering})]</span>
+                    </th:block>
+                </th:block>
+                <th:block th:case="*">
+                    <th:block th:if="${isAlter}">
+                        &nbsp;&nbsp;
+                        <span style="color: red;" title="[(#{alteringTitle})]">
+                            [(#{altering})]
+                            [(#{alterUser})][[${alterUserRealName}]]&nbsp;&nbsp;
+                            [(${#dates.format(alterTime, 'MM-dd HH:mm')})]
+                        </span>
+                    </th:block>
+                </th:block>
+            </th:block>
+
+            <span th:attr="style=${flowIsRemarkShow} ? '':'display:none'">
+            &nbsp;&nbsp;[(#{rem})]：
+            <input id="cwsWorkflowResult" name="cwsWorkflowResult" size="30" style="border:1px solid #cccccc; color:#888888;width:250px;" th:value="${myActionResult}"/>
+            </span>
+        </div>
+        <div class="main-content">
+            <div style="text-align:center">
+                <span id="switchProcessBox" style="cursor:pointer" onclick="switchProcessList()">
+                    <img id="imgSwitchProcess" src="images/hide.png" alt="[[#{displayProcess}]]"/><span id="spanSwitchProcess" style="font-size: 12px;color:#606060;">&nbsp;&nbsp;[[#{expansion}]]</span>
+                </span>
+            </div>
+            <table id="processListTab" width="98%" class="tabStyle_1 percent98" style="display:none;margin-top:10px;background-color:#fff">
+                <thead>
+                <tr>
+                    <td class="tabStyle_1_title" width="7%" align="center">[(#{handler})]</td>
+                    <td class="tabStyle_1_title" width="5%" align="center">[(#{bearer})]</td>
+                    <td class="tabStyle_1_title" width="8%" align="center">[(#{task})]</td>
+                    <td class="tabStyle_1_title" width="7%" align="center">[(#{startTime})]</td>
+                    <td class="tabStyle_1_title" width="7%" align="center">[(#{handleTime})]</td>
+                    <td th:if="${flowPerformanceDisplay}" class="tabStyle_1_title" width="7%" align="center">[(#{remainTime})]</td>
+                    <td class="tabStyle_1_title" width="5%" align="center">[(#{timeSpent})]
+                        ([[${flowExpireUnit}]])
+                    </td>
+                    <td th:if="${flowPerformanceDisplay}" class="tabStyle_1_title" width="4%" align="center">[(#{achievements})]</td>
+                    <td th:if="${isReactive}" class="tabStyle_1_title" width="6%" align="center">[(#{alterTime})]</td>
+                    <td class="tabStyle_1_title" width="6%" align="center">[(#{handle})]</td>
+                    <td class="tabStyle_1_title" width="12%" align="center">[(#{rem})]</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="highlight" th:each="json : ${aryMyAction}">
+                    <td>
+                        <th:block th:if="${json[isExpired]}">
+                            <img src="images/flow/expired.png" align="absmiddle" alt="[[#{timeOut}]]"/>
+                        </th:block>
+                        [[${json.userRealName}]]
+                    </td>
+                    <td>
+                        [[${json.privRealName}]]
+                    </td>
+                    <td>[[${json.actionTitle}]]</td>
+                    <td align="center">
+                        [[${#dates.format(json.receiveDate, 'yyyy-MM-dd')}]]
+                    </td>
+                    <td align="center">
+                        [[${#dates.format(json.checkDate, 'yyyy-MM-dd')}]]
+                    </td>
+                    <td th:if="${flowPerformanceDisplay}" align="center">
+                        [[${json.remainDate}]]
+                    </td>
+                    <td align="center">
+                        [[${json.workDuration}]]
+                    </td>
+                    <td th:if="${flowPerformanceDisplay}" align="center">
+                        [[${json.performance}]]
+                    </td>
+                    <td th:if="${isReactive}" align="center">
+                        [[${#dates.format(json.alterTime, 'yy-MM-dd HH:mm')}]]
+                    </td>
+                    <td align="center">
+                        [[${json.checkStatusName}]]
+                        <th:block th:if="isResultDesc">
+                            [[${json.resultDesc}]]
+                        </th:block>
+                    </td>
+                    <td align="center">
+                        [[${json.result}]]
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div id="dlgReturn" style="display:none" th:if="${hasReturnAction}">
+                [(#{backTo})]：
+                <span th:each="json : ${aryReturnAction}">
+                    <input type="checkbox" name="returnId" th:value="${json.actionId}" checked="checked"/>
+                    [[${json.actionTitle}]]：[[${json.realName}]]
+                </span>
+            </div>
+
+            <table id="tableBox" width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="35%" align="center">
+                        <table class="percent98" border="0" align="center" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td align="left" style="padding-top:5px;">
+                                    <th:block th:if="${isHasAttachment}">
+                                        <script>initUpload();</script>
+                                    </th:block>
+                                    <input type="hidden" name="flowId" th:value="${flowId}"/>
+                                    <input type="hidden" name="actionId" th:value="${actionId}"/>
+                                    <input type="hidden" name="myActionId" th:value="${myActionId}"/>
+                                    <input type="hidden" name="XorNextActionInternalNames"/>
+                                    <input type="hidden" name="op" value="saveformvalue"/>
+                                    <input type="hidden" name="isAfterSaveformvalueBeforeXorCondSelect"/>
+                                    <textarea name="formReportContent" style="display:none"></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                        <div id="attBox"></div>
+                        <th:block th:if="${canQuery}">
+                        <div id="formQueryBox"></div>
+                        <script th:inline="javascript">
+                            function onQueryRelateFieldChange() {
+                                $.ajax({
+                                    type: "post",
+                                    contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                                    url: "[(${queryAjaxUrl})]",
+                                    data: {
+                                        id: "[(${queryId})]",
+                                        [# th:each="key : ${queryCond.keySet()}"]
+                                            [(${key})] : o("[(${key})]").value,
+                                        [/]
+                                        flowTypeCode : "[(${flowTypeCode})]"
+                                    },
+                                    dataType: "html",
+                                        beforeSend:function (XMLHttpRequest) {
+                                        $('#bodyBox').showLoading();
+                                    },
+                                    success: function (data, status) {
+                                        // 如果存在queryBox（内置于表单中）
+                                        if (o("queryBox")) {
+                                            o("queryBox").innerHTML = data;
+                                        } else {
+                                            o("formQueryBox").innerHTML = data;
+                                        }
+
+                                        $('#formQueryTable').fixheadertable({
+                                            caption: '[(${queryName})]',
+                                            colratio: [[(${colRatio})]],
+                                            // height      : 150,
+                                            width: [(${queryTableWidth})],
+                                            zebra: true,
+                                            // sortable    : true,
+                                            sortedColId: 1,
+                                            resizeCol: true,
+                                            pager: true,
+                                            rowsPerPage: 25, // 10 25 50 100
+                                            // sortType    : ['integer', 'string', 'string', 'string', 'string', 'date'],
+                                            dateFormat: 'm/d/Y'
+                                        });
+                                    },
+                                    complete: function (XMLHttpRequest, status) {
+                                        $('#bodyBox').hideLoading();
+                                    },
+                                    error: function (XMLHttpRequest, textStatus) {
+                                        $('#bodyBox').hideLoading();
+                                        layer.alert(XMLHttpRequest.responseText);
+                                    }
+                                });
+                            }
+
+                            $(function () {
+                                onQueryRelateFieldChange();
+                            });
+
+                            [# th:each="qField : ${queryCond.keySet()}"]
+                            $(function () {
+                                var oldValue_[(${qField})] = o("[(${qField})]").value;
+
+                                setInterval(function () {
+                                    if (oldValue_[(${qField})] != o("[(${qField})]").value) {
+                                        onQueryRelateFieldChange();
+                                        oldValue_[(${qField})] = o("[(${qField})]").value;
+                                    }
+                                }, 500);
+                            });
+                            [/]
+                        </script>
+                        </th:block>
+
+                        <div id="formContent" class="form-content">
+                            <th:block th:switch="${isTab}">
+                                <th:block th:case="true">
+                                    [[${tabs}]]
+                                    <script th:inline="javascript">
+                                        $(function () {
+                                            $('#tabs').tabs();
+                                        });
+                                    </script>
+                                </th:block>
+                                <th:block th:case="*">
+                                    [(${content})]
+                                </th:block>
+                            </th:block>
+                        </div>
+                        <br/>
+                        <div th:if="${isReply} and ${isFlowStarted}" id="divAnnexBox" style="width:98%;background-color:#efefef;padding-top:10px;padding-bottom:10px;margin-bottom:50px;">
+                            <div id="divAnnex" style="width:98%;background-color:white;padding-top:10px;">
+                                <table width="95%" border="0" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td width="48%" align="left" style="text-align:left"><strong>&nbsp;附言：</strong>
+                                            <th:block th:if="${isProgress}">
+                                            （总进度<span id="totalProgress">[[${progress}]]</span>%）
+                                            </th:block>
+                                        </td>
+                                        <td width="52%" style="text-align:right">
+                                            <input id="showDiv" style="display:none" class="mybtn2" type="button" value="展开" onclick="show()"/>
+                                            <input id="notShowDiv" class="mybtn2" type="button" value="收起" onclick="notshow()"/>
+                                            <input class="mybtn2" type="button" value="回复" onclick="addMyReply('0')"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left" colspan="2">
+                                            <div id="myReplyTextarea0" style="display:none; clear:both;position:relative;margin-bottom:40px">
+                                                <textarea name="myReplyTextareaContent" id="get0" class="myTextarea"></textarea>
+                                                <span align="left" th:title="#{othersHidden}" style="cursor:pointer;" onclick="chooseHideComment(this);">
+                                                    <img th:src="@{${skinPath} + '/images/admin/functionManage/checkbox_not.png'}"/>&nbsp;
+                                                    [(#{needHidden})]
+                                                    <input type="hidden" id="isSecret0" name="isSecret0" value="0"/>
+                                                </span>
+                                                <th:block th:if="${isProgress}">
+                                                &nbsp;&nbsp;进度&nbsp;<input id="cwsProgress" name="cwsProgress" style="width:30px; height:22px;" value="0" readonly/>
+                                                <div id="slider" style="margin-left:10px;width:200px; display:inline-block; *display:inline;*zoom:1;"></div>
+                                                </th:block>
+                                                <script th:inline="javascript">
+                                                    $(function () {
+                                                        $("#slider").slider({
+                                                            value: 0,
+                                                            min: 0,
+                                                            max: 100,
+                                                            step: 5,
+                                                            slide: function (event, ui) {
+                                                                $("#cwsProgress").val(ui.value);
+                                                            }
+                                                        });
+                                                    });
+                                                </script>
+
+                                                <input type="hidden" id="myActionId0" name="myActionId0" th:value="${myActionId}"/>
+                                                <input type="hidden" id="discussId0" name="discussId0" value="0"/>
+                                                <input type="hidden" id="flow_id0" name="flow_id0" th:value="${flowId}"/>
+                                                <input type="hidden" id="action_id0" name="action_id0" value="0"/>
+                                                <input type="hidden" id="user_name0" name="user_name0" th:value="${myUserName}"/>
+                                                <input type="hidden" id="userRealName0" name="userRealName0" th:value="${myRealName}"/>
+                                                <input type="hidden" id="reply_name0" name="reply_name0" th:value="${myUserName}"/>
+                                                <input type="hidden" id="parent_id0" name="parent_id0" value="-1"/>
+                                                <input class="mybtn" type="button" th:value="#{sure}" onclick="submitPostscript('0','0')"/>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <hr class="hrLine"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div id="divShow" style="width:98%;">
+                                    <table id="tablehead" class="" width="95%" border="0" cellspacing="3" cellpadding="0">
+                                    </table>
+                                    <table th:each="json : ${aryAnnex}" th:id="'replaytable' + ${json[id]}" class="" width="95%" border="0" cellspacing="3" cellpadding="0">
+                                        <tr th:id="'trReply' + ${json[id]}">
+                                            <td width="50" style="text-align:left;" class="nameColor">
+                                                [[${json[realName]}]]
+                                            </td>
+                                            <td width="70%" style="text-align:left;word-break:break-all">
+                                                <th:block th:if="${json[isProgress]}">
+                                                <div>进度：[[${json[progress]}]]%</div>
+                                                </th:block>
+                                                [[${json[content]}]]
+                                                <th:block th:if="${isFlowManager}"></th:block>
+                                                <a href="javascript:;" th:onclick="delAnnex('[(${json[id]})]')">[[(#{delete})]]</a>
+                                                </th:block>
+                                            </td>
+                                            <td width="" style="text-align:right;">
+                                                [[${#dates.format(json[addDate], 'yyyy-MM-dd HH:mm:ss')}]]
+                                                <a align="right" class="comment" href="javascript:;" th:onclick="addMyReply('[(${json[id]})]')"><img th:title='#{replyTo}' src="images/dateline/replyto.png"/></a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="left" colspan="3">
+                                                <div th:id="'myReplyTextarea' + ${json[id]}" style="display:none; clear:both;position:relative;margin-bottom:40px">
+                                                    <textarea name="myReplyTextareaContent" th:id="'get' + ${json[id]}" class="myTextarea"></textarea>
+                                                    <span align="left" th:title="#{othersHidden}" style="cursor:pointer;" onclick="chooseHideComment(this);">
+                                                        <img th:src="@{${skinPath} + '/images/admin/functionManage/checkbox_not.png'}"/>
+                                                        &nbsp;[(#{needHidden})]
+                                                        <input type="hidden" th:id="'isSecret' + ${json[id]}" th:name="'isSecret' + ${json[id]}" value="0"/>
+                                                    </span>
+                                                    <input type="hidden" th:id="'myActionId' + ${json[id]}" th:name="'myActionId' + ${json[id]}" value=""/>
+                                                    <input type="hidden" th:id="'discussId' + ${json[id]}" th:name="'discussId' + ${json[id]}" th:value="${json[id]}"/>
+                                                    <input type="hidden" th:id="'flow_id' + ${json[id]}" th:name="'flow_id' + ${json[id]}" th:value="${json[flowId]}"/>
+                                                    <input type="hidden" th:id="'action_id' + ${json[id]}" th:name="'action_id' + ${json[id]}" th:value="${json[actionId]}"/>
+                                                    <input type="hidden" th:id="'user_name' + ${json[id]}" th:name="'user_name' + ${json[id]}" th:value="${myUserName}"/>
+                                                    <input type="hidden" th:id="'userRealName' + ${json[id]}" th:name="'userRealName' + ${json[id]}" th:value="${myRealName}"/>
+                                                    <input type="hidden" th:id="'reply_name' + ${json[id]}" th:name="'reply_name' + ${json[id]}" th:value="${json[userName]}"/>
+                                                    <input type="hidden" th:id="'parent_id' + ${json[id]}" th:name="'parent_id' + ${json[id]}" th:value="${json[id]}"/>
+                                                    <input class="mybtn" type="button" th:value="#{sure}" th:onclick="submitPostscript('[(${json[id]})]','[(${json[id]})]')"/>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <th:block th:each="jo : ${json[aryAnnexSub]}">
+                                        <tr th:id="'trReply' + ${jo[id]}" th:attr="pId=${json[id]}">
+                                            <td width="180" style="text-align:left;" class="nameColor">
+                                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                [[${jo[realName]}]]
+                                                &nbsp;回复&nbsp;[[${jo[replyRealName]}]]&nbsp;:
+                                            </td>
+                                            <td style="text-align:left;">
+                                                [[${jo[content]}]]
+                                                <th:block th:if="${isFlowManager}">
+                                                <a href="javascript:;" th:onclick="delAnnex('[(${jo[id]})]')">[[(#{delete})]]</a>
+                                                </th:block>
+                                            </td>
+                                            <td style="text-align:right;">
+                                                [[${#dates.format(jo[addDate], 'yyyy-MM-dd HH:mm:ss')}]]
+                                                <a align="right" class="comment" href="javascript:;" th:onclick="addMyReply('[(${jo[id]})]')"><img th:title='#{replyTo}' src="images/dateline/replyto.png"/></a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td align="left" colspan="3">
+                                                <div th:id="'myReplyTextarea' + ${jo[id]}" style="display:none; clear:both;position:relative;margin-bottom:40px">
+                                                    <textarea name="myReplyTextareaContent" th:id="'get' + ${jo[id]}" class="myTextarea"></textarea>
+                                                    <span align="left" title="[[#{othersHidden}]]" style="cursor:pointer;" onclick="chooseHideComment(this);">
+                                                        <img th:src="@{${skinPath} + '/images/admin/functionManage/checkbox_not.png'}"/>&nbsp;
+                                                        [[#{needHidden}]]
+                                                        <input type="hidden" th:id="'isSecret' + ${jo[id]}" th:name="'isSecret' + ${jo[id]}" value="0"/>
+                                                    </span>
+                                                    <input type="hidden" th:id="'myActionId' + ${jo[id]}" th:name="'myActionId' + ${jo[id]}" value=""/>
+                                                    <input type="hidden" th:id="'discussId' + ${jo[id]}" th:name="'discussId' + ${jo[id]}" th:value="${jo[id]}"/>
+                                                    <input type="hidden" th:id="'flow_id' + ${jo[id]}" th:name="'flow_id' + ${jo[id]}" th:value="${jo[flowId]}"/>
+                                                    <input type="hidden" th:id="'action_id' + ${jo[id]}" th:name="'action_id' + ${jo[id]}" th:value="${jo[actionId]}"/>
+                                                    <input type="hidden" th:id="'user_name' + ${jo[id]}" th:name="'user_name' + ${jo[id]}" th:value="${myUserName}"/>
+                                                    <input type="hidden" th:id="'userRealName' + ${jo[id]}" th:name="'userRealName' + ${jo[id]}" th:value="${myRealName}"/>
+                                                    <input type="hidden" th:id="'reply_name' + ${jo[id]}" th:name="'reply_name' + ${jo[id]}" th:value="${jo[userName]}"/>
+                                                    <input type="hidden" th:id="'parent_id' + ${jo[id]}" th:name="'parent_id' + ${jo[id]}" th:value="${json[id]}"/>
+                                                    <input class="mybtn" type="button" th:value="#{sure}" th:onclick="submitPostscript('[(${jo[id]})]','[(${json[id]})]')"/>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </th:block>
+                                        <tr th:id="'trline' + ${json[id]}">
+                                            <td colspan="3">
+                                                <hr class="hrLine"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <input name="returnBack" th:value="${isReturnBack}?'true':'false'" type=hidden>
+                    </td>
+                </tr>
+            </table>
+        
+   		 <div id="processBox"></div>
+        
+        </div>
+    </form>
+    <br/>
+    <div id="dlg" style="display:none"></div>
+
+    <div id="plusDlg" style="display:none">
+        <table width="80%" class="tabStyle_1 percent80">
+            <tr>
+                <td width="23%"><strong>
+                    [(#{plusType})]</strong></td>
+                <td width="77%">
+                    <input th:if="${isFlowStarted}" id="plusType" name="plusType" type="radio" checked th:value="${PLUS_TYPE_BEFORE}"/>
+                    <th:block th:if="${isFlowStarted}">[(#{bplus})]</th:block>
+                    <input id="plusType" name="plusType" type="radio" th:checked="${!isFlowStarted}" th:value="${PLUS_TYPE_AFTER}"/>
+                    [(#{aplus})]
+                    <input id="plusType" name="plusType" type="radio" th:value="${PLUS_TYPE_CONCURRENT}"/>
+                    [(#{cplus})]
+                </td>
+            </tr>
+            <tr id="plusModeTr">
+                <td><strong>[(#{approvalType})]</strong></td>
+                <td>
+                    <input id="plusMode" name="plusMode" type="radio" th:value="${PLUS_MODE_ORDER}"/>
+                    [(#{approvalOrder})]<br/>
+                    <input id="plusMode" name="plusMode" type="radio" th:value="${PLUS_MODE_ONE}"/>
+                    [(#{approvalDown})]<br/>
+                    <input id="plusMode" name="plusMode" type="radio" th:value="${PLUS_MODE_ALL}" checked/>
+                    [(#{approvalAll})]
+                </td>
+            </tr>
+            <tr>
+                <td><strong>[(#{selectPeople})]</strong></td>
+                <td>
+                    <input name="plusUsers" id="plusUsers" type="hidden" value=""/>
+                    <input name="plusUserRealNames" readonly wrap="yes" id="plusUserRealNames"/>
+                    <input class="btn" th:title="#{selectUser}" onclick="openWin('user_multi_sel.jsp', 900, 730)" type="button" th:value="#{choose}"/>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="toolbar2" style="height:25px; clear:both"></div>
+</div>
+<div th:if="${isDebug}" class="sidebar">
+    <div class="subNav"><h6><strong>调试面板</strong></h6></div>
+    <hr/>
+    <div class="subNav"><h6>用户：[[${myRealName}]]
+        <a target="_top" href="index">重新登录</a>
+    </h6></div>
+    <div class="subNav"><h6><input title="应用可写字段及隐藏字段" onclick="applyProps()" type="button" class="btn btn-default" value="确定"/></h6></div>
+    <div class="subNav"><h6>可写字段</h6></div>
+    <ul class="navContent">
+        <th:block th:each="json : ${aryFieldWritable}">
+        <li>
+            <input name="fieldsWrite" type="checkbox" th:value="${json[fieldName]}" th:title="${json[fieldTitle]}" th:checked="${json[isWrite]}" />
+            [[${json[fieldTitle]}]]
+        </li>
+        </th:block>
+        <th:block th:each="json : ${aryNestFieldWritable}">
+        <li>
+            <input name="fieldsWrite" type="checkbox" th:value="'nest.' + ${json[fieldName]}" th:title="${json[fieldTitle]}" th:checked="${json[isWrite]}" />
+            [[${json[fieldText]}]]
+        </li>
+        </th:block>
+    </ul>
+    <div class="subNav"><h6>隐藏字段</h6></div>
+    <ul class="navContent">
+        <th:block th:each="json : ${aryFieldHide}">
+        <li>
+            <input name="fieldsHide" type="checkbox" th:value="${json[fieldName]}" th:title="${json[fieldTitle]}" th:checked="${isHide}" />
+            [[${json[fieldTitle]}]]
+        </li>
+        </th:block>
+        <th:block th:each="json : ${aryNestFieldHide}">
+        <li>
+            <input name="fieldsHide" type="checkbox" th:value="'nest.' + ${json[fieldName]}" th:title="${json[fieldTitle]}" th:checked="${json[isHide]}" />
+            [[${josn[fieldText]}]]
+        </li>
+        </th:block>
+    </ul>
+    <th:block th:if="${isLicenseSrc}">
+    <div class="subNav"><h6>验证脚本</h6></div>
+    <ul class="navContent">
+        <li><input type="button" class="btn btn-default" value="运行" onclick="runValidateScript()"/></li>
+        <li>
+            <div id="boxValidateResult" class="console">
+            </div>
+        </li>
+    </ul>
+    <div class="subNav"><h6>结束脚本</h6></div>
+    <ul class="navContent">
+        <li><input type="button" class="btn btn-default" value="运行" onclick="runFinishScript()"/></li>
+        <li>
+            <div id="boxFinishResult" class="console">
+
+            </div>
+        </li>
+    </ul>
+    <div class="subNav"><h6>流转脚本</h6></div>
+    <ul class="navContent">
+        <li><input type="button" class="btn btn-default" value="运行" onclick="runDeliverScript()"/></li>
+        <li>
+            <div id="boxDeliverResult" class="console">
+
+            </div>
+        </li>
+    </ul>
+    </th:block>
+    </div>
+</div>
+<script th:inline="javascript">
+    function runDeliverScript() {
+        $.ajax({
+            type: "post",
+            url: "flow/runDeliverScript.do",
+            data: {
+                myActionId: [(${myActionId})],
+                flowId: [(${flowId})]
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == "1") {
+                    $("#boxDeliverResult").html(data.msg);
+                } else {
+                    $("#boxDeliverResult").html("<font style='color:red'>" + data.msg + "</font>");
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                layer.alert(XMLHttpRequest.responseText);
+                $('#bodyBox').hideLoading();
+            }
+        })
+    }
+
+    function runFinishScript() {
+        $.ajax({
+            type: "post",
+            url: "flow/runFinishScript.do",
+            data: {
+                actionId: [(${actionId})],
+                flowId: [(${flowId})]
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                data.msg += "<br/>事件运行结束";
+                if (data.ret == "1") {
+                    $("#boxFinishResult").html(data.msg);
+                } else {
+                    $("#boxFinishResult").html("<font style='color:red'>" + data.msg + "</font>");
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                layer.alert(XMLHttpRequest.responseText);
+                $('#bodyBox').hideLoading();
+            }
+        });
+    }
+
+    function runValidateScript() {
+        $.ajax({
+            type: "post",
+            url: "flow/runValidateScript.do",
+            data: {
+                actionId: [(${actionId})],
+                flowId: [(${flowId})]
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == "1") {
+                    $("#boxValidateResult").html(data.msg);
+                } else {
+                    $("#boxValidateResult").html("<font style='color:red'>" + data.msg + "</font>");
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                layer.alert(XMLHttpRequest.responseText);
+                $('#bodyBox').hideLoading();
+            }
+        });
+    }
+
+    function applyProps() {
+        var fieldWrite = getCheckboxValue("fieldsWrite");
+        var fieldHide = getCheckboxValue("fieldsHide");
+
+        var writes = fieldWrite.split(",");
+        var hides = fieldHide.split(",");
+        for (var i = 0; i < hides.length; i++) {
+            if (hides[i] == '') {
+                continue;
+            }
+            for (var j = 0; j < writes.length; j++) {
+                if (hides[i] == writes[j]) {
+                    var title = $($("input[value='" + hides[i] + "']")[0]).attr("title");
+                    layer.msg("出现相同字段：" + title + "，注意可填写字段与隐藏字段不能有重叠！", {
+                        offset: '6px'
+                    });
+                    return;
+                }
+            }
+        }
+
+        layer.confirm('您确定要应用么？', {icon: 3, title: '提示'}, function (index) {
+            $.ajax({
+                type: "post",
+                url: "flow/applyProps.do",
+                data: {
+                    fieldWrite: fieldWrite,
+                    fieldHide: fieldHide,
+                    actionId: [(${actionId})],
+                    flowId: [(${flowId})]
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#bodyBox').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    if (data.ret == 1) {
+                        layer.msg(data.msg, {
+                            // icon: 1,
+                            offset: '6px',
+                            time: 2000 // 2秒关闭（如果不配置，默认是3秒）
+                        }, function () {
+                            window.location.reload();
+                        });
+                    } else {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#bodyBox').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.alert(XMLHttpRequest.responseText);
+                    $('#bodyBox').hideLoading();
+                }
+            });
+        });
+    }
+</script>
+<script src="js/jquery-contextmenu/jquery.contextMenu.js"></script>
+<script src="js/jquery-contextmenu/jquery.ui.position.min.js"></script>
+<script th:inline="javascript">
+    $(document).ready(function () {
+        var isDebug = [[${isDebug}]];
+        if (isDebug) {
+            var opener = $("a[title='调试面板']")[0];
+
+            if (opener) {
+                opener.id = "mybtn";
+            } else {
+                console.error('开启了调试模式，但是未找到调试面板');
+            }
+
+            $('.sidebar').simpleSidebar({
+                settings: {
+                    opener: '#mybtn',
+                    wrapper: '.wrapper',
+                    animation: {
+                        duration: 0,
+                        easing: 'easeOutQuint'
+                    }
+                },
+                sidebar: {
+                    align: 'right',
+                    width: 300,
+                    closingLinks: 'a',
+                }
+            });
+        }
+    });
+
+    $(function () {
+        $(".subNav").click(function () {
+            // 修改数字控制速度， slideUp(500)控制卷起速度
+            $(this).next(".navContent").slideToggle(500);
+        })
+    })
+
+    function getSelUserNames() {
+        return o("plusUsers").value;
+    }
+
+    function getSelUserRealNames() {
+        return o("plusUserRealNames").value;
+    }
+
+    function setUsers(users, userRealNames) {
+        o("plusUsers").value = users;
+        o("plusUserRealNames").value = userRealNames;
+    }
+
+    function refreshAttachments() {
+        ajaxpage("flow_dispose_ajax_att.jsp?myActionId=[(${myActionId})]&flowId=[(${flowId})]", "attBox");
+    }
+
+    function renameAtt(attId) {
+        if (o("spanAttName" + attId).innerHTML == o("attName" + attId).value) {
+            o("spanRename" + attId).style.display = "";
+            o("spanAttNameInput" + attId).style.display = "none";
+            o("spanAttLink" + attId).style.display = "";
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "flow/renameAtt.do",
+            data: {
+                attId: attId,
+                newName: o("attName" + attId).value
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == "0") {
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                } else {
+                    o("spanRename" + attId).style.display = "";
+                    o("spanAttNameInput" + attId).style.display = "none";
+                    o("spanAttName" + attId).innerHTML = o("attName" + attId).value;
+                    o("spanAttLink" + attId).style.display = "";
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                layer.alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function changeName(attId) {
+        o("spanRename" + attId).style.display = "none";
+        o("spanAttNameInput" + attId).style.display = "";
+        o("spanAttLink" + attId).style.display = "none";
+    }
+
+    function writeDoc() {
+        openWin("flow/flow_ntko_write_doc.jsp?flowId=[(${flowId})]", 800, 600);
+    }
+
+    // 用于自选用户flow_action_modify.jsp选人后置XorActionSelected为checked
+    function setXORActionChecked(actionId) {
+        var xorObj = document.getElementById("XOR" + actionId);
+        if (xorObj == null)
+            return;
+
+        xorObj.checked = true;
+        $("#dlg input[id=" + "XOR" + actionId + "]").attr("checked", true);
+    }
+
+    function checkXOR(chkObj, actionId) {
+        var xorObj = document.getElementById("XOR" + actionId);
+        if (xorObj == null)
+            return;
+
+        if (chkObj.checked) {
+            $(xorObj).prop('checked', true);
+            $("#dlg input[id=" + "XOR" + actionId + "]").attr("checked", true);
+            return;
+        }
+
+        var isAllUnchecked = true;
+        $("#dlg input[name='" + "WorkflowAction_" + actionId + "']").each(function () {
+            var chked = $(this)[0].checked;
+            chked = "" + chked;
+            if (chked == "true") {
+                isAllUnchecked = false;
+                return false;
+            }
+        });
+
+        if (isAllUnchecked) {
+            xorObj.checked = false;
+            // IE11 无效
+            // $("#dlg input:checkbox[id=" + "XOR" + actionId + "]").attr("checked", false);
+        }
+    }
+
+    function detectZoom() {
+        var ratio = 1,
+            screen = window.screen;
+        var os = getOS();
+        if (os == 1) { // ie
+            if (window.devicePixelRatio) {
+                ratio = window.devicePixelRatio;
+            } else if (screen.deviceXDPI && screen.logicalXDPI) {
+                ratio = screen.deviceXDPI / screen.logicalXDPI;
+            }
+        } else if (os == 3) { // chrome
+            ratio = window.top.outerWidth / window.top.innerWidth;
+        } else if (window.outerWidth !== undefined && window.innerWidth !== undefined) { // firefox、opera
+            if (window.devicePixelRatio) {
+                ratio = window.devicePixelRatio;
+            } else {
+                ratio = window.outerWidth / window.innerWidth;
+            }
+        }
+        ratio = Math.round(ratio * 100) / 100;
+        return ratio;
+    }
+
+    function ShowDesigner() {
+        addTab('流程图', 'flowShowChartPage.do?flowId=[(${flowId})]&isShowNav=0&isTab=[(${!isDebug})]');
+    }
+
+    function setPerson(deptCode, deptName, user, userRealName) {
+        if (userRealName == null || userRealName == "") {
+            layer.msg('[(#{setTransferPerson})]', {
+                offset: '6px'
+            });
+            return false;
+        }
+
+        layer.confirm('[(#{assign1})]' + userRealName + '？', {icon: 3, title: '[(#{prompt})]'}, function (index) {
+            o("spanLoad").innerHTML = "<img src='inc/ajaxtabs/loading.gif' />";
+
+            $.ajax({
+                type: "post",
+                url: "flow/transfer.do",
+                data: {
+                    // op: "transfer",
+                    toUserName: user,
+                    isUseMsg: o("isUseMsg").checked,
+                    isToMobile: o("isToMobile") ? o("isToMobile").checked : "false",
+                    myActionId: "[(${myActionId})]",
+                    cwsWorkflowResult: $("#cwsWorkflowResult").val()
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#bodyBox').showLoading();
+                },
+                success: function (data, status) {
+                    o("spanLoad").innerHTML = "";
+                    data = $.parseJSON(data);
+                    if (data.ret == "0") {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    } else {
+                        done(data.msg);
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#bodyBox').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.msg(XMLHttpRequest.responseText, {
+                        offset: '6px'
+                    });
+                }
+            });
+        });
+    }
+
+    function transfer() {
+        openWin('user_sel.jsp?unitCode=[[${unitCode}]]', 800, 600);
+    }
+
+    function suspend() {
+        layer.confirm('[(#{hang})]', {icon: 3, title: '[(#{prompt})]'}, function (index) {
+            o("spanLoad").innerHTML = "<img src='inc/ajaxtabs/loading.gif' />";
+
+            $.ajax({
+                type: "post",
+                url: "flow/suspend.do",
+                data: {
+                    myActionId: "[(${myActionId})]"
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    //ShowLoading();
+                },
+                success: function (data, status) {
+                    o("spanLoad").innerHTML = "";
+                    data = $.parseJSON(data);
+                    if (data.ret == "0") {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    } else {
+                        done(data.msg, true);
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    //HideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.msg(XMLHttpRequest.responseText, {
+                        offset: '6px'
+                    });
+                }
+            });
+        });
+    }
+
+    function resume() {
+        layer.confirm('[(#{restore})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+            o("spanLoad").innerHTML = "<img src='inc/ajaxtabs/loading.gif' />";
+
+            $.ajax({
+                type: "post",
+                url: "flow/resume.do",
+                data: {
+                    myActionId: "[(${myActionId})]"
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    //ShowLoading();
+                },
+                success: function (data, status) {
+                    o("spanLoad").innerHTML = "";
+                    data = $.parseJSON(data);
+                    if (data.ret == "0") {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    } else {
+                        layer.msg(data.msg, {
+                            // icon: 1,
+                            offset: '6px',
+                            time: 2000 // 2秒关闭（如果不配置，默认是3秒）
+                        }, function () {
+                            window.location.href = "flowDispose.do?myActionId=" + data.myActionId;
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    //HideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.msg(XMLHttpRequest.responseText, {
+                        offset: '6px'
+                    });
+                }
+            });
+        });
+    }
+
+    var tabIdOpener = '[(${tabIdOpener})]';
+
+    function showResponse(data) {
+        // 过滤掉其它字符，只保留JSON字符串
+        var m = data.match(/\{.*?\}/gi);
+        if (m != null) {
+            if (m.length == 1) {
+                data = m[0];
+            }
+        }
+
+        $('#bodyBox').hideLoading();
+
+        try {
+            data = jQuery.parseJSON(data);
+        } catch (e) {
+            layer.msg(data, {
+                offset: '6px'
+            });
+            toolbar.setDisabled(1, false);
+            return;
+        }
+
+        if (data == null)
+            return;
+        if (data.msg != null)
+            data.msg = data.msg.replace(/\\r/ig, "<BR>");
+
+        if (data.ret == "0") {
+            // 下面的注释是因为在有条件分支时，可能为op=saveformvalueBeforeXorCondSelect
+            // if (data.op=="finish") {
+            toolbar.setDisabled(1, false);
+            // }
+            toolbar.setDisabled(0, false);
+            layer.msg(data.msg, {
+                offset: '6px'
+            });
+            return;
+        }
+
+        if (window.top.mainFrame) {
+            // var pos = window.top.mainFrame.getActiveTab().id;
+            // window.top.mainFrame.closeTab("待办流程");
+            window.top.mainFrame.reloadTab("桌面");
+            // window.top.mainFrame.showTab(pos, false);
+        } else {
+            if (window.top.o("content-main")) {
+                reloadTab("0");
+            }
+        }
+        if (tabIdOpener != "") {
+            reloadTab(tabIdOpener);
+        }
+
+        var isDebug = [(${isDebug})];
+        var op = data.op;
+        if (op == "read") {
+            if (isDebug) {
+                layer.alert(data.msg, {
+                    btn: ['确定'],
+                    yes: function() {
+                        window.location.href = "flow/flow_list_debugger.jsp?myActionId=[(${myActionId})]";
+                    }
+                });
+            }
+            else {
+                done(data.msg, true);
+            }
+            return;
+        } else if (op == "saveformvalue") {
+            toolbar.setDisabled(0, false);
+            layer.msg(data.msg, {
+                offset: '6px'
+            });
+            refreshAttachments();
+            delAllUploadFile();
+            return;
+        } else if (op == "AutoSaveArchiveNodeManualFinish") {
+            // 20200428自动存档已经不需要再回到flow_dispose.jsp页面处理了
+            done(data.msg, true);
+            return;
+        } else if (op == "manualFinish" || op == "manualFinishAgree") {
+            done(data.msg, true);
+        } else if (op == "finish") {
+            // 当流程处理后在form_js_表单编码.jsp文件中调用
+            try {
+                onFinishAction(op);
+            }
+            catch (e) {}
+
+            var isCustomRedirectUrl = [(${isCustomRedirectUrl})];
+            if (isCustomRedirectUrl) {
+                layer.alert(msg, {
+                    btn: ['确定'],
+                    yes: function() {
+                        window.location.href = '[(${redirectUrl})]myActionId=[(${myActionId})]';
+                    }
+                });
+            }
+            else {
+                var nextMyActionId = data.nextMyActionId;
+                if (nextMyActionId && nextMyActionId != "") {
+                    layer.alert(data.msg, {
+                        btn: ['确定'],
+                        yes: function() {
+                            window.location.href = 'flowDispose.do?myActionId=' + nextMyActionId;
+                        }
+                    });
+                } else {
+                    if (isDebug) {
+                        layer.alert(data.msg, {
+                            btn: ['确定'],
+                            yes: function() {
+                                window.location.href = 'flow/flow_list_debugger.jsp?myActionId=[(${myActionId})]';
+                            }
+                        });
+                    } else {
+                        done(data.msg, false, op);
+                    }
+                }
+            }
+        } else if (op == "return") {
+            if (isDebug) {
+                layer.alert(data.msg, {
+                    btn: ['确定'],
+                    yes: function() {
+                        window.location.href = 'flow/flow_list_debugger.jsp?myActionId=[(${myActionId})]';
+                    }
+                });
+            } else {
+                done(data.msg);
+            }
+        } else if (op == "saveformvalueBeforeXorCondSelect") {
+            $("#dlg").html(data.msg);
+            // 匹配
+            $.ajax({
+                type: "post",
+                url: "flow/matchBranchAndUser.do",
+                data: {
+                    op: "matchNextBranch",
+                    actionId: "[(${actionId})]",
+                    deptOfUserWithMultiDept: deptOfUserWithMultiDept, // 当前所选的部门
+                    myActionId: "[(${myActionId})]",
+                    askType: 1
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#bodyBox').showLoading();
+                },
+                success: function (data, status) {
+                    $('#bodyBox').hideLoading();
+                    $("#spanNextUser").hide();
+
+                    data = $.parseJSON(data);
+                    console.log('saveformvalueBeforeXorCondSelect result', data);
+                    // 返回中没有ret
+                    /*if (data.ret == 0) {
+                        $('#spanNextUser').html(data.msg);
+                        return;
+                    }*/
+                    if (data.errCode == -2) {
+                        // 不需要显示info
+                        return;
+                    }
+                    else if (data.errCode == -1) {
+                        $('#spanNextUser').html(data.info);
+                        return;
+                    }
+
+                    var rendResult = rendBranchAndUsers(data);
+                    // console.log('rednResult:' + rendResult);
+                    $('#spanNextUser').html(rendResult);
+
+                    // 判断有没有匹配到人员
+                    var hasUserCheckbox = false;
+                    $("input:checkbox", o("spanNextUser")).each(function () {
+                        if (this.name.indexOf('WorkflowAction_') == 0) {
+                            hasUserCheckbox = true;
+                            return;
+                        }
+                    });
+                    var isMatchUserException = false;
+                    if (data.hasOwnProperty('isMatchUserException')) {
+                        isMatchUserException = data.isMatchUserException;
+                    }
+                    // 如果没有匹配到人员且没有“选择用户”按钮
+                    if (!hasUserCheckbox && !data.isBtnSelUserShow && !isMatchUserException && data.errCode!=-3) {
+                        rendResult += "<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;无需选择用户，请点击确定按钮！";
+                    }
+
+                    var isNotShowNextUsers = [(${isNotShowNextUsers})];
+                    if (isNotShowNextUsers) {
+                        if (!isMatchUserException) {
+                            rendResult = "请点击确定按钮<span style='display:none'>" + rendResult + "</span>";
+                        }
+                    }
+
+                    $("#dlg").html(rendResult);
+                    $("#dlg").dialog({
+                        title: '[(#{conditions})]',
+                        modal: true,
+                        // bgiframe:true,
+                        buttons: {
+                            '[(#{cancel})]': function () {
+                                $(this).dialog("close");
+                                toolbar.setDisabled(1, false);
+                                $("#spanNextUser").show();
+                            },
+                            '[(#{sure})]': function () {
+                                $("#spanNextUser").html($("#dlg").clone().html());
+                                // 置选中状态，因为clone不会复制状态
+                                $("#dlg").find("input").each(function () {
+                                    var obj = $(this);
+                                    $("input:checkbox", o("spanNextUser")).each(function () {
+                                        if (obj.attr("value") == this.value) {
+                                            if (obj.attr("checked") == "checked") {
+                                                this.setAttribute("checked", "checked");
+                                            }
+                                        }
+                                    });
+                                });
+
+                                var hasUser = false;
+                                $("input:checkbox", o("spanNextUser")).each(function () {
+                                    if (this.name.indexOf('WorkflowAction_') == 0 && $(this).attr("checked") == "checked") {
+                                        hasUser = true;
+                                    }
+                                });
+
+                                // $("#dlg").clone()中的DIV含有jquery-ui中的class，界面效果比较难看，所以隐藏掉
+                                if (!hasUser) {
+                                    // 20161116 fgf 如果下一节点未匹配到人，则可能需跳过，所以不必再次确认
+                                    // 未选择用户，确定要提交么？
+                                    if (hasUserCheckbox && !confirm('[(#{noUserSelected})]')) {
+                                        return;
+                                    }
+                                }
+
+                                var isAfterSaveformvalueBeforeXorCondSelect = true;
+                                SubmitResult(isAfterSaveformvalueBeforeXorCondSelect);
+                                $(this).dialog("close");
+
+                                $('#bodyBox').showLoading();
+                            }
+                        },
+                        closeOnEscape: true,
+                        draggable: true,
+                        resizable: true,
+                        width: 500
+                    });
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#bodyBox').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.msg(XMLHttpRequest.responseText, {
+                        offset: '6px'
+                    });
+                }
+            });
+        }
+    }
+
+    function showError(pRequest, pStatus, pErrorText) {
+        layer.alert('pStatus=' + pStatus + '\r\n\r\n' + 'pErrorText=' + pErrorText + '\r\n\r\npRequest=' + pRequest);
+    }
+
+    var isReadOnly = [(${isActionKindRead})];
+    // 文件是否已分发
+    var isDocDistributed = [(${isDocDistributed})];
+
+    function toolbarSubmit() {
+        //var fields = lv_cwsWorkflowResult.formObj.fields;
+        // 取消验证
+        //LiveValidation.cancelValidate(lv_cwsWorkflowResult.formObj.fields);
+        //lv_cwsWorkflowResult.formObj.fields.destory();
+
+        try {
+            ctlOnBeforeSerialize();
+        } catch (e) {
+        }
+
+        // hw 20160616 要摧毁校验，包括他不允许为空的*以及错误提示都需要摧毁，再实例化lv_cwsWorkflowResult，再调用FormUtil.doGetCheckJS
+        // FormUtil.doGetCheckJS也要注意，因为它是script标签的，所以一定得去除标签
+        LiveValidation.destroyValidate(lv_cwsWorkflowResult.formObj.fields);
+        $(".LV_presence").remove();
+        lv_cwsWorkflowResult = new LiveValidation('cwsWorkflowResult');
+        //$(".LV_validation_message").remove();
+        [(${checkJsSub})]
+
+        if (!LiveValidation.massValidate(lv_cwsWorkflowResult.formObj.fields)) {
+            layer.msg(LiveValidation.liveErrMsg, {
+                offset: '6px'
+            });
+            return;
+        }
+
+        var canUserStartFlow = [(${canUserStartFlow})];
+        if (canUserStartFlow) {
+            layer.confirm('[(#{startFlow})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                toolbar.setDisabled(1, true);
+                // 必须手动close，否则下一步如有jQuery.dialog会使得其不会自动关闭，而浮于dialog的上方
+                layer.close(index);
+                $('#bodyBox').showLoading();
+                SubmitResult();
+            })
+        } else {
+            layer.confirm('[(#{submitForm})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+                toolbar.setDisabled(1, true);
+                layer.close(index);
+                $('#bodyBox').showLoading();
+                SubmitResult();
+            })
+        }
+    }
+
+    var lv_title = new LiveValidation('cwsWorkflowTitle');
+    lv_title.add(Validate.Presence, {failureMessage: '[(#{writeTitle})]'});
+
+    // 用于massValidate检查表单内容
+    var lv_cwsWorkflowResult = new LiveValidation('cwsWorkflowResult');
+
+    function initToolbar(toolbarId) {
+        // 不能在ready中初始化toolbar，因为有时onload时间可能比较长，会致toolbar要过很长时间才能显示
+        toolbar = new Toolbar({
+            renderTo : toolbarId,
+            // border: 'top',
+            items: [
+                [# th:each="json, stat : ${aryButton}"]
+                [# th:if="${stat.index > 0}"]
+                    ,'-',
+                    [/]
+                    {
+                        type : 'button',
+                        text : '[(${json.text})]',
+                        title: '[(${json.title})]',
+                        bodyStyle : '[(${json.bodyStyle})]',
+                        useable : '[(${json.useable})]',
+                        handler : function() {
+                            [(${json.handler})]
+                        }
+                    }
+                [/]
+            ]
+        })
+        toolbar.render();
+    }
+
+    // 放在$(function...)中时，在ie8下某些时候会出现工具条出不来的情况
+    initToolbar('toolbar');
+    $(function () {
+        // 可以在底部再放一个工具条
+        // initToolbar('toolbar2');
+    });
+
+    function alter() {
+        addTab('[(#{alterTitle})]', 'flow/flow_doc_list.jsp?flowId=[[${flowId}]]');
+    }
+
+    function disagree() {
+        layer.confirm('[(#{endFlow})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+            // 退回时验证数据合法性
+            try {
+                // 在form_js_formCode.jsp中写此方法
+                var r = checkOnRefuse();
+                if (r != "") {
+                    layer.msg(r, {
+                        offset: '6px'
+                    });
+                    return;
+                }
+            } catch (e) {
+            }
+
+            manualFinish();
+        })
+    }
+
+    // ajaxForm序列化提交数据之前的回调函数，ntko、ckeditor控件会用到
+    function onBeforeSerialize() {
+        try {
+            ctlOnBeforeSerialize();
+        } catch (e) {
+        }
+    }
+
+    // ajaxSubmit存在bug，当提交后，遇到提示”请先套红“，再提交时表单会被提交两次，出现两个附件，独立使用$(this).ajaxSubmit(options)问题依然存在，且仅当提交文件时才存在
+    // 经检测jquery.form.js升级到新版(3.48.0)也同样存在此问题，且每次带文件提交时，jquery.form.js中存储的数据是被清空了的，因而不是数据bug问题，而是事件问题
+    var lastSubmitTime = new Date().getTime();
+    $('#flowForm').submit(function () {
+        // 通过判断时间，禁多次重复提交
+        var curSubmitTime = new Date().getTime();
+        // 在0.5秒内的点击视为连续提交两次，实际当出现重复提交时，测试时间差为0
+        if (curSubmitTime - lastSubmitTime < 500) {
+            lastSubmitTime = curSubmitTime;
+            // alert(curSubmitTime - lastSubmitTime);
+            $('#bodyBox').hideLoading();
+            return false;
+        } else {
+            lastSubmitTime = curSubmitTime;
+        }
+
+        var options = {
+            beforeSerialize: onBeforeSerialize,
+            success: showResponse,  // post-submit callback
+            error: showError,
+            dataType: 'text'   // 'xml', 'script', or 'json' (expected server response type)  表单为multipart/form-data即上传文件时，json无法解析
+        };
+        $(this).ajaxSubmit(options);
+        return false;
+    });
+
+
+    // 如果不注释掉，则当直接在桌面点击时，无法载入
+    // $(document).ready(function() {
+    refreshAttachments();
+    // });
+
+    function setAttention(isAttention) {
+        var page = isAttention ? "favorite.do" : "unfavorite.do";
+        $.ajax({
+            type: "post",
+            url: "flow/" + page,
+            data: {
+                flowId: "[(${flowId})]"
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == "0") {
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                } else {
+                    $.toaster({priority: 'info', message: data.msg});
+                    if (isAttention) {
+                        $('.attention').html('[[${btnCancelAttention}]]');
+                        $('.attention').attr('title', '[[${btnCancelAttention}]]');
+                        $('.attention').attr('class', 'cancelAttention');
+                        $('.cancelAttention').unbind().bind('click', function () {
+                            setAttention(false);
+                        });
+                    } else {
+                        $('.cancelAttention').html('[[${btnAttention}]]');
+                        $('.cancelAttention').attr('title', '[[${btnAttention}]]');
+                        $('.cancelAttention').attr('class', 'attention');
+                        $('.attention').unbind().bind('click', function () {
+                            setAttention(true);
+                        });
+                    }
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                layer.alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function delAtt(docId, attId, fieldName) {
+        layer.confirm('[(#{isDelete})]', {icon: 3, title: '[(#{prompt})]'}, function (index) {
+            $.getJSON('flow/delAttach.do', {
+                    "myActionId": [(${myActionId})],
+                    "flowId": [(${flowId})],
+                    "doc_id": docId,
+                    "attach_id": attId
+                },
+                function (data) {
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                    if (data.re == "true") {
+                        $('#trAtt' + attId).remove();
+                        if (fieldName != null) {
+                            $('#helper_' + fieldName).remove();
+                        }
+                    }
+                });
+        })
+    }
+
+    $("input[name='plusType']").click(function () {
+        if ($(this).val() == "[(${PLUS_TYPE_CONCURRENT})]") {
+            $("#plusModeTr").hide();
+        } else {
+            $("#plusModeTr").show();
+        }
+    });
+
+    function addPlus() {
+        $("#plusDlg").dialog({
+            title: '[(#{plusPeople})]',
+            modal: true,
+            width: 500,
+            height: 260,
+            // bgiframe:true,
+            buttons: {
+                '[(#{cancel})]': function () {
+                    $(this).dialog("close");
+                },
+                '[(#{sure})]': function () {
+                    if ($("#plusUsers").val() == "") {
+                        layer.msg('[(#{plusPeople})]', {
+                            offset: '6px'
+                        });
+                        return;
+                    }
+                    $.ajax({
+                        type: "post",
+                        url: "flow/plus.do",
+                        data: {
+                            myActionId: "[(${myActionId})]",
+                            users: o("plusUsers").value,
+                            type: $("input[name='plusType']:checked").val(),
+                            mode: $("input[name='plusMode']:checked").val(),
+                            cwsWorkflowResult: o("cwsWorkflowResult").value,
+                            actionId: "[(${actionId})]"
+                        },
+                        dataType: "html",
+                        beforeSend: function (XMLHttpRequest) {
+                            $('#bodyBox').showLoading();
+                        },
+                        success: function (data, status) {
+                            data = $.parseJSON(data);
+                            if (data.ret == "0") {
+                                layer.msg(data.msg, {
+                                    offset: '6px'
+                                });
+                            } else {
+                                if (data.type == "[(${PLUS_TYPE_BEFORE})]") {
+                                    done(data.msg, true);
+                                } else {
+                                    layer.msg(data.msg, {
+                                        offset: '6px'
+                                    });
+                                }
+                            }
+                        },
+                        complete: function (XMLHttpRequest, status) {
+                            $('#bodyBox').hideLoading();
+                        },
+                        error: function (XMLHttpRequest, textStatus) {
+                            // 请求出错处理
+                            layer.alert(XMLHttpRequest.responseText);
+                        }
+                    });
+
+                    $(this).dialog("close");
+                }
+            },
+            closeOnEscape: true,
+            draggable: true,
+            resizable: true
+        });
+    }
+
+    // 记录当前所选的部门（当存在兼职的情况时），用于当存在条件分支时，还需再machNextBrach，此时还需要调用matchBranchAndUser，
+    // 缺了此参数，会报“请选择您所在的部门”异常
+    var deptOfUserWithMultiDept;
+
+    // 当存在兼职的情况，选择部门时
+    function onSelDept(deptCode) {
+        // 匹配
+        $.ajax({
+            type: "post",
+            url: "flow/matchBranchAndUser.do",
+            data: {
+                op: "matchAfterSelDept",
+                actionId: "[(${actionId})]",
+                myActionId: "[(${myActionId})]",
+                deptOfUserWithMultiDept: deptCode
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                if (data.ret == 0) {
+                    $('#spanNextUser').html(data.msg);
+                    return;
+                }
+                if (data.errCode == -2) {
+                    // 不需要显示info
+                    return;
+                }
+                else if (data.errCode == -1) {
+                    $('#spanNextUser').html(data.info);
+                    return;
+                }
+
+                var rendResult = rendBranchAndUsers(data);
+                $('#spanNextUser').html(rendResult);
+                $("#dlg").html(rendResult);
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                layer.alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    // 公文套红
+    function selTemplate(doc_id, file_id) {
+        // $("#dlg").html(data.msg);
+        // ajax匹配
+        $.ajax({
+            type: "post",
+            url: "flow/flow_get_templates.jsp",
+            data: {
+                op: "sel"
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+                $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                $("#dlg").html(data);
+                $("#dlg").dialog({
+                    title: '[(#{template})]', modal: true,
+                    buttons: {
+                        '[(#{cancel})]': function () {
+                            $("#dlg").html("");
+                            $(this).dialog("close");
+                        },
+                        '[(#{sure})]': function () {
+                            layer.confirm('[(#{red})]',{
+                                btn: ['确定', '取消']
+                            }, function () {
+                                // 按钮1的事件
+                                openWin("flow/flow_ntko_edit.jsp?file_id=" + file_id + "&flowId=[(${flowId})]&actionId=[(${actionId})]&doc_id=" + doc_id + "&isRevise=0&isApply=true&templateId=" + o("template").value, 1024, 768);
+                                $("#dlg").html("");
+                            }, function(){
+                                // 按钮2的事件
+                                $("#dlg").html("");
+                                return;
+                            });
+
+                            $(this).dialog("close");
+                        }
+                    },
+                    closeOnEscape: true,
+                    draggable: true,
+                    resizable: true,
+                    width: 300,
+                    height: 200
+                });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                layer.alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function addMyReply(id) {
+        if ($("#myReplyTextarea" + id).is(":hidden")) {
+            $("#myReplyTextarea" + id).show();
+            $("#get" + id).focus();
+            autoTextarea($("#get" + id).get(0));
+        } else {
+            $("#myReplyTextarea" + id).hide();
+        }
+    }
+
+    /**
+     * 文本框根据输入内容自适应高度
+     * @param                {HTMLElement}        输入框元素
+     * @param                {Number}                设置光标与输入框保持的距离(默认0)
+     * @param                {Number}                设置最大高度(可选)
+     */
+    var autoTextarea = function (elem, extra, maxHeight) {
+        extra = extra || 0;
+        var isFirefox = !!document.getBoxObjectFor || 'mozInnerScreenX' in window,
+            isOpera = !!window.opera && !!window.opera.toString().indexOf('Opera'),
+            addEvent = function (type, callback) {
+                elem.addEventListener ?
+                    elem.addEventListener(type, callback, false) :
+                    elem.attachEvent('on' + type, callback);
+            },
+            getStyle = elem.currentStyle ? function (name) {
+                var val = elem.currentStyle[name];
+
+                if (name === 'height' && val.search(/px/i) !== 1) {
+                    var rect = elem.getBoundingClientRect();
+                    return rect.bottom - rect.top -
+                        parseFloat(getStyle('paddingTop')) -
+                        parseFloat(getStyle('paddingBottom')) + 'px';
+                }
+
+                return val;
+            } : function (name) {
+                return getComputedStyle(elem, null)[name];
+            },
+            minHeight = parseFloat(getStyle('height'));
+
+        elem.style.resize = 'none';
+
+        var change = function () {
+            var scrollTop, height,
+                padding = 0,
+                style = elem.style;
+
+            if (elem._length === elem.value.length) return;
+            elem._length = elem.value.length;
+
+            if (!isFirefox && !isOpera) {
+                padding = parseInt(getStyle('paddingTop')) + parseInt(getStyle('paddingBottom'));
+            }
+            //scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
+
+            elem.style.height = minHeight + 'px';
+            if (elem.scrollHeight > minHeight) {
+                if (maxHeight && elem.scrollHeight > maxHeight) {
+                    height = maxHeight - padding;
+                    style.overflowY = 'auto';
+
+                } else {
+                    height = elem.scrollHeight - padding;
+                    style.overflowY = 'hidden';
+
+                }
+                ;
+                style.height = height + extra + 'px';
+                //scrollTop += parseInt(style.height) - elem.currHeight;
+                //document.body.scrollTop = scrollTop;
+                //document.documentElement.scrollTop = scrollTop;
+                elem.currHeight = parseInt(style.height);
+            }
+        };
+
+        addEvent('propertychange', change);
+        addEvent('input', change);
+        addEvent('focus', change);
+        change();
+    };
+
+    function submitPostscript(textareaId, rootId) {
+        var textareaContent = $("#get" + textareaId).val();//“评论”文本框的内容
+        var flow_id = $("#flow_id" + textareaId).val();
+        var action_id = $("#action_id" + textareaId).val();
+        var myActionId = $("#myActionId" + textareaId).val();
+        var discussId = $("#discussId" + textareaId).val();
+        var userRealName = $("#userRealName" + textareaId).val();
+        var user_name = $("#user_name" + textareaId).val();
+        var reply_name = $("#reply_name" + textareaId).val();
+        var flow_name = $("#flow_name" + textareaId).val();
+        var parent_id = $("#parent_id" + textareaId).val();
+        var is_secret = $("#isSecret" + textareaId).val();
+
+        if (textareaContent == "") {
+            layer.msg('[(#{reviewContent})]', {
+                offset: '6px'
+            });
+        } else {
+            $.ajax({
+                type: "post",
+                url: "flow/addReply.do",
+                data: {
+                    content: textareaContent,
+                    flow_id: flow_id,
+                    action_id: action_id,
+                    myActionId: myActionId,
+                    discussId: discussId,
+                    userRealName: userRealName,
+                    user_name: user_name,
+                    reply_name: reply_name,
+                    flow_name: flow_name,
+                    parent_id: parent_id,
+                    cwsProgress: $('#cwsProgress').val(),
+                    isSecret: is_secret
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#bodyBox').showLoading();
+                    //$('#loading-indicator-bodyBox-overlay').height($('#flowbodybg').height());
+                    //$('#loading-indicator-bodyBox').css({'bottom':'350px','top':''});
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#bodyBox').hideLoading();
+                    //$("#get"+textareaId).height("48px");
+                    //$('#bodyBox').hideLoading();
+                },
+                success: function (data, status) {
+                    data = data.substring(data.indexOf("{\"ret\""));
+                    console.log(data);
+                    var re = $.parseJSON(data);
+                    console.log(re);
+                    console.log('rootId=' + rootId);
+                    if (re.ret == "1") {
+                        if (rootId == 0) {
+                            $("#tablehead").append(re.result);
+                            var isProgress = [(${isProgress})];
+                            if (isProgress) {
+                                $("#tablehead").find("td:eq(1)").prepend("<div>进度：" + $('#cwsProgress').val() + "%</div>");
+                                $("#totalProgress").html($('#cwsProgress').val());
+                            }
+                            $("#get" + textareaId).val("");
+                            $("#myReplyTextarea" + textareaId).hide();
+                            $("#divShow").show();
+                        } else {
+                            $("#trline" + rootId).before(re.result);
+                            $("#get" + textareaId).val("");
+                            $("#myReplyTextarea" + textareaId).hide();
+                            $("#divShow").show();
+                        }
+                    }
+                },
+                error: function () {
+                    layer.msg('[(#{replyWrong})]', {
+                        offset: '6px'
+                    });
+                }
+            });
+        }
+    }
+
+    function show() {
+        $("#notShowDiv").show();
+        $("#showDiv").hide();
+        $("#divShow").show();
+    }
+
+    function notshow() {
+        $("#notShowDiv").hide();
+        $("#showDiv").show();
+        $("#divShow").hide();
+    }
+
+    function chooseHideComment(obj) {
+        var myImg = $(obj).children("img");
+        var myInput = $(obj).children("input");
+        var contextPath = [[@{/}]];
+        if (myImg.attr("src").indexOf("checkbox_sel") != -1) {//现在是“显示”状态
+            myImg.attr("src", contextPath + "[(${skinPath})]/images/admin/functionManage/checkbox_not.png");
+            myInput.val("0");
+        } else {//现在是“隐藏”状态
+            myImg.attr("src", contextPath + "[(${skinPath})]/images/admin/functionManage/checkbox_sel.png");
+            myInput.val("1");
+        }
+    }
+
+    var isDebug = [(${isDebug})]
+    if (isDebug) { //  || tester!=null) {
+        $.toaster({priority: 'info', message: '流程处于调试模式'});
+    }
+
+    function delAnnex(annexId) {
+        layer.confirm('[(#{isDelete})]', {icon: 3, title: '[(#{prompt})]'}, function(index) {
+            $.ajax({
+                type: "post",
+                url: "flow/delAnnex.do",
+                data: {
+                    annexId: annexId
+                },
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#bodyBox').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#bodyBox').hideLoading();
+                    $('#trReply' + annexId).hide();
+                    $('#trline' + annexId).hide();
+                    $("tr[pId='" + annexId + "']").hide();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    }
+
+    // 如果下一节点上设置为“表单中的人员”，或者限定了部门表单域，则绑定change事件，以重新匹配人员
+    [# th:each="fieldName : ${bindFieldList}"]
+    if (o('[(${fieldName})]')) {
+        if (o('[(${fieldName})]').tagName == 'input') {
+            $("input[name='[(${fieldName})]']").change(function () {
+                reMatchUser('[(${fieldName})]', o('[(${fieldName})]').value);
+            });
+        } else {
+            $("select[name='[(${fieldName})]']").change(function () {
+                reMatchUser('[(${fieldName})]', o('[(${fieldName})]').value);
+            });
+        }
+
+        // 在页面加载时，即reMatchUser，如：当部门宏控件默认为本人部门时
+        $(function () {
+            reMatchUser('[(${fieldName})]', o('[(${fieldName})]').value);
+        })
+    }
+    else {
+        if (_canLog()) {
+            console.warn("表单中的人员 字段：[(${fieldName})] 未找到");
+        }
+    }
+    [/]
+
+        // 当表单中的用户有变化时，重新匹配用户
+        function reMatchUser(fieldName, fieldValue) {
+            var data = {
+                op: "reMatchUser",
+                actionId: "[(${actionId})]",
+                myActionId: "[(${myActionId})]",
+                fieldName: fieldName,
+                fieldValue: fieldValue
+            }
+
+            $.ajax({
+                type: "post",
+                url: "flow/matchBranchAndUser.do",
+                data: data,
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('#bodyBox').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    if (data.ret == 0) {
+                        $('#spanNextUser').html(data.msg);
+                        return;
+                    }
+                    if (data.errCode == -2) {
+                        // 不需要显示info
+                        return;
+                    }
+                    else if (data.errCode == -1) {
+                        $('#spanNextUser').html(data.info);
+                        return;
+                    }
+
+                    var rendResult = rendBranchAndUsers(data);
+                    $('#spanNextUser').html(rendResult);
+                    $("#dlg").html(rendResult);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('#bodyBox').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    layer.alert(XMLHttpRequest.responseText);
+                }
+            });
+        }
+
+    // 页面载入时显示loading效果，以免当页面还没有完全加载，如产业类别这类级联的SQL控件还未完全载入时，即点击了同意，致数据丢失
+    // 不能用jQuery的ready方法，因为ready方法注册的事件处理程序，只要在DOM完全就绪时，就可以调用了，比如一张图片只要<img>标签完成，不用等这个图片加载完成，就可以设置图片的宽高的属性或样式等
+    // 用window.onload也不行，因为页面中有ajax
+    // 注意用when的意思是参数中放ajax执行的函数，下行会导致页面多加载了两次
+    /*$.when($.ajax(), $.ajax()).then(function(){
+        // 所有 AJAX 请求已完成
+        $("#loading").hide();
+    })*/
+
+    // 前提：所有ajax请求都是用jquery的$.ajax发起的，而非原生的XHR；
+    var ajaxBack = $.ajax;
+    var ajaxCount = 0;
+    var allAjaxDone = function () {
+        // 所有 AJAX 请求已完成
+        $("#loading").hide();
+    };
+    // 由于get/post/getJSON等，最后还是调用到ajax，因此只要改ajax函数即可
+    $.ajax = function (setting) {
+        ajaxCount++;
+        var cb = setting.complete;
+        setting.complete = function () {
+            if ($.isFunction(cb)) {
+                cb.apply(setting.context, arguments);
+            }
+            ajaxCount--;
+            if (ajaxCount == 0 && $.isFunction(allAjaxDone)) {
+                allAjaxDone();
+            }
+        };
+        ajaxBack(setting);
+    };
+    $(function () {
+        // 如果没有ajax，则ajaxCount为0，应置loading为hide
+        if (ajaxCount == 0) {
+            $("#loading").hide();
+        }
+    })
+
+    function done(msg, isClose, op) {
+        if (tabIdOpener != "") {
+            reloadTab(tabIdOpener);
+        }
+        if (isClose) {
+            layer.alert(msg, {
+                btn: ['确定'],
+                yes: function() {
+                    closeActiveTab();
+                }
+            });
+        } else {
+            // 当操作为“提交”时
+            if ("finish" == op) {
+                var isRecall = [(${isRecall})];
+                // 如果能够撤回
+                if (isRecall) {
+                    msg += " [(#{recallTip})]";
+                }
+            }
+
+            layer.alert(msg, {
+                btn: ['确定'],
+                yes: function() {
+                    // 20220113始终重定向至详情页，isNav=false表示不显示详情页顶部的导航
+                    if (true || isRecall) {
+                        window.location.href = "flowShowPage.do?flowId=[(${flowId})]&isNav=false";
+                    } else {
+                        // 关闭tab
+                        closeActiveTab();
+                    }
+                }
+            });
+        }
+    }
+
+    // 如果处理过程显示于下方
+    [# th:if="${flowProcessShowOnBottom}"]
+    $(function() {
+        $("#processListTab").appendTo($('#processBox'));
+        $("#processListTab").show();
+        $('#switchProcessBox').hide();
+    });
+    [/]
+
+    $(function () {
+        $('input[type=radio]').each(function (i) {
+            var name = $(this).attr("name");
+            if ($(this).attr("readonly") == null) {
+                $(this).addClass('radio-menu');
+            }
+        });
+
+        // 不能用BootstrapMenu，因为chrome上会导致radio无法点击
+        $.contextMenu({
+            selector: '.radio-menu',
+            trigger: 'hover',
+            delay: 1000,
+            callback: function (key, options) {
+                if (key == 'cancel') {
+                    var $obj = options.$trigger;
+                    var name = $obj.attr('name');
+                    $('input[type=radio][name="' + name + '"]:checked').attr("checked", false);
+                }
+            },
+            items: {
+                "cancel": {
+                    name: "取消选择", icon: function ($element, key, item) {
+                        return 'context-menu-icon context-menu-icon-quit';
+                    }
+                }
+            }
+        });
+
+        $('input').each(function () {
+            if ($(this).attr('kind') == 'DATE' || $(this).attr('kind') == 'DATE_TIME') {
+                $(this).attr('autocomplete', 'off');
+            }
+        });
+
+        // 初始化tip提示
+        // 不能通过$("#visualForm").serialize()来获取所有的元素，因为radio或checkbox未被选中，则不会被包含
+        $('#flowForm input, #flowForm select, #flowForm textarea').each(function () {
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type')!='hidden' && $(this).attr('type')!='file') {
+                $(this).addClass('form-control');
+            }
+
+            var tip = '';
+            if ($(this).attr('type') == 'radio') {
+                tip = $(this).parent().attr('tip');
+            } else {
+                tip = $(this).attr('tip');
+            }
+            if (null != tip && "" != tip) {
+                $(this).poshytip({
+                    content: function () {
+                        return tip;
+                    },
+                    className: 'tip-yellowsimple',
+                    alignTo: 'target',
+                    alignX: 'center',
+                    offsetY: 5,
+                    allowTipHover: true
+                });
+            }
+        });
+    });
+
+    function rendBranchAndUsers(matchJson) {
+        if (matchJson.errCode == 0) {
+            var panel = "";
+            var toActionsAry = matchJson.toActions;
+            for (var i in toActionsAry) {
+                // console.log(toActionsAry[i]);
+                var action = toActionsAry[i];
+                if (!action.isDisplay) {
+                    continue;
+                }
+                panel += "<div style='width: 100%; clear:both;'>";
+                panel += "<div style='width: 100px; text-align: center; margin: 5px 10px; float: left'>";
+
+                // 如果是分支线上的节点
+                if (action.hasOwnProperty("XorActionSelected")) {
+                    var xorAct = action.XorActionSelected;
+                    var xorChk = "<input id='XOR" + action.id + "' name='XorActionSelected' id='" + xorAct.id + "' type='checkbox' style='display:" + (xorAct.isDisplay?"":"none") + "' value='" + action.internalName + "' " + (xorAct.checked?"checked":"") + "/>";
+                    panel += xorChk;
+                }
+                if (action.color) {
+                    panel += "<span style='color:" + action.color + "'>" + action.title + "：</span>";
+                }
+                else {
+                    panel += action.title + "：";
+                }
+                panel += "</div>";
+
+                panel += "<div style='margin: 5px; float:left'>";
+                panel += "<span id='spanUsers_" + action.id + "'>";
+                panel += "  <span id='checker'>";
+
+                var checkers = action.checkers;
+                for (var k in checkers) {
+                    var checker = checkers[k];
+                    panel += "<span name='WorkflowAction_span_" + action.id + "' class='checkerUser'>";
+                    var display = "", checked = "", clickXor = "", type = "checkbox";
+                    if (checker.hasOwnProperty("disabled")) {
+                        panel += "<input type=\"checkbox\" checked disabled />";
+                        display = "none";
+                    }
+                    if (checker.hasOwnProperty("checked")) {
+                        if (checker.checked) {
+                            checked = "checked";
+                        }
+                    }
+                    if (checker.hasOwnProperty("clickXor")) {
+                        if (checker.clickXor) {
+                            clickXor = "onclick=\"checkXOR(this, '" + action.id + "')\"";
+                        }
+                    }
+                    if (checker.hasOwnProperty("type")) {
+                        if (checker.type) {
+                            type = checker.type;
+                        }
+                    }
+                    panel += "<input name='WorkflowAction_" + action.id + "' type='" + type + "' " + clickXor + " style='display:" + display + "' " + checked + " value='" + checker.userName + "'/>";
+                    panel += checker.realName;
+                    panel += "</span>";
+                }
+
+                panel += "  </span>";
+                panel += "</span>";
+
+                if (action.isBtnSelUser) {
+                    panel += "<input class='btn btn-default' type='button' value='选择' title='选择用户' onclick=\"OpenModifyWin('" + action.internalName + "', '" + action.id + "', '" + action.isBtnXor + "')\"/>"
+                }
+                if (action.hasOwnProperty("expireHour")) {
+                    panel += "完成时间：" + action.expireHour + action.expireUnit;
+                }
+                panel += "</div>";
+                panel += "</div>";
+
+                if (matchJson.isDelayed) {
+                    panel += "<div class='match-delayed'>";
+                    panel += "<img src=\"images/job.png\" align=\"absmiddle\" />&nbsp;延时动作：" + matchJson.actionTitleDelayed + "&nbsp;-&nbsp;" + matchJson.actionJobNameDelayed;
+                    if (matchJson.isCanPrivUserModifyDelayDate) {
+                        var tUnit = matchJson.timeDelayedUnit;
+                        panel += '&nbsp;&nbsp;';
+                        panel += '<input title="是否延迟" type="checkbox" id="isDelayed" name="isDelayed" value="1" checked />';
+                        panel += '    延迟';
+                        panel += '    <input id="timeDelayedValue" name="timeDelayedValue" size="3" value="' + matchJson.timeDelayedValue + '" />';
+                        panel += '        <select id="timeDelayedUnit" name="timeDelayedUnit">';
+                        panel += '        <option value="0" ' + (tUnit==0?'selected':'') + '>天</option>';
+                        panel += '        <option value="1" ' + (tUnit==1?'selected':'') + '>小时</option>';
+                        panel += '        <option value="2" ' + (tUnit==2?'selected':'') + '>工作日</option>';
+                        panel += '        <option value="3" ' + (tUnit==3?'selected':'') + '>工作小时</option>';
+                        panel += '    </select>';
+                    }
+                    else {
+                        panel += "&nbsp;&nbsp;延迟" + matchJson.timeDelayedValue + "&nbsp;" + matchJson.timeDelayedUnitDesc;
+                    }
+                    panel += "</div>";
+                }
+            }
+            if (matchJson.hasOwnProperty("info")) {
+                panel += "<div class='match-info'>" + matchJson.info + "</div>";
+            }
+
+            if (matchJson.hasOwnProperty("isMatchUserException")) {
+                if (matchJson.isMultiDept) {
+                    panel += "<div class='match-multi-dept'><span>请选择部门</span>";
+                    var multiDepts = matchJson.multiDepts
+                    for (var n in multiDepts) {
+                        var dept = multiDepts[n];
+                        panel += "<input name='deptOfUserWithMultiDept' value='" + dept.deptCode + "' type='radio' onclick='onSelDept(this.value)' class='radio-menu'/>";
+                        panel += "<span>" + dept.deptName + "</span>";
+                    }
+                    panel += "</div>";
+                }
+            }
+            else {
+                if (matchJson.deptOfUserWithMultiDept) {
+                    panel += "<input type='hidden' name='deptOfUserWithMultiDept' value='" + matchJson.deptOfUserWithMultiDept + "'/>";
+                }
+            }
+            return panel;
+        }
+        else {
+            if (matchJson.errCode == -1 || matchJson.errCode == -3) {
+                return "<div class='match-info'>" + matchJson.info + "</div>";
+            }
+        }
+    }
+
+    var matchJson = [(${matchJson})];
+    if (matchJson.hasOwnProperty("hasCond")) {
+        hasCond = matchJson.hasCond;
+    }
+    // console.log(matchJson);
+    $('#spanNextUser').html(rendBranchAndUsers(matchJson));
+
+    var isPageStyleLight = [(${isPageStyleLight})];
+    if (isPageStyleLight) {
+        // 不能放在$(function() 中，原来的tabStyle_8风格会闪现
+        $('#flowForm').find('.tabStyle_8, .tabStyle_1').addClass('layui-table').removeClass('tabStyle_8');
+        $('#processListTab').addClass('layui-table').removeClass('tabStyle_1');
+        $('#processListTab').find('.tabStyle_1_title').removeClass('tabStyle_1_title');
+    }
+</script>
+</body>
+</html>

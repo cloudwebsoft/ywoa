@@ -24,14 +24,7 @@ public class GZIPEncodeFilter implements Filter {
                                           getHeaderNames();
                 while (headerNames.hasMoreElements()) {
                     String headerName = (String) headerNames.nextElement();
-                    System.out.print("headerName=" + headerName);
-                    System.out.println(" value=" +
-                                       ((HttpServletRequest) request).getHeader(
-                            headerName));
                 }
-
-                System.out.println(getClass() + " transferEncoding=" +
-                                   transferEncoding);
                 */
 
                 if (transferEncoding == null) {
@@ -58,7 +51,6 @@ public class GZIPEncodeFilter implements Filter {
 
     private static String getGZIPEncoding(HttpServletRequest request) {
         String acceptEncoding = request.getHeader("Accept-Encoding");
-        // System.out.println(GZIPEncodeFilter.class + " Accept-Encoding=" + acceptEncoding);
         if (acceptEncoding == null)
             return null;
         acceptEncoding = acceptEncoding.toLowerCase();

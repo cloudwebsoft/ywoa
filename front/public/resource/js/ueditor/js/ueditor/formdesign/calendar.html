@@ -1,0 +1,459 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>日历控件</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" >
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="leipi.style.css">
+    <script type="text/javascript" src="../dialogs/internal.js"></script>
+    <script type="text/javascript">
+        /* Thank you by
+        http://www.alt-tag.com/blog/2006/02/ie-dom-bugs/ */
+        function createElement(type, name)
+        {
+            var element = null;
+            try {
+                element = document.createElement('<'+type+' name="'+name+'">');
+            } catch (e) {}
+            if(element==null) {
+                element = document.createElement(type);
+                element.name = name;
+            }
+            return element;
+        }
+        function getContextPath(){
+            var pathName = document.location.pathname;
+            var index = pathName.substr(1).indexOf("/");
+            var result = pathName.substr(0,index+1);
+            return result;
+        }
+
+    </script>
+</head>
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th>控件字段&nbsp;<span class="label label-important">*</span></th>
+            <th><span>控件名称&nbsp;</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <th><input type="text" id="orgname" placeholder="必填项"></th>
+            <th><input type="text" id="orgtitle" placeholder="必填项"></th>
+        </tr>
+        <tr>
+            <th><span>默认值</span></th>
+            <th>必填项</th>
+        </tr>
+        <tr>
+            <td>
+                <select name="defaultValue" id="defaultValue">
+                    <option value="CURRENT">当前时间</option>
+                    <option value="" selected>无</option>
+                </select>
+            </td>
+            <td>
+                <input id="canNull" name="canNull" type="checkbox" value="0" checked />
+            </td>
+        </tr>
+        <tr>
+            <th><span>类型</span></th>
+            <th><span>格式</span> </th>
+        </tr>
+        <tr>
+            <td>
+                <select name="format" id="formatDate">
+                    <option value="yyyy-MM-dd" selected>年-月-日</option>
+                    <option value="yyyy-MM-dd HH:mm:ss">年-月-日 时：分：秒</option>
+                </select>
+            </td>
+            <td>
+                <select id="description" name="description">
+                    <option value="">默认</option>
+                    <option value="yy-MM">yy-MM</option>
+                    <option value="yyyy-MM">yyyy-MM</option>
+                    <option value="yy年MM月">yy年MM月</option>
+                    <option value="yyyy年MM月">yyyy年MM月</option>
+                    <option value="yyyy年MM月dd日">yyyy年MM月dd日</option>
+                    <option value="yy-MM-dd HH:mm">yyyy-MM-dd HH:mm</option>
+                    <option value="yyyy-MM-dd HH:mm">yyyy-MM-dd HH:mm</option>
+                    <option value="yy年MM月dd日 HH时mm分">yy年MM月dd日 HH时mm分</option>
+                    <option value="yyyy年MM月dd日 HH时mm分">yyyy年MM月dd日 HH时mm分</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><span>只读</span></th>
+            <th><span>只读类型</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1" />
+            </td>
+            <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件样式宽</span></th>
+            <th><span>大小</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>&nbsp;px
+            </td>
+            <td>
+                <span>
+                <select id="minT" name="minT" style="width:53px">
+                    <option value="d=">>=</option>
+                    <option value="d">></option>
+                </select>
+                <select id="minV" name="minV" style="width:80px">
+                    <option value=""></option>
+                    <option value="curDate">当前日期</option>
+                </select>
+                <select id="maxT" name="maxT" style="width:53px">
+                    <option value="x="><=</option>
+                    <option value="x"><</option>
+                </select>
+                <select id="maxV" name="maxV" style="width:80px">
+                    <option value=""></option>
+                    <option value="curDate">当前日期</option>
+                </select>
+                <select id="orgalign" style="display:none">
+                    <option value="left">左对齐</option>
+                    <option value="center">居中对齐</option>
+                    <option value="right">右对齐</option>
+                </select>
+                </span>
+            </td>
+        </tr>
+        <tr>
+        <th><span>提示</span></th>
+          <th>&nbsp;</th>
+        </tr>
+        <tr>
+          <td>
+               <textarea id="tip" name="tip" style="width:250px; height:100px"></textarea>
+          </td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr style="display: none">
+            <th></th>
+            <th><span style="display: none">可见性</span> </th>
+        </tr>
+        <tr style="display: none">
+            <td>
+                <span style="display:none">
+                X
+                <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/>
+                &
+                <input id="orgfontsize" type="text"  value="" class="input-small span1" placeholder="auto"/> px
+                </span>
+            </td>
+            <td>
+                <label style="display: none" class="checkbox inline"><input id="orghide" type="checkbox"/> 隐藏 </label>
+            </td>
+        </tr>
+
+    </table>
+</div>
+<script type="text/javascript">
+    var oNode = null,thePlugins = 'calendar';
+    window.onload = function() {
+        if( UE.plugins[thePlugins].editdom ){
+            oNode = UE.plugins[thePlugins].editdom;
+
+            var gValue=oNode.getAttribute('value');
+            if (gValue)
+                gValue = gValue.replace(/&quot;/g,"\"");
+            var gName=oNode.getAttribute('name').replace(/&quot;/g,"\"");
+            var gTitle=oNode.getAttribute('title').replace(/&quot;/g,"\"");
+            var gHidden=oNode.getAttribute('orghide');
+            var gFontSize=oNode.getAttribute('orgfontsize');
+            var gAlign=oNode.getAttribute('orgalign');
+            var gWidth=oNode.getAttribute('orgwidth');
+            var gHeight=oNode.getAttribute('orgheight');
+
+            var gCanNull = oNode.getAttribute("canNull");
+            var gMinT = oNode.getAttribute("minT");
+            var gMinV = oNode.getAttribute("minV");
+            var gMaxT = oNode.getAttribute("maxT");
+            var gMaxV = oNode.getAttribute("maxV");
+            var gkind = oNode.getAttribute("kind");
+
+            var isReadOnly = oNode.getAttribute("readonly");
+            if (isReadOnly!=null) {
+                $G('isReadOnly').checked = true;
+            }
+            else {
+                $G('isReadOnly').checked = false;
+            }
+
+            var gDescription = oNode.getAttribute("description");
+            gDescription = gDescription==null ? '' : gDescription;
+	        var gTip = oNode.getAttribute("tip");
+	        if (gTip == null) {
+	            gTip = '';
+	        }
+	        var gReadOnlyType = oNode.getAttribute("readOnlyType");
+	        if (gReadOnlyType == null) {
+	            gReadOnlyType = '';
+            }
+
+            gValue = gValue==null ? '' : gValue;
+            gTitle = gTitle==null ? '' : gTitle;
+            $G('orgname').value = gName;
+            $G('orgtitle').value = gTitle;
+            if (gHidden == '1') {
+                $G('orghide').checked = true;
+            }
+            $G('orgfontsize').value = gFontSize;
+            $G('orgwidth').value = gWidth;
+            $G('orgheight').value = gHeight;
+            $G('orgalign').value = gAlign;
+            $G('defaultValue').value = gValue;
+
+            if (gkind == "DATE")
+            {
+                $G('formatDate').value = 'yyyy-MM-dd';
+            }
+            else
+            {
+                $G('formatDate').value = 'yyyy-MM-dd HH:mm:ss';
+            }
+
+            $G('orgname').setAttribute("readonly", true);
+            $G('formatDate').setAttribute("disabled", true);
+            if (gCanNull==0) {
+                $G('canNull').checked = true;
+            }
+            else {
+                $G('canNull').checked = false;
+            }
+
+            $G('description').value = gDescription;
+
+            if (gMinT) {
+                $G('minT').value = gMinT;
+                $G('minV').value = gMinV;
+                $G('maxT').value = gMaxT;
+                $G('maxV').value = gMaxV;
+            }
+	        $G('tip').value = gTip;
+            $G('readOnlyType').value = gReadOnlyType;
+        }
+    }
+    dialog.oncancel = function () {
+        if( UE.plugins[thePlugins].editdom ) {
+            delete UE.plugins[thePlugins].editdom;
+        }
+    };
+    dialog.onok = function (){
+        var gName=$G('orgname').value.replace(/\"/g,"&quot;");
+        if(gName==''){
+            alert('请输入控件字段');
+            return false;
+        }
+        var gTitle=$G('orgtitle').value.replace(/\"/g,"&quot;");
+        if(gTitle==''){
+            alert('请输入控件名称');
+            return false;
+        }
+
+        var maxVal = $G('maxV').value;
+        var minVal = $G('minV').value;
+        if (maxVal == minVal && maxVal!='') {
+            alert('不能同时填写最大最小值');
+            return false;
+        }
+
+        var gFontSize=$G('orgfontsize').value;
+        var gAlign=$G('orgalign').value;
+        var gWidth=$G('orgwidth').value;
+        var gHeight=$G('orgheight').value;
+
+        var gCanNull = $G('canNull').checked?0:1;
+        var gMinT=$G('minT').value;
+        var gMinV=$G('minV').value;
+        var gMaxT=$G('maxT').value;
+        var gMaxV=$G('maxV').value;
+        var gDefaultValue = $G('defaultValue').value;
+        var gFormatDate = $G('formatDate').value;
+        var gDescription = $G('description').value;
+	    var gTip = $G('tip').value;
+	    var gReadOnlyType = $G('readOnlyType').value;
+		
+        if( !oNode ) {
+            try {
+                oNode = createElement('input', gName);
+                oNode.setAttribute('title',gTitle);
+                oNode.setAttribute('value',gDefaultValue);
+                oNode.setAttribute('cwsPlugins',thePlugins);
+                if ( $G('orghide').checked ) {
+                    oNode.setAttribute('orghide',1);
+                } else {
+                    oNode.setAttribute('orghide',0);
+                }
+                if( gFontSize != '' ) {
+                    oNode.style.fontSize = gFontSize + 'px';
+                    //style += 'font-size:' + gFontSize + 'px;';
+                    oNode.setAttribute('orgfontsize',gFontSize );
+                }
+                if( gAlign != '' ) {
+                    //style += 'text-align:' + gAlign + ';';
+                    oNode.style.textAlign = gAlign;
+                    oNode.setAttribute('orgalign',gAlign );
+                }
+                if( gWidth != '' ) {
+                    oNode.style.width = gWidth+ 'px';
+                    //style += 'width:' + gWidth + 'px;';
+                    oNode.setAttribute('orgwidth',gWidth );
+                }
+                if( gHeight != '' ) {
+                    oNode.style.height = gHeight+ 'px';
+                    //style += 'height:' + gHeight + 'px;';
+                    oNode.setAttribute('orgheight',gHeight );
+                }
+
+                oNode.setAttribute("canNull", gCanNull);
+                oNode.setAttribute("minT", gMinT);
+                oNode.setAttribute("minV", gMinV);
+                oNode.setAttribute("maxT", gMaxT);
+                oNode.setAttribute("maxV", gMaxV);
+
+                if ($G('isReadOnly').checked) {
+                    oNode.setAttribute("readonly", "readonly");
+                }
+                else {
+                    oNode.removeAttribute("readonly");
+                }
+
+                if(gFormatDate == "yyyy-MM-dd")
+                {
+                    oNode.setAttribute('kind','DATE');
+
+                    //var imgName = gName + "_btnImg";
+                    //var imgPath = getContextPath() + '/images/form/calendar.gif';
+                    //oImgNode = createElement('img', imgName);
+                    //oImgNode.setAttribute("id",imgName);
+                    //oImgNode.setAttribute("width",'26px');
+                    //oImgNode.setAttribute("height",'26px');
+                    //oImgNode.setAttribute("align",'absMiddle');
+                    //oImgNode.setAttribute("style",'cursor: hand;');
+                    //oImgNode.setAttribute("onclick",'SelectDate("'+gName+'","yyyy-mm-dd")');
+                    //oImgNode.setAttribute("src",imgPath);
+
+                    //editor.execCommand('insertHtml',oNode.outerHTML+oImgNode.outerHTML);
+                }
+                else
+                {
+                    oNode.setAttribute('kind','DATE_TIME');
+
+                    //日期按钮
+                    //var imgName = gName + "_btnImg";
+                    //var imgDatePath = getContextPath() + '/images/form/calendar.gif';
+                    //oDateImgNode = createElement('img', imgName);
+                    ///oDateImgNode.setAttribute("id",imgName);
+                    //oDateImgNode.setAttribute("width",'26px');
+                    //oDateImgNode.setAttribute("height",'26px');
+                    //oDateImgNode.setAttribute("align",'absMiddle');
+                    //oDateImgNode.setAttribute("style",'cursor: hand;');
+                    //oDateImgNode.setAttribute("onclick",'SelectDate("' + gName + '","yyyy-mm-dd")');
+                    //oDateImgNode.setAttribute("src",imgDatePath);
+                    //时间显示
+                    //var timeInputName = gName + "_time";
+                    //oTimeInput = createElement('input', timeInputName);
+                    //oTimeInput.setAttribute("style",'width: 50px;');
+                    //oTimeInput.setAttribute("value",'12:30:30');
+
+                    //时间按钮
+                    //var timeImgName = gName + "_time_btnImg";
+                    //var imgTimePath = getContextPath() + '/images/form/clock.gif';
+                    //oTimeImgNode = createElement('img', timeImgName);
+                    //oTimeImgNode.setAttribute("align",'absMiddle');
+                    //oTimeImgNode.setAttribute("style",'cursor: hand;');
+                    //oTimeImgNode.setAttribute("onclick",'SelectDateTime("' + gName + '")');
+                    //oTimeImgNode.setAttribute("src",imgTimePath);
+
+                    //editor.execCommand('insertHtml',oNode.outerHTML+oDateImgNode.outerHTML+oTimeInput.outerHTML+ " " + oTimeImgNode.outerHTML);
+                }
+                oNode.setAttribute("description", gDescription);
+
+                oNode.setAttribute("id", gName);
+                //oNode.setAttribute("readOnly", true);
+                //oNode.setAttribute("onclick", "SelectNewDate('" + gName + "','" + gFormatDate + "')");
+                oNode.setAttribute("isNewDateTimeCtl", true);
+	            oNode.setAttribute("tip", gTip);
+                oNode.setAttribute("readOnlyType", gReadOnlyType);
+
+                editor.execCommand('insertHtml', oNode.outerHTML);
+            } catch (e) {
+                try {
+                    editor.execCommand('error');
+                } catch ( e ) {
+                    alert('控件异常！');
+                }
+                return false;
+            }
+        } else {
+            oNode.setAttribute('title', gTitle);
+            //oNode.setAttribute('value', $G('orgvalue').value);
+            if( $G('orghide').checked ) {
+                oNode.setAttribute('orghide', 1);
+            } else {
+                oNode.setAttribute('orghide', 0);
+            }
+            if( gAlign != '' ) {
+                oNode.style.textAlign = gAlign;
+                oNode.setAttribute('orgalign',gAlign );
+            }else{
+                oNode.setAttribute('orgalign', '');
+            }
+            if( gWidth != '' ) {
+                oNode.style.width = gWidth+ 'px';
+                oNode.setAttribute('orgwidth',gWidth );
+            }else{
+                oNode.style.width = '';
+                oNode.setAttribute('orgwidth', '');
+            }
+
+            oNode.setAttribute("value", gDefaultValue);
+
+            oNode.setAttribute("canNull", gCanNull);
+            oNode.setAttribute("minT", gMinT);
+            oNode.setAttribute("minV", gMinV);
+            oNode.setAttribute("maxT", gMaxT);
+            oNode.setAttribute("maxV", gMaxV);
+
+            oNode.setAttribute("description", gDescription);
+
+            if ($G('isReadOnly').checked) {
+                oNode.setAttribute("readonly", "readonly");
+            }
+            else {
+                oNode.removeAttribute("readonly");
+            }
+	        oNode.setAttribute("tip", gTip);
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
+
+            delete UE.plugins[thePlugins].editdom;
+        }
+    };
+
+</script>
+</body>
+</html>

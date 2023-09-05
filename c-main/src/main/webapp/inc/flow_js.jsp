@@ -6,6 +6,7 @@
 <%@page import="com.redmoon.oa.visual.FormDAO"%>
 <%@page import="cn.js.fan.util.StrUtil"%>
 <%@ page import="com.redmoon.oa.flow.WorkflowMgr" %>
+<%@ page import="com.alibaba.fastjson.JSONObject" %>
 <%
 /*
 - 功能描述：流程中的js处理，宏控件中的脚本调用（如：打开窗口）一般放在此文件中
@@ -21,17 +22,17 @@
 - 修改点：
 */
 
-	// 防漏洞：1; mode=block 启用XSS保护，并在检查到XSS攻击时，停止渲染页面
-	response.setHeader("X-XSS-Protection", "1; mode=block");
+// 防漏洞：1; mode=block 启用XSS保护，并在检查到XSS攻击时，停止渲染页面
+response.setHeader("X-XSS-Protection", "1; mode=block");
 String rootpath = request.getContextPath();
 Privilege privilege = new Privilege();
 String unitCode = "";
-if(!privilege.isValid(request,"notice")){
+if (!privilege.isValid(request, "notice")) {
 	unitCode = privilege.getUserUnitCode(request);
 }
 
 String op = cn.js.fan.util.ParamUtil.get(request, "op");
-net.sf.json.JSONObject json = new net.sf.json.JSONObject();
+JSONObject json = new JSONObject();
 if ("user_department".equals(op)) {
 	response.setContentType("text/html;charset=utf-8");
 	String userName = cn.js.fan.util.ParamUtil.get(request,"user_name");
@@ -97,7 +98,7 @@ function openWinForFlowAccess(url,width,height) {
 	var newwin = window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=250,left=350,width="+width+",height="+height);
 }
 
-// checkJs 为字段的校验脚本，module_list_sel.jsp中映射字段时使用了该参数
+// module_list_sel.jsp中替换掉宏控件，checkJs 为字段的校验脚本
 function replaceValue(openerField, val, sourceValue, checkJs) {
 	// consoleLog("openerField=" + openerField + " type=" + o(openerField).getAttribute("type") + " val=" + val + " sourceValue=" + sourceValue);
 	// $(o(openerField)).parent().html(val); // 如果元素是放在td中，则td中其它的隐藏字段会被清掉
@@ -115,21 +116,54 @@ function replaceValue(openerField, val, sourceValue, checkJs) {
 		$(o(openerField)).before(val);
 	}
 	else {
-		$(o(openerField)).prop('outerHTML', val);
-		$(o(openerField)).val(sourceValue);
-	}
-	if (checkJs) {
-		var frm = o("visualForm");
-		if (frm==null) {
-			frm = o("flowForm");
+		// 如果是图标控件
+		if (o(openerField + "_wrapper")) {
+			// 通过outerHTML方式，无法调用val中的js
+			// $(o(openerField + "_wrapper")).prop('outerHTML', val);
+			// $(o(openerField)).val(sourceValue);
+
+			// 通过.html(val)方法，能够调用val中的js，但是会使其父节点下的其它孩子节点，如提示语句被清掉
+			<%--
+			var $p = $(o(openerField + "_wrapper")).parent();
+			$p.html(val);
+			var arr = new Array();
+			arr[0] = sourceValue;
+			$(o(openerField)).val(arr).trigger('change');
+			--%>
+
+			$(o(openerField + "_wrapper")).prop('outerHTML', '<span id="temp_' + openerField + '"></span>');
+			var tmp = o('temp_' + openerField);
+			var $tmp = $(tmp);
+			$tmp.after(val);
+			$tmp.remove();
+			var arr = new Array();
+			arr[0] = sourceValue;
+			$(o(openerField)).val(arr).trigger('change');
 		}
-		// 删除原来的验证，否则会因为原验证中存储的对象不存在而导致验证失效            
-		var formObj = LiveValidationForm.getInstance(frm);
-		if (formObj) {    
+		else {
+			$(o(openerField)).prop('outerHTML', val);
+			$(o(openerField)).val(sourceValue);
+		}
+	}
+
+	var frm = o("visualForm");
+	if (frm==null) {
+		frm = o("flowForm");
+	}
+
+	// console.log('openerField=' + openerField + ' checkJs=' + checkJs);
+	// 删除原来的验证，否则会因为原验证中存储的对象不存在而导致验证失效
+	var formObj = LiveValidationForm.getInstance(frm);
+	if (formObj) {
+		if (checkJs) {
 			formObj.removeFieldByName(openerField);
 			var script = $('<script>' + checkJs + '</script>');
 			$('body').append(script);
-		}  		
+		}
+		else {
+			// 删除原来的验证，因为似乎原来绑定的元素不存在了，但是校验还在
+			formObj.removeFieldByName(openerField);
+		}
 	}
 }
 
@@ -137,7 +171,7 @@ var inputObj;
 
 function setIntpuObjValue(id, v) {
 	inputObj.value = id;
-	if(!v) {
+	if(!v && v!='') {
 		return;
 	}
 	// 在其父元素里面找对应的_realshow，因为在新的嵌套表格宏控件中会clone表格行，不同行之间存在有同名的元素
@@ -249,7 +283,7 @@ function openWinModuleFieldList(obj, formCode, byFieldName, showFieldName, filte
 	filter = "";
 	inputObj = obj
 	var openerFieldName = obj.getAttribute('field');
-	openWinForFlowAccess("<%=rootpath%>/visual/module_list_sel.jsp?formCode=" + formCode + "&byFieldName=" + byFieldName + "&showFieldName=" + showFieldName + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + openerFieldName + "&flowId=" + flowId + "&pageType=" + pageType + "&filter=" + filter, 1024, 768);
+	openWinForFlowAccess("<%=rootpath%>/visual/moduleListSelPage.do?formCode=" + formCode + "&byFieldName=" + byFieldName + "&showFieldName=" + showFieldName + "&openerFormCode=" + openerFormCode + "&openerFieldName=" + openerFieldName + "&flowId=" + flowId + "&pageType=" + pageType + "&filter=" + filter, 1024, 768);
 }
 
 function openWinProjectList(obj) {
@@ -270,7 +304,13 @@ function openWinSalesOrderList(obj, customerId) {
 // 多部门选择窗体
 function openWinDeptsSelect(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/admin/organize/organize_dept_sel.jsp?deptCode="+obj.value, 450, 400, "yes");
+	openWinForFlowAccess("<%=rootpath%>/admin/organize/organize_dept_sel.jsp?deptCode="+obj.value, 800, 600, "yes");
+}
+
+// 多角色选择窗体
+function openWinRoleMultiSel(obj) {
+	inputObj = obj;
+	openWin("<%=rootpath%>/roleMultilSelBack.do?roleCodes=" + obj.value, 800, 600);
 }
 
 // 四则运算拆分算式
@@ -312,13 +352,16 @@ function isOperator(str) {
 function doCalculate(jqueryObj) {
     var formula = jqueryObj.attr('formula');
     var digit = jqueryObj.attr('digit');
-    var isRoundTo5 = jqueryObj.attr('isRoundTo5');      
-    // 对日期相减进行计算
-    formula = callFunc(formula);
-    if (formula.indexOf("addDate") >= 0) {
-    	jqueryObj.val(formula);
+    var isRoundTo5 = jqueryObj.attr('isRoundTo5');
+	if (formula.toLowerCase().indexOf("subdate") != -1 || formula.toLowerCase().indexOf("adddate") != -1){
+		// 对日期加减进行计算，有可能会出现 subDate(...) + 1 的情况，所以需要eval
+		jqueryObj.val(eval(callFunc(formula)));
     	return;
     }
+	var format = jqueryObj.attr('format');
+	var valForInfinity = jqueryObj.attr('valForInfinity');
+	var valForNaN = jqueryObj.attr('valForNaN');
+
     var ary = getSymbolsWithBracket(formula);
 
     for (var i=0; i < ary.length; i++) {
@@ -333,6 +376,11 @@ function doCalculate(jqueryObj) {
                 	$obj = $("#cws_textarea_" + ary[i]);
                 }
 				var v = $obj.val();
+				// 去掉千分位逗号
+				if (v) {
+					v = v.replaceAll(',', '');
+				}
+
 				if (v=="")
 					ary[i] = 0;
 				else if (isNaN(v))
@@ -349,9 +397,20 @@ function doCalculate(jqueryObj) {
     try {
 	    var calValue = parseFloat(eval(formula));
 	    var strValue = calValue.toString();
+
 	    if (isNaN(calValue)) {
-	    	return false;
+			if (valForNaN!=null && valForNaN!='') {
+				jqueryObj.val(valForNaN);
+			}
+			return;
 	    }
+
+		if (calValue == Infinity || calValue == -Infinity) {
+			if (valForInfinity!=null && valForInfinity!='') {
+				jqueryObj.val(valForInfinity);
+			}
+			return;
+		}
 
 	    // 判断是否四舍五入 1：是 0：否
 	    if (isRoundTo5 != null && isRoundTo5 == 1){
@@ -368,6 +427,11 @@ function doCalculate(jqueryObj) {
 				calValue = changeTwoDecimal_f(calValue,digitNum);
 			}
 	    }
+		// console.log('formula=' + formula + ' format=' + format + ' calValue=' + calValue);
+		// 千分位处理
+		if ("0" == format) {
+			calValue = thousandth(calValue);
+		}
    
     	jqueryObj.val(calValue);
     }
@@ -416,7 +480,6 @@ function initCalculator() {
         var calObj = $(this);
         if ($(this).attr('formula')) {
            var formula = $(this).attr('formula');
-            
            var isSum = false;
            var regStr = /(sum\(([\w|\.]+)\))/gi;
            var mactches = formula.match(regStr)
@@ -568,6 +631,7 @@ function initFuncFieldEvent(str, calObj) {
 }
 
 function callFunc(str) {
+	var isDate = false;
 	// 时间相减方法subdate(d1, d2)
     var pat = /subdate\(([a-z0-9_-]+),([a-z0-9_-]+)\)/ig;
     str = str.replace(pat, function(p1, date1, date2){ 
@@ -579,7 +643,8 @@ function callFunc(str) {
         	alert("字段" + date2 + "不存在！");
             return 0;
         }
-        
+
+		isDate = true;
         var mode = "day";
         if (o(date1).getAttribute("kind")=="DATE_TIME" || o(date2).getAttribute("kind")=="DATE_TIME") {
         	mode = "hour";
@@ -593,7 +658,7 @@ function callFunc(str) {
         	return subDate(v1, v2, mode);
         }
     });
-    
+
 	// 时间相加方法addDate(d1, d2)
     var pat = /adddate\(([a-z0-9_-]+),([a-z0-9_-]+)\)/ig;
     str = str.replace(pat, function(p1, date, days){ 
@@ -614,16 +679,22 @@ function callFunc(str) {
 	            return "";
 	        }        	
         }
-                
+
+		isDate = true;
         var v = o(date).value;        
         if (""==v)
         	return "";
         else {        
         	return addDate(v, days);
         }
-    });    
-    
-    return str;
+    });
+	if (isDate) {
+		return str;
+	}
+	else {
+		var v = eval(str);
+		return v;
+	}
 }
 
 function subDate(strDate1, strDate2, mode) {
@@ -660,7 +731,7 @@ function addDate(date, days) {
 	} 
 	if(day<10) { 
 		day = "0"+day; 
-	} 
+	}
 	var val = d.getFullYear()+"-"+month+"-"+day;
 	return val; 
 }
@@ -699,7 +770,7 @@ function openWinLocationSelect(obj) {
 
 function openWinWorkflowMineSelect(obj) {
 	inputObj = obj;
-	openWinForFlowAccess("<%=rootpath%>/flow/flow_list.jsp?displayMode=<%=WorkflowMgr.DISPLAY_MODE_ATTEND%>&action=sel", 1024, 768);
+	openWinForFlowAccess("<%=rootpath%>/flow/flowListPage.do?displayMode=<%=WorkflowMgr.DISPLAY_MODE_ATTEND%>&action=sel", 1024, 768);
 }
 
 function openWinQueryFieldList(objName, openerFormCode, fieldName, isScript, queryId) {
@@ -734,7 +805,7 @@ function loadNestCtl(ajaxPath, divId, curPage, pageSize, conds) {
 			ajaxPath += "&" + conds;
 		}
 	}
-	ajaxpage(ajaxPath, divId);
+	ajaxpage("<%=rootpath%>/" + ajaxPath, divId);
 }
 
 function bindFuncFieldRelateChangeEvent(formCode, targetFieldName, fieldNames) {
@@ -890,4 +961,126 @@ function checkFieldIsUniqueNest(id, formCode, fieldName, fieldsUnique) {
             }
         });
     });
+}
+
+function thousandth(num) {
+    num = num + '';
+	// 先清掉逗号，再转为千分位，以避已转千分位后再转的问题
+	num = num.replaceAll(',', '');
+
+	var p = num.indexOf('.');
+    if (p == -1) {
+        num += '.'
+    }
+    return num.replace(/(\d)(?=(\d{3})+\.)/g, function ($0, $1) {
+        return $1 + ',';
+    }).replace(/\.$/, '');
+}
+
+// 千分位处理
+function doFormat(fieldName) {
+	$('[name="' + fieldName + '"]').change(function() {
+		if ($(this).val()!='') {
+			$(this).val(thousandth($(this).val()));
+		}
+	});
+}
+
+<%--
+function eventHandler(action, moduleCode) {
+
+}
+
+function initEventEmitter(moduleCode, data) {
+	// 创建一个jQuery自定义事件对象
+	var eventEmitter = $({});
+	// 监听事件 add
+	eventEmitter.on('add', function () {
+		eventHandler('add', moduleCode, data);
+	});
+	// 监听事件 edit
+	eventEmitter.on('edit', function() {
+		eventHandler('edit', moduleCode, data);
+	});
+	eventEmitter.del('del', function() {
+		eventHandler('del', moduleCode, data);
+	});
+
+	// 触发事件 add
+	// eventEmitter.trigger('add');
+}
+
+var evtEmitter = initEventEmitter();
+function getEventEmitter() {
+	return evtEmitter;
+}--%>
+
+//自定义事件构造函数
+function EventTarget(){
+	//事件处理程序数组集合
+	this.handlers = {};
+}
+
+var EVENT_TYPE = {
+	"NEST_ADD": "nest_add",	// 添加一行
+	"NEST_EDIT": "nest_edit",	// 编辑一行
+	"NEST_DEL": "nest_del",	// 删除一行
+	"NEST_AUTO_SEL_DONE": "nest_auto_sel_done",	// 自动拉单
+	"NEST_SELECT": "nest_select" // 批量选择
+}
+
+//自定义事件的原型对象
+EventTarget.prototype = {
+	// 设置原型构造函数链
+	constructor: EventTarget,
+	// 注册给定类型的事件处理程序
+	// type -> 自定义事件类型， handler -> 自定义事件回调函数
+	addEvent: function (type, handler) {
+		// 判断事件处理数组是否有该类型事件
+		if (typeof this.handlers[type] == 'undefined') {
+			this.handlers[type] = [];
+		}
+		// 将处理事件push到事件处理数组里面
+		this.handlers[type].push(handler);
+	},
+	// 触发一个事件
+	// event -> 为一个js对象，属性中至少包含type属性，
+	// 因为类型是必须的，其次可以传一些处理函数需要的其他变量参数。（这也是为什么要传js对象的原因）
+	fireEvent: function(event){
+		//模拟真实事件的event
+		if(!event.target){
+			event.target = this;
+		}
+		// 判断是否存在该事件类型
+		if(this.handlers[event.type] instanceof Array){
+			var handlers = this.handlers[event.type];
+			//在同一个事件类型下的可能存在多种处理事件，找出本次需要处理的事件
+			for(var i = 0; i < handlers.length; i++){
+				// 执行触发
+				handlers[i](event);
+			}
+		}
+	},
+	// 注销事件
+	// type -> 自定义事件类型， handler -> 自定义事件回调函数
+	removeEvent: function(type, handler){
+		//判断是否存在该事件类型
+		if(this.handlers[type] instanceof Array){
+			var handlers = this.handlers[type];
+			//在同一个事件类型下的可能存在多种处理事件
+			for(var i = 0; i < handlers.length; i++){
+				//找出本次需要处理的事件下标
+				if(handlers[i] == handler){
+					break;
+				}
+			}
+			//从事件处理数组里面删除
+			handlers.splice(i, 1);
+		}
+	}
+};
+
+var eventTarget = new EventTarget();
+function getEventTarget() {
+	return eventTarget;
 }

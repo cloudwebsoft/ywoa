@@ -25,7 +25,7 @@
 	String nestType = ParamUtil.get(request, "nestType");
 	String parentFormCode = ParamUtil.get(request, "parentFormCode");
 	String nestFieldName = ParamUtil.get(request, "nestFieldName");
-	long parentId = ParamUtil.getLong(request, "parentId", com.redmoon.oa.visual.FormDAO.TEMP_CWS_ID);
+	String parentId = ParamUtil.get(request, "parentId", "-1");
 	
 	int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
 	
@@ -149,13 +149,10 @@ if (op.equals("selBatch")) {
 					  JSONObject jsonObj = null;
 					  try {
 						  jsonObj = mapsNest.getJSONObject(k);
-						  
-						  // System.out.println("json=" + json);
-						  
+
 						  String sfield = (String) jsonObj.get("sourceField");
 						  String dfield = (String) jsonObj.get("destField");
 						  
-						  // System.out.println(getClass() + " " + dfield + "=>" + (String)json.get(sfield.toUpperCase()));
 						  jsonObj2.put(dfield, (String)json.get(sfield.toUpperCase()));
 
 						  fdaoNest.setFieldValue(dfield, (String)json.get(sfield.toUpperCase()));
@@ -167,7 +164,6 @@ if (op.equals("selBatch")) {
 				  if (nestType.equals("detaillist")) {
 					  JSONArray jsonAry2 = new JSONArray();
 					  jsonAry2.put(jsonObj2);
-					  // System.out.println(getClass() + " jsonAry=" + jsonAry);
 					  %>
 					  <script>
 					  // 如果有父窗口
@@ -184,7 +180,7 @@ if (op.equals("selBatch")) {
 				  }
 			
 				  fdaoNest.setFlowId(flowId);			
-				  fdaoNest.setCwsId(String.valueOf(parentId));
+				  fdaoNest.setCwsId(parentId);
 				  fdaoNest.setCreator(privilege.getUser(request));
 				  fdaoNest.setUnitCode(privilege.getUserUnitCode(request));
 				  boolean re = fdaoNest.create();
@@ -192,11 +188,8 @@ if (op.equals("selBatch")) {
 					  long fdaoId = fdaoNest.getId();
 					  // 如果是嵌套表格2
 					  if (nestType.equals("nest_sheet")) {
-						  // System.out.println(getClass() + " nestFormCode=" + nestFormCode);
 						  ModuleSetupDb msd = new ModuleSetupDb();
 						  msd = msd.getModuleSetupDbOrInit(nestFormCode);
-						  // String listField = StrUtil.getNullStr(msd.getString("list_field"));
-						  // System.out.println(getClass() + " listField=" + listField);
 						  String[] fields = msd.getColAry(false, "list_field");
 						  
 						  int len = 0;
@@ -208,9 +201,7 @@ if (op.equals("selBatch")) {
 						  for (int n=0; n<len; n++) {
 							  String fieldName = fields[n];
 							  String v = StrUtil.getNullStr(fdaoNest.getFieldHtml(request, fieldName)); // fdao.getFieldValue(fieldName);
-						  
-						  	  // System.out.println(getClass() + " v=" + v + " fieldName=" + fieldName);
-							   
+
 							  if (n==0) {
 								  tds = v;
 							  } else {
@@ -375,8 +366,6 @@ if (mode.equals("moduleTag")) {
 
 FormQueryDb fqd = new FormQueryDb();
 fqd = fqd.getFormQueryDb(id);
-
-// System.out.println(getClass() + " colProps=" + colProps);
 %>
 
 <table id="queryTable" style="display:none"></table>
@@ -530,7 +519,6 @@ url: '<%=request.getContextPath()%>/flow/form_query_script_list_ajax.jsp?id=<%=i
 		String[] paramValues = ParamUtil.getParameters(request, paramName);
 		if (paramValues.length == 1) {
 			String paramValue = paramValues[0];
-			// System.out.println(getClass() + " paramValue=" + paramValue);
 			// 过滤掉id、mode
 			if (paramName.equals("id") || paramName.equals("mode"))
 				;
@@ -589,8 +577,6 @@ else if (mode.equals("filter")) {
 					;
 					}else {
 					param += "&" + paramName + "=" + StrUtil.UrlEncode(paramValue);
-					
-					// System.out.println(getClass() + " paramName=" + paramName + " paramValue=" + paramValue);
 				}
 			}
 		}

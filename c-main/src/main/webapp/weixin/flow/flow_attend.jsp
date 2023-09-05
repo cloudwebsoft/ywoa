@@ -1,8 +1,12 @@
 <%@ page language="java" import="com.redmoon.oa.android.Privilege" pageEncoding="utf-8" %>
+<%@ page import="cn.js.fan.util.ParamUtil" %>
 <%
     Privilege pvg = new Privilege();
     pvg.auth(request);
     String skey = pvg.getSkey();
+
+    // 通过uniapp的webview载入
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE HTML>
 <html>
@@ -75,7 +79,14 @@
         return (prePath + postPath);
     }
 
+    var isUniWebview = <%=isUniWebview%>;
+
     if(mui.os.plus) {
+        // 如果是通过uniapp的webview载入
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
+
         // 使搜索区域下方空白不致过大，因为搜索框中的input的margin-bottom为15px，而在原生手机端中则不会有此margin-bottom
         $('#pullrefresh').css('margin-top', '-15px');
     }
@@ -87,15 +98,21 @@
     // 将路径改为完整的路径，否则ios中5+app会因为spring security不允许url中包括../而致无法访问
     var url = "../../public/android/flow/attend?";
     if(mui.os.plus && mui.os.ios) {
-        url = getContextPath() + "/public/android/flow/attend?";
+        // url = getContextPath() + "/public/android/flow/attend?";
+        var rootPath = getContextPath();
+        var p = rootPath.indexOf('/weixin');
+        if ( p != -1) {
+            rootPath = rootPath.substring(0, p);
+        }
+        url = rootPath + "/public/android/flow/attend?";
     }
 
     var skey = '<%=skey%>';
-
     var options = {
         "ajax_params": {"skey": skey},
         "url": url,
-        "ajaxDatasType": "myflows"
+        "ajaxDatasType": "myflows",
+        "isUniWebview": isUniWebview
     };
     var content = document.querySelector('.mui-content');
 

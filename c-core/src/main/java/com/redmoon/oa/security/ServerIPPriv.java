@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.*;
 import com.redmoon.oa.db.SequenceManager;
@@ -103,7 +104,7 @@ public class ServerIPPriv extends ObjectRaw {
                 loaded = true;
             }
         } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -143,7 +144,7 @@ public class ServerIPPriv extends ObjectRaw {
             ps.setInt(2, id);
             r = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         }
         return r == 1 ? true : false;
     }
@@ -170,8 +171,6 @@ public class ServerIPPriv extends ObjectRaw {
 
     /**
      * 检查用户权限
-     * @param leaf Leaf 节点
-     * @param username String
      * @return boolean
      */
     public boolean canUserDo(UserDb user, UserGroupDb[] groups, RoleDb[] roles, int privType) {
@@ -205,7 +204,7 @@ public class ServerIPPriv extends ObjectRaw {
                     }
                 }
             }
-            else if (sip.getType()==sip.TYPE_ROLE) {
+            else if (sip.getType()== TYPE_ROLE) {
                 if (sip.getName().equals(RoleDb.CODE_MEMBER)) {
                     if (privType==PRIV_LOGIN) {
                         if (sip.getLogin() == 1)
@@ -228,7 +227,7 @@ public class ServerIPPriv extends ObjectRaw {
                     }
                 }
             }
-            else if (sip.getType()==sip.TYPE_USER) { //　个人用户
+            else if (sip.getType()== TYPE_USER) { //　个人用户
                 if (sip.getName().equals(user.getName())) {
                     if (privType == PRIV_LOGIN) {
                         if (sip.getLogin() == 1)
@@ -254,7 +253,7 @@ public class ServerIPPriv extends ObjectRaw {
             ps.setInt(4, serverIPId);
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error("add:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error("add:" + StrUtil.trace(e));
             throw new ErrMsgException("请检查是否有重复项存在！");
         }
         finally {
@@ -271,7 +270,7 @@ public class ServerIPPriv extends ObjectRaw {
         try {
             sip = new ServerIPPriv(id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return sip;
     }
@@ -285,7 +284,7 @@ public class ServerIPPriv extends ObjectRaw {
             ps.setInt(1, serverIPId);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -299,7 +298,7 @@ public class ServerIPPriv extends ObjectRaw {
             ps.setInt(1, id);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -349,7 +348,7 @@ public class ServerIPPriv extends ObjectRaw {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {
@@ -383,7 +382,7 @@ public class ServerIPPriv extends ObjectRaw {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -416,7 +415,7 @@ public class ServerIPPriv extends ObjectRaw {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -452,7 +451,7 @@ public class ServerIPPriv extends ObjectRaw {
                 }
             }
         } catch (Exception e) {
-            logger.error("getRolesOfLeafPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRolesOfLeafPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -486,7 +485,7 @@ public class ServerIPPriv extends ObjectRaw {
                 add(ary[i], TYPE_ROLE, serverIPId);
             }
         } catch (SQLException e) {
-            logger.error("setRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setRoles:" + e.getMessage());
         }
         finally {
             if (conn!=null) {

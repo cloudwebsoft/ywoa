@@ -17,10 +17,13 @@
 %>
 <%@ page import="com.cloudweb.oa.api.ILicense" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
+<%@ page import="java.io.File" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <jsp:useBean id="backup" scope="page" class="cn.js.fan.util.Backup"/>
 <jsp:useBean id="cfg" scope="page" class="cn.js.fan.web.Config"/>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>许可证</title>
@@ -45,7 +48,7 @@
         try {
             ret = fileUpload.doUpload(application, request);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         if (fileUpload.getRet() == FileUpload.RET_SUCCESS) {
@@ -67,7 +70,8 @@
         }
     } else if ("change".equals(op)) {
         licFileName = ParamUtil.get(request, "licFileName");
-        FileUtil.CopyFile(licFileName, Global.getAppPath() + "WEB-INF/license.dat");
+        ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+        FileUtil.CopyFile(licFileName, configUtil.getFilePath() + File.separator + "license.dat");
         License.getInstance().init();
         ILicense iLicense = SpringUtil.getBean(ILicense.class);
         iLicense.init();
@@ -94,7 +98,13 @@
         </tr>
     </table>
 </form>
-<%if ("".equals(licFileName)) {%>
+<%
+    Config oaCfg = new Config();
+    SpConfig spCfg = new SpConfig();
+    String version = StrUtil.getNullStr(oaCfg.get("version"));
+    String spVersion = StrUtil.getNullStr(spCfg.get("version"));
+    if ("".equals(licFileName)) {
+%>
 <table width="53%" border="0" align="center" cellpadding="0" cellspacing="0" class="tabStyle_1 percent80">
     <tbody>
     <tr>
@@ -104,10 +114,6 @@
         <td width="17%" align="left">授权单位</td>
         <td width="83%" align="left">
             <%
-                Config oaCfg = new Config();
-                SpConfig spCfg = new SpConfig();
-                String version = StrUtil.getNullStr(oaCfg.get("version"));
-                String spVersion = StrUtil.getNullStr(spCfg.get("version"));
                 License license = License.getInstance();
                 out.print(license.getCompany());
             %>
@@ -171,6 +177,11 @@
     <tr>
         <td align="left">系统补丁版本</td>
         <td align="left"><%=spVersion%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">类别</td>
+        <td align="left"><%="cloud".equals(license.getCategory())?"登云版":"本地版"%>
         </td>
     </tr>
     <tr>
@@ -241,6 +252,40 @@
     <tr>
         <td align="left">域名</td>
         <td align="left"><%=lu.getDomain()%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">流程最大节点数</td>
+        <td align="left"><%=lu.getActionCount()%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">试用版</td>
+        <td align="left"><%=lu.isTrial()?"是":"否"%></td>
+    </tr>
+    <tr>
+        <td align="left">流程设计器</td>
+        <td align="left"><%=lu.getFlowDesigner().equals(License.FLOW_DESIGNER_A) ? "A版（仅可在IE下设计）":"X版"%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">Office控件序列号</td>
+        <td align="left"><%=lu.getOfficeControlKey()%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">系统版本</td>
+        <td align="left"><%=lu.getVersion()%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">系统补丁版本</td>
+        <td align="left"><%=spVersion%>
+        </td>
+    </tr>
+    <tr>
+        <td align="left">类别</td>
+        <td align="left"><%="cloud".equals(lu.getCategory())?"登云版":"本地版"%>
         </td>
     </tr>
     <tr>

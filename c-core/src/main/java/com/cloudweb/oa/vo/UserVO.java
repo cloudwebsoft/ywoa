@@ -24,6 +24,7 @@ public class UserVO {
 
     private String pwdRaw;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime regDate;
 
     @NotEmpty(message = "{user.realName.empty}")
@@ -64,6 +65,7 @@ public class UserVO {
 
     private String hobbies;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastTime;
 
     /**
@@ -73,6 +75,9 @@ public class UserVO {
 
     private String emailName;
 
+    /**
+     * 短号码
+     */
     private String msn;
 
     /**
@@ -80,8 +85,10 @@ public class UserVO {
      */
     private String proxy;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime proxyBeginDate;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime proxyEndDate;
 
     private Long diskSpaceAllowed;
@@ -131,6 +138,7 @@ public class UserVO {
 
     private Integer orders;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastLogin;
 
     private String leaderCode;
@@ -144,4 +152,6 @@ public class UserVO {
     private String Password2;
 
     private Long msgSpaceAllowed;
+
+    private String loginName;
 }

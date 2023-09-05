@@ -3,7 +3,6 @@
 				 cn.js.fan.db.*,
 				 cn.js.fan.util.*,
 				 cn.js.fan.web.*,
-				 com.redmoon.forum.*,
 				 org.jdom.*,
                  java.util.*"
 %>
@@ -19,7 +18,7 @@ XMLConfig cfg = new XMLConfig("config_sys.xml", false, "iso-8859-1");
     <div align="left"><b>欢迎您使用云网社区 版本<%=cfg.get("Application.version")%></b></div>
     <hr size="0">
 <%
-cfg = new XMLConfig(application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml", true, "iso-8859-1");
+cfg = new XMLConfig("proxool.xml", false, "iso-8859-1");
 
 Element root = cfg.getRootElement();
 Element driverProp = root.getChild("proxool").getChild("driver-properties");

@@ -1,0 +1,51 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>选择职位</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .layui-form-checkbox {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<div class="spacerH"></div>
+<div class="container" style="text-align: center">
+    <div id="tranBox"></div>
+    <div>
+        <button id="btnOk" style="margin-top: 10px" class="btn btn-default">确定</button>
+    </div>
+</div>
+<script th:inline="javascript">
+    var ary = [[${deptUserAry}]];
+    var arr = [];
+    for (var i in ary) {
+        var json = {};
+        json.value = ary[i].userName;
+        json.title = ary[i].realName;
+        arr.push(json);
+    }
+    layui.use('transfer', function () {
+        var transfer = layui.transfer;
+        transfer.render({
+            elem: '#tranBox'
+            , title: ['候选用户', '已选用户']
+            , showSearch: true // 显示搜索框
+            , width: 400
+            , height: 680
+            , data: arr
+            , id: 'tran'
+            ,value: [
+                [(${postUsers})]
+            ]
+        });
+
+        $("#btnOk").click(function () {
+            window.opener.setPostUsers(transfer.getData('tran'));
+            window.close();
+        })
+    });
+</script>
+</body>
+</html>

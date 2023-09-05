@@ -60,8 +60,6 @@ public class SMSBoundaryMonthMgr {
         //SMSBoundaryMonthDb sbmDb = new SMSBoundaryMonthDb();
         //sbmDb = sbmDb.getSMSBoundaryDetialDb(1);
         //sbmDb.set("total",new Integer(total));
-        //System.out.println(getClass()+";;;;;;;"+total);
-
     }
 
     public int getRemainingCount(int month) throws SQLException {
@@ -119,8 +117,6 @@ public class SMSBoundaryMonthMgr {
         int used = 0;
         int year = DateUtil.getYear(new Date());
         int day = DateUtil.getDayCount(year, month);
-        // System.out.println(getClass() + ":::" + month + "::::" + day + "::::" +
-        //                   year);
         Date beginDate = DateUtil.parse(year + "-" + month + "-01 00:00:00",
                                         "yyyy-MM-dd hh:mm:ss");
         Date endDate = DateUtil.parse(year + "-" + month + "-" + day +

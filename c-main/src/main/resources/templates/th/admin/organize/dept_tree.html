@@ -1,0 +1,424 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>部门管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" href="../../js/jstree/themes/default/style.css"/>
+    <link type="text/css" rel="stylesheet" href="../../skin/common/organize.css"/>
+    <script src="../../inc/common.js"></script>
+    <script src="../../js/jquery.my.js"></script>
+    <script src="../../js/jstree/jstree.js"></script>
+    <script src="../../js/jquery.toaster.email.js"></script>
+    <script src="../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <style>
+        html {
+            height: 100%;
+            margin: 0;
+            overflow-y: hidden;
+        }
+
+        body {
+            overflow-y: auto;
+        }
+
+        td {
+            height: 20px;
+        }
+
+        .unit {
+            font-weight: bold;
+        }
+
+        .deptNodeHidden {
+            color: #999;
+        }
+
+        #d {
+            height: 100%;
+        }
+    </style>
+</head>
+<body >
+<div class="organize-leftbox">
+  <div class="organize-btn" onclick="add()"><img src="../../skin/images/organize/btnicon-add.png"  width="20" height="20"/>新增</div>
+  <div class="organize-btn" onclick="modify()"><img src="../../skin/images/organize/btnicon-alter.png"  width="20" height="20"/>修改</div>
+  <div class="organize-btn" onclick="del()"><img src="../../skin/images/organize/btnicon-del.png"  alt="" width="20" height="20"/>删除</div>
+</div>
+<table cellSpacing=0 cellPadding=0 width="95%" align=center>
+  <TBODY>
+    <TR>
+      <TD height=200 valign="top">
+		<div id="departmentTree"></div>
+		</TD>
+    </TR>
+  </TBODY>
+</table>
+</body>
+<script type="text/javascript" th:inline="javascript">
+var selectNodeId, selectNodeName;
+var unitStr = "[(${unitStr})]";
+var listCode = unitStr.split(",");
+var inst;
+var node;
+var myjsTree;
+var listHided = new Array();
+
+var isDraggable = true;
+function setDraggable(draggable) {
+    isDraggable = draggable;
+}
+
+$(function() {
+	var i = 0;
+    var listHided = [[${listHided}]];
+    if (listHided!="") {
+        listHided = listHided.split(",");
+    }
+    else {
+        listHided = [];
+    }
+
+	$(function () {
+		myjsTree = $('#departmentTree')
+		 .jstree({
+		  "core" : {
+			  "data" :  [(${jsonData})],
+			  "themes" : {
+				 "theme" : "default" ,
+				 "dots" : true,
+				 "icons" : true
+			  },
+			  "check_callback" : true,
+		 },
+		 "ui" : {"initially_select" : [ "root" ]  },
+		 "plugins" : ["unique", "dnd", "wholerow", "themes", "ui", "contextmenu" , "types", "crrm", "state"],
+         "dnd": {    // 拖放插件配置
+             drag_selection: false,
+             is_draggable : function () {
+                 var tmp = isDraggable; // return false后，chrome中点击右侧页面打开addTab，再回到本页有效了
+                 if (!isDraggable) {
+                     isDraggable = true;
+                 }
+                 return tmp;
+             }
+         },
+		 "contextmenu": {	//绑定右击事件
+		  "items": {
+			  "create": {
+				  "label": "增加",
+				  "icon" : "../../js/jstree/themes/default/tree_icon_add.png",
+				  "action": function (data) {
+					  inst = $.jstree.reference(data.reference);
+					  node = inst.get_node(data.reference);
+					  selectNodeId = node.id;
+					  selectNodeName = node.text;
+					  addDepartment(selectNodeId);
+				  }
+			  },
+			  "rename": {
+				  "label": "修改",
+				  "icon" : "../../js/jstree/themes/default/tree_icon_alter.png",
+				  "action": function (data) {
+					  inst = $.jstree.reference(data.reference);
+					  node = inst.get_node(data.reference);
+					  selectNodeId = node.id;
+					  selectNodeName = node.text;
+					  modifyDepartment(selectNodeId,selectNodeName)
+				  }
+			  },
+			  "remove": {
+				  "label": "删除",
+				  "icon" : "../../js/jstree/themes/default/tree_icon_close.png",
+				  "action": function (data) {
+					  inst = $.jstree.reference(data.reference);
+					  node = inst.get_node(data.reference);
+					  selectNodeId = node.id;
+					  selectNodeName = node.text;
+					  deleteDepartment(selectNodeId,inst,node);
+				  }
+			  }
+		  }
+		 }
+		}).bind('move_node.jstree', function (e, data) {//绑定移动节点事件
+                node = data.node;
+                $.ajax({
+                    type: "post",
+                    url: "../../department/move.do",
+                    dataType: "json",
+                    data: {
+                        code: data.node.id,
+                        parentCode: data.parent,
+                        position: data.position
+                    },
+                    success: function (data, status) {
+                        if (data.ret == 0) {
+                            alert(data.msg);
+                            window.location.reload(true);
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        alert("移动失败！");
+                        window.location.reload(true);
+                    }
+                });
+                for (var i = 0; i < listCode.length; i++) {
+                    $("#" + listCode[i] + " a").first().css("font-weight", "bold");
+                }
+                for (var i = 0; i < listHided.length; i++) {
+                    $("#" + listHided[i] + " a").first().css("color", "#999");
+                }
+		}).bind('select_node.jstree', function (e, data) {     //绑定选中事件
+                node = data.node;
+                selectNodeName = data.node.text;
+                selectNodeId = data.node.id;
+                if (parent.parent) {
+                    parent.parent.setDeptCode(selectNodeId);
+                }
+
+                [# th:switch="${pageType}"]
+                    [# th:case="list"]
+                    parent.userFrame.location.href = "../../admin/organize/listUser.do?deptCode=" + selectNodeId;
+                    [/]
+                    [# th:case="postList"]
+                    parent.userFrame.location.href = "../../admin/organize/postListPage.do?curDeptCode=" + selectNodeId;
+                    [/]
+                    [# th:case="*"]
+                    try {
+                        parent.userFrame.setDeptCodeAndName(selectNodeId, selectNodeName);
+                    } catch (e) {
+                        // consoleLog(e);
+                        // 当添加后，进入了刚添加用户所在部门的用户列表，所以setDeptCodeAndName方法在userFrame中不存在
+                        parent.userFrame.location.href = "../../admin/organize/listUser.do?deptCode=" + selectNodeId;
+                    }
+                    [/]
+                [/]
+
+                for (var i = 0; i < listCode.length; i++) {
+                    $("#" + listCode[i] + " a").first().css("font-weight", "bold");
+                }
+                for (var i = 0; i < listHided.length; i++) {
+                    $("#" + listHided[i] + " a").first().css("color", "#999");
+                }
+		}).bind('click.jstree', function(event) {
+                for (var i = 0; i < listCode.length; i++) {
+                    $("#" + listCode[i] + " a").first().css("font-weight", "bold");
+                }
+                for (var i = 0; i < listHided.length; i++) {
+                    $("#" + listHided[i] + " a").first().css("color", "#999");
+                }
+		}).bind('ready.jstree',function(){
+		    [# th:if="${pageType} eq 'add'"]
+                try {
+                    parent.userFrame.setDeptCodeAndName(selectNodeId, selectNodeName);
+                } catch (e) {
+		            consoleLog(e);
+                }
+			[/]
+		 	positionNode([[${curDeptCode}]]);
+		});
+
+		// 初始化，使得单位加粗
+		for(var i=0;i<listCode.length;i++){
+		 $("#"+listCode[i]+" a").first().css("font-weight","bold");
+		}
+
+		for(var i=0;i<listHided.length;i++){
+			$("#"+listHided[i]+" a").first().css("color","#999");
+		}
+	});
+});
+
+//父页面回调函数，不刷新增加部门
+function addNewNode(myId, myText, unitCode) {
+    if (selectNodeId == undefined) {
+        selectNodeId = "root";
+    }
+    myjsTree.jstree('create_node', selectNodeId + "", {'id': myId + "", 'text': myText + ""}, 'last');
+    positionNode(myId);
+    if (unitCode == "0") {
+        listCode[listCode.length] = myId + "";
+    }
+    for (var i = 0; i < listCode.length; i++) {
+        $("#" + listCode[i] + " a").first().css("font-weight", "bold");
+    }
+    for (var i = 0; i < listHided.length; i++) {
+        $("#" + listHided[i] + " a").first().css("color", "#999");
+    }
+}
+
+//增加部门
+function addDepartment(parent_code) {
+    $.ajax({
+        type: "post",
+        url: "../../department/add.do",
+        dataType: "json",
+        data: {
+            currNodeCode: parent_code
+        },
+        beforeSend: function (XMLHttpRequest) {
+        },
+        success: function (data, status) {
+            parent.parent.addDept(parent_code, data.parentNodeName, data.newNodeCode);
+        },
+        complete: function (XMLHttpRequest, status) {
+        },
+        error: function (XMLHttpRequest, textStatus) {
+            alert(XMLHttpRequest.responseText);
+        }
+    });
+}
+
+//父页面回调函数，不刷新修改部门
+function modifyTitle(name, unitCode, myId, isHide) {
+    myjsTree.jstree("set_text", node, name, "zh");
+    positionNode(myId);
+    for (var i = 0; i < listCode.length; i++) {
+        if (listCode[i] == selectNodeId + "") {
+            listCode.splice(i, 1);
+            break;
+        }
+    }
+    // 如果 isHide为true，则判断listHided中是否有，如果没有，则 加入
+    // 如果isHide为false，则判断listHided中是否有，如果有，则删除
+    // console.log("isHide=" + isHide + " " + name + " " + myId);
+    if (isHide) {
+        $("#" + myId + " a").first().css("color", "#999");
+        listHided.splice(1, 0, myId);
+    } else {
+        for (var i = 0; i < listHided.length; i++) {
+            if (listHided[i] == myId) {
+                listHided.splice(i, 1);
+                break;
+            }
+        }
+        $("#" + myId + " a").first().css("color", "");
+    }
+
+    if (unitCode == "0") {
+        listCode[listCode.length] = selectNodeId + "";
+    } else {
+        $("#" + selectNodeId + " a").first().css("font-weight", "normal");
+    }
+    for (var i = 0; i < listCode.length; i++) {
+        $("#" + listCode[i] + " a").first().css("font-weight", "bold");
+    }
+    for (var i = 0; i < listHided.length; i++) {
+        $("#" + listHided[i] + " a").first().css("color", "#999");
+    }
+}
+
+// 定位节点     myId=部门code
+function positionNode(myId) {
+    myjsTree.jstree("deselect_all");
+    myjsTree.jstree("select_node", myId);
+}
+
+// 修改部门
+function modifyDepartment(code, name) {
+    $.ajax({
+        type: "post",
+        url: "../../department/edit.do",
+        dataType: "json",
+        data: {
+            code: code
+        },
+        beforeSend: function (XMLHttpRequest) {
+        },
+        success: function (data, status) {
+            if (data.ret==0) {
+                parent.parent.setToaster(data.msg);
+            }
+            else {
+                parent.parent.modifyDept(code, name, data.parentNodeName, data.parentCode, data.deptType, data.isGroup, data.isHide, data.description, data.shortName, data.layer, data.id);
+            }
+        },
+        complete: function (XMLHttpRequest, status) {
+        },
+        error: function (XMLHttpRequest, textStatus) {
+            alert(XMLHttpRequest.responseText);
+        }
+    });
+}
+
+function deleteDepartment(code, inst, obj) {
+    if ("root" == code) {
+        parent.parent.setToaster("根节点不能被删除");
+        return;
+    }
+    parent.parent.jConfirm("您确定要删除吗?", "提示", function (r) {
+        if (!r) {
+            return;
+        } else {
+            $.ajax({
+                type: "post",
+                url: "../../department/del.do",
+                dataType: "json",
+                data: {
+                    code: code
+                },
+                beforeSend: function (XMLHttpRequest) {
+                    parent.parent.showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret == 1) {
+                        parent.parent.jAlert("删除部门成功", "提示");
+                        myjsTree.jstree('delete_node', obj);
+                    } else {
+                        parent.parent.jAlert(data.msg, "提示");
+                    }
+                    positionNode(data.selectCode);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    parent.parent.hiddenLoading();
+                    // shrink();
+                    for (var i = 0; i < listCode.length; i++) {
+                        $("#" + listCode[i] + " a").first().css("font-weight", "bold");
+                    }
+                    for (var i = 0; i < listHided.length; i++) {
+                        $("#" + listHided[i] + " a").first().css("color", "#999");
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        }
+    })
+}
+
+function add() {
+    if (selectNodeId == undefined) {
+        parent.parent.setToaster("请选择操作节点");
+        return;
+    }
+    addDepartment(selectNodeId);
+}
+
+function modify() {
+    if (selectNodeId == undefined) {
+        parent.parent.setToaster("请选择操作节点");
+        return;
+    }
+    modifyDepartment(selectNodeId, selectNodeName);
+}
+
+function del() {
+    if (selectNodeId == undefined) {
+        parent.parent.setToaster("请选择操作节点");
+        return;
+    }
+    deleteDepartment(selectNodeId, inst, node);
+}
+
+$(document).ready(function () {
+    if (0 == [(${flag})]) {
+        parent.parent.setToaster("右键菜单可管理或拖动部门");
+    }
+})
+</script>
+</html>

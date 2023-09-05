@@ -14,6 +14,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.person.UserDb;
@@ -75,8 +76,7 @@ public class SQLUtil {
 	            		}
 	            	}
 				} catch (ErrMsgException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+                    LogUtil.getLog(SQLUtil.class).error(e);
 				}
             }
             else if (str.equalsIgnoreCase("curUser")) {

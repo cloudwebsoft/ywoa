@@ -153,8 +153,12 @@ public class SQLBuilder {
 	 * @param sql
 	 * @return
 	 */
-	public static String getListSqlForLogRelateModule(HttpServletRequest request, String sql) {
-		return SpringUtil.getBean(ISQLBuilderService.class).getListSqlForLogRelateModule(request, sql);
+	public static String getListSqlForLogRelateModule(HttpServletRequest request, String sql, boolean isRead) {
+		return SpringUtil.getBean(ISQLBuilderService.class).getListSqlForLogRelateModule(request, sql, isRead);
+	}
+
+	public static String getListSqlForLogRelateModuleBack(HttpServletRequest request, String sql) {
+		return SpringUtil.getBean(ISQLBuilderService.class).getListSqlForLogRelateModuleBack(request, sql);
 	}
 }
 

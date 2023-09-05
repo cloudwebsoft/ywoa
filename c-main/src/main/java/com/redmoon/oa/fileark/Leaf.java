@@ -10,15 +10,14 @@ import cn.js.fan.db.*;
 import cn.js.fan.security.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.kernel.License;
 
 public class Leaf implements Serializable,ITagSupport {
     transient RMCache rmCache = RMCache.getInstance();
     String connname = "";
-    transient Logger logger = Logger.getLogger(Leaf.class.getName());
-    
+
     public final static String SCRIPTS_DOWNLOAD_VALIDATE = "download_validate";
     public final static String SCRIPTS_DOWNLOAD = "download";
     public final static String SCRIPTS_ADD = "add";
@@ -118,23 +117,20 @@ public class Leaf implements Serializable,ITagSupport {
     public Leaf() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
     }
 
     public Leaf(String code) {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
         this.code = code;
         loadFromDb();
     }
 
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(Leaf.class.getName());
-        }
         if (rmCache==null) {
             rmCache = RMCache.getInstance();
         }
@@ -177,7 +173,7 @@ public class Leaf implements Serializable,ITagSupport {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("loadFromDb: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("loadFromDb: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -302,12 +298,12 @@ public class Leaf implements Serializable,ITagSupport {
             if (rs != null) {
                 while (rs.next()) {
                     String c = rs.getString(1);
-                    //logger.info("child=" + c);
+                    //LogUtil.getLog(getClass()).info("child=" + c);
                     v.addElement(getLeaf(c));
                 }
             }
         } catch (SQLException e) {
-            logger.error("getChildren: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getChildren: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -353,7 +349,7 @@ public class Leaf implements Serializable,ITagSupport {
                 ",is_show=" + (show ? 1 : 0) + ",is_office_ntko_show=" + (OfficeNTKOShow ? 1 : 0) + ",is_log=" + (log ? 1 : 0) +
                 ",is_fulltext=" + (fulltext ? 1 : 0) + ",is_examine=" + (examine ? 1 : 0) + ",scripts=" + StrUtil.sqlstr(scripts) +
                 ",flow_type_code=" + StrUtil.sqlstr(flowTypeCode) + ", is_copyable=" + (copyable ? 1 : 0) + " where code=" + StrUtil.sqlstr(code);
-        // logger.info(sql);
+        // LogUtil.getLog(getClass()).info(sql);
         RMConn conn = new RMConn(connname);
         int r = 0;
         try {
@@ -361,15 +357,15 @@ public class Leaf implements Serializable,ITagSupport {
             try {
                 if (r == 1) {
                     removeFromCache(code);
-                    //logger.info("cache is removed " + code);
+                    //LogUtil.getLog(getClass()).info("cache is removed " + code);
                     //DirListCacheMgr更新
                     LeafChildrenCacheMgr.remove(parent_code);
                 }
             } catch (Exception e) {
-                logger.error("update: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("update: " + e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("update: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("update: " + e.getMessage());
         }
         boolean re = r == 1 ? true : false;
         if (re) {
@@ -462,10 +458,10 @@ public class Leaf implements Serializable,ITagSupport {
                     newParentLeaf.update();
                 }
             } catch (Exception e) {
-                logger.error("update: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("update: " + e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("update: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("update: " + e.getMessage());
         }
         boolean re = r == 1 ? true : false;
         if (re) {
@@ -520,7 +516,7 @@ public class Leaf implements Serializable,ITagSupport {
             lp.add(childleaf.getCode());
         } catch (SQLException e) {
             conn.rollback();
-            logger.error("AddChild: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("AddChild: " + e.getMessage());
             return false;
         } finally {
             if (conn != null) {
@@ -541,7 +537,7 @@ public class Leaf implements Serializable,ITagSupport {
             rmCache.remove(code, dirCache);
             LeafChildrenCacheMgr.remove(code);
         } catch (Exception e) {
-            logger.error("removeFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeFromCache: " + e.getMessage());
         }
     }
 
@@ -550,7 +546,7 @@ public class Leaf implements Serializable,ITagSupport {
             rmCache.invalidateGroup(dirCache);
             LeafChildrenCacheMgr.removeAll();
         } catch (Exception e) {
-            logger.error("removeAllFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeAllFromCache: " + e.getMessage());
         }
     }
 
@@ -559,7 +555,7 @@ public class Leaf implements Serializable,ITagSupport {
         try {
             leaf = (Leaf) rmCache.getFromGroup(code, dirCache);
         } catch (Exception e) {
-            logger.error("getLeaf1: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getLeaf1: " + e.getMessage());
         }
         if (leaf == null) {
             leaf = new Leaf(code);
@@ -569,7 +565,7 @@ public class Leaf implements Serializable,ITagSupport {
                 try {
                     rmCache.putInGroup(code, dirCache, leaf);
                 } catch (Exception e) {
-                    logger.error("getLeaf2: " + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getLeaf2: " + e.getMessage());
 
                 }
             }
@@ -586,7 +582,7 @@ public class Leaf implements Serializable,ITagSupport {
         try {
             doc.delDocumentByDirCode(leaf.getCode());
         } catch (ErrMsgException e) {
-            logger.error("delsingle:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("delsingle:" + e.getMessage());
         }
 
         // 删除该目录下的所有权限
@@ -606,7 +602,7 @@ public class Leaf implements Serializable,ITagSupport {
             // removeFromCache(leaf.getParentCode());
             removeAllFromCache();
         } catch (SQLException e) {
-            logger.error("delsingle: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("delsingle: " + e.getMessage());
             return false;
         }
         return true;
@@ -642,7 +638,7 @@ public class Leaf implements Serializable,ITagSupport {
                 bleaf = getLeaf(rr.getString(1));
             }
         } catch (SQLException e) {
-            logger.error("getBrother: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getBrother: " + e.getMessage());
         }
         return bleaf;
     }
@@ -685,7 +681,7 @@ public class Leaf implements Serializable,ITagSupport {
                 removeFromCache(bleaf.getCode());
             } catch (Exception e) {
                 conn.rollback();
-                logger.error("move: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("move: " + e.getMessage());
                 return false;
             } finally {
                 if (conn != null) {
@@ -734,12 +730,12 @@ public class Leaf implements Serializable,ITagSupport {
             if (rs != null) {
                 while (rs.next()) {
                     String c = rs.getString(1);
-                    //logger.info("child=" + c);
+                    //LogUtil.getLog(getClass()).info("child=" + c);
                     v.addElement(getLeaf(c));
                 }
             }
         } catch (SQLException e) {
-            logger.error("getChildren: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getChildren: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();

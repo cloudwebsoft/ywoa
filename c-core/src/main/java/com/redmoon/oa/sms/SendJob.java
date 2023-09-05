@@ -6,10 +6,12 @@ import cn.js.fan.web.*;
 import com.cloudwebsoft.framework.template.*;
 import com.cloudwebsoft.framework.util.*;
 import com.redmoon.oa.sys.DebugUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.db.ResultIterator;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * <p>Title: </p>
@@ -23,7 +25,12 @@ import cn.js.fan.db.ResultIterator;
  * @author not attributable
  * @version 1.0
  */
-public class SendJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class SendJob extends QuartzJobBean {
     com.redmoon.oa.sms.Config smscfg = new com.redmoon.oa.sms.Config();
     int smsSendInterval = StrUtil.toInt(smscfg.getIsUsedProperty("sendInterval"), 6000); // 6秒
     int sendIncludeMinute = StrUtil.toInt(smscfg.getIsUsedProperty("sendIncludeMinute"), 10); // 10分钟内的待发送短信
@@ -41,7 +48,7 @@ public class SendJob implements Job {
             long t = System.currentTimeMillis();
             String sql = "update sms_send_record set msg_flag='" + t + "' where is_sended=0 and msg_id=-1 and sendtime>? and send_count<? and is_timing=0 and msg_flag = '0'";
             JdbcTemplate jt = new JdbcTemplate();
-            jt.executeUpdate(sql, new Object[]{d, new Integer(sendMaxCountOnFail)});
+            jt.executeUpdate(sql, new Object[]{d, sendMaxCountOnFail});
 
             // 选择已被置时间戳的记录，以避免与别的线程发送同一条记录
             sql = "select id from sms_send_record where is_sended=0 and msg_id=-1 and msg_flag='" + t + "' and sendtime>? and send_count<? and is_timing=0 order by id asc";
@@ -61,11 +68,7 @@ public class SendJob implements Job {
                 // 超出最大次数，则不发送
                 // if (ssrd.getSendCount()>=sendMaxCountOnFail)
                 //    continue;
-                // System.out.println(getClass() + " msgText=" + ssrd.getMsgText() + " " + ssrd.getUserName());
                 // sender.send(ssrd);
-
-
-                    //System.out.print("ccc");
                 boolean re = imu.send(ssrd);
                 if (re) {
                     remainCount --;
@@ -141,9 +144,9 @@ public class SendJob implements Job {
      *
      * @param jobExecutionContext JobExecutionContext
      * @throws JobExecutionException
-     * @todo Implement this org.quartz.Job method
      */
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         try {

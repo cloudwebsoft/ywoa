@@ -1,0 +1,47 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<div id="tabs1" th:fragment="nav(myUserName, flowId, canManageFlow, isFlowChartShow, canModifyTitle, visitKey, item)">
+    <ul>
+        <li id="menu1" th:attr="class=${item} eq 1 ? 'current':''">
+            <a th:href="@{'/flowShowPage.do?flowId=' + ${flowId}}">
+                <span>[(#{transferProcess})]</span>
+            </a>
+        </li>
+        <li th:if="${isFlowChartShow}" id="menu2" th:attr="class=${item} eq 2 ? 'current':''">
+            <a th:href="@{'/flowShowChartPage.do?flowId=' + ${flowId}}">
+                <span>[(#{flowChart})]</span>
+            </a>
+        </li>
+        <li th:if="${canModifyTitle}" id="menu6" th:attr="class=${item} eq 6 ? 'current':''">
+            <a th:href="@{'/flowModifyTitlePage.do?flowId=' + ${flowId} + '&visitKey=' + ${visitKey}}">
+                <span>
+                    [(#{modifyTitle})]
+                </span>
+            </a>
+        </li>
+        <li th:if="${isNotifyTabShow}" id="menu7" th:attr="class=${item} eq 7 ? 'current':''">
+            <a th:href="@{'/paper/paper_distribute_flow_list.jsp?flowId=' + ${flowId} + '&visitKey=' + ${visitKey}}">
+                <span>[(${notifyTabName})]</span>
+            </a>
+        </li>
+        <li th:if="${isArchiveTabShow}" id="menu9" th:attr="class=${item} eq 9 ? 'current':''">
+            <a th:href="@{'/flow/flow_doc_list.jsp?flowId=' + ${flowId} + '&visitKey=' + ${visitKey}}">
+            <span>
+                [(#{reactivationList})]
+            </span>
+            </a>
+        </li>
+        <li th:if="${canManageFlow}" id="menu8" th:attr="class=${item} eq 8 ? 'current':''">
+            <a th:href="@{'/admin/flow_intervene.jsp?flowId=' + ${flowId} + '&visitKey=' + ${visitKey}}">
+                <span>
+                    [(#{interventionProcess})]
+                </span>
+            </a>
+        </li>
+    </ul>
+</div>
+</body>
+</html>

@@ -130,7 +130,6 @@ public class ReciveOneMail {
         boolean conname = false;
         if (nameindex != -1)
             conname = true;
-        // System.out.println("CONTENTTYPE: " + contenttype);
         if (part.isMimeType("text/plain") && !conname) {
             bodytext.append((String) part.getContent());
         } else if (part.isMimeType("text/html") && !conname) {
@@ -173,11 +172,9 @@ public class ReciveOneMail {
         boolean isnew = false;
         Flags flags = ((Message) mimeMessage).getFlags();
         Flags.Flag[] flag = flags.getSystemFlags();
-        System.out.println("flags's length: " + flag.length);
         for (int i = 0; i < flag.length; i++) {
             if (flag[i] == Flags.Flag.SEEN) {
                 isnew = true;
-                System.out.println("seen Message.......");
                 break;
             }
         }
@@ -289,10 +286,6 @@ public class ReciveOneMail {
             storedir = "/tmp";
         }
         File storefile = new File(storedir + separator + fileName);
-        System.out.println("storefile's path: " + storefile.toString());
-        // for(int i=0;storefile.exists();i++){
-        // storefile = new File(storedir+separator+fileName+i);
-        // }
         BufferedOutputStream bos = null;
         BufferedInputStream bis = null;
         try {
@@ -327,29 +320,23 @@ public class ReciveOneMail {
         Folder folder = store.getFolder("INBOX");
         folder.open(Folder.READ_ONLY);
         Message message[] = folder.getMessages();
-        System.out.println("Messages's length: " + message.length);
         ReciveOneMail pmm = null;
         for (int i = 0; i < message.length; i++) {
-            System.out.println("======================");
             pmm = new ReciveOneMail((MimeMessage) message[i]);
-            System.out.println("Message " + i + " subject: " + pmm.getSubject());
-            System.out.println("Message " + i + " sentdate: "+ pmm.getSentDate());
-            System.out.println("Message " + i + " replysign: "+ pmm.getReplySign());
-            System.out.println("Message " + i + " hasRead: " + pmm.isNew());
-            System.out.println("Message " + i + "  containAttachment: "+ pmm.isContainAttach((Part) message[i]));
-            System.out.println("Message " + i + " form: " + pmm.getFrom());
-            System.out.println("Message " + i + " to: "+ pmm.getMailAddress("to"));
-            System.out.println("Message " + i + " cc: "+ pmm.getMailAddress("cc"));
-            System.out.println("Message " + i + " bcc: "+ pmm.getMailAddress("bcc"));
+            /*LogUtil.getLog(getClass()).info("Message " + i + " subject: " + pmm.getSubject());
+            LogUtil.getLog(getClass()).info("Message " + i + " sentdate: "+ pmm.getSentDate());
+            LogUtil.getLog(getClass()).info("Message " + i + " replysign: "+ pmm.getReplySign());
+            LogUtil.getLog(getClass()).info("Message " + i + " hasRead: " + pmm.isNew());
+            LogUtil.getLog(getClass()).info("Message " + i + "  containAttachment: "+ pmm.isContainAttach((Part) message[i]));
+            LogUtil.getLog(getClass()).info("Message " + i + " form: " + pmm.getFrom());
+            LogUtil.getLog(getClass()).info("Message " + i + " to: "+ pmm.getMailAddress("to"));
+            LogUtil.getLog(getClass()).info("Message " + i + " cc: "+ pmm.getMailAddress("cc"));
+            LogUtil.getLog(getClass()).info("Message " + i + " bcc: "+ pmm.getMailAddress("bcc"));*/
             pmm.setDateFormat("yy年MM月dd日 HH:mm");
-            System.out.println("Message " + i + " sentdate: "+ pmm.getSentDate());
-            System.out.println("Message " + i + " Message-ID: "+ pmm.getMessageId());
             // 获得邮件内容===============
-            pmm.getMailContent((Part) message[i]);
-            System.out.println("Message " + i + " bodycontent: \r\n"
-                    + pmm.getBodyText());
+            pmm.getMailContent(message[i]);
             pmm.setAttachPath("c:\\");
-            pmm.saveAttachMent((Part) message[i]);
+            pmm.saveAttachMent(message[i]);
         }
     }
 }

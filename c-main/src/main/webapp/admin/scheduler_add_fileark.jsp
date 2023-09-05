@@ -44,7 +44,7 @@ function findObj(theObj, theDoc)
 }
 
 function SelectDateTime(objName) {
-    var dt = openWin("../util/calendar/time.htm","266px","185px");//showModalDialog("../util/calendar/time.htm", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
+    var dt = openWin("../util/calendar/time.htm","266px","185px");
     
 }
 function sel(dt) {

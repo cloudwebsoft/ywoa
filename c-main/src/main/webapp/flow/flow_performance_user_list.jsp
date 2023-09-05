@@ -1,13 +1,21 @@
 <%@ page contentType="text/html; charset=utf-8"%>
-<%@ page import="java.util.*"%>
-<%@ page import="cn.js.fan.util.*"%>
-<%@ page import="cn.js.fan.db.*"%>
-<%@ page import="com.cloudwebsoft.framework.db.*"%>
-<%@ page import="com.redmoon.oa.flow.*"%>
-<%@ page import="com.redmoon.oa.person.*"%>
-<%@ page import = "com.redmoon.oa.ui.*"%>
-<%@ page import="cn.js.fan.web.*" %>
-<%@ page import="com.redmoon.oa.dept.*" %>
+<%@ page import="cn.js.fan.db.ListResult"%>
+<%@ page import="cn.js.fan.db.Paginator"%>
+<%@ page import="cn.js.fan.db.ResultIterator"%>
+<%@ page import="cn.js.fan.db.ResultRecord"%>
+<%@ page import="cn.js.fan.util.DateUtil"%>
+<%@ page import="cn.js.fan.util.NumberUtil"%>
+<%@ page import="cn.js.fan.util.ParamUtil"%>
+<%@ page import="cn.js.fan.util.StrUtil" %>
+<%@ page import="com.cloudwebsoft.framework.db.JdbcTemplate" %>
+<%@ page import="com.redmoon.oa.dept.DeptDb" %>
+<%@ page import="com.redmoon.oa.dept.DeptMgr" %>
+<%@ page import="com.redmoon.oa.dept.DeptUserDb" %>
+<%@ page import="com.redmoon.oa.person.UserDb" %>
+<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="java.util.Calendar" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.Vector" %>
 <jsp:useBean id="docmanager" scope="page" class="com.redmoon.oa.fileark.DocumentMgr"/><jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 String priv="read";
 if (!privilege.isUserPrivValid(request,priv)) {
@@ -28,17 +36,22 @@ if (!myname.equals(privilege.getUser(request))) {
 
 String op = ParamUtil.get(request, "op");
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>流程绩效列表</title>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
 	<link rel="stylesheet" href="<%=request.getContextPath()%>/js/bootstrap/css/bootstrap.min.css"/>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexigrid/flexigrid.css"/>
+	<style>
+		.search-form input, select {
+			vertical-align: middle;
+		}
+	</style>
 	<script type="text/javascript" src="../inc/common.js"></script>
 	<script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+	<script src="../js/jquery-migrate-1.2.1.min.js"></script>
 	<script type="text/javascript" src="../js/flexigrid.js"></script>
 </head>
 <body>
@@ -50,10 +63,9 @@ String op = ParamUtil.get(request, "op");
 	}
 %>
 <script>
-o("<%=currentMenu%>").className="current";
+	o("<%=currentMenu%>").className="current";
 </script>
-<% 
-    
+<%
 	Calendar cal = Calendar.getInstance();
 	Calendar cal2 = Calendar.getInstance();
 	String rename = ParamUtil.get(request,"rename");
@@ -63,7 +75,7 @@ o("<%=currentMenu%>").className="current";
 <table id="searchTable" border="0" align="center">
   <tr>
     <td align="center"> 
-      <form name="formSearch" action="flow_performance_user_list.jsp" method="get">
+      <form name="formSearch" class="search-form" action="flow_performance_user_list.jsp" method="get">
         &nbsp;&nbsp;年度
         <select id="showyear" name="showyear" onchange="var y=this.options[this.selectedIndex].value; window.location.href='flow_performance_user_list.jsp?deptCode=<%=deptCode%>&showyear=' + y;">
         <%for (int y2=cury-60; y2<=cury; y2++) {%>

@@ -1,14 +1,16 @@
 <%@ page contentType="text/html;charset=utf-8" %>
-<%@ page import="java.util.*" %>
-<%@ page import="cn.js.fan.util.*" %>
-<%@ page import="cn.js.fan.web.*" %>
-<%@ page import="com.redmoon.oa.basic.*" %>
-<%@ page import="com.redmoon.oa.person.*" %>
-<%@ page import="com.redmoon.oa.dept.*" %>
+<%@ page import="cn.js.fan.util.ParamUtil" %>
+<%@ page import="cn.js.fan.util.StrUtil" %>
+<%@ page import="cn.js.fan.web.SkinUtil" %>
+<%@ page import="com.redmoon.oa.basic.SelectDb" %>
+<%@ page import="com.redmoon.oa.basic.SelectMgr" %>
+<%@ page import="com.redmoon.oa.basic.SelectOptionDb" %>
 <%@ page import="com.redmoon.oa.flow.*" %>
-<%@ page import="com.redmoon.oa.flow.strategy.*" %>
-<%@ page import="com.redmoon.oa.visual.ModuleSetupDb" %>
-<%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="com.redmoon.oa.flow.strategy.StrategyMgr" %>
+<%@ page import="com.redmoon.oa.flow.strategy.StrategyUnit" %>
+<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.Vector" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +18,6 @@
     <title>流程动作设定</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
-    <script src="../js/bootstrap/js/bootstrap.min.js"></script>
     <%
         String op = ParamUtil.get(request, "op");
         String fieldWrite = ParamUtil.get(request, "hidFieldWrite");
@@ -55,14 +56,14 @@
     <script src="../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
     <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/bootstrap/js/bootstrap.min.js"></script>
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
     <script src="../js/jquery.xmlext.js"></script>
     <script language="JavaScript">
         function openWin(url, width, height) {
-            var newwin = window.open(url, "fieldWin", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=" + width + ",height=" + height);
-            return newwin;
+            return window.open(url, "fieldWin", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=50,left=120,width=" + width + ",height=" + height);
         }
 
         var curFields, curFieldsShow
@@ -80,7 +81,7 @@
         }
 
         function openPostWindow(url) {
-            openWin("flow_predefine_form_field_nest_sel.jsp", 600, 480);
+            openWin(url, 600, 553);
             var tempForm = document.createElement("form");
             tempForm.id = "tempForm1";
             tempForm.method = "post";
@@ -144,7 +145,7 @@
                 }
             }
 
-            if (isSubmit) {
+            /*if (isSubmit) {
                 if (o('userName').value == '<%=WorkflowActionDb.PRE_TYPE_USER_SELECT%>') {
                     var $opt = $("#strategy").find("option:selected");
                     if ($opt.attr("isSelectable") == "false") {
@@ -152,7 +153,7 @@
                         return;
                     }
                 }
-            }
+            }*/
 
             if (o("flagModify").checked)
                 flag = "1";
@@ -212,6 +213,11 @@
             else {
                 flag += "0";
             }
+            if (o("flagSeal").checked) {
+                flag += "1";
+            } else {
+                flag += "0";
+            }
 
             var rankName = o("rank").options[o("rank").selectedIndex].text;
             var rel = "0";
@@ -226,12 +232,17 @@
             // 检查fieldWrite与fieldHide不能有重叠
             if (o("fieldHide").value.trim() != "" && o("fieldWrite").value.trim() != "") {
                 var hides = o("fieldHide").value.trim().split(",");
+                var hidesText = o("fieldHideText").value.trim().split(",");
                 var writes = o("fieldWrite").value.trim().split(",");
                 var writesText = o("fieldWriteText").value.trim().split(",");
                 for (var i = 0; i < hides.length; i++) {
                     for (var j = 0; j < writes.length; j++) {
                         if (hides[i] == writes[j]) {
-                            jAlert("出现相同字段：" + writesText[j] + "，注意可填写字段与隐藏字段不能有重叠！", "提示");
+                            if (hidesText[i]) {
+                                jAlert("出现相同字段：" + hidesText[i] + "，注意可填写字段与隐藏字段不能有重叠！", "提示");
+                            } else {
+                                jAlert("出现相同字段：" + hides[i] + "，注意可填写字段与隐藏字段不能有重叠！", "提示");
+                            }
                             return;
                         }
                     }
@@ -301,6 +312,10 @@
             return window.parent.getFlowString();
         }
 
+        function getFlowJson() {
+            return window.parent.getFlowJson();
+        }
+
         function getInternalName() {
             return "<%=internalName%>";
         }
@@ -348,6 +363,9 @@
             if (o("nodeMode").value == "<%=WorkflowActionDb.NODE_MODE_ROLE%>") {
                 o("spanMode").innerHTML = "角色";
             }
+            else if (o("nodeMode").value == "<%=WorkflowActionDb.NODE_MODE_POST%>") {
+                o("spanMode").innerHTML = "职位";
+            }
             else {
                 o("spanMode").innerHTML = "用户";
             }
@@ -366,9 +384,11 @@
                 if (flag.substr(1, 1) != "1")
                     o("flagSel").checked = false;
             }
+            else {
+                o("flagSel").checked = false;
+            }
 
             // flag.length长度为2时，是给新创建的节点设置属性
-
             if (flag.length >= 3) {
                 if (flag.substr(2, 1) != "1")
                     o("flagDiscardFlow").checked = false;
@@ -466,6 +486,18 @@
                 o("flagXorReturn").checked = false;
             }
 
+            if (flag.length >= 15) {
+                if (flag.substr(14, 1)!="1") {
+                    o("flagSeal").checked = false;
+                }
+                else {
+                    o("flagSeal").checked = true;
+                }
+            }
+            else {
+                o("flagSeal").checked = false;
+            }
+
             var stra = window.parent.getActionStrategy();
             if (stra.indexOf("x") == 0) {
                 var xtext = $("#strategy option[value='x']").text();
@@ -483,12 +515,16 @@
                 o("item1").value = "0";
             }
 
+            // 从旧版升级过来的item2中可能含有comma
             var item2 = window.parent.getActionItem2();
+            item2 = item2.replaceAll("comma", ",");
+            // console.log('item2=' + item2);
             // 解析item2，格式{ relateToAction , ignoreType , kind , fieldHide , isDelayed , timeDelayedValue , timeDelayedUnit , canPrivUserModifyDelayDate, formView, relateDeptManager };
             if (item2.length >= 2) {
                 var items = item2.substring(1, item2.length - 1);
                 var itemAry = items.split(",");
                 if (itemAry.length >= 1) {
+                    // console.log('itemAry[1]=' + itemAry[1]);
                     if (itemAry[0].length > 0) {
                         o("relateToAction").value = itemAry[0];
                     }
@@ -676,6 +712,15 @@
                         o("isShowNextUsers").checked = false;
                     }
 
+                    var isBtnSaveShow = $(this).find("isBtnSaveShow").text();
+                    // 判断是否为空，是为了向下兼容
+                    if (isBtnSaveShow=="" || isBtnSaveShow=="1") {
+                        o("isBtnSaveShow").checked = true;
+                    }
+                    else {
+                        o("isBtnSaveShow").checked = false;
+                    }
+
                     var deptField = $(this).find("deptField").text();
                     if (deptField) {
                         $('#deptField').val(deptField);
@@ -777,9 +822,15 @@
             if (nodeMode.value == "<%=WorkflowActionDb.NODE_MODE_ROLE%>") {
                 roleCodes = o("userName").value
             }
-            // showModalDialog('../role_multi_sel.jsp?unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>&roleCodes=' + roleCodes, window.self, 'dialogWidth:526px;dialogHeight:435px;status:no;help:no;');
-            openWin('../role_multi_sel.jsp?unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>&roleCodes=' + roleCodes, 526, 435);
-            return;
+            openWin('../role_multi_sel.jsp?unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>&roleCodes=' + roleCodes, 640, 480);
+        }
+
+        function openWinUserPosts() {
+            var postCodes = "";
+            if (nodeMode.value == "<%=WorkflowActionDb.NODE_MODE_POST%>") {
+                postCodes = o("userName").value
+            }
+            openWinMax('organize/postFlowTransferPageBack.do?unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>&postCodes=' + postCodes);
         }
 
         function checkRelation() {
@@ -818,8 +869,16 @@
     <tr>
         <td width="82" height="22">处理人员</td>
         <td height="22" align="left" style="line-height:1.5">
-            <span id="span_self"> <a title="本人" href="#" onclick="userName.value='$self';userRealName.value='本人';nodeMode.value='1';spanMode.innerHTML='用户';ModifyAction(false)">本人</a>&nbsp;&nbsp; </span> <a href="javascript:;" onclick="openWinUserRoles()">选择角色</a>&nbsp;&nbsp;&nbsp;<a href="#"
-                                                                                                                                                                                                                                                                                                   onclick="javascript:openWin('../user_multi_sel.jsp','900','730')">选择用户</a>
+            <span id="span_self"> <a title="本人" href="#" onclick="userName.value='$self';userRealName.value='本人';nodeMode.value='1';spanMode.innerHTML='用户';ModifyAction(false)">本人</a>&nbsp;&nbsp; </span>
+            <a href="javascript:;" onclick="openWinUserRoles()">选择角色</a>&nbsp;&nbsp;&nbsp;
+            <%
+                if (com.redmoon.oa.Config.getInstance().getBoolean("isPostUsed")) {
+            %>
+            <a href="javascript:;" onclick="openWinUserPosts()">选择职位</a>&nbsp;&nbsp;&nbsp;
+            <%
+                }
+            %>
+            <a href="javascript:;" onclick="javascript:openWin('../user_multi_sel.jsp','900','730')">选择用户</a>
             <!--<a href="#" onClick="userName.value='$deptLeader';userRealName.value='部门领导';jobCode.value='';jobName.value='';proxyJobCode.value='';proxyJobName.value=''">部门领导</a>-->
             <!--&nbsp;&nbsp;<a href="#" onClick="userName.value='<%=WorkflowActionDb.PRE_TYPE_USER_SELECT%>';userRealName.value='用户自选';jobCode.value='';jobName.value='';proxyJobCode.value='';proxyJobName.value=''">用户自选</a>-->
             <br/>
@@ -842,9 +901,8 @@
 	<BR/>
     <a title="流程中某个节点的处理人员" href="javascript:;" onclick="selAction()">所选节点上的人员</a><br/>
     <a title="表单中指定的人员" href="javascript:;" onclick="selField()">表单中指定的人员</a><br/>
-    <%if (com.redmoon.oa.kernel.License.getInstance().isPlatform()) {%>
     <a title="通过脚本选择人员" href="javascript:;" onclick="showNodeScript()">通过脚本选人</a><br/>
-	<span title="表单中需存在项目选择宏控件">
+	<span title="表单中需存在项目选择宏控件" style="display: none">
     项目角色<select id="projectRole" name="projectRole" onchange="setProjectRole()">
     <option value="">请选择</option>
 	<%
@@ -861,16 +919,15 @@
         %>
     </select>
     </span>
-    <%}%>
-    </div>    
+    </div>
     </span>
             <script>
                 function selAction() {
-                    showModalDialog('flow_designer_action_sel.jsp', window.self, 'dialogWidth:200px;dialogHeight:100px;status:no;help:no;resizable:yes;');
+                    openWin('flow_designer_action_sel.jsp', 800, 300);
                 }
 
                 function selField() {
-                    showModalDialog('flow_designer_field_sel.jsp?flowTypeCode=<%=flowTypeCode%>', window.self, 'dialogWidth:300px;dialogHeight:220px;status:no;help:no;');
+                    openWin('flow_designer_field_sel.jsp?flowTypeCode=<%=flowTypeCode%>', 800, 300);
                 }
 
                 function setAction(iName, iText) {
@@ -928,7 +985,7 @@
                 flowlf = flowlf.getLeaf(flowTypeCode);
             %>
             <textarea id="nodeScript" name="nodeScript" style="width:100%; height:200px"></textarea>
-            <input type="button" style="margin-top:3px" value="设计器" class="btn" onclick="openIdeWin()"/>
+            <input type="button" style="margin-top:3px" value="设计器" class="btn btn-default" onclick="openIdeWin()"/>
         </td>
     </tr>
     <tr>
@@ -949,7 +1006,6 @@
         <td height="22" bgcolor="#F9FAD3">
             <textarea id="userName" name="userName" rows="3" readonly style="display:none;background-color:#eeeeee"><%=userName%></textarea>
             <input id="nodeMode" name="nodeMode" type="hidden" size="5" readonly value="<%=nodeMode%>">
-            <font color="red" style="display:none">当前为：<span id="spanMode" name="spanMode"></span></font>
             <span id="span_direction">
       <select onchange="ModifyAction(false)" id="direction" name="direction">
       <option value="2" selected>上级</option>
@@ -980,14 +1036,17 @@
         </td>
     </tr>
     <tr>
-        <td height="22" align="left" bgcolor="#F9FAD3" title="用户是否能管理关联节点上的人员">部门管理</td>
+        <td height="22" align="left" bgcolor="#F9FAD3" title="用户能否分管所关联节点上的人员">分管部门</td>
         <td height="22" bgcolor="#F9FAD3">
-            <input id="relateDeptManager" name="relateDeptManager" value="1" type="checkbox" title="用户是否能管理关联节点上的人员"/>
+            <input id="relateDeptManager" name="relateDeptManager" value="1" type="checkbox" title="用户能否分管所关联节点上的人员"/>
         </td>
     </tr>
     <tr>
         <td height="22" align="left">角色/用户</td>
-        <td height="22"><textarea id="userRealName" name="userRealName" readonly rows="3" style="width:180px;background-color:#eeeeee"><%=userRealName%></textarea></td>
+        <td height="22">
+            <textarea id="userRealName" name="userRealName" readonly rows="3" style="width:180px;background-color:#eeeeee"><%=userRealName%></textarea>
+            <span style="display: block">当前为：<span id="spanMode" name="spanMode"></span></span>
+        </td>
     </tr>
     <tr style="display:none">
         <td height="22" align="left">用户职级</td>
@@ -1041,15 +1100,16 @@
     </tr>
     <tr id="trFlag">
         <td height="22" align="left">标志位</td>
-        <td height="22"><input type=checkbox id="flagSel" name="flagSel" value="0" checked title="允许选择下一节点上的用户"/>
+        <td height="22"><input type="checkbox" id="flagSel" name="flagSel" value="0" checked title="允许上一节点处理者选择用户"/>
             选择用户
             <input onchange="ModifyAction(false)" type="checkbox" id="flagDiscardFlow" name="flagDiscardFlow" value="1" checked/>
             放弃流程
             <br/>
             <input onchange="ModifyAction(false)" type="checkbox" id="flagDelFlow" name="flagDelFlow" value="1" checked/>
             删除流程
+            <span style="display: none">
             <input onchange="ModifyAction(false)" type="checkbox" id="flagEditAttach" name="flagEditAttach" value="1" checked/>
-            编辑附件
+            编辑附件</span>
             <br/>
             <input onchange="ModifyAction(false)" type="checkbox" id="flagDelAttach" name="flagDelAttach" value="1" checked/>
             删除附件
@@ -1061,25 +1121,22 @@
             <input onchange="ModifyAction(false)" type="checkbox" id="flagFinishFlow" name="flagFinishFlow" value="1" checked title="流程处理者可以拒绝流程，同时流程结束"/>
             拒绝流程
             <br/>
-            <input title="模板套红" onchange="ModifyAction(false)" type="checkbox" id="flagReceiveRevise" name="flagReceiveRevise" value="1" checked/>
+            <input title="模板套红（强制）" onchange="ModifyAction(false)" type="checkbox" id="flagReceiveRevise" name="flagReceiveRevise" value="1" checked/>
             模板套红
-            <%
-                String disBtnName = "流程分发";
-                String disBtnDesc = "将流程表单分发给相关人员";
-                String kind = com.redmoon.oa.kernel.License.getInstance().getKind();
-                if (kind.equalsIgnoreCase(com.redmoon.oa.kernel.License.KIND_COM)) {
-                    disBtnName = "流程知会";
-                    disBtnDesc = "将流程表单知会给相关人员";
-                }
-            %>
-            <input title="<%=disBtnDesc %>" onchange="ModifyAction(false)" type="checkbox" id="flagModify" name="flagModify" value="1" checked/>
-            <%=disBtnName %>
+            <input title="加盖印章（非强制）" onchange="ModifyAction(false)" type="checkbox" id="flagSeal" name="flagSeal" value="1" checked/>
+            加盖印章
             <br/>
+            <%
+                String disBtnName = "流程抄送";
+                String disBtnDesc = "将流程表单抄送给相关人员";
+            %>
+            <input title="<%=disBtnDesc %>" onchange="ModifyAction(false)" type="checkbox" id="flagModify" name="flagModify" value="1" />
+            <%=disBtnName %>
             <input title="同意并结束流程，可用于非开始节点" onchange="ModifyAction(false)" type="checkbox" id="flagAgreeAndFinish" name="flagAgreeAndFinish" value="1" checked/>
             结束流程
+            <br/>
             <input title="同一节点中有多人处理时，每个人都可以立即往下提交，并且不能更改下一节点上之前被选择的用户" onchange="ModifyAction(false)" type="checkbox" id="flagXorFinish" name="flagXorFinish" value="1"/>
             异步提交
-            <br/>
             <input title="同一节点中有多人处理时，退回时不会忽略本节点其他人及其他节点上的待办记录，并且在处理完毕再次提交时，不能更改之前选择的用户" onchange="ModifyAction(false)" type="checkbox" id="flagXorReturn" name="flagXorReturn" value="1"/>
             异步退回
             <iframe id=hiddenframe name=hiddenframe src="flow_predefine_action_modify_getfieldtitle.jsp" style="display:none" width=0 height=0></iframe>
@@ -1205,7 +1262,7 @@
         <td height="22" align="left">归档</td>
         <td height="22"><select onchange="ModifyAction(false)" id="flagSaveArchive" name="flagSaveArchive">
             <option value="0" selected>不存档</option>
-            <option value="1">手工存档</option>
+            <%--<option value="1">手工存档</option>--%>
             <option value="2">自动存档</option>
             <!--<option value="3">公文存档</option>-->
         </select></td>
@@ -1253,9 +1310,15 @@
         boolean isPlatformSrc = com.redmoon.oa.kernel.License.getInstance().isPlatformSrc();
         String dis = isPlatformSrc ? "" : "display:none";
     %>
-    <tr style="<%=dis%>">
-        <td height="22" align="left">模块过滤</td>
+    <tr style="display:none">
+        <td height="22" align="left">模块过滤<%--已移至流程总属性下，放在节点上不方便--%></td>
         <td height="22"><input id="isModuleFilter" name="isModuleFilter" value="1" type="checkbox" title="如果存在用嵌套表格2，是否启用其模块中配置的过滤条件"/></td>
+    </tr>
+    <tr style="<%=dis%>">
+        <td height="22" align="left">保存按钮</td>
+        <td height="22">
+            <input id="isBtnSaveShow" name="isBtnSaveShow" title="保存按钮是否显示" value="1" type="checkbox" checked/>&nbsp;显示
+        </td>
     </tr>
     <tr style="<%=dis%>">
         <td height="22" align="left">提交按钮</td>
@@ -1272,7 +1335,7 @@
     <tr>
         <td height="22" align="left">审核人</td>
         <td height="22">
-            <input id="isShowNextUsers" name="isShowNextUsers" title="是否显示下一节点上的审核人" value="1" type="checkbox" checked/>显示下一节点上的审核人
+            <input id="isShowNextUsers" name="isShowNextUsers" title="是否显示下一节点上的审核人" value="1" type="checkbox" checked/>&nbsp;显示下一节点上的审核人
         </td>
     </tr>
     <tr style="<%=dis%>">
@@ -1458,10 +1521,11 @@
         var $elem = $($.parseXML("<action internalName='<%=internalName%>'><property>" + str + "</property>"
             + "<btnAgreeName>" + o("btnAgreeName").value + "</btnAgreeName>"
             + "<btnRefuseName>" + o("btnRefuseName").value + "</btnRefuseName>"
-            + "<isShowNextUsers>" + (o("isShowNextUsers").checked?o("isShowNextUsers").value:0) +
-            "</isShowNextUsers><redirectUrl>" + o("redirectUrl").value + "</redirectUrl><nodeScript>" +
-            o("nodeScript").value + "</nodeScript><isModuleFilter>" + (o("isModuleFilter").checked ? o("isModuleFilter").value : "") + "</isModuleFilter><branchMode>" +
-            o("branchMode").value + "</branchMode><deptField>" + o("deptField").value + "</deptField><canSelUserWhenReturned>" + (o("canSelUserWhenReturned").checked ? o("canSelUserWhenReturned").value : "") + "</canSelUserWhenReturned></action>"));
+            + "<isShowNextUsers>" + (o("isShowNextUsers").checked?o("isShowNextUsers").value:0) + "</isShowNextUsers>"
+            + "<isBtnSaveShow>" + (o("isBtnSaveShow").checked?o("isBtnSaveShow").value:0) + "</isBtnSaveShow>"
+            + "<redirectUrl>" + o("redirectUrl").value + "</redirectUrl><nodeScript>"
+            + o("nodeScript").value + "</nodeScript><isModuleFilter>" + (o("isModuleFilter").checked ? o("isModuleFilter").value : "") + "</isModuleFilter><branchMode>"
+            + o("branchMode").value + "</branchMode><deptField>" + o("deptField").value + "</deptField><canSelUserWhenReturned>" + (o("canSelUserWhenReturned").checked ? o("canSelUserWhenReturned").value : "") + "</canSelUserWhenReturned></action>"));
         var newNode = null;
         if (typeof document.importNode == 'function') {
             newNode = document.importNode($elem.find('action').get(0), true);
@@ -1602,5 +1666,25 @@
             }
         }
     });
+
+    function setPosts(posts) {
+        var str = '', ids = '';
+        for (var i in posts) {
+            if (ids === '') {
+                ids = posts[i].value;
+                str = posts[i].name
+            }
+            else {
+                ids += ',' + posts[i].value;
+                str += ',' + posts[i].name;
+            }
+        }
+
+        o("userName").value = ids;
+        o("userRealName").value = str;
+        o("nodeMode").value = "<%=WorkflowActionDb.NODE_MODE_POST%>";
+        spanMode.innerHTML = "职位";
+        ModifyAction(false);
+    }
 </script>
 </HTML>

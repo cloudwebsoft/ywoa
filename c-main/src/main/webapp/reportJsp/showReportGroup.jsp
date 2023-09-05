@@ -36,35 +36,26 @@
 			   if(urltype== SubReportConfig.TYPE_ABSOLUTE){
 				   String url = rg.getReportMetaData().getSubReportConfig(0).getURL();
 				   ReportDefine rd2 = (ReportDefine)ReportUtils.read(url);
-				   System.out.println(rd2);
 				   if(rd2.getInput()==ReportDefine.INPUT_NORMAL){
 						isinput="yes";
-						System.out.print(isinput);
 					}else{
 						isinput="no";
-						System.out.print(isinput);
 					}
-				  
 			   }else{
 				  //String url =   application.getRealPath("/reportFiles/"+rg.getReportMetaData().getSubReportConfig(0).getURL()) ;
 				  String url = Global.getRealPath() + "/reportFiles/"+rg.getReportMetaData().getSubReportConfig(0).getURL();
                    ReportDefine rd2 = (ReportDefine)ReportUtils.read(url);
-				   System.out.println(rd2);
 				   if(rd2.getInput()==ReportDefine.INPUT_NORMAL){
 						isinput="yes";
-						System.out.print(isinput);
 					}else{
 						isinput="no";
-						System.out.print(isinput);
 					}
 			   }
 			}else{
 				if(rd.getInput()==ReportDefine.INPUT_NORMAL){
 					isinput="yes";
-					System.out.print(isinput);
 				}else{
 					isinput="no";
-					System.out.print(isinput);
 				}
 			}
 

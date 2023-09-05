@@ -1,18 +1,13 @@
 <%@ page contentType="text/html;charset=utf-8" %>
-<%@ page import="java.net.URLEncoder" %>
-<%@ page import="com.cloudwebsoft.framework.db.*" %>
-<%@ page import="java.util.*" %>
-<%@ page import="cn.js.fan.util.*" %>
-<%@ page import="cn.js.fan.web.SkinUtil" %>
-<%@ page import="com.redmoon.oa.basic.*" %>
-<%@ page import="com.redmoon.oa.pvg.*" %>
-<%@ page import="com.redmoon.oa.person.*" %>
-<%@ page import="java.util.*" %>
-<%@ page import="cn.js.fan.db.*" %>
-<%@ page import="cn.js.fan.web.*" %>
-<%@ page import="com.redmoon.oa.ui.*" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<%@ page import="cn.js.fan.util.ErrMsgException" %>
+<%@ page import="cn.js.fan.util.ParamUtil" %>
+<%@ page import="cn.js.fan.util.StrUtil" %>
+<%@ page import="com.cloudwebsoft.framework.db.JdbcTemplate" %>
+<%@ page import="com.redmoon.oa.pvg.PrivDb" %>
+<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="java.util.Iterator" %>
+<!DOCTYPE html>
+<html>
 <head>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -23,36 +18,14 @@
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script src="../js/jquery.toaster.js" type="text/javascript"></script>
 </head>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <%
     String op = ParamUtil.get(request, "op");
-    if (op.equals("add")) {
-        SelectMgr sm = new SelectMgr();
-        int kind = ParamUtil.getInt(request, "kind", -1);
-        boolean re = false;
-        try {
-            re = sm.create(request);
-        } catch (ErrMsgException e) {
-            out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-        }
-        if (re) {
-            out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "basic_select_list.jsp?kind=" + kind));
-        }
-        return;
-    } else if (op.equals("del")) {
-        SelectMgr sm = new SelectMgr();
-        String code = ParamUtil.get(request, "code");
-        String kind = ParamUtil.get(request, "kind");
-        boolean re = false;
-        re = sm.del(code);
-        if (re) {
-            out.print(StrUtil.jAlert_Redirect("操作成功！", "提示", "basic_select_list.jsp?kind=" + kind));
-        } else {
-            out.print(StrUtil.jAlert_Back("操作失败！", "提示"));
-        }
-        return;
-    }
 %>
 <body>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -139,7 +112,7 @@
                 kindName = skd.getName();
             }
     %>
-    <tr align="center">
+    <tr align="center" id="tr<%=sd.getCode()%>">
         <td align="left"><%=sd.getCode()%>
         </td>
         <td align="left">&nbsp;<span title="<%=sd.getCode()%>"><%=sd.getName()%></span></td>
@@ -185,7 +158,7 @@
             <a href="basic_select_edit.jsp?kind=<%=kind %>&code=<%=StrUtil.UrlEncode(sd.getCode())%>">修改</a>
             &nbsp;&nbsp;
             <%if (canDel) { %>
-            <a href="#" onclick="jConfirm('您确定要删除<%=StrUtil.toHtml(sd.getName())%>吗？','提示',function(r){ if(!r){return;}else{window.location.href='basic_select_list.jsp?op=del&code=<%=StrUtil.UrlEncode(sd.getCode())%>&kind=<%=kind%>'}}) ">删除</a>
+            <a href="javascript:;" onclick="del('<%=sd.getCode()%>', '<%=sd.getName()%>') ">删除</a>
             &nbsp;&nbsp;
             <%} %>
             <%if (sd.getType() == SelectDb.TYPE_LIST) {%>
@@ -199,6 +172,41 @@
 </table>
 </body>
 <script>
+    function del(code, name) {
+        jConfirm('您确定要删除 ' + name + ' 么？', '提示', function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "../basicdata/del.do",
+                    data: {
+                        code: code
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        if (data.ret == 1) {
+                            $.toaster({priority : 'info', message : data.msg });
+                            $('#tr' + code).remove();
+                        }
+                        else {
+                            jAlert(data.msg, "提示");
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            }
+        });
+    }
+
     $(document).ready(function () {
         $("#mainTable td").mouseout(function () {
             if ($(this).parent().parent().get(0).tagName != "THEAD")

@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipOutputStream;
 
@@ -29,7 +31,6 @@ import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
-import com.redmoon.oa.LogUtil;
 import com.redmoon.oa.fileark.Attachment;
 import com.redmoon.oa.fileark.DocPriv;
 import com.redmoon.oa.fileark.Document;
@@ -51,17 +52,17 @@ public class FileBakUp {
 	 * //获得期刊所有入选主编划版的稿件：路径和稿件名称 Vector<Vector<String>> files = new
 	 * Vector<Vector<String>>(); String sql =
 	 * "select name, fullpath from document_attach where doc_id in (select docId from "
-	 * +ConstantDb.FORM_TABLE_NAME_GJGL+" where kdqs = "+qkid+" and sfzsly = "+
+	 * +ConstantDb.ft_NAME_GJGL+" where kdqs = "+qkid+" and sfzsly = "+
 	 * StrUtil.sqlstr(ConstantDb.ZBHB_SFZSLY_Y)+")"; JdbcTemplate jt = new
 	 * JdbcTemplate(); ResultIterator ri = jt.executeQuery(sql); ResultRecord rd
 	 * = null; String pathtmp = ""; while(ri.hasNext()){ rd =
 	 * (ResultRecord)ri.next(); String name = rd.getString(1); String fullpath =
 	 * rd.getString(2);
-	 * System.out.println(FileBakUp.class+":::::::::::"+name+","+fullpath);
+	 * LogUtil.getLog(getClass()).info(FileBakUp.class+":::::::::::"+name+","+fullpath);
 	 * Vector<String> item = new Vector<String>(); item.add(name);
 	 * item.add(fullpath); files.add(item); if(pathtmp.equals("")){ pathtmp =
 	 * fullpath.substring(0,fullpath.lastIndexOf("/"));
-	 * System.out.println(FileBakUp
+	 * LogUtil.getLog(getClass()).info(FileBakUp
 	 * .class+":::::aaaaaa::::::"+name+","+fullpath+","+pathtmp); } }
 	 * //压缩这些稿件并输出 String outputfile = ""; if(files.size()>0){ outputfile =
 	 * pathtmp+"/美编下载.zip"; FileOutputStream f = new FileOutputStream(new
@@ -80,7 +81,7 @@ public class FileBakUp {
 	public Map<String, DocZipHelp> getMaps(Map<String, DocZipHelp> map,
 			String userName, String dirCode, String flag, String basePath)
 			throws SQLException {
-		//System.out.println(getClass() + ":::::::::::::::::::::::" + flag + ","+ userName + "," + dirCode);
+		//LogUtil.getLog(getClass()).info(getClass() + ":::::::::::::::::::::::" + flag + ","+ userName + "," + dirCode);
 		// String basePath = "zip/";
 		if (flag.equals("0")) {// 只打包本文件夹中的文件，不打包子文件夹中的文件
 			// 添加文件夹本身
@@ -96,7 +97,7 @@ public class FileBakUp {
 			help.setPath(basePath + "/" + dirName);
 			help.setType(DocZipHelp.TYPE_DOC);
 			map.put(basePath + "/" + dirName, help);
-			//System.out.println(FileBakUp.class + "::::::::::" + map.size()+ "," + dirName);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class + "::::::::::" + map.size()+ "," + dirName);
 			// 添加文件夹中的内容
 			map = getDocChildMaps(map, dirCode, userName, basePath + "/"
 					+ dirName);
@@ -147,7 +148,7 @@ public class FileBakUp {
 			String dirCode, String userName, String basePath)
 			throws SQLException {
 		// 判断文档权限，如果可下载，则进行打包，如果不可下载，则跳过
-		//System.out.println(getClass() + ":::::::::::::::::::::::::::::::::AB");
+		//LogUtil.getLog(getClass()).info(getClass() + ":::::::::::::::::::::::::::::::::AB");
 		DocPriv dp = new DocPriv();
 		String sql = "select id from document where class1 = "
 				+ StrUtil.sqlstr(dirCode) + " and examine<>"
@@ -157,7 +158,7 @@ public class FileBakUp {
 		ResultIterator ri = jt.executeQuery(sql);
 		ResultRecord rd = null;
 		DocZipHelp help = null;
-		//System.out.println(getClass() + ":::::" + ri.getRows());
+		//LogUtil.getLog(getClass()).info(getClass() + ":::::" + ri.getRows());
 		while (ri.hasNext()) {
 			rd = (ResultRecord) ri.next();
 			int docId = rd.getInt(1);
@@ -178,7 +179,7 @@ public class FileBakUp {
 				help.setPath(basePath + "/" + fileName);
 				help.setType(DocZipHelp.TYPE_DOC);
 				map.put(basePath + "/" + fileName, help);
-			//	System.out.println(getClass() + "::::::::::::::::AAAAAAAAAAA1"				+ fileName);
+			//	LogUtil.getLog(getClass()).info(getClass() + "::::::::::::::::AAAAAAAAAAA1"				+ fileName);
 			} else if (type == 0) {// 老办法建立的文档
 				Vector vatts = doc.getAttachments(1);
 				if (vatts != null) {
@@ -194,7 +195,7 @@ public class FileBakUp {
 						help.setPath(basePath + "/" + dirName);
 						help.setType(DocZipHelp.TYPE_DIR);
 						map.put(basePath + "/" + dirName, help);
-						//System.out.println(getClass()		+ "::::::::::::::::AAAAAAAAAAA2" + dirName);
+						//LogUtil.getLog(getClass()).info(getClass()		+ "::::::::::::::::AAAAAAAAAAA2" + dirName);
 						// 把附件放到map中去
 						map = getAttMapChild(map, vatts, dirCode, docId + "",
 								basePath + "/" + dirName);
@@ -202,7 +203,7 @@ public class FileBakUp {
 				}
 			}
 		}
-		//System.out.println(getClass() + "::::" + map.size());
+		//LogUtil.getLog(getClass()).info(getClass() + "::::" + map.size());
 		return map;
 	}
 
@@ -353,13 +354,11 @@ public class FileBakUp {
 
 		return outputfile;
 	}
-	
 
 	/**
-	 * 打包下载一个文档中的所有文件，通过文档id，获得这个文档中的所有附件，生成打包文件
+	 * 打包下载多个文档中的所有文件，通过文档id，获得这个文档中的所有附件，生成打包文件
 	 * 
 	 * @Description:
-	 * @param doc_id
 	 * @return
 	 * @throws SQLException
 	 * @throws IOException
@@ -368,7 +367,7 @@ public class FileBakUp {
 			throws SQLException, IOException, ErrMsgException {
 		String[] aryIds = StrUtil.split(ids, ",");
 		if (aryIds==null) {
-			throw new ErrMsgException("压缩时没有选择文件！");
+			throw new ErrMsgException("请选择文件！");
 		}
 		
 		String dirCode = "";
@@ -389,7 +388,7 @@ public class FileBakUp {
 			String pathtmp = "";
 			int k = 0;
 			while (ri.hasNext()) {
-				rd = (ResultRecord) ri.next();
+				rd = ri.next();
 				String name = rd.getString(1);
 				String fullpath = Global.getRealPath() + rd.getString(2) + "/" + rd.getString(3);
 				String fullpath2 = realPath + "/" + dirCode + "/" + name;
@@ -517,7 +516,7 @@ public class FileBakUp {
 		String pathtmp = "";
 		int k = 0;
 		while (ri.hasNext()) {
-			rd = (ResultRecord) ri.next();
+			rd = ri.next();
 			String name = rd.getString(1);
 			String fullpath = Global.getRealPath() + rd.getString(2) + "/" + rd.getString(3);
 			String fullpath2 = realPath + "/" + doc_id + "/" + name;
@@ -627,8 +626,7 @@ public class FileBakUp {
 	public static void doziptest() throws IOException, IllegalArgumentException {
 		FileOutputStream f = new FileOutputStream(new File("e:/aa.zip"));
 		CheckedOutputStream ch = new CheckedOutputStream(f, new CRC32());
-		ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(
-				ch));
+		ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream( ch));
 		/*
 		 * doZipDir2(zipOut,
 		 * "D:/prj/ymxm/zzwhoa/WebRoot/upfile/file_flow/2015/8/14392958442511045830219.docx"
@@ -644,27 +642,24 @@ public class FileBakUp {
 		 */
 		//doZipDir2(zipOut, "D:/aa/aaa.txt", "aaa.txt");
 		//doZipDir2(zipOut, "D:/bb/bbb.txt", "测试稿件3.txt");
-		//doZipDir2(zipOut, "e:/aa/bcc.txt", "bcc.txt");
+		doZipDir3(zipOut, "D:\\home8.0\\FileUploadTmp\\zip\\16786034226881794934", "", "");
 		zipOut.close();
 		f.close();
 	}
 
 	public static void main(String[] args) {
-		FileBakUp up = new FileBakUp();
 		try {
-			up.doziptest();
+			FileBakUp.doziptest();
 		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(FileBakUp.class).error(e);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(FileBakUp.class).error(e);
 		}
 	}
 
 	public static void zipDirectory(String dir, String zipfile)
 			throws IOException, IllegalArgumentException {
-		//System.out.println(FileBakUp.class + "aaaaaaaaaaaaaaaaaa");
+		//LogUtil.getLog(getClass()).info(FileBakUp.class + "aaaaaaaaaaaaaaaaaa");
 		FileOutputStream f = new FileOutputStream(new File(zipfile));
 		CheckedOutputStream ch = new CheckedOutputStream(f, new CRC32());
 		ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(
@@ -676,7 +671,7 @@ public class FileBakUp {
 	
 	
 	/**
-	 * 进行打包文件的方法
+	 * 打包文件
 	 * 
 	 * @Description:
 	 * @param out
@@ -690,7 +685,7 @@ public class FileBakUp {
 		if (!(file.isDirectory())) {
 			FileInputStream in = new FileInputStream(path);
 			String fpath = file.getPath();
-			int point = fpath.lastIndexOf("\\");
+			int point = fpath.lastIndexOf(File.separator);
 			fpath = fpath.substring(point+1,fpath.length());
 			ZipEntry entry = new ZipEntry(fpath);
 			out.putNextEntry(entry);
@@ -700,7 +695,6 @@ public class FileBakUp {
 			}
 			out.setEncoding("gbk");
 			in.close();
-			return;
 		} else {
 			/*
 			 * FileInputStream in = new FileInputStream(path); ZipEntry entry =
@@ -727,23 +721,23 @@ public class FileBakUp {
 	 */
 	public static void doZipDir2(ZipOutputStream out, String path,
 			String fileName,String basePath) throws IOException {
-		//System.out.println(FileBakUp.class			+ ":::::::path===================================" + path);
+		//LogUtil.getLog(getClass()).info(FileBakUp.class			+ ":::::::path===================================" + path);
 		File file = new File(path);
-		//System.out.println(FileBakUp.class + ":1:" + file.getName());
-		//System.out.println(FileBakUp.class + ":2:" + file.getParent());
+		//LogUtil.getLog(getClass()).info(FileBakUp.class + ":1:" + file.getName());
+		//LogUtil.getLog(getClass()).info(FileBakUp.class + ":2:" + file.getParent());
 		if (!(file.isDirectory())) {
 			// BufferedReader in = new BufferedReader(new InputStreamReader(new
 			// FileInputStream(path)));
 			String parent = file.getParent();
 			FileInputStream in = new FileInputStream(path);
-			//System.out.println(FileBakUp.class + "::::::::::::::bakupPath="	+ parent.substring(parent.lastIndexOf("\\") + 1) + "\\"				+ fileName);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class + "::::::::::::::bakupPath="	+ parent.substring(parent.lastIndexOf("\\") + 1) + "\\"				+ fileName);
 			String fpath = file.getPath();
 			int length = basePath.length();
-			//System.out.println(FileBakUp.class+":::::::::::basePath="+basePath);
-			//System.out.println(FileBakUp.class+":::::::::::fpath1="+fpath);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class+":::::::::::basePath="+basePath);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class+":::::::::::fpath1="+fpath);
 			//fpath = fpath.replace(basePath, "");
 			fpath = fpath.substring(length+1,fpath.length());
-			//System.out.println(FileBakUp.class+":::::::::::fpath2="+fpath);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class+":::::::::::fpath2="+fpath);
 			//fpath.substring(beginIndex)
 			// ZipEntry entry = new
 			// ZipEntry(parent.substring(parent.lastIndexOf("\\")+1)+"\\"+fileName);
@@ -766,17 +760,15 @@ public class FileBakUp {
 
 			String[] entries = file.list();
 			for (int i = 0; i < entries.length; i++) {
-				//System.out.println(FileBakUp.class + ":::" + entries[i]);
+				//LogUtil.getLog(getClass()).info(FileBakUp.class + ":::" + entries[i]);
 
 			}
 			String pathTemp = file.getPath();
-			//System.out.println(FileBakUp.class + "::::" + entries.length);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class + "::::" + entries.length);
 			for (int i = 0; i < entries.length; ++i)
 				doZipDir(out, pathTemp + "/" + entries[i]);
 		}
 	}
-	
-	
 
 	/**
 	 * 进行打包文件的方法
@@ -793,8 +785,8 @@ public class FileBakUp {
 			String parent = file.getParent();
 			FileInputStream in = new FileInputStream(path);
 			ZipEntry entry = new ZipEntry(parent.substring(parent
-					.lastIndexOf("\\") + 1)
-					+ "\\" + file.getName());
+					.lastIndexOf(File.separator) + 1)
+					+ File.separator + file.getName());
 			out.putNextEntry(entry);
 			int nNumber;
 			while ((nNumber = in.read()) != -1) {
@@ -804,7 +796,7 @@ public class FileBakUp {
 		} else {
 			String[] entries = file.list();
 			String pathTemp = file.getPath();
-			//System.out.println(FileBakUp.class + "::::" + entries.length);
+			//LogUtil.getLog(getClass()).info(FileBakUp.class + "::::" + entries.length);
 			for (int i = 0; i < entries.length; ++i) {
 				doZipDir(out, pathTemp + "/" + entries[i]);
 			}

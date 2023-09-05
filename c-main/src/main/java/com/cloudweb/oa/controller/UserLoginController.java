@@ -14,7 +14,10 @@ import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.service.UserRegistService;
 import com.cloudweb.oa.utils.ResponseUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysUtil;
+import com.cloudweb.oa.vo.Result;
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.flow.WorkflowUtil;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.ui.SkinMgr;
 import org.json.JSONException;
@@ -61,7 +64,7 @@ public class UserLoginController {
     }
 
     /**
-     * 用于red_bag.jsp登录
+     * 用于wap/index.jsp及red_bag.jsp登录
      * @param response
      * @return
      */
@@ -77,7 +80,17 @@ public class UserLoginController {
                 // spring security 手工认证
                 UserDetailsService userDetailsService = SpringUtil.getBean(UserDetailsService.class);
                 //根据用户名username加载userDetails
-                String userName = ParamUtil.get(request, "name");
+                String name = ParamUtil.get(request, "name");
+                IUserService userService = SpringUtil.getBean(IUserService.class);
+                User user = userService.getUserByLoginName(name);
+                if (user == null) {
+                    JSONObject json = new JSONObject();
+                    json.put("ret", "0");
+                    json.put("msg", "用户名或密码错误！");
+                    return json.toString();
+                }
+                String userName = user.getName();
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
                 //根据userDetails构建新的Authentication,这里使用了
                 //PreAuthenticatedAuthenticationToken当然可以用其他token,如 UsernamePasswordAuthenticationToken              
@@ -92,10 +105,8 @@ public class UserLoginController {
                 //在session中存放security context,方便同一个session中控制用户的其他操作
                 session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
             }
-        } catch (WrongPasswordException e) {
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
+        } catch (WrongPasswordException | ErrMsgException | JSONException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         JSONObject json = new JSONObject();
         try {
@@ -107,7 +118,7 @@ public class UserLoginController {
                 json.put("msg", "登录失败！");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -150,66 +161,51 @@ public class UserLoginController {
      */
     @ResponseBody
     @RequestMapping(value = "/public/resetPwdSendLink", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String resetPwdSendLink(@RequestParam(value = "userName", required = true) String userName, @RequestParam(value = "email", required = true) String email) {
-        JSONObject json = new JSONObject();
-        boolean re = true;
-        try {
-            UserDb user = new UserDb();
-            user = user.getUserDb(userName);
-            if (!user.isLoaded()) {
-                json.put("ret", 0);
-                json.put("msg", "帐户不存在");
-                return json.toString();
-            }
-            String userEmail = user.getEmail();
-            if (!userEmail.equals(email)) {
-                json.put("ret", 0);
-                json.put("msg", "用户名或邮箱错误");
-                return json.toString();
-            }
-
-            String charset = Global.getSmtpCharset();
-            cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
-            String senderName = StrUtil.GBToUnicode(Global.AppName);
-            senderName += "<" + Global.getEmail() + ">";
-
-            String mailserver = Global.getSmtpServer();
-            int smtp_port = Global.getSmtpPort();
-            String name = Global.getSmtpUser();
-            String pwd_raw = Global.getSmtpPwd();
-            boolean isSsl = Global.isSmtpSSL();
-            try {
-                sendmail.initSession(mailserver, smtp_port, name,
-                        pwd_raw, "", isSsl);
-            } catch (Exception ex) {
-                LogUtil.getLog(getClass()).error(StrUtil.trace(ex));
-            }
-
-            com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
-            String action = "userName=" + userName + "|" + "email=" + email + "|timestamp=" + System.currentTimeMillis();
-            action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
-            String t = Global.AppName + "重置密码";
-            String c = "请点击下面的链接重置密码";
-            c += "<br/>>>&nbsp;<a href='" + Global.getFullRootPath() +
-                    "/public/user_reset_pwd_do.jsp?action=" + action +
-                    "' target='_blank'>请点击此处</a>";
-            c += "<br/>如果点击链接无响应，请拷贝链接至浏览器地址栏中访问：" + Global.getFullRootPath() +
-                    "/public/user_reset_pwd_do.jsp?action=" + action;
-            sendmail.initMsg(email, senderName, t, c, true);
-            sendmail.send();
-            sendmail.clear();
-
-            if (re) {
-                json.put("ret", "1");
-                json.put("msg", "操作成功！");
-            } else {
-                json.put("ret", "0");
-                json.put("msg", "操作失败！");
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
+    public Result<Object> resetPwdSendLink(@RequestParam(value = "userName", required = true) String userName, @RequestParam(value = "email", required = true) String email) {
+        boolean re = false;
+        UserDb user = new UserDb();
+        user = user.getUserDb(userName);
+        if (!user.isLoaded()) {
+            return new Result<>(false, "帐户不存在");
         }
-        return json.toString();
+        String userEmail = user.getEmail();
+        if (!userEmail.equals(email)) {
+            return new Result<>(false, "用户名或邮箱错误");
+        }
+
+        String charset = Global.getSmtpCharset();
+        cn.js.fan.mail.SendMail sendmail = new cn.js.fan.mail.SendMail(charset);
+        String senderName = StrUtil.GBToUnicode(Global.AppName);
+        senderName += "<" + Global.getEmail() + ">";
+
+        String mailserver = Global.getSmtpServer();
+        int smtp_port = Global.getSmtpPort();
+        String name = Global.getSmtpUser();
+        String pwd_raw = Global.getSmtpPwd();
+        boolean isSsl = Global.isSmtpSSL();
+        try {
+            sendmail.initSession(mailserver, smtp_port, name, pwd_raw, "", isSsl);
+        } catch (Exception ex) {
+            LogUtil.getLog(getClass()).error(ex);
+        }
+
+        com.redmoon.oa.sso.Config ssoCfg = new com.redmoon.oa.sso.Config();
+        String action = "userName=" + userName + "|" + "email=" + email + "|timestamp=" + System.currentTimeMillis();
+        action = cn.js.fan.security.ThreeDesUtil.encrypt2hex(ssoCfg.getKey(), action);
+        String t = Global.AppName + "重置密码";
+        String c = "请点击下面的链接重置密码";
+        c += "<br/>>>&nbsp;<a href='" + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_RESET_PWD, action) +
+                "' target='_blank'>请点击此处</a>";
+        c += "<br/>如果点击链接无响应，请拷贝链接至浏览器地址栏中访问：" + WorkflowUtil.getJumpUrl(WorkflowUtil.OP_RESET_PWD, action);
+        /*c += "<br/>>>&nbsp;<a href='" + Global.getFullRootPath() +
+                "/public/user_reset_pwd_do.jsp?action=" + action +
+                "' target='_blank'>请点击此处</a>";
+        c += "<br/>如果点击链接无响应，请拷贝链接至浏览器地址栏中访问：" + Global.getFullRootPath(request) +
+                "/public/user_reset_pwd_do.jsp?action=" + action;*/
+        sendmail.initMsg(email, senderName, t, c, true);
+        re = sendmail.send();
+        sendmail.clear();
+        return new Result<>(re);
     }
 
     /**
@@ -260,10 +256,8 @@ public class UserLoginController {
                 json.put("ret", "0");
                 json.put("msg", "操作失败！");
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -291,9 +285,9 @@ public class UserLoginController {
             }
             json.put("ret", "1");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }

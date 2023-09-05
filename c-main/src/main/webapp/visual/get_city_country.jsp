@@ -14,7 +14,7 @@
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 /*
- * Èç¹û·µ»Ø<select>...</select>£¬ÓÃoutHTMLÌæ»»£¬»áÊ¹µÃlivevaidtionµÄÊÂ¼þ¶ªÊ§
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½<select>...</select>ï¿½ï¿½ï¿½ï¿½outHTMLï¿½æ»»ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½livevaidtionï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½Ê§
 */
 String province = ParamUtil.get(request, "province");
 boolean isCity = ParamUtil.get(request, "isCity").equals("true");
@@ -27,7 +27,7 @@ String countryId = ParamUtil.get(request, "countryId");
 String firstCity = ParamUtil.get(request, "city");
 
 if (province.equals("")) {
-	// µ±Ñ¡ÔñÁË³ÇÊÐÊ±
+	// ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½Ê±
 	String city = ParamUtil.get(request, "city");
 	if (isCountry && !city.equals("")) {
 		JdbcTemplate jt = new JdbcTemplate();
@@ -100,7 +100,7 @@ else {
 		%>
 		<%
 		while (ri.hasNext()) {
-			ResultRecord rr = (ResultRecord)ri.next();
+			ResultRecord rr = ri.next();
 		%>
 		<option value="<%=rr.getInt(1)%>"><%=rr.getString(2)%></option>
 		<%

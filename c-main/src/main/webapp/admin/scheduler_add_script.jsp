@@ -28,10 +28,6 @@
         JobUnitDb ju = new JobUnitDb();
         try {
             if (qom.create(request, ju, "scheduler_add")) {
-                SchedulerManager sm = SchedulerManager.getInstance();
-                sm.shutdown(); // 结束调度
-                sm.startWhenIsShutdown(); // 重启调度
-    
                 json.put("ret", 1);
                 json.put("msg", "操作成功");
             }

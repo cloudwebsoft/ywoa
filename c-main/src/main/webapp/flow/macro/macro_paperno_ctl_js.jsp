@@ -45,16 +45,30 @@
 
 %>
     $("select[name='<%=field%>']").change(function() {
-        onchange();
+        onPageNoCtlChange();
     });
 <%}%>
 
-function onchange() {
-	if (o("<%=ary[0]%>").value=="") {
+function onPageNoCtlChange() {
+	if (o("<%=ary[0]%>") && o("<%=ary[0]%>").value=="") {
     	o("<%=fieldName%>").value = "";
         return;
     }
-    $.ajax({
+
+    var ajaxData = {
+        op: "getNo",
+        flowId: "<%=flowId%>",
+        fieldName: "<%=fieldName%>",
+        <%=ary[0]%>: o("<%=ary[0]%>").value,
+        <%=ary[1]%>: o("<%=ary[1]%>").value,
+        desc: "<%=desc%>"
+    };
+    ajaxPost('/flow/macro/macro_paperno_ctl_js.jsp', ajaxData).then((data) => {
+        console.log('data', data);
+        findObj("<%=fieldName%>").value = $.trim(data);
+    });
+
+    <%--$.ajax({
         type: "post",
         url: "<%=request.getContextPath()%>/flow/macro/macro_paperno_ctl_js.jsp",
         data: {
@@ -79,7 +93,7 @@ function onchange() {
             // 请求出错处理
             alert(XMLHttpRequest.responseText);
         }
-	});
+	});--%>
 }
 
 

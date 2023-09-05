@@ -188,7 +188,7 @@ public class UserGroupDb extends ObjectDb {
     }
 
     public UserGroupDb getUserGroupDb(String code) {
-        this.code = code;
+        // this.code = code;
         com.cloudweb.oa.cache.GroupCache roleCache = SpringUtil.getBean(com.cloudweb.oa.cache.GroupCache.class);
         Group group = roleCache.getGroup(code);
         return getFromGroup(group, new UserGroupDb());
@@ -223,12 +223,9 @@ public class UserGroupDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("getRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRoles:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return rds;
     }

@@ -13,44 +13,24 @@
 <%@page import="com.redmoon.oa.flow.DirectoryView"%>
 <%@ page import="com.redmoon.oa.sms.*"%>
 <%@ page import="com.redmoon.oa.message.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <%String users = ParamUtil.get(request, "users");%>
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <HEAD><TITLE>设置代理</TITLE>
 <META http-equiv=Content-Type content="text/html; charset=utf-8">
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <script type="text/javascript" src="../inc/common.js"></script>
-    <script src="../js/jquery-1.9.1.min.js"></script>
-    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+<script src="../js/jquery-1.9.1.min.js"></script>
+<script src="../js/jquery-migrate-1.2.1.min.js"></script>
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
 <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
 <script src="../inc/livevalidation_standalone.js"></script>
-
 <script>
-function findObj(theObj, theDoc)
-{
-  var p, i, foundObj;
-  
-  if(!theDoc) theDoc = document;
-  if( (p = theObj.indexOf("?")) > 0 && parent.frames.length)
-  {
-    theDoc = parent.frames[theObj.substring(p+1)].document;
-    theObj = theObj.substring(0,p);
-  }
-  if(!(foundObj = theDoc[theObj]) && theDoc.all) foundObj = theDoc.all[theObj];
-  for (i=0; !foundObj && i < theDoc.forms.length; i++) 
-    foundObj = theDoc.forms[i][theObj];
-  for(i=0; !foundObj && theDoc.layers && i < theDoc.layers.length; i++) 
-    foundObj = findObj(theObj,theDoc.layers[i].document);
-  if(!foundObj && document.getElementById) foundObj = document.getElementById(theObj);
-  
-  return foundObj;
-}
 var timeObjName;
 function SelectDateTime(objName) {
 	 openWin("../util/calendar/time.jsp",350, 185);
@@ -73,13 +53,11 @@ function getSelUserRealNames() {
 function openWinUsers() {
 	selUserNames = form1.users.value;
 	selUserRealNames = form1.userRealNames.value;
-	showModalDialog('../user_multi_sel.jsp?unitCode=root',window.self,'dialogWidth:900px;dialogHeight:730px;status:no;help:no;')
+	openWin('../user_multi_sel.jsp?unitCode=root', 800, 600);
 }
 function setUsers(users, userRealNames) {
-	
-		form1.users.value = users;
-		form1.userRealNames.value = userRealNames;
-	
+	form1.users.value = users;
+	form1.userRealNames.value = userRealNames;
 }
 function setPerson(deptCode, deptName, userName, userRealName)
 {
@@ -166,11 +144,10 @@ function setPerson(deptCode, deptName, userName, userRealName)
 				fromNick = MimeUtility.encodeText(formUserDb.getRealName());
 				toNick = MimeUtility.encodeText(toUserDb.getRealName());
 			} catch (Exception e) {
-				e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
 			}
 			String fromEmail = Global.getEmail();
       		fromNick = fromNick + "<" + fromEmail + ">";
-            // System.out.println(getClass() + "====" + fromNick+"=========="+toUserDb.getEmail());
 			String toRealName = toUserDb.getRealName();
 			//2016年10月21号-2016-10-30  XX不在，工作流程由XXX代理
 			com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
@@ -267,7 +244,7 @@ function setPerson(deptCode, deptName, userName, userRealName)
         <tr>
           <td><lt:Label res="res.flow.Flow" key="agent"/>
           <input id="proxyUserRealName" name=proxyUserRealName readonly />
-          <input class="btn" type="button" onclick="javascript:showModalDialog('../user_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')" value='<lt:Label res="res.flow.Flow" key="selectUser"/>' />&nbsp;&nbsp;
+          <input class="btn" type="button" onclick="openWin('../user_sel.jsp', 800, 600)" value='<lt:Label res="res.flow.Flow" key="selectUser"/>' />&nbsp;&nbsp;
           <input id="proxy" name=proxy type=hidden />
           <input name="userName" type="hidden" value="<%=userName%>" />
             <input class="btn" type="button" onclick="form1.proxy.value='';form1.proxyUserRealName.value=''" value='<lt:Label res="res.flow.Flow" key="remove"/>'>
@@ -352,9 +329,6 @@ function selectNode(code, name) {
 }
 function openWinDepts() {
 	var deptCode = o("starter_param").value;
-	//var ret = showModalDialog('../dept_multi_sel.jsp',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')
-	//if (ret==null)
-		//return;
 	openWin("../admin/organize/organize_dept_sel.jsp?deptCode="+deptCode, 450, 400, "yes");
 	o("starter_param").value = "";
 	o("starter_param_show").value = "";

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>模块附件</title>
+</head>
+<body>
+<div id="attDiv" th:if="${hasAttach}">
+    <table id="attTable" class="tabStyle_1 percent98" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr>
+            <td height="31" align="right" class="tabStyle_1_title">&nbsp;</td>
+            <td class="tabStyle_1_title">
+                [(#{fileName})]
+            </td>
+            <td class="tabStyle_1_title">
+                [(#{creator})]
+            </td>
+            <td align="center" class="tabStyle_1_title">
+                [(#{time})]
+            </td>
+            <td align="center" class="tabStyle_1_title">
+                [(#{size})]
+            </td>
+            <td align="center" class="tabStyle_1_title">
+                [(#{operate})]
+            </td>
+        </tr>
+        <tr th:each="att : ${vAttach}" th:id="'trAtt' + ${att.id}">
+            <td width="2%" height="31" align="center"><img src="../images/attach.gif"/></td>
+            <td width="51%" align="left">
+                &nbsp;
+                <span th:id="'spanAttLink' + ${att.id}">
+                    <a th:href="'preview.do?attachId=' + ${att.id} + '&visitKey=' + ${att.visitKey}" target="_blank">
+                        <span th:id="'spanAttName' + ${att.id}">[(${att.name})]</span>
+                    </a>
+                </span>
+            </td>
+            <td width="10%" align="center">
+                [(${att.creatorRealName})]
+            </td>
+            <td width="15%" align="center">
+                [(${#dates.format(att.createDate, 'yyyy-MM-dd HH:mm')})]
+            </td>
+            <td width="11%" align="center">[(${att.fileSizeMb})]M
+            </td>
+            <td width="11%" align="center">
+                <a th:href="'download.do?attachId=' + ${att.id} + '&visitKey=' + ${att.visitKey}" target="_blank">
+                    [(#{download})]
+                </a>
+                <th:block th:if="${!isShowPage}">
+                    &nbsp;&nbsp;
+                    <a href="javascript:;" th:onclick="delAtt([(${att.id})])" style="cursor:pointer">删除</a>
+                </th:block>
+                &nbsp;&nbsp;<a th:if="${canUserLog}" href="javascript:;" th:onclick="addTab('[(${att.name})] 日志', 'visual/att_log_list.jsp?attId=[(${att.id})]')">日志</a>
+                &nbsp;&nbsp;<a th:if="${#strings.length(att.previewUrl) != 0}" href="javascript:;" th:onclick="addTab('[(${att.name})]', '[(${att.previewUrl})]')">预览</a>
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

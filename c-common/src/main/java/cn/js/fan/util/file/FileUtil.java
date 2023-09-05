@@ -1,12 +1,9 @@
 package cn.js.fan.util.file;
 
+import cn.js.fan.security.AntiXSS;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.*;
-
-import org.apache.log4j.Logger;
-import cn.js.fan.util.StrUtil;
-import cn.js.fan.web.Global;
-
-import java.net.URI;
 
 public class FileUtil extends Object {
     private String path; //文件完整路径名
@@ -39,21 +36,61 @@ public class FileUtil extends Object {
                 returnStr.append(line).append("\r\n");
             }
         } catch (IOException e) { //错误处理
-            System.out.println("IOException: " + FileUtil.class.getName() + " " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(FileUtil.class).error(e);
         } finally {
             if (read!=null) {
                 try {
                     read.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
             if (reader!=null) {
                 try {
                     reader.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
+                }
+            }
+        }
+
+        return returnStr.toString();
+    }
+
+    public static String readFile(InputStream inputStream, String charset) {
+        StringBuilder returnStr = new StringBuilder();
+        BufferedReader reader = null;
+        InputStreamReader read = null;
+        try {
+            read = new InputStreamReader(inputStream, charset);
+            reader = new BufferedReader(read);
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                // 读取一行数据并保存到currentRecord变量中
+                returnStr.append(line).append("\r\n");
+            }
+        } catch (IOException e) { //错误处理
+            LogUtil.getLog(FileUtil.class).error(e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(FileUtil.class).error(e);
+                }
+            }
+            if (read!=null) {
+                try {
+                    read.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(FileUtil.class).error(e);
+                }
+            }
+            if (reader!=null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
         }
@@ -78,9 +115,7 @@ public class FileUtil extends Object {
             //清除PrintWriter对象
             pw.close();
         } catch (IOException e) {
-            //错误处理
-            System.out.println("写入文件错误:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(FileUtil.class).error(e);
         }
     }
 
@@ -94,7 +129,7 @@ public class FileUtil extends Object {
             out1 = new PrintWriter(osw);
             out1.println(str);
         } catch (IOException e) {
-            System.out.println("FileUtil.java writeFile:" + e.getMessage());
+            LogUtil.getLog(FileUtil.class).error(e);
         }
         finally {
             if (out1!=null) {
@@ -104,14 +139,14 @@ public class FileUtil extends Object {
                 try {
                     osw.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
             if (fo!=null) {
                 try {
                     fo.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
         }
@@ -154,25 +189,25 @@ public class FileUtil extends Object {
                 output.flush();
                 re = true;
             } catch (IOException e) {
-                e.printStackTrace();
+                LogUtil.getLog(FileUtil.class).error(e);
             } finally {
                 if (output != null) {
                     try {
                         output.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(FileUtil.class).error(e);
                     }
                 }
                 if (input != null) {
                     try {
                         input.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(FileUtil.class).error(e);
                     }
                 }
             }
         } else {
-            System.out.print("Error:" + filePathSrc + " is not found！");
+            LogUtil.getLog(FileUtil.class).error("Error:" + filePathSrc + " is not found！");
         }
         return re;
     }
@@ -194,28 +229,28 @@ public class FileUtil extends Object {
                 rf.write(buf, 0, len);
             }
         } catch (IOException e) {
+            LogUtil.getLog(FileUtil.class).error(e);
             re = false;
-            System.out.println("IOException:" + FileUtil.class.getName() + " AppendFile:" + e.getMessage());
         } finally {
             if (bis != null) {
                 try {
                     bis.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
             if (fis != null) {
                 try {
                     fis.close(); // 关闭文件
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
             if (rf != null) {
                 try {
                     rf.close();  // 关闭文件流
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
         }
@@ -274,9 +309,9 @@ public class FileUtil extends Object {
                     }
                 }
                 del(filepath); // 递归调用
+            } else {
+                f.delete();
             }
-        } else {
-            f.delete();
         }
     }
 
@@ -300,8 +335,7 @@ public class FileUtil extends Object {
             out1 = new PrintWriter(osw);
             out1.println(content);
         } catch (IOException e) {
-            System.out.println("IOException: " + FileUtil.class.getName() + " append:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(FileUtil.class).error(e);
         } finally {
             if (out1!=null) {
                 out1.close();
@@ -310,14 +344,14 @@ public class FileUtil extends Object {
                 try {
                     osw.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
             if (fo != null) {
                 try {
                     fo.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(FileUtil.class).error(e);
                 }
             }
         }

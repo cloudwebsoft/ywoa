@@ -26,5 +26,7 @@ public interface ISQLBuilderService {
 
     String[] getMacroCondsAndUrlStrs(HttpServletRequest request, IFormMacroCtl ifmc, FormField ff, String name_cond, String value, String cond, String urlStr, String tableAlias);
 
-    String getListSqlForLogRelateModule(HttpServletRequest request, String sql);
+    String getListSqlForLogRelateModule(HttpServletRequest request, String sql, boolean isRead);
+
+    String getListSqlForLogRelateModuleBack(HttpServletRequest request, String sql);
 }

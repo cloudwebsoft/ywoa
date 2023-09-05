@@ -51,7 +51,7 @@
     if (modUrlList.equals("")) {
         String privurl = ParamUtil.get(request, "privurl");
         if (privurl.equals("")) {
-            modUrlList = request.getContextPath() + "/" + "visual/module_list.jsp?code=" + code + "&formCode=" + StrUtil.UrlEncode(formCode);
+            modUrlList = request.getContextPath() + "/" + "visual/moduleListPage.do?code=" + code + "&formCode=" + StrUtil.UrlEncode(formCode);
         }
         else {
             modUrlList = privurl;
@@ -110,6 +110,9 @@
 
     com.redmoon.oa.visual.Render rd = new com.redmoon.oa.visual.Render(request, fd);
     request.setAttribute("rend", rd.rendForAdd(msd));
+
+    com.alibaba.fastjson.JSONArray buttons = msd.getButtons(request, ConstUtil.PAGE_TYPE_ADD, null, 1);
+    request.setAttribute("buttons", buttons);
 %>
 <!DOCTYPE html>
 <html>
@@ -119,6 +122,8 @@
     <link type="text/css" rel="stylesheet" href="${skinPath}/css.css"/>
     <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
     <link href="../flowstyle.css" rel="stylesheet" type="text/css"/>
+    <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
     <style>
         input,textarea {
             outline:none;
@@ -134,11 +139,11 @@
         }
 
         select {
-            line-height: 27px;
-            height: 29px !important;
+            /*line-height: 27px;
+            height: 29px !important;*/
             border: 1px solid #d4d4d4;
         }
-        <%=msd.getCss(ConstUtil.PAGE_TYPE_ADD)%>
+        <%=StrUtil.getNullStr(msd.getCss(ConstUtil.PAGE_TYPE_ADD))%>
     </style>
     <script src="../inc/common.js"></script>
     <script src="../inc/map.js"></script>
@@ -176,7 +181,7 @@
 <body>
 <%@ include file="module_inc_menu_top.jsp" %>
 <script>
-    o("menu1").className = "current";
+    $('#menu1').addClass('current');
 </script>
 <div class="spacerH"></div>
 <%@ include file="../inc/tip_phrase.jsp" %>
@@ -208,14 +213,14 @@
             return;
         }
 
-        $('#btnAdd').attr("disabled", true);
+        $('#btnOk').attr("disabled", true);
         $('#visualForm').submit();
     }
 
     $(function () {
         SetNewDate();
 
-        $('#btnAdd').click(function (e) {
+        $('#btnOK').click(function (e) {
             e.preventDefault();
             add();
         });
@@ -270,7 +275,7 @@
                 data.msg = data.msg.replace(/\\r/ig, "<BR>");
             }
             jAlert(data.msg, "提示");
-            $('#btnAdd').attr("disabled", false);
+            $('#btnOK').attr("disabled", false);
         } else {
             try {
                 onModuleAdd<%=code%>(data.id);
@@ -291,7 +296,7 @@
         }
     }
 </script>
-<form action="create.do?code=${code}&formCode=${formCode}&privurl=${privurl}" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
+<form action="create.do?code=${code}&formCode=${formCode}&privurl=${privurl}" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm" class="form-inline">
     <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
         <tr>
             <td align="left">
@@ -307,9 +312,30 @@
         </c:if>
         <tr>
             <td height="30" align="center" style="padding-top: 10px">
-                <button id="btnAdd" class="btn btn-default">确定</button>
-                &nbsp;&nbsp;
-                <button id="btnBack" class="btn btn-default">返回</button>
+                <c:if test="${fn:length(buttons)==0}">
+                    <button id="btnOK" class="btn btn-default">确定</button>
+                    &nbsp;&nbsp;
+                    <button id="btnBack" class="btn btn-default">返回</button>
+                </c:if>
+                <c:forEach items="${buttons}" var="button">
+                    <c:choose>
+                        <c:when test="${button.event=='click'}">
+                            <button id="${button.id}" class="btn btn-default" title="${button.title}" onclick="${button.href}">${button.name}</button>
+                            &nbsp;&nbsp;&nbsp;&nbsp;
+                        </c:when>
+                        <c:otherwise>
+                            <c:if test="${button.target=='newTab'}">
+                                <button id="${button.id}" class="btn btn-default" title="${button.title}" onclick="addTab('${button.name}', '${button.href}')">${button.name}</button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </c:if>
+                            <c:if test="${button.target=='curTab'}">
+                                <button id="${button.id}" class="btn btn-default" title="${button.title}" onclick="window.location.href='${button.href}'">${button.name}</button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </c:if>
+                        </c:otherwise>
+                    </c:choose>
+                </c:forEach>
+
                 <input id="cwsHelper" name="cwsHelper" value="1" type="hidden"/>
                 <c:forEach items="${map}" var="mymap" >
                 <input type='hidden' name='<c:out value="${mymap.key}" />' value='<c:out value="${mymap.value}" />'/>
@@ -324,7 +350,24 @@
 <link rel="stylesheet" href="../js/jquery-contextmenu/jquery.contextMenu.min.css">
 <script src="../js/jquery-contextmenu/jquery.contextMenu.js"></script>
 <script src="../js/jquery-contextmenu/jquery.ui.position.min.js"></script>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
 <script>
+    <%
+    if (msd.getPageStyle()==ConstUtil.PAGE_STYLE_LIGHT) {
+    %>
+    // 不能放在$(function中，原来的tabStyle_8风格会闪现
+    // $(function() {
+    var $table = $('#visualForm').find('.tabStyle_8');
+    if ($table[0] == null) {
+        $table = $('#visualForm').find('.tabStyle_1');
+    }
+    $table.addClass('layui-table');
+    $table.removeClass('tabStyle_8');
+    // })
+    <%
+    }
+    %>
+
     $(function() {
        $('#btnBack').click(function(e) {
            e.preventDefault();
@@ -374,7 +417,7 @@
         })
 
         $('input').each(function() {
-            if ($(this).attr('kind')=='DATE') {
+            if ($(this).attr('kind')=='DATE' || $(this).attr('kind')=='DATE_TIME') {
                 $(this).attr('autocomplete', 'off');
             }
         });
@@ -382,6 +425,11 @@
         // 初始化tip提示
         // 不能通过$("#visualForm").serialize()来获取所有的元素，因为radio或checkbox未被选中，则不会被包含
         $('#visualForm input, #visualForm select, #visualForm textarea').each(function() {
+            // 如果不是富文本编辑宏控件，如果富文本编辑宏控件加上了form-control，则会因为生成ueditor时，外面包裹的div也带上了form-control，致富文本编辑器位置变成了浮于表单上
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type')!='hidden' && $(this).attr('type')!='file') {
+                $(this).addClass('form-control');
+            }
+
             var tip = '';
             if ($(this).attr('type') == 'radio') {
                 tip = $(this).parent().attr('tip');

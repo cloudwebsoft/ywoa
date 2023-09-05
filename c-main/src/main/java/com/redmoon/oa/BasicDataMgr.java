@@ -3,7 +3,6 @@ package com.redmoon.oa;
 import java.io.FileInputStream;
 import java.net.URL;
 import org.jdom.Document;
-import org.apache.log4j.Logger;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.XMLOutputter;
 import java.io.FileOutputStream;
@@ -31,7 +30,6 @@ public class BasicDataMgr {
     String xmlPath;
     Document doc = null;
     Element root = null;
-    Logger logger = Logger.getLogger(BasicDataMgr.class.getName());
 
     public BasicDataMgr(String moduleName) {
         this.moduleName = moduleName;
@@ -47,9 +45,9 @@ public class BasicDataMgr {
             root = doc.getRootElement();
             fin.close();
         } catch (org.jdom.JDOMException e) {
-            logger.error("BasicDataMgr1:" + e.getMessage());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("BasicDataMgr1:" + e.getMessage());
         } catch (java.io.IOException e) {
-            logger.error("BasicDataMgr2:" + e.getMessage());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("BasicDataMgr2:" + e.getMessage());
         }
     }
 
@@ -69,8 +67,9 @@ public class BasicDataMgr {
         if (options!=null) {
             int len = options.length;
             for (int i=0; i<len; i++) {
-                if (options[i][1].equals(itemValue))
+                if (options[i][1].equals(itemValue)) {
                     return options[i][0];
+                }
             }
         }
         return "";
@@ -78,15 +77,17 @@ public class BasicDataMgr {
 
     public String[][] getOptions(String itemCode) {
         DataItem di = getDataItem(itemCode);
-        if (di==null)
+        if (di==null) {
             return null;
+        }
         return di.options;
     }
 
     public DataItem getDataItem(String itemCode) {
       List childs = root.getChildren();
-      if (childs==null)
+      if (childs==null) {
           return null;
+      }
       Iterator ir = childs.iterator();
       int i = 0;
       DataItem di = new DataItem();
@@ -111,7 +112,6 @@ public class BasicDataMgr {
               break;
           }
       }
-      // System.out.println("name=" + name + " which=" + which);
       return di;
     }
 
@@ -176,7 +176,6 @@ public class BasicDataMgr {
                   while (chir.hasNext()) {
                       Element e1 = (Element) chir.next();
                       if (e1.getAttributeValue("value").equals(value)) {
-                          System.out.print("e:"+e1.getAttributeValue("value"));
                           re = e.getChild("options").removeContent(e1);
                           if(re){
                               writemodify();

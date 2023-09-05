@@ -71,9 +71,7 @@ ir = v.iterator();
 while (ir.hasNext()) {
 	FormField ff = (FormField)ir.next();
 	if (ff.getType().equals(FormField.TYPE_MACRO)) {
-		// System.out.println(getClass() + " ff.getMacroType()=" + ff.getMacroType());
-        MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());		
-		// System.out.println(getClass() + " mu.getNestType()=" + mu.getNestType());
+        MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
 		if (mu.getNestType() != MacroCtlUnit.NEST_TYPE_NONE) {
 		// if (ff.getMacroType().equals("nest_table") || ff.getMacroType().equals("nest_sheet")) {
 			// String nestFormCode = ff.getDefaultValue();
@@ -101,9 +99,7 @@ while (ir.hasNext()) {
 			
 			ModuleSetupDb msd = new ModuleSetupDb();
 			msd = msd.getModuleSetupDbOrInit(nestFormCode);
-			
-			// System.out.println(getClass() + " nestFormCode=" + nestFormCode);
-			
+
 			String listField = "," + StrUtil.getNullStr(msd.getString("list_field")) + ",";
 			Iterator ir2 = nestfd.getFields().iterator();
 			while (ir2.hasNext()) {

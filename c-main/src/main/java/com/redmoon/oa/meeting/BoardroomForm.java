@@ -61,7 +61,6 @@ public class BoardroomForm extends AbstractForm {
 
     public int chkPersonNum(HttpServletRequest request) {
         String strPersonNum = ParamUtil.get(request, "personNum");
-        // System.out.println("personNum=" + strPersonNum);
         if (!StrUtil.isNumeric(strPersonNum))
             log("人数必须为数字！");
         else {

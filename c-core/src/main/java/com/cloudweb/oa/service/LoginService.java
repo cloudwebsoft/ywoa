@@ -7,22 +7,32 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.cloudweb.oa.cache.UserCache;
+import com.cloudweb.oa.entity.Department;
+import com.cloudweb.oa.entity.Role;
+import com.cloudweb.oa.entity.User;
 import com.cloudweb.oa.entity.UserSetup;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.security.AesUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.WrongPasswordException;
+import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.security.ServerIPPriv;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.sql.SQLException;
+import java.util.List;
 
 @Service
 public class LoginService {
@@ -30,14 +40,30 @@ public class LoginService {
     @Autowired
     IUserSetupService userSetupService;
 
-    public String login(HttpServletRequest request, HttpServletResponse response) throws JSONException {
+    @Autowired
+    IDepartmentService departmentService;
+
+    @Autowired
+    IUserOfRoleService userOfRoleService;
+
+    @Autowired
+    UserCache userCache;
+
+    @Autowired
+    IUserService userService;
+
+    public String login(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws JSONException {
         JSONObject json = new JSONObject();
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
 
-        String userName = ParamUtil.get(request, "name");
+        String loginName = ParamUtil.get(request, "name");
+        // 根据登录名取得用户名
+        User user = userService.getUserByLoginName(loginName);
+        String userName = user.getName();
+
         boolean re;
         com.redmoon.oa.security.Config scfg = com.redmoon.oa.security.Config.getInstance();
-        if (scfg.isDefendBruteforceCracking()) {
+        /*if (scfg.isDefendBruteforceCracking()) {
             try {
                 Login.canlogin(request, "redmoonoa");
             }
@@ -46,7 +72,7 @@ public class LoginService {
                 json.put("msg", e.getMessage());
                 return json.toString();
             }
-        }
+        }*/
 
         //比对是否和数据库中的版本相同
         com.redmoon.oa.Config oaCfg = new com.redmoon.oa.Config();
@@ -61,7 +87,7 @@ public class LoginService {
             String spVersion = "";
             if (ri != null && ri.size() == 1){
                 while(ri.hasNext()){
-                    cn.js.fan.db.ResultRecord rr = (cn.js.fan.db.ResultRecord) ri.next();
+                    cn.js.fan.db.ResultRecord rr = ri.next();
                     version = StrUtil.getNullStr(rr.getString("version")).trim();
                     spVersion = StrUtil.getNullStr(rr.getString("sp_version")).trim();
                     break;
@@ -73,16 +99,16 @@ public class LoginService {
                 return json.toString();
             }
         }catch(SQLException e){
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             json.put("ret", "0");
             json.put("msg", "数据库连接错误");
             return json.toString();
         }
         try {
-            re = pvg.login(request, response);
-            if (scfg.isDefendBruteforceCracking()) {
+            re = pvg.login(request, response, authentication);
+            /*if (scfg.isDefendBruteforceCracking()) {
                 Login.afterlogin(request,re,"redmoonoa",true);
-            }
+            }*/
         }
         catch(WrongPasswordException | ErrMsgException e){
             json.put("ret", "0");
@@ -92,7 +118,7 @@ public class LoginService {
         catch (NullPointerException e) {
             json.put("ret", "0");
             json.put("msg", "数据库连接错误！");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return json.toString();
         }
         if (re) {
@@ -106,21 +132,36 @@ public class LoginService {
         }
 
         if (re) {
-            String name = userName;
-            UserDb user = new UserDb();
-            user = user.getUserDb(name);
-
-            boolean isLoginAgreement = oaCfg.getBooleanProperty("isLoginAgreement");
-            if (isLoginAgreement) {
-                UserSetup userSetup = userSetupService.getUserSetup(user.getName());
-                if (userSetup.getAgreeDate() == null) {
-                    String url = "user/login_agreement.jsp";
-                    json.put("ret", "1");
-                    json.put("msg", "");
-                    json.put("redirect", url);
-                    return json.toString();
+            com.redmoon.oa.Config cfg = Config.getInstance();
+            // 如果角色可切换，则取默认角色，在上面的pvg.login(...)中已经调用Privilege.doLoginSession，其中已经设置了默认当前角色和部门
+            String curRoleCode = Privilege.getCurRoleCode();
+            if (cfg.getBooleanProperty("isRoleSwitchable")) {
+                json.put("isRoleSwitchable", true);
+                // 置当前切换角色
+                if (curRoleCode != null) {
+                    json.put(ConstUtil.CUR_ROLE_CODE, curRoleCode);
+                    response.setHeader(ConstUtil.CUR_ROLE_CODE, curRoleCode);
+                } else {
+                    json.put(ConstUtil.CUR_ROLE_CODE, "");
                 }
+            } else {
+                json.put("isRoleSwitchable", false);
             }
+
+            if (cfg.getBooleanProperty("isDeptSwitchable")) {
+                json.put("isDeptSwitchable", true);
+                // 置当前切换部门
+                String curDeptCode = Privilege.getCurDeptCode();
+                if (curDeptCode!=null) {
+                    json.put(ConstUtil.CUR_DEPT_CODE, curDeptCode);
+                    response.setHeader(ConstUtil.CUR_DEPT_CODE, curDeptCode);
+                } else {
+                    json.put(ConstUtil.CUR_DEPT_CODE, "");
+                }
+            } else {
+                json.put("isDeptSwitchable", false);
+            }
+
             if (scfg.getIntProperty("isPwdCanReset")==1) {
                 // 检查用户的邮箱信息是否已完善
                 String email = user.getEmail();
@@ -135,26 +176,48 @@ public class LoginService {
 
             if (scfg.isForceChangeInitPassword()) {
                 // 判断是否初始密码
-                String pwd = ParamUtil.get(request, "pwd");
+                com.redmoon.oa.security.Config myconfig = com.redmoon.oa.security.Config.getInstance();
+                String pwdName = myconfig.getProperty("pwdName");
+                String pwd = ParamUtil.get(request, pwdName);
+
+                String pwdAesKey = myconfig.getProperty("pwdAesKey");
+                String pwdAesIV = myconfig.getProperty("pwdAesIV");
+                try {
+                    pwd = AesUtil.aesDecrypt(pwd, pwdAesKey, pwdAesIV);
+                } catch (Exception e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+
                 if (pwd.equals(scfg.getInitPassword())) {
-                    String url = "user/changeInitPwd.do";
+                    // String url = "user/changeInitPwd.do";
                     json.put("ret", "1");
                     json.put("msg", "");
-                    json.put("redirect", url);
+                    // json.put("redirect", url);
+                    json.put("isForceChangePwd", true);
                     return json.toString();
                 }
             }
 
             if (scfg.isForceChangeWhenWeak()) {
+                int minLen = scfg.getIntProperty("password.minLen");
                 com.redmoon.oa.security.Config myconfig = com.redmoon.oa.security.Config.getInstance();
                 String pwdName = myconfig.getProperty("pwdName");
                 String pwd = ParamUtil.get(request, pwdName);
 
-                if (PwdUtil.getPasswordLevel(pwd).getType() < scfg.getStrenthLevelMin() && scfg.getStrenthLevelMin()!=0) {
-                    String url = "user/changeMyPwd.do";
+                String pwdAesKey = myconfig.getProperty("pwdAesKey");
+                String pwdAesIV = myconfig.getProperty("pwdAesIV");
+                try {
+                    pwd = AesUtil.aesDecrypt(pwd, pwdAesKey, pwdAesIV);
+                } catch (Exception e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+
+                if (pwd.length() < minLen || PwdUtil.getPasswordLevel(pwd).getType() < scfg.getStrenthLevelMin() && scfg.getStrenthLevelMin()!=0) {
+                    // String url = "user/changeMyPwd.do";
                     json.put("ret", "1");
                     json.put("msg", "");
-                    json.put("redirect", url);
+                    // json.put("redirect", url);
+                    json.put("isForceChangePwd", true);
                     return json.toString();
                 }
             }
@@ -169,6 +232,7 @@ public class LoginService {
 
             json.put("ret", "1");
             json.put("msg", "");
+            // 后端登录需要用到，所以暂不删除redirect
             json.put("redirect", getUIModePage(queryStr));
         }
         else {
@@ -183,73 +247,6 @@ public class LoginService {
         if (!"".equals(queryStr) && !queryStr.startsWith("?")) {
             queryStr = "?" + queryStr;
         }
-
-        UserSetup userSetup = userSetupService.getUserSetup(SpringUtil.getUserName());
-
-        Config cfg = Config.getInstance();
-        boolean isSpecified = "2".equals(cfg.get("styleMode"));
-        String url = "";
-        // 指定风格
-        if (isSpecified) {
-            int styleSpecified = StrUtil.toInt(cfg.get("styleSpecified"), -1);
-            if (styleSpecified!=-1) {
-                if (styleSpecified== ConstUtil.UI_MODE_PROFESSION) {
-                    url = "oa.jsp" + queryStr;
-                }
-                else if (styleSpecified==ConstUtil.UI_MODE_FLOWERINESS) {
-                    url = "mydesktop.jsp" + queryStr;
-                }
-                else if (styleSpecified==ConstUtil.UI_MODE_FASHION) {
-                    url = "main.jsp" + queryStr;
-                }
-                else if (styleSpecified == ConstUtil.UI_MODE_PROFESSION_NORMAL) {
-                    url = "oa_main.jsp" + queryStr;// 经典型传统菜单
-                }
-                else if (styleSpecified == ConstUtil.UI_MODE_LTE) {
-                    url = "lte/index.do" + queryStr;
-                }
-                else {
-                    if (userSetup.getMenuMode()==ConstUtil.MENU_MODE_NEW) {
-                        url = "oa.jsp" + queryStr;
-                    }
-                    else {
-                        url = "oa_main.jsp" + queryStr;
-                    }
-                }
-            }
-        }
-        else {
-            if (userSetup.getUiMode() == ConstUtil.UI_MODE_NONE) {
-                com.redmoon.oa.kernel.License license = com.redmoon.oa.kernel.License.getInstance();
-                if (license.isVip()) {
-                    url = "ui_mode_guide.jsp" + queryStr;
-                } else {
-                    if (userSetup.getMenuMode() == ConstUtil.MENU_MODE_NEW) {
-                        url = "oa.jsp" + queryStr;
-                    } else {
-                        url = "oa_main.jsp" + queryStr;
-                    }
-                }
-            } else if (userSetup.getUiMode() == ConstUtil.UI_MODE_PROFESSION) {
-                if (userSetup.getMenuMode() == ConstUtil.MENU_MODE_NEW) {
-                    url = "oa.jsp" + queryStr;
-                } else {
-                    url = "oa_main.jsp" + queryStr;
-                }
-            } else if (userSetup.getUiMode() == ConstUtil.UI_MODE_FLOWERINESS) {
-                url = "mydesktop.jsp" + queryStr;
-            } else if (userSetup.getUiMode() == ConstUtil.UI_MODE_FASHION) {
-                url = "main.jsp" + queryStr;
-            } else if (userSetup.getUiMode() == ConstUtil.UI_MODE_LTE) {
-                url = "lte/index.do" + queryStr;
-            } else {
-                if (userSetup.getMenuMode() == ConstUtil.MENU_MODE_NEW) {
-                    url = "oa.jsp" + queryStr;
-                } else {
-                    url = "oa_main.jsp";
-                }
-            }
-        }
-        return url;
+        return "lte/index.do" + queryStr;
     }
 }

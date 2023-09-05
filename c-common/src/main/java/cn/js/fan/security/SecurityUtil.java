@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import cn.js.fan.db.SQLFilter;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class SecurityUtil {
     String defaulturl = "../index.jsp";
@@ -87,59 +88,32 @@ public class SecurityUtil {
     public static byte[] getKey() throws Exception {
         KeyGenerator keygen = KeyGenerator.getInstance(Algorithm);
         SecretKey deskey = keygen.generateKey();
-        if (debug) {
-            System.out.println("生成密钥:" + byte2hex(deskey.getEncoded()));
-        }
         return deskey.getEncoded();
     }
 
     //加密
     public static byte[] encode(byte[] input, byte[] key) throws Exception {
         SecretKey deskey = new javax.crypto.spec.SecretKeySpec(key, Algorithm);
-        if (debug) {
-            System.out.println("加密前的二进串:" + byte2hex(input));
-            System.out.println("加密前的字符串:" + new String(input));
-        }
         Cipher c1 = Cipher.getInstance(Algorithm);
         c1.init(Cipher.ENCRYPT_MODE, deskey);
-
         byte[] cipherByte = c1.doFinal(input);
-        if (debug) {
-            System.out.println("加密后的二进串:" + byte2hex(cipherByte));
-            System.out.println("加密后的字符串:" + new String(cipherByte));
-        }
         return cipherByte;
     }
 
     public static String encode2hex(byte[] input, byte[] key) throws Exception {
         SecretKey deskey = new javax.crypto.spec.SecretKeySpec(key, Algorithm);
-        if (debug) {
-            System.out.println("加密前的二进串:" + byte2hex(input));
-            System.out.println("加密前的字符串:" + new String(input));
-        }
         Cipher c1 = Cipher.getInstance(Algorithm);
         c1.init(Cipher.ENCRYPT_MODE, deskey);
         byte[] cipherByte = c1.doFinal(input);
-        if (debug) {
-            System.out.println("加密后的二进串:" + byte2hex(cipherByte));
-            System.out.println("加密后的字符串:" + new String(cipherByte));
-        }
         return byte2hex(cipherByte);
     }
 
     //解密
     public static byte[] decode(byte[] input, byte[] key) throws Exception {
         SecretKey deskey = new javax.crypto.spec.SecretKeySpec(key, Algorithm);
-        if (debug) {
-            System.out.println("解密前的信息:" + byte2hex(input));
-        }
         Cipher c1 = Cipher.getInstance(Algorithm);
         c1.init(Cipher.DECRYPT_MODE, deskey);
         byte[] clearByte = c1.doFinal(input);
-        if (debug) {
-            System.out.println("解密后的二进串:" + byte2hex(clearByte));
-            System.out.println("解密后的字符串:" + (new String(clearByte)));
-        }
         return clearByte;
     }
 
@@ -152,7 +126,7 @@ public class SecurityUtil {
         } else if (hex >= 'a' && hex <= 'f') {
             k = 10 + hex - 'a';
         } else {
-            System.out.println("Wrong hex digit!");
+            LogUtil.getLog(SecurityUtil.class).warn("Wrong hex digit!");
         }
         return (byte) (k & 0xFF);
     }
@@ -190,7 +164,7 @@ public class SecurityUtil {
     public static byte[] hexstr2byte(String str) {
         int len = str.length();
         if (len % 2 != 0) {
-            System.out.println("十六进制字符串的长度为" + len + ",不为2的倍数！");
+            LogUtil.getLog(SecurityUtil.class).warn("十六进制字符串的长度为" + len + ",不为2的倍数!");
             return null; //经过byte2hex后结果的长度应为双数
         }
         byte[] r = new byte[len / 2];
@@ -209,16 +183,9 @@ public class SecurityUtil {
             return null;
         }
         SecretKey deskey = new javax.crypto.spec.SecretKeySpec(key, Algorithm);
-        if (debug) {
-            System.out.println("解密前的信息:" + hexstr);
-        }
         Cipher c1 = Cipher.getInstance(Algorithm);
         c1.init(Cipher.DECRYPT_MODE, deskey);
         byte[] clearByte = c1.doFinal(input);
-        if (debug) {
-            System.out.println("解密后的二进串:" + byte2hex(clearByte));
-            System.out.println("解密后的字符串:" + (new String(clearByte)));
-        }
         return clearByte;
     }
 
@@ -231,15 +198,15 @@ public class SecurityUtil {
                 CertificateFactory cf = CertificateFactory.getInstance("X.509");
                 cert = (X509Certificate) cf.generateCertificate(inStream);
             } catch (java.security.cert.CertificateException e) {
-                System.out.println("generateCertificate error:" + e.getMessage());
+                LogUtil.getLog(SecurityUtil.class).error(e);
                 return false;
             }
             inStream.close();
         } catch (FileNotFoundException e) {
-            System.out.println("read " + filename + " error:" + e.getMessage());
+            LogUtil.getLog(SecurityUtil.class).error(e);
             return false;
         } catch (IOException e) {
-            System.out.println("close " + filename + " error:" + e.getMessage());
+            LogUtil.getLog(SecurityUtil.class).error(e);
             return false;
         }
 
@@ -249,26 +216,23 @@ public class SecurityUtil {
         try {
             signer = Signature.getInstance("MD5withRSA");
             signer.initVerify(publicKey);
-        } catch (NoSuchAlgorithmException noAlgorithm) {
-            System.out.println(noAlgorithm);
-            return false;
-        } catch (InvalidKeyException badKey) {
-            System.out.println(badKey);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            LogUtil.getLog(getClass()).error(e);
             return false;
         }
 
         try {
             signer.update(oridata);
-        } catch (SignatureException signError) {
-            System.out.println(signError);
+        } catch (SignatureException e) {
+            LogUtil.getLog(SecurityUtil.class).error(e);
             return false;
         }
 
         boolean signatureVerified = false;
         try {
             signatureVerified = signer.verify(signatureData);
-        } catch (SignatureException signError) {
-            System.out.println(signError);
+        } catch (SignatureException e) {
+            LogUtil.getLog(SecurityUtil.class).error(e);
             return false;
         }
         return signatureVerified;
@@ -311,7 +275,6 @@ public class SecurityUtil {
       SecurityUtil.debug = true;
       String str = SecurityUtil.encode2hex("测试一下中文及englisth text".getBytes("utf-8"), "82986728".getBytes());
 
-      // System.out.println(MD5("cloudweb"));
       // AEF6DCF78F7B10E06BDFF04C3FA6D95E38D813B37D42254C17
       // 852A6B5575FD3496298E7B1DC9
       // 852a6b5575fd3496c8f92e72a5480d6e
@@ -323,9 +286,7 @@ public class SecurityUtil {
 
       // 5298E6D5129C27FBDE916AC47DEB2FDDE12D4968AD815DBC
 
-      System.out.println(str);
-
-      System.out.println(SecurityUtil.decodehexstr(str, "82986728".getBytes()));
+      LogUtil.getLog(SecurityUtil.class).info(str);
 
   }
 

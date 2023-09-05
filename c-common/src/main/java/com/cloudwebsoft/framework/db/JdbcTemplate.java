@@ -1,16 +1,16 @@
 package com.cloudwebsoft.framework.db;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
 import com.cloudwebsoft.framework.util.*;
-import org.apache.log4j.*;
-import com.cloudwebsoft.framework.console.ConnMonitor;
-
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * <p>Title: 参考Spring的类名称及其含义，制作本类，用以实现无须关闭数据库连接的数据库操作</p>
@@ -32,7 +32,6 @@ public class JdbcTemplate {
     public int curPage = 1;
     public long total = 0; // 由sql语句得到的总记录条数
 
-    Logger logger;
     // HashMap mapIndex; // 因为mapIndex为对象，所以不能作为参数传递，否则当重复调用JdbcTemplate时，返回ResultIterator时，就会传递mapIndex，在循环嵌套遍历表时，不同的表结构就会导致出现问题
     Connection connection = null;
 
@@ -41,19 +40,16 @@ public class JdbcTemplate {
     public JdbcTemplate() {
         this.connection = new Connection(Global.getDefaultDB());
         connName = connection.connName;
-        logger = Logger.getLogger(JdbcTemplate.class.getName());
     }
 
     public JdbcTemplate(Connection conn) {
         this.connection = conn;
         connName = connection.connName;
-        logger = Logger.getLogger(JdbcTemplate.class.getName());
     }
 
     public JdbcTemplate(DataSource ds) {
         this.connection = ds.getConnection();
         connName = connection.connName;
-        logger = Logger.getLogger(JdbcTemplate.class.getName());
     }
 
     /**
@@ -63,13 +59,11 @@ public class JdbcTemplate {
     public JdbcTemplate(String connName) {
         this.connName = connName;
         this.connection = new Connection(connName);
-        logger = Logger.getLogger(JdbcTemplate.class.getName());
     }
 
     public JdbcTemplate(DataSource ds, int curPage, int pageSize) {
         this.connection = ds.getConnection();
         connName = connection.connName;
-        logger = Logger.getLogger(JdbcTemplate.class.getName());
         this.curPage = curPage;
         this.pageSize = pageSize;
     }
@@ -123,18 +117,18 @@ public class JdbcTemplate {
                 for (int i = 1; i <= colCount; i++) {
                     // getColumnName返回的是sql语句中field的原始名字。getColumnLabel是field的SQL AS的值。
                     // mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
-                    mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
+                    mapIndex.put(rm.getColumnName(i).toUpperCase(), i);
                     mapLabel.put(rm.getColumnName(i).toUpperCase(), rm.getColumnLabel(i).toUpperCase());
-                    
-                    mapType.put(rm.getColumnName(i).toUpperCase(),  new Integer(rm.getColumnType(i)));
+                    mapType.put(rm.getColumnName(i).toUpperCase(), rm.getColumnType(i));
                 }
                 
                 result = new Vector();
                 ResultWrapper rsw = new ResultWrapper(rs);
                 while (rsw.next()) {
                     Vector row = new Vector();
-                    for (int i = 0; i < colCount; i++)
+                    for (int i = 0; i < colCount; i++) {
                         row.addElement(rsw.getObject(i + 1));
+                    }
                     result.addElement(row);
                     rowCount++;
                 }
@@ -145,9 +139,7 @@ public class JdbcTemplate {
                 try {
                     rs.close();
                 } catch (Exception e) {}
-                rs = null;
             }
-            // System.out.println(getClass() + " connection.getAutoCommit()=" + connection.getAutoCommit());
 
             if (autoClose && connection.getAutoCommit()) {
                 connection.close();
@@ -211,7 +203,6 @@ public class JdbcTemplate {
                 } catch (Exception e) {}
                 rs = null;
             }
-            // System.out.println(getClass() + " connection.getAutoCommit()=" + connection.getAutoCommit());
 
             if (autoClose && connection.getAutoCommit()) {
                 connection.close();
@@ -255,8 +246,9 @@ public class JdbcTemplate {
     public static void fillPreparedStatement(PreparedStatement ps,
                                       Object[] objectParams) throws
             SQLException {
-        if (objectParams == null)
+        if (objectParams == null) {
             return;
+        }
 
         int len = objectParams.length;
         for (int i = 1; i <= len; i++) {
@@ -273,33 +265,40 @@ public class JdbcTemplate {
             else if (obj instanceof String) {
                 ps.setString(i, (String) obj);
             } else if (obj instanceof Integer) {
-                ps.setInt(i, ((Integer) obj).intValue());
+                ps.setInt(i, (Integer) obj);
             } else if (obj instanceof java.util.Date) {
                 ps.setTimestamp(i, new Timestamp(((java.util.Date)obj).getTime()));
-            } else if (obj instanceof Timestamp) {
-                ps.setTimestamp(i, (Timestamp) obj);
             } else if (obj instanceof Long) {
-                ps.setLong(i, ((Long) obj).longValue());
+                ps.setLong(i, (Long) obj);
             } else if (obj instanceof Short) {
-                ps.setShort(i, ((Short) obj).shortValue());
+                ps.setShort(i, (Short) obj);
             } else if (obj instanceof Double) {
-                ps.setDouble(i, ((Double) obj).doubleValue());
+                ps.setDouble(i, (Double) obj);
             } else if (obj instanceof Float) {
-                ps.setFloat(i, ((Float) obj).floatValue());
+                ps.setFloat(i, (Float) obj);
             } else if (obj instanceof Clob) {
                 ps.setClob(i, (Clob) obj);
             } else if (obj instanceof Blob) {
                 ps.setBlob(i, (Blob) obj);
             } else if (obj instanceof Boolean) {
-                ps.setBoolean(i, ((Boolean) obj).booleanValue());
+                ps.setBoolean(i, (Boolean) obj);
             } else if (obj instanceof Byte) {
-                ps.setByte(i, ((Byte) obj).byteValue());
+                ps.setByte(i, (Byte) obj);
             }
             else if (obj instanceof BigDecimal) {
                 ps.setBigDecimal(i, (BigDecimal)obj);
             }
-            else
+            else if (obj instanceof LocalDate) {
+                Date d = DateUtil.asDate((LocalDate)obj);
+                ps.setTimestamp(i, new Timestamp(d.getTime()));
+            }
+            else if (obj instanceof LocalDateTime) {
+                Date d= DateUtil.asDate((LocalDateTime)obj);
+                ps.setTimestamp(i, new Timestamp(d.getTime()));
+            }
+            else {
                 throw new SQLException("fillPreparedStatement: Object " + obj + " type is not supported. It's sequence number is " + i + " in parameters");
+            }
         }
     }
 
@@ -367,7 +366,6 @@ public class JdbcTemplate {
                 ResultSetMetaData rm = rs.getMetaData();
                 colCount = rm.getColumnCount();
                 for (int i = 1; i <= colCount; i++) {
-                    //System.out.println(rm.getColumnName(i));
                     // getColumnName返回的是sql语句中field的原始名字。getColumnLabel是field的SQL AS的值。
                     // mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
                     mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
@@ -379,7 +377,6 @@ public class JdbcTemplate {
                 rs.setFetchSize(pageSize);
 
                 int absoluteLocation = pageSize * (curPage - 1) + 1;
-                //System.out.println("绝对定位于: " + absoluteLocation);
                 if (rs.absolute(absoluteLocation) == false) {
                     return new ResultIterator();
                 }
@@ -432,13 +429,13 @@ public class JdbcTemplate {
         ResultSet rs = null;
         try {
             dbmd = connection.getCon().getMetaData();
-            rs = dbmd.getTables(null, null, "%", null);
+            rs = dbmd.getTables(null, null, "%", new String[] {"TABLE"});
             //ResultSet rs=dbmd.getTables(null,null,"news",null);
             while (rs.next()) {
                 v.addElement(rs.getString(3));
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         finally {
         	if (rs != null){
@@ -446,7 +443,7 @@ public class JdbcTemplate {
 					rs.close();
 					rs = null;
 				} catch (SQLException e) {
-					e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
 				}
         	}
             if (autoClose) {
@@ -487,15 +484,18 @@ public class JdbcTemplate {
 
             // 防止受到攻击时，curPage被置为很大，或者很小
             int totalpages = (int) Math.ceil((double) total / pageSize);
-            if (curPage > totalpages)
+            if (curPage > totalpages) {
                 curPage = totalpages;
-            if (curPage <= 0)
+            }
+            if (curPage <= 0) {
                 curPage = 1;
+            }
 
             ps = connection.prepareStatement(sql);
 
-            if (total != 0)
+            if (total != 0) {
                 connection.setMaxRows(curPage * pageSize); //尽量减少内存的使用
+            }
 
             fillPreparedStatement(ps, objectParams);
             rs = connection.executePreQuery();
@@ -506,7 +506,6 @@ public class JdbcTemplate {
                 ResultSetMetaData rm = rs.getMetaData();
                 colCount = rm.getColumnCount();
                 for (int i = 1; i <= colCount; i++) {
-                    //System.out.println(rm.getColumnName(i));
                     // getColumnName返回的是sql语句中field的原始名字。getColumnLabel是field的SQL AS的值。
                     // mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
                     mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
@@ -517,7 +516,6 @@ public class JdbcTemplate {
                 rs.setFetchSize(pageSize);
 
                 int absoluteLocation = pageSize * (curPage - 1) + 1;
-                //System.out.println("绝对定位于: " + absoluteLocation);
                 if (rs.absolute(absoluteLocation) == false) {
                 	ResultIterator ri = new ResultIterator();
                     ri.setMapType(mapType);
@@ -532,8 +530,9 @@ public class JdbcTemplate {
                 ResultWrapper rsw = new ResultWrapper(rs);
                 do {
                     Vector row = new Vector();
-                    for (int i = 0; i < colCount; i++)
+                    for (int i = 0; i < colCount; i++) {
                         row.addElement(rsw.getObject(i + 1));
+                    }
                     result.addElement(row);
                     rowCount++;
                 } while (rsw.next());
@@ -597,9 +596,9 @@ public class JdbcTemplate {
                 for (int i = 1; i <= colCount; i++) {
                     // getColumnName返回的是sql语句中field的原始名字。getColumnLabel是field的SQL AS的值。
                     // mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
-                    mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
+                    mapIndex.put(rm.getColumnName(i).toUpperCase(), i);
                     mapLabel.put(rm.getColumnName(i).toUpperCase(), rm.getColumnLabel(i).toUpperCase());
-                    mapType.put(rm.getColumnName(i).toUpperCase(),  new Integer(rm.getColumnType(i)));                                        
+                    mapType.put(rm.getColumnName(i).toUpperCase(), rm.getColumnType(i));
                 }
 
                 result = new Vector();
@@ -625,11 +624,9 @@ public class JdbcTemplate {
         } finally {
             if (rs != null) {
                 rs.close();
-                rs = null;
             }
             if (ps!=null) {
                 ps.close();
-                ps = null;
             }
             if (autoClose && connection.getAutoCommit()) {
                 connection.close();
@@ -703,11 +700,9 @@ public class JdbcTemplate {
         } finally {
             if (rs != null) {
                 rs.close();
-                rs = null;
             }
             if (ps!=null) {
                 ps.close();
-                ps = null;
             }
             if (autoClose && connection.getAutoCommit()) {
                 connection.close();
@@ -757,13 +752,16 @@ public class JdbcTemplate {
 
             // 防止受到攻击时，curPage被置为很大，或者很小
             int totalpages = (int) Math.ceil((double) total / pageSize);
-            if (curPage > totalpages)
+            if (curPage > totalpages) {
                 curPage = totalpages;
-            if (curPage <= 0)
+            }
+            if (curPage <= 0) {
                 curPage = 1;
+            }
 
-            if (total != 0)
+            if (total != 0) {
                 connection.setMaxRows(curPage * pageSize); //尽量减少内存的使用
+            }
 
             rs = connection.executeQuery(sql);
             // LogUtil.getLog(getClass()).info("executeQuery: rs=" + rs);
@@ -777,7 +775,6 @@ public class JdbcTemplate {
                 // LogUtil.getLog(getClass()).info("executeQuery: sql=" + sql);
                 
                 for (int i = 1; i <= colCount; i++) {
-                    //System.out.println(rm.getColumnName(i));
                     // getColumnName返回的是sql语句中field的原始名字。getColumnLabel是field的SQL AS的值。
                     // mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
                     mapIndex.put(rm.getColumnName(i).toUpperCase(), new Integer(i));
@@ -790,8 +787,7 @@ public class JdbcTemplate {
                 rs.setFetchSize(pageSize);
 
                 int absoluteLocation = pageSize * (curPage - 1) + 1;
-                //System.out.println("绝对定位于: " + absoluteLocation);
-                if (rs.absolute(absoluteLocation) == false) {
+                if (!rs.absolute(absoluteLocation)) {
                 	ResultIterator ri = new ResultIterator();
                     ri.setMapType(mapType);
                     ri.setMapLabel(mapLabel);
@@ -804,8 +800,9 @@ public class JdbcTemplate {
                 ResultWrapper rsw = new ResultWrapper(rs);
                 do {
                     Vector row = new Vector();
-                    for (int i = 1; i <= colCount; i++)
+                    for (int i = 1; i <= colCount; i++) {
                         row.addElement(rsw.getObject(i));
+                    }
                     result.addElement(row);
                     rowCount++;
                 } while (rsw.next());
@@ -815,7 +812,6 @@ public class JdbcTemplate {
                 try {
                     rs.close();
                 } catch (Exception e) {}
-                rs = null;
             }
             if (autoClose && connection.getAutoCommit()) {
                 connection.close();
@@ -848,6 +844,22 @@ public class JdbcTemplate {
             }
         }
         return r;
+    }
+
+    public void addBatchByPreparedStatement(PreparedStatement ps, Object[] objectParams) throws SQLException {
+        fillPreparedStatement(ps, objectParams);
+        ps.addBatch();
+    }
+
+    public void executeBatchByPreparedStatement(PreparedStatement ps) throws SQLException {
+        try {
+            ps.executeBatch();
+        } finally {
+            if (autoClose && connection.getAutoCommit()) {
+                connection.close();
+                connection = null;
+            }
+        }
     }
 
     /**
@@ -891,8 +903,9 @@ public class JdbcTemplate {
 
     public void commit() throws SQLException {
         // 如果config_cws.xml中强制不使用事务，则当executeUpdate等操作后，connection就会被close，并置为null
-        if (connection!=null)
+        if (connection!=null) {
             connection.commit();
+        }
     }
 
     public void rollback() {
@@ -903,8 +916,9 @@ public class JdbcTemplate {
      * 当用于事务处理时，需要在finally块中关闭connection
      */
     public void close() {
-        if (connection!=null)
+        if (connection!=null) {
             connection.close();
+        }
     }
 
     public boolean isClosed() {

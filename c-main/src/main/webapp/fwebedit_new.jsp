@@ -11,7 +11,6 @@
 <%@ page import="com.redmoon.oa.person.*" %>
 <%@ page import="com.redmoon.oa.basic.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
-<%@ page import="com.redmoon.clouddisk.Config" %>
 <%@ page import="com.alibaba.fastjson.JSONObject" %>
 <%@ page import="com.redmoon.oa.dept.DeptDb" %>
 <%@ page import="com.redmoon.oa.dept.DeptMgr" %>
@@ -22,7 +21,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <link href="lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <link rel="stylesheet" href="js/bootstrap/css/bootstrap.min.css"/>
     <style>
+        #addform table td {
+            padding: 5px;
+        }
         .upfile-image-box {
             display: inline-block;
             width: 160px;
@@ -113,6 +116,16 @@
             opacity: 0.4;
             background-color: #F4E2C9;
         }
+
+        .head1 {
+            background-color: #daeaf8;
+            height: 35px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666666;
+            padding: 8px 0px 0px 5px;
+            border-bottom: 1px solid #92b4d2;
+        }
     </style>
     <script src="inc/common.js"></script>
     <script src="js/jquery-1.9.1.min.js"></script>
@@ -164,7 +177,6 @@
     <jsp:useBean id="dir" scope="page" class="com.redmoon.oa.fileark.Directory"/>
     <%
         String dir_code = ParamUtil.get(request, "dir_code");
-        String dir_name = ParamUtil.get(request, "dir_name");
         int id = 0;
 
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
@@ -172,7 +184,6 @@
         String op = ParamUtil.get(request, "op");
         String action = ParamUtil.get(request, "action");
 
-        String correct_result = "操作成功！";
         Document doc = null;
         Document template = null;
 
@@ -191,6 +202,8 @@
             out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, "目录:" + dir_code + "不存在"));
             return;
         }
+
+        String dir_name = leaf.getName();
 
         String strtemplateId = ParamUtil.get(request, "templateId");
         int templateId = Document.NOTEMPLATE;
@@ -290,47 +303,6 @@
         }
     %>
     <title><%=doc != null ? doc.getTitle() : ""%></title>
-    <style type="text/css">
-        .head1 {
-            background-color: #daeaf8;
-            height: 25px;
-            font-size: 14px;
-            font-weight: bold;
-            color: #666666;
-            padding: 8px 0px 0px 5px;
-            border-bottom: 1px solid #92b4d2;
-        }
-
-        input[type=text] {
-            border: 1px solid #d6d6d6;
-            height: 22px
-        }
-
-        .mybtn {
-            background-color: #87c3f1 !important;
-            font-weight: bold;
-            text-align: center;
-            line-height: 35px;
-            height: 35px;
-            width: 120px;
-            padding-right: 8px;
-            padding-left: 8px;
-            -moz-border-radius: 5px;
-            -webkit-border-radius: 5px;
-            border-radius: 5px;
-            behavior: url(skin/common/ie-css3.htc);
-            cursor: pointer;
-            color: #fff;
-            border-top-width: 0px;
-            border-right-width: 0px;
-            border-bottom-width: 0px;
-            border-left-width: 0px;
-            border-top-style: none;
-            border-right-style: none;
-            border-bottom-style: none;
-            border-left-style: none;
-        }
-    </style>
     <script type="text/javascript" charset="utf-8" src="ueditor/js/ueditor/ueditor.config.js?2023"></script>
     <script type="text/javascript" charset="utf-8" src="ueditor/js/ueditor/ueditor.all.js?2023"></script>
     <script type="text/javascript" charset="utf-8" src="ueditor/js/ueditor/lang/zh-cn/zh-cn.js?2023"></script>
@@ -349,7 +321,7 @@
         //-->
     </script>
 </head>
-<body>
+<body class="form-inline">
 <table width="100%" BORDER=0 align="center" CELLPADDING=0 CELLSPACING=0>
     <tr valign="top" bgcolor="#FFFFFF">
         <td width="" height="430" colspan="2" style="background-attachment: fixed; background-repeat: no-repeat">
@@ -372,11 +344,10 @@
                         </script>
                         &nbsp;&nbsp;
                         <%
-                            String pageUrl = "fileark/document_list_m.jsp?";
+                            String pageUrl = "fileark/docListPage.do?";
                             if (op.equals("add")) {
                         %>
                         <%=dir_name%>&nbsp;-&nbsp;添加
-                        <!-- <a href="<%=pageUrl%>&dir_code=<%=StrUtil.UrlEncode(dir_code)%>&dir_name=<%=StrUtil.UrlEncode(dir_name)%>">&nbsp;<%=dir_name%></a> -->
                         <%
                         } else {
                             Leaf dlf = new Leaf();
@@ -385,7 +356,6 @@
                             }
                             if (doc != null && dlf.getType() == 2) {
                         %>
-                        <!-- <a href="<%=pageUrl%>&dir_code=<%=StrUtil.UrlEncode(dir_code)%>&dir_name=<%=StrUtil.UrlEncode(dir_name)%>"><%=dlf.getName()%></a> -->
                         <%=dlf.getName()%>
                         <%} else {%>
                         <%=dir_name%>
@@ -775,20 +745,6 @@
                         </td>
                     </tr>
                     <%
-                        com.redmoon.clouddisk.Config cloudCfg = com.redmoon.clouddisk.Config.getInstance();
-                        if (cloudCfg.getBooleanProperty("isUsed")) {
-                    %>
-                    <tr>
-                        <td style="width:5%" align="left" valign="top">网盘：</td>
-                        <td>
-                            <a href="javascript:;"
-                               onClick="openWin('netdisk/clouddisk_list.jsp?mode=select', 850, 600)">选择文件</a>
-                            <div id="netdiskFilesDiv" style="line-height:1.5"></div>
-                        </td>
-                    </tr>
-                    <%
-                        }
-
                         String trFilePrivDis = (lp.canUserExamine(privilege.getUser(request)) || cfg.getBooleanProperty("filearkCanAuthorSetFilePriv")) ? "" : "none";
                     %>
                     <tr style="display: <%=trFilePrivDis%>">
@@ -934,13 +890,13 @@
                             <%
                                 if (op.equals("add")) {
                             %>
-                            <input id="btnDraft" type="button" class="mybtn" value="保存草稿">
+                            <input id="btnDraft" type="button" class="btn btn-default" value="保存草稿">&nbsp;
                             <%
                                 }
                                 else {
                                     if (doc.getExamine()==Document.EXAMINE_DRAFT) {
                             %>
-                            <input id="btnDraft" type="button" class="mybtn" value="保存草稿">
+                            <input id="btnDraft" type="button" class="btn btn-default" value="保存草稿">&nbsp;
                             <%
                                     }
                                 }
@@ -963,7 +919,7 @@
                                     submitForm();
                                 });
                             </script>
-                            <input id="btnOK" type="button" class="mybtn" value=" <%=action%> ">
+                            <input id="btnOK" type="button" class="btn btn-default" value=" <%=action%> ">&nbsp;
                             <%
                                 String prjUrl = "";
                                 if (dir_code.indexOf("cws_prj_") == 0) {
@@ -977,11 +933,11 @@
 
                                 if (!"edit".equals(op)) {
                             %>
-                            &nbsp;<input name="remsg" type="button" class="mybtn" onClick='location.href="fileark/document_list_m.jsp?dir_code=<%=dir_code %>&<%=prjUrl %>"' value=" 返 回 ">
+                            &nbsp;<input name="remsg" type="button" class="btn btn-default" onclick='location.href="fileark/docListPage.do?dirCode=<%=dir_code %>&<%=prjUrl %>"' value=" 返 回 ">&nbsp;
                             <%
                                 }
                             %>
-                            &nbsp;<input type="button" class="mybtn" onClick='window.location.reload()' value=" 刷 新 ">
+                            &nbsp;<input type="button" class="btn btn-default" onClick='window.location.reload()' value=" 刷 新 ">&nbsp;
                             <%
                                 if (op.equals("edit")) {
                                     String viewPage = "doc_show.jsp";
@@ -992,12 +948,12 @@
                                         viewPage = pu.getViewPage();
                                     }
                             %>
-                            &nbsp;<input name="remsg" type="button" class="mybtn" onclick='addTab("<%=doc.getTitle()%>", "<%=viewPage%>?id=<%=id%>")' value=" 查 看 ">
+                            &nbsp;<input name="remsg" type="button" class="btn btn-default" onclick='addTab("<%=doc.getTitle()%>", "<%=viewPage%>?id=<%=id%>")' value=" 查 看 ">&nbsp;
                             <%
                                 }
                                 else {
                             %>
-                            &nbsp;<input type="button" class="mybtn" onclick='preview()' value=" 预 览 ">
+                            &nbsp;<input type="button" class="btn btn-default" onclick='preview()' value=" 预 览 ">&nbsp;
                             <%
                                 }
                             %>
@@ -1123,46 +1079,27 @@
         openWin("fwebedit_left_choose.jsp", 300, 400, "yes");
     }
 
-    function setNetdiskFiles(ids) {
-        getNetdiskFiles(ids);
-    }
-
-    function doGetNetdiskFiles(response) {
-        var rsp = response.responseText.trim();
-        o("netdiskFilesDiv").innerHTML += rsp;
-    }
-
-    var errFunc = function (response) {
-        // alert('Error ' + response.status + ' - ' + response.statusText);
-        jAlert(response.responseText, '提示');
-    };
-
-    function getNetdiskFiles(ids) {
-        var str = "ids=" + ids;
-        var myAjax = new cwAjax.Request(
-                "<%=cn.js.fan.web.Global.getFullRootPath(request)%>/netdisk/ajax_getfile.jsp",
-                {
-                    method: "post",
-                    parameters: str,
-                    onComplete: doGetNetdiskFiles,
-                    onError: errFunc
-                }
-        );
-    }
-
+    var isPublish = false;
     $(function() {
         $('#btnOK').click(function() {
-            if (o("examine").value=="<%=Document.EXAMINE_DRAFT%>") {
-                <%
-                    // 当由草稿状态转发布时的状态
-                    int examineWhenPublish = Document.EXAMINE_NOT;
-                    if (!leaf.isExamine() || lp.canUserExamine(privilege.getUser(request))) {
-                        examineWhenPublish = Document.EXAMINE_PASS;
+            jConfirm("您确定要操作么？", "提示", function (r) {
+                if (!r) {
+                    return;
+                } else {
+                    if (o("examine").value=="<%=Document.EXAMINE_DRAFT%>") {
+                        isPublish = true;
+                        <%
+                            // 当由草稿状态转发布时的状态
+                            int examineWhenPublish = Document.EXAMINE_NOT;
+                            if (!leaf.isExamine() || lp.canUserExamine(privilege.getUser(request))) {
+                                examineWhenPublish = Document.EXAMINE_PASS;
+                            }
+                        %>
+                        o("examine").value = "<%=examineWhenPublish%>";
                     }
-                %>
-                o("examine").value = "<%=examineWhenPublish%>";
-            }
-            submitForm();
+                    submitForm();
+                }
+            })
         });
     });
 
@@ -1214,6 +1151,10 @@
                     $('#btnOK').attr("disabled", false);
                 }
                 else {
+                    if (isPublish) {
+                        $('#btnDraft').hide();
+                    }
+
                     if ($('#op').val()=="add") {
                         if (data.redirectUri != "") {
                             jAlert_Redirect(data.msg, "提示", data.redirectUri);
@@ -1227,7 +1168,7 @@
                                 if (data.examineFlowId!=null && data.examineFlowId!=<%=DocumentMgr.EXAMINE_FLOW_ID_NONE%>) {
                                     msg = "操作成功，文章正在流程审核中...";
                                 }
-                                jAlert_Redirect(msg, "提示", "fileark/document_list_m.jsp?dir_code=<%=dir_code%>");
+                                jAlert_Redirect(msg, "提示", "fileark/docListPage.do?dirCode=<%=dir_code%>");
                             }
                         }
                     }
@@ -1273,7 +1214,7 @@
         }
         $.ajax({
             type: "post",
-            url: "fileark/move.do",
+            url: "fileark/moveAttachment.do",
             contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
             data: {
                 attachId: attachId,
@@ -1506,5 +1447,13 @@
         var id = $(this).parents(".upfile-image-box").data('id');
         changeTitleImage(id, false);
     });
+
+    $(function() {
+        $('input, select, textarea').each(function () {
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+            }
+        });
+    })
 </script>
 </html>

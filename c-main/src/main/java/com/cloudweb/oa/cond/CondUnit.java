@@ -16,6 +16,9 @@ public class CondUnit {
     String fieldTitle;
     String html;
     String script;
+    /**
+     * 对应于SQLBuilder中的COND_TYPE_***
+     */
     String condType;
 
     HttpServletRequest request;
@@ -25,8 +28,9 @@ public class CondUnit {
     ArrayList<String> dateFieldNamelist;
     String queryValue;
 
-    public CondUnit(HttpServletRequest request, FormDb fd, String fieldName, String fieldTitle, String condType, Map<String, String> checkboxGroupMap, ArrayList<String> dateFieldNamelist, String queryValue) {
+    public CondUnit(HttpServletRequest request, ModuleSetupDb msd, FormDb fd, String fieldName, String fieldTitle, String condType, Map<String, String> checkboxGroupMap, ArrayList<String> dateFieldNamelist, String queryValue) {
         this.request = request;
+        this.msd = msd;
         this.fd = fd;
         this.fieldName = fieldName;
         this.fieldTitle = fieldTitle;

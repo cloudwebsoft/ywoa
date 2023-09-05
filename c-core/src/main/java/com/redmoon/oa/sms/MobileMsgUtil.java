@@ -3,7 +3,6 @@ package com.redmoon.oa.sms;
 import cn.js.fan.util.*;
 
 import com.redmoon.oa.person.*;
-import org.apache.log4j.*;
 import java.util.Date;
 
 /**
@@ -19,7 +18,6 @@ import java.util.Date;
  * @version 1.0
  */
 public class MobileMsgUtil implements IMsgUtil {
-    Logger logger = Logger.getLogger(MobileMsgUtil.class.getName());
 
     /**
      * 短信发送，用于调度中实际发送短信
@@ -66,8 +64,6 @@ public class MobileMsgUtil implements IMsgUtil {
      * @param mobile String
      * @param msgText String
      * @param sender String
-     * @param meetingCode String
-     * @param meetingPersonId int
      * @return boolean
      * @throws ErrMsgException
      */

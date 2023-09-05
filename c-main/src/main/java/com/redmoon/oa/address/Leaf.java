@@ -14,13 +14,11 @@ import com.cloudwebsoft.framework.util.*;
 import com.redmoon.kit.util.*;
 import com.redmoon.oa.person.*;
 import com.redmoon.oa.pvg.*;
-import org.apache.log4j.*;
 
 public class Leaf implements Serializable,ITagSupport {
 
     transient RMCache rmCache = RMCache.getInstance();
     String connname = "";
-    transient Logger logger = Logger.getLogger(Leaf.class.getName());
 
     int docId;
 
@@ -61,21 +59,18 @@ public class Leaf implements Serializable,ITagSupport {
     public Leaf() {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("Directory:默认数据库名不能为空?");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空?");
     }
 
     public Leaf(String code) {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("Directory:默认数据库名不能为空?");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空?");
         this.code = code;
         loadFromDb();
     }
 
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(Leaf.class.getName());
-        }
         if (rmCache==null) {
             rmCache = RMCache.getInstance();
         }
@@ -107,7 +102,7 @@ public class Leaf implements Serializable,ITagSupport {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("loadFromDb: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("loadFromDb: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -213,12 +208,12 @@ public class Leaf implements Serializable,ITagSupport {
             if (rs != null) {
                 while (rs.next()) {
                     String c = rs.getString(1);
-                    //logger.info("child=" + c);
+                    //LogUtil.getLog(getClass()).info("child=" + c);
                     v.addElement(getLeaf(c));
                 }
             }
         } catch (SQLException e) {
-            logger.error("getChildren: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getChildren: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -252,13 +247,12 @@ public class Leaf implements Serializable,ITagSupport {
     }
 
     public synchronized boolean update() {
-    	//System.out.println(preType+"==="+preNode);
         String sql = "update address_dir set name=" + StrUtil.sqlstr(name) +
                      ",description=" + StrUtil.sqlstr(description) +
                      ",item_type=" + type + ",isHome=" + (isHome ? "1" : "0") +
                      ",orders=" + orders + ",layer=" + layer + ",child_count=" + child_count +
                      " where code=" + StrUtil.sqlstr(code);
-        // logger.info("update:" + sql + " " + StrUtil.trace(new Throwable()));
+        // LogUtil.getLog(getClass()).info("update:" + sql + " " + StrUtil.trace(new Throwable()));
 
         RMConn conn = new RMConn(connname);
         int r = 0;
@@ -267,15 +261,15 @@ public class Leaf implements Serializable,ITagSupport {
             try {
                 if (r == 1) {
                     removeFromCache(code);
-                    //logger.info("cache is removed " + code);
+                    //LogUtil.getLog(getClass()).info("cache is removed " + code);
                     //DirListCacheMgr更新
                     LeafChildrenCacheMgr.remove(parent_code);
                 }
             } catch (Exception e) {
-                logger.error("update: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("update: " + e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("update: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("update: " + e.getMessage());
         }
         boolean re = r == 1 ? true : false;
         if (re) {
@@ -364,10 +358,10 @@ public class Leaf implements Serializable,ITagSupport {
                     newParentLeaf.update();
                 }
             } catch (Exception e) {
-                logger.error("update: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("update: " + e.getMessage());
             }
         } catch (SQLException e) {
-            logger.error("update: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("update: " + e.getMessage());
         }
         boolean re = r == 1 ? true : false;
         if (re) {
@@ -420,7 +414,7 @@ public class Leaf implements Serializable,ITagSupport {
             // LeafPriv lp = new LeafPriv();
             // lp.add(code);
         } catch (SQLException e) {
-            logger.error("create: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("create: " + e.getMessage());
             return false;
         } finally {
             if (conn != null) {
@@ -472,7 +466,6 @@ public class Leaf implements Serializable,ITagSupport {
 
         String updatesql = "";
         String insertsql = "insert into address_dir (code,name,parent_code,description,orders,root_code,child_count,layer,item_type,add_date) values (?,?,?,?,?,?,?,?,?,?)";
-        //System.out.print("==============");
         if (!SecurityUtil.isValidSql(insertsql))
             throw new ErrMsgException("请勿输入非法字符如;号等!");
         Conn conn = new Conn(connname);
@@ -502,7 +495,7 @@ public class Leaf implements Serializable,ITagSupport {
 
         } catch (SQLException e) {
             conn.rollback();
-            logger.error("AddChild: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("AddChild: " + e.getMessage());
             return false;
         } finally {
             if (conn != null) {
@@ -525,7 +518,7 @@ public class Leaf implements Serializable,ITagSupport {
             // 故为了避免问题,应始终使用LeafChildrenCacheMgr.removeAll()
             LeafChildrenCacheMgr.remove(code);
         } catch (Exception e) {
-            logger.error("removeFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeFromCache: " + e.getMessage());
         }
     }
 
@@ -534,7 +527,7 @@ public class Leaf implements Serializable,ITagSupport {
             rmCache.invalidateGroup(dirCache);
             LeafChildrenCacheMgr.removeAll();
         } catch (Exception e) {
-            logger.error("removeAllFromCache: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("removeAllFromCache: " + e.getMessage());
         }
     }
 
@@ -543,7 +536,7 @@ public class Leaf implements Serializable,ITagSupport {
         try {
             leaf = (Leaf) rmCache.getFromGroup(code, dirCache);
         } catch (Exception e) {
-            logger.error("getLeaf: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getLeaf: " + e.getMessage());
         }
         if (leaf == null) {
             leaf = new Leaf(code);
@@ -554,7 +547,7 @@ public class Leaf implements Serializable,ITagSupport {
                     try {
                         rmCache.putInGroup(code, dirCache, leaf);
                     } catch (Exception e) {
-                        logger.error("getLeaf: " + e.getMessage());
+                        LogUtil.getLog(getClass()).error("getLeaf: " + e.getMessage());
                     }
                 }
             }
@@ -580,7 +573,7 @@ public class Leaf implements Serializable,ITagSupport {
             removeAllFromCache();
 
         } catch (SQLException e) {
-            logger.error("delsingle: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("delsingle: " + e.getMessage());
             return false;
         }
         return true;
@@ -616,7 +609,7 @@ public class Leaf implements Serializable,ITagSupport {
                 bleaf = getLeaf(rr.getString(1));
             }
         } catch (SQLException e) {
-            logger.error("getBrother: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getBrother: " + e.getMessage());
         }
         return bleaf;
     }
@@ -659,7 +652,7 @@ public class Leaf implements Serializable,ITagSupport {
                 removeFromCache(bleaf.getCode());
             } catch (Exception e) {
                 conn.rollback();
-                logger.error("move: " + e.getMessage());
+                LogUtil.getLog(getClass()).error("move: " + e.getMessage());
                 return false;
             } finally {
                 if (conn != null) {

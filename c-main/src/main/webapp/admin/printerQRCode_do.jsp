@@ -1,6 +1,7 @@
 <%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
 <%@ page import="cn.js.fan.util.*"%>
 <%@ page import="java.io.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%
 String op = ParamUtil.get(request, "op");
 if(op.equals("download")){
@@ -23,7 +24,7 @@ if(op.equals("download")){
 			bos.write(buff,0,bytesRead);
 		}
 	} catch(final IOException e) {
-		System.out.println( "IOException." + e );
+		LogUtil.getLog(getClass()).error(e);
 	} finally {
 		if (bis != null)
 			bis.close();

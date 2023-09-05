@@ -188,7 +188,7 @@ public class NoticeDb extends ObjectDb {
 			}
 			return re;
 		} catch (SQLException e) {
-			logger.error("isDeptNotice: " + StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error("isDeptNotice: " + StrUtil.trace(e));
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -243,205 +243,11 @@ public class NoticeDb extends ObjectDb {
 				rc.refreshCreate();
 			}
 		} catch (SQLException e) {
-			logger.error("create:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
 				conn = null;
-			}
-		}
-		return re;
-	}
-
-	public boolean create(FileUpload fu) {
-		Conn conn = new Conn(connname);
-		boolean re = false;
-		try {
-			id = (long) SequenceManager.nextID(SequenceManager.OA_NOTICE);
-			PreparedStatement pstmt = conn.prepareStatement(QUERY_CREATE);
-			pstmt.setLong(1, id);
-			pstmt.setString(2, title);
-			pstmt.setString(3, content);
-			pstmt.setString(4, userName);
-			pstmt.setTimestamp(5, new Timestamp(createDate.getTime()));
-			pstmt.setInt(6, isDeptNotice);
-			pstmt.setInt(7, isShow);
-			pstmt.setTimestamp(8, new java.sql.Timestamp(beginDate.getTime()));
-			if (endDate==null){
-				pstmt.setTimestamp(9, null);
-			}
-			else{
-				pstmt.setTimestamp(9, new java.sql.Timestamp(endDate.getTime()));
-			}
-			pstmt.setString(10, color);
-			pstmt.setInt(11, bold?1:0);
-			pstmt.setString(12, unitCode);
-			pstmt.setInt(13, level);
-			pstmt.setInt(14, isall);
-			pstmt.setInt(15, flowId);
-			pstmt.setInt(16, is_reply);
-			pstmt.setInt(17,is_forced_response);
-			re = conn.executePreUpdate() == 1 ? true : false;
-			if (re) {
-				NoticeCache rc = new NoticeCache(this);
-				rc.refreshCreate();
-			}
-		} catch (SQLException e) {
-			logger.error("create:" + e.getMessage());
-		} finally {
-			if (conn != null) {
-				conn.close();
-				conn = null;
-			}
-		}
-		// 閸愭瑥鍙唎a_notice OVER
-		Vector v = fu.getFiles();
-		Iterator ir = v.iterator();
-		int k = 0;
-		Calendar cal = Calendar.getInstance();
-		// 缂冾喕绻氱�涙鐭惧锟�
-		String year = "" + (cal.get(cal.YEAR));
-		String month = "" + (cal.get(cal.MONTH) + 1);
-		String vpath = "";
-		NoticeAttachmentDb nad = new NoticeAttachmentDb();
-		while (ir.hasNext()) {
-			FileInfo fi = (FileInfo) ir.next();
-			vpath = "upfile/notice/" + year + "/" + month + "/";
-			String filepath = Global.getRealPath() + "/" + vpath;
-			// 娴ｈ法鏁ら梾蹇旀簚閸氬秶袨閸愭瑥鍙嗙壕浣烘磸
-			fi.write(filepath, true);
-			nad.setVisualPath(vpath);
-			nad.setNoticeId(id);
-			nad.setName(fi.getName());
-			nad.setDiskName(fi.getDiskName());
-			nad.setOrders(k);
-			nad.setSize(fi.getSize());
-			re = nad.create();
-			k++;
-		}
-
-		NoticeDeptDb ndd = new NoticeDeptDb();
-		String depts = StrUtil.getNullStr(fu.getFieldValue("depts"));
-		String[] ary = StrUtil.split(depts, ",");
-		if (ary != null) {
-			int len = ary.length;
-			for (int i = 0; i < len; i++) {
-				ndd.setDeptCode(ary[i]);
-				ndd.setNoticeId(id);
-				ndd.create();
-			}
-		}
-		return re;
-	}
-
-	public boolean createNoticeForFlow() {
-		Conn conn = new Conn(connname);
-		boolean re = false;
-		try {
-			id = (long) SequenceManager.nextID(SequenceManager.OA_NOTICE);
-			PreparedStatement pstmt = conn.prepareStatement(QUERY_CREATE);
-			pstmt.setLong(1, id);
-			pstmt.setString(2, title);
-			pstmt.setString(3, content);
-			pstmt.setString(4, userName);
-			pstmt.setTimestamp(5, new Timestamp(createDate.getTime()));
-			pstmt.setInt(6, isDeptNotice);
-			pstmt.setInt(7, isShow);
-			if (beginDate==null)
-				pstmt.setTimestamp(8, null);
-			else
-				pstmt.setTimestamp(8, new java.sql.Timestamp(beginDate.getTime()));
-			if (endDate==null)
-				pstmt.setTimestamp(9, null);
-			else
-				pstmt.setTimestamp(9, new java.sql.Timestamp(endDate.getTime()));
-			pstmt.setString(10, color);
-			pstmt.setInt(11, bold?1:0);
-			pstmt.setString(12, unitCode);
-			pstmt.setInt(13, level);
-			pstmt.setInt(14, isall);
-			pstmt.setInt(15, flowId);
-			pstmt.setInt(16, is_reply);
-			pstmt.setInt(17, is_forced_response);
-
-			re = conn.executePreUpdate() == 1 ? true : false;
-			if (re) {
-				NoticeCache rc = new NoticeCache(this);
-				rc.refreshCreate();
-			}
-		} catch (SQLException e) {
-			logger.error("create:" + e.getMessage());
-		} finally {
-			if (conn != null) {
-				conn.close();
-				conn = null;
-			}
-		}
-		return re;
-	}
-
-	public boolean save(FileUpload fu) {
-		boolean re = save();
-		// LogUtil.getLog(getClass()).info(" save re=" + re);
-
-		if (!re)
-			return re;
-		// 閸愭瑥鍙唎a_notice OVER
-		Vector v = fu.getFiles();
-		LogUtil.getLog(getClass()).info("v.size=" + v.size());
-		Iterator ir = v.iterator();
-		int k = 0;
-		Calendar cal = Calendar.getInstance();
-		// 缂冾喕绻氱�涙鐭惧锟�
-		String year = "" + (cal.get(Calendar.YEAR));
-		String month = "" + (cal.get(Calendar.MONTH) + 1);
-		String vpath = "";
-		NoticeAttachmentDb nad = new NoticeAttachmentDb();
-		while (ir.hasNext()) {
-			FileInfo fi = (FileInfo) ir.next();
-			vpath = "upfile/notice/" + year + "/" + month + "/";
-			String filepath = Global.getRealPath() + "/" + vpath;
-			// 娴ｈ法鏁ら梾蹇旀簚閸氬秶袨閸愭瑥鍙嗙壕浣烘磸
-			fi.write(filepath, true);
-			nad.setVisualPath(vpath);
-			nad.setNoticeId(id);
-			nad.setName(fi.getName());
-			nad.setDiskName(fi.getDiskName());
-			nad.setOrders(k);
-			nad.setSize(fi.getSize());
-			re = nad.create();
-			if (!re)
-				return re;
-			k++;
-		}
-
-		// 閸掔娀娅庨柅姘辩叀閹碉拷鐫橀柈銊╂，
-		Conn conn = new Conn(connname);
-		String sql = "delete from oa_notice_dept where notice_id=?";
-		try {
-			PreparedStatement pstmt = conn.prepareStatement(sql);
-			pstmt.setLong(1, id);
-			conn.executePreUpdate();
-		} catch (SQLException e) {
-			logger.error("save:" + e.getMessage());
-		} finally {
-			if (conn != null) {
-				conn.close();
-				conn = null;
-			}
-		}
-
-		NoticeDeptDb ndd = new NoticeDeptDb();
-		String depts = StrUtil.getNullStr(fu.getFieldValue("depts"));
-		String[] ary = StrUtil.split(depts, ",");
-		if (ary != null) {
-			int len = ary.length;
-			for (int i = 0; i < len; i++) {
-				ndd.setDeptCode(ary[i]);
-				ndd.setNoticeId(id);
-				re = ndd.create();
-				if (re == false)
-					return re;
 			}
 		}
 		return re;
@@ -476,7 +282,7 @@ public class NoticeDb extends ObjectDb {
 				primaryKey.setValue(new Long(id));
 			}
 		} catch (SQLException e) {
-			logger.error("load: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("load: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -513,7 +319,7 @@ public class NoticeDb extends ObjectDb {
 				}
 			}
 		} catch (SQLException e) {
-			logger.error("del: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("del: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -569,7 +375,7 @@ public class NoticeDb extends ObjectDb {
 				rc.refreshSave(primaryKey);
 			}
 		} catch (SQLException e) {
-			logger.error("save: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("save: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -594,7 +400,7 @@ public class NoticeDb extends ObjectDb {
 			}
 			return v;
 		} catch (SQLException e) {
-			logger.error("getDeptOfNotice: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getDeptOfNotice: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -684,7 +490,7 @@ public class NoticeDb extends ObjectDb {
 					try {
 						va = deptDb.getAllChild(va, deptDb);
 					} catch (ErrMsgException e) {
-						e.printStackTrace();
+						LogUtil.getLog(getClass()).error(e);
 					}
 					Vector va2 = new Vector();
 					va2.add(deptDb);
@@ -720,7 +526,7 @@ public class NoticeDb extends ObjectDb {
 						} catch (SQLException e) {
 							LogUtil.getLog(getClass()).error(
 									"createNoticeReply:" + StrUtil.trace(e));
-							e.printStackTrace();
+							LogUtil.getLog(getClass()).error(e);
 						} finally {
 							jt.close();
 						}
@@ -744,7 +550,7 @@ public class NoticeDb extends ObjectDb {
 			try {
 				v = dd.getAllChild(v, dd);
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			Vector va2 = new Vector();
 			va2.add(dd);
@@ -777,9 +583,7 @@ public class NoticeDb extends ObjectDb {
 						usernames[i++] = rr.getString(1);
 					}
 				} catch (SQLException e) {
-					LogUtil.getLog(getClass()).error(
-							"createNoticeReply:" + StrUtil.trace(e));
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				} finally {
 					jt.close();
 				}
@@ -844,7 +648,7 @@ public class NoticeDb extends ObjectDb {
 				return true;
 			}
 		} catch (Exception e) {
-			logger.error("isUserReaded: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("isUserReaded: " + e.getMessage());
 		} finally {
 			jt.close();
 		}
@@ -890,6 +694,52 @@ public class NoticeDb extends ObjectDb {
 
 		sql += " order by " + orderBy + " " + sort;
 		return sql;
+	}
+
+	public boolean createNoticeForFlow() {
+		Conn conn = new Conn(connname);
+		boolean re = false;
+		try {
+			id = (long) SequenceManager.nextID(SequenceManager.OA_NOTICE);
+			PreparedStatement pstmt = conn.prepareStatement(QUERY_CREATE);
+			pstmt.setLong(1, id);
+			pstmt.setString(2, title);
+			pstmt.setString(3, content);
+			pstmt.setString(4, userName);
+			pstmt.setTimestamp(5, new Timestamp(createDate.getTime()));
+			pstmt.setInt(6, isDeptNotice);
+			pstmt.setInt(7, isShow);
+			if (beginDate==null)
+				pstmt.setTimestamp(8, null);
+			else
+				pstmt.setTimestamp(8, new java.sql.Timestamp(beginDate.getTime()));
+			if (endDate==null)
+				pstmt.setTimestamp(9, null);
+			else
+				pstmt.setTimestamp(9, new java.sql.Timestamp(endDate.getTime()));
+			pstmt.setString(10, color);
+			pstmt.setInt(11, bold?1:0);
+			pstmt.setString(12, unitCode);
+			pstmt.setInt(13, level);
+			pstmt.setInt(14, isall);
+			pstmt.setInt(15, flowId);
+			pstmt.setInt(16, is_reply);
+			pstmt.setInt(17, is_forced_response);
+
+			re = conn.executePreUpdate() == 1 ? true : false;
+			if (re) {
+				NoticeCache rc = new NoticeCache(this);
+				rc.refreshCreate();
+			}
+		} catch (SQLException e) {
+			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
+		} finally {
+			if (conn != null) {
+				conn.close();
+				conn = null;
+			}
+		}
+		return re;
 	}
 
 	/**

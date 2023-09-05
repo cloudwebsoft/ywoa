@@ -3,17 +3,19 @@ package com.cloudweb.oa.config;
 import com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceBuilder;
 import com.cloudweb.oa.utils.DruidManager;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
 
 import javax.sql.DataSource;
 
 @Configuration
 public class DruidConfig {
-    @Value("${spring.datasource.url}")
+    /*@Value("${spring.datasource.url}")
     private String dbUrl;
     @Value("${spring.datasource.username}")
     private String username;
@@ -50,7 +52,7 @@ public class DruidConfig {
     @Value("${spring.datasource.connectionProperties}")
     private String connectionProperties;
     @Value("${spring.datasource.useGlobalDataSourceStat}")
-    private boolean useGlobalDataSourceStat;
+    private boolean useGlobalDataSourceStat;*/
 
     // @Bean
     // @Primary

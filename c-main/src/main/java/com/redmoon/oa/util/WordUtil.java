@@ -1,5 +1,6 @@
 package com.redmoon.oa.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.poifs.filesystem.*;
@@ -18,7 +19,7 @@ public class WordUtil {
         try {
             if (!"".equals(fileName)) {
                 // File file = new File(fileName);
-                byte b[] = content.getBytes(StandardCharsets.UTF_8);
+                byte b[] = content.getBytes("GBK");
                 bais = new ByteArrayInputStream(b);
                 POIFSFileSystem poifs = new POIFSFileSystem();
                 DirectoryEntry directory = poifs.getRoot();
@@ -29,7 +30,7 @@ public class WordUtil {
                 fos.close();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(WordUtil.class).error(e);
         } finally {
             if (fos != null) {
                 fos.close();
@@ -151,7 +152,7 @@ public class WordUtil {
 
         ByteArrayInputStream bais = null;
         try {
-            byte b[] = html.getBytes();
+            byte b[] = html.getBytes("GBK");
             bais = new ByteArrayInputStream(b);
             POIFSFileSystem poifs = new POIFSFileSystem();
             DirectoryEntry directory = poifs.getRoot();
@@ -178,7 +179,7 @@ public class WordUtil {
 
             poifs.writeFilesystem(bos);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(WordUtil.class).error(e);
         } finally {
             if (bais != null) {
                 bais.close();
@@ -194,11 +195,10 @@ public class WordUtil {
         DocumentNode documentNode = (DocumentNode)document;
         DirectoryNode parentNode = (DirectoryNode)document.getParent();
         if(parentNode.getFileSystem() != null) {
-            delegate = new ODocumentInputStream(document);
-        } else if(parentNode.getNFileSystem() != null) {
-            delegate = new NDocumentInputStream(document);
+            delegate = new DocumentInputStream(document);
         } else {
-            delegate = new ODocumentInputStream(document);
+            parentNode.getFileSystem();
+            delegate = new DocumentInputStream(document);
             // throw new IOException("No FileSystem bound on the parent, can't read contents");
         }
         return delegate;
@@ -237,12 +237,9 @@ public class WordUtil {
 
             fos = new FileOutputStream(outputPath);
             poifs.writeFilesystem(fos);
-
-            System.out.println("转换word文件完成!");
-
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(WordUtil.class).error(e);
         } finally {
             if (fos != null) {
                 fos.close();
@@ -258,18 +255,14 @@ public class WordUtil {
         POIFSFileSystem fs = null;
 
         try {
-            System.out.println("Starting the test");
             fs = new POIFSFileSystem(new FileInputStream("C:/Users/312845/Desktop/a.doc"));
 
             HWPFDocument doc = new HWPFDocument(fs);
             WordExtractor we = new WordExtractor(doc);
 
             OutputStream file = new FileOutputStream(new File("C:/Users/312845/Desktop/test.docx"));
-
-            System.out.println("Document testing completed");
         } catch (Exception e) {
-            System.out.println("Exception during test");
-            e.printStackTrace();
+            LogUtil.getLog(WordUtil.class).error(e);
         }
     }
     
@@ -367,7 +360,7 @@ public class WordUtil {
                         + "<w:tblStylePr w:type=\"band1Horz\"><w:tblPr/><w:tcPr><w:shd w:val=\"clear\" w:color=\"auto\" w:themeFillTint=\"33\" w:themeFill=\"text1\" w:fill=\"CCCCCC\"/></w:tcPr></w:tblStylePr>"
                         + "</w:style>";
 
-        CTStyles ctStyles = CTStyles.Factory.parse(tableStyleXML);
+        CTStyles ctStyles = (CTStyles)CTStyles.Factory.parse(tableStyleXML);
         CTStyle ctStyle = ctStyles.getStyleArray(0);
 
         XWPFStyle style = styles.getStyle(styleId);

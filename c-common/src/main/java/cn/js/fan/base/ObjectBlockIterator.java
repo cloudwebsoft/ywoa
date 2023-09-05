@@ -1,7 +1,5 @@
 package cn.js.fan.base;
 
-import org.apache.log4j.Logger;
-
 import java.util.Iterator;
 
 import cn.js.fan.db.PrimaryKey;
@@ -23,8 +21,6 @@ import java.util.HashMap;
  */
 @SuppressWarnings("AlibabaLowerCamelCaseVariableNaming")
 public class ObjectBlockIterator implements Iterator {
-    public Logger logger = Logger.getLogger(this.getClass().getName());
-
     ObjectDb objectDb;
 
     private Object[] infoBlock;

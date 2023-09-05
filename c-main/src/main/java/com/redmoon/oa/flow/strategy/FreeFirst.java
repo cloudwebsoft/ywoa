@@ -1,6 +1,5 @@
 package com.redmoon.oa.flow.strategy;
 
-import org.apache.log4j.Logger;
 import java.util.Vector;
 
 import cn.js.fan.util.ErrMsgException;

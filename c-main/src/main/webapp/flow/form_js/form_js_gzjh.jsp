@@ -48,7 +48,7 @@
 		} else {
 			yf -= 1;
 		}
-		String sql = "select * from form_table_gzjh where nf=? and yf=? and cws_status=1 order by id desc";
+		String sql = "select * from ft_gzjh where nf=? and yf=? and cws_status=1 order by id desc";
 		JdbcTemplate jt = new JdbcTemplate();
 		ResultIterator ri = jt.executeQuery(sql, new Object[]{nf, yf});
 		if (ri.hasNext()) {

@@ -92,7 +92,7 @@ for (int i=0; i<ary.length(); i++) {
 		
 		int len = fields.length;
 		
-		String sql = "select id from " + FormDb.getTableName(nestFormCode) + " where cws_id=" + StrUtil.sqlstr("" + sourceFlowId) + " order by cws_order";
+		String sql = "select id from " + FormDb.getTableName(nestFormCode) + " where cws_id=" + sourceFlowId + " order by cws_order";
 		// System.out.println(getClass() + " sql=" + sql);
 		FormDb nestfd = new FormDb();
 		nestfd = nestfd.getFormDb(nestFormCode);
@@ -170,7 +170,7 @@ if (ary!=null && ary.length() > 0) {
 	// 取出相应的值，置于json字符串中返回
 	
 	// 取出源嵌套表中的数据
-	String sql = "select id from " + FormDb.getTableName(sourceFormNest) + " where cws_id=" + StrUtil.sqlstr("" + sourceFlowId) + " order by cws_order";
+	String sql = "select id from " + FormDb.getTableName(sourceFormNest) + " where cws_id=" + sourceFlowId + " order by cws_order";
 	// System.out.println(getClass() + " sql=" + sql);
 	
 	com.redmoon.oa.visual.FormDAO sourcefdaoNest = new com.redmoon.oa.visual.FormDAO();
@@ -195,8 +195,6 @@ if (ary!=null && ary.length() > 0) {
 				IFormMacroCtl imc = mcu.getIFormMacroCtl();
 				ffAttrValue = fdaoSourceNest.getFieldValue(sourceF);
 				ffValue = imc.converToHtml(request, sourceff, fdaoSourceNest.getFieldValue(sourceF));
-				
-				// System.out.println(getClass() + " sourceF=" + sourceF + " ff.getMacroType()=" + ff.getMacroType() + " ffValue=" + ffValue + " ffAttrValue=" + ffAttrValue + " --" + fdaoSourceNest.getFieldValue(sourceF));
 			}
 			else {
 				ffValue = fdaoSourceNest.getFieldValue(sourceF);

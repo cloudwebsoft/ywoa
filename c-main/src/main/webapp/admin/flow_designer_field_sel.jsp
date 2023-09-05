@@ -10,8 +10,8 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.visual.ModuleSetupDb" %>
 <%@ page import="org.apache.commons.lang3.StringUtils" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <TITLE>表单域选择</TITLE>
@@ -58,12 +58,12 @@ function sel() {
 		fieldNames = $("#field").find("option:selected").text()
 	}
 	
-	dialogArguments.setField(fields, fieldNames);
+	window.opener.setField(fields, fieldNames);
 	window.close();
 }
 
 function selNest() {
-	dialogArguments.setField(o("fieldNest").value, $("#fieldNest").find("option:selected").text());
+	window.opener.setField(o("fieldNest").value, $("#fieldNest").find("option:selected").text());
 	window.close();
 }
 </script>
@@ -100,13 +100,13 @@ function selNest() {
     <%=options%>
     </select>
     &nbsp;
-    <input type="button" value="增加" onclick="addField()" />
+    <input type="button" class="btn" value="增加" onclick="addField()" />
     <div id="selDiv"></div>
     </td>
   </tr>
   <tr>
     <td height="22" align="center">
-    <input type="button" value="确定" onclick="sel()" />
+    <input type="button" class="btn" value="确定" onclick="sel()" />
     </td>
   </tr>
 </table>
@@ -165,7 +165,7 @@ while (ir.hasNext()) {
   </tr>
   <tr>
     <td height="22" align="center">
-    <input type="button" value="确定" onclick="selNest()" />
+    <input type="button" class="btn" value="确定" onclick="selNest()" />
     </td>
   </tr>
 </table>

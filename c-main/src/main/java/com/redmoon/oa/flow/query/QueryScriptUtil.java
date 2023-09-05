@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudweb.oa.api.IQueryScriptUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.sys.DebugUtil;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 import net.sf.jsqlparser.schema.Table;
@@ -167,8 +169,6 @@ public class QueryScriptUtil {
 				myscript = myscript.replace(sql, sqlReplaced);				
 			}
 			
-			// myscript = myscript.replaceAll("System.out.println\\(",
-			// "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -209,8 +209,7 @@ public class QueryScriptUtil {
 				try {
 					statement = pm.parse(new StringReader(sql));
 				} catch (JSQLParserException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 					return null;
 				}
 				
@@ -270,8 +269,7 @@ public class QueryScriptUtil {
 				return ri;
 			}
 		} catch (EvalError e) {
-			e.printStackTrace();
-			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return null;
@@ -284,38 +282,8 @@ public class QueryScriptUtil {
 	 * @return
 	 */
 	public String getSqlExpressionReplacedWithFieldValue(String sql, Map mapCondValue, Map mapCondType) {
-		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-
-		Statement parsed;
-		try {
-			parsed = parserManager.parse(new StringReader(sql));
-
-			PlainSelect plainSelect = (PlainSelect) ((Select) parsed).getSelectBody();
-			
-			ExpressionDeParser expressionDeParser = new ExpressionDeParser(mapCondValue, mapCondType);
-			StringBuffer stringBuffer = new StringBuffer();
-			expressionDeParser.setBuffer(stringBuffer);
-
-			ExpressionVisitor expressionVisitor = expressionDeParser;
-			SelectDeParser deParser = new SelectDeParser(expressionVisitor, new StringBuilder());
-			expressionDeParser.setSelectVisitor(deParser);
-			Expression exp = plainSelect.getWhere();
-			if (exp==null) {
-				LogUtil.getLog(getClass()).error("SQL语句中where条件不存在，sql=" + sql);
-			}
-			else {
-				exp.accept(expressionDeParser);
-			}
-			String newSql = plainSelect.toString();
-			
-			newSql = newSql.replaceAll("#", "");
-			
-			return newSql;
-		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		IQueryScriptUtil queryScriptUtil = SpringUtil.getBean(IQueryScriptUtil.class);
+		return queryScriptUtil.getSqlExpressionReplacedWithFieldValue(sql, mapCondValue, mapCondType);
 	}	
 	
 	/**
@@ -326,33 +294,8 @@ public class QueryScriptUtil {
 	 * @return
 	 */
 	public String getSqlExpressionReplacedWithFieldValue(String sql, FormDAO moduleFdao, JSONObject jsonTabSetup) {
-		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-
-		Statement parsed;
-		try {
-			parsed = parserManager.parse(new StringReader(sql));
-
-			PlainSelect plainSelect = (PlainSelect) ((Select) parsed).getSelectBody();
-			
-			ExpressionDeParser expressionDeParser = new ExpressionDeParser(moduleFdao, jsonTabSetup);
-			StringBuffer stringBuffer = new StringBuffer();
-			expressionDeParser.setBuffer(stringBuffer);
-
-			StringBuilder sb = new StringBuilder();
-			SelectDeParser deParser = new SelectDeParser(expressionDeParser, sb);
-			expressionDeParser.setSelectVisitor(deParser);
-			plainSelect.getWhere().accept(expressionDeParser);
-			
-			String newSql = plainSelect.toString();
-			
-			newSql = newSql.replaceAll("#", "");
-			
-			return newSql;
-		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		IQueryScriptUtil queryScriptUtil = SpringUtil.getBean(IQueryScriptUtil.class);
+		return queryScriptUtil.getSqlExpressionReplacedWithFieldValue(sql, moduleFdao, jsonTabSetup);
 	}
 	
 	/**
@@ -364,38 +307,8 @@ public class QueryScriptUtil {
 	 * @return
 	 */
 	public String getSqlExpressionReplacedWithFieldValue(String sql, FormDb parentFormDb, JSONArray mapsCond, HashMap mapCondValue) {
-		// 如果没有映射条件，则直接返回sql
-		if (mapsCond.length()==0) {
-			return sql;
-		}
-		
-		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-
-		Statement parsed;
-		try {
-			parsed = parserManager.parse(new StringReader(sql));
-
-			PlainSelect plainSelect = (PlainSelect) ((Select) parsed).getSelectBody();
-			
-			ExpressionDeParser expressionDeParser = new ExpressionDeParser(parentFormDb, mapsCond, mapCondValue);
-			StringBuffer stringBuffer = new StringBuffer();
-			expressionDeParser.setBuffer(stringBuffer);
-
-			StringBuilder stringBuilder = new StringBuilder();
-			SelectDeParser deParser = new SelectDeParser(expressionDeParser, stringBuilder);
-			expressionDeParser.setSelectVisitor(deParser);
-			plainSelect.getWhere().accept(expressionDeParser);
-			
-			String newSql = plainSelect.toString();
-			
-			newSql = newSql.replaceAll("#", "");
-			
-			return newSql;
-		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		IQueryScriptUtil queryScriptUtil = SpringUtil.getBean(IQueryScriptUtil.class);
+		return queryScriptUtil.getSqlExpressionReplacedWithFieldValue(sql, parentFormDb, mapsCond, mapCondValue);
 	}	
 	
 	/**
@@ -406,59 +319,13 @@ public class QueryScriptUtil {
 	 * @return
 	 */
 	public String getSqlOrderByReplaced(String sql, String orderBy, String sort) {
-		boolean isAsc = sort.equalsIgnoreCase("asc");
-
-		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-		Statement parsed;
-		try {
-			parsed = parserManager.parse(new StringReader(sql));
-		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return sql;
-		}
-
-		PlainSelect plainSelect = (PlainSelect) ((Select) parsed).getSelectBody();
-				
-		StringBuilder stringBuilder = new StringBuilder();
-		net.sf.jsqlparser.util.deparser.ExpressionDeParser expressionDeParser = new net.sf.jsqlparser.util.deparser.ExpressionDeParser();
-		expressionDeParser.setBuffer(stringBuilder);
-
-		StringBuilder sb = new StringBuilder();
-		QueryOrderByDeParser deParser = new QueryOrderByDeParser(expressionDeParser, sb);
-		deParser.setOrderBy(orderBy, isAsc);
-
-		plainSelect.accept(deParser);
-
-		sql = sb.toString();
-		
-		return sql.replaceAll("#", "");
+		IQueryScriptUtil queryScriptUtil = SpringUtil.getBean(IQueryScriptUtil.class);
+		return queryScriptUtil.getSqlOrderByReplaced(sql, orderBy, sort);
 	}
 	
 	public String getSqlSearchInResult(HttpServletRequest request, FormQueryDb fqd, String sql) {
-		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-		Statement parsed;
-		try {
-			parsed = parserManager.parse(new StringReader(sql));
-		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return sql;
-		}
-
-		PlainSelect plainSelect = (PlainSelect) ((Select) parsed).getSelectBody();
-				
-		StringBuilder stringBuffer = new StringBuilder();
-		net.sf.jsqlparser.util.deparser.ExpressionDeParser expressionDeParser = new net.sf.jsqlparser.util.deparser.ExpressionDeParser();
-		expressionDeParser.setBuffer(stringBuffer);
-
-		QuerySearchInResultDeParser deParser = new QuerySearchInResultDeParser(request, fqd, expressionDeParser, new StringBuilder());
-		
-		plainSelect.accept(deParser);
-
-		sql = stringBuffer.toString();
-		
-		return sql.replaceAll("#", "");
+		IQueryScriptUtil queryScriptUtil = SpringUtil.getBean(IQueryScriptUtil.class);
+		return queryScriptUtil.getSqlSearchInResult(request, fqd, sql);
 	}	
 	
 	/**
@@ -507,8 +374,7 @@ public class QueryScriptUtil {
 				sqlCond = SQLUtil.change(sqlCond, pvg.getUser(request));
 				ret = jt.executeQuery(sqlCond, 1, 1);
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			Map mapType = ret.getMapType();
 	    	
@@ -523,9 +389,9 @@ public class QueryScriptUtil {
 			
 			DebugUtil.i(getClass(), "executeQueryOnChangCondValue", "sql:" + sql + " sqlReplaced:" + sqlReplaced);
 			
-			if (sqlReplaced==null)
+			if (sqlReplaced==null) {
 				throw new ErrMsgException("SQL语句非法，解析失败！");
-
+			}
 			
 			myscript = myscript.replace(sql, sqlReplaced);
 			// fqd.setScripts(myscript);
@@ -537,8 +403,6 @@ public class QueryScriptUtil {
 			// bsh.set("out", out);
 			bsh.eval(sb.toString());
 
-			// myscript = myscript.replaceAll("System.out.println\\(",
-			// "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -554,9 +418,7 @@ public class QueryScriptUtil {
 				return ri;
 			}
 		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.out.println(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return null;
@@ -633,8 +495,8 @@ public class QueryScriptUtil {
 				sqlCond = SQLUtil.change(sqlCond, pvg.getUser(request));				
 				ret = jt.executeQuery(sqlCond, 1, 1);
 			} catch (SQLException e) {
-				e.printStackTrace();
-                LogUtil.getLog(getClass()).error(" sqlCond=" + sqlCond + " SQL 语句异常");
+				LogUtil.getLog(getClass()).error(" sqlCond=" + sqlCond + " SQL 语句异常");
+				LogUtil.getLog(getClass()).error(e);
 				throw new ErrMsgException("SQL 语句异常");
 			}
 			
@@ -661,8 +523,6 @@ public class QueryScriptUtil {
 			// bsh.set("out", out);
 			bsh.eval(sb.toString());
 
-			// myscript = myscript.replaceAll("System.out.println\\(",
-			// "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -678,9 +538,7 @@ public class QueryScriptUtil {
 				return ri;
 			}
 		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.out.println(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return null;
@@ -704,7 +562,7 @@ public class QueryScriptUtil {
 		String myscript = fqd.getScripts();
 		Interpreter bsh = new Interpreter();
 		try {
-			StringBuffer sb = new StringBuffer();
+			StringBuilder sb = new StringBuilder();
 			
 			sql = parseSql(myscript);
 			
@@ -714,8 +572,9 @@ public class QueryScriptUtil {
 			
 			LogUtil.getLog(getClass()).info("sql:" + sql + " sqlReplaced:" + sqlReplaced);
 			
-			if (sqlReplaced==null)
+			if (sqlReplaced==null) {
 				throw new ErrMsgException("SQL语句非法，解析失败！");
+			}
 			
 			// 解决sql中需替换的替换符，如：$curDate
 			sqlReplaced = SQLUtil.change(sqlReplaced, pvg.getUser(request));
@@ -728,8 +587,6 @@ public class QueryScriptUtil {
 			// bsh.set("out", out);
 			bsh.eval(sb.toString());
 
-			// myscript = myscript.replaceAll("System.out.println\\(",
-			// "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -745,9 +602,7 @@ public class QueryScriptUtil {
 				return ri;
 			}
 		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.out.println(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return null;
@@ -817,8 +672,6 @@ public class QueryScriptUtil {
 			// bsh.set("out", out);
 			bsh.eval(sb.toString());
 
-			// myscript = myscript.replaceAll("System.out.println\\(",
-			// "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -835,9 +688,7 @@ public class QueryScriptUtil {
 				return ri;
 			}
 		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.out.println(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return null;
@@ -877,7 +728,6 @@ public class QueryScriptUtil {
 			// bsh.set("out", out);
 			bsh.eval(sb.toString());
 
-			// myscript = myscript.replaceAll("System.out.println\\(", "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -895,7 +745,7 @@ public class QueryScriptUtil {
 				try {
 					statement = pm.parse(new StringReader(sql));
 				} catch (JSQLParserException e) {
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 					return null;
 				}
 				
@@ -929,7 +779,7 @@ public class QueryScriptUtil {
 			}
 		} catch (EvalError e) {
 			// TODO Auto-generated catch block
-			// e.printStackTrace();
+			// LogUtil.getLog(getClass()).error(e);
 			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
 		}
 		return mapFieldTitle;		
@@ -953,7 +803,6 @@ public class QueryScriptUtil {
 			String sqlReplaced = SQLUtil.change(sql, pvg.getUser(request));
 			myscript = myscript.replace(sql, sqlReplaced);
 
-			// myscript = myscript.replaceAll("System.out.println\\(", "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ri");
 			if (obj != null) {
@@ -986,7 +835,7 @@ public class QueryScriptUtil {
 				try {
 					statement = pm.parse(new StringReader(sql));
 				} catch (JSQLParserException e) {
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 					return null;
 				}
 				
@@ -1067,8 +916,6 @@ public class QueryScriptUtil {
 				// 加上操作列
 				colProps += ",{display: '操作', name : '" + CWS_OP + "', width : 50, sortable : true, align: 'center', hide: false}";
 
-				// System.out.println(getClass() + " colProps1=" + colProps);
-
 				colProps = "[" + colProps + "]";
 				
 				return colProps;
@@ -1091,9 +938,7 @@ public class QueryScriptUtil {
 				*/
 			}
 		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.out.println(StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return null;
 	}
@@ -1147,8 +992,7 @@ public class QueryScriptUtil {
 		try {
 			statement = pm.parse(new StringReader(sql));
 		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			return null;
 		}
 				
@@ -1181,7 +1025,6 @@ public class QueryScriptUtil {
 			}
 
 			Expression expression = plainSelect.getWhere();
-			// System.out.println("where=" + expression.toString());
 			SqlNode whereNode = new SqlNode();
 			parseWhere(expression, whereNode);	
 			
@@ -1427,7 +1270,6 @@ public class QueryScriptUtil {
             node.setLeft(in.getLeftExpression().toString());
             node.setConditionInt(Const.IN);
             node.setCondition("in");
-            // System.out.println(in.getItemsList());
 			// String [] arr = in.getItemsList().toString().split(",");
 			String [] arr = in.getRightItemsList().toString().split(",");
             node.setInList(arr);
@@ -1448,9 +1290,7 @@ public class QueryScriptUtil {
         condFields.addElement(node.getLeft());
         
         condNodes.addElement(node);
-        
-        // System.out.println(node.getLeft());
-        
+
         return true;
     }    	
 
@@ -1507,8 +1347,7 @@ public class QueryScriptUtil {
 		try {
 			statement = pm.parse(new StringReader(sql));
 		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			return null;
 		}
 		
@@ -1577,7 +1416,6 @@ public class QueryScriptUtil {
           case Types.VARCHAR: break;
           default: ;
         }
-        //System.out.print(obj.toString());
         return type;
     }
     

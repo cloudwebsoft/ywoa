@@ -1,9 +1,10 @@
 package com.redmoon.oa.flow;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import cn.js.fan.cache.jcs.*;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Iterator;
 
 public class LeafChildrenCacheMgr {
@@ -12,14 +13,13 @@ public class LeafChildrenCacheMgr {
     RMCache rmCache = RMCache.getInstance();
     static String cachePrix = "FLOW_dirlist_";
     static String group = "FLOW_LeafChildren";
-    static Logger logger = Logger.getLogger(LeafChildrenCacheMgr.class.getName());
     Vector<Leaf> list;
 
     public LeafChildrenCacheMgr(String parentCode) {
         this.parentCode = parentCode;
         connname = Global.getDefaultDB();
         if ("".equals(connname)) {
-            logger.info("LeafChildrenCacheMgr:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("LeafChildrenCacheMgr:默认数据库名不能为空");
         }
         list = getDirList();
     }
@@ -42,8 +42,7 @@ public class LeafChildrenCacheMgr {
                 }
             }
         } catch (Exception e) {
-            logger.error("getDirList:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }
@@ -59,8 +58,7 @@ public class LeafChildrenCacheMgr {
             RMCache rmCache = RMCache.getInstance();
             rmCache.remove(cachePrix + parentCode, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(LeafChildrenCacheMgr.class).error(e);
         }
     }
 
@@ -69,8 +67,7 @@ public class LeafChildrenCacheMgr {
             RMCache rmCache = RMCache.getInstance();
             rmCache.invalidateGroup(group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(LeafChildrenCacheMgr.class).error(e);
         }
     }
 }

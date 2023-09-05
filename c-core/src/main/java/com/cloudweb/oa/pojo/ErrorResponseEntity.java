@@ -11,11 +11,13 @@ public class ErrorResponseEntity {
 
     int ret = 0;
 
-    public ErrorResponseEntity(int code, String msg) {
+    public ErrorResponseEntity(int code, String msg, String uuid) {
         this.code = code;
         this.msg = msg;
+        this.uuid = uuid;
     }
 
     private int code;
     private String msg;
+    private String uuid;
 }

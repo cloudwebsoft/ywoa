@@ -674,7 +674,7 @@ margin-right:8px;
 vertical-align:middle;
 }
 .tabs1Box {
-	height:38px;!important;height:;
+	height:38px;!important;
 }
 /*tabs1*/
 #tabs1 {
@@ -684,7 +684,7 @@ vertical-align:middle;
 	background:#f3f3f4;
 	line-height:40px;
 	margin:0 auto;
-	padding-top:0px;
+	padding-top:0;
 	text-align:center;
 	border-top:2px solid #adc9e6;
 }
@@ -809,7 +809,8 @@ border:0;
 }
 select {
 line-height: 27px;
-height: 29px;
+/*height: 29px;与bootstrap form-control冲突*/
+min-height: 29px;
 border: 1px solid #d4d4d4;
 }
 textarea {
@@ -1405,9 +1406,13 @@ font-size: 16px;
 .search-form input,select {
 	vertical-align:middle;
 }
+.search-form select {
+	height: 29px;
+}
 .search-form input:not([type="radio"]):not([type="button"]):not([type="checkbox"]):not([type="submit"]) {
 	width: 80px;
 	line-height: 20px; /*否则flexigrid中输入框的文字会偏下*/
+	height: 29px;
 }
 #formSearch input,select {
 	vertical-align:middle;
@@ -1422,4 +1427,47 @@ font-size: 16px;
 }
 .select2-selection img {
 	width: 24px;
+}
+
+i {
+	margin-right: 3px;
+}
+.link-btn {
+	margin-right: 15px;
+}
+.link-icon {
+	margin-right: 5px;
+}
+.link-icon-show {
+	color:#1ab394;
+}
+.link-icon-add {
+	color:#1ab394;
+}
+.link-icon-edit {
+	color:#1c84c6;
+}
+.link-icon-del {
+	color:#ed5565;
+}
+.link-icon-flow {
+	color:#1ab394
+}
+.link-icon-history {
+	color: #23c6c8;
+}
+.link-icon-log-edit {
+	color: #79bbf3;
+}
+.link-icon-log-read {
+	color: #8fdf82;
+}
+.link-icon-alt {
+	color: #D98E2A;
+}
+.link-icon-handle {
+	color:#1c84c6;
+}
+.link-icon-attention {
+	color:#ed5565;
 }

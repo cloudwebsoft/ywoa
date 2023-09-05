@@ -8,6 +8,8 @@ import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.StrUtil;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormField;
@@ -45,20 +47,18 @@ public class CityCtl extends AbstractMacroCtl{
         }
         str += ">";
         str += "<option value=''>无</option>";
-        if (ff.getValue()!=null && !ff.getValue().equals("")) {
+        if (ff.getValue()!=null && !"".equals(ff.getValue())) {
             try {
                 JdbcTemplate jt = new JdbcTemplate();
-                String sql =
-                        "select parent_id from oa_china_region where region_id=" +
-                        ff.getValue();
-                int parent_id = -1;
+                String sql = "select parent_id from oa_china_region where region_id=" + ff.getValue();
+                int parentId = -1;
                 ResultIterator ri = jt.executeQuery(sql);
                 if (ri.hasNext()) {
                     ResultRecord rr = (ResultRecord) ri.next();
-                    parent_id = rr.getInt(1);
+                    parentId = rr.getInt(1);
                 }
 
-                sql = "select region_id,region_name from oa_china_region where region_type=2 and parent_id=" + parent_id
+                sql = "select region_id,region_name from oa_china_region where region_type=2 and parent_id=" + parentId
                       + " order by region_id";
                 ri = jt.executeQuery(sql);
                 while (ri.hasNext()) {
@@ -76,6 +76,7 @@ public class CityCtl extends AbstractMacroCtl{
         return str;
     }
     
+    @Override
     public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
         if (fieldValue==null || "".equals(fieldValue)) {
         	return "";
@@ -102,11 +103,12 @@ public class CityCtl extends AbstractMacroCtl{
      * @param ff FormField
      * @return String
      */
+    @Override
     public String getReplaceCtlWithValueScript(FormField ff) {
         String v = "";
         String regionId = StrUtil.getNullStr(ff.getValue());
 
-        if (!regionId.equals("")) {
+        if (!"".equals(regionId)) {
             try {
                 String sql = "select region_name from oa_china_region where region_id=" + regionId;
                 JdbcTemplate jt = new JdbcTemplate();
@@ -123,16 +125,16 @@ public class CityCtl extends AbstractMacroCtl{
         return "ReplaceCtlWithValue('" + ff.getName() +"', '" + ff.getType() + "','" + v + "');\n";
      }
 
-
      /**
       * 获取用来保存宏控件toHtml后的值的表单中的HTML元素中保存的值，生成用以禁用控件的脚本
       * @return String
       */
+     @Override
      public String getDisableCtlScript(FormField ff, String formElementId) {
          String v = "";
          String regionId = StrUtil.getNullStr(ff.getValue());
 
-         if (!regionId.equals("")) {
+         if (!"".equals(regionId)) {
              try {
                  String sql = "select region_name from oa_china_region where region_id=" + regionId;
                  JdbcTemplate jt = new JdbcTemplate();
@@ -146,10 +148,9 @@ public class CityCtl extends AbstractMacroCtl{
                  LogUtil.getLog(getClass()).error(StrUtil.trace(e));
              }
         }
-         String str = "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
-                 "','" + v + "','" + regionId + "');\n";
 
-         return str;
+         return "DisableCtl('" + ff.getName() + "', '" + ff.getType() +
+                 "','" + v + "','" + regionId + "');\n";
     }
      /**
       * 根据名称取值，用于导入Excel数据
@@ -159,11 +160,11 @@ public class CityCtl extends AbstractMacroCtl{
     public String getValueByName(FormField ff, String name) {
  		String fieldValue="";
         try {
-            String sql = "select region_id from oa_china_region where region_name='" + name + "'"; 
+            String sql = "select region_id from oa_china_region where region_type=2 and region_name='" + name + "'";
             JdbcTemplate jt = new JdbcTemplate();
             ResultIterator ri = jt.executeQuery(sql);
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord) ri.next();
+                ResultRecord rr = ri.next();
                 fieldValue = rr.getString(1);
             }
         }
@@ -174,14 +175,17 @@ public class CityCtl extends AbstractMacroCtl{
         return fieldValue;
  	}
 
+    @Override
     public String getControlType() {
-        return "text";
+        return "select";
     }
 
+    @Override
     public String getControlValue(String userName, FormField ff) {
         return ff.getValue();
     }
 
+    @Override
     public String getControlText(String userName, FormField ff) {
     	String fieldValue = ff.getValue();
         if (fieldValue==null || "".equals(fieldValue)) {
@@ -192,7 +196,7 @@ public class CityCtl extends AbstractMacroCtl{
             JdbcTemplate jt = new JdbcTemplate();
             ResultIterator ri = jt.executeQuery(sql);
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord) ri.next();
+                ResultRecord rr = ri.next();
                 fieldValue = rr.getString(1);
             }
         }
@@ -203,8 +207,17 @@ public class CityCtl extends AbstractMacroCtl{
         return fieldValue;
     }
 
+    @Override
     public String getControlOptions(String userName, FormField ff) {
-        return "";
+ 	    // 为使得在macro_province_select.jsp doGetCityCountry中能够取到其值
+        JSONArray ary = new JSONArray();
+        if (!StrUtil.isEmpty(ff.getValue())) {
+            JSONObject json = new JSONObject();
+            json.put("name", ff.getValue());
+            json.put("value", ff.getValue());
+            ary.add(json);
+        }
+        return ary.toString();
     }
 
     /**
@@ -218,11 +231,11 @@ public class CityCtl extends AbstractMacroCtl{
     @Override
     public String getSqlForQuery(HttpServletRequest request, FormField ff, String value, boolean isBlur) {
         if (isBlur) {
-            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=2 and r.region_name like " +
+            return "select f." + ff.getName() + " from ft_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=2 and r.region_name like " +
                     StrUtil.sqlstr("%" + value + "%");
         }
         else {
-            return "select f." + ff.getName() + " from form_table_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=2 and r.region_name=" +
+            return "select f." + ff.getName() + " from ft_" + ff.getFormCode() + " f, oa_china_region r where f.city=r.region_id and r.region_type=2 and r.region_name=" +
                     StrUtil.sqlstr(value);
         }
     }

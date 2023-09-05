@@ -23,12 +23,8 @@ public class HttpClientVerificationCode {
 			sb = HttpClientConnectUtil.getHttpConnect(URL, jobject.toString());
 
 			jReturn = new JSONObject(sb.toString());
-		} catch (JSONException e) {
-			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			e.printStackTrace();
-		} catch (IOException e) {
-			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			e.printStackTrace();
+		} catch (JSONException | IOException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return jReturn;
@@ -45,10 +41,10 @@ public class HttpClientVerificationCode {
 			jReturn = new JSONObject(sb.toString());
 		} catch (JSONException e) {
 			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (IOException e) {
 			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return jReturn;

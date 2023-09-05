@@ -6,6 +6,7 @@ import cn.js.fan.util.ResKeyException;
 
 import com.cloudwebsoft.framework.base.QObjectDb;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class AddressVersionDb extends QObjectDb {
 	/**
@@ -21,8 +22,7 @@ public class AddressVersionDb extends QObjectDb {
 			
 			re = create(new JdbcTemplate(), new Object[]{user_name, unitCode, version, new java.util.Date()});
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return re;
 	}

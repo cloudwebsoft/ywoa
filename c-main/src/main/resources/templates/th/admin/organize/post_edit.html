@@ -1,0 +1,231 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>修改职位</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        #tableDetail td {
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="spacerH"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <form id="form1" name="form1" method="post" class="layui-form">
+                <table class="table table-bordered table-hover" width="65%" border="0" align="center" cellpadding="0" cellspacing="0">
+                    <tr class="active">
+                        <td height="31" colspan="2" align="center">
+                            修改职位
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">部门</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <select id="deptCode" name="deptCode" lay-ignore class="form-control">
+                                    [(${deptOpts})]
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">排序号</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input name="orders" class="form-control" th:value="${post.orders}"/>&nbsp;（排序号越大，排名越高）
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="127" height="31" align="center">名称</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input name="name" th:value="${post.name}" class="form-control">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">描述</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                            <input name="description" th:value="${post.description}" class="form-control">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">启用</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input name="status" type="checkbox" th:checked="${post.status}" value="1" lay-skin="switch" lay-filter="limited" class="form-control">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">是否限制人数</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input name="limited" type="checkbox" th:checked="${post.limited}" value="1" lay-skin="switch" lay-filter="limited" class="form-control">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="trNumLimted" th:attr="style=${post.limited} ? '':'display:none'">
+                        <td height="32" align="center">限制人数</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input id="numLimited" name="numLimited" th:value="${post.numLimited}" class="form-control"> （0或负值表示不限制）
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">是否职位互斥</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input type="checkbox" id="exclusive" name="exclusive" th:checked="${post.exclusive}" value="1" lay-skin="switch" lay-filter="exclusive"/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="trPostsExcluded" th:attr="style=${post.exclusive} ? '':'display:none'">
+                        <td height="32" align="center">互斥职位</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <button class="layui-btn btn-add">设置</button>
+                                <button class="layui-btn btn-clear">清空</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="trPostsExcludedDetail" th:attr="style=${post.exclusive} ? '':'display:none'">
+                        <td colspan="2">
+                            <table id="tableDetail" style="width: 100%">
+                                <thead>
+                                <tr>
+                                    <th style="width: 30%">职位</th>
+                                    <th>部门</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="43" colspan="2" align="center">
+                            <input type="hidden" name="id" th:value="${id}"/>
+                            <input type="hidden" id="postsExcluded" name="postsExcluded"/>
+                            <button id="btnOk" class="btn btn-default">确定</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    $(function () {
+        $('#deptCode').val([[${post.deptCode}]]);
+
+        $('#btnOk').click(function(e) {
+            // 阻止默认的提交
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "postUpdate.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret==1) {
+                        layer.msg(data.msg, {
+                            time:500,
+                            offset: '6px',
+                            end:function () {
+                                var tabIdOpener = [[${tabIdOpener}]]
+                                // reloadTab(tabIdOpener);
+                            }
+                        });
+                    }
+                    else {
+                        layer.msg(data.msg, {
+                            offset: '6px'
+                        });
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    });
+
+    layui.use(['form'], function(){
+        var form = layui.form
+            ,layer = layui.layer
+        form.on('switch(limited)', function(data){
+            if (this.checked) {
+                $('#trNumLimted').show();
+            }
+            else {
+                $('#trNumLimted').hide();
+                $('#numLimited').val('0');
+            }
+            /*layer.msg('开关checked：'+ (this.checked ? 'true' : 'false'), {
+                offset: '6px'
+            });*/
+        });
+
+        form.on('switch(exclusive)', function(data) {
+            if (this.checked) {
+                $('#trPostsExcluded').show();
+                $('#trPostsExcludedDetail').show();
+            }
+            else {
+                $('#trPostsExcluded').hide();
+                $('#trPostsExcludedDetail').hide();
+            }
+        });
+    });
+
+    $('.btn-add').click(function(e) {
+        e.preventDefault();
+        openWin("postTransferPage.do?id=" + [[${id}]], 800, 600);
+    });
+
+    $('.btn-clear').click(function(e) {
+        e.preventDefault();
+        $('#postsExcluded').val('');
+        $('#tableDetail tbody').html('');
+    })
+
+    function setPosts(posts) {
+        var str = '', ids = '';
+        var $tbody = $('#tableDetail tbody');
+        $tbody.html('');
+        for (var i in posts) {
+            if (ids === '') {
+                ids = posts[i].value;
+            }
+            else {
+                ids += ',' + posts[i].value;
+            }
+            str += '<tr><td>' + posts[i].name + '</td><td>' + posts[i].fullDeptName + '</td></tr>';
+        }
+        $tbody.html(str);
+
+        $('#postsExcluded').val(ids);
+    }
+
+    $(function() {
+        setPosts([[${aryExcluded}]]);
+    })
+</script>
+</html>

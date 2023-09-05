@@ -3,14 +3,12 @@ package cn.js.fan.base;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.util.StrUtil;
-import org.apache.log4j.Logger;
 
 public abstract class AbstractForm {
     protected HttpServletRequest request;
-    protected Logger logger = null;
 
     public AbstractForm() {
-        logger = Logger.getLogger(this.getClass().getName());
+
     }
 
     protected String errmsg = "";

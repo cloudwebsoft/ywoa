@@ -1,11 +1,13 @@
 package com.cloudweb.oa.utils;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.ContextLoader;
@@ -21,7 +23,8 @@ import javax.servlet.annotation.WebListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 
-@Component
+@Order(-10000)
+@Component("SpringUtil")
 @WebListener
 @Slf4j
 public class SpringUtil implements ApplicationContextAware, ServletContextListener {
@@ -31,9 +34,9 @@ public class SpringUtil implements ApplicationContextAware, ServletContextListen
     private static ServletContext servletContext;
 
     @Override
-    public void setApplicationContext(ApplicationContext arg0) throws BeansException {
-        applicationContext = arg0;
-        System.out.println("---------------com.cloudweb.oa.utils.SpringUtil setApplicationContext---------------");
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        SpringUtil.applicationContext = applicationContext;
+        LogUtil.getLog(getClass()).info("---------------com.cloudweb.oa.utils.SpringUtil setApplicationContext---------------");
     }
 
     public static Object getBean(String name) throws BeansException {
@@ -41,12 +44,16 @@ public class SpringUtil implements ApplicationContextAware, ServletContextListen
     }
 
     public static <T> T getBean(Class<T> requiredType) throws BeansException {
-        // System.out.println(SpringUtil.class.getName() + " applicationContext=" + applicationContext);
         return getApplicationContext().getBean(requiredType);
     }
 
     public static String getUserName() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+        // if (SecurityContextHolder.getContext() != null) {
+            if (SecurityContextHolder.getContext().getAuthentication()!=null) {
+                return SecurityContextHolder.getContext().getAuthentication().getName();
+            }
+        // }
+        return null;
     }
 
     public static DataSource getDataSource() {

@@ -152,26 +152,27 @@ public class StrUtil {
      * @return String
      */
     public static String getIp(HttpServletRequest request) {
-        String ip = request.getHeader("HTTP_X_FORWARDED_FOR"); // 如果有代理
-        if (ip == null) {
-            ip = request.getHeader("x-forwarded-for");
-            String un = "unknown";
-            if (ip != null && !ip.equalsIgnoreCase(un) &&
-                ip.trim().length() > 0) {
-                ;
-            }
-            else {
-                ip = request.getHeader("http_client_ip");
-                if (ip != null && !ip.equalsIgnoreCase(un) &&
-                    ip.trim().length() > 0) {
-                    ;
-                }
-                else {
-                    ip = StrUtil.getNullStr(request.getRemoteAddr());
+        // 通过了 HTTP 代理或者负载均衡服务器时才会添加该项。格式为X-Forwarded-For: client1, proxy1, proxy2，一般情况下，第一个ip为客户端真实ip，后面的为经过的代理服务器ip
+        String ip = request.getHeader("x-forwarded-for");
+        if (ip != null && ip.length() > 0 && !"unknown".equalsIgnoreCase(ip)) {
+            String[] ary = ip.split(",");
+            ip = ary[0];
+        } else {
+            // nginx
+            ip = request.getHeader("X-Real-IP");
+            if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+                // apache
+                ip = request.getHeader("Proxy-Client-IP");
+                if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+                    // weblogic插件加上的头
+                    ip = request.getHeader("WL-Proxy-Client-IP");
+                    if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+                        ip = request.getRemoteAddr();
+                    }
                 }
             }
         }
-        return getNullString(ip);
+        return ip;
     }
 
     /**
@@ -509,7 +510,7 @@ public class StrUtil {
         try {
             d = Float.parseFloat(str.trim());
         } catch (Exception e) {
-            LogUtil.getLog(StrUtil.class).info("toFloat:" + e.getMessage());
+            // LogUtil.getLog(StrUtil.class).info("toFloat:" + e.getMessage());
         }
         return d;
     }
@@ -558,12 +559,15 @@ public class StrUtil {
      * @return int
      */
     public static int toInt(String str, int defaultValue) {
+        if (isEmpty(str)) {
+            return defaultValue;
+        }
         int d = defaultValue;
         try {
             // d = Integer.valueOf(str.trim());
             d = (int)Double.parseDouble(str.trim());
         } catch (Exception e) {
-            LogUtil.getLog(StrUtil.class).info( "toInt:" + e.getMessage());
+            LogUtil.getLog(StrUtil.class).warn( "toInt:" + e.getMessage());
         }
         return d;
     }
@@ -588,7 +592,7 @@ public class StrUtil {
         try {
             d = Long.parseLong(str.trim());
         } catch (Exception e) {
-            LogUtil.getLog(StrUtil.class).error( "info:" + e.getMessage());
+            LogUtil.getLog(StrUtil.class).warn( "info:" + e.getMessage());
         }
         return d;
     }
@@ -603,7 +607,7 @@ public class StrUtil {
     }
 
     /**
-     * 检查字符串是否全由数字组成，注意：当为负数或带小数点的时候正确不能检测
+     * 检查字符串是否全由数字组成，注意：当为负数或带小数点的时候正确不能检测，得用NumberUtil.isNumeric
      * @param s String
      * @return boolean
      */
@@ -658,8 +662,9 @@ public class StrUtil {
         int len = s.length();
         for (int i = 0; i < len; ++i) {
             char ch = s.charAt(i);
+            // mysql5.7表名中不允许有-号
             if (!(((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) ||
-                  ((ch >= '0') && (ch <= '9')) || ch == '-' || ch == '_')) {
+                  ((ch >= '0') && (ch <= '9')) || ch == '_')) {
                 return false;
             }
         }
@@ -1446,12 +1451,16 @@ public class StrUtil {
      * @return String
      */
     public static String getFileExt(String fileName) {
-        if (fileName == null)
+        if (StringUtils.isEmpty(fileName)) {
             return "";
+        }
         // 下面取到的扩展名错误，只有三位，而如html的文件则有四位
         // extName = fileName.substring(fileName.length() - 3, fileName.length()); // 扩展名
-        int dotindex = fileName.lastIndexOf(".");
-        String extName = fileName.substring(dotindex + 1, fileName.length());
+        int dotIndex = fileName.lastIndexOf(".");
+        if (dotIndex == -1) {
+            return "";
+        }
+        String extName = fileName.substring(dotIndex + 1, fileName.length());
         extName = extName.toLowerCase(); //置为小写
         return extName;
     }
@@ -1487,8 +1496,6 @@ public class StrUtil {
      */
     public static String format(String format, Object[] args) {
         int len = args.length;
-
-        // System.out.println("StrUtil format2=" + format);
 
         for (int i = 0; i < len; i++) {
             if (args[i] == null) {
@@ -1671,7 +1678,6 @@ public class StrUtil {
         int idx1 = content.lastIndexOf('<');
         int idx2 = content.lastIndexOf('>');
         // 如果截取时，未取到 > ，则继续往前取，直到取到为止
-        // System.out.println("MsgUtil.java getAbstract: idx1=" + idx1 + " idx2=" + idx2);
         if ((idx2 == -1 && idx1 >= 0) || (idx1 > idx2)) {
             String ct3 = html;
             int idx3 = ct3.indexOf('>', idx1);
@@ -1722,7 +1728,6 @@ public class StrUtil {
                         if (!(textnode.getParent() instanceof StyleTag)) {
                             line = textnode.getText();
                         }
-                        // System.out.println(HtmlUtil.class + " line1=" + line);
                     }
                     else {
                         line = textnode.getText();
@@ -1737,7 +1742,6 @@ public class StrUtil {
 	                    if (ext.equals("gif") || ext.equals("png") ||
 	                        ext.equals("jpg") || ext.equals("jpeg") ||
 	                        ext.equals("bmp")) {
-	                        // System.out.println("MsgUtil.java getAbstract:" + imagenode.toHtml() + " url=" + imagenode.getImageURL());
 	                        if (imagenode.getImageURL().startsWith("http"))
 	                            ; // line = "<div align=center>" + imagenode.toHtml() + "</div>";
 	                        else if (imagenode.getImageURL().startsWith("/")) {
@@ -1754,7 +1758,6 @@ public class StrUtil {
 	                                SkinUtil.LoadString(request,
 	                                "res.cn.js.fan.util.StrUtil",
 	                                "click_open_win") + " onload=\"javascript:if(this.width>screen.width-333) this.width=screen.width-333\"></a></div><BR>";
-	                        // System.out.println(line);
 	                    }
                 	}
                 }
@@ -1780,8 +1783,7 @@ public class StrUtil {
                 }
             }
         } catch (ParserException e) {
-            LogUtil.getLog(StrUtil.class.getName()).error("getAbstract:" +
-                    e.getMessage());
+            LogUtil.getLog(StrUtil.class.getName()).warn("getAbstract:" + e.getMessage());
         }
         
         str = StrUtil.getLeft(str, len);
@@ -1901,5 +1903,28 @@ public class StrUtil {
 
     public static boolean isEmpty(CharSequence cs) {
         return cs == null || cs.length() == 0;
+    }
+
+    /**
+     * 去除开头和末尾的空格，包括全角和半角空格
+     * @param str
+     * @return
+     * @throws Exception
+     */
+    public static String trim(String str) {
+        if (str == null) {
+            return null;
+        }
+        String regStartSpace = "^[　 ]*";
+        String regEndSpace = "[　 ]*$";
+        return str.replaceAll(regStartSpace, "").replaceAll(regEndSpace, "");
+    }
+
+    public static String emptyTo(String str, String defaultStr) {
+        if (StrUtil.isEmpty(str)) {
+            return defaultStr;
+        } else {
+            return str;
+        }
     }
 }

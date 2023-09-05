@@ -1,12 +1,11 @@
-<%@ page contentType="text/html; charset=utf-8" language="java" errorPage="" %><%@ page import = "com.cloudwebsoft.framework.base.*"%><%@ page import = "com.redmoon.oa.BasicDataMgr"%><%@ page import = "cn.js.fan.util.*"%><%@ page import = "cn.js.fan.web.*"%><%@ page import = "java.util.*"%><%@ page import = "com.redmoon.oa.dept.*"%><%@ page import = "com.redmoon.oa.flow.*"%><%@ page import = "com.redmoon.oa.flow.query.*"%><%@ page import = "com.redmoon.oa.visual.*"%><%@ page import = "com.redmoon.oa.dept.DeptDb"%><%@ page import = "com.redmoon.oa.dept.DeptMgr"%><%@ page import="jxl.*"%><%@ page import="jxl.write.*"%><%@ page import="java.io.*"%><%@ page import = "org.json.*"%><%@ page import = "com.cloudwebsoft.framework.db.*"%><%@ page import = "cn.js.fan.db.*"%><%
+<%@ page contentType="text/html; charset=utf-8" language="java" errorPage="" %><%@ page import = "com.cloudwebsoft.framework.base.*"%><%@ page import = "com.redmoon.oa.BasicDataMgr"%><%@ page import = "cn.js.fan.util.*"%><%@ page import = "cn.js.fan.web.*"%><%@ page import = "java.util.*"%><%@ page import = "com.redmoon.oa.dept.*"%><%@ page import = "com.redmoon.oa.flow.*"%><%@ page import = "com.redmoon.oa.flow.query.*"%><%@ page import = "com.redmoon.oa.visual.*"%><%@ page import = "com.redmoon.oa.dept.DeptDb"%><%@ page import = "com.redmoon.oa.dept.DeptMgr"%><%@ page import="jxl.*"%><%@ page import="jxl.write.*"%><%@ page import="java.io.*"%><%@ page import = "org.json.*"%><%@ page import = "com.cloudwebsoft.framework.db.*"%><%@ page import = "cn.js.fan.db.*"%>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %><%
 	FormQueryDb aqd = new FormQueryDb();
 	int id = ParamUtil.getInt(request, "id", -1);
 	aqd = aqd.getFormQueryDb(id);
 	
 	String colProps = aqd.getColProps();
-	
-	// System.out.println(getClass() + " colProps=" + colProps);
-	
+
 	if ("".equals(colProps)) {
 		out.print("结果不存在，请运行查询并检查查询结果！");
 		return;
@@ -32,9 +31,7 @@
 		int k = 0;
 		for(int i=0; i<jsons.length();i++){
 			JSONObject json = jsons.getJSONObject(i);
-			
-			// System.out.println(getClass() + " name=" + json.getString("name") + " hide=" + json.get("hide").toString());
-			
+
 			if(json.get("hide").toString().equals("true")) {
 				continue;
 			}
@@ -71,8 +68,8 @@
 			// 取得选项卡中的条件字段映射关系
 			String tagUrl = ModuleUtil.getModuleSubTagUrl(moduleFormCode, tagName);
 			
-			if (tagUrl.equals("")) {
-				System.out.println(getClass() + " tagUrl is empty.");
+			if ("".equals(tagUrl)) {
+				LogUtil.getLog(getClass()).info("tagUrl is empty.");
 				return;
 			}
 			
@@ -127,7 +124,6 @@
 		else {
 			ri = qsu.executeQuery(request, aqd);
 		}
-		// System.out.println(getClass() + " ri.total=" + ri.getTotal());
 		while(ri.hasNext()){
 			ResultRecord rr = (ResultRecord)ri.next();
 			

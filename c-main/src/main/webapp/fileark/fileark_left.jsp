@@ -56,8 +56,13 @@
 %>
 </body>
 <script>
+    var isDraggable = true;
+    function setDraggable(draggable) {
+        isDraggable = draggable;
+    }
+
     var myjsTree;
-    $(document).ready(function () {
+    function createTree() {
         myjsTree = $('#directoryTree').jstree({
             "core": {
                 "data":  <%=jsonData%>,
@@ -66,9 +71,27 @@
                     "dots": true,
                     "icons": true
                 },
-                "check_callback": true,
+                "check_callback": function (op, node, parent, position, more) {
+                    if(op == 'move_node') {  //当进行拖拽时
+                        // 在对树进行改变时（如创建，重命名，删除，移动或复制），check_callback是必须设置或返回为true
+                        return true;
+                    }
+                    else {
+                        return true;
+                    }
+                }
             },
             "plugins": ["unique", "dnd", "wholerow", "themes", "ui", "contextmenu", "types", "crrm", "state"],
+            "dnd": {    // 拖放插件配置
+                drag_selection: false,
+                is_draggable : function () {
+                    var tmp = isDraggable; // return false后，chrome中点击右侧页面打开addTab，再回到本页有效了
+                    if (!isDraggable) {
+                        isDraggable = true;
+                    }
+                    return tmp;
+                }
+            },
             "contextmenu": {	//绑定右击事件
                 "items": {
                     "create": {
@@ -106,15 +129,18 @@
                     }
                 }
             }
-        }).bind('click.jstree', function (e, data) {//绑定选中事件
+        }).bind('select_node.jstree', function (e, data) {
+            // 绑定选中事件，以支持state插件，根据记录的状态，打开节点
+            window.open("fileark_main.jsp?dir_code=" + data.node.id, "mainFileFrame");
+        })/*.bind('click.jstree', function (e, data) {
+            // 绑定选中事件，不支持state，故改为采用select_node.jstree
             var eventNodeName = e.target.nodeName;
-            if (eventNodeName == 'INS') {
-                return;
-            } else if (eventNodeName == 'A') {
+            if (eventNodeName === 'INS') {
+            } else if (eventNodeName === 'A') {
                 var $subject = $(e.target).parent();
                 var code = $(e.target).parents('li').attr('id');
                 var url = "fileark_main.jsp?dir_code=" + code;
-                if (code.indexOf("cws_prj_") == 0) {
+                if (code.indexOf("cws_prj_") === 0) {
                     var project = code.substring(8);
                     var p = project.indexOf("_");
                     if (p != -1) {
@@ -124,7 +150,7 @@
                 }
                 window.open(url, "mainFileFrame");
             }
-        }).bind('move_node.jstree', function (e, data) {//绑定移动节点事件
+        })*/.bind('move_node.jstree', function (e, data) {//绑定移动节点事件
             //data.node.id移动节点的id
             //data.parent移动后父节点的id
             //data.position移动后所在父节点的位置，第一个位置为0
@@ -152,9 +178,14 @@
                 }
             })
         }).bind('ready.jstree', function () {
-            myjsTree.jstree("deselect_all");
-            myjsTree.jstree("select_node", "<%=Leaf.ROOTCODE%>");
+            // 注释掉，以恢复之前的选中状态
+            // myjsTree.jstree("deselect_all");
+            // myjsTree.jstree("select_node", "<%=Leaf.ROOTCODE%>");
         });
+    }
+
+    $(document).ready(function () {
+        createTree();
     });
 
     function deleteLeaf(code) {
@@ -209,5 +240,20 @@
     function setToaster(mess) {
         $.toaster({priority: 'info', message: mess});
     }
+
+    $(document).bind("dnd_start.vakata", function (e, data) {
+        if (data.data.jstree) {
+            // console.log('dragg start');
+        }});
+
+    $(document).bind("dnd.vakata", function (e, data) {
+        if (data.data.jstree) {
+            // console.log('dragging');
+        }});
+
+    $(document).bind("dnd_stop.vakata", function (e, data) {
+        if (data.data.jstree) {
+            // console.log('dragg stop');
+        }});
 </script>
 </html>

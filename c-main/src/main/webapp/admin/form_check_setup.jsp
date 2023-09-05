@@ -10,6 +10,8 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="org.json.*" %>
 <%@ page import="com.redmoon.oa.visual.ModuleUtil" %>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="cfg" scope="page" class="com.redmoon.oa.Config"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -53,7 +55,6 @@
         optionsVar += "<option value='{$" + ff.getName() + "}' id='" + ff.getFieldType() + "' name='" + ff.getMacroType() + "' lrc='" + ff.getType() + "'>" + ff.getTitle() + "</option>";
     
         if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
-            String desc = StrUtil.getNullStr(ff.getDescription());
             String chkGroup = StrUtil.getNullStr(ff.getDescription());
             if (!"".equals(chkGroup)) {
                 if (!checkboxGroupMap.containsKey(chkGroup)) {
@@ -65,6 +66,45 @@
             }
         }
     }
+
+    String optionsThen = options;
+
+    // 取出嵌套表中字段
+    MacroCtlMgr mm = new MacroCtlMgr();
+    fieldIr = fieldV.iterator();
+    while (fieldIr.hasNext()) {
+        FormField ff = (FormField)fieldIr.next();
+        if (ff.getType().equals(FormField.TYPE_MACRO)) {
+            MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+            if (mu.getNestType() != MacroCtlUnit.NEST_TYPE_NONE) {
+                String nestFormCode = ff.getDefaultValue();
+                try {
+                    String defaultVal;
+                    if (mu.getNestType()==MacroCtlUnit.NEST_DETAIL_LIST) {
+                        defaultVal = StrUtil.decodeJSON(ff.getDescription());
+                    }
+                    else {
+                        defaultVal = StrUtil.decodeJSON(ff.getDescription());
+                        if ("".equals(defaultVal)) {
+                            defaultVal = StrUtil.decodeJSON(ff.getDefaultValueRaw());
+                        }
+                    }
+                    JSONObject json = new JSONObject(defaultVal);
+                    nestFormCode = json.getString("destForm");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                FormDb nestfd = new FormDb();
+                nestfd = nestfd.getFormDb(nestFormCode);
+
+                for (FormField ff2 : nestfd.getFields()) {
+                    optionsThen += "<option value='nest." + nestFormCode + "." + ff2.getName() + "'>" + ff2.getTitle() + "(" + nestfd.getName() + ")</option>";
+                }
+            }
+        }
+    }
+
     if (checkboxGroupMap.size()>0) {
         Iterator ir = checkboxGroupMap.keySet().iterator();
         while (ir.hasNext()) {
@@ -222,7 +262,7 @@
                     }
 
                     str += "  <span id=\"spanVal" + valCount + "\">";
-                    str += "  <select id='field" + valCount + "' name='field' num='" + valCount + "' onChange='changeField(this)'><%=options%></select>";
+                    str += "  <select id='field" + valCount + "' name='field' num='" + valCount + "' onChange='changeField(this)'><%=optionsThen%></select>";
                     str += "  <select id=\"operator" + valCount + "\" name=\"operator\">";
                     str += "    <option value='<>' " + ((jsonAry[index].operator == "<>") ? "selected" : "") + "> <> </option>";
                     str += "    <option value='>=' " + ((jsonAry[index].operator == ">=") ? "selected" : "") + "> >= </option>";
@@ -289,7 +329,7 @@
     o("menu6").className = "current";
 </script>
 <div class="spacerH"></div>
-<table width="100%" align="center" cellpadding="2" cellspacing="0" class="tabStyle_1 percent80" id="tabCond" style="padding:0px; margin:0px; margin-top:3px; width:100%">
+<table width="100%" align="center" cellpadding="2" cellspacing="0" class="tabStyle_1 percent98" id="tabCond" style="padding:0; margin:0 auto; margin-top:3px;">
     <tr>
         <td height="22" colspan="5" align="center"><input name="okbtn" type="button" class="btn btn-default" onclick="ModifyRules()" value="保存"/>
             &nbsp;&nbsp;
@@ -358,7 +398,7 @@
         
         var newSpanCond = spanCond.cloneNode();
         newSpanCond.id = "cond" + count;
-        
+
         var aryChild = spanCond.children;
         for (i=0; i<aryChild.length; i++) {
             // console.log(aryChild[i]);
@@ -379,9 +419,16 @@
             }
             newSpanCond.appendChild(subObj);
         }
-        
+
+        // 删除除已生成的select2
+        $(newSpanCond).find('.select2-container').remove();
+        $(newSpanCond).find('select[name=fieldName]').removeClass();
+
         var html = "<div id='div" + tdId + count + "'>" + $(newSpanCond).prop("outerHTML") + "&nbsp;<a href='javascript:;' onclick=\"$('#div" + tdId + count + "').remove()\" class='delBtn' title='删除'>×</a>";
         $('#' + tdId).append(html);
+
+        // 重新生成select2
+        $('#fieldName' + count).select2();
 
         initDropdownMenuEvent();
     }
@@ -430,7 +477,7 @@
         str += "<td>则</td>";
         str += "<td id='tdVal" + rowCount + "'>";
         str += "<div><span id='spanVal" + valCount + "'>";
-        str += "<select id='field" + valCount + "' name='field" + "' num='" + valCount + "' onchange='changeField(this)'><%=options%></select>";
+        str += "<select id='field" + valCount + "' name='field" + "' num='" + valCount + "' onchange='changeField(this)'><%=optionsThen%></select>";
         str += "<select id='operator" + valCount + "' name='operator'>";
         str += "    <option value='<>'> <> </option>";
         str += "    <option value='>='> >= </option>";

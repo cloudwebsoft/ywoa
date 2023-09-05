@@ -7,8 +7,9 @@ import com.cloudweb.oa.dcs.DistributedLock;
 import com.cloudweb.oa.entity.Menu;
 import com.cloudweb.oa.service.IMenuService;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -143,9 +144,9 @@ public class MenuCache extends ObjCache {
                     }
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } catch (CacheException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                     distributedLock.unlock(getClass().getName(), indentifier);
@@ -241,9 +242,9 @@ public class MenuCache extends ObjCache {
                 }
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                 distributedLock.unlock(getClass().getName(), indentifier);

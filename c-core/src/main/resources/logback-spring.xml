@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration debug="false">
-    <!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径-->
+<configuration scan="false" scanPeriod="30 seconds" debug="false">
+    <!-- 输出logback内部日志信息，每隔30s判断一下配置文件有没有更新，若更新，则重新加载 -->
+    <!--
+    scan: 当此属性设置为true时，配置文件如果发生改变，将会被重新加载，默认值为true。
+    scanPeriod: 设置监测配置文件是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。当scan为true时，此属性生效。默认的时间间隔为1分钟。
+    debug: 当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。
+    -->
+    <!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径，外置tomcat时logs为tomcat/logs目录 -->
     <property name="LOG_HOME" value="logs" />
 
     <!-- 彩色日志 -->
@@ -9,17 +15,22 @@
     <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
     <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
     <!-- 彩色日志格式 -->
-    <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+    <!--<property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(-&#45;&#45;){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>-->
+
+    <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度 %logger包类名, %class类名, %method方法名,%line行号 %msg：日志消息，%n是换行符-->
+    <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %cyan(${PID}) - %yellow([%thread]) %green([%logger{39},%gray(%method),%green(%line)]) : %msg%n"/>
 
     <!-- 控制台输出 -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <!--日志级别过滤INFO以下-->
+        <!--日志级别过滤DEBUG以下-->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>DEBUG</level>
         </filter>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <!-- 取消控制台日志的编码格式，不设置编码，logback可以默认跟随平台编码，否则会中文乱码 -->
+            <!--<charset>UTF-8</charset>-->
         </encoder>
     </appender>
 
@@ -27,7 +38,8 @@
     <appender name="FILE"  class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!--日志文件输出的文件名-->
-            <FileNamePattern>${LOG_HOME}/promotion.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!--<FileNamePattern>${catalina.home}/promotion.%d{yyyy-MM-dd}.log</FileNamePattern>-->
+            <FileNamePattern>${LOG_HOME}/cwoa.%d{yyyy-MM-dd}.log</FileNamePattern>
             <!--日志文件保留天数-->
             <MaxHistory>30</MaxHistory>
         </rollingPolicy>
@@ -42,14 +54,13 @@
     </appender>
 
     <!--myibatis log configure-->
-    <logger name="com.apache.ibatis" level="DEBUG"/>
-    <logger name="java.sql.Connection" level="DEBUG"/>
-    <logger name="java.sql.Statement" level="DEBUG"/>
-    <logger name="java.sql.PreparedStatement" level="DEBUG"/>
-
-    <logger name="com.cloudweb.oa.mapper" level="DEBUG"></logger>
-    <!-- 日志输出级别 -->
-    <root level="DEBUG">
+    <logger name="com.apache.ibatis" level="INFO"/>
+    <!--<logger name="java.sql.Connection" level="INFO"/>
+    <logger name="java.sql.Statement" level="INFO"/>
+    <logger name="java.sql.PreparedStatement" level="INFO"/>-->
+    <logger name="com.cloudweb.oa.mapper" level="INFO"/>
+    <!-- 默认日志输出级别 -->
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>

@@ -38,9 +38,11 @@ public class OaNoticeAttach extends Model<OaNoticeAttach> {
 
     private String name;
 
-    private String diskname;
+    @TableField("diskname")
+    private String diskName;
 
-    private String visualpath;
+    @TableField("visualpath")
+    private String visualPath;
 
     private Integer orders;
 

@@ -81,7 +81,9 @@
             paramAry[i] = paramAry[i].replaceAll("%co", ",").trim();
         }
     }
-    
+
+    String formName = ParamUtil.get(request, "cwsFormName");
+
     StringBuffer sbParams = new StringBuffer();
     for (String fieldTitle : paramAry) {
         fieldTitle = fieldTitle.trim();
@@ -101,10 +103,10 @@
                 }
             }
             else if ("cws_status".equalsIgnoreCase(fieldTitle)) {
-                StrUtil.concat(sbParams, "+','+", "$(o('" + fieldTitle + "')).val()"); // @task 模块编辑页面中没有元素cws_status
+                StrUtil.concat(sbParams, "+','+", "$(findObj('" + fieldTitle + "')).val()"); // @task 模块编辑页面中没有元素cws_status
             }
             else if ("cws_id".equalsIgnoreCase(fieldTitle)) {
-                StrUtil.concat(sbParams, "+','+", "$(o('" + fieldTitle + "')).val()"); // @task 模块编辑页面中没有元素cws_status
+                StrUtil.concat(sbParams, "+','+", "$(findObj('" + fieldTitle + "')).val()"); // @task 模块编辑页面中没有元素cws_status
             }
             else if ("formCode".equalsIgnoreCase(fieldTitle)) {
                 StrUtil.concat(sbParams, "+','+", formCode);
@@ -129,32 +131,43 @@
             continue;
         }
         else {
-            StrUtil.concat(sbParams, "+','+", "o('" + fieldTitle + "').value");
+            StrUtil.concat(sbParams, "+','+", "findObj('" + fieldTitle + "').value");
         }
 %>
-        $(function() {
+        function initCheckChange_<%=field.getName()%>() {
+            // 函数宏控件在进入页面时，必进行计算
+            // var curFormId = getCurFormUtil().get();
+            var curFormId = '<%=formName%>';
             var oldValue_<%=field.getName()%> = "cws-65536"; // 一个不存在的值
-            if (o("<%=field.getName()%>")) { // 防止此控件也是SQL控件，并且此时还不存在
-                oldValue_<%=field.getName()%> = o("<%=field.getName()%>").value;
+            if (fo("<%=field.getName()%>", curFormId)) { // 防止此控件也是SQL控件，并且此时还不存在
+                oldValue_<%=field.getName()%> = fo("<%=field.getName()%>", curFormId).value;
             }
-            setInterval(function(){
-                if (o("<%=field.getName()%>")) {
-                    if (oldValue_<%=field.getName()%> != o("<%=field.getName()%>").value) {
-                        oldValue_<%=field.getName()%> = o("<%=field.getName()%>").value;
-                        onFormulaCtlRelateFieldChange_<%=fieldName%>();
+            var sint = setInterval(function(){
+				if (o(curFormId)) {
+                    if (fo("<%=field.getName()%>", curFormId)) {
+                        if (oldValue_<%=field.getName()%> != fo("<%=field.getName()%>", curFormId).value) {
+                            oldValue_<%=field.getName()%> = fo("<%=field.getName()%>", curFormId).value;
+                            onFormulaCtlRelateFieldChange_<%=fieldName%>();
+                        }
+                    } else {
+                        // 使关闭抽屉时，能够销毁setInterval，否则仅管前端removeScript了，但检测代码仍会运行
+                        window.clearInterval(sint);
+                        console.log('macro_formula_ctl_js clearInterval <%=field.getName()%>');
                     }
                 }
-            },500);
-        });
+            }, 200);
+            // 当菜单项不启用缓存时，只能通过如下方法才能清除interval
+			getCurFormUtil().addInterval(sint, '<%=formName%>');
+        }
+        initCheckChange_<%=field.getName()%>();
 <%
     }
     // System.out.println(getClass() + " sbParams=" + sbParams);
 %>
 // 取得本表单中相应的值
 function getFieldVal(fieldName) {
-    // 先从当前表单中取，如果取不到则从父表单中取
-    if (o(fieldName)) {
-        return o(fieldName).value;
+    if (findObj(fieldName)) {
+        return findObj(fieldName).value;
     }
 }
 
@@ -179,72 +192,53 @@ function onFormulaCtlRelateFieldChange_<%=fieldName%>() {
         return;
     }
 
-    $.ajax({
-        type: "post",
-        contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
-        url: "<%=request.getContextPath()%>/visual/formula/doFormula.do",
-        async: false,
-        data: {
-            formula: formulaStr,
-        },
-        dataType: "html",
-        beforeSend: function(XMLHttpRequest) {
-            // $('#bodyBox').showLoading();
-        },
-        success: function(data, status) {
-            data = $.parseJSON(data);
-            if (data.ret=="1") {
-		    	if (o("<%=fieldName%>")) {
-                    $("#<%=fieldName%>").val(data.value);
+    var ajaxData = {
+        formula: formulaStr,
+    };
+    ajaxPost('/visual/formula/doFormula', ajaxData).then((data) => {
+		console.log('data', data);
+        if (data.ret=="1") {
+            var obj = findObj("<%=fieldName%>");
+            if (obj) {
+                $(obj).val(data.value);
 
-                    setTimeout(function () {
-                        if(o("<%=fieldName%>_show")) {
-                            o("<%=fieldName%>_show").innerHTML = data.value;
-                        }
-                    }, 500);
-
-		            var frm = o("visualForm");
-		            if (frm==null) {
-		            	frm = o("flowForm");
-		            }
-		
-                    // 删除原来的验证，否则会因为原验证中存储的对象不存在而导致验证失效
-                    var formObj = LiveValidationForm.getInstance(frm);
-                    if (formObj) {
-                        formObj.removeFieldByName('<%=fieldName%>');
+                setTimeout(function () {
+                    if(findObj("<%=fieldName%>_show")) {
+                        findObj("<%=fieldName%>_show").innerHTML = data.value;
                     }
-		            <%
-		                ParamChecker pck = new ParamChecker(request);
-		                out.print(com.redmoon.oa.visual.FormUtil.getCheckFieldJS(pck, ff));
-		                // DebugUtil.i(getClass(), "doFormula", com.redmoon.oa.visual.FormUtil.getCheckFieldJS(pck, ff));
-		            %>
-			    }
-			
-			    try {
-			    	initCalculator();
-			    }
-			    catch(e) {}
-		    }
-            else {
-                console.error(data.msg);
-                // jAlert(data.msg, "提示");
+                }, 500);
+
+                var frm = getCurForm();
+
+                // 删除原来的验证，否则会因为原验证中存储的对象不存在而导致验证失效
+                var formObj = LiveValidationForm.getInstance(frm);
+                if (formObj) {
+                    formObj.removeFieldByName('<%=fieldName%>');
+                }
+                <%
+                    ParamChecker pck = new ParamChecker(request);
+                    out.print(com.redmoon.oa.visual.FormUtil.getCheckFieldJS(pck, ff));
+                    // DebugUtil.i(getClass(), "doFormula", com.redmoon.oa.visual.FormUtil.getCheckFieldJS(pck, ff));
+                %>
             }
-	    },
-	    complete: function(XMLHttpRequest, status){
-	    	// $('#bodyBox').hideLoading();
-	    },
-	    error: function(XMLHttpRequest, textStatus){
-	    	// 请求出错处理
-	    	alert(XMLHttpRequest.responseText);
-	    }
-    });
+
+            try {
+                initCalculator();
+            }
+            catch(e) {}
+        }
+        else {
+            console.error(data.msg);
+            myMsg(data.msg, 'warning');
+        }
+	});
 }
 
 <%
 // nest_sheet_edit_relat.jsp中传过来时是edit
 if (!"flowShow".equals(pageType) && !"show".equals(pageType)) { // && !"edit".equals(pageType)) {
 %>
-    $(function() {
+    // $(function() {
         onFormulaCtlRelateFieldChange_<%=fieldName%>();
-    });
+    // });
 <%}%>

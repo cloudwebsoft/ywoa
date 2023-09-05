@@ -1,6 +1,5 @@
 package com.redmoon.oa.flow;
 
-import org.apache.log4j.Logger;
 import cn.js.fan.cache.jcs.*;
 import cn.js.fan.db.Conn;
 import java.util.Vector;
@@ -9,6 +8,7 @@ import java.sql.SQLException;
 import cn.js.fan.web.Global;
 import cn.js.fan.db.SQLFilter;
 import cn.js.fan.security.SecurityUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * 有三个缓存与Document关联，一个是用于Iterator模式列表的DOCBLOCKCACHEPRIX，另一个是Document本身的，还有一个是用于计算count值的COUNT_GROUP_NAME
@@ -42,7 +42,6 @@ public class DocCacheMgr implements ICacheMgr {
     private long curFulltextLife = FULLTEXTMAXLIFE;// one hour
     static boolean isRegisted = false;
 
-    Logger logger = Logger.getLogger(DocCacheMgr.class.getName());
     RMCache rmCache = RMCache.getInstance();
 
     String connname = "";
@@ -50,21 +49,20 @@ public class DocCacheMgr implements ICacheMgr {
     public DocCacheMgr() {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("DocCacheMgr:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("DocCacheMgr:默认数据库名为空！");
 
         regist();
     }
 
     /**
      *
-     * @param code String
      */
     public void refreshFulltext() {
         try {
             rmCache.invalidateGroup(DOCBLOCKCACHEPRIX + FULLTEXT);
         }
         catch (Exception e){
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -98,10 +96,10 @@ public class DocCacheMgr implements ICacheMgr {
             rmCache.invalidateGroup(ALL);
 
             // 刷新其父目录的所有文章的列表缓存（不包含父目录本身）
-            // logger.info("refreshCreate:" + DOCBLOCKCACHEPRIX + CHILDREN_OF_PARENT + parent_code);
+            // LogUtil.getLog(getClass()).info("refreshCreate:" + DOCBLOCKCACHEPRIX + CHILDREN_OF_PARENT + parent_code);
             rmCache.invalidateGroup(DOCBLOCKCACHEPRIX + CHILDREN_OF_PARENT + parent_code);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -128,7 +126,7 @@ public class DocCacheMgr implements ICacheMgr {
             rmCache.invalidateGroup(DOCBLOCKCACHEPRIX + CHILDREN_OF_PARENT +
                                     parent_code);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -138,7 +136,7 @@ public class DocCacheMgr implements ICacheMgr {
             rmCache.invalidateGroup(DOCBLOCKCACHEPRIX + dirCodeTo);
             rmCache.invalidateGroup(COUNT_GROUP_NAME);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -155,7 +153,7 @@ public class DocCacheMgr implements ICacheMgr {
             rmCache.invalidateGroup(DOCBLOCKCACHEPRIX + CHILDREN_OF_PARENT +
                                     parent_code);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -163,7 +161,7 @@ public class DocCacheMgr implements ICacheMgr {
         try {
             rmCache.remove(cachePrix + id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -177,11 +175,11 @@ public class DocCacheMgr implements ICacheMgr {
 
         long[] longArray = null;
         try {
-            // logger.info("getDocBlock:" +DOCBLOCKCACHEPRIX + groupKey);
+            // LogUtil.getLog(getClass()).info("getDocBlock:" +DOCBLOCKCACHEPRIX + groupKey);
             longArray = (long[]) rmCache.getFromGroup(key,
                     DOCBLOCKCACHEPRIX + groupKey);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         //If already in cache, return the block.
         if (longArray != null) {
@@ -210,7 +208,7 @@ public class DocCacheMgr implements ICacheMgr {
                 // Set the maxium number of rows to end at the end of this block.
                 conn.setMaxRows(DOC_BLOCK_SIZE * (blockID + 1));
                 rs = conn.executeQuery(query);
-                //logger.info("query=" + query);
+                //LogUtil.getLog(getClass()).info("query=" + query);
                 // Grab THREAD_BLOCK_ROWS rows at a time.
                 conn.setFetchSize(DOC_BLOCK_SIZE);
                 // Many JDBC drivers don't implement scrollable cursors the real
@@ -227,30 +225,26 @@ public class DocCacheMgr implements ICacheMgr {
                     count++;
                 }
             } catch (SQLException sqle) {
-                logger.error("getDocBlock: " + sqle.getMessage());
-                // sqle.printStackTrace();
+                LogUtil.getLog(getClass()).error("getDocBlock: " + sqle.getMessage());
+                // sqlLogUtil.getLog(getClass()).error(e);
             } finally {
                 if (rs != null) {
                     try {
                         rs.close();
-                    } catch (SQLException e) {e.printStackTrace();}
-                    rs = null;
+                    } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
                 }
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
             int len = DocBlock.size();
             long[] docs = new long[len];
             for (int i = 0; i < len; i++) {
-                docs[i] = ((Long) DocBlock.elementAt(i)).longValue();
+                docs[i] = (Long) DocBlock.elementAt(i);
             }
             // Add the thread block to cache
             try {
                 rmCache.putInGroup(key, DOCBLOCKCACHEPRIX + groupKey, docs);
             } catch (Exception e) {
-                logger.error("getDocBlock1:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getDocBlock1:" + e.getMessage());
             }
             /**
              * The actual block may be smaller than THREAD_BLOCK_SIZE. If that's
@@ -276,13 +270,14 @@ public class DocCacheMgr implements ICacheMgr {
     public int getDocCount(String sql) {
         //根据sql语句得出计算总数的sql查询语句
         String query = SQLFilter.getCountSql(sql);
-        if (!SecurityUtil.isValidSql(query))
+        if (!SecurityUtil.isValidSql(query)) {
             return -1;
+        }
         Integer count = null;
         try {
             count = (Integer) rmCache.getFromGroup(query, COUNT_GROUP_NAME);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
 
         // If already in cache, return the count.
@@ -296,30 +291,27 @@ public class DocCacheMgr implements ICacheMgr {
             ResultSet rs = null;
             try {
                 rs = conn.executeQuery(query);
-                if (rs.next())
+                if (rs.next()) {
                     docCount = rs.getInt(1);
-            } catch (SQLException sqle) {
-                sqle.printStackTrace();
+                }
+            } catch (SQLException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (rs != null) {
                     try {
                         rs.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
-                    rs = null;
                 }
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
             // Add the thread count to cache
             try {
                 rmCache.putInGroup(query, COUNT_GROUP_NAME,
-                                   new Integer(docCount));
+                        docCount);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             return docCount;
         }
@@ -333,12 +325,13 @@ public class DocCacheMgr implements ICacheMgr {
                 try {
                     rmCache.put(cachePrix + id, doc);
                 } catch (Exception e) {
-                    logger.error("getDocument:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getDocument:" + e.getMessage());
                 }
                 return doc;
             }
-            else
+            else {
                 return null;
+            }
         } else {
             doc.renew();
             return doc;

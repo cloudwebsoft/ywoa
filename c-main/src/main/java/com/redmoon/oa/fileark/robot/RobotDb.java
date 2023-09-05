@@ -4,6 +4,8 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
 import com.cloudwebsoft.framework.base.QObjectDb;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.address.ExcelHandle;
 import com.redmoon.oa.db.SequenceManager;
 
 import java.io.PrintStream;
@@ -11,12 +13,13 @@ import java.sql.SQLException;
 
 public class RobotDb extends QObjectDb
         implements Cloneable {
+    @Override
     public Object clone() {
         Object o = null;
         try {
             o = super.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return o;
     }
@@ -33,7 +36,7 @@ public class RobotDb extends QObjectDb
         try {
             p.load(str);
         } catch (Exception e) {
-            System.out.println("Import: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
 
         String[] ary = getFieldsFromQueryCreate();

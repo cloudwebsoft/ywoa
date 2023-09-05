@@ -224,7 +224,7 @@ public class FormSQLBuilder {
              }
 
              /*
-             System.out.println(FormSQLBuilder.class +
+             LogUtil.getLog(getClass()).info(FormSQLBuilder.class +
                                 " old_condition_field_code=" +
                                 old_condition_field_code + " conditions=" +
                                 conditions);
@@ -256,7 +256,7 @@ public class FormSQLBuilder {
                      conditions.append(aqcd.getConditionFieldCode()).append(" ").append(aqcd.getConditionSign()).append(" ").append(val);
                  } else {
                      /*
-                     System.out.println(FormSQLBuilder.class +
+                     LogUtil.getLog(getClass()).info(FormSQLBuilder.class +
                                         " getConditionSign=" +
                                         aqcd.getConditionSign() + " conditions=" +
                                         conditions);
@@ -307,7 +307,7 @@ public class FormSQLBuilder {
                              }
                          }
 
-                         // System.out.println(FormSQLBuilder.class + " conditions=" + conditions);
+                         // LogUtil.getLog(getClass()).info(FormSQLBuilder.class + " conditions=" + conditions);
                      }
                  }
              }
@@ -348,7 +348,7 @@ public class FormSQLBuilder {
 				try {
 					queryField = json.getString(formField);
 				} catch (JSONException e) {
-					e.printStackTrace();
+					LogUtil.getLog(FormSQLBuilder.class).error(e);
 					break;
 				}
 				if (queryField.equals(condField)) {
@@ -419,7 +419,7 @@ public class FormSQLBuilder {
 			try {
 				queryField = json.getString(formField);
 			} catch (JSONException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 				break;
 			}
 			if (queryField.equals(condField)) {
@@ -520,7 +520,7 @@ public class FormSQLBuilder {
              aqcd = (FormQueryConditionDb) iConditionField.next();
              // 去除与chart需要用到的字段重复的条件
              if (aqcd.getConditionFieldCode().equalsIgnoreCase(chartFieldCode)) {
-                 // System.out.println("ArchiveSQLBuilder:aqcd.getConditionFieldCode()=" + aqcd.getConditionFieldCode());
+                 // LogUtil.getLog(getClass()).info("ArchiveSQLBuilder:aqcd.getConditionFieldCode()=" + aqcd.getConditionFieldCode());
                  cc++;
                  if (cc > 1) {
                      iConditionField.remove();
@@ -537,7 +537,7 @@ public class FormSQLBuilder {
          ModuleRelateDb mrd = new ModuleRelateDb();
          // 判断是否为嵌套表
          Vector v = mrd.getModuleReverseRelated(aqd.getTableCode());
-         // System.out.println(FormSQLBuilder.class + " getSmartQuerySQL v.size()=" + v.size());
+         // LogUtil.getLog(getClass()).info(FormSQLBuilder.class + " getSmartQuerySQL v.size()=" + v.size());
          if (v.size()>0) {
              isSubForm = true;
          }
@@ -727,7 +727,7 @@ public class FormSQLBuilder {
                  String s = getQueryRelated(queryRelatedId);
                  int p = s.indexOf("id");
                  // s = s.substring(0, p) + "flowId" + s.substring(p + 2);
-                 if (sql.indexOf("where")!=-1) {
+                 if (sql.contains("where")) {
                      sql += " and cws_id in (" + s + ")";
                  }
                  else {
@@ -979,7 +979,7 @@ public class FormSQLBuilder {
          sql = sql.toLowerCase();
          field = field.toLowerCase();
          // 从sql语句中找到field，判断其是否含有别名
-         // 但sql可能为：select id from form_table_bxdjkzb t1 where cws_id='57' and flowid=1497 and 1=1 and t1.jkje>3 order by id desc，field为jkje
+         // 但sql可能为：select id from ft_bxdjkzb t1 where cws_id='57' and flowid=1497 and 1=1 and t1.jkje>3 order by id desc，field为jkje
          // 此时select ***部分无jkje，所以需在第一个where之前去寻找有无别名
          int p = sql.indexOf(" where ");
          String sqlBeforeWhere = sql.substring(0, p);
@@ -1015,7 +1015,7 @@ public class FormSQLBuilder {
                  return rr.getDouble(1);
              }
          } catch (SQLException ex) {
-             ex.printStackTrace();
+             LogUtil.getLog(FormSQLBuilder.class).error(ex);
          }
 
          return 0;
@@ -1030,15 +1030,14 @@ public class FormSQLBuilder {
  	 * @throws ErrMsgException
  	 */
  	public String getSmartQueryOnFlowChangCondValue(HttpServletRequest request, FormQueryDb fqd, Leaf lf) throws ErrMsgException {
-     	if (com.redmoon.oa.kernel.License.getInstance().isPlatform())
-     		;
-     	else {
+     	if (com.redmoon.oa.kernel.License.getInstance().isPlatform()) {
+            ;
+        } else {
      		throw new ErrMsgException("系统版本中无此功能！");
      	}
      	
      	String sql = null;
 
- 		Privilege pvg = new Privilege();
  		try {
  			FormSQLBuilder fsb = new FormSQLBuilder();
  			sql = fsb.getSmartQuery(request, fqd.getId());  
@@ -1056,8 +1055,6 @@ public class FormSQLBuilder {
  					mapCondValue.put(condField, ParamUtil.get(request, qField));
  				}
  			} catch (JSONException e1) {
- 				// TODO Auto-generated catch block
- 				e1.printStackTrace();
  				throw new ErrMsgException("请检查流程属性中表单与查询条件字段的映射关系是否正确！");
  			}
 
@@ -1082,8 +1079,7 @@ public class FormSQLBuilder {
  			try {
  				ret = jt.executeQuery(sqlCond, 1, 1);
  			} catch (SQLException e) {
- 				// TODO Auto-generated catch block
- 				e.printStackTrace();
+ 				LogUtil.getLog(getClass()).error(e);
  			}
  			Map mapType = ret.getMapType();
  			
@@ -1095,15 +1091,13 @@ public class FormSQLBuilder {
  			
  			LogUtil.getLog(getClass()).info("sqlReplaced:" + sql);
  			
- 			if (sql==null)
- 				throw new ErrMsgException("SQL语句非法，解析失败！");
- 			
+ 			if (sql==null) {
+                throw new ErrMsgException("SQL语句非法，解析失败！");
+            }
  		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
  		return sql;

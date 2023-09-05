@@ -1,11 +1,10 @@
-(function ($, window, document, undefined) {
+(function ($, document, window, undefined) {
     $.ajaxSettings.beforeSend = function (xhr, setting) {
         jQuery.myloading();
     };
     $.ajaxSettings.complete = function (xhr, status) {
         jQuery.myloading("hide");
     }
-    var w = window;
     var self;
     var Form;
     $.NestSheet = $.Class.extend({
@@ -55,6 +54,12 @@
                     var formSelector = jQuery(".mui-input-group");
                     formSelector.append(params);
                     formSelector.append(btnContent);
+
+                    if (data.viewJs) {
+                        var s0 = document.createElement('script');
+                        s0.text = data.viewJs;
+                        document.body.appendChild(s0);
+                    }
                 }
 
                 mui(".mui-button-row").on("tap", ".flow_submit", function () {
@@ -64,8 +69,6 @@
                     var url = "";
 
                     var parentPageType = getParentPageType();
-                    // 不能直接通过window.parent获取，因为此处的window是js方法中的参数
-                    // parentPageType = window.parent.getParentPageType();
 
                     if (isAdd) {
                         ajax_url = AJAX_REQUEST_URL.NEST_SHEET_ADD;

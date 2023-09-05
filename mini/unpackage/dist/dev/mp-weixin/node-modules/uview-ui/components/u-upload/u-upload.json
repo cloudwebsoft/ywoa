@@ -1,0 +1,10 @@
+{
+  "usingComponents": {
+    "u-icon": "/node-modules/uview-ui/components/u-icon/u-icon",
+    "u-line-progress": "/node-modules/uview-ui/components/u-line-progress/u-line-progress"
+  },
+  "component": true,
+  "componentGenerics": {
+    "scoped-slots-file": true
+  }
+}

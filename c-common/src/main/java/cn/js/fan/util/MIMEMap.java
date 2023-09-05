@@ -43,6 +43,7 @@ public class MIMEMap {
          map.put("dib", "image/bmp");
          map.put("doc", "application/msword");
          map.put("xls", "application/vnd.ms-excel");
+         map.put("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
          map.put("dtd", "text/plain");
          map.put("dv", "video/x-dv");
          map.put("dvi", "application/x-dvi");

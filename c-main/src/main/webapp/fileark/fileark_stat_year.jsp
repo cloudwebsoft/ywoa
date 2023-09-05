@@ -194,7 +194,7 @@ if (isShowNav==1) {
         <%}%>
       </select>
     <script>
-	showyear.value = "<%=showyear%>";
+	o("showyear").value = "<%=showyear%>";
 	</script>
   </tr>
   <tr><td></td></tr>

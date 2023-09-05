@@ -1,15 +1,22 @@
 package com.cloudweb.oa.controller;
 
+import cn.js.fan.db.ListResult;
 import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import cn.js.fan.web.SkinUtil;
 import com.alibaba.fastjson.JSONArray;
+import com.cloudweb.oa.api.IFormulaCtl;
 import com.cloudweb.oa.api.ISQLCtl;
+import com.cloudweb.oa.cache.FlowFormDaoCache;
+import com.cloudweb.oa.cache.VisualFormDaoCache;
+import com.cloudweb.oa.vo.Result;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.*;
 import com.redmoon.oa.flow.macroctl.*;
-import com.redmoon.oa.notice.NoticeAttachmentDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.visual.ModuleSetupDb;
+import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +29,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 @Controller
 @RequestMapping("/form")
@@ -30,22 +40,25 @@ public class FormController {
     @Autowired
     private HttpServletRequest request;
 
+    @Autowired
+    private FlowFormDaoCache flowFormDaoCache;
+
+    @Autowired
+    private VisualFormDaoCache visualFormDaoCache;
+
     @ResponseBody
     @RequestMapping(value = "/parseForm", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
     public String parseForm() {
         String content = ParamUtil.get(request, "content");
-        JSONObject json = new JSONObject();
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
         try {
+            json.put("ret", 1);
+            com.alibaba.fastjson.JSONObject jsonObj = com.alibaba.fastjson.JSONObject.parseObject(FormParser.doParse(content));
+            json.put("fields", jsonObj.getJSONArray("fields"));
+            return json.toString();
+        } catch (ErrMsgException e) {
             json.put("ret", 0);
-            json.put("msg", "操作失败");
-            try {
-                return FormParser.doParse(content);
-            } catch (ResKeyException e) {
-                json.put("ret", 0);
-                json.put("msg", e.getMessage(request));
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
+            json.put("msg", e.getMessage());
         }
         return json.toString();
     }
@@ -93,7 +106,7 @@ public class FormController {
                 json.put("msg", "操作失败");
             }
         } catch (JSONException | ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -115,7 +128,7 @@ public class FormController {
                 json.put("msg", SkinUtil.LoadString(request, "pvg_invalid"));
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -133,7 +146,7 @@ public class FormController {
                 json.put("msg", e.getMessage());
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -167,7 +180,7 @@ public class FormController {
                     JSONObject jsonObj = new JSONObject(defaultValue);
                     nestFormCode = jsonObj.getString("destForm");
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                     // LogUtil.getLog(getClass()).info(nestFormCode + " is old version before 20131123.");
                 }
 
@@ -191,7 +204,7 @@ public class FormController {
                     }
                     if (FormField.TYPE_MACRO.equals(ff2.getType())) {
                         mu = mm.getMacroCtlUnit(ff2.getMacroType());
-                        if (mu.getIFormMacroCtl() instanceof ISQLCtl || mu.getIFormMacroCtl() instanceof FormulaCtl) {
+                        if (mu.getIFormMacroCtl() instanceof ISQLCtl || mu.getIFormMacroCtl() instanceof IFormulaCtl) {
                             isFound = true;
                         }
                     }
@@ -216,7 +229,7 @@ public class FormController {
                 json.put("msg", "非嵌套表宏控件");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -290,7 +303,7 @@ public class FormController {
                 bos.write(buff,0,bytesRead);
             }
         } catch(final IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (bis != null) {
                 bis.close();
@@ -299,5 +312,96 @@ public class FormController {
                 bos.close();
             }
         }
+    }
+
+    @ApiOperation(value = "取得表单中的所有字段", notes = "取得表单中的所有字段", httpMethod = "POST")
+    @ApiImplicitParam(name = "moduleCode", value = "模块编码", required = false, dataType = "String")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
+    @ResponseBody
+    @RequestMapping(value = "/getFieldsByModuleCode", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> getFieldsByModuleCode(String moduleCode) {
+        ModuleSetupDb msd = new ModuleSetupDb();
+        msd = msd.getModuleSetupDb(moduleCode);
+        if (!msd.isLoaded()) {
+            return new Result<>(false, "模块: " + moduleCode + " 不存在");
+        }
+        FormDb formDb = new FormDb();
+        formDb = formDb.getFormDb(msd.getString("form_code"));
+        if (!formDb.isLoaded()) {
+            return new Result<>(false, "模块" + msd.getString("name") + " 的表单: " + msd.getString("form_code") + " 不存在");
+        }
+        return new Result<>(formDb.getFields());
+    }
+
+    @ApiOperation(value = "取得表单中的所有字段", notes = "取得表单中的所有字段", httpMethod = "POST")
+    @ApiImplicitParam(name = "formCode", value = "表单编码", required = false, dataType = "String")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
+    @ResponseBody
+    @RequestMapping(value = "/getFields", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> getFields(String formCode) {
+        FormDb formDb = new FormDb();
+        formDb = formDb.getFormDb(formCode);
+        if (!formDb.isLoaded()) {
+            return new Result<>(false, "表单: " + formCode + " 不存在");
+        }
+        return new Result<>(formDb.getFields());
+    }
+
+    @ApiOperation(value = "取得表单的视图", notes = "取得表单的视图", httpMethod = "POST")
+    @ApiImplicitParam(name = "formCode", value = "表单编码", required = false, dataType = "String")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
+    @ResponseBody
+    @RequestMapping(value = "/getViews", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> getViews(String formCode) {
+        JSONArray ary = new JSONArray();
+        FormViewDb fvd = new FormViewDb();
+        List list = fvd.getViews(formCode);
+        for (Object o : list) {
+            FormViewDb formViewDb = (FormViewDb)o;
+            com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
+            jsonObject.put("id", formViewDb.getLong("id"));
+            jsonObject.put("name", formViewDb.getString("name"));
+            ary.add(jsonObject);
+        }
+        return new Result<>(ary);
+    }
+
+    @ApiOperation(value = "拷贝表单字段的值", notes = "取得表单的视图", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "formCode", value = "表单编码", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "sourceFieldName", value = "源字段", required = false, dataType = "String"),
+            @ApiImplicitParam(name = "targetFieldName", value = "目标字段", required = false, dataType = "String")
+    })
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
+    @ResponseBody
+    @RequestMapping(value = "/copyField", method = RequestMethod.POST, produces={"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> copyField(String formCode, String sourceFieldName, String targetFieldName) {
+        String sql = "update ft_" + formCode + " set " + targetFieldName + "=" + sourceFieldName;
+        JdbcTemplate jt = new JdbcTemplate();
+        try {
+            jt.executeUpdate(sql);
+            flowFormDaoCache.refreshAll(formCode);
+            visualFormDaoCache.refreshAll(formCode);
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+        return new Result<>(true);
+    }
+
+    @ApiOperation(value = "列出流程类型下的表单", notes = "列出流程类型下的表单", httpMethod = "POST")
+    @ApiImplicitParam(name = "code", value = "流程类型节点编码", required = false, dataType = "String")
+    @RequestMapping(value = "/listByFlowType", produces={"text/html;charset=UTF-8;","application/json;charset=UTF-8;"})
+    @ResponseBody
+    public Result<Object> listByFlowType(String code) {
+        FormDb fd = new FormDb();
+        Vector<FormDb> formV = fd.listOfFlow(code);
+        com.alibaba.fastjson.JSONArray arr = new JSONArray();
+        for (FormDb formDb : formV) {
+            com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+            json.put("code", formDb.getCode());
+            json.put("name", formDb.getName());
+            arr.add(json);
+        }
+        return new Result<>(arr);
     }
 }

@@ -31,20 +31,24 @@ import cn.js.fan.web.SkinUtil;
 import com.cloudwebsoft.framework.security.ProtectSQLInjectException;
 import com.cloudwebsoft.framework.security.ProtectXSSException;
 import com.cloudwebsoft.framework.security.SecurityUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class FileUpload {
     boolean debug = false;
     public String savePath;
     String filepath, filename, contentType;
     public Dictionary fields;
-    public int fileSize = 2048 * 1000; // 单个文件最大2048 * 1000K 即2G，window2000的默认最大值
-    String extname = ""; // 上传文件的扩展名
+    // 单个文件最大2048 * 1000K 即2G，window2000的默认最大值
+    public int fileSize = 2048 * 1000;
+    // 上传文件的扩展名
+    String extname = "";
     String[] extnames = null;
-    public Vector<FileInfo> files = null;
+    public Vector<FileInfo> files;
 
-    public Vector tmpFiles = new Vector(); // 存放临时文件名
+    // 存放临时文件名
+    public Vector<String> tmpFiles = new Vector<>();
 
-    static Hashtable hash = new Hashtable();
+    static Hashtable<Integer, String> hash = new Hashtable<>();
     // 随机数字生成器
     static Random rand = new Random(System.currentTimeMillis());
     static long lastRandTime = System.currentTimeMillis();
@@ -70,7 +74,7 @@ public class FileUpload {
     public static final String TEMP_PATH = "FileUploadTmp";
 
     public FileUpload() {
-        files = new Vector();
+        files = new Vector<>();
     }
 
     @Override
@@ -78,9 +82,7 @@ public class FileUpload {
         // 删除临时文件
         // @task:因GC回收时需进行磁盘IO，会不会导致回收速度慢？
         // 2013/10/13，在UploadReaper中加入了临时文件超过12小时则删除，此处不作处理也没关系
-        Iterator ir = tmpFiles.iterator();
-        while (ir.hasNext()) {
-            String fpath = (String) ir.next();
+        for (String fpath : tmpFiles) {
             File f = new File(fpath);
             f.delete();
         }
@@ -147,7 +149,7 @@ public class FileUpload {
         this.fields = fields;
     }
 
-    public void setFiles(Vector files) {
+    public void setFiles(Vector<FileInfo> files) {
         this.files = files;
     }
 
@@ -197,7 +199,7 @@ public class FileUpload {
             if (isTrim) {
                 str = (String) fields.get(fieldName);
                 if (str!=null) {
-                    str = str.trim();
+                    str = StrUtil.trim(str);
                 }
             }
             else {
@@ -205,7 +207,8 @@ public class FileUpload {
             }
         }
         catch (ClassCastException e) {
-            System.out.println(getClass() + " field:" + fieldName + " class cast exception");
+            LogUtil.getLog(getClass()).error("field:" + fieldName + " class cast exception");
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
         return str;
@@ -226,11 +229,11 @@ public class FileUpload {
             return r;
         }
         else {
-            Vector v = (Vector) obj;
+            Vector<String> v = (Vector) obj;
             int len = v.size();
             String[] r = new String[len];
             for (int i=0; i<len; i++) {
-                r[i] = (String)v.get(i);
+                r[i] = v.get(i);
             }
             return r;
         }
@@ -248,7 +251,7 @@ public class FileUpload {
         int pos = s.indexOf("filename=\"");
         if (pos != -1) {
             filepath = s.substring(pos + 10, s.length() - 1);
-            if (filepath.equals("")) {
+            if ("".equals(filepath)) {
                 return; // 未上传文件
             }
             filename = getUploadFileName(filepath);
@@ -301,9 +304,7 @@ public class FileUpload {
         }
         int len = extnames1.length;
         extnames = new String[len];
-        for (int i = 0; i < len; i++) {
-            extnames[i] = extnames1[i];
-        }
+        System.arraycopy(extnames1, 0, extnames, 0, len);
     }
 
     /**
@@ -313,11 +314,11 @@ public class FileUpload {
      */
     public boolean isValidExtname(String ext) {
         if (extnames == null) {
-            if (ext.equalsIgnoreCase("jsp") || ext.equalsIgnoreCase("jspx")) {
+            if ("jsp".equalsIgnoreCase(ext) || "jspx".equalsIgnoreCase(ext)) {
                 // 除非显式允许JSP文件
                 return jspValid;
             }
-            else if (ext.equalsIgnoreCase("htm") || ext.equalsIgnoreCase("html")){
+            else if ("htm".equalsIgnoreCase(ext) || "html".equalsIgnoreCase(ext)){
                 return htmValid;
             }
             else {
@@ -325,14 +326,13 @@ public class FileUpload {
             }
         }
         int len = extnames.length;
-        for (int i = 0; i < len; i++) {
-            // System.out.println(getClass() + " exts=" + extnames[i] + ".");
-            if (extnames[i].equalsIgnoreCase(ext)) {
-                if (ext.equalsIgnoreCase("jsp")) {
+        for (String s : extnames) {
+            // LogUtil.getLog(getClass()).info(getClass() + " exts=" + extnames[i] + ".");
+            if (s.equalsIgnoreCase(ext)) {
+                if ("jsp".equalsIgnoreCase(ext)) {
                     // 除非显示式允许JSP文件，否则即使配置允许上传JSP，而源码中未显示设置setJspValid(true)，也不允许
                     return jspValid;
-                }
-                else {
+                } else {
                     return true;
                 }
             }
@@ -394,12 +394,11 @@ public class FileUpload {
         case RET_INVALIDEXT:
             String str = "";
             if (extnames!=null) {
-                int len = extnames.length;
-                for (int i=0; i<len; i++) {
-                    if (str.equals("")) {
-                        str = extnames[i];
+                for (String s : extnames) {
+                    if ("".equals(str)) {
+                        str = s;
                     } else {
-                        str += "," + extnames[i];
+                        str += "," + s;
                     }
                 }
             }
@@ -424,6 +423,17 @@ public class FileUpload {
         return doUpload(application, request, "utf-8");
     }
 
+    public static String getTempPath() {
+        if (tmpPath == null) {
+            tmpPath = Global.getRealPath() + TEMP_PATH + "/";
+            File f = new File(tmpPath);
+            if (!f.isDirectory()) {
+                f.mkdirs();
+            }
+        }
+        return tmpPath;
+    }
+
     /**
      * 上传文件
      * @param request HttpServletRequest
@@ -435,7 +445,6 @@ public class FileUpload {
         //文件路径从config_cws.xml获取 jfy 20150104
         //realPath = application.getRealPath("/");
         realPath = Global.getRealPath();
-        // System.out.println(getClass() + " realPath=" + realPath + " realPath.lastIndexOf(\"\\\")=" + realPath.lastIndexOf("\\") + " realPath.length()=" + realPath.length());
         if (realPath.lastIndexOf("/")!=realPath.length()-1 && realPath.lastIndexOf("\\")!=realPath.length()-1) {
             realPath += "/";
         }
@@ -456,7 +465,7 @@ public class FileUpload {
         int i = in.readLine(line, 0, maxcount);
 
         // debug = true;
-        if (debug) {
+        if (false) {
             // 写入文件，调试用
             File f2 = new File("d:/redmoon_upload.txt");
             FileOutputStream os2;
@@ -467,13 +476,11 @@ public class FileUpload {
                 // os2.write(d.getBytes("ISO-8859-1"));
                 osw.write(d);
                 i = in.readLine(line, 0, maxcount);
-                // System.out.println(d);
+                // LogUtil.getLog(getClass()).info(d);
             }
             osw.close();
             os2.close();
-            if (true) {
-                return -1;
-            }
+            return -1;
         }
 
         if (i < 3) { // 第一行小于3则上传出错
@@ -500,7 +507,7 @@ public class FileUpload {
             }
         }
 
-        boolean isFilterAttack = SecurityUtil.isFilter(request.getRequestURL().toString());
+        boolean isFilterAttack = SecurityUtil.isFilter(request, request.getRequestURL().toString());
 
         try {
             while (i != -1) {
@@ -508,29 +515,27 @@ public class FileUpload {
                 // 注意当WAP发送时，中间没有空格，如：Content-Disposition:form-data;name="boardcode"
                 // if (newLine.startsWith("Content-Disposition: form-data; name=\"")) {
                 if (newLine.startsWith("Content-Disposition:")) {
-                    if (newLine.indexOf("filename=\"") != -1) {
+                    if (newLine.contains("filename=\"")) {
                         // 获取上传的文件
                         int pos = newLine.indexOf("name=\"");
-                        String fieldName = newLine.substring(pos + 6,
-                                newLine.length() - 3);
+                        String fieldName = newLine.substring(pos + 6, newLine.length() - 3);
                         // 此时 fieldName = filename1"; filename="C:\Documents and Settings\Administrator\My Documents\My Pictures\forum_isnews.gif
                         int index = fieldName.indexOf("\";");
                         fieldName = fieldName.substring(0, index);
                         fieldName = new String(fieldName.getBytes(), charset);
-                        if (debug) {
-                            System.out.println("filename=" + new String(line, 0, i - 2, charset));
-                        }
                         parseFileName(new String(line, 0, i - 2, charset));
                         if (filename == null) {
                             // 未上传文件
                             i = in.readLine(line, 0, maxcount);
                             continue;
                         }
-                        if (filename != null && !isValidExtname(extname)) {
-                            if (debug) {
-                                System.out.println("extname=" + extname);
-                            }
+                        if (!isValidExtname(extname)) {
                             ret = RET_INVALIDEXT; // 扩展名非法
+                            // 继续读完，否则前端会报：网络异常，请检查您的网络连接是否正常!
+                            byte[] buffer = new byte[maxcount * 1000];
+                            while (i != -1) {
+                                i = in.read(buffer);
+                            }
                             return ret;
                         }
                         i = in.readLine(line, 0, maxcount);
@@ -556,22 +561,21 @@ public class FileUpload {
 
                         while (i != -1 && !newLine.startsWith(boundary)) {
                             oldi = i;
-                            for (int k = 0; k < i; k++) {
-                                oldline[k] = line[k]; // 复制line
+                            // 复制line
+                            if (i >= 0) {
+                                System.arraycopy(line, 0, oldline, 0, i);
                             }
 
                             i = in.readLine(line, 0, maxcount);
                             if ((i == boundaryLength + 2 || i == boundaryLength + 4)
                                     && (new String(line, 0, i).startsWith(boundary))) { //如果是所有数据的最后一行或分界符
-                                // filedata.append(new String(oldline, 0, oldi - 2,
-                                //        "ISO-8859-1"));
+                                // filedata.append(new String(oldline, 0, oldi - 2, "ISO-8859-1"));
                                 os2.write(oldline, 0, oldi - 2);
 
                                 allFileSize += oldi - 2;
                                 thisfilesize += oldi - 2;
                             } else {
-                                // filedata.append(new String(oldline, 0, oldi,
-                                //         "ISO-8859-1"));
+                                // filedata.append(new String(oldline, 0, oldi, "ISO-8859-1"));
                                 os2.write(oldline, 0, oldi);
 
                                 allFileSize += oldi;
@@ -605,9 +609,6 @@ public class FileUpload {
                         os2.close();
 
                         if (thisfilesize == 0) {
-                            if (debug) {
-                                System.out.println("FileUpload 文件" + filename + "长度为 0 ！");
-                            }
                             continue;
                         }
 
@@ -621,23 +622,16 @@ public class FileUpload {
                         // fi.data = filedata.toString();
                         fi.contentType = contentType;
                         fi.size = thisfilesize; // 或者filedata.length();//以K为单位
-                        if (debug) {
-                            System.out.println(fi.name + ": " + fi.size + " " +
-                                    fi.ext + " " + fi.contentType);
-                        }
                         files.addElement(fi);
                     } else {
                         // 获取表单域的值
                         int pos = newLine.indexOf("name=\"");
                         String fieldName;
 
-                        // System.out.println(newLine.indexOf(";"));
-
                         if (newLine.lastIndexOf(";") == newLine.length() - 3) {
                             // linux android上传
                             fieldName = newLine.substring(pos + 6, newLine.length() - 4);
                         } else {
-                            // System.out.println(newLine);
                             // 有时可能会出现不规范的情况，如下所示，name="后面没有内容了
                             // -----------------------------7e5631420c18c4
                             // Content-Disposition: form-data; name="
@@ -646,29 +640,25 @@ public class FileUpload {
                             }
                             else {
                                 fieldName = "";
-                                System.out.println(newLine);
-                                System.out.println(getClass() + " fieldName is not valid.");
+                                LogUtil.getLog(getClass()).error(newLine);
+                                LogUtil.getLog(getClass()).error("fieldName is not valid.");
                                 break;
                             }
                         }
 
-                        // System.out.println(getClass() + " fieldName=" + fieldName);
-
                         // 如果是IE或其它浏览器上传，读取空行，如果是WAP上传，则下面会比前者多一行Content-Type:text/plain
                         i = in.readLine(line, 0, maxcount);
                         String seperateLine = new String(line, 0, i, charset);
-                        // System.out.println(getClass() + " seperateLine=" + seperateLine);
                         if (seperateLine.startsWith("Content-Type")) {
                             i = in.readLine(line, 0, maxcount); // 读取空行
                         }
 
                         i = in.readLine(line, 0, maxcount);
-                        // System.out.println("reqeust getCharacterEncoding: " + request.getCharacterEncoding()); // 取得的值为null
 
                         newLine = new String(line, 0, i, charset);
                         // newLine = new String(line, 0, i);
 
-                        StringBuffer fieldValue = new StringBuffer(maxcount);
+                        StringBuilder fieldValue = new StringBuilder(maxcount);
 
                         while (i != -1 && !newLine.startsWith(boundary)) {
                             // 最后一行包含换行字符
@@ -695,35 +685,31 @@ public class FileUpload {
                                 ret = RET_XSS;
                                 return ret;
                                 // fieldV = "Filtered by AntiXSS";
-                                // e.printStackTrace();
                             } catch (ProtectSQLInjectException e) {
                                 // DebugUtil.e(getClass(), "AntiSQL " + fieldName, fieldV);
                                 lastErrMsg = "字段：" + fieldName + "，值：" + fieldV;
                                 ret = RET_SQL_INJ;
                                 return ret;
                                 // fieldV = "Filtered by AntiSQL";
-                                // e.printStackTrace();
                             }
                         }
 
                         // String fv = new String(fieldValue.toString().getBytes("ISO8859_1"), charset);
                         // fields.put(fieldName, fv);
                         Object obj = fields.get(fieldName);
-                        // System.out.println(getClass() + " fieldName=" + fieldName + " value=" + fieldValue.toString());
                         if (obj != null) {
                             // 如果为字符串
                             if (obj instanceof String) {
-                                Vector v = new Vector();
-                                v.addElement(obj); // 第一个对应于filed的值
+                                Vector<String> v = new Vector<>();
+                                v.addElement((String)obj); // 第一个对应于filed的值
                                 v.addElement(fieldV);
                                 fields.put(fieldName, v);
                             } else {
-                                Vector v = (Vector) obj;
+                                Vector<String> v = (Vector) obj;
                                 v.addElement(fieldV);
                             }
                         } else {
                             fields.put(fieldName, fieldV);
-                            // System.out.println(getClass() + " fieldName=" + fieldV);
                         }
                     }
                 }
@@ -752,14 +738,13 @@ public class FileUpload {
             f.mkdirs();
         }
 
-        java.util.Enumeration e = files.elements();
+        java.util.Enumeration<FileInfo> e = files.elements();
         while (e.hasMoreElements()) {
-            FileInfo fi = (FileInfo) e.nextElement();
+            FileInfo fi = e.nextElement();
             if (!isRandName) {
                 fi.write(savePath);
             } else { //防止文件名重复
-                fi.write(savePath,
-                         getRandName() + "." + fi.getExt());
+                fi.write(savePath, getRandName() + "." + fi.getExt());
             }
         }
     }
@@ -773,19 +758,19 @@ public class FileUpload {
         if (System.currentTimeMillis()-lastRandTime>20000) {
             hash.clear();
         }
-        Integer id = new Integer(0);
+        int id = 0;
         synchronized (hash) {
             // 生成一个唯一的随机数字
-            id = new Integer(rand.nextInt());
+            id = rand.nextInt();
             while (hash.containsKey(id)) {
-                id = new Integer(rand.nextInt());
+                id = rand.nextInt();
             }
             // 为当前用户保留该ID
             String data = "";
             hash.put(id, data);
         }
         lastRandTime = System.currentTimeMillis();
-        return System.currentTimeMillis() + "" + Math.abs(id.intValue());
+        return System.currentTimeMillis() + "" + Math.abs(id);
     }
 
     /**
@@ -816,17 +801,12 @@ public class FileUpload {
             extName = fileName.substring(dotindex + 1, fileName.length());
             extName = extName.toLowerCase(); //置为小写
         }
-
-        // System.out.println("extName=" + extName + " " + dotindex);
-
         return extName;
     }
 
     public long getAllFileSize() {
-        Iterator ir = getFiles().iterator();
         long allSize = 0;
-        while (ir.hasNext()) {
-            FileInfo fi = (FileInfo) ir.next();
+        for (FileInfo fi : getFiles()) {
             allSize += fi.getSize();
         }
         return allSize;

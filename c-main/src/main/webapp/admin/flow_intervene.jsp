@@ -12,6 +12,9 @@
 <%@ page import="com.cloudwebsoft.framework.util.*"%>
 <%@ page import="com.redmoon.oa.sms.*"%>
 <%@ page import="org.json.JSONObject" %>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
+<%@ page import="com.redmoon.oa.shell.BSHShell" %>
+<%@ page import="com.cloudweb.oa.vo.Result" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
@@ -85,19 +88,52 @@
 		// 判断是否参与了流程
 		if (!privilege.isUserPrivValid(request, "admin")) {
 		%>
-		<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+			<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 		<%
-		out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid"), true));
-		return;
+			out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid"), true));
+			return;
+		}
 	}
-}
 
 com.redmoon.oa.flow.FormDAO fdao = new com.redmoon.oa.flow.FormDAO();
 fdao = fdao.getFormDAO(flow_id, fd);
 
+String myUserName = privilege.getUser(request);
 boolean isStarted = wf.isStarted();
 String op = ParamUtil.get(request, "op");
-if ("delMyAction".equals(op)) {
+if ("deliver".equals(op)) {
+	long myActionId = ParamUtil.getInt(request, "myActionId", -1);
+	int actionId = ParamUtil.getInt(request, "actionId", -1);
+
+	BSHShell shell = null;
+
+	WorkflowActionDb wa = new WorkflowActionDb();
+	wa = wa.getWorkflowActionDb((int) actionId);
+
+	WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+	wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
+	WorkflowPredefineMgr wpm = new WorkflowPredefineMgr();
+	String script = wpm.getActionFinishScript(wpd.getScripts(), wa.getInternalName());
+
+	if (script != null && !"".equals(script.trim())) {
+		WorkflowMgr wm = new WorkflowMgr();
+		// shell = wm.runDeliverScript(request, privilege.getUser(request), wf, fdao, mad, script, true);
+	}
+
+	JSONObject json = new JSONObject();
+	if (shell == null) {
+		json.put("ret", 0);
+		json.put("msg", "请检查脚本是否存在");
+	} else {
+		String errDesc = shell.getConsole().getLogDesc().trim();
+		// json.put("msg", StrUtil.toHtml(errDesc));
+		json.put("ret", 1);
+		json.put("msg", errDesc);
+	}
+	out.print(json.toString());
+	return;
+}
+else if ("delMyAction".equals(op)) {
 	boolean re = false;
 	JSONObject json = new JSONObject();
 	try {
@@ -121,11 +157,14 @@ if ("delMyAction".equals(op)) {
 				wa.setStatus(WorkflowActionDb.STATE_NOTDO);
 				wa.save();
 			}
+
+			wf.setIntervenor(myUserName);
+			wf.setInterveneTime(new Date());
+			wf.save();
 		}
 	}
-	catch (Exception e) {
+	catch (ErrMsgException e) {
 		e.printStackTrace();
-		// out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
 		json.put("ret", 0);
 		json.put("msg", e.getMessage());
 		out.print(json);
@@ -133,45 +172,87 @@ if ("delMyAction".equals(op)) {
 	}
 	if (re) {
 		String str = LocalUtil.LoadString(request,"res.common","info_op_success");
-		// out.print(StrUtil.jAlert_Redirect(str,"提示", "flow_intervene.jsp?flowId=" + flow_id));
-		//out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_intervene.jsp?flowId=" + flow_id));
 		json.put("ret", 1);
 		json.put("msg", str);
 	}
 	else {
 		String str = LocalUtil.LoadString(request,"res.common","info_op_fail");
-		// out.print(StrUtil.jAlert_Back(str,"提示"));
-		//out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
 		json.put("ret", 0);
 		json.put("msg", str);
 	}
 	out.print(json);
 	return;
 }
+else if ("changeStatus".equals(op)) {
+	int status = ParamUtil.getInt(request, "status");
+	MyActionDb mad = new MyActionDb();
+	mad = mad.getLastMyActionDbOfFlow(wf.getId());
+	long actionId = mad.getActionId();
+	WorkflowActionDb lastAction = new WorkflowActionDb();
+	lastAction = lastAction.getWorkflowActionDb((int)actionId);
+	boolean re = false;
+	try {
+		int oldStatus = wf.getStatus();
+		re = wf.changeStatus(request, status, lastAction);
+
+		// 置所有未结束的mad为已处理状态
+		if (status == WorkflowDb.STATUS_FINISHED && oldStatus != status) {
+			Vector<MyActionDb> v = mad.getMyActionDbDoingOfFlow(flow_id);
+			for (MyActionDb myActionDb : v) {
+				lastAction.changeMyActionDb(myActionDb, ConstUtil.USER_SYSTEM);
+			}
+		}
+	}
+	catch (ErrMsgException e) {
+		out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
+		return;
+	}
+	com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+	if (re) {
+		// 因为在changeStatus中修改了wf，所以此处需重新获取wf，否则flowstring得不到更新
+		wf = wf.getWorkflowDb(flow_id);
+		wf.setIntervenor(myUserName);
+		wf.setInterveneTime(new Date());
+		wf.save();
+		json.put("ret", 1);
+		json.put("msg", LocalUtil.LoadString(request, "res.common", "info_op_success"));
+	} else {
+		json.put("ret", 0);
+		json.put("msg", LocalUtil.LoadString(request, "res.common", "info_op_fail"));
+	}
+	out.print(json.toString());
+	return;
+}
 %>
 <!DOCTYPE html>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>查看/修改流程</title>
-<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-<script src="../inc/map.js"></script>
-<script src="../inc/common.js"></script>
-<script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
-<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/jquery-ui/jquery-ui-1.10.4.css" />
-<script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
-<script src="../inc/flow_dispose.jsp"></script>
-<script type="text/javascript" src="../js/goToTop/goToTop.js"></script>
-<link type="text/css" rel="stylesheet" href="../js/goToTop/goToTop.css" />
-
-<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" /> 
-<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
-
-<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
-<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
-<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>查看/修改流程</title>
+	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/jquery-ui/jquery-ui-1.10.4.css"/>
+	<link type="text/css" rel="stylesheet" href="../js/goToTop/goToTop.css"/>
+	<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+	<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+	<script src="../inc/map.js"></script>
+	<script src="../inc/common.js"></script>
+	<script src="../js/jquery-1.9.1.min.js"></script>
+	<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+	<script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+	<script src="../inc/flow_dispose.jsp"></script>
+	<script src="../js/goToTop/goToTop.js"></script>
+	<script src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+	<script src="../js/layui/layui.js" charset="utf-8"></script>
 	<script>
+		var layer;
+		layui.use('layer', function(){
+			layer = layui.layer;
+		});
+
 		$(function() {
 			$('#btnSubmit').click(function(e) {
 				e.preventDefault();
@@ -185,18 +266,81 @@ if ("delMyAction".equals(op)) {
 				return;
 			}*/
 			if ($('#status').val() == '<%=WorkflowDb.STATUS_FINISHED%>') {
-				jConfirm("需要调用结束事件么？", "提示", function (r) {
-					if (!r) {
-						$('#isCallEvent').val('false');
-					}
-					else {
+				layer.open({
+					type: 1
+					, offset: 'auto' // 具体配置参考：http://www.layui.com/doc/modules/layer.html#offset
+					, id: 'dlgFinishEvent' // 防止重复弹出
+					, content: '<div style="padding: 20px 50px;">需要调用结束事件么</div>'
+					, btn: ['是', '否', '取消']
+					, btnAlign: 'c' //按钮居中
+					, shade: 0 //不显示遮罩
+					, yes: function (index, layero) {
+						//按钮【按钮一】的回调
 						$('#isCallEvent').val('true');
+						// $('#flowForm').submit();
+						$.ajax({
+							type: "post",
+							url: "flow_intervene.jsp",
+							data: $('#flowForm').serialize(),
+							success: function (data, status) {
+								data = $.parseJSON(data);
+								layer.msg(data.msg, {
+									offset: '6px'
+								});
+							},
+							error: function (XMLHttpRequest, textStatus) {
+								alert(XMLHttpRequest.responseText);
+							}
+						})
+
+						layer.close(index);
 					}
-					$('#flowForm').submit();
+					, btn2: function (index, layero) {
+						//按钮【按钮二】的回调
+						$('#isCallEvent').val('false');
+						// $('#flowForm').submit();
+						$.ajax({
+							type: "post",
+							url: "flow_intervene.jsp",
+							data: $('#flowForm').serialize(),
+							success: function (data, status) {
+								data = $.parseJSON(data);
+								layer.msg(data.msg, {
+									offset: '6px'
+								});
+							},
+							error: function (XMLHttpRequest, textStatus) {
+								alert(XMLHttpRequest.responseText);
+							}
+						})
+
+						layer.close(index);
+					}
+					, btn3: function (index, layero) {
+						//按钮【按钮三】的回调
+						// layer.close(index);
+					}
+					, cancel: function () {
+						//右上角关闭回调
+						//return false 开启该代码可禁止点击该按钮关闭
+					}
 				});
 			}
 			else {
-				$('#flowForm').submit();
+				$.ajax({
+					type: "post",
+					url: "flow_intervene.jsp",
+					data: $('#flowForm').serialize(),
+					success: function (data, status) {
+						data = $.parseJSON(data);
+						layer.msg(data.msg, {
+							offset: '6px'
+						});
+					},
+					error: function (XMLHttpRequest, textStatus) {
+						alert(XMLHttpRequest.responseText);
+					}
+				})
 			}
 		}
 	</script>
@@ -210,35 +354,15 @@ if ("submitTo".equals(op)) {
 	String userRealNames = ParamUtil.get(request, "userRealNames");
 	WorkflowMgr workflowMgr = new WorkflowMgr();
 	boolean re = workflowMgr.deliverTo(request, flow_id, myActionId, users, userRealNames, internalName);
+	if (re) {
+		wf = wf.getWorkflowDb(flow_id);
+		wf.setIntervenor(myUserName);
+		wf.setInterveneTime(new Date());
+		wf.save();
+	}
 	String str = LocalUtil.LoadString(request, "res.common", "info_op_success");
 	out.print(StrUtil.jAlert_Redirect(str, "提示", "flow_intervene.jsp?flowId=" + flow_id));
 	return;
-}
-else if ("changeStatus".equals(op)) {
-	int status = ParamUtil.getInt(request, "status");
-	/*if (status == wf.getStatus()) {
-		out.print(StrUtil.jAlert_Back(LocalUtil.LoadString(request, "res.flow.Flow", "statusNotChange"), "提示"));
-		return;
-	}*/
-	// wf.setStatus(status);
-	// boolean re = wf.save();
-	MyActionDb mad = new MyActionDb();
-	mad = mad.getLastMyActionDbOfFlow(wf.getId());
-	long actionId = mad.getActionId();
-	WorkflowActionDb lastAction = new WorkflowActionDb();
-	lastAction = lastAction.getWorkflowActionDb((int)actionId);
-	boolean re = wf.changeStatus(request, status, lastAction);
-	if (re) {
-		String str = LocalUtil.LoadString(request,"res.common","info_op_success");
-		out.print(StrUtil.jAlert_Redirect(str,"提示", "flow_intervene.jsp?flowId=" + flow_id));
-		//out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_intervene.jsp?flowId=" + flow_id));
-	}
-	else {
-		String str = LocalUtil.LoadString(request,"res.common","info_op_fail");
-		out.print(StrUtil.jAlert_Back(str,"提示"));
-		//out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
-	}
-	return;	
 }
 else if ("changeActionStatus".equals(op)) {
 	int actionId = ParamUtil.getInt(request, "actionId");
@@ -248,6 +372,12 @@ else if ("changeActionStatus".equals(op)) {
 	wa.setStatus(status);
 	boolean re = wa.save();
 	if (re) {
+		// 因为在wa.save()中修改了wf，所以此处需重新获取wf，否则flowstring得不到更新
+		wf = wf.getWorkflowDb(flow_id);
+		wf.setIntervenor(myUserName);
+		wf.setInterveneTime(new Date());
+		wf.save();
+
 		String str = LocalUtil.LoadString(request,"res.common","info_op_success");
 		out.print(StrUtil.jAlert_Redirect(str,"提示", "flow_intervene.jsp?flowId=" + flow_id));
 		//out.print(StrUtil.Alert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "flow_intervene.jsp?flowId=" + flow_id));
@@ -257,7 +387,7 @@ else if ("changeActionStatus".equals(op)) {
 		out.print(StrUtil.jAlert_Back(str,"提示"));
 		//out.print(StrUtil.Alert_Back(SkinUtil.LoadString(request, "info_op_fail")));
 	}
-	return;	
+	return;
 }
 
 com.redmoon.oa.person.UserMgr um = new com.redmoon.oa.person.UserMgr();
@@ -306,13 +436,25 @@ o("menu8").className="current";
 			int doc_id = wf.getDocId();
 			DocumentMgr dm = new DocumentMgr();
 			Document doc = dm.getDocument(doc_id);
+			String intervenor = wf.getIntervenor();
+			String intervenorRealName = "";
+			Date interveneTime = null;
+			if (!"".equals(intervenor)) {
+				interveneTime = wf.getInterveneTime();
+				intervenorRealName = um.getUserDb(intervenor).getRealName();
+			}
 			%>
+            ID：<%=wf.getId()%>
+            &nbsp;&nbsp;
             <lt:Label res="res.flow.Flow" key="organ"/>：<%=um.getUserDb(wf.getUserName()).getRealName()%>
             &nbsp;&nbsp;
             <lt:Label res="res.flow.Flow" key="state"/>：<%=wf.getStatusDesc()%>
             &nbsp;&nbsp;
-            ID：<%=wf.getId()%>
-            &nbsp;&nbsp;
+			  <%
+				  if (!"".equals(intervenor)) {
+				  	out.print("干预：" + intervenorRealName + "&nbsp;" + DateUtil.format(interveneTime, "yyyy-MM-dd HH:mm:ss") + "&nbsp;&nbsp;");
+				  }
+			  %>
             <span id="projectName">
             <%if (wf.getProjectId()!=-1) {
                 com.redmoon.oa.visual.FormDAO fdaoPrj = new com.redmoon.oa.visual.FormDAO();
@@ -364,7 +506,7 @@ o("menu8").className="current";
 										   value='<lt:Label res="res.flow.Flow" key="sure"/>'/>
 									&nbsp;&nbsp;
 									<input type="button" class="btn btn-default" title="编辑表单内容" value="编辑"
-										   onclick="addTab('编辑：<%=wf.getTitle()%>', '<%=request.getContextPath()%>/visual/module_edit.jsp?id=<%=fdao.getId()%>&code=<%=fd.getCode()%>')"/>
+										   onclick="addTab('编辑：<%=wf.getTitle()%>', '<%=request.getContextPath()%>/visual/moduleEditPage.do?id=<%=fdao.getId()%>&code=<%=fd.getCode()%>')"/>
 									<script>
 										o("status").value = "<%=wf.getStatus()%>";
 									</script>
@@ -373,10 +515,10 @@ o("menu8").className="current";
 						</table>
 					</form>
                 <%
-String sql = "select id from flow_my_action where flow_id=" + flow_id + " order by receive_date asc";
-MyActionDb mad = new MyActionDb();
-Vector v = mad.list(sql);
-%>
+					String sql = "select id from flow_my_action where flow_id=" + flow_id + " order by receive_date asc";
+					MyActionDb mad = new MyActionDb();
+					Vector v = mad.list(sql);
+				%>
                   <table width="100%" border="0" cellspacing="0" cellpadding="0" class="percent98">
                     <tr>
                       <td height="30" align="left"><strong>&nbsp;<lt:Label res="res.flow.Flow" key="cprocess"/>：</strong></td>
@@ -387,15 +529,15 @@ Vector v = mad.list(sql);
                       <tr>
                         <td class="tabStyle_1_title" width="10%" align="center"><lt:Label res="res.flow.Flow" key="handler"/></td>
                         <td class="tabStyle_1_title" width="9%" align="center"><lt:Label res="res.flow.Flow" key="bearer"/></td>
-                        <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="agent"/></td>
+                        <td class="tabStyle_1_title" width="6%" align="center"><lt:Label res="res.flow.Flow" key="agent"/></td>
                         <td class="tabStyle_1_title" width="6%" align="center"><lt:Label res="res.flow.Flow" key="task"/></td>
-                        <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="reachState"/></td>
-                        <td class="tabStyle_1_title" width="8%" align="center"><lt:Label res="res.flow.Flow" key="signTime"/></td>
+                        <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="reachState"/></td>
+                        <td class="tabStyle_1_title" width="10%" align="center"><lt:Label res="res.flow.Flow" key="arrivalTime"/></td>
                         <td class="tabStyle_1_title" width="10%" align="center"><lt:Label res="res.flow.Flow" key="handleTime"/></td>
                         <td class="tabStyle_1_title" width="7%" align="center"><lt:Label res="res.flow.Flow" key="processor"/></td>
 						  <td class="tabStyle_1_title" width="9%" align="center"><lt:Label res="res.flow.Flow" key="processeStatus"/></td>
-						  <td class="tabStyle_1_title" width="12%" align="center">IP/OS/Browser</td>
-                        <td class="tabStyle_1_title" width="14%" align="center"><lt:Label res="res.flow.Flow" key="operate"/></td>
+						  <td class="tabStyle_1_title" width="10%" align="center">IP/OS/Browser</td>
+                        <td class="tabStyle_1_title" width="16%" align="center"><lt:Label res="res.flow.Flow" key="operate"/></td>
                       </tr>
                       <%
 java.util.Iterator ir = v.iterator();
@@ -412,7 +554,7 @@ while (ir.hasNext()) {
 		UserDb user = um.getUserDb(mad.getUserName());
 		userRealName = user.getRealName();
 	}
-	WorkflowActionDb wad = new WorkflowActionDb();	
+	WorkflowActionDb wad = new WorkflowActionDb();
 	wad = wad.getWorkflowActionDb((int)mad.getActionId());
 	m++;
 	%>
@@ -435,7 +577,7 @@ while (ir.hasNext()) {
 							if (!dts.equals(""))
 								out.print(dts + "：");
 						  }
-						  
+
 						  boolean isExpired = false;
 						  java.util.Date chkDate = mad.getCheckDate();
 						  if (chkDate==null)
@@ -480,8 +622,8 @@ while (ir.hasNext()) {
                             <%}%>
                         <%}%>
                         </td>
-                        <td align="center"><%=DateUtil.format(mad.getReceiveDate(), "yy-MM-dd HH:mm")%> </td>
-                        <td align="center"><%=DateUtil.format(mad.getCheckDate(), "yy-MM-dd HH:mm")%></td>
+                        <td align="center"><%=DateUtil.format(mad.getReceiveDate(), "yy-MM-dd HH:mm:ss")%> </td>
+                        <td align="center"><%=DateUtil.format(mad.getCheckDate(), "yy-MM-dd HH:mm:ss")%></td>
                         <td align="center">
                           <%if (mad.isChecked()) {%>
                           <%if (mad.getChecker().equals(UserDb.SYSTEM)) {%>
@@ -496,10 +638,10 @@ while (ir.hasNext()) {
                         </td>
                         <td align="center" id="tdMad<%=mad.getId()%>" class="<%=MyActionDb.getCheckStatusClass(mad.getCheckStatus())%>">
                         <%
-						if (mad.getChecker().equals(UserDb.SYSTEM)) {
+						if (false && mad.getChecker().equals(UserDb.SYSTEM)) {
 							String str = LocalUtil.LoadString(request,"res.flow.Flow","skipOverTime");
 							out.print(str);
-						}else{						
+						}else{
 						%>
                           <%=mad.getCheckStatusName()%>
                         <%}
@@ -533,7 +675,7 @@ while (ir.hasNext()) {
 							  <%=ip%>/<%=os%>/<%=browser%>/<span title="集群编号"><%=clusterNo%></span>
 						  </td>
                         <td align="center">
-						  <%
+							<%
                             // 检查是否存在后续节点
                             boolean canRecall = false;
                             WorkflowActionDb wa = new WorkflowActionDb();
@@ -541,8 +683,8 @@ while (ir.hasNext()) {
                             if (v.size()>1 && m==v.size()-1)
                                 canRecall = true;
                             if (wa.getLinkToActions().size()==0)
-                                canRecall = false;	
-                                              
+                                canRecall = false;
+
                           if (isFree) {%>
                               <%if (canRecall) {%>
                               <a href='javascript:;' onClick="recallFree(<%=m %>,<%=flow_id%>,<%=mad.getId()%>)"><lt:Label res="res.flow.Flow" key="forcedWithdraw"/></a>
@@ -554,7 +696,9 @@ while (ir.hasNext()) {
                               <%
                               }
                           }%>
-                          <%
+							&nbsp;&nbsp;
+							<a href="javascript:;" title="运行流转事件" onClick="runEventScript(<%=mad.getId()%>)">流转</a>
+							<%
                           // 发起记录不能被删除
                           if (m!=1) {%>
                           &nbsp;&nbsp;
@@ -564,7 +708,7 @@ while (ir.hasNext()) {
                           &nbsp;&nbsp;
                           <a href="javascript:;" onClick="submitTo('<%=mad.getId()%>')"><lt:Label res="res.flow.Flow" key="forwarded"/></a>
                           <%}%>
-                          &nbsp;&nbsp;                          
+                          &nbsp;&nbsp;
                           <a href="javascript:;" onClick="changeCheckStatus('<%=mad.getId()%>', <%=mad.getCheckStatus()%>, <%=mad.getActionId()%>)">状态</a>
                         </td>
                       </tr>
@@ -572,6 +716,43 @@ while (ir.hasNext()) {
                     </tbody>
                   </table>
                   </div>
+					<script>
+						function runEventScript(myActionid) {
+							layer.confirm('您确定要在节点上调用流转事件么', {icon: 3, title: '提示'}, function (index) {
+								layer.close();
+								$.ajax({
+									type: "POST",
+									url: "../flow/runDeliverScript",
+									data: {
+										"op": "deliver",
+										"flowId": "<%=flow_id%>",
+										"myActionId": myActionid
+									},
+									success: function (data, status) {
+										console.log(data);
+										if (data.code == "200") {
+											if (data.data == '') {
+												layer.msg('操作成功', {
+													offset: '6px'
+												});
+											} else {
+												layer.msg(data.data, {
+													offset: '6px'
+												});
+											}
+										} else {
+											layer.msg(data.msg, {
+												offset: '6px'
+											});
+										}
+									},
+									error:function(XMLHttpRequest, textStatus){
+										alert(XMLHttpRequest.responseText);
+									}
+								})
+							});
+						}
+					</script>
                 <br>
                 <%if (!isFree) {%>
                 <table width="555" align="center" class="tabStyle_1 percent98 mainTable">
@@ -605,20 +786,20 @@ while (ir.hasNext()) {
                             <option value="<%=WorkflowActionDb.STATE_PLUS%>"><%=WorkflowActionDb.getStatusName(WorkflowActionDb.STATE_PLUS)%></option>
                             <option value="<%=WorkflowActionDb.STATE_SUSPEND_OVER%>"><%=WorkflowActionDb.getStatusName(WorkflowActionDb.STATE_SUSPEND_OVER)%></option>
                             </select>
-                            
+
                             <input id="flowId" name="flowId" type="hidden" value="<%=flow_id%>" />
                             <input id="op" name="op" type="hidden" value="changeActionStatus" />
                             <input id="actionId" name="actionId" type="hidden" value="<%=wa.getId()%>" />
-                            
+
                             <script>
                             o("waStatus<%=wa.getId()%>").value = "<%=wa.getStatus()%>";
                             </script>
-                            
+
                           </td>
                           <td align="center">
-                            <input type="submit" class="btn" value='<lt:Label res="res.flow.Flow" key="sure"/>' />
+                            <input type="submit" class="btn btn-default" value='<lt:Label res="res.flow.Flow" key="sure"/>' />
 							  &nbsp;&nbsp;
-							  <input type="button" class="btn" value="清除用户" title="仅限于代码调试用" onclick="clearActionUser(<%=wa.getId()%>)"/>
+							  <input type="button" class="btn btn-default" value="清除用户" title="仅限于代码调试用" onclick="clearActionUser(<%=wa.getId()%>)"/>
                           </td>
                         </tr>
                         </form>
@@ -629,10 +810,40 @@ while (ir.hasNext()) {
                 <%}%>
                 </td>
               </tr>
-            </table></td>
+            </table>
+		  </td>
         </tr>
       </table></td>
   </tr>
+	<tr><td>
+		<form id="formEvent" action="flow_intervene.jsp">
+			<table width="100%" align="center" class="tabStyle_1 percent98">
+				<tr>
+					<td class="tabStyle_1_title">调用事件</td>
+				</tr>
+				<tr>
+					<td align="center">
+						<select id="actionRunId" name="actionId">
+							<option value="">请选择</option>
+						<%
+							Vector<WorkflowActionDb> va = wf.getActions();
+							for (WorkflowActionDb wa : va) {
+							%>
+							<option value="<%=wa.getId()%>"><%=wa.getJobName() + ":" + wa.getTitle()%></option>
+							<%
+							}
+						%>
+						</select>
+						<select id="event" name="event">
+							<option value="deliver">流转事件</option>
+						</select>
+						<button class="btn btn-default" onclick="runEventScript()">确定</button>
+
+					</td>
+				</tr>
+			</table>
+		</form>
+	</td></tr>
 </table>
 <div id="dlg" style="display:none">
 <form id="formSubmitTo" action="flow_intervene.jsp" method="post">
@@ -641,7 +852,7 @@ while (ir.hasNext()) {
     String options = "";
     Vector vt = null;
 	if (isFree) {
-		vt = wf.getActions();		
+		vt = wf.getActions();
 	}
 	else {
 		vt = wf.getActionsFromString(flowString);
@@ -693,7 +904,7 @@ function getSelUserRealNames() {
 function openWinUsers() {
 	selUserNames = o("users").value;
 	selUserRealNames = o("userRealNames").value;
-	showModalDialog('../user_multi_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')
+	openWin('../user_multi_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600)
 }
 
 function setUsers(users, userRealNames) {
@@ -702,74 +913,71 @@ function setUsers(users, userRealNames) {
 }
 
 function delMyAction(delMyActionId, m) {
-	jConfirm('<lt:Label res="res.flow.Flow" key="isDelete"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
-		if(!r){return;}
-		else{
-			// window.location.href = "flow_intervene.jsp?op=delMyAction&flowId=<%=flow_id%>&delMyActionId=" + delMyActionId;
-			$.ajax({
-				type:"get",
-				url:"flow_intervene.jsp",
-				data:{"op":"delMyAction","flowId":"<%=flow_id%>","delMyActionId":delMyActionId},
-				success:function(data,status){
-					data = $.parseJSON(data);
-					jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
-					if (data.ret=="1") {
-						$("tr[id=" + m + "]").remove();
-					}
-				},
-				error:function(XMLHttpRequest, textStatus){
-					alert(XMLHttpRequest.responseText);
+	layer.confirm('<lt:Label res="res.flow.Flow" key="isDelete"/>', {icon: 3, title: '提示'}, function (index) {
+		layer.close();
+		$.ajax({
+			type:"get",
+			url:"flow_intervene.jsp",
+			data:{"op":"delMyAction","flowId":"<%=flow_id%>","delMyActionId":delMyActionId},
+			success:function(data,status){
+				data = $.parseJSON(data);
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
+				if (data.ret=="1") {
+					$("tr[id=" + m + "]").remove();
 				}
-			})
-		}
-	})
+			},
+			error:function(XMLHttpRequest, textStatus){
+				alert(XMLHttpRequest.responseText);
+			}
+		})
+	});
 }
 
 function recall(id,flow_id,action_id){
-	jConfirm('<lt:Label res="res.flow.Flow" key="toForcedWithdraw"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
-		if(!r){
-			return;
-		}else{
-			$.ajax({
-				type: "post",
-				url:"../flow/recall.do",
-				data:{"flow_id":flow_id,"action_id":action_id},
-		 		success:function(data,status){
-					data = $.parseJSON(data);
-		 			jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
-		 			if (data.ret=="1") {
-						$("tr[privMyActionId=" + action_id + "]").remove();
-					}
-		 		},
-		 		error:function(XMLHttpRequest, textStatus){
-		 			alert(XMLHttpRequest.responseText);
-		 		}
-			})
-		}
-	})
+	layer.confirm('<lt:Label res="res.flow.Flow" key="toForcedWithdraw"/>', {icon: 3, title: '提示'}, function (index) {
+		layer.close();
+		$.ajax({
+			type: "post",
+			url:"../flow/recall.do",
+			data:{"flow_id":flow_id,"action_id":action_id},
+			success:function(data,status){
+				data = $.parseJSON(data);
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
+				if (data.ret=="1") {
+					$("tr[privMyActionId=" + action_id + "]").remove();
+				}
+			},
+			error:function(XMLHttpRequest, textStatus){
+				alert(XMLHttpRequest.responseText);
+			}
+		})
+	});
 }
 
 function recallFree(id,flow_id,action_id){
-	jConfirm('<lt:Label res="res.flow.Flow" key="toForcedWithdraw"/>','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
-		if(!r){
-			return;
-		}else{
-			$.ajax({
-				type:"get",
-				url:"../flow/recall.do",
-				data:{"flow_id":flow_id,"action_id":action_id},
-		 		success:function(data,status){
-		 			$("#"+id).remove();
-		 			data = $.parseJSON(data);
-		 			
-		 			jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
-		 		},
-		 		error:function(XMLHttpRequest, textStatus){
-		 			//alert(XMLHttpRequest.responseText);
-		 		}
-			})
-		}
-	})
+	layer.confirm('<lt:Label res="res.flow.Flow" key="toForcedWithdraw"/>', {icon: 3, title: '提示'}, function (index) {
+		layer.close();
+		$.ajax({
+			type:"get",
+			url:"../flow/recall.do",
+			data:{"flow_id":flow_id,"action_id":action_id},
+			success:function(data,status){
+				$("#"+id).remove();
+				data = $.parseJSON(data);
+
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
+			},
+			error:function(XMLHttpRequest, textStatus){
+				//alert(XMLHttpRequest.responseText);
+			}
+		})
+	});
 }
 
 function submitTo(myActionId) {
@@ -785,11 +993,15 @@ function submitTo(myActionId) {
 			},
 			'<lt:Label res="res.flow.Flow" key="sure"/>': function() {
 				if (o("users").value=="") {
-					jAlert('<lt:Label res="res.flow.Flow" key="selectUser"/>','提示');
+					layer.msg('<lt:Label res="res.flow.Flow" key="selectUser"/>', {
+						offset: '6px'
+					});
 					return;
 				}
 				if (o("internalName").value=="") {
-					jAlert('<lt:Label res="res.flow.Flow" key="selectNode"/>','提示');
+					layer.msg('<lt:Label res="res.flow.Flow" key="selectNode"/>', {
+						offset: '6px'
+					});
 					return;
 				}
 				
@@ -821,15 +1033,16 @@ function changeCheckStatus(myActionId, curStatus, actionId) {
 					// consoleLog($('#checkStatus').val());
 					$.ajax({
 						type : "post",
-						url : "../public/flow/setMyActionStatus.do",
+						url : "../flow/setMyActionStatus.do",
 						data : {
 							"myActionId" : myActionId,
 							"checkStatus" : $('#checkStatus').val()
 						},
 						success : function(data, status) {
 							data = $.parseJSON(data);
-							// console.log(data);
-							jAlert(data.msg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+							layer.msg(data.msg, {
+								offset: '6px'
+							});
 							if (data.ret == "1") {
 								$("#tdMad" + myActionId).html($("#checkStatus").find("option:selected").text());
 								var actionStatus = data.actionStatus;
@@ -859,24 +1072,23 @@ function changeCheckStatus(myActionId, curStatus, actionId) {
 }
 
 function clearActionUser(actionId) {
-	jConfirm('您确定要清除用户么','<lt:Label res="res.flow.Flow" key="prompt"/>',function(r){
-		if(!r){
-			return;
-		}else{
-			$.ajax({
-				type:"post",
-				url:"../public/flow/clearActionUser.do",
-				data:{"actionId":actionId},
-				success:function(data,status){
-					data = $.parseJSON(data);
-					jAlert(data.msg,'<lt:Label res="res.flow.Flow" key="prompt"/>');
-				},
-				error:function(XMLHttpRequest, textStatus){
-					//alert(XMLHttpRequest.responseText);
-				}
-			})
-		}
-	})
+	layer.confirm('您确定要清除用户么', {icon: 3, title: '提示'}, function (index) {
+		layer.close();
+		$.ajax({
+			type:"post",
+			url:"../public/flow/clearActionUser.do",
+			data:{"actionId":actionId},
+			success:function(data,status){
+				data = $.parseJSON(data);
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
+			},
+			error:function(XMLHttpRequest, textStatus){
+				//alert(XMLHttpRequest.responseText);
+			}
+		})
+	});
 }
 
 $(document).ready( function() {

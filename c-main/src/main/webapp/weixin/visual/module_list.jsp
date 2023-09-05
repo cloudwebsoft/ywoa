@@ -14,6 +14,8 @@
         out.print("模块不存在！");
         return;
     }
+    // 通过uniapp的webview载入
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
 <!DOCTYPE HTML>
 <html>
@@ -58,6 +60,10 @@
 
     .search_div label {
         color: #aaa;
+    }
+
+    #op_add {
+        z-index: 9999;
     }
 </style>
 <body>
@@ -118,7 +124,27 @@
     var options = {"ajax_params": {"skey": skey, "moduleCode": moduleCode}, "url": url};
     var content = document.querySelector('.mui-content');
 
-    mui.init();
+    if(!mui.os.plus) {
+        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
+        jQuery('.mui-bar').remove();
+        mui.init();
+    }
+    else {
+        // 如果是通过uniapp的webview载入
+        if (isUniWebview) {
+            $('.mui-bar').remove();
+        }
+
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        if (isUniWebview) {
+            mui.init({
+                keyEventBind: {
+                    backbutton: false // 关闭back按键监听
+                }
+            });
+        }
+    }
+
     (function($) {
         $.ready(function() {
             var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
@@ -126,10 +152,6 @@
         });
     })(mui);
 
-    if(!mui.os.plus) {
-        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
-        jQuery('.mui-bar').remove();
-    }
     // 当5+app中添加完毕返回此页面时执行刷新
     window.addEventListener('refreshList', function(e){
         location.reload();

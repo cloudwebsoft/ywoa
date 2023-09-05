@@ -73,6 +73,7 @@
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject json = arr.getJSONObject(i);
                     String mName = json.getString("mName");
+                    String imgUrl = json.getString("imgUrl");
                     int mId = json.getInt("mId");
                     String icon = "";
                     if (json.has("icon")) {
@@ -108,6 +109,15 @@
                         if ("flow".equals(code)) {
                             url = request.getContextPath() + "/weixin/flow/flow_main.jsp?skey=" + skey;
                         }
+                        else if ("flow_wait".equals(code)) {
+                            url = request.getContextPath() + "/weixin/flow/flow_doing_or_return.jsp?skey=" + skey;
+                        }
+                        else if ("myflow".equals(code)) {
+                            url = request.getContextPath() + "/weixin/flow/flow_attend.jsp?skey=" + skey;
+                        }
+                        else if ("flow_launch".equals(code)) {
+                            url = request.getContextPath() + "/weixin/flow/flow_initiate.jsp?skey=" + skey;
+                        }
                         else if (MobileAppIconConfigMgr.OA_TEAM == mId) {
                             url = request.getContextPath() + "/weixin/address/address_list.jsp?skey=" + skey;
                         }
@@ -124,13 +134,26 @@
                     else {
                         continue;
                     }
+
+                    boolean isBadge = false;
+                    String liId = "";
+                    if (url.contains("flow_doing_or_return")) {
+                        liId = "liWaitCount";
+                        isBadge = true;
+                    }
+                    else if (url.contains("msg_new_list")) {
+                        liId = "liUnreadCount";
+                        isBadge = true;
+                    }
             %>
             <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3">
                 <a href="<%=url%>">
                     <span class="mui-icon app-icon">
-                        <svg class="icon svg-icon" aria-hidden="true">
+                        <span id="<%=liId%>" class="mui-badge mui-badge-danger" style="display: <%=isBadge?"":"none"%>"></span>
+                        <%--<svg class="icon svg-icon" aria-hidden="true">
                             <use id="useFontIcon" xlink:href="<%=icon%>"></use>
-                        </svg>
+                        </svg>--%>
+                        <img src="../<%=imgUrl%>">
                     </span>
                     <div class="mui-media-body"><%=mName%></div>
                 </a>
@@ -141,10 +164,43 @@
         </ul>
     </div>
 </div>
-
 <jsp:include page="inc/navbar.jsp">
     <jsp:param name="skey" value="<%=skey%>" />
     <jsp:param name="tabId" value="app" />
 </jsp:include>
+<script>
+    $.ajax({
+        type: "post",
+        url: "../public/android/getCounts.do",
+        data: {
+            skey: "<%=skey%>"
+        },
+        dataType: "html",
+        beforeSend: function (XMLHttpRequest) {
+        },
+        success: function (data, status) {
+            data = $.parseJSON(data);
+            var waitCount = data.waitCount;
+            var unReadCount = data.unReadCount;
+            if (waitCount > 0) {
+                $('#liWaitCount').html(waitCount);
+            }
+            else {
+                $('#liWaitCount').hide();
+            }
+            if (unReadCount > 0) {
+                $('#liUnreadCount').html(unReadCount);
+            }
+            else {
+                $('#liUnreadCount').hide();
+            }
+        },
+        complete: function (XMLHttpRequest, status) {
+        },
+        error: function (XMLHttpRequest, textStatus) {
+            alert(XMLHttpRequest.responseText);
+        }
+    });
+</script>
 </body>
 </html>

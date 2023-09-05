@@ -5,7 +5,6 @@
 <%@ page import="com.redmoon.oa.fileark.*" %>
 <%@ page import="com.redmoon.oa.pvg.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -54,7 +53,7 @@
     String sql = doc.getListSqlOfDustbin(request, dir_code, op, what, kind);
 
     String strcurpage = StrUtil.getNullString(request.getParameter("CPages"));
-    if (strcurpage.equals("")) {
+    if ("".equals(strcurpage)) {
         strcurpage = "1";
     }
     if (!StrUtil.isNumeric(strcurpage)) {
@@ -79,15 +78,15 @@
 <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0" class="p9">
     <form name="form1" action="dustbin.jsp?op=search" method="post">
         <tr>
-            <td align="center"><lt:Label res="res.label.cms.doc" key="an"/>
+            <td align="center">
                 <select id="kind" name="kind">
-                    <option value="title"><lt:Label res="res.label.cms.doc" key="title"/></option>
-                    <option value="keywords"><lt:Label res="res.label.cms.doc" key="key_words"/></option>
+                    <option value="title">标题</option>
+                    <option value="keywords">关键词</option>
                 </select>
                 &nbsp;
                 <input id="what" name="what" size=20 value="<%=what%>">
                 &nbsp;
-                <input class="btn" type="submit" value="<%=SkinUtil.LoadString(request, "res.label.cms.doc","search")%>"/>
+                <input class="btn" type="submit" value="查询"/>
             </td>
         </tr>
     </form>
@@ -95,18 +94,16 @@
 <table width="98%" border="0" align="center" class="p9">
     <tr>
         <td width="50%" align="left">
-            <input class="btn btn-default" type="button" onclick="doDel()" value="<lt:Label key="op_del"/>"/>
+            <input class="btn btn-default" type="button" onclick="doDel()" value="删除"/>
             &nbsp;
             <input class="btn btn-default" type="button" onclick="doResume()" value="恢复"/>
             &nbsp;
             <input class="btn btn-default" type="button" onclick="cleanUp()" value="清空" title="清空回收站">
         </td>
         <td height="24" align="right">
-            <lt:Label res="res.label.cms.doc" key="found_right_list"/>
-            <b><%=paginator.getTotal() %></b>
-            <lt:Label res="res.label.cms.doc" key="page_list"/><b><%=paginator.getPageSize() %>
-            <lt:Label res="res.label.cms.doc" key="page"/>
-            <b><%=paginator.getCurrentPage() %>/<%=paginator.getTotalPages() %></b>
+            共<b><%=paginator.getTotal() %></b>页&nbsp;
+            每页<b><%=paginator.getPageSize() %></b>条&nbsp;
+            页数<b><%=paginator.getCurrentPage() %>/<%=paginator.getTotalPages() %></b>
         </td>
     </tr>
 </table>
@@ -117,12 +114,12 @@
             <input id="chk" type="checkbox" value="on"/>
         </td>
         <td width="7%" align="center" noWrap class="tabStyle_1_title" style="PADDING-LEFT: 10px">编号</td>
-        <td width="28%" align="center" noWrap class="tabStyle_1_title" style="PADDING-LEFT: 10px"><lt:Label res="res.label.cms.doc" key="title"/></td>
+        <td width="28%" align="center" noWrap class="tabStyle_1_title" style="PADDING-LEFT: 10px">标题</td>
         <td width="13%" align="center" noWrap class="tabStyle_1_title">栏目</td>
         <td width="9%" align="center" noWrap class="tabStyle_1_title">作者</td>
-        <td width="9%" align="center" noWrap class="tabStyle_1_title"><lt:Label res="res.label.cms.doc" key="type"/></td>
-        <td width="9%" align="center" noWrap class="tabStyle_1_title"><lt:Label res="res.label.cms.doc" key="modify_date"/></td>
-        <td width="20%" align="center" noWrap class="tabStyle_1_title"><lt:Label res="res.label.cms.doc" key="mgr"/></td>
+        <td width="9%" align="center" noWrap class="tabStyle_1_title">类型</td>
+        <td width="9%" align="center" noWrap class="tabStyle_1_title">修改日期</td>
+        <td width="20%" align="center" noWrap class="tabStyle_1_title">操作</td>
     </tr>
     <%
         com.redmoon.oa.person.UserDb ud = new com.redmoon.oa.person.UserDb();
@@ -203,12 +200,12 @@
             <%
                 if (rr.getInt("type") == Document.TYPE_DOC) {
             %>
-            <a href="javascript:;" onclick="addTab('<%=title%>', '<%=request.getContextPath()%>/fwebedit_new.jsp?op=edit&id=<%=docId%>&dir_code=<%=StrUtil.UrlEncode((String)rr.get(1))%>&dir_name=<%=StrUtil.UrlEncode(dir_name)%>')"><lt:Label res="res.label.cms.doc" key="edit"/></a>
+            <a href="javascript:;" onclick="addTab('<%=title%>', '<%=request.getContextPath()%>/fwebedit_new.jsp?op=edit&id=<%=docId%>&dir_code=<%=StrUtil.UrlEncode((String)rr.get(1))%>&dir_name=<%=StrUtil.UrlEncode(dir_name)%>')">编辑</a>
             &nbsp;&nbsp;
             <%
                 }
             %>
-            <a href="javascript:;" onclick="addTab('<%=title%>', '<%=request.getContextPath()%>/doc_show.jsp?id=<%=docId%>')"><lt:Label res="res.label.cms.doc" key="view"/></a>
+            <a href="javascript:;" onclick="addTab('<%=title%>', '<%=request.getContextPath()%>/doc_show.jsp?id=<%=docId%>')">查看</a>
         </td>
     </tr>
     <%}%>
@@ -239,7 +236,7 @@
     function doResume() {
         var ids = getCheckboxValue("ids");
         if (ids == "") {
-            jAlert("<lt:Label res="res.label.forum.topic_m" key="need_id"/>", "提示");
+            jAlert("请选择记录", "提示");
             return;
         }
 
@@ -281,7 +278,7 @@
     function doDel() {
         var ids = getCheckboxValue("ids");
         if (ids == "") {
-            jAlert("<lt:Label res="res.label.forum.topic_m" key="need_id"/>", "提示");
+            jAlert("请选择记录", "提示");
             return;
         }
         jConfirm('您确定要删除么？', '提示', function (r) {

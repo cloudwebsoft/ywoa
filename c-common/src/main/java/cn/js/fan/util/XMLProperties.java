@@ -11,10 +11,20 @@ package cn.js.fan.util;
  */
 
 import java.io.*;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.*;
+
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.CommonConstUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.*;
 import org.jdom.input.*;
 import org.jdom.output.*;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.xml.sax.InputSource;
 
 /**
  * Provides the the ability to use simple XML property files. Each property is
@@ -35,6 +45,9 @@ public class XMLProperties {
 
     private File file;
     private Document doc;
+    private String fileName;
+    private boolean isXml = false;
+
     /**
      * Parsing the XML file every time we need a property is slow. Therefore,
      * we use a Map to cache property values that are accessed more than once.
@@ -47,7 +60,7 @@ public class XMLProperties {
      * @parm file the full path the file that properties should be read from
      *      and written to.
      */
-    public XMLProperties(String file) {
+    public void XMLPropertiesXXX(String file) {
         this.file = new File(file);
         try {
             SAXBuilder builder = new SAXBuilder();
@@ -57,10 +70,34 @@ public class XMLProperties {
             doc = builder.build(new File(file));
         }
         catch (Exception e) {
-            System.err.println("Error creating XML parser in "
-                + "PropertyManager.java");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
+    }
+
+    /*public XMLProperties(String fileName, String xml) {
+        this.fileName = fileName;
+        this.isXml = true;
+        try {
+            SAXBuilder builder = new SAXBuilder();
+            DataUnformatFilter format = new DataUnformatFilter();
+            builder.setXMLFilter(format);
+            doc = builder.build(new InputSource(new StringReader(xml)));
+        }
+        catch (Exception e) {
+            System.err.println("Error creating XML parser in "
+                    + "PropertyManager.java");
+        }
+    }*/
+
+    public XMLProperties(String fileName, Document doc, boolean isXml) {
+        this.doc = doc;
+        this.fileName = fileName;
+        this.isXml = true;
+    }
+
+    public XMLProperties(String fileName, Document doc) {
+        this.doc = doc;
+        this.fileName = fileName;
     }
 
     public XMLProperties(File file, Document doc) {
@@ -98,8 +135,9 @@ public class XMLProperties {
         }
         else {
             // Add to cache so that getting property next time is fast.
-            if (value!=null)
+            if (value!=null) {
                 value = value.trim();
+            }
             propertyCache.put(name, value);
             return value;
         }
@@ -108,8 +146,8 @@ public class XMLProperties {
     /**
      * 从name节点中取出属性名称为attributeName，属性值为attributeValue的text
      * @param name String
-     * @param attributeName String
-     * @param attributeValue String
+     * @param childAttributeName String
+     * @param childAttributeValue String
      * @return String
      */
     public String getProperty(String name, String childAttributeName, String childAttributeValue) {
@@ -134,8 +172,9 @@ public class XMLProperties {
         // Empty strings are returned as null.
         String value = null;
         List list = element.getChildren();
-        if (list==null)
+        if (list==null) {
             return null;
+        }
         Iterator ir = list.iterator();
         while (ir.hasNext()) {
             Element child = (Element)ir.next();
@@ -152,8 +191,9 @@ public class XMLProperties {
         }
         else {
             // Add to cache so that getting property next time is fast.
-            if (value!=null)
+            if (value!=null) {
                 value = value.trim();
+            }
             propertyCache.put(visualName, value);
             return value;
         }
@@ -162,9 +202,6 @@ public class XMLProperties {
     /**
      * 从name节点中取出属性名称为attributeName，属性值为attributeValue的孩子节点childName的text
      * @param name String
-     * @param attributeName String
-     * @param attributeValue String
-     * @param childName String
      * @return String
      */
     public String getProperty(String name, String childAttributeName, String childAttributeValue, String subChildName) {
@@ -188,8 +225,9 @@ public class XMLProperties {
         // Empty strings are returned as null.
         String value = "";
         List list = element.getChildren();
-        if (list==null)
+        if (list==null) {
             return null;
+        }
         Iterator ir = list.iterator();
         while (ir.hasNext()) {
             Element child = (Element)ir.next();
@@ -276,8 +314,6 @@ public class XMLProperties {
     /**
      * 置name节点的子节点的值，属性名称为attributeName，属性值为attributeValue
      * @param name String
-     * @param attributeName String
-     * @param attributeValue String
      * @param value String
      */
     public void setProperty(String name, String childAttributeName, String childAttributeValue, String value) {
@@ -291,13 +327,15 @@ public class XMLProperties {
          Element element = doc.getRootElement();
          for (int i=0; i<propName.length; i++) {
              element = element.getChild(propName[i]);
-             if (element==null)
+             if (element==null) {
                  return;
+             }
          }
 
          List list = element.getChildren();
-         if (list==null)
+         if (list==null) {
              return;
+         }
          Iterator ir = list.iterator();
          while (ir.hasNext()) {
              Element child = (Element)ir.next();
@@ -317,16 +355,11 @@ public class XMLProperties {
     /**
      * 置name节点的子节点的孩子childName的值，子节点属性名称为attributeName，属性值为attributeValue
      * @param name String
-     * @param attributeName String
-     * @param attributeValue String
-     * @param childName String
      * @param value String
      */
     public void setProperty(String name, String childAttributeName, String childAttributeValue, String subChildName, String value) {
          // Set cache correctly with prop name and value.
          String visualName = name + "_-_" + childAttributeName + "_-_" + childAttributeValue + "_-_" + subChildName;
-
-         // System.out.println(getClass() + "getProperty: visualName=" + visualName + " value=" + value);
 
          propertyCache.put(visualName, value);
 
@@ -335,13 +368,15 @@ public class XMLProperties {
          Element element = doc.getRootElement();
          for (int i=0; i<propName.length; i++) {
              element = element.getChild(propName[i]);
-             if (element==null)
+             if (element==null) {
                  return;
+             }
          }
 
          List list = element.getChildren();
-         if (list==null)
+         if (list==null) {
              return;
+         }
          Iterator ir = list.iterator();
          while (ir.hasNext()) {
              Element child = (Element)ir.next();
@@ -390,32 +425,60 @@ public class XMLProperties {
         // Write data out to a temporary file first.
         File tempFile = null;
         try {
-            tempFile = new File(file.getParentFile(), file.getName() + ".tmp");
-            // Use JDOM's XMLOutputter to do the writing and formatting. The
-            // file should always come out pretty-printed.
-            // XMLOutputter outputter = new XMLOutputter("    ", true);
             String indent = "    ";
             org.jdom.output.Format format = org.jdom.output.Format.getPrettyFormat();
             format.setIndent(indent);
             format.setEncoding("utf-8");
             XMLOutputter outp = new XMLOutputter(format);
-            out = new BufferedOutputStream(new FileOutputStream(tempFile));
-            outp.output(doc, out);
+
+            if (file != null) {
+                tempFile = new File(file.getParentFile(), file.getName() + ".tmp");
+                // Use JDOM's XMLOutputter to do the writing and formatting. The
+                // file should always come out pretty-printed.
+                // XMLOutputter outputter = new XMLOutputter("    ", true);
+                out = new BufferedOutputStream(new FileOutputStream(tempFile));
+                outp.output(doc, out);
+            }
+            else {
+                if (isXml) {
+                    IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+                    configUtil.putXml(fileName, doc);
+                }
+                else {
+                    // 判断是否在jar文件中运行
+                    URL url = getClass().getResource("");
+                    String protocol = url.getProtocol();
+                    if (!CommonConstUtil.RUN_MODE_JAR.equals(protocol)) {
+                        URL cfgUrl = getClass().getResource("/" + fileName);
+                        String cfgpath = URLDecoder.decode(cfgUrl.getFile());
+
+                        File f = new File(cfgpath);
+                        out = new BufferedOutputStream(new FileOutputStream(f));
+                        outp.output(doc, out);
+                    }/* else if ("file".equals(protocol)) {
+                    test = "本地运行启动";
+                    }*/
+                }
+            }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             // There were errors so abort replacing the old property file.
             error = true;
         }
         finally {
-            try {  out.close();  }
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            }
             catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
                 error = true;
             }
         }
         // No errors occured, so we should be safe in replacing the old
-        if (!error) {
+        if (!error && file!=null) {
             // Delete the old file so we can replace it.
             file.delete();
             // Rename the temp file. The delete and rename won't be an

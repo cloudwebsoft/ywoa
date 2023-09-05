@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
+import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 
 public class SecurityUtil {
@@ -24,7 +26,7 @@ public class SecurityUtil {
 			url = new URL(curl);
 			q = url.getHost();
 		} catch (MalformedURLException e) {			
-			// e.printStackTrace();
+			LogUtil.getLog(SecurityUtil.class).error(e);
 		}
 		return q;
 	}
@@ -51,7 +53,7 @@ public class SecurityUtil {
 	 * @throws ProtectSQLInjectException
 	 */
 	public static void filter(HttpServletRequest request, String path) throws ProtectXSSException, ProtectSQLInjectException {
-		if (isFilter(path)) {
+		if (isFilter(request, path)) {
 			Enumeration paramNames = request.getParameterNames();
 			while (paramNames.hasMoreElements()) {
 				String paramName = (String) paramNames.nextElement();
@@ -98,19 +100,17 @@ public class SecurityUtil {
 		}
 	}
 
-	public static boolean isFilter(String url) {
+	public static boolean isFilter(HttpServletRequest request, String url) {
+		String queryString = StrUtil.getNullStr(request.getQueryString());
 		ProtectConfig pc = new ProtectConfig();
 		// 如果被排除，则不再检测
 		Vector<ProtectUnit> vun = pc.getAllUnProtectUnit();
-		Iterator<ProtectUnit> irun = vun.iterator();
-		while (irun.hasNext()) {
-			ProtectUnit pu = irun.next();
+		for (ProtectUnit pu : vun) {
 			if (pu.getType() == ProtectUnit.TYPE_INCLUDE) {
-				if (url.indexOf(pu.getRule())!=-1) {
+				if (url.contains(pu.getRule()) || queryString.contains(pu.getRule())) {
 					return false;
 				}
-			}
-			else {
+			} else {
 				// 正则
 				Pattern pattern = Pattern.compile(pu.getRule(),
 						Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -118,23 +118,28 @@ public class SecurityUtil {
 				if (matcher.find()) {
 					return false;
 				}
+				matcher = pattern.matcher(queryString);
+				if (matcher.find()) {
+					return false;
+				}
 			}
 		}
 
 		Vector<ProtectUnit> v = pc.getAllProtectUnit();
-		Iterator<ProtectUnit> ir = v.iterator();
-		while (ir.hasNext()) {
-			ProtectUnit pu = ir.next();
+		for (ProtectUnit pu : v) {
 			// 包含
-			if (pu.getType()==ProtectUnit.TYPE_INCLUDE) {
-				if (url.indexOf(pu.getRule())!=-1) {
+			if (pu.getType() == ProtectUnit.TYPE_INCLUDE) {
+				if (url.contains(pu.getRule()) || queryString.contains(pu.getRule())) {
 					return true;
 				}
-			}
-			else {
+			} else {
 				// 正则
 				Pattern pattern = Pattern.compile(pu.getRule(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 				Matcher matcher = pattern.matcher(url);
+				if (matcher.find()) {
+					return true;
+				}
+				matcher = pattern.matcher(queryString);
 				if (matcher.find()) {
 					return true;
 				}
@@ -145,8 +150,6 @@ public class SecurityUtil {
 
 	public static void main(String[] args) throws Exception {
 	    SecurityUtil su = new SecurityUtil();
-	    System.out.println(SecurityUtil.getDomain("oa.jsp"));
-	    System.out.println(SecurityUtil.getDomain("http://192.168/oa.jsp"));
 	}
 
 }

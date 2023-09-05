@@ -4,8 +4,8 @@ import cn.js.fan.base.IPrivilege;
 import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
-import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -13,8 +13,6 @@ import javax.servlet.http.HttpSession;
 public class Privilege implements IPrivilege {
     public static final String NAME = "PLUGIN_TEACH_NAME";
     public static final String CARDID = "PLUGIN_TEACH_CARDID";
-
-    Logger logger = Logger.getLogger(Privilege.class.getName());
 
     public Privilege() {
 
@@ -60,7 +58,7 @@ public class Privilege implements IPrivilege {
             pwdMD5 = SecurityUtil.MD5(pwd);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         /*// 如果是指定了机器
         if (vcd.isUseFingerPrint())

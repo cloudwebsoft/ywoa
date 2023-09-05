@@ -116,7 +116,11 @@
                 </select>
                 <%}%>
                 <input title="选择附件文件" type="file" size="20" name="excel"/>
-                <input class="btn" id="btnOk" type="submit" value="确  定"/></td>
+                <input name="moduleCode" value="<%=code%>" type="hidden"/>
+                <input class="btn btn-default" id="btnOk" type="submit" value="确定"/>
+                &nbsp;
+                <input class="btn btn-default" id="btnOk" type="button" value="返回" onclick="window.history.back()"/>
+            </td>
         </tr>
     </table>
 </form>

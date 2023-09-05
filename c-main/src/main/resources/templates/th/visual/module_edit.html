@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>模块修改</title>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+	<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+	<link href="../flowstyle.css" rel="stylesheet" type="text/css" />
+	<link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+	<style>
+		.page-main {
+			margin: 10px 15px 0 15px;
+		}
+		input,textarea,button {
+			outline:none;
+		}
+		input[readonly]{
+			background-color: #ddd;
+		}
+		select[readonly]{
+			background-color: #ddd;
+		}
+		textarea[readonly]{
+			background-color: #ddd;
+		}
+		#attDiv {
+			margin-top: 10px;
+		}
+
+		select {
+			line-height: 27px;
+			/*height: 29px !important;与bootstrap冲突*/
+			border: 1px solid #d4d4d4;
+		}
+
+		[(${pageCss})]
+	</style>
+	<script src="../inc/common.js"></script>
+	<script src="../inc/map.js"></script>
+	<script src="../inc/livevalidation_standalone.js"></script>
+	<script src="../js/jquery-1.9.1.min.js"></script>
+	<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="../js/MyPaging/MyPaging.css">
+	<script src="../js/MyPaging/MyPaging.js"></script>
+	<link rel="stylesheet" href="../js/poshytip/tip-yellowsimple/tip-yellowsimple.css" type="text/css" />
+	<script type="text/javascript" src="../js/poshytip/jquery.poshytip.js"></script>
+
+	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+	
+	<script src="../js/jquery.raty.min.js"></script>
+	
+	<script src="../inc/flow_dispose_js.jsp"></script>
+	<script src="../inc/flow_js.jsp"></script>
+	<script src="../inc/ajax_getpage.jsp"></script>
+	<script src="../inc/upload.js"></script>	
+	<script src="../js/jquery.bgiframe.js"></script>
+	<script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+	<link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}" />
+	
+	<link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
+	<script src="../js/datepicker/jquery.datetimepicker.js"></script>
+	
+	<link href="../js/select2/select2.css" rel="stylesheet" />
+	<script src="../js/select2/select2.js"></script>
+	<script src="../js/select2/i18n/zh-CN.js"></script>
+	
+	<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
+	<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+	<script src="../js/jquery.form.js"></script>	
+	<script type="text/javascript" src="../js/appendGrid/jquery.appendGrid-1.5.1.js"></script>
+	<link type="text/css" rel="stylesheet" href="../js/appendGrid/jquery.appendGrid-1.5.1.css" />
+	<script type="text/javascript" src="../js/jquery.toaster.js"></script>
+	<script src="../js/BootstrapMenu.min.js"></script>
+	<script th:src="@{'/flow/form_js/form_js_' + ${formCode} + '.jsp?pageType=' + ${pageType} + '&id=' + ${id} + '&random=' + ${random}}"></script>
+</head>
+<body>
+<div th:if="${hasTab}" class="tabs1Box">
+	<div id="tabs1">
+		<ul>
+			<li th:each="json : ${aryTab}" th:id="${json.id}" th:attr="tagName=${json.name}">
+				<th:block th:switch="${json.get('target')!=null and json.target eq 'newTab'}">
+					<th:block th:case="true">
+						<a href="javascript:;" th:title="${json.name}" th:onclick="addTab('[(${json.name})]', '[(${json.url})]')"><span>[(${json.name})]</span></a>
+					</th:block>
+					<th:block th:case="*">
+						<a th:href="${json.url}" title="${json.name}"><span>[(${json.name})]</span></a>
+					</th:block>
+				</th:block>
+			</li>
+		</ul>
+	</div>
+	<script>
+		$('#menu1').addClass('current');
+	</script>
+</div>
+<div id="tipPhrase"></div>
+<script th:inline="javascript">
+	$(function() {
+		$.ajax({
+			type: "post",
+			url: "../inc/tip_phrase.jsp",
+			data: {},
+			dataType: "html",
+			beforeSend: function (XMLHttpRequest) {
+				$('body').showLoading();
+			},
+			success: function (data, status) {
+				$('#tipPhrase').html(data);
+			},
+			complete: function (XMLHttpRequest, status) {
+				$('body').hideLoading();
+			},
+			error: function () {
+				//请求出错处理
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+	})
+
+	function save() {
+		// 表单合法性校验，用于在form_js_***中扩展
+		try {
+			var re = checkModuleForm();
+			if ( "" !== re ) {
+				layer.msg(re);
+				return;
+			}
+		}
+		catch (e) {}
+
+		try {
+			ctlOnBeforeSerialize();
+		}
+		catch (e) {}
+
+		var f_helper = new LiveValidation('cwsHelper');
+		if (!LiveValidation.massValidate(f_helper.formObj.fields)) {
+			if (LiveValidation.liveErrMsg.length < 100) {
+				layer.msg(LiveValidation.liveErrMsg);
+			}
+			else {
+				layer.msg("请检查表单中的内容填写是否正常！");
+			}
+			return;
+		}
+
+		$('#visualForm').submit();
+	}
+
+	$(function() {
+		SetNewDate();
+		$('#btnOK').click(function(e) {
+			e.preventDefault();
+			save();
+		});
+	});
+
+    // ajaxForm序列化提交数据之前的回调函数
+    function onBeforeSerialize() {
+        try {
+            ctlOnBeforeSerialize();
+        } catch (e) {
+        }
+    }
+
+    $(function () {
+        var options = {
+            beforeSerialize: onBeforeSerialize,
+            //target:        '#output2',   // target element(s) to be updated with server response
+            beforeSubmit: preSubmit,  // pre-submit callback
+            success: showResponse  // post-submit callback
+
+			// other available options:
+			//url:       url         // override for form's 'action' attribute
+			//type:      type        // 'get' or 'post', override for form's 'method' attribute
+			//dataType:  null        // 'xml', 'script', or 'json' (expected server response type)
+			//clearForm: true        // clear all form fields after successful submit
+			//resetForm: true        // reset the form after successful submit
+
+			// $.ajax options can be used here too, for example:
+			//timeout:   3000
+		};
+
+		// bind to the form's submit event
+		var lastSubmitTime = new Date().getTime();
+		$('#visualForm').submit(function() {
+			// 通过判断时间，禁多次重复提交
+			var curSubmitTime = new Date().getTime();
+			// 在0.5秒内的点击视为连续提交两次，实际当出现重复提交时，测试时间差为0
+			if (curSubmitTime - lastSubmitTime < 500) {
+				lastSubmitTime = curSubmitTime;
+				$('#visualForm').hideLoading();
+				return false;
+			}
+			else {
+				lastSubmitTime = curSubmitTime;
+			}
+
+			$(this).ajaxSubmit(options);
+			return false;
+		});
+	});
+
+	function preSubmit() {
+		$('#visualForm').showLoading();
+	}
+
+	function showResponse(responseText, statusText, xhr, $form) {
+		$('#visualForm').hideLoading();
+		var data = responseText;
+		if (!isJson(data)) {
+			data = $.parseJSON($.trim(responseText));
+		}
+		if (data.ret=="1") {
+			try {
+				onModuleEdit[(${code})]([(${id})], "[(${tabIdOpener})]");
+			}
+			catch (e) {}
+
+			var isReloadAfterUpdate = [(${isReloadAfterUpdate})];
+
+			if (isReloadAfterUpdate) {
+				layer.alert(data.msg, {
+					btn: ['确定'],
+					yes: function() {
+						window.location.reload(); // 文件宏控件需要刷新
+					}
+				});
+			}
+			else {
+				layer.msg(data.msg);
+			}
+			// refreshAttach();
+			reloadTab("[(${tabIdOpener})]");
+		}
+		else {
+			if (data.msg != null) {
+				data.msg = data.msg.replace(/\\r/ig, "<BR>");
+			}
+			layer.msg(data.msg);
+		}
+	}
+
+	function refreshAttach() {
+		var isHasAttachment = [(${isHasAttachment})];
+		if (!isHasAttachment) {
+			return;
+		}
+
+		$.ajax({
+			type: "post",
+			url: "moduleAttListPage.do",
+			data: {
+				id: "[(${id})]",
+				code: "[(${code})]"
+			},
+			dataType: "html",
+			beforeSend: function(XMLHttpRequest){
+				$('#visualForm').showLoading();
+			},
+			success: function(data, status){
+				// 删除编辑时界面上添加的文件
+				delAllUploadFile();
+				$('#tdAtt').html(data);
+			},
+			complete: function(XMLHttpRequest, status){
+				$('#visualForm').hideLoading();
+			},
+			error: function(XMLHttpRequest, textStatus){
+				alert(XMLHttpRequest.responseText);
+			}
+		});
+	}
+
+	function delAtt(attId, fieldName) {
+		layer.confirm('您确认要删除么?', {icon: 3, title: '提示'}, function(index) {
+			$.ajax({
+				type: "post",
+				url: "delAttach.do",
+				data: {
+					id: "[(${id})]",
+					formCode: "[(${formCode})]",
+					attachId: attId,
+					code: "[(${code})]"
+				},
+				dataType: "html",
+				beforeSend: function(XMLHttpRequest){
+					$('#visualForm').showLoading();
+				},
+				success: function(data, status){
+					data = $.parseJSON(data);
+					layer.msg(data.msg);
+					if (data.ret=="1") {
+						$('#trAtt' + attId).remove();
+						if (fieldName!=null) {
+							$('#helper_' + fieldName).remove();
+						}
+					}
+				},
+				complete: function(XMLHttpRequest, status){
+					$('#visualForm').hideLoading();
+				},
+				error: function(XMLHttpRequest, textStatus){
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		});
+	}
+</script>
+<div class="page-main">
+<form th:action="'moduleUpdate.do?id=' + ${id} + '&code=' + ${code} + '&isNav=' + ${isNav} + '&parentId=' + ${parentId}" class="form-inline" method="post" enctype="multipart/form-data" id="visualForm" name="visualForm">
+	<table style="margin-bottom:10px" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+		<tr>
+			<td align="center">
+			[(${rend})]
+			</td>
+		</tr>
+		<tr>
+			<td align="left" id="tdAtt">
+			</td>
+		</tr>
+		<tr th:if="${isHasAttachment}">
+			<td align="left"><script>initUpload()</script>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" style="padding-top: 10px">
+				<input name="id" value="${id}" type="hidden" />
+				<th:block th:if="${#lists.size(buttons)==0}">
+					<button id="btnOK" class="btn btn-default">确定</button>
+					&nbsp;&nbsp;
+					<button id="btnClose" class="btn btn-default">关闭</button>
+					&nbsp;&nbsp;
+				</th:block>
+				<th:block th:each="button : ${buttons}">
+					<th:block th:switch="${button.event}">
+							<button th:case="click" th:id="${button.id}" class="btn btn-default" th:title="${button.title}" th:onclick="[(${button.href})]">[(${button.name})]</button>
+							&nbsp;&nbsp;&nbsp;&nbsp;
+							<button th:case="newTab" th:id="${button.id}" class="btn btn-default" th:title="${button.title}" th:onclick="addTab('[(${button.name})]', '[(${button.href})]')">[(${button.name})]</button>
+							&nbsp;&nbsp;&nbsp;&nbsp;
+							<button th:case="curTab" th:id="${button.id}" class="btn btn-default" th:title="${button.title}" th:onclick="window.location.href='[(${button.href})]'">[(${button.name})]</button>
+							&nbsp;&nbsp;&nbsp;&nbsp;
+					</th:block>
+				</th:block>
+				<input id="cwsHelper" name="cwsHelper" value="1" type="hidden" />
+				<input id="cws_id" type="hidden" th:value="${id}" />
+			</td>
+		</tr>
+	</table>
+</form>
+<br/>
+</div>
+<link rel="stylesheet" href="../js/jquery-contextmenu/jquery.contextMenu.min.css">
+<script src="../js/jquery-contextmenu/jquery.contextMenu.js"></script>
+<script src="../js/jquery-contextmenu/jquery.ui.position.min.js"></script>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
+<script th:inline="javascript">
+	var isPageStyleLight = [(${isPageStyleLight})]
+	if (isPageStyleLight) {
+		// 不能放在$(function中，原来的tabStyle_8风格会闪现
+		// $(function() {
+		var $table = $('#visualForm').find('.tabStyle_8');
+		if ($table[0] == null) {
+			$table = $('#visualForm').find('.tabStyle_1');
+		}
+		$table.addClass('layui-table');
+		$table.removeClass('tabStyle_8');
+		// })
+	}
+
+	refreshAttach();
+
+	$(function() {
+        $('#btnClose').click(function() {
+            closeActiveTab();
+        });
+
+		$('input[type=radio]').each(function(i) {
+			if ($(this).attr("readonly")==null) {
+				$(this).addClass('radio-menu');
+			}
+		});
+
+		// 不能用BootstrapMenu，因为chrome上会导致radio无法点击
+		$.contextMenu({
+			selector: '.radio-menu',
+			trigger: 'hover',
+			delay: 1000,
+			callback: function(key, options) {
+				if (key == 'cancel') {
+					var $obj = options.$trigger;
+					var name = $obj.attr('name');
+					$('input[type=radio][name="' + name + '"]:checked').attr("checked", false);
+				}
+			},
+			items: {
+				"cancel": {name: "取消选择", icon: function($element, key, item){ return 'context-menu-icon context-menu-icon-quit'; }}
+			}
+		});
+
+		$('input').each(function() {
+			if ($(this).attr('kind')=='DATE' || $(this).attr('kind')=='DATE_TIME') {
+				$(this).attr('autocomplete', 'off');
+			}
+		});
+
+		var canUserData = [(${canUserData})];
+
+		// 初始化tip提示及如果拥有数据权限，则去除只读
+		// 不能通过$("#visualForm").serialize()来获取所有的元素，因为radio或checkbox未被选中，则不会被包含
+		$('#visualForm input, #visualForm select, #visualForm textarea').each(function() {
+			if (canUserData) {
+				$(this).removeAttr('readonly');
+				$(this).attr('onchange', '');
+			}
+
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type')!='hidden' && $(this).attr('type')!='file') {
+				$(this).addClass('form-control');
+			}
+
+			var tip = '';
+			if ($(this).attr('type') == 'radio') {
+				tip = $(this).parent().attr('tip');
+			}
+			else {
+				tip = $(this).attr('tip');
+			}
+			if (null!=tip && ""!=tip) {
+				$(this).poshytip({
+					content: function(){return tip;},
+					className: 'tip-yellowsimple',
+					alignTo: 'target',
+					alignX: 'center',
+					offsetY: 5,
+					allowTipHover: true
+				});
+			}
+		});
+
+		// 如果有数据权限，则对日期控件初始化
+		if (canUserData) {
+			SetNewDate();
+		}
+	});
+</script>
+</body>
+</html>

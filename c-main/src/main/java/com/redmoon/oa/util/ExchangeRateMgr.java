@@ -11,6 +11,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class ExchangeRateMgr {
 	public ExchangeRateMgr() {
@@ -60,8 +61,7 @@ public class ExchangeRateMgr {
 			try {
 				del(Integer.parseInt(ids[i]));
 			} catch (Exception e) {
-				e.printStackTrace();
-			
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 	}

@@ -5,6 +5,12 @@
 <%@ page import="com.redmoon.oa.flow.WorkflowPredefineDb" %>
 <%@ page import="com.redmoon.oa.person.UserDb" %>
 <%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="com.cloudweb.oa.api.ILicense" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
+<%@ page import="com.redmoon.oa.basic.TreeSelectView" %>
+<%@ page import="cn.js.fan.util.ErrMsgException" %>
+<%@ page import="com.redmoon.oa.basic.TreeSelectDb" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
@@ -13,8 +19,6 @@
 
     WorkflowPredefineDb wpd = new WorkflowPredefineDb();
     wpd = wpd.getDefaultPredefineFlow(flowTypeCode);
-    com.redmoon.clouddisk.Config cfgNd = com.redmoon.clouddisk.Config.getInstance();
-    boolean isUsed = cfgNd.getBooleanProperty("isUsed"); //判断网盘是否启用
     if (wpd != null) {
         op = "edit";
     }
@@ -25,12 +29,12 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta name="renderer" content="ie-stand"/>
     <meta http-equiv="pragma" content="no-cache"/>
     <meta http-equiv="Cache-Control" content="no-cache,must-revalidate"/>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>流程设计 - <%=wpd.getTitle()%></title>
+    <title>流程设计 - <%=wpd!=null?wpd.getTitle():""%></title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
     <%@ include file="../inc/nocache.jsp" %>
     <script src="../inc/common.js"></script>
     <%--<script src="../js/jquery-1.9.1.min.js"></script>--%>
@@ -43,7 +47,6 @@
     <script type="text/javascript" src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
     <link rel="stylesheet" type="text/css" href="../js/flow/myflow.css">
     <script type="text/javascript" src="../js/flow/lib/raphael-min.js"></script>
-    <script type="text/javascript" src="../js/jquery.toaster.js"></script>
     <script type="text/javascript" src="../js/flow/myflow.min.js"></script>
     <script type="text/javascript" src="../js/flow/myflow.jpdl.js"></script>
     <script type="text/javascript" src="../js/flow/myflow.editors.js"></script>
@@ -51,6 +54,7 @@
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
     <script type="text/javascript" src="../js/jquery-alerts/jquery.alerts.js"></script>
     <script type="text/javascript" src="../js/jquery-alerts/cws.alerts.js"></script>
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
     <script language=javascript>
         <!--
         var actionSelected = false;
@@ -98,13 +102,20 @@
             _r.setProp("ActionItem1", isEndNode);
             _r.setProp("ActionItem2", item2);
             _r.setProp("ActionIsMsg", isMsg);
+            // 使_name能够刷新，因为_name中显示的为_text的经过省略号处理的文本
+            _r.resize();
 
             // console.log(_r.toJson());
             if (isEndNode == 1) {
                 _r.setType("end");
             }
-
-            return;
+            else {
+                // 如果原来是结束节点，则变为任务节点
+                // 注意不能直接置为task，因为有可能为开始节点
+                if (_r.getType() == "end") {
+                    _r.setType("task");
+                }
+            }
         }
 
         function ModifyAction(user, title, clrindex, userRealName, jobCode, jobName, proxyJobCode, proxyJobName, proxyUserName, proxyUserRealName, fieldWrite, checkState, dept, flag, nodeMode, strategy, isEndNode, item2, isMsg) {
@@ -193,6 +204,9 @@
         }
 
         function GetActionProperty(actionName, prop) {
+            if (curAction == null) {
+                return "";
+            }
             console.log("GetActionProperty: actionName=" + actionName + " prop=" + prop);
             var myflow = $.myflow;
             var _r = myflow.getStates()[curAction.getId()];
@@ -459,7 +473,7 @@
                     <li><a href="#tabs-1">流程</a></li>
                     <li><a href="#tabs-2">属性</a></li>
                     <%
-                        if (license.isPlatformSrc()) {
+                        if (license.isPlatform()) {
                     %>
                     <li><a href="#tabs-5">回写</a></li>
                     <%
@@ -490,18 +504,25 @@
                                         <select id="dirCode" name="dirCode" style="width:100%" onchange="if(this.options[this.selectedIndex].value=='not'){alert(this.options[this.selectedIndex].text+' 不能被选择！'); return false;}">
                                             <option value="" selected="selected">无</option>
                                             <%
-                                                com.redmoon.oa.fileark.Directory dir = new com.redmoon.oa.fileark.Directory();
-                                                com.redmoon.oa.fileark.Leaf lf = dir.getLeaf("root");
-                                                com.redmoon.oa.fileark.DirectoryView dv = new com.redmoon.oa.fileark.DirectoryView(request, lf);
-                                                dv.ShowDirectoryAsOptions(out, lf, lf.getLayer());
+                                                TreeSelectDb tsd = new TreeSelectDb();
+                                                tsd = tsd.getTreeSelectDb(ConstUtil.FILEARK_DIR);
+                                                TreeSelectView tsv = new TreeSelectView(tsd);
+                                                StringBuffer sb = new StringBuffer();
+                                                try {
+                                                    tsv.getTreeSelectAsOptions(sb, tsd, 1);
+                                                } catch (ErrMsgException e) {
+                                                    e.printStackTrace();
+                                                }
+                                                out.print(sb.toString());
                                             %>
-                                        </select></td>
+                                        </select>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td title="自动存档时保存状态">保存状态</td>
                                     <td title="自动存档时保存状态" style="border-right:0px"><select id="examine" name="examine">
                                         <option value="<%=com.redmoon.oa.fileark.Document.EXAMINE_NOT%>">未审核</option>
-                                        <option value="<%=com.redmoon.oa.fileark.Document.EXAMINE_PASS%>">已通过</option>
+                                        <option value="<%=com.redmoon.oa.fileark.Document.EXAMINE_PASS%>" selected>已通过</option>
                                     </select>
                                         <input id="id" name="id" type="hidden" value="<%=id%>"/>
                                         <input type="hidden" id="typeCode" name="typeCode" value="<%=flowTypeCode%>"/>
@@ -524,7 +545,7 @@
                                 <tr>
                                     <td>
                                         <%
-                                            String disBtnName = "流程分发";
+                                            String disBtnName = "流程抄送";
                                             String disBtnDesc = "在每个节点上都可以将流程表单分发给相关人员";
                                             String kind = com.redmoon.oa.kernel.License.getInstance().getKind();
                                             if (kind.equalsIgnoreCase(com.redmoon.oa.kernel.License.KIND_COM)) {
@@ -545,14 +566,18 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>能否指派</td>
+                                    <td>能否转办</td>
                                     <td style="border-right:0px">
-                                        <input type="checkbox" title="流程中能否指派" id="isTransfer" name="isTransfer" value="1" <%=wpd != null && wpd.isTransfer() ? "checked" : ""%> />
+                                        <input type="checkbox" title="流程中能否转办" id="isTransfer" name="isTransfer" value="1" <%=wpd != null && wpd.isTransfer() ? "checked" : ""%> />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>能否回复</td>
                                     <td style="border-right:0px"><input type="checkbox" title="流程中能否回复" id="isReply" name="isReply" value="1" <%=wpd != null && wpd.isReply() ? "checked" : ""%> /></td>
+                                </tr>
+                                <tr>
+                                    <td height="22" align="left">模块过滤</td>
+                                    <td height="22"><input id="isModuleFilter" name="isModuleFilter" value="1" type="checkbox" <%=wpd != null && wpd.isModuleFilter() ? "checked" : ""%> title="如果存在用嵌套表格2，则启用其模块中配置的过滤条件"/></td>
                                 </tr>
                                 <tr>
                                     <td>最大下载</td>
@@ -641,6 +666,10 @@
 </table>
 <div id="result"></div>
 <textarea id="props" name="props" style="display:none"><%=wpd != null ? wpd.getProps() : ""%></textarea>
+<%--
+不能存于此处，否则如在WorkflowPredefineMgr中保存时，如显示规则中存在不等于<>，会会被转义，致规则不能被解析
+故在WorkflowPredefineMgr的modify方法中注释掉wpd.setViews(views)
+--%>
 <textarea id="views" name="views" style="display:none"><%=wpd != null ? wpd.getViews() : ""%></textarea>
 <textarea style="display:none" name="hiddenCondition" id="hiddenCondition"></textarea>
 <textarea style="display:none" name="hiddenMsgProp" id="hiddenMsgProp"><%=wpd != null ? wpd.getMsgProp() : ""%></textarea>
@@ -704,6 +733,11 @@
         return myflow.getWorkflow();
     }
 
+    function getFlowJson() {
+        var myflow = $.myflow;
+        return myflow.getJson();
+    }
+
     function submitDesigner() {
         if (o("title").value == "") {
             alert("请填写名称！");
@@ -712,7 +746,7 @@
         var myflow = $.myflow;
         var flowJson = myflow.getJson();
         var flowString = myflow.getWorkflow();
-        // console.log("flowJson=" + flowJson);
+        console.log("flowJson", flowJson);
         // console.log("myflow.getWorkflow()=" + flowString);
         var op = o("op").value;
         var url = op == "edit" ? "modifyFlowPredefined" : "createFlowPredefined";
@@ -742,6 +776,7 @@
                 isPlus: o("isPlus").checked ? o("isPlus").value : "0",
                 isTransfer: o("isTransfer").checked ? o("isTransfer").value : "0",
                 isReply: o("isReply").checked ? o("isReply").value : "0",
+                isModuleFilter: o("isModuleFilter").checked? "1" : "0",
                 downloadCount: o("downloadCount").value,
                 canDelOnReturn: o("canDelOnReturn").checked?"1":"0"
             },
@@ -751,11 +786,10 @@
             },
             success: function (data, status) {
                 data = $.parseJSON(data);
-                // alert(data.msg);
-                $.toaster({
-                    "priority": "info",
-                    "message": data.msg
+                layer.msg(data.msg, {
+                    offset: '6px'
                 });
+
                 if (data.newId != null && data.newId != "-1") {
                     o("id").value = data.newId;
                     o("op").value = "edit";
@@ -819,6 +853,10 @@
 
     <%
         String cloudUrl = cfg.get("cloudUrl");
+        ILicense iLicense = SpringUtil.getBean(ILicense.class);
+        if (iLicense.getCategory().equals(ConstUtil.CATEGORY_LOCAL)) {
+            cloudUrl = request.getContextPath();
+        }
     %>
 
     $(function () {
@@ -834,7 +872,7 @@
             flowData = "{}";
         }
         flowData = eval("(" + flowData + ")");
-        // console.log(JSON.stringify(flowData));
+        console.log('flowData', flowData);
 
         $('#myflow').myflow({
             // basePath: "",

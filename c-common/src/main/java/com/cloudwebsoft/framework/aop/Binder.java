@@ -7,6 +7,8 @@ import java.util.Vector;
 import java.util.Iterator;
 import com.cloudwebsoft.framework.aop.base.Advisor;
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -77,15 +79,12 @@ public class Binder implements InvocationHandler {
         Object result = null;
         try {
             // 请在这里插入代码，在方法前调用
-            // System.out.println("调用log日志方法" + method.getName());
             // 如果method.invoke中出现了异常，如ErrMsgException，则并不抛出，注意invoke只抛出几种异常，e.getMessage()得到的将是null
             result = method.invoke(proxyObj, args); // 原方法
             // 请在这里插入代码，方法后调用
         }
         catch (InvocationTargetException e) {
-            // System.out.println("Binder.java invoke:" + e.getMessage() + " cause:" + e.getCause());
-            e.printStackTrace();
-            throw e.getTargetException();
+            LogUtil.getLog(getClass()).error(e);
             // Throw(proxy, method, args, e.getTargetException());
         }
         After(proxy, method, args);

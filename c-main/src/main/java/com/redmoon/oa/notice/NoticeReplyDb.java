@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.Vector;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.person.UserDb;
 
@@ -64,8 +65,7 @@ public class NoticeReplyDb extends ObjectDb{
 			}
 			jt.executeBatch();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			return 0;
 		}
 		return len;
@@ -91,7 +91,7 @@ public class NoticeReplyDb extends ObjectDb{
 				rc.refreshCreate();
 			}
 		} catch (SQLException e) {
-			logger.error("create:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -138,7 +138,7 @@ public class NoticeReplyDb extends ObjectDb{
 				rc.refreshCreate();
 			}
 		} catch (SQLException e) {
-			logger.error("updateContent:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("updateContent:" + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -167,7 +167,7 @@ public class NoticeReplyDb extends ObjectDb{
 			}
 		
 		} catch (SQLException e) {
-			logger.error("getNoticeReply: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getNoticeReply: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -198,7 +198,7 @@ public class NoticeReplyDb extends ObjectDb{
 			}
 			return v;
 		} catch (SQLException e) {
-			logger.error("getNoticeReply: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getNoticeReply: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -219,18 +219,15 @@ public class NoticeReplyDb extends ObjectDb{
 			pstmt.setLong(3, noticeid);
 			pstmt.setString(4,username);
 			
-			re = conn.executePreUpdate() == 1 ? true : false;
+			re = conn.executePreUpdate() == 1;
 			if (re) {
 				NoticeReplyCache rc = new NoticeReplyCache(this);
 				rc.refreshCreate();
 			}
 		} catch (SQLException e) {
-			logger.error("updateContent:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("updateContent:" + e.getMessage());
 		} finally {
-			if (conn != null) {
-				conn.close();
-				conn = null;
-			}
+			conn.close();
 		}
 
 	}
@@ -257,12 +254,9 @@ public class NoticeReplyDb extends ObjectDb{
 			}
 			return v;
 		} catch (SQLException e) {
-			logger.error("getDeptOfNotice: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("getDeptOfNotice: " + e.getMessage());
 		} finally {
-			if (conn != null) {
-				conn.close();
-				conn = null;
-			}
+			conn.close();
 		}
 		return v;
 	}

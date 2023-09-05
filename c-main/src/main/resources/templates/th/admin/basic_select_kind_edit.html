@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>基础数据类型编辑</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<div th:replace="th/include/tab_basic_select :: navConfig(3)"></div>
+<br>
+<div class="spacerH"></div>
+<table width="494" border="0" align="center" cellpadding="0" cellspacing="0" class="tabStyle_1 percent60">
+    <tr>
+        <td height="23" class="tabStyle_1_title">类型</td>
+    </tr>
+    <tr>
+        <td align="center">
+            <form id="form1" action="?op=modify" method=post>
+                名称：
+                <input name="name" th:value="${name}" maxlength="30"/>
+                <input name="id" th:value="${id}" type="hidden"/>
+                序号：<input name="orders" th:value="${orders}" size="3"/>
+                &nbsp;
+                <input class="btn btn-default" id="btnOk" type="button" value="确定"/>
+            </form>
+        </td>
+    </tr>
+</table>
+<script>
+    $(function () {
+        $('#btnOk').click(function (e) {
+            e.preventDefault();
+            edit();
+        })
+    })
+
+    function edit() {
+        $.ajax({
+            type: "post",
+            url: "../basicdata/updateKind.do",
+            data: $('#form1').serialize(),
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                layer.msg(data.msg, {
+                    offset: '6px'
+                });
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    $(function() {
+        $('body').addClass('form-inline');
+        $('input, select, textarea').each(function() {
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+                $(this).attr('autocomplete', 'off');
+            }
+        });
+    })
+</script>
+</body>
+</html>

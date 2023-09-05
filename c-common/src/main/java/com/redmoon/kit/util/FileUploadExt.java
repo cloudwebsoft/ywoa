@@ -12,6 +12,7 @@ import java.util.Hashtable;
 import javax.servlet.http.HttpSession;
 import cn.js.fan.web.SkinUtil;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title:上传时统计文件被读取的字节 </p>
@@ -57,12 +58,13 @@ public class FileUploadExt extends FileUpload {
      * @return int
      * @throws IOException
      */
+    @Override
     public int doUpload(ServletContext application, HttpServletRequest request, String charset) throws
             IOException {
         this.request = request;
 
         realPath = application.getRealPath("/");
-        // System.out.println(getClass() + " realPath=" + realPath + " realPath.lastIndexOf(\"\\\")=" + realPath.lastIndexOf("\\") + " realPath.length()=" + realPath.length());
+        // LogUtil.getLog(getClass()).info(getClass() + " realPath=" + realPath + " realPath.lastIndexOf(\"\\\")=" + realPath.lastIndexOf("\\") + " realPath.length()=" + realPath.length());
         if (realPath.lastIndexOf("/")!=realPath.length()-1 && realPath.lastIndexOf("\\")!=realPath.length()-1)
             realPath += "/";
 
@@ -72,7 +74,7 @@ public class FileUploadExt extends FileUpload {
         // 获取上传流水号，每次上传对应一个流水号
         String uploadSerialNo = request.getParameter("uploadSerialNo");
 
-        // System.out.println(getClass() + " uploadSerialNo=" + uploadSerialNo);
+        // LogUtil.getLog(getClass()).info(getClass() + " uploadSerialNo=" + uploadSerialNo);
 
         if (uploadSerialNo==null)
             uploadSerialNo = "default";
@@ -118,7 +120,7 @@ public class FileUploadExt extends FileUpload {
                 osw.write(d);
                 i = in.readLine(line, 0, maxcount);
                 fusi.setBytesRead(fusi.getBytesRead() + i);
-                System.out.println(d);
+                LogUtil.getLog(getClass()).info(d);
             }
             osw.close();
             os2.close();
@@ -167,7 +169,7 @@ public class FileUploadExt extends FileUpload {
                     fieldName = fieldName.substring(0, index);
                     fieldName = new String(fieldName.getBytes(), charset);
                     if (debug) {
-                        System.out.println("filename=" + new String(line, 0, i - 2, charset));
+                        LogUtil.getLog(getClass()).info("filename=" + new String(line, 0, i - 2, charset));
                     }
                     parseFileName(new String(line, 0, i - 2, charset));
                     if (filename == null) {
@@ -179,9 +181,9 @@ public class FileUploadExt extends FileUpload {
                     }
                     if (filename != null && !isValidExtname(extname)) {
                         if (debug) {
-                            System.out.println("extname=" + extname);
+                            LogUtil.getLog(getClass()).info("extname=" + extname);
                         }
-                        ret = this.RET_INVALIDEXT; // 扩展名非法
+                        ret = RET_INVALIDEXT; // 扩展名非法
                         fusi.setRet(ret);
                         return ret;
                     }
@@ -251,7 +253,7 @@ public class FileUploadExt extends FileUpload {
                             in.close();
                             tmpFile.delete();
                             os2.close();
-                            ret = this.RET_TOOLARGESINGLE;
+                            ret = RET_TOOLARGESINGLE;
                             fusi.setRet(ret);
                             return ret;
                         }
@@ -259,7 +261,7 @@ public class FileUploadExt extends FileUpload {
                         // 如果超过预定上传文件总的大小
                         if (maxAllFileSize != -1 &&
                             allFileSize > maxAllFileSize * 1024) {
-                            ret = this.RET_TOOLARGEALL;
+                            ret = RET_TOOLARGEALL;
                             tmpFile.delete();
                             os2.close();
 
@@ -275,7 +277,7 @@ public class FileUploadExt extends FileUpload {
 
                     if (thisfilesize == 0) {
                         if (debug) {
-                            System.out.println("FileUpload 文件" + filename + "长度为 0 ！");
+                            LogUtil.getLog(getClass()).info("FileUpload 文件" + filename + "长度为 0 ！");
                         }
                         continue;
                     }
@@ -291,7 +293,7 @@ public class FileUploadExt extends FileUpload {
                     fi.contentType = contentType;
                     fi.size = thisfilesize; // 或者filedata.length();//以K为单位
                     if (debug) {
-                        System.out.println(fi.name + ": " + fi.size + " " +
+                        LogUtil.getLog(getClass()).info(fi.name + ": " + fi.size + " " +
                                            fi.ext + " " + fi.contentType);
                     }
 
@@ -309,7 +311,7 @@ public class FileUploadExt extends FileUpload {
                     fusi.setBytesRead(fusi.getBytesRead() + i);
 
                     String seperateLine = new String(line, 0, i, charset);
-                    // System.out.println(getClass() + " seperateLine=" + seperateLine);
+                    // LogUtil.getLog(getClass()).info(getClass() + " seperateLine=" + seperateLine);
                     if (seperateLine.startsWith("Content-Type")) {
                         i = in.readLine(line, 0, maxcount); // 读取空行
                         fusi.setBytesRead(fusi.getBytesRead() + i);
@@ -318,7 +320,7 @@ public class FileUploadExt extends FileUpload {
                     i = in.readLine(line, 0, maxcount);
                     fusi.setBytesRead(fusi.getBytesRead() + i);
 
-                    // System.out.println("reqeust getCharacterEncoding: " + request.getCharacterEncoding()); // 取得的值为null
+                    // LogUtil.getLog(getClass()).info("reqeust getCharacterEncoding: " + request.getCharacterEncoding()); // 取得的值为null
 
                     newLine = new String(line, 0, i, charset);
                     // newLine = new String(line, 0, i);
@@ -344,7 +346,7 @@ public class FileUploadExt extends FileUpload {
                     // String fv = new String(fieldValue.toString().getBytes("ISO8859_1"), charset);
                     // fields.put(fieldName, fv);
                     Object obj = fields.get(fieldName);
-                    // System.out.println(getClass() + " fieldName=" + fieldName + " value=" + fieldValue.toString());
+                    // LogUtil.getLog(getClass()).info(getClass() + " fieldName=" + fieldName + " value=" + fieldValue.toString());
                     if (obj!=null) {
                         // 如果为字符串
                         if (obj instanceof String) {
@@ -360,7 +362,7 @@ public class FileUploadExt extends FileUpload {
                     }
                     else {
                         fields.put(fieldName, fieldValue.toString());
-                        // System.out.println(getClass() + " fieldName=" + fieldValue.toString());
+                        // LogUtil.getLog(getClass()).info(getClass() + " fieldName=" + fieldValue.toString());
                     }
                 }
             }
@@ -374,8 +376,8 @@ public class FileUploadExt extends FileUpload {
 
         fusi.setBytesRead(fusi.getBytesRead() + 1); // 为了加结束符
 
-        // System.out.println(getClass() + " upload bytes=" + fusi.getBytesRead());
-        // System.out.println(getClass() + " content length=" + request.getContentLength());
+        // LogUtil.getLog(getClass()).info(getClass() + " upload bytes=" + fusi.getBytesRead());
+        // LogUtil.getLog(getClass()).info(getClass() + " content length=" + request.getContentLength());
 
         return ret;
     }

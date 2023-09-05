@@ -17,6 +17,7 @@ import cn.js.fan.db.PrimaryKey;
 import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -139,7 +140,7 @@ public class DocAttachmentLogDb extends ObjectDb {
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -156,22 +157,21 @@ public class DocAttachmentLogDb extends ObjectDb {
      * @return boolean
      * @throws ErrMsgException
      * @throws ResKeyException
-     * @todo Implement this cn.js.fan.base.ObjectDb method
      */
+    @Override
     public boolean del() throws ErrMsgException {
         String sql = "delete from " + tableName + " where id=?";
         JdbcTemplate jt = new JdbcTemplate();
         try {
-			jt.executeUpdate(sql, new Object[]{new Long(id)});
+			jt.executeUpdate(sql, new Object[]{id});
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			return false;
 		}
         
         // 更新缓存
         DocAttachmentLogCache dlc = new DocAttachmentLogCache();
-        primaryKey.setValue(new Long(id));
+        primaryKey.setValue(id);
         dlc.refreshDel(primaryKey);
         return true;
     }
@@ -211,7 +211,7 @@ public class DocAttachmentLogDb extends ObjectDb {
                 primaryKey.setValue(new Long(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn!=null) {
                 conn.close();
@@ -234,6 +234,7 @@ public class DocAttachmentLogDb extends ObjectDb {
          return re;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
 	public ListResult listResult(String listsql, int curPage, int pageSize)
 			throws ErrMsgException {
@@ -280,7 +281,7 @@ public class DocAttachmentLogDb extends ObjectDb {
 				} while (rs.next());
 			}
 		} catch (SQLException e) {//捕获SQLException
-			logger.error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 			throw new ErrMsgException("数据库出错！");
 		} finally {
 			if (conn != null) {

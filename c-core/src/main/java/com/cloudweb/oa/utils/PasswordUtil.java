@@ -72,7 +72,7 @@ public class PasswordUtil {
                 desc = "密码必须为字母加数字的组合且含大写字母";
                 break;
             case 3:
-                desc = "密码必须为字母、数字加字符组合";
+                desc = "密码必须为字母、数字加字符组合且含大写字母";
                 break;
             default:
                 ;
@@ -186,21 +186,22 @@ public class PasswordUtil {
                     patStr = "[A-Z]+";
                     return Pattern.compile(patStr).matcher(pwd).find();
                 }
-
                 // 不能由连续的字母组成，例如：abcdefg
             }
-
         } else if (strenth == 3) {
             String patStr = "[a-zA-Z]+";
             if (Pattern.compile(patStr).matcher(pwd).find()) {
                 patStr = "[-`=\\[\\];',./~!@#$%\\^&\\*\\(\\)_+|{}:\"<>\\?]+";
                 if (Pattern.compile(patStr).matcher(pwd).find()) {
                     patStr = "[\\d]+";
-                    return Pattern.compile(patStr).matcher(pwd).find();
+                    if (Pattern.compile(patStr).matcher(pwd).find()) {
+                        // 判断是否含有大写字母
+                        patStr = "[A-Z]+";
+                        return Pattern.compile(patStr).matcher(pwd).find();
+                    }
                 }
             }
         }
-
         return false;
     }
 

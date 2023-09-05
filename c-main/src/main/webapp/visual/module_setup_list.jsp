@@ -121,7 +121,7 @@
             &nbsp;&nbsp;<a href="javascript:" onclick="syncModule('<%=vsd.getString("code")%>', '<%=vsd.getString("name")%>')">同步</a>
             <%
                 }
-                String moduleUrlList = request.getContextPath() + "/visual/module_list.jsp?code=" + vsd.getString("code") + "&formCode=" + StrUtil.UrlEncode(vsd.getString("form_code"));
+                String moduleUrlList = request.getContextPath() + "/visual/moduleListPage.do?code=" + vsd.getString("code") + "&formCode=" + StrUtil.UrlEncode(vsd.getString("form_code"));
                 if (license.isPlatformSrc() && vsd.getInt("is_use") == 1) {
             %>
             &nbsp;&nbsp;<a href="javascript:" onclick="addTab('<%=StrUtil.getNullStr(vsd.getString("name"))%>', '<%=moduleUrlList%>');">打开</a>

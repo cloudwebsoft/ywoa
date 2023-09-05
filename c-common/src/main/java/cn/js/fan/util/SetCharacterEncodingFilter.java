@@ -46,7 +46,6 @@ public class SetCharacterEncodingFilter
     String encoding = selectEncoding(request);
     if (encoding != null) {
       request.setCharacterEncoding(encoding);
-      System.out.println("encoding:" + encoding);
     }
 
 // Pass control on to the next filter
@@ -58,7 +57,6 @@ public class SetCharacterEncodingFilter
 
     this.filterConfig = filterConfig;
     this.encoding = filterConfig.getInitParameter("encoding");
-    System.out.println(getClass() + " encoding...");
   }
 
   protected String selectEncoding(ServletRequest request) {

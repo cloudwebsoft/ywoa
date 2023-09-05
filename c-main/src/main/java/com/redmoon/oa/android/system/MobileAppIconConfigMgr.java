@@ -7,8 +7,9 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.menu.Leaf;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,6 +25,7 @@ public class MobileAppIconConfigMgr {
 	public static final int TYPE_FLOW = 2;
 	public static final int TYPE_MODULE = 3;
 	public static final int TYPE_LINK = 4;
+	public static final int TYPE_FRONT = 5;
 	
 	public static final int CAN_MOBILE_START = 1;
 	private static final String SUPERVIS = "supervis";
@@ -45,7 +47,7 @@ public class MobileAppIconConfigMgr {
 	public static final int OA_CRM = 5;//Crm
 	public static final int OA_INNER_MSG = 6;//内部邮件
 	public static final int OA_SYSTEM_MSG = 7;//系统邮件
-	public static final int OA_NETDISK = 8;//网络硬盘
+	// public static final int OA_NETDISK = 8;//网络硬盘
 	public static final int OA_SCHEDULE = 9;//日程安排
 	public static final int OA_FILECASE = 10;//文件柜
 	public static final int OA_LOACTION = 11;//定位签到
@@ -117,7 +119,7 @@ public class MobileAppIconConfigMgr {
 			String code = ParamUtil.get(request, "type_module_selected");
 			mb.set("code", code);
 		}
-		else if (type==TYPE_LINK) {
+		else if (type==TYPE_LINK || type == TYPE_FRONT) {
 			String link = ParamUtil.get(request, "link");
 			mb.set("code", link);			
 		}
@@ -157,7 +159,7 @@ public class MobileAppIconConfigMgr {
 			try {
 				re = del(StrUtil.toInt(id));
 			} catch (Exception e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 		return re;
@@ -182,7 +184,7 @@ public class MobileAppIconConfigMgr {
 				res = false;
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return res;
@@ -270,7 +272,7 @@ public class MobileAppIconConfigMgr {
 		try {
 			it = jt.executeQuery(sql1);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(MobileAppIconConfigMgr.class).error(e);
 		} finally {
 			jt.close();
 		}
@@ -290,7 +292,7 @@ public class MobileAppIconConfigMgr {
 			try {
 				itr = jte.executeQuery(sql2, new Object[] { code });
 			} catch (SQLException e) {
-				e.printStackTrace();
+				LogUtil.getLog(MobileAppIconConfigMgr.class).error(e);
 			} finally {
 				jte.close();
 			}
@@ -321,7 +323,7 @@ public class MobileAppIconConfigMgr {
 				imgUrl = rrd.getString("imgUrl");
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return imgUrl;
@@ -381,8 +383,7 @@ public class MobileAppIconConfigMgr {
 				}
 			}
 		} catch (JSONException e) {
-			Logger.getLogger(MobileAppIconConfigMgr.class).error(e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return jsonArr;
@@ -414,7 +415,7 @@ public class MobileAppIconConfigMgr {
 				JSONObject appJson = new JSONObject();
 				appJson.put("mId", id);
 				appJson.put("mName", name);
-				appJson.put("imgUrl", imgUrl);
+				appJson.put("imgUrl", "static/" + imgUrl);
 				appJson.put("code", code);
 				appJson.put("type", type);
 				appJson.put("isAdd", isAdd); // 看似多余，因为getMobileCanStartInfo给手机端的添加按钮中并未下发isAdd
@@ -436,13 +437,25 @@ public class MobileAppIconConfigMgr {
 							}
 						}
 					}
-				} else {
+				}
+				else if (type == TYPE_FLOW) {
+					com.redmoon.oa.flow.Leaf lf = new com.redmoon.oa.flow.Leaf();
+					lf = lf.getLeaf(code);
+					if (lf==null) {
+						DebugUtil.e(getClass(), "getAppIcons", "流程类型 " + code + " 不存在");
+						continue;
+					}
+					com.redmoon.oa.flow.DirectoryView dv = new com.redmoon.oa.flow.DirectoryView(lf);
+					if (dv.canUserSeeWhenInitFlow(request, lf)) {
+						jsonArr.put(appJson);
+					}
+				}
+				else {
 					jsonArr.put(appJson);
 				}
 			}
 		} catch (JSONException e) {
-			Logger.getLogger(MobileAppIconConfigMgr.class).error(e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return jsonArr;

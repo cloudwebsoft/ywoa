@@ -11,6 +11,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.visual.ModuleUtil;
+import com.redmoon.oa.visual.func.ConnStrFuncImpl;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -81,12 +84,12 @@ public class ConvertCharset {
 				code = GBK;
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(ConvertCharset.class).error(e);
 		} finally {
 			try {
 				inputStream.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				LogUtil.getLog(ConvertCharset.class).error(e);
 			}
 		}
 		return code;
@@ -111,7 +114,6 @@ public class ConvertCharset {
 	 * 读文件
 	 * 
 	 * @param fileName
-	 * @param encoding
 	 */
 	private static String read(String fileName) {
 		BufferedReader in = null;
@@ -131,8 +133,6 @@ public class ConvertCharset {
 					rows++;
 				}
 				in.close();
-				System.out.println(file.length() + "----"
-						+ sb.toString().getBytes(temp).length);
 				if (file.length() == sb.toString().getBytes(temp).length
 						|| file.length() == sb.toString().getBytes(temp).length - 2
 						|| file.length() == sb.toString().getBytes(temp).length
@@ -146,12 +146,12 @@ public class ConvertCharset {
 
 			return sb.toString();
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(ConvertCharset.class).error(ex);
 		} finally {
 			try {
 				in.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				LogUtil.getLog(ConvertCharset.class).error(e);
 			}
 		}
 		return "";
@@ -173,7 +173,7 @@ public class ConvertCharset {
 			out.write(str);
 			out.close();
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(ConvertCharset.class).error(ex);
 		}
 	}
 
@@ -217,21 +217,15 @@ public class ConvertCharset {
 		ConvertAll(path);
 		if (true)
 			return;
-		
-		System.out.println("Convert successfully!");
-		
+
 		String str = "{formCode:aaa, sourceFormCode:shouwen, idField:id, showField:wh, filter:cwsId%eq$parentId, isParentSaveAndReload:true, maps:[]}";
 		JSONObject json = null;
 		try {
 			json = new JSONObject(str);
-	        String formCode = json.getString("sourceFormCode");
-	        System.out.println(formCode);
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(ConvertCharset.class).error(e);
 			str = "json 格式非法";
 		}
-
 	}
 
 }

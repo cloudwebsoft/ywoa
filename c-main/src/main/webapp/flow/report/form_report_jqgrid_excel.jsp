@@ -13,6 +13,8 @@
 <%@ page import = "com.redmoon.oa.flow.*"%>
 <%@ page import="jxl.*"%>
 <%@ page import="jxl.write.*"%>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/><%
 String priv="admin.flow.query";
 if (!privilege.isUserPrivValid(request, priv)){
@@ -30,7 +32,7 @@ FormQueryReportRender fqrr = new FormQueryReportRender();
 
 Vector[] ret = fqrr.export(request, id);
 if (ret==null) {
-	out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, "ç»“æžœé›†ä¸ºç©ºï¼"));
+	out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, "½á¹û¼¯Îª¿Õ£¡"));
 	return;
 }
 
@@ -43,11 +45,14 @@ response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUni
 OutputStream os = response.getOutputStream();
 
 try {
-	
-	File file = new File(Global.realPath + "visual/template/blank.xls");
-	Workbook wb = Workbook.getWorkbook(file);
+	/*File file = new File(Global.realPath + "visual/template/blank.xls");
+	Workbook wb = Workbook.getWorkbook(file);*/
 
-	// æ‰“å¼€ä¸€ä¸ªæ–‡ä»¶çš„å‰¯æœ¬ï¼Œå¹¶ä¸”æŒ‡å®šæ•°æ®å†™å›žåˆ°åŽŸæ–‡ä»¶
+	ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+	InputStream inputStream = configUtil.getFile("templ/blank.xls");
+	Workbook wb = Workbook.getWorkbook(inputStream);
+
+	// ´ò¿ªÒ»¸öÎÄ¼þµÄ¸±±¾£¬²¢ÇÒÖ¸¶¨Êý¾ÝÐ´»Øµ½Ô­ÎÄ¼þ
 	WritableWorkbook wwb = Workbook.createWorkbook(os, wb);
 	WritableSheet ws = wwb.getSheet(0);
 

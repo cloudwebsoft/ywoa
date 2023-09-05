@@ -123,6 +123,20 @@ public class Privilege {
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
     }
 
+    /**
+     * 用于jwt登录时，赋予session？暂未使用
+     * @param request
+     * @param userName
+     */
+    public void doLoginByUserName(HttpServletRequest request, String userName) {
+        UserDb user = new UserDb();
+        user = user.getUserDb(userName);
+
+        HttpSession session = request.getSession();
+        session.setAttribute(Constant.OA_NAME, userName);
+        session.setAttribute(Constant.OA_UNITCODE, user.getUnitCode());
+    }
+
     public boolean isUserLogin(HttpServletRequest request) {
         HttpSession session = request.getSession(true);
         String name = (String) session.getAttribute(Constant.OA_NAME);
@@ -131,15 +145,15 @@ public class Privilege {
 
     public boolean authDingDing(HttpServletRequest request) {
         String code = ParamUtil.get(request, "code");
-        if (!code.equals("")) {
-            UserService _userService = new UserService();
-            UserDb _userDb = _userService.getUserByAvoidLogin(code);
-            if (_userDb != null && _userDb.isLoaded()) {
-                userName = _userDb.getName();
-                String _dingding = StrUtil.getNullStr(_userDb.getDingding());
-                if (_dingding.equals("")) {
-                    _userDb.setDingding(code);
-                    _userDb.save();
+        if (!"".equals(code)) {
+            UserService userService = new UserService();
+            UserDb userDb = userService.getUserByAvoidLogin(code);
+            if (userDb != null && userDb.isLoaded()) {
+                userName = userDb.getName();
+                String dingding = StrUtil.getNullStr(userDb.getDingding());
+                if ("".equals(dingding)) {
+                    userDb.setDingding(code);
+                    userDb.save();
                 }
             } else {
                 return false;
@@ -155,11 +169,11 @@ public class Privilege {
     public boolean auth(HttpServletRequest request) {
         // 先判断skey，如果为空，则有可能来自于微信的转发
         skey = ParamUtil.get(request, "skey");
-        if (skey.equals("")) {
+        if ("".equals(skey)) {
             // 发起流程也会传过来code，但因发起流程界面flow_initiate.jsp将转至flow_dispose.jsp?code=...
             // 而后者并非来自企业微信转发，所以当发起流程时skey不可能为空
             String code = ParamUtil.get(request, "code");
-            if (!code.equals("")) {
+            if (!"".equals(code)) {
                 WXUserMgr wxUserMgr = new WXUserMgr();
                 UserDb userDb = null;
 

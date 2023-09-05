@@ -6,6 +6,7 @@ import com.cloudweb.oa.entity.User;
 import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.Config;
 import com.redmoon.dingding.domain.BaseDdObj;
 import com.redmoon.dingding.domain.DdUser;
@@ -16,8 +17,8 @@ import com.redmoon.dingding.service.user.UserService;
 import com.redmoon.dingding.service.user.dto.DdUserDto;
 import com.redmoon.dingding.util.DdException;
 import com.redmoon.dingding.util.HttpHelper;
+import com.redmoon.oa.ui.SkinMgr;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +47,7 @@ public class DdUserService extends BaseService {
             HttpHelper _http = new HttpHelper(URL_USER_GET + "userid=" + userId + "&");
             _user = _http.httpGet(DdUser.class);
         } catch (DdException e) {
-            Logger.getLogger(UserService.class).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return _user;
     }
@@ -92,7 +93,7 @@ public class DdUserService extends BaseService {
                 }
             }
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return user;
     }
@@ -148,7 +149,7 @@ public class DdUserService extends BaseService {
             http.httpPost(BaseDdObj.class, ddUser);
             re = true;
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -166,7 +167,7 @@ public class DdUserService extends BaseService {
             http.httpGet(BaseDdObj.class);
             re = true;
         } catch (DdException e) {
-            Logger.getLogger(UserService.class).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return re;
     }
@@ -232,7 +233,7 @@ public class DdUserService extends BaseService {
                 _list = ddUserDto.userlist;
             }
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return _list;
     }

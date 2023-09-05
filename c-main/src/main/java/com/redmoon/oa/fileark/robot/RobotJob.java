@@ -1,11 +1,10 @@
 package com.redmoon.oa.fileark.robot;
 
-import org.quartz.JobExecutionException;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobDataMap;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 import cn.js.fan.util.ErrMsgException;
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * <p>Title: </p>
@@ -19,7 +18,12 @@ import com.cloudwebsoft.framework.util.LogUtil;
  * @author not attributable
  * @version 1.0
  */
-public class RobotJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class RobotJob extends QuartzJobBean {
     public RobotJob() {
     }
 
@@ -30,7 +34,7 @@ public class RobotJob implements Job {
      * @throws JobExecutionException
      */
     @Override
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         String strId = data.getString("id");

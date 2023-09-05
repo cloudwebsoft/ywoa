@@ -6,7 +6,8 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
 
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
@@ -14,6 +15,7 @@ import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.base.QObjectDb;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
 import java.util.Iterator;
@@ -31,55 +33,49 @@ import java.util.Iterator;
  * @version 1.0
  */
 
-
-
 public class WorkflowAnnexDb extends QObjectDb {
 	
     public WorkflowAnnexDb() {
         super();
     }
 
+    @Override
     public boolean create(JdbcTemplate jt, ParamChecker paramChecker) throws
             ResKeyException, ErrMsgException {
-        boolean re = super.create(jt, paramChecker);
-        return re;
-       
+        return super.create(jt, paramChecker);
     }
     
-    public boolean create(JdbcTemplate jt,Object[] params){
+    @Override
+    public boolean create(JdbcTemplate jt, Object[] params){
     	boolean re = false;
 		try {
 			re = super.create(jt, params);
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(WorkflowAnnexMgr.class).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
 		}
     	return re;
     }
 
     public void writeAttachment(HttpServletRequest request, FileUpload fu, long annexId) throws ErrMsgException {
        if (fu.getRet() == FileUpload.RET_SUCCESS) {
-            Vector v = fu.getFiles();
-            Iterator ir = v.iterator();
+            Vector<FileInfo> v = fu.getFiles();
+            Iterator<FileInfo> ir = v.iterator();
             Calendar cal = Calendar.getInstance();
-            String year = "" + (cal.get(Calendar.YEAR));
-            String month = "" + (cal.get(Calendar.MONTH) + 1);
+            int year = cal.get(Calendar.YEAR);
+            int month = cal.get(Calendar.MONTH) + 1;
             com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
             String vpath = cfg.get("file_flow") + "/" + year + "/" + month + "/";
-            // 置保存路径
-            String filepath = Global.getRealPath() + vpath;
-            // 置路径
-            fu.setSavePath(filepath);
+
+            IFileService fileService = SpringUtil.getBean(IFileService.class);
             while (ir.hasNext()) {
-                FileInfo fi = (FileInfo) ir.next();
+                FileInfo fi = ir.next();
 
                 // 使用随机名称写入磁盘
-                fi.write(fu.getSavePath(), true);
+                fileService.write(fi, vpath);
 
                 WorkflowAnnexAttachment wfaa = new WorkflowAnnexAttachment();
                 wfaa.setAnnexId(annexId);
-                String visualPath = year + "/" + month;
-                wfaa.setVisualPath(visualPath);
+                wfaa.setVisualPath(vpath);
                 wfaa.setName(fi.getName());
                 wfaa.setDiskName(fi.getDiskName());
                 wfaa.setOrders(0);
@@ -89,9 +85,9 @@ public class WorkflowAnnexDb extends QObjectDb {
         }
     }
 
+    @Override
     public boolean del(JdbcTemplate jt) throws ResKeyException {
-        boolean re = false;
-        re = super.del(jt);
+        boolean re = super.del(jt);
         if (re) {
             WorkflowAnnexAttachment wfaa = new WorkflowAnnexAttachment();
             wfaa.delAttachments(getLong("id"));
@@ -115,7 +111,7 @@ public class WorkflowAnnexDb extends QObjectDb {
 				v.add(afad);
 			}
 		} catch (SQLException e) {
-			Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
 		}
 		
 		return v;
@@ -123,7 +119,7 @@ public class WorkflowAnnexDb extends QObjectDb {
     
     public Vector<WorkflowAnnexDb> listChildren(int parentId, String userName) {
     	JdbcTemplate jt = new JdbcTemplate();
-		String sql = "select id from flow_annex where parent_id=" + parentId + " and (user_name=" + StrUtil.sqlstr(userName) + " or reply_name=" + StrUtil.sqlstr(userName) + " or is_secret=0) order by add_date desc";
+		String sql = "select id from flow_annex where parent_id=" + parentId + " and (user_name=" + StrUtil.sqlstr(userName) + " or reply_name=" + StrUtil.sqlstr(userName) + " or is_secret=0) order by add_date asc";
 
 		Vector<WorkflowAnnexDb> v = new Vector<WorkflowAnnexDb>();
 		ResultIterator ri = null;
@@ -137,7 +133,7 @@ public class WorkflowAnnexDb extends QObjectDb {
 				v.add(afad);
 			}
 		} catch (SQLException e) {
-			Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
 		}
 		
 		return v;

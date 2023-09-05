@@ -11,13 +11,19 @@
         <result column="reply_time" property="replyTime" />
         <result column="is_readed" property="isReaded" />
         <result column="read_time" property="readTime" />
-        <association property="user" select="com.cloudweb.oa.mapper.UserMapper.getUserByName" column="{userName=user_name}"></association>
+        <association property="user" select="com.cloudweb.oa.mapper.UserMapper.getUserByName" column="user_name"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         id, notice_id, user_name, content, reply_time, is_readed, read_time
     </sql>
+
+    <select id="getReplyReadOrNot" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from oa_notice_reply where notice_id=#{noticeId} and is_readed=#{isReaded} order by id desc
+    </select>
 
     <select id="getReplyHasContent" resultMap="BaseResultMap">
         select

@@ -20,8 +20,9 @@ if (op.equals("edit")) {
 		if (dtm.modifyByWeboffice(application, request)) {
 			out.print("操作成功！");
 		}
-		else
+		else {
 			out.print("操作失败！");
+		}
 	}
 	catch (ErrMsgException e) {
 		out.print(e.getMessage());
@@ -50,7 +51,7 @@ function init(){
 	// TANGER_OCX.CreateNew("Word.Document");
 
 	// TANGER_OCX.OpenFromURL("<%=dtd.getFileUrl(request)%>");
-	TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/admin/flow_doc_template_getfile.jsp?id=<%=dtd.getId()%>");
+	TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/flow/getTemplateFile.do?id=<%=dtd.getId()%>");
 
 	<%
 	UserDb user = new UserDb();

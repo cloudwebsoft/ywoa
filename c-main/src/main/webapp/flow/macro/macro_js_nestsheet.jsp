@@ -117,54 +117,46 @@ function callCalculateOnload() {
 }
 // i从1开始
 <%
-   
 	String fieldName = ParamUtil.get(request,"fieldName");
-	
 	String nestFormCode = ParamUtil.get(request, "nestFormCode");
 	
 	int isTab = ParamUtil.getInt(request, "isTab", 0);
 	int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
+	String formName = ParamUtil.get(request, "cwsFormName");
 
 	String op = ParamUtil.get(request, "op");
-	if (op.equals("forRefresh")) {
+	if ("forRefresh".equals(op)) {
 		String pageType = ParamUtil.get(request, "pageType");
         String path = ParamUtil.get(request, "path");
 		%>
+		var $nestSheetContainerObj_<%=nestFormCode%>_<%=fieldName%> = $("#nestsheet_<%=fieldName%>");
 		// 如果是智能模块添加页面，则重新加载newIds中的记录，否则刷新后显示第一页
-        function refreshNestSheetCtl<%=nestFormCode%>(newIds){  
-                var path = '<%=path %>';
-				path = (path.indexOf("?")!=-1)? path += "&"+new Date().getTime() : path += "?"+new Date().getTime()
+        async function refreshNestSheetCtl<%=nestFormCode%>(newIds) {
+			var path = '<%=path %>';
+			path = (path.indexOf("?")!=-1)? path += "&"+new Date().getTime() : path += "?"+new Date().getTime()
 
-                var fieldName = '<%=fieldName %>';
-                
-                var strNewIds = "";
-                if (newIds!=null) {
-                	strNewIds = newIds;
-                }
-            
-                 $.ajax({
-                    type: "post",
-                    url: path,
-					data : {
-						newIds: strNewIds
-					},                    
-                    success: function(data, status){
-                    	<%if (isTab==0) { %>
-                        $("#nestsheet_"+fieldName).html(data);
-                        <%}else{ %>
-                        // 流程中选项卡式显示方式
-                        $("#tabs-<%=nestFormCode %>").html(data);                        
-                        <%} %>
-                        // callCalculateOnload();
-						try {
-							onNestSheetRefresh_<%=nestFormCode%>();
-						} catch (e) {};
-                    },
-                    error: function(XMLHttpRequest, textStatus){
-                        // 请求出错处理
-                        alert(XMLHttpRequest.responseText);
-                    }
-                });            
+			var fieldName = '<%=fieldName %>';
+
+			var strNewIds = "";
+			if (newIds!=null) {
+				strNewIds = newIds;
+			}
+
+			var data = await ajaxPost(path, {newIds: strNewIds});
+			// console.log('data', data);
+			<%if (isTab==0) { %>
+			// 如果选项卡在刷新中途切换，如开工切换至注册评审，就会造成找不到$("#nestsheet_"+fieldName)无法刷新的情况
+			// $("#nestsheet_"+fieldName).html(data);
+			$nestSheetContainerObj_<%=nestFormCode%>_<%=fieldName%>.html(data);
+			// console.log('#nestsheet_' + fieldName, $("#nestsheet_"+fieldName)[0]);
+			<%}else{ %>
+			// 流程中选项卡式显示方式
+			// $("#tabs-<%=nestFormCode %>").html(data);
+			<%} %>
+			// callCalculateOnload();
+			try {
+				onNestSheetRefresh_<%=nestFormCode%>();
+			} catch (e) {};
         }		
 		<%
 		boolean isAutoSel = false;
@@ -205,7 +197,7 @@ function callCalculateOnload() {
 		}		
 		
 		if (isAutoSel) {
-			// wumeng,为了获取主表单中的值,解析配置条件中的主表所配置的字段并获取签到表的表单编码用于刷新表格
+			// 为了获取主表单中的值,解析配置条件中的主表所配置的字段并获取签到表的表单编码用于刷新表格
 			String mainFormFieldNames="";
 			Pattern p = Pattern.compile("\\{\\$([A-Z0-9a-z-_@\\u4e00-\\u9fa5\\xa1-\\xff]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
 						Pattern.DOTALL | Pattern.CASE_INSENSITIVE);        
@@ -216,24 +208,35 @@ function callCalculateOnload() {
 					continue;
 				}
 				// 当条件为包含时，fieldName以@开头
-				if (fName.startsWith("@")){
+				if (fName.startsWith("@")) {
 					fName = fName.substring(1);
 				}
-				if(mainFormFieldNames.length()==0){
+				if (mainFormFieldNames.length() == 0) {
 					mainFormFieldNames = fName;
-				}else{
-					mainFormFieldNames += ","+ fName;
+				} else {
+					mainFormFieldNames += "," + fName;
 				}
 			}
 			String mainId = ParamUtil.get(request, "mainId");
 		%>
-			$(function() {
+			function initNestSheetAutoSel<%=nestFormCode%>() {
+				var formName = "<%=formName%>";
 				// 自动拉单功能
 				var isAutoSel = <%=isAutoSel%>;
-				if(isAutoSel){	//如果是自动嵌套拉单，每隔两秒执行检查是否改刷新表格
+				console.log('macro_js_nestsheet isAutoSel', isAutoSel);
+				if (isAutoSel) {	//如果是自动嵌套拉单，每隔两秒执行检查是否该刷新表格
 					var fields = '<%=mainFormFieldNames%>';
+					console.log('isAutoSel fields', fields);
 					var fieldNames = fields.split(",");
-					var oldValueArr = getFormValue(fieldNames);
+
+					// 取得的formObj为null，因为此时filterJS还未运行，currentFormObj尚未被赋值
+					// var formObj = getCurrentFormObj();
+					// console.log('formObj', formObj);
+					var fieldObj = fo(fieldNames[0], formName);
+					var formObj = $(fieldObj).closest('form')[0]; // 缓存后再激活时，formObj有可能会被销毁
+					console.log('formObj', formObj, 'fieldNames[0]', fieldNames[0], 'fieldObj', fieldObj, 'formName', formName);
+
+					var oldValueArr = getFormValue(fieldNames, formObj);
 					var ajaxData = {
 						'flowId':'<%=flowId%>',
 						'parentFormCode':'<%=parentFormCode%>',
@@ -241,116 +244,118 @@ function callCalculateOnload() {
 						'nestFieldName':'<%=nestFieldName%>',
 						'isFirst':true
 					};
-					for (var i in fieldNames) {
-						ajaxData[fieldNames[i]] = oldValueArr[i];
+					// 当找不到元素时oldValueArr为null，有可能是发起流程然后切换选项卡太快时，就会找不到
+					if (oldValueArr != null) {
+						for (var i in fieldNames) {
+							ajaxData[fieldNames[i]] = oldValueArr[i];
+						}
 					}
-					
-					<%
+					// 如果获取到值的数组中有不为空的，则需立即自动拉单，否则不需要
+					var isDoAutoSelImmediate = false;
+					if (oldValueArr != null && oldValueArr.length > 0) {
+						for (var m in oldValueArr) {
+							if (oldValueArr[m]) {
+								isDoAutoSelImmediate = true;
+								break;
+							}
+						}
+					}
+					console.log('oldValueArr', oldValueArr, 'isDoAutoSelImmediate', isDoAutoSelImmediate);
+<%
 					// 如果是模块编辑，则不需要自动拉单，否则将只显示拉单结果，而无法显示原来的数据
 					if (!"edit".equals(pageType)) {
 					%>
-					ajaxPost('<%=request.getContextPath()%>/nestsheetctl/autoSel.do',ajaxData,function(da){
-						if (!isJson(da)) {
-							da = $.parseJSON(da);
-						}
-						if(da.ret == '1') {
-							var newIds = da.newIds;
-							if (newIds==null) {
-								newIds = "";
-							}
-							refreshNestSheetCtl<%=nestFormCode%>(newIds);
-							<%if (flowId == com.redmoon.oa.visual.FormDAO.NONEFLOWID) {%>
-							if (newIds!="") {
-								var idsAry = newIds.split(",");
-								for (x in idsAry) {
-									addTempCwsId("<%=nestFormCode%>", idsAry[x]);									
-								}								
-							}
-							<%}%>
-						}
-					},false);
-					<%} %>
+					if (isDoAutoSelImmediate) {
+						doAutoSel<%=nestFormCode%>(ajaxData);
+					}
+					<%}%>
 								
-					if(fields!=''){ // 配置了条件,没有配置条件则不处理
-						window.setInterval(function(){ // 5秒进行自动检测一次
-							// 从新获取获取的条件的值，如果变化了，
-							var newValueArr = getFormValue(fieldNames);
-							if(JSON.stringify(oldValueArr) != JSON.stringify(newValueArr)){
-								oldValueArr = getFormValue(fieldNames);
-								var ajaxData = {
-									'flowId':'<%=flowId%>',
-									'parentFormCode':'<%=parentFormCode%>',
-									'parentId':'<%=mainId%>',
-									'nestFieldName':'<%=nestFieldName%>',
-									'isFirst':false
-								};
-								for (var i in fieldNames) {
-									ajaxData[fieldNames[i]] = newValueArr[i];
-								}
-								ajaxPost('<%=request.getContextPath()%>/nestsheetctl/autoSel.do',ajaxData,function(da){
-									if (!isJson(da)) {
-										da = $.parseJSON(da);
-									}
-									if(da.ret == '1'){
-										var newIds = da.newIds;	
-										if (newIds==null) {
-											newIds = "";
-										}
-										refreshNestSheetCtl<%=nestFormCode%>(newIds);
-										<%if (flowId == com.redmoon.oa.visual.FormDAO.NONEFLOWID) {%>
-										if (newIds!="") {
-											var idsAry = newIds.split(",");
-											for (x in idsAry) {
-												addTempCwsId("<%=nestFormCode%>", idsAry[x]);									
+					if(fields!='') { // 配置了条件,没有配置条件则不处理
+						var sint = window.setInterval(function() { // 200毫秒检测一次
+							if (o(formName)) {
+								var newValueArr = getFormValue(fieldNames, formObj);
+								// console.log('<%=nestFormCode%> <%=formName%> formName=', formName, 'newValueArr', newValueArr);
+								if (newValueArr != null && oldValueArr != null) {
+									if(JSON.stringify(oldValueArr) != JSON.stringify(newValueArr)) {
+										console.log('oldValueArr', oldValueArr, 'newValueArr', newValueArr);
+										oldValueArr = newValueArr;
+										var ajaxData = {
+											'flowId':'<%=flowId%>',
+											'parentFormCode':'<%=parentFormCode%>',
+											'parentId':'<%=mainId%>',
+											'nestFieldName':'<%=nestFieldName%>',
+											'isFirst':false
+										};
+										var isAllEmpty = true;
+										for (var i in fieldNames) {
+											ajaxData[fieldNames[i]] = newValueArr[i];
+											if (newValueArr[i]) {
+												isAllEmpty = false;
 											}
 										}
-										<%}%>
+										// 如果全部参数都为空，则不能自动拉单
+										if (!isAllEmpty) {
+											doAutoSel<%=nestFormCode%>(ajaxData);
+										}
 									}
-								},false);
+								}
 							}
-						},200);
+						}, 100);
+						getCurFormUtil().addInterval(sint, formName);
 					}
 				}
-			});
+			}
+
+			initNestSheetAutoSel<%=nestFormCode%>();
+
+			async function doAutoSel<%=nestFormCode%>(ajaxData) {
+				var data = await ajaxPost('/nestsheetctl/autoSel', ajaxData);
+				console.log('autoSel data', data);
+				if (data.ret == '1') {
+					var newIds = data.newIds;
+					if (newIds==null) {
+						newIds = "";
+					}
+					await refreshNestSheetCtl<%=nestFormCode%>(newIds);
+					<%if (flowId == com.redmoon.oa.visual.FormDAO.NONEFLOWID) {%>
+					if (newIds!="") {
+						// 清除之前拉单的结果，因为有可能是更改了条件字段的值，重新拉单
+						$("input[name='tempCwsId_<%=nestFormCode%>']").remove();
+
+						var idsAry = newIds.split(",");
+						for (x in idsAry) {
+							addTempCwsId("<%=nestFormCode%>", idsAry[x]);
+						}
+					}
+					<%}%>
+					eventTarget.fireEvent({
+						type: EVENT_TYPE.NEST_AUTO_SEL_DONE,
+						moduleCode: "<%=nestFormCode%>",
+						newIds: newIds
+					});
+				}
+			}
 			
 			// 获取主表单中的值并拼接成sql的where字句
-			function getFormValue(fieldNames){
+			function getFormValue(fieldNames, formObj){
 				var arr = new Array();
-				for(var i = 0;i < fieldNames.length;i++){
-					if (o(fieldNames[i])) {
-						arr[i] =  o(fieldNames[i]).value;
+				for(var i = 0;i < fieldNames.length;i++) {
+					// 当在流程中编辑嵌套表时，在filterJs中调用了setCurrentFormObj，form变了，所以findObj找到的为空，导致检测到值有变化，使嵌套表格自动拉单被调用
+					// if (findObj(fieldNames[i])) {
+					// 不能直接用formObj.name，因为formObj中可能刚好有个元素，其id为"name"
+					// var obj = findObjInForm(formObj.name, fieldNames[i]);
+					// 20230220 用getAttribute也行，但还是改为采用findObjInFormObj以提升效率
+					// var obj = findObjInForm(formObj.getAttribute('name'), fieldNames[i]);
+					var obj = findObjInFormObj(formObj, fieldNames[i]);
+					if (obj) {
+						arr[i] = obj.value;
+					} else {
+						console.warn('getFormValue 表单中未找到: ' + fieldNames[i]);
+						return null;
 					}
 				}
 				return arr;
 			}
-			// 写出公共方法用于调用
-			function ajaxPost(path,parameter,func,asy){
-				$.ajax({
-					type: "post",
-					url: path,
-					data: parameter,
-					async:asy,
-					dataType: "html",
-					contentType:"application/x-www-form-urlencoded; charset=iso8859-1",		
-					beforeSend: function(XMLHttpRequest){
-						if(!asy){
-							$(document.body).showLoading();
-						}
-					},	
-					success: function(data, status){
-						func(data);
-						if(!asy){
-							$(document.body).hideLoading();
-						}
-					},
-					error: function(XMLHttpRequest, textStatus){
-						if(!asy){
-							$(document.body).hideLoading();
-						}
-						alert(XMLHttpRequest.responseText);
-					}
-				});
-			}			
 		<%
 		}
 		
@@ -426,20 +431,4 @@ function hideNestSheetCol(fieldName) {
             }
         }
     });
-}
-
-// 计算控件回调
-function callByNestSheet(nestSheetSums, formCode) {
-    if (nestSheetSums != null) {
-        if (typeof (nestSheetSums) == 'object') {
-            for (var o in nestSheetSums) {
-				var $ctl = $("input[formula*='nest." + o + "'][formCode='" + formCode + "']");
-				if (!$ctl[0]) {
-					// 向下兼容，旧版的sum型计算控件中没有formCode
-					$ctl = $("input[formula*='nest." + o + "']");
-				}
-                $ctl.val(nestSheetSums[o]);
-            }
-        }
-    }
 }

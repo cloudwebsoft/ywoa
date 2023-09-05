@@ -13,6 +13,7 @@ import cn.js.fan.db.PrimaryKey;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.web.Global;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 
 public class NoticeDeptDb extends ObjectDb{
@@ -73,7 +74,7 @@ public class NoticeDeptDb extends ObjectDb{
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -99,7 +100,7 @@ public class NoticeDeptDb extends ObjectDb{
             }
             return v;
         } catch (SQLException e) {
-            logger.error("getDeptOfNotice: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDeptOfNotice: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -124,7 +125,7 @@ public class NoticeDeptDb extends ObjectDb{
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -162,7 +163,7 @@ public class NoticeDeptDb extends ObjectDb{
                 primaryKey.setKeyValue("dept_code", deptCode);
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -183,7 +184,7 @@ public class NoticeDeptDb extends ObjectDb{
             pstmt.setString(2, deptCode);
             re = conn.executePreUpdate() >= 1 ? true : false;
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();

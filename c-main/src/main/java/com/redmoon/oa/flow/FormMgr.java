@@ -3,11 +3,15 @@ package com.redmoon.oa.flow;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
+import cn.js.fan.util.StrUtil;
 import com.cloudweb.oa.cache.FormArchiveCache;
 import com.cloudweb.oa.service.FormArchiveService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.LogDb;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.visual.ModuleSetupDb;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -53,7 +57,7 @@ public class FormMgr {
             JSONArray ary = new JSONArray(fieldsAry);
             fp.getFields(ary);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(e.getMessage());
         }
         ft.setFormParser(fp);
@@ -62,12 +66,15 @@ public class FormMgr {
         if (re) {
             FormArchiveService formArchiveService = SpringUtil.getBean(FormArchiveService.class);
             formArchiveService.create(SpringUtil.getUserName(), ft.getCode(), ft.getContent());
+
+            // 生成模块
+            ModuleSetupDb msd = new ModuleSetupDb();
+            msd.getModuleSetupDbOrInit(ft.getCode());
         }
         return re;
     }
 
-    public synchronized boolean del(String code) throws
-            ErrMsgException {
+    public synchronized boolean del(String code) throws ErrMsgException {
         Leaf lf = new Leaf();
         for (Object o : lf.getLeavesUseForm(code)) {
             lf = (Leaf) o;
@@ -82,14 +89,17 @@ public class FormMgr {
         fd = fd.getFormDb(code);
         boolean re = fd.del();
         if (re) {
+            // 记录日志
+            HttpServletRequest request = SpringUtil.getRequest();
+            com.redmoon.oa.LogUtil.log(SpringUtil.getUserName(), StrUtil.getIp(request), LogDb.TYPE_ACTION, "FORM_DEL " + fd.getName() + ":" + fd.getCode());
+
             FormArchiveCache formArchiveCache = SpringUtil.getBean(FormArchiveCache.class);
             formArchiveCache.refreshAll(code);
         }
         return re;
     }
 
-    public synchronized boolean modify(HttpServletRequest request) throws
-            ErrMsgException {
+    public synchronized boolean modify(HttpServletRequest request) throws ErrMsgException {
         // 许可性验证
         License.getInstance().validate(request);
 
@@ -121,13 +131,16 @@ public class FormMgr {
             fp.getFields(ary);
         } catch (JSONException e) {
             DebugUtil.i(getClass(), "modify", fieldsAry);
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(e.getMessage());
         }
         ftd.setFormParser(fp);
 
         boolean re = ftd.save();
         if (re) {
+            // 记录日志
+            com.redmoon.oa.LogUtil.log(SpringUtil.getUserName(), StrUtil.getIp(request), LogDb.TYPE_ACTION, "FORM_EDIT " + ftd.getName() + ":" + ftd.getCode());
+
             // 当表单更新时，处理表单归档记录
             FormArchiveService formArchiveService = SpringUtil.getBean(FormArchiveService.class);
             formArchiveService.onFormUpdate(ftd);
@@ -150,11 +163,9 @@ public class FormMgr {
             try {
                 re = fvd.save();
             } catch (ResKeyException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         return re;
     }
-
-
 }

@@ -7,11 +7,16 @@
                  com.redmoon.oa.dept.DeptDb"
 %>
 <%@ page import="com.redmoon.oa.pvg.Privilege" %>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SysUtil" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.cloudweb.oa.base.IConfigUtil" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%
     License lic = License.getInstance();
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title><%=lic.getCompany()%>系统安装 - 配置环境变量</title>
@@ -65,11 +70,6 @@
             <%
                 DeptDb dd = new DeptDb();
                 dd = dd.getDeptDb(DeptDb.ROOTCODE);
-                String op = ParamUtil.get(request, "op");
-                String publicIp = ParamUtil.get(request, "publicIp");
-                if (op.equals("setup")) {
-
-                }
             %>
             <form id="form1" action="?op=setup&isHideStep=<%=isHideStep %>" method="post">
                 <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -84,20 +84,47 @@
                             <input type="hidden" name="Application.port" value="<%=request.getServerPort()%>"/>
                             <input type="hidden" name="Application.title" value=""/>
                             <input type="hidden" name="Application.desc" value=""/>
+                        </td>
+                    </tr>
+                    <tr style="display: none">
+                        <td align="right">虚拟路径：</td>
+                        <td align="left">
                             <%
-                                String vPath = request.getContextPath();
-                                if (!vPath.equals("")) {
-                                    vPath = vPath.substring(1);
-                                }
-                                String realPathRecommand = application.getRealPath("/").replaceAll("\\\\", "/");
                                 boolean isCluster = Global.isCluster();
-                                String realPath = realPathRecommand;
-                                if (isCluster) {
+                                String realPathRecommand;
+                                String realPath = "";
+                                IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+                                if (configUtil.isRunJar()) {
+                                    realPathRecommand = Global.getRealPath();
                                     realPath = Global.getRealPath();
                                 }
-                                // String realPath = Global.getRealPath().replaceAll("\\\\", "/");
+                                else {
+                                    // 当以内置tomcat运行时，取得的为：WEB-INF/classes/META-INF/resources/
+                                    // realPathRecommand = application.getRealPath("/").replaceAll("\\\\", "/");
+                                    realPathRecommand = Global.getAppPath();
+                                    LogUtil.getLog(getClass()).info("realPathRecommand=" + realPathRecommand);
+                                    if (isCluster) {
+                                        realPath = Global.getRealPath();
+                                    }
+                                    else {
+                                        if ("".equals(Global.getRealPath())) {
+                                            realPath = realPathRecommand;
+                                        }
+                                        else {
+                                            realPath = Global.getRealPath();
+                                        }
+                                    }
+                                }
+
+                                String vPath = Global.virtualPath;
+                                if ("".equals(vPath)) {
+                                    vPath = request.getContextPath();
+                                    if (vPath.startsWith("/")) {
+                                        vPath = vPath.substring(1);
+                                    }
+                                }
                             %>
-                            <input type="hidden" name="Application.virtualPath" value="<%=vPath%>"/>
+                            <input name="Application.virtualPath" value="<%=vPath%>"/>
                         </td>
                     </tr>
                     <tr>
@@ -131,21 +158,11 @@
                             </select>
                         </td>
                     </tr>
-                    <tr id="trRealPath" style="display:<%=isCluster?"":"none"%>">
+                    <tr id="trRealPath">
                         <td align="right">文件上传路径：</td>
                         <td>
-                            <%
-                                String cloudHome = application.getRealPath("/");
-                                cloudHome = cloudHome.replaceAll("\\\\", "/");
-                                if (cloudHome.lastIndexOf("/") != cloudHome.length() - 1) {
-                                    cloudHome += "/";
-                                }
-                                if (isCluster) {
-                                    cloudHome = Global.getRealPath();
-                                }
-                            %>
-                            <input id="Application.realPath" name="Application.realPath" style="width:400px" value="<%=cloudHome%>"/>
-                            建议：<a href="javascript:;" title="点击设置文件上传路径" onclick="o('Application.realPath').value='<%=realPath%>'"><%=realPath%>
+                            <input id="realPath" name="realPath" style="width:400px" value="<%=realPath%>"/>
+                            建议：<a href="javascript:;" title="点击设置文件上传路径" onclick="o('realPath').value='<%=realPathRecommand%>'"><%=realPathRecommand%>
                         </a>
                         </td>
                     </tr>
@@ -293,13 +310,13 @@
 
         $('#isCluster').change(function () {
             if ($(this).val() == "true") {
-                $('#trRealPath').show();
+                // $('#trRealPath').show();
                 $('#trClusterNo').show();
             } else {
-                $('#trRealPath').hide();
+                // $('#trRealPath').hide();
                 $('#trClusterNo').hide();
                 $('#isClusterNoDisplay').val('false');
-                o('Application.realPath').value = '<%=realPathRecommand%>';
+                // o('realPath').value = '<%=realPathRecommand%>';
             }
         });
 

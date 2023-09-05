@@ -41,7 +41,7 @@
 			ResultIterator ri = jt.executeQuery(sql, new Object[]{bz});	
 			float rate = 0;
 			if (ri.hasNext()) {
-				ResultRecord rr = (ResultRecord)ri.next();
+				ResultRecord rr = ri.next();
 				rate = rr.getFloat("rate");
 				money_result = num_result* rate;
 				String money_result_sring = NumberUtil.roundRMB(money_result);

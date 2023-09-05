@@ -17,18 +17,10 @@
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <html>
-<!--
-<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8" />
--->
 <link type="text/css" href="css/style.css" rel="stylesheet"/>
 <script src="../inc/common.js" type="text/javascript"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
-<script type="text/javascript" src="../util/jscalendar/calendar.js"></script>
-<script type="text/javascript" src="../util/jscalendar/lang/calendar-zh.js"></script>
-<script type="text/javascript" src="../util/jscalendar/calendar-setup.js"></script>
-<script type="text/javascript" src="../ckeditor/ckeditor.js" mce_src="../ckeditor/ckeditor.js"></script>
-<style type="text/css"> @import url("../util/jscalendar/calendar-win2k-2.css"); </style>
 <style type="text/css">
     #watermark {
         width: 100%;
@@ -40,8 +32,42 @@
         opacity: 1;
         filter: alpha(opacity=100);
     }
+
+     .loading{
+         display: none;
+         position: fixed;
+         z-index:1801;
+         top: 45%;
+         left: 45%;
+         width: 100%;
+         margin: auto;
+         height: 100%;
+     }
+    .SD_overlayBG2 {
+        background: #FFFFFF;
+        filter: alpha(opacity = 20);
+        -moz-opacity: 0.20;
+        opacity: 0.20;
+        z-index: 1500;
+    }
+    .treeBackground {
+        display: none;
+        position: absolute;
+        top: -2%;
+        left: 0%;
+        width: 100%;
+        margin: auto;
+        height: 200%;
+        background-color: #EEEEEE;
+        z-index: 1800;
+        -moz-opacity: 0.8;
+        opacity: .80;
+        filter: alpha(opacity = 80);
+    }
 </style>
 <body topmargin=0 leftmargin=0 rightmargin=0 bottomMargin=0>
+<div id="treeBackground" class="treeBackground"></div>
+<div id='loading' class='loading'><img src='../images/loading.gif'></div>
 <%
     // request.setCharacterEncoding( "utf-8" );
     //String report = request.getParameter("raq");
@@ -53,6 +79,8 @@
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "err_id") + " id=" + id));
         return;
     }
+
+    String Authorization = ParamUtil.get(request, "Authorization");
 
     //根据传入文件的名称获取访问权限集合
     ReportManageDb rmdb = new ReportManageDb();
@@ -112,32 +140,56 @@
         while (paramNames.hasMoreElements()) {
             String paramName = (String) paramNames.nextElement();
             String paramValue = request.getParameter(paramName);
-            // DebugUtil.i(getClass(), paramName, paramValue);
-            paramValue = new String(paramValue.getBytes("iso-8859-1"), "GB2312");
+            DebugUtil.i(getClass(), paramName, paramValue);
+            DebugUtil.i(getClass(), paramName, ParamUtil.get(request, paramName));
+
+            // out.print(paramName + "=" + paramValue + "<br/>");
+
+            // 前后端分离后，不需要再转GB2312
+            // paramValue = new String(paramValue.getBytes("iso-8859-1"), "GB2312");
             // DebugUtil.i(getClass(), paramName + "2", paramValue);
-    
+            // out.print(paramName + "2=" + paramValue + "<br/>");
+
+            String paramValue2 = "";
+            // if ("userName1".equals(paramName)) {
+            // paramValue2 = new String(request.getParameter(paramName).getBytes("iso-8859-1"), "GB2312");
+            // paramValue2 = new String(request.getParameter(paramName).getBytes("GBK"), "GBK");
+            // paramValue2 = new String(request.getParameter(paramName).getBytes("iso-8859-1"), "GB2312");
+            // paramValue2 = new String(request.getParameter(paramName).getBytes("iso-8859-1"), "utf8");
+
+            paramValue2 = new String(request.getParameter(paramName).getBytes(), "GB2312");
+            // }
+            // out.print(paramName + "2===" + paramValue2 + "<br/>");
             if ("userName1".equals(paramName)) {
-                paramValue = new String(request.getParameter("userName").getBytes("iso-8859-1"), "GB2312");
+                paramValue2 = request.getParameter("userName");
             }
-    
+
             if (paramValue != null) {
-                try {
+                /*try {
                     com.redmoon.oa.security.SecurityUtil.antiXSS(request, privilege, paramName, paramValue, getClass().getName());
                 } catch (ErrMsgException e) {
                     out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, e.getMessage()));
                     return;
                 }
-
+                */
                 //把参数拼成name=value;name2=value2;.....的形式
-                param.append(paramName).append("=").append(paramValue).append(";");
+                // param.append(paramName).append("=").append(paramValue).append(";");
+                // param.append(paramName).append("=").append("鼓楼商务局1").append(";");
+                // param.append(paramName).append("=").append(StrUtil.UrlEncode(paramValue)).append(";");
+                param.append(paramName).append("=").append(paramValue2).append(";");
             }
         }
     }
+    // out.print(param.toString());
 
     //以下代码是检测这个报表是否有相应的参数模板
     String paramFile = report.substring(0, iTmp) + "_arg.raq";
     // File f = new File(application.getRealPath(reportFileHome + File.separator + paramFile));
-    File f = new File(Global.getRealPath() + reportFileHome + File.separator + paramFile);
+    File f = new File(Global.getAppPath() + reportFileHome + File.separator + paramFile);
+
+    // out.print("report=" + report + "<BR>");
+    // out.print("paramFile=" + paramFile + "<BR>");
+    // out.print("param=" + param.toString());
 %>
 <jsp:include page="toolbar.jsp" flush="false"/>
 <table id="rpt" align="center">
@@ -148,13 +200,13 @@
             %>
             <table id="param_tbl" width="100%" height="100%">
                 <tr>
-                    <td <%--align="center" 如果置为居中，则某些超宽的报表因标题未居中，而查询条件居中则使得反而看起来不美观--%>>
+                    <td style="background-color: #fff" <%--align="center" 如果置为居中，则某些超宽的报表因标题未居中，而查询条件居中则使得反而看起来不美观--%>>
                         <report:param name="form1" paramFileName="<%=paramFile%>"
                                       needSubmit="no"
                                       params="<%=param.toString()%>"/>
                     </td>
                     <td id="btnTd">
-                        <a id="btnSearch" style="display: none; margin-left: 10px" href="javascript:_submit( form1 )">
+                        <a id="btnSearch" style="display: none; margin-left: 10px" href="javascript:showLoading(); _submit( form1 )">
                             <img src="../images/search.png" border=no style="vertical-align:middle">
                         </a>
                         <%
@@ -163,10 +215,22 @@
                             // DebugUtil.i(getClass(), "valGb2312", valGb2312);
                         %>
                         <script>
+                            function showLoading() {
+                                $(".treeBackground").addClass("SD_overlayBG2");
+                                $(".treeBackground").css({"display":"block"});
+                                $(".loading").css({"display":"block"});
+                            }
                             $(function() {
-                                o("form1").action = "showReport.jsp?id=<%=id%>&userName=<%=StrUtil.UrlEncode(valGb2312, "GB2312")%>";
+                                // o("form1").action = "showReport.jsp?id=<%=id%>&userName=<%=StrUtil.UrlEncode(valGb2312, "GB2312")%>";
+                                // o("form1").action = "showReport.jsp?id=<%=id%>&userName=<%=StrUtil.UrlEncode(val, "GB2312")%>";
+                                o("form1").action = "showReport.jsp?id=<%=id%>&userName=<%=StrUtil.UrlEncode(val)%>&Authorization=<%=Authorization%>";
+
                                 // o("resultPage").value = "/reportJsp/showReport.jsp?id=<%=id%>&userName=<%=StrUtil.UrlEncode(valGb2312, "GB2312")%>";
                                 // console.log("action=2" + o("form1").action);
+
+                                // o('userName1').value = "%E9%BC%93%E6%A5%BC%E5%95%86%E5%8A%A1%E5%B1%801";
+                                // o('userName1').value = "<%=val%>";
+                                // o('form1').method = "GET";
                             });
                         </script>
                     </td>
@@ -244,9 +308,23 @@
         })
 
         $('#btnSearch').show();
-        
+
         // 隐藏pdf按钮
         $('.pdf').parent().parent().hide();
+
+        // 隐藏导出Excel对话框中的 请选择导出格式：2003、2007、OpenXML
+        var sint = setInterval(function(){
+            var frame = document.getElementById("popupFrame");
+            if (frame) {
+                var doc = frame.contentWindow.document;
+                var row1 = doc.getElementById('formatRow1');
+                if (row1) {
+                    $(row1).hide();
+                    $(doc.getElementById('formatRow2')).hide();
+                    frame.contentWindow.excelFormat='OpenXML';
+                }
+            }
+        },500);
     })
 </script>
 </html>

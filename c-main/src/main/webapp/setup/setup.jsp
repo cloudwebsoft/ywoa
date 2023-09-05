@@ -3,7 +3,6 @@
                  cn.js.fan.db.*,
                  cn.js.fan.util.*,
                  cn.js.fan.web.*,
-                 com.redmoon.forum.*,
                  com.redmoon.oa.flow.macroctl.*,
                  com.redmoon.oa.db.*,
                  org.jdom.*,
@@ -19,8 +18,19 @@
 <%@ page import="com.redmoon.oa.pvg.Privilege" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%@ page import="com.cloudweb.oa.api.ILicense" %>
-<jsp:useBean id="myconfig" scope="page" class="com.redmoon.oa.Config"/>
+<%@ page import="com.redmoon.oa.person.UserSet" %>
+<%@ page import="com.cloudweb.oa.api.IUserSecretService" %>
+<%@ page import="com.cloudweb.oa.utils.ConfigUtil" %>
+<%@ page import="com.cloudweb.oa.base.IConfigUtil" %>
+<%@ page import="java.net.URL" %>
+<%@ page import="java.net.URLDecoder" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%
+    // 清除缓存
+    RMCache.refresh();
+    RMCache rmcache = RMCache.getInstance();
+    rmcache.clear();
+
     // 重新载入许可证
     License lic = License.getInstance();
     lic.init();
@@ -59,16 +69,10 @@
         }
     }
 
-    // 清除缓存
-    RMCache.refresh();
-    RMCache rmcache = RMCache.getInstance();
-    rmcache.clear();
-    System.out.println("setup:清除缓存！");
-
     // 重新载入config_db.xml
     QDBConfig qdbcfg = new QDBConfig();
     qdbcfg.reload();
-    System.out.println("setup:重新载入数据库配置文件！");
+    LogUtil.getLog(getClass()).info("setup:重新载入数据库配置文件！");
 
     ProtectConfig pc = new ProtectConfig();
     pc.reload();
@@ -83,12 +87,6 @@
     com.redmoon.weixin.Config.reload();
     com.redmoon.oa.android.CloudConfig.reload();
     // com.redmoon.oa.robot.Config.reload();
-
-    com.redmoon.forum.Config forumCfg = com.redmoon.forum.Config.getInstance();
-    forumCfg.refresh();
-    com.redmoon.forum.MsgDb.initParam();
-
-    cn.js.fan.module.cms.plugin.wiki.Config.getInstance().refresh();
 
     com.redmoon.oa.security.Config.getInstance().refresh();
 
@@ -110,7 +108,7 @@
     com.redmoon.oa.Config.reload();
 
     String op = ParamUtil.get(request, "op");
-    if (op.equals("select")) {
+    if ("select".equals(op)) {
         String url = "";
         String db = "";
         String oadb = ParamUtil.get(request, "oadb");
@@ -140,7 +138,7 @@
         return;
     }
 
-    XMLConfig cfg = new XMLConfig("config.xml", false, "gb2312");
+    XMLConfig cfg = new XMLConfig("config.xml", false, "utf-8");
 %>
 <table cellpadding="6" cellspacing="0" border="0" width="100%">
     <tr>
@@ -219,22 +217,6 @@
                     <%
                         }
 
-                        // cloudwebsoft
-                        boolean cloudInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.forum.MsgDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            cloudInstalled = false;
-                        }
-
-                        // workplan
-                        boolean workplanInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.workplan.WorkPlanDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            workplanInstalled = false;
-                        }
-
                         // address
                         boolean addressInstalled = true;
                         try {
@@ -251,68 +233,12 @@
                             messageInstalled = false;
                         }
 
-                        // task
-                        boolean taskInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.task.TaskDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            taskInstalled = false;
-                        }
-
                         // kaoqin
                         boolean kaoqinInstalled = true;
                         try {
                             Class.forName("com.redmoon.oa.kaoqin.KaoqinDb");
                         } catch (ClassNotFoundException cnfe) {
                             kaoqinInstalled = false;
-                        }
-
-                        // worklog
-                        boolean worklogInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.worklog.WorkLogDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            worklogInstalled = false;
-                        }
-
-                        // netdisk
-                        boolean netdiskInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.netdisk.Leaf");
-                        } catch (ClassNotFoundException cnfe) {
-                            netdiskInstalled = false;
-                        }
-
-                        // book
-                        boolean bookInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.book.BookDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            bookInstalled = false;
-                        }
-
-                        // officeequip
-                        boolean officeequipInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.officeequip.OfficeDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            officeequipInstalled = false;
-                        }
-
-                        // asset
-                        boolean assetInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.asset.AssetDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            assetInstalled = false;
-                        }
-
-                        // vehicle
-                        boolean vehicleInstalled = true;
-                        try {
-                            Class.forName("com.redmoon.oa.vehicle.VehicleDb");
-                        } catch (ClassNotFoundException cnfe) {
-                            vehicleInstalled = false;
                         }
 
                         // meeting
@@ -357,7 +283,7 @@
                             jdbcExtInstalled = false;
                         }
 
-                        boolean filesOK = cloudInstalled && workplanInstalled && addressInstalled && taskInstalled && kaoqinInstalled && worklogInstalled && messageInstalled && netdiskInstalled && bookInstalled && assetInstalled && officeequipInstalled && vehicleInstalled && meetingInstalled && javaMailInstalled && jdbcExtInstalled;
+                        boolean filesOK = addressInstalled && kaoqinInstalled && messageInstalled && meetingInstalled && javaMailInstalled && jdbcExtInstalled;
                         if (filesOK) {
                     %>
                     <tr>
@@ -375,7 +301,7 @@
                     <tr>
                         <td colspan="2" valign=top>
                             <ul>
-                                <img src="images/<%= workplanInstalled?"check.gif":"x.gif" %>" width="13" height="13">
+                                <img src="images/<%= jdbcExtInstalled?"check.gif":"x.gif" %>" width="13" height="13">
                                 工作流内核
                                 <br> <img src="images/<%= javaMailInstalled?"check.gif":"x.gif" %>" width="13" height="13">
                                 JavaMail支持 (mail.jar, activation.jar,)
@@ -385,25 +311,36 @@
                         </td>
                     </tr>
                     <%
+                        License.getInstance().init();
+
                         // 改变JCS 目录
                         String cloudHome = application.getRealPath("/");
                         cloudHome = cloudHome.replaceAll("\\\\", "/");
                         if (cloudHome.lastIndexOf("/") != cloudHome.length() - 1) {
                             cloudHome += "/";
                         }
+                        LogUtil.getLog(getClass()).info("cloudHome=" + cloudHome);
 
-                        System.out.println("cloudHome=" + cloudHome);
-                        License.getInstance().init();
+                        LogUtil.getLog(getClass()).info("init cache.ccf.");
+                        IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+                        String cfgPath = configUtil.getFilePath();
+                        if (Global.getInstance().isUseCache() && !Global.getInstance().isUseRedis()) {
+                            PropertiesUtil propertiesUtil = new PropertiesUtil(cfgPath + "/cache.ccf");
+                            if (propertiesUtil.getSafeProperties() != null) {
+                                LogUtil.getLog(getClass()).info("init DiskPath in cache.ccf.");
+                                propertiesUtil.setValue("jcs.auxiliary.DC.attributes.DiskPath", cloudHome + "CacheTemp");
+                                propertiesUtil.saveFile(cfgPath + "/cache.ccf");
+                            }
+                        }
 
-                        PropertiesUtil pu = new PropertiesUtil(cloudHome + "WEB-INF/log4j.properties");
-                        pu.setValue("log4j.appender.R.File", cloudHome + "logs/oa.log");
-                        pu.saveFile(cloudHome + "WEB-INF/log4j.properties");
-                        java.net.URL cfgURL = getClass().getResource("/cache.ccf");
-                        PropertiesUtil pucache = new PropertiesUtil(java.net.URLDecoder.decode(cfgURL.getFile()));
-                        pucache.setValue("jcs.auxiliary.DC.attributes.DiskPath", cloudHome + "CacheTemp");
-                        pucache.saveFile(java.net.URLDecoder.decode(cfgURL.getFile()));
+                        // 清除缓存
+                        RMCache.refresh();
+                        rmcache = RMCache.getInstance();
+                        rmcache.clear();
+                        LogUtil.getLog(getClass()).info("setup:清除缓存！");
 
-                        XMLConfig reportCfg = new XMLConfig(cloudHome + "WEB-INF" + java.io.File.separator + "reportConfig.xml", true, "utf-8");
+                        /*
+                        XMLConfig reportCfg = new XMLConfig("../reportConfig.xml", true, "utf-8");
                         try {
                             Element root = reportCfg.getRootElement();
                             Iterator ir = root.getChildren().iterator();
@@ -415,7 +352,6 @@
                                     if (!rptCacheDir.exists()) {
                                         rptCacheDir.mkdir();
                                     }
-
                                     break;
                                 }
                             }
@@ -423,7 +359,7 @@
                         } catch (Exception e) {
                             // out.print("<font style='font-size:14px' color='#FF0000'>请检查WEB-INF/proxool.xml文件中的driver-url是否设置正确！<br>参照设置为：jdbc:microsoft:sqlserver://localhost:1433;DatabaseName=cwbbs</font><br>");
                             e.printStackTrace();
-                        }
+                        }*/
 
                         boolean propError = false;
                         String errorMessage = null;
@@ -483,7 +419,7 @@
                     <tr>
                         <td valign=top><img src="images/check.gif" width="13" height="13"></td>
                         <td>
-                            系统目录正确配置于: <tt><%= cloudHome %>
+                            系统目录正确配置于: <%= cfgPath %>
                         </td>
                     </tr>
                     <%
@@ -517,12 +453,12 @@
             %>
             <form method="post" action="setup.jsp?op=select">
                 请选择数据库类型：&nbsp;&nbsp;&nbsp;
-                <input name="oadb" value="MySQL" type="hidden"/>
+                <input name="oadb" value="mysql" type="hidden"/>
                 <select name="oadb" disabled>
                     <option value="">请选择数据库类型</option>
                     <%
                         String dbType = StrUtil.getNullStr(Global.db);
-                        // System.out.println("dbType=" + dbType);
+                        // LogUtil.getLog(getClass()).info("dbType=" + dbType);
                         if (dbType.equals("MySQL")) {
                     %>
                     <option value="mysql" selected="selected">MYSQL</option>

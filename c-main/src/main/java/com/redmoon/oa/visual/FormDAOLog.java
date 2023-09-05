@@ -8,6 +8,7 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.base.IAttachment;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.FormField;
@@ -16,9 +17,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.Vector;
 
 public class FormDAOLog implements IFormDAO {
+
 	public static final int LOG_TYPE_CREATE = 0;
 	FormDb fd;
 	Vector<FormField> fields;
@@ -116,7 +119,7 @@ public class FormDAOLog implements IFormDAO {
     @Override
     public FormField getFormField(String fieldName) {
         for (FormField ff : fields) {
-            // System.out.println(getClass() + " " + ff.getName() + " " + ff.getValue());
+            // LogUtil.getLog(getClass()).info(getClass() + " " + ff.getName() + " " + ff.getValue());
             if (ff.getName().equals(fieldName)) {
                 return ff;
             }
@@ -221,8 +224,25 @@ public class FormDAOLog implements IFormDAO {
         lr.setResult(result);
         lr.setTotal(total);
         return lr;
-    }	
-    
+    }
+
+    /**
+     * 取得到达时间之前的最后一条历史记录
+     * @param flowId
+     * @param receiveDate
+     * @return
+     */
+    public FormDAOLog getLastBeforeReceiveDate(int flowId, Date receiveDate) {
+        String logTable = FormDb.getTableNameForLog(fd.getCode());
+        String sql = "select id from " + logTable + " where flowId=" + flowId + " and cws_log_date < " + SQLFilter.getDateStr(DateUtil.format(receiveDate, "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss");
+        ListResult lr = listResult(sql, 1, 1);
+        if (lr.getResult().size() > 0) {
+            return (FormDAOLog)lr.getResult().elementAt(0);
+        } else {
+            return null;
+        }
+    }
+
     public void load() {
         String fds = "";
         for (FormField ff : fields) {
@@ -264,13 +284,13 @@ public class FormDAOLog implements IFormDAO {
                         } catch (SQLException e) {
                             // 以免出现如下问题：load:Value '0000-00-00' can not be represented as java.sql.Timestamp
                             LogUtil.getLog(getClass()).error("load1:" + e.getMessage());
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
                         }
                         k++;
                     }
 
                     creator = StrUtil.getNullStr(rs.getString(k));
-                    cwsId = StrUtil.getNullStr(rs.getString(k+1));
+                    cwsId = rs.getString(k+1);
                     cwsOrder = rs.getInt(k+2);
                     unitCode = rs.getString(k+3);
                     flowId = rs.getInt(k+4);
@@ -287,7 +307,7 @@ public class FormDAOLog implements IFormDAO {
         }
         catch (SQLException e) {
             LogUtil.getLog(getClass()).error("load:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -392,5 +412,20 @@ public class FormDAOLog implements IFormDAO {
     @Override
     public String getCwsQuoteForm() {
         return "";
+    }
+
+    @Override
+    public String getFormCode() {
+        if (fd != null) {
+            return fd.getCode();
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    public Vector<IAttachment> getAttachments() {
+        return null;
     }
 }

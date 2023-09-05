@@ -6,8 +6,6 @@
 <%@ page import="cn.js.fan.web.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.fileark.*"%>
-<%@ page import="com.redmoon.forum.person.*"%>
-<%@ page import="cn.js.fan.security.*"%>
 <%
 int flowId = ParamUtil.getInt(request, "flowId", -1);
 if (flowId==-1) {
@@ -22,8 +20,8 @@ if (ary==null || ary.length<2) {
 	return;
 }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <title><%=Global.AppName%></title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -81,7 +79,7 @@ function DriveLeftScroll() {
       <ul id="contrast_left" style="list-style-type: none;">
         <li><strong>注:</strong></li>
         <li>1、浅绿色 表示一个范围</li>
-        <li>2、浅紫色 存在差异</li>
+        <li>2、浅红色 存在差异</li>
       </ul>
     </div>
   </div>

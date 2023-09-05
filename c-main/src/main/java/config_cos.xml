@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <appId>1251471436</appId>
+    <secretId>AKIDZx5xXrufAOL1ZqqZ1D7k6BzWmnZ9VcU6</secretId>
+    <secretKey>OWP4UeZEeojPpztYx6zd191eBUXKr76o</secretKey>
+	<name>bucket-test-1251471436</name>
+	<region>ap-nanjing</region>
+	<domain>https://bucket-test-1251471436.cos.ap-nanjing.myqcloud.com</domain>
+</config>

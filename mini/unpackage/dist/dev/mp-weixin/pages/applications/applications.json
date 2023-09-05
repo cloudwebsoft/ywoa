@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "应用",
+  "usingComponents": {
+    "u-badge": "/node-modules/uview-ui/components/u-badge/u-badge"
+  }
+}

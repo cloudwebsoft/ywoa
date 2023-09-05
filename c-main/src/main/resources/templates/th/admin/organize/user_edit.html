@@ -1,0 +1,472 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑用户</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="../../js/bootstrap/css/bootstrap.min.css"/>
+    <style>
+        #photoImg {
+            margin: 5px;
+        }
+
+        #photoImg img {
+            width: 130px;
+        }
+
+        .main-content {
+            width: 90%;
+            margin: 10px auto;
+        }
+    </style>
+    <script type="text/javascript" src="../../inc/common.js"></script>
+    <script src="../../js/jquery-1.9.1.min.js"></script>
+    <script src="../../js/jquery-migrate-1.2.1.min.js"></script>
+    <link href="../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <script src="../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <script src="../../inc/livevalidation_standalone.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../js/datepicker/jquery.datetimepicker.css"/>
+    <script src="../../js/datepicker/jquery.datetimepicker.js"></script>
+    <link href="../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script th:inline="javascript">
+        function selectNode(code, name) {
+            o("deptCode").value = code;
+            o("deptName").value = name;
+        }
+
+        function selDept() {
+            var deptCode = o("deptCode").value;
+            openWin("../../deptMultiSel.do?deptCodes=" + deptCode, 800, 600, "yes");
+        }
+
+        // 校验手机号唯一性
+        function checkMobile(mobile) {
+            $.ajax({
+                type: "post",
+                url: "../../user/checkMobile.do",
+                data: {
+                    mobile: mobile
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                },
+                success: function (data, status) {
+                    if (data.ret==0) {
+                        o("checkMobileResult").innerHTML = data.msg;
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    jAlert(XMLHttpRequest.responseText, "[(${prompt})]");
+                }
+            });
+        }
+
+        function setUsers(users, userRealNames) {
+            o("leaderCode").value = users;
+            o("leaderName").value = userRealNames;
+        }
+
+        function getSelUserNames() {
+            return o("leaderCode").value;
+        }
+
+        function getSelUserRealNames() {
+            return o("leaderName").value;
+        }
+
+    </script>
+</head>
+<body>
+<div th:replace="th/include/tab_user :: navUser(${user.name}, 1)"></div>
+<div class="spacerH"></div>
+<div class="main-content">
+    <form method="post" action="../../user/update.do" autocomplete="off" enctype="MULTIPART/FORM-DATA" onsubmit="return false" id="memberForm" name="memberForm">
+        <table width=100% border=0 cellpadding=0 cellspacing=0 class="tabStyle_1">
+            <tr>
+                <td colspan="4" align=left class="tabStyle_1_title">用户信息</td>
+            </tr>
+            <tr>
+                <td>帐号</td>
+                <td>
+                    <span style="color:green" width="150" th:inline="text">[[${user.name}]]</span>
+                    <input type="hidden" name="name" id="name" th:value="${user.name}"/>
+                </td>
+                <td rowspan="3">头像</td>
+                <td colspan="1" rowspan="3" align=left id="photoTd">
+                    <div id="photoImg">
+                    <span th:switch="${user.photo!=null && user.photo!=''}" th:remove="tag">
+                        <span th:case="true" th:remove="tag">
+                            <img th:src="@{'/showImg.do?path=' + ${user.photo}}"/>
+                        </span>
+                        <span th:case="*" th:remove="tag">
+                            <span th:remove="tag" th:switch="${user.gender}">
+                                <img th:case="false" class="photoImg" src="../../images/man.png" style="width:29px"/>
+                                <img th:case="*" class="photoImg" src="../../images/woman.png" style="width:29px"/>
+                            </span>
+                        </span>
+                    </span>
+                    </div>
+                    <input name="photo" type="file" id="photo" accept='image/gif,image/jpeg,image/jpg,image/png,image/bmp,image/svg'/>
+                    <div style="margin-top: 5px">
+                        <a href="javascript:;" onclick="restoreIcon()">恢复默认</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>姓名</td>
+                <td align=left>
+                    <input type="text" name="RealName" maxlength=20 size=20 th:value="${user.realName}"/>
+                    <script>
+                        var RealNameObj = new LiveValidation('RealName');
+                        RealNameObj.add(Validate.Presence);
+                    </script>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>手机号</td>
+                <td align=left>
+                    <input type=text size=20 maxlength="16" name=mobile th:value="${user.mobile}" onchange="checkMobile(this.value)"/>
+                    <span id="checkMobileResult"></span>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>密码</td>
+                <td align=left>
+                    <input type="password" name="Password" autocomplete="off" size="21" onkeyup="checkPwd(this.value)">
+                    <span style="color: #FF0000"><span id="checkResult"></span>（如不需更改，则不用填写） </span></td>
+                </td>
+                <td width=146 height="25">
+                    婚否
+                </td>
+                <td height="25" class=stable><select name="isMarriaged">
+                    <option value="" selected>请选择</option>
+                    <option value="true">已婚</option>
+                    <option value="false">未婚</option>
+                </select>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>确认密码</td>
+                <td align=left>
+                    <input type="password" name="Password2" autocomplete="off" size=21/>
+                </td>
+                <td width=146 height="28">
+                    QQ
+                </td>
+                <td height="28">
+                    <input type="text" name="QQ" size="20" maxlength="15" th:value="${user.qq}">
+                </td>
+            </tr>
+            <tr>
+                <td align=left>部门</td>
+                <td align=left><input id="deptName" name="deptName" th:value="${deptName}" readonly size=20/>
+                    <input id="deptCode" name="deptCode" type="hidden" th:value="${deptCode}"/>
+                    &nbsp;<a href="javascript:;" onclick="selDept()">选择</a>
+                </td>
+                <td>入职日期</td>
+                <td>
+                    <input type="text" id="entryDate" name="entryDate" th:object="${user}" th:value="${#temporals.format(user.entryDate,'yyyy-MM-dd')}" size="20"/>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>类型</td>
+                <td align=left>
+                    <select id="type" name="type" th:inline="text">
+                        [[${userTypeOpts}]]
+                    </select>
+                    <script language="JavaScript" th:inline="javascript">
+                        $('#type').val([[${user.userType}]]);
+                    </script>
+                </td>
+                <td>&nbsp;</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td width=120 height="28" align=left>
+                    他的领导
+                </td>
+                <td height="28">
+                    <input id="leaderName" name="leaderName" type=text readonly size=20 th:value="${leaderNames}"/>
+                    <input id="leaderCode" name="leaderCode" type="hidden" th:value="${leaders}"/>
+                    &nbsp;&nbsp;<a href="javascript:;" onclick="openWin('../../userMultiSel.do', 800, 600)">选择</a>
+                </td>
+                <td width=120 height="28" align=left>
+                    邮政编码
+                </td>
+                <td height="28">
+                    <input type=text name=postCode size=20 th:value="${user.postCode}"/>
+                </td>
+            </tr>
+            <tr>                
+                <td height="27" align=left>地址</td>
+                <td height="27" colspan="3"><input type="text" name="Address" size="20" th:value="${user.address}"/></td>
+            </tr>
+            <tr>
+                <td width=120 height="25" align=left>
+                    性别
+                </td>
+                <td width="449" height="25">
+                    <input type="radio" name="gender" value="false" th:attr="checked=${!user.gender}" />
+                    男
+                    <input type="radio" name="gender" value="true" th:attr="checked=${user.gender}" />
+                    女
+                </td>
+                <td width=120 height="28" align=left>
+                    出生日期
+                </td>
+                <td height="28">
+                    <input type="text" name="birthday" id="birthday" th:value="${#temporals.format(user.birthday,'yyyy-MM-dd')}" size="20"/>
+                </td>
+            </tr>
+            <tr>
+                <td width=120 height="25" align=left>
+                    E-mail
+                </td>
+                <td height="25">
+                    <input type=text id="Email" name="Email" size=20 maxlength="50" th:value="${user.email}"/>
+                    <script>
+                        var Email = new LiveValidation('Email');
+                        Email.add(Validate.Email);
+                    </script>
+                </td>
+                <td width=146 height="25">身份证号码</td>
+                <td height="25">
+                    <input type=text name=IDCard size=20 th:value="${user.IDCard}"/>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" align=left>兴趣爱好</td>
+                <td height="25">
+                    <input name="Hobbies" type=text size="20" th:value="${user.hobbies}"/>
+                </td>
+                <td width=120 height="25" align=left>
+                    电话
+                </td>
+                <td height="25">
+                    <input type="text" name="phone" size="20" th:value="${user.phone}">
+                </td>
+            </tr>
+            <tr>
+                <td width=13% height="28" align=left>网盘份额&nbsp;</td>
+                <td width="37%" height="28"><input name="diskSpaceAllowed" th:value="${user.diskSpaceAllowed}" size=20/>
+                    字节
+                </td>
+                <td width="12%" height="28" align="left">内部邮箱份额</td>
+                <td height="28" class=stable>
+                    <input name="msgSpaceAllowed" th:value="${msgSpaceAllowed}" size=20/>
+                    字节
+                </td>
+            </tr>
+            <tr>
+                <td align="left">员工编号</td>
+                <td>
+                    <input type="text" id="personNo" name="personNo" title="用于集成考勤机" size="20" th:value="${user.personNo}"/>
+                    <span id="checkPersonNoResult" style="color:red"></span>
+                </td>
+                <td align="left">短号</td>
+                <td>
+                    <input type="text" name="MSN" size=20 th:value="${user.msn}"/>
+                </td>
+            </tr>
+            <tr style="display:none;">
+                <td><input type="text" name="isPass" value="1"/></td>
+            </tr>
+            <tr>
+                <td colspan="4" align=center style="padding: 10px 0px">
+                    <input name="party" th:value="${user.party}" type="hidden"/>
+                    <input name="selectDeptCode" th:value="${selectDeptCode}" type="hidden"/>
+                    <button id="btnOk" class="btn btn-default">确定</button>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+</body>
+<script th:inline="javascript">
+    function update() {
+        var mobileCheck = $("#checkMobileResult").text();
+        var r = mobileCheck.match(/手机号已注册/i);
+        if (r != null) {
+            return;
+        }
+
+        if (!LiveValidation.massValidate(RealNameObj.formObj.fields)) {
+            /*if (LiveValidation.liveErrMsg.length < 100) {
+                jAlert(LiveValidation.liveErrMsg, "[(#{prompt})]");
+            }
+            else {
+                jAlert("请检查表单中的内容填写是否正常！","提示");
+            }*/
+            return;
+        }
+
+        var form = $('#memberForm')[0];
+        var data = new FormData(form);
+        $.ajax({
+            type: "post",
+            enctype: 'multipart/form-data',
+            url: "../../user/update.do",
+            data: data,
+            processData: false,
+            contentType: false,
+            cache: false,
+            dataType: "json",
+            // timeout: 6000,
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data) {
+                $('body').hideLoading();
+                if (data.ret != 1) {
+                    if (data.msg != null) {
+                        data.msg = data.msg.replace(/\\r/ig, "<BR>");
+                    }
+                } else {
+                    var deptCodeAry = o("deptCode").value.split(",");
+                    // jAlert_Redirect(data.msg, [[#{prompt}]], "../../admin/organize/listUser.do?deptCode=" + deptCodeAry[0]);
+                }
+                jAlert(data.msg, "[(#{prompt})]");
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (e) {
+                consoleLog(e);
+                $('body').hideLoading();
+                jAlert(e, "提示");
+            }
+        });
+    }
+
+    function checkPersonNo(pn) {
+        $.ajax({
+            type: "post",
+            url: "../../user/checkPersonNo.do",
+            data: {
+                personNo: pn
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                o("checkPersonNoResult").innerHTML = data.msg;
+            },
+            complete: function (XMLHttpRequest, status) {
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                jAlert(XMLHttpRequest.responseText, "提示");
+            }
+        });
+    }
+
+    $(function () {
+        var DeptName = new LiveValidation('deptName');
+        DeptName.add(Validate.Presence);
+
+        var mobile = new LiveValidation('mobile');
+        mobile.add(Validate.Mobile);
+        [# th:if="${isMobileNotEmpty}"]
+        mobile.add(Validate.Presence);
+        [/]
+
+        o("isMarriaged").value = [(${user.isMarriaged})];
+        var IDCard = new LiveValidation('IDCard');
+        IDCard.add(Validate.IdCardNo);
+
+        $('#personNo').bind('input propertychange', function () {
+            checkPersonNo(this.value);
+        });
+        $('#entryDate').datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d',
+            step: 1
+        });
+        $('#birthday').datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d',
+            step: 1
+        });
+
+        $('#btnOk').click(function() {
+            update();
+        })
+    });
+
+    function checkPwd(pwd) {
+        $.ajax({
+            type: "post",
+            url: "../../user/checkPwd.do",
+            data: {
+                op: "checkPwd",
+                pwd: pwd
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                o("checkResult").innerHTML = data.msg;
+            },
+            complete: function (XMLHttpRequest, status) {
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function restoreIcon() {
+        jConfirm("您确定要恢复默认头像么", "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "../../user/restoreIcon.do",
+                    data: {
+                        userName: [[${user.name}]]
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                    },
+                    success: function (data, status) {
+                        if (data.ret==1) {
+                            jAlert(data.msg, "[(#{prompt})]", function() {
+                                window.location.reload();
+                            })
+                        }
+                        else {
+                            jAlert(data.msg, "[(#{prompt})]");
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                    },
+                    error: function (XMLHttpRequest, textStatus) {
+                        // 请求出错处理
+                        jAlert(XMLHttpRequest.responseText, "提示");
+                    }
+                });
+            }
+        })
+    }
+
+    $("#photo").change(function(){
+        var curFile = this.files[0];
+        var reader = new FileReader();
+        reader.readAsDataURL(curFile);
+        reader.onload = function () {
+            $('#photoImg').html('<img src="'+ reader.result +'"/>');
+        }
+    });
+</script>
+</html>

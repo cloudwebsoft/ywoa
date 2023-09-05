@@ -23,12 +23,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author fgf
@@ -94,6 +95,14 @@ public class UserOfRoleServiceImpl extends ServiceImpl<UserOfRoleMapper, UserOfR
     }
 
     @Override
+    public boolean del(String userName, String roleCode) {
+        QueryWrapper<UserOfRole> qw = new QueryWrapper<>();
+        qw.eq("userName", userName);
+        qw.eq("roleCode", roleCode);
+        return userOfRoleMapper.delete(qw) == 1;
+    }
+
+    @Override
     public UserOfRole getUserOfRole(String userName, String roleCode) {
         QueryWrapper<UserOfRole> qw = new QueryWrapper<>();
         qw.eq("userName", userName);
@@ -154,6 +163,8 @@ public class UserOfRoleServiceImpl extends ServiceImpl<UserOfRoleMapper, UserOfR
 
             userService.refreshOrders(userName);
 
+            userCache.refreshRoles(userName);
+
             Role role = roleService.getRole(roleCode);
             User user = userService.getUser(userName);
             // 角色中添加用户时，如果UserSetupDb中的小，则赋予UserSetupDb角色的配额
@@ -184,39 +195,41 @@ public class UserOfRoleServiceImpl extends ServiceImpl<UserOfRoleMapper, UserOfR
             // 刷新用户所拥有的权限
             userAuthorityService.refreshUserAuthority(userName);
 
+            userCache.refreshRoles(userName);
+
             // 更新排序号
             userService.refreshOrders(userName);
 
-            Role role = roleService.getRole(roleCode);
-            User user = userService.getUser(userName);
-            UserSetup userSetup = userSetupService.getUserSetup(userName);
+//            Role role = roleService.getRole(roleCode);
+//            User user = userService.getOne(new QueryWrapper<User>().eq("realName", userName));
+//            UserSetup userSetup = userSetupService.getUserSetup(userName);
 
             // 将修改后用户拥有角色中的最大配额赋予User
-            List<UserOfRole> urList = listByUserName(user.getName());
-            if (role.getDiskQuota().longValue() == user.getDiskSpaceAllowed().longValue()) {
-                long q = 0;
-                for (UserOfRole userOfRole : urList) {
-                    Role roleTmp = roleService.getRole(userOfRole.getRoleCode());
-                    if (roleTmp.getDiskQuota() > q) {
-                        q = roleTmp.getDiskQuota();
-                    }
-                }
-                user.setDiskSpaceAllowed(q);
-                user.updateById();
-            }
+//            List<UserOfRole> urList = listByUserName(user.getName());
+//            if (role.getDiskQuota().longValue() == user.getDiskSpaceAllowed().longValue()) {
+//                long q = 0;
+//                for (UserOfRole userOfRole : urList) {
+//                    Role roleTmp = roleService.getRole(userOfRole.getRoleCode());
+//                    if (roleTmp.getDiskQuota() > q) {
+//                        q = roleTmp.getDiskQuota();
+//                    }
+//                }
+//                user.setDiskSpaceAllowed(q);
+//                user.updateById();
+//            }
 
             // 将修改后用户拥有角色中的最大配额赋予UserSetup
-            if (role.getMsgSpaceQuota().longValue() == userSetup.getMsgSpaceAllowed().longValue()) {
-                long q = 0;
-                for (UserOfRole userOfRole : urList) {
-                    Role roleTmp = roleService.getRole(userOfRole.getRoleCode());
-                    if (roleTmp.getMsgSpaceQuota() > q) {
-                        q = roleTmp.getMsgSpaceQuota();
-                    }
-                }
-                userSetup.setMsgSpaceAllowed(q);
-                userSetupService.updateByUserName(userSetup);
-            }
+//            if (role.getMsgSpaceQuota().longValue() == userSetup.getMsgSpaceAllowed().longValue()) {
+//                long q = 0;
+//                for (UserOfRole userOfRole : urList) {
+//                    Role roleTmp = roleService.getRole(userOfRole.getRoleCode());
+//                    if (roleTmp.getMsgSpaceQuota() > q) {
+//                        q = roleTmp.getMsgSpaceQuota();
+//                    }
+//                }
+//                userSetup.setMsgSpaceAllowed(q);
+//                userSetupService.updateByUserName(userSetup);
+//            }
         }
         return re;
     }
@@ -228,7 +241,7 @@ public class UserOfRoleServiceImpl extends ServiceImpl<UserOfRoleMapper, UserOfR
         delOfUser(userName);
 
         boolean re = true;
-        if (roleCodes!=null) {
+        if (roleCodes != null) {
             List<UserOfRole> list = new ArrayList<>();
             int i = 0;
             for (String code : roleCodes) {
@@ -250,6 +263,9 @@ public class UserOfRoleServiceImpl extends ServiceImpl<UserOfRoleMapper, UserOfR
 
         // 刷新排序号
         userService.refreshOrders(userName);
+
+        // 刷新缓存
+        userCache.refreshRoles(userName);
 
         return re;
     }
@@ -367,19 +383,42 @@ public class UserOfRoleServiceImpl extends ServiceImpl<UserOfRoleMapper, UserOfR
         return update(userOfRole, qw);
     }
 
+    /**
+     * 角色在部门中是否有效
+     *
+     * @param userName
+     * @param roleCode
+     * @param deptCode
+     * @return
+     */
     @Override
     public boolean isRoleOfDept(String userName, String roleCode, String deptCode) {
         UserOfRole userOfRole = getUserOfRole(userName, roleCode);
+        if (userOfRole == null) {
+            return false;
+        }
         String depts = userOfRole.getDepts();
         if (StringUtils.isEmpty(depts)) {
             return true;
         }
         com.alibaba.fastjson.JSONObject deptsJson = com.alibaba.fastjson.JSONObject.parseObject(depts);
         if (deptsJson.containsKey(deptCode)) {
-            return deptsJson.getIntValue(deptCode)!=ConstUtil.ROLE_OF_DEPT_NO;
-        }
-        else {
+            return deptsJson.getIntValue(deptCode) != ConstUtil.ROLE_OF_DEPT_NO;
+        } else {
             return true;
         }
+    }
+
+    @Override
+    public int create(UserOfRole userOfRole) {
+        return userOfRoleMapper.insert(userOfRole);
+    }
+
+    @Override
+    public boolean create(String userName, String roleCode) {
+        UserOfRole userOfRole = new UserOfRole();
+        userOfRole.setRoleCode(roleCode);
+        userOfRole.setUserName(userName);
+        return userOfRoleMapper.insert(userOfRole) == 1;
     }
 }

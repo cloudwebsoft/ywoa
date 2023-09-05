@@ -26,4 +26,6 @@ public interface IModuleRender {
     String[] rendForNestTable(FormDb fd, String content, Vector<FormField> fields, String FORM_FLEMENT_ID, boolean isAdd, IFormDAO fdao);
 
     String getContentMacroReplaced(ModuleSetupDb msd, FormDAO fdao, String content, Vector<FormField> fields, Vector<FormField> vdisable);
+
+    String rendNestSheetCtlRelated(FormDAO fdao, FormDb fd, WorkflowActionDb wfa, Vector<FormField> vNestFormField) throws ErrMsgException;
 }

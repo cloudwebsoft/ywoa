@@ -3,6 +3,7 @@ package com.redmoon.oa.shell;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
+import bsh.TargetError;
 import cn.js.fan.web.Global;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
@@ -27,7 +28,7 @@ public class BSHShell {
     	try {
 			bsh.set("console", console);
 		} catch (EvalError e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     }
     
@@ -39,7 +40,7 @@ public class BSHShell {
     	try {
 			bsh.set(objName, obj);
 		} catch (EvalError e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     }
     
@@ -53,10 +54,24 @@ public class BSHShell {
         try {
 			bsh.eval(script);
 		} catch (EvalError e) {
-        	e.printStackTrace();
-			// LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			DebugUtil.e(getClass(), "eval script", script);
-			DebugUtil.e(getClass(), "eval", StrUtil.trace(e));
+			LogUtil.getLog(getClass()).error("scene: " + StrUtil.getNullStr((String)get(ConstUtil.SCENE)));
+			if (e instanceof TargetError) {
+				TargetError err = (TargetError)e;
+				LogUtil.getLog(getClass()).error(err);
+				if (err.getTarget() instanceof IllegalArgumentException) {
+					console.log(err.getMessage());
+					throw ((IllegalArgumentException)err.getTarget());
+				} else if (err.getTarget() instanceof ErrMsgException) {
+					console.log(err.getMessage());
+					throw (ErrMsgException)err.getTarget();
+				} else if (err.getTarget() instanceof ClassCastException) {
+					throw ((ClassCastException)err.getTarget());
+				}
+			} else {
+				LogUtil.getLog(getClass()).error(e);
+			}
+			// DebugUtil.e(getClass(), "eval script", script);
+
 			error = true;
 			console.log(e.getMessage());
 			throw new ErrMsgException("脚本运行错误：" + console.getLogDesc());
@@ -80,10 +95,10 @@ public class BSHShell {
 				}
 			}
 			if (!"".equals(console.getLogs().trim())) {
-				DebugUtil.i(getClass(), desc, console.getLogs());
+				DebugUtil.i(getClass(), desc, console.getLogs().trim());
 			}
 			if (!"".equals(console.getErrors().trim())) {
-				DebugUtil.e(getClass(), desc, console.getErrors());
+				DebugUtil.e(getClass(), desc, console.getErrors().trim());
 			}
 		}
 		return true;
@@ -93,7 +108,7 @@ public class BSHShell {
     	try {
 			return bsh.get(objName);
 		} catch (EvalError e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			console.log(e.getMessage());			
 		}
 		return null;

@@ -6,6 +6,11 @@
 <%@ page import="cn.js.fan.util.*" %>
 <%@ page import="org.json.*" %>
 <%@ page import="com.redmoon.oa.android.CloudConfig" %>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
+<%
+    // 通过uniapp的webview载入
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -31,6 +36,8 @@
     <script type="text/javascript" src="../../inc/common.js"></script>
     <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
     <script type="text/javascript" src="../js/mui.js"></script>
+    <script type="text/javascript" src="../js/config.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/getscript?v=3.0&ak=3dd31b657f333528cc8b581937fd066a"></script>
 </head>
 <style>
     body {
@@ -102,10 +109,62 @@
         padding: 15px;
         border: 1px solid #ddd;
         text-align: center;
+        font-size: 12px;
+    }
+    .info-box .mui-icon {
+        font-size: 12px;
+        margin-right: 10px;
+    }
+
+    .img-area {
+        margin: 10px;
+    }
+    .img-box {
+        border: 1px solid #C1C0C0;
+        width: 100px;
+        height: 100px;
+        float: left;
+        margin: 5px;
+        position: relative;
+    }
+    .img-box .capture_btn {
+        margin: 5px 0 0 5px;
+        width: 80px;
+        height: 80px;
+    }
+    .img-box-img {
+        width: 100px;
+        height: 100px;
+    }
+    .btn-del-img {
+        width: 32px;
+        height: 32px;
+        position: absolute;
+        left: 90px;
+        top: -10px;
+        z-index: 1;
+    }
+    .btn-del-img img {
+        width: 16px;
+        height: 16px;
+    }
+    .remark {
+        color: #3b86a0;
+    }
+    #plusDescBox {
+        margin: 10px;
+    }
+    #btnDelPlus {
+        color: red;
+        margin-left: 10px;
+    }
+    .mui-radio input[type='radio'] {
+        margin-top: -5px;
     }
 </style>
+</head>
 <body>
-<header class="mui-bar mui-bar-nav">
+<header class="mui-bar mui-bar-nav" style="display: <%=isUniWebview?"none":""%>">
     <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
     <h1 class="mui-title">处理流程</h1>
 </header>
@@ -133,6 +192,7 @@
     if (myActionId != 0) {
         MyActionDb mad = new MyActionDb();
         mad = mad.getMyActionDb(myActionId);
+        /*
         if (mad == null || !mad.isLoaded()) {
             out.print("<div class=\"info-box\">待办记录已不存在！</div>");
             return;
@@ -140,33 +200,55 @@
         if (mad.getCheckStatus() == MyActionDb.CHECK_STATUS_CHECKED) {
             out.print("<div class=\"info-box\">流程已处理！</div>");
             return;
-        }
+        }*/
         actionId = mad.getActionId();
         flowId = (int) mad.getFlowId();
         WorkflowDb wf = new WorkflowDb();
         wf = wf.getWorkflowDb(flowId);
         flowTypeCode = wf.getTypeCode();
+
+        // 判断能否提交
+        try {
+            WorkflowActionDb wa = new WorkflowActionDb();
+            wa = wa.getWorkflowActionDb((int)actionId);
+            WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+            wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());
+
+            WorkflowMgr.canSubmit(request, wf, wa, mad, userName, wpd);
+        } catch (ErrMsgException e) {
+            out.print("<div class=\"info-box\"><span class=\"mui-icon mui-icon-info\"></span>" + e.getMessage() + "</div>");
+            return;
+        }
+
         // System.out.println(getClass() + " flowId=" + flowId + " flowTypeCode=" + flowTypeCode);
-    }
-    Leaf lf = new Leaf();
-    lf = lf.getLeaf(flowTypeCode);
-    if (lf == null || !lf.isLoaded()) {
-        out.print("<div class=\"info-box\">流程类型已不存在！</a>");
-        return;
-    }
-    String formCode = lf.getFormCode();
-    FormDb fd = new FormDb();
-    fd = fd.getFormDb(formCode);
-    if (fd == null && !fd.isLoaded()) {
-        out.print("<div class=\"info-box\">表单类型已不存在！</a>");
-        return;
     }
 
     boolean isInit = myActionId == 0; // 是否为发起流程
-
     WorkflowPredefineDb wpd = new WorkflowPredefineDb();
+    boolean isRecall = true;
+    FormDb fd = new FormDb();
+    String formCode = "";
+    Leaf lf = new Leaf();
+    lf = lf.getLeaf(flowTypeCode);
+    boolean isError = false;
+    if (lf == null || !lf.isLoaded()) {
+        isError = true;
+        out.print("<div class=\"info-box\">流程类型已不存在！</a>");
+    } else {
+        formCode = lf.getFormCode();
+        fd = fd.getFormDb(formCode);
+        if (fd == null && !fd.isLoaded()) {
+            isError = true;
+            out.print("<div class=\"info-box\">表单类型已不存在！</a>");
+        }
+    }
+
     wpd = wpd.getPredefineFlowOfFree(flowTypeCode);
-    boolean isRecall = wpd.isRecall();
+    if (wpd != null) {
+        isRecall = wpd.isRecall();
+    }
+
+    if (wpd != null) {
 %>
 <div class="mui-content">
     <%if (!isInit && !wpd.isLight()) {%>
@@ -187,13 +269,13 @@
             </form>
             <form class="mui-input-group" id="flow_form">
             </form>
-            <input type="file" id="captureFile" <%--capture="camera"--%> name="upload" accept="image/*" style="cursor: pointer"/>
+            <input type="file" id="captureFile" <%--capture="camera"--%> name="upload" style="cursor: pointer"/>
             <%
                 String dis = "";
                 if (!fd.isProgress()) {
                     dis = "display:none";
                 }
-                if (wpd.isReply() && !flowTypeCode.equals("at") && !wpd.isLight() && lf.getType() != Leaf.TYPE_FREE) { %>
+                if (wpd.isReply() && !"at".equals(flowTypeCode) && !wpd.isLight() && lf.getType() != Leaf.TYPE_FREE) { %>
             <div class="annex-group">
                 <div class="reply-form" style="display:none; margin-bottom:10px">
                     <div class="mui-input-row mui-input-range" s>
@@ -228,7 +310,7 @@
                     for (MyActionDb myActionDb : v) {
                         mad = myActionDb;
                         String userRealName;
-                        if (!mad.getProxyUserName().equals("")) {
+                        if (!"".equals(mad.getProxyUserName())) {
                             userRealName = um.getUserDb(mad.getProxyUserName()).getRealName();
                         } else {
                             UserDb user = um.getUserDb(mad.getUserName());
@@ -264,15 +346,18 @@
                                 }
                             %>
                         </p>
+                        <p class="remark">
+                            留言: <%=mad.getResult()%>
+                        </p>
                         <%
                             if (isRecall && mad.canRecall(userName)) {
                         %>
                         <a href="#" class="btn btn-sm btn-success btn-recall" myActionId="<%=mad.getId()%>">撤回</a>
                         <%} %>
                         <span class="vertical-date">
-                                	<%=userRealName %> <br>
-                                <small><%=DateUtil.format(mad.getCheckDate(), "MM-dd HH:mm")%></small>
-                        		</span>
+                            <%=userRealName %> <br/>
+                            <small><%=DateUtil.format(mad.getCheckDate(), "MM-dd HH:mm")%></small>
+                        </span>
                     </div>
                 </div>
                 <%} %>
@@ -281,14 +366,18 @@
         <%}%>
     </div>
 </div>
-<script src="form_js/<%=lf.getFormCode()%>.jsp?flowId=<%=flowId%>&myActionId=<%=myActionId%>&skey=<%=skey %>&Fcode=<%=flowTypeCode %>&Ftype=<%=type %>&Ftitle=<%=title %>"></script>
+<%
+    }
+%>
+<script src="form_js/<%=formCode%>.jsp?flowId=<%=flowId%>&myActionId=<%=myActionId%>&skey=<%=skey %>&Fcode=<%=flowTypeCode %>&Ftype=<%=type %>&Ftitle=<%=title %>"></script>
 <jsp:include page="../inc/navbar.jsp">
     <jsp:param name="skey" value="<%=skey%>"/>
     <jsp:param name="isBarBottomShow" value="false"/>
 </jsp:include>
 <script>
+    var isUniWebview = <%=isUniWebview%>;
     // 用于HBuilderX手机端
-    if(!mui.os.plus) {
+    if(!mui.os.plus || isUniWebview) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
     }
@@ -296,11 +385,20 @@
     if(mui.os.plus) {
         // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
         mui.init({
+            <%
+            if (isUniWebview) {
+            %>
+            keyEventBind: {
+                backbutton: false // 关闭back按键监听
+            },
+            <%
+            }
+            %>
             beforeback: function() {
                 //获得父页面的webview
                 var list = plus.webview.currentWebview().opener();
                 //触发父页面的自定义事件(refresh),从而进行刷新
-                mui.fire(list, 'refresh');
+                mui.fire(list, 'refreshList');
                 //返回true,继续页面关闭逻辑
                 return true;
             }
@@ -328,7 +426,28 @@
 <script src="../js/jq_mydialog.js"></script>
 <script type="text/javascript" src="../js/newPopup.js"></script>
 <script src="../js/macro/macro.js"></script>
-<script src="../js/mui.picker.min.js"></script>
+<%--<script src="../js/mui.picker.min.js"></script>--%>
+<script>
+    console.log('mui.os.ios', mui.os.ios, 'parseFloat(mui.os.version)', parseFloat(mui.os.version));
+    if (mui.os.ios) {
+        if (parseFloat(mui.os.version) < 16.5) {
+            includFile(getContextPath() + "/weixin/js/",['mui.picker_ios16.min.js']);
+            includFile(getContextPath() + "/weixin/css/",['mui.picker_ios16.min.css']);
+        }
+        else {
+            includFile(getContextPath() + "/weixin/js/",['mui.picker.min.js']);
+            includFile(getContextPath() + "/weixin/css/",['mui.picker.min.css']);
+        }
+    } else {
+        includFile(getContextPath() + "/weixin/js/",['mui.picker_ios16.min.js']);
+        includFile(getContextPath() + "/weixin/css/",['mui.picker_ios16.min.css']);
+    }
+</script>
+<%--微信小程序SDK--%>
+<%--<script type="text/javascript" src="../js/jweixin-1.4.0.js"></script>
+<script type="text/javascript" src="../js/uni.webview.1.5.2.js"></script>--%>
+<script type="text/javascript" src="../js/weixin.js"></script>
+<script type="text/javascript" src="../js/uniapps.js"></script>
 
 <link rel="stylesheet" href="../css/photoswipe.css">
 <link rel="stylesheet" href="../css/photoswipe-default-skin/default-skin.css">
@@ -341,25 +460,33 @@
 <!--解决iphone拍照变横向的问题-->
 <script type="text/javascript" src="../js/exif.js"></script>
 <script type="text/javascript" charset="utf-8">
+    <%
+    if (isError) {
+        return;
+    }
+    %>
     var content = document.querySelector('.mui-content');
     var skey = '<%=skey%>';
     var myActionId = '<%=myActionId%>';
     var flowTypeCode = '<%=flowTypeCode%>';
     var title = '<%=title%>';
     var type = <%=type%>;
+    var isUniWebview = <%=isUniWebview%>;
     var options = {
         "skey": skey,
         "title": title,
         "myActionId": myActionId,
         "type": type,
         "formCode": '<%=formCode%>',
-        "code": flowTypeCode
+        "code": flowTypeCode,
+        "isUniWebview": isUniWebview
     };
 
     <%
     // myActionId为0表示发起流程
     JSONObject extraData = new JSONObject();
-    if (myActionId==0) {
+    // 在小程序端的webview待办列表中，再转至此页面时要带入参数，如：blockId
+    if (true || myActionId==0) {
         Enumeration paramNames = request.getParameterNames();
         while (paramNames.hasMoreElements()) {
             String paramName = (String) paramNames.nextElement();
@@ -367,12 +494,13 @@
             if (paramValues.length == 1) {
                 String paramValue = paramValues[0];
                 // 过滤掉formCode、code等，code是企业微信端传过来的，不能被二次消费
-                if (!(paramName.equals("code") || paramName.equals("myActionId") || paramName.equals("title") || paramName.equals("type") || paramName.equals("flowTypeCode") || paramName.equals("skey"))) {
+                if (!("flowId".equals(paramName) || paramName.equals("code") || paramName.equals("myActionId") || paramName.equals("title") || paramName.equals("type") || paramName.equals("flowTypeCode") || paramName.equals("skey"))) {
                      extraData.put(paramName, paramValue);
                 }
             }
         }
     }
+    DebugUtil.i(getClass(), " extraData", extraData.toString());
     %>
 
     options.extraData = '<%=extraData%>';
@@ -380,11 +508,12 @@
     window.flow = new mui.Flow(content, options);
     window.flow.flowDisposeInit();
 
-    function setAgreeBtnName() {
+    // 当发起流程时，actionId为-1，所以在发起点上此方法不可行
+    /*function setAgreeBtnName() {
         // 置同意按钮的名称
         <%
             String btnAgreeName = "";
-            if (actionId!=-1) {
+            if (actionId != -1) {
                 WorkflowActionDb wa = new WorkflowActionDb();
                 wa = wa.getWorkflowActionDb((int)actionId);
                 btnAgreeName = WorkflowActionDb.getActionProperty(wpd, wa.getInternalName(), "btnAgreeName");
@@ -398,8 +527,9 @@
                 btnName = conf.getBtnName("FLOW_BUTTON_AGREE").startsWith("#") ? LocalUtil.LoadString(request, "res.flow.Flow", "agree") : conf.getBtnName("FLOW_BUTTON_AGREE");
             }
         %>
+
         $('.flow_submit').html('<%=btnName%>');
-    }
+    }*/
 
     $(function () {
         <%
@@ -412,7 +542,8 @@
             height: <%=photoMaxSize%>,
             level: <%=intPhotoQuality%>
         };
-        setTimeout(setAgreeBtnName, 1000);
+
+        // setTimeout(setAgreeBtnName, 1000);
 
         $('.btn-ok').click(function () {
             var _tips = "";

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloudweb.oa.mapper.VisualModuleTreePrivMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.cloudweb.oa.entity.VisualModuleTreePriv">
+        <id column="id" property="id" />
+        <result column="root_code" property="rootCode" />
+        <result column="node_code" property="nodeCode" />
+        <result column="name" property="name" />
+        <result column="priv_type" property="privType" />
+        <result column="priv_see" property="privSee" />
+        <result column="priv_add" property="privAdd" />
+        <result column="priv_edit" property="privEdit" />
+        <result column="priv_download" property="privDownload" />
+        <result column="priv_del" property="privDel" />
+        <result column="priv_export" property="privExport" />
+        <result column="priv_import" property="privImport" />
+        <result column="priv_export_word" property="privExportWord" />
+        <result column="priv_manage" property="privManage" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, root_code, node_code, name, priv_type, priv_see, priv_add, priv_edit, priv_download, priv_del, priv_manage,priv_export,priv_import,priv_export_word
+    </sql>
+
+    <select id="selectTreePrivList" parameterType="string" resultMap="BaseResultMap">
+        ${sql}
+    </select>
+</mapper>

@@ -10,7 +10,6 @@
 <%@ page import="com.redmoon.weixin.mgr.WXBaseMgr" %>
 <%@ page import="com.redmoon.weixin.mgr.AgentMgr" %>
 <%@ page import="org.json.JSONObject" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <!DOCTYPE html>
 <html>
@@ -24,30 +23,16 @@
     <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
     <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
     <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
 <body>
 <jsp:useBean id="cfgparser" scope="page" class="cn.js.fan.util.CFGParser"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
     if (!privilege.isUserPrivValid(request, PrivDb.PRIV_ADMIN)) {
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
-        return;
-    }
-
-    String op = ParamUtil.get(request, "op");
-    if (op.equals("setAgent")) {
-        String r = "";
-        try {
-            r = AgentMgr.setAgent(application, request);
-        } catch (ErrMsgException e) {
-            out.print(StrUtil.jAlert_Back(e.getMessage(), "提示"));
-            return;
-        }
-        JSONObject json = new JSONObject(r);
-        if (json.getInt("ret") == 1) {
-            out.print(StrUtil.jAlert_Redirect(json.getString("msg"), "提示", "config_weixin.jsp"));
-        } else {
-            out.print(StrUtil.jAlert_Back(json.getString("msg"), "提示"));
-        }
         return;
     }
 
@@ -64,37 +49,6 @@
 <br>
 <%
     Element root = myconfig.getRoot();
-
-    String name = "", value = "";
-    name = request.getParameter("name");
-    if (name != null && !name.equals("")) {
-        value = ParamUtil.get(request, "value");
-        myconfig.setProperty(name, value);
-
-        if ("isUserIdUseMobile".equals(name)) {
-            if ("1".equals(value)) {
-                myconfig.setProperty("isUserIdUseEmail", "false");
-                myconfig.setProperty("isUserIdUseMobile", "false");
-                myconfig.setProperty("isUserIdUseAccount", "false");
-            } else if ("2".equals(value)) {
-                myconfig.setProperty("isUserIdUseEmail", "true");
-                myconfig.setProperty("isUserIdUseMobile", "false");
-                myconfig.setProperty("isUserIdUseAccount", "false");
-            } else if ("3".equals(value)) {
-                myconfig.setProperty("isUserIdUseEmail", "false");
-                myconfig.setProperty("isUserIdUseMobile", "true");
-                myconfig.setProperty("isUserIdUseAccount", "false");
-            } else if ("4".equals(value)) {
-                myconfig.setProperty("isUserIdUseEmail", "false");
-                myconfig.setProperty("isUserIdUseMobile", "false");
-                myconfig.setProperty("isUserIdUseAccount", "true");
-            }
-        }
-
-        Config.reload();
-        out.println(StrUtil.jAlert_Redirect(SkinUtil.LoadString(request, "info_op_success"), "提示", "config_weixin.jsp"));
-        return;
-    }
 %>
 <table width="100%" class="tabStyle_1 percent80" border="0" align="center" cellpadding="0" cellspacing="0">
     <tr>
@@ -106,9 +60,10 @@
         String desc = "";
         while (ir.hasNext()) {
             Element e = (Element) ir.next();
-            name = e.getName();
-            if ("agentMenu".equals(name))
+            String name = e.getName();
+            if ("agentMenu".equals(name)) {
                 continue;
+            }
 
             String isDisplay = StrUtil.getNullStr(e.getAttributeValue("isDisplay"));
             // System.out.println(getClass() + " name=" + name + " isDisplay=" + isDisplay);
@@ -116,10 +71,10 @@
                 continue;
             }
 
-            value = e.getValue();
-            desc = (String) e.getAttributeValue("desc");
+            String value = e.getValue();
+            desc = e.getAttributeValue("desc");
     %>
-    <form method="post" id="form<%=k%>" name="form<%=k%>" action='config_weixin.jsp'>
+    <form method="post" id="form<%=k%>" name="form<%=k%>">
         <tr>
             <td width='52%'><input type="hidden" name="name" value="<%=name%>"/>
                 &nbsp;<%=desc%>
@@ -128,10 +83,10 @@
                 <%if (!"isSyncWxToOA".equals(name) && !"isUserIdUseMobile".equals(name) && (value.equals("true") || value.equals("false"))) {%>
                 <select id="attr<%=k%>" name="value">
                     <option value="true">
-                        <lt:Label key="yes"/>
+                        是
                     </option>
                     <option value="false">
-                        <lt:Label key="no"/>
+                        否
                     </option>
                 </select>
                 <script>
@@ -190,8 +145,8 @@
                         }
                     }
                 %></td>
-            <td width="14%" align="center"><input class="btn" type="submit" name='edit'
-                                                  value='<lt:Label key="op_modify"/>'/>
+            <td width="14%" align="center">
+                <input class="btn" type="button" name='edit' value='修改' onclick="handleSumbit('form<%=k%>')"/>
             </td>
         </tr>
     </form>
@@ -246,7 +201,7 @@
         </tr>
         <tr>
             <td colspan="2" align="center">
-                <input type="submit" id="btnSetApp" value="确定"/>
+                <input class="btn" type="button" id="btnSetApp" value="确定" onclick="handleSumbit('form<%=agentId%>', true)"/>
             </td>
         </tr>
     </table>
@@ -254,5 +209,59 @@
 <%
     }
 %>
+<script>
+    function handleSumbit(formId, isSetAgent) {
+        var params = $("#" + formId).serialize();
+        if (isSetAgent) {
+            var formData = new FormData($('#' + formId)[0]);
+            $.ajax({
+                url: "../wx/admin/configAgent",
+                dataType: 'json',// 服务器返回json格式数据
+                type: 'post',// HTTP请求类型
+                data: formData,
+                processData: false,
+                contentType: false,
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                success: function (data) {
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                },
+                error: function (xhr, type, errorThrown) {
+                    console.log(type);
+                }
+            });
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "../wx/admin/configWxWork",
+            contentType:"application/x-www-form-urlencoded; charset=UTF-8",
+            data: params,
+            dataType: "json",
+            beforeSend: function(XMLHttpRequest){
+                $('body').showLoading();
+            },
+            success: function(data, status) {
+                layer.msg(data.msg, {
+                    offset: '6px'
+                });
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(XMLHttpRequest, textStatus){
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+</script>
 </body>
 </html>

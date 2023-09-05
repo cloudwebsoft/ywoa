@@ -2,12 +2,11 @@ package com.redmoon.oa.db;
 
 import java.sql.*;
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 import cn.js.fan.db.Conn;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class SequenceManager implements com.cloudwebsoft.framework.base.ISequence {
     String connname;
-    Logger logger = Logger.getLogger(SequenceManager.class.getName());
     private static final String LOAD_ID =
         "SELECT id FROM redmoonid WHERE idType=?";
     private static final String UPDATE_ID =
@@ -18,17 +17,17 @@ public class SequenceManager implements com.cloudwebsoft.framework.base.ISequenc
     public static final int OA_WORKFLOW_ACTION = 2;
     public static final int OA_WORKFLOW_LINK = 3;
     public static final int OA_EMAIL = 4;   // 邮件草稿
-    public static final int OA_DOCUMENT_FLOW = 5; // 流程表单
+    public static final int OA_DOCUMENT_FLOW = 5; // 流程文档
     public static final int OA_TASK = 6;
     public static final int OA_MESSAGE = 7; // 短消息
-    public static final int OA_DOCUMENT_NETDISK = 8;
+    // public static final int OA_DOCUMENT_NETDISK = 8;
     public static final int OA_VISUAL_DOCUMENT = 9;
     public static final int OA_LOG = 10;
     public static final int OA_ADDRESS = 11;
     public static final int OA_ADDRESS_GROUP = 12;
     public static final int OA_WORKFLOW_PREDEFINED = 13;
 
-    public static final int SQ_MESSAGE = 14; // 已无效，社区换用表sq_id 2006.9.24
+    public static final int OA_ORACLE_INDEX = 14; // 用于oracle索引在创建时的值
 
     public static final int OA_ARCHIVE_STUDY = 15;
     public static final int OA_ARCHIVE_RESUME = 16;
@@ -115,7 +114,7 @@ public class SequenceManager implements com.cloudwebsoft.framework.base.ISequenc
     public static final int PLAN_PERIODICITY = 75;
     
     public static final int OA_DOCUMENT_ROBOT = 76;
-    public static final int CMS_IMAGES = 77; // 未派用处
+    public static final int CMS_IMAGES = 77;
     
     public static final int EMAIL_POP3 = 78;
     
@@ -142,12 +141,15 @@ public class SequenceManager implements com.cloudwebsoft.framework.base.ISequenc
     public static final int FLOW_PAPER_NO_PREFIX = 88;
     
     public static final int OA_FLOW_PAPER_DISTRIBUTE = 89;
-    
-    public static final int OA_DOCUMENT_NETDISK_ATTACHMENT = 90;
+
+    /**
+     * 职位
+     */
+    public static final int OA_POST = 90;
     
     public static final int OA_REPORT_MANAGE = 91;         //报表管理
 
-    public static final int OA_NETDISK_ROLE_TEMPLATE = 92; //	角色模板id
+    public static final int OA_ROLE = 92; //	角色模板id
     
     public static final int OA_WORK_LOG = 93;//工作日报
     
@@ -156,8 +158,11 @@ public class SequenceManager implements com.cloudwebsoft.framework.base.ISequenc
     public static final int OA_WORK_LOG_EXPAND = 95;//工作汇报扩展表ID
     
     public static final int OA_WORK_DATE = 96;//工作日表ID
-    
-        
+
+    public static final int OA_FLASH_IMAGE = 97; // SiteFlashImageDb
+
+    public static final int OA_FILEARK_ROBOT = 98;
+
     /**
      * 增量
      */
@@ -212,7 +217,7 @@ public class SequenceManager implements com.cloudwebsoft.framework.base.ISequenc
     public SequenceManager(int type) {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("SequenceManager:默认数据库名为空！");
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).info("SequenceManager:默认数据库名为空！");
         this.type = type;
         currentID = 0l;
         maxID = 0l;
@@ -279,12 +284,14 @@ public class SequenceManager implements com.cloudwebsoft.framework.base.ISequenc
                 this.maxID = newID;
             }
         }
-        catch( Exception sqle ) {
-            sqle.printStackTrace();
+        catch( Exception e ) {
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             try {  pstmt.close();   }
-            catch (Exception e) { e.printStackTrace(); }
+            catch (Exception e) {
+                LogUtil.getLog(getClass()).error(e);
+            }
             if (conn!=null) {
                 conn.close(); conn = null;
             }

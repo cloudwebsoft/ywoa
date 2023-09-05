@@ -4,9 +4,9 @@
 <%@ page import="cn.js.fan.util.*" %>
 <%@ page import = "com.redmoon.oa.person.*"%>
 <%@page import="java.util.ArrayList"%>
-<%@page import="net.sf.json.JSONObject"%>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<%@page import="org.json.JSONObject"%>
+<!DOCTYPE html>
+<html>
 <head>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <script src="<%=request.getContextPath() %>/js/jquery.my.js"></script>

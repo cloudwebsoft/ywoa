@@ -22,7 +22,6 @@ if (op.equals("")) {
 
 	String mode = ParamUtil.get(request, "mode");
 
-	// System.out.println(getClass() + " mode=" + mode);
 	int id = ParamUtil.getInt(request, "id", -1);
 
 	if (!mode.equals("moduleTag") && !mode.equals("selField")) {
@@ -216,7 +215,7 @@ if (op.equals("")) {
 	/*
 	String tableName = "";
 	sql = qsu.getSql();
-	int p = sql.indexOf("form_table_");
+	int p = sql.indexOf("ft_");
 	if (p!=-1) {
 		int q = sql.indexOf(" ", p);
 		if (q==-1) {
@@ -229,8 +228,8 @@ if (op.equals("")) {
 
 	FormDb fd = null;
 	String scriptFormCode = "";
-	if (tableName.startsWith("form_table_")) {
-		scriptFormCode = tableName.substring("form_table_".length());
+	if (tableName.startsWith("ft_")) {
+		scriptFormCode = tableName.substring("ft_".length());
 	}
 	*/
 
@@ -264,7 +263,6 @@ if (op.equals("")) {
 
 	MacroCtlMgr mm = new MacroCtlMgr();
 
-	// System.out.println(getClass() + " page=" + qsu.getPage());
 	int row = 0;
 	while(ri.hasNext()){
 		ResultRecord rr = (ResultRecord)ri.next();
@@ -309,7 +307,7 @@ if (op.equals("")) {
 				catch (IllegalArgumentException e) {
 				}
 				if (!"".equals(mid)) {
-					jo.put(QueryScriptUtil.CWS_OP, "<a href=\"javascript:;\" onclick=\"addTab('" + formName + "', '" + request.getContextPath() + "/visual/module_show.jsp?parentId=" + mid + "&id=" + mid + "&code=" + queryFormCode + "')\">查看</a>");
+					jo.put(QueryScriptUtil.CWS_OP, "<a href=\"javascript:;\" onclick=\"addTab('" + formName + "', '" + request.getContextPath() + "/visual/moduleShowPage.do?parentId=" + mid + "&id=" + mid + "&code=" + queryFormCode + "')\">查看</a>");
 				}
 				else {
 					jo.put(QueryScriptUtil.CWS_OP, "");

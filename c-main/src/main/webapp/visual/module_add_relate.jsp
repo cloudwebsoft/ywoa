@@ -38,7 +38,7 @@
     FormDb fd = fm.getFormDb(formCodeRelated);
 
     String relateFieldValue = "";
-    int parentId = ParamUtil.getInt(request, "parentId"); // 父模块的ID
+    long parentId = ParamUtil.getLong(request, "parentId", -1); // 父模块的ID
     if (parentId == -1) {
         out.print(SkinUtil.makeErrMsg(request, "缺少父模块记录的ID！"));
         return;
@@ -272,7 +272,7 @@
                         if (isTabStyleHor) {
                         %>
                         jAlert(data.msg, "提示", function() {
-                            window.location.href = "module_list_relate.jsp?parentPageType=<%=parentPageType%>&code=<%=StrUtil.UrlEncode(moduleCode)%>&parentId=<%=parentId%>&menuItem=<%=menuItem%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=formCode%>&isShowNav=<%=isShowNav%>&moduleCodeRelated=<%=moduleCodeRelated%>";
+                            window.location.href = "moduleListRelatePage.do?parentPageType=<%=parentPageType%>&code=<%=StrUtil.UrlEncode(moduleCode)%>&parentId=<%=parentId%>&menuItem=<%=menuItem%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=formCode%>&isShowNav=<%=isShowNav%>&moduleCodeRelated=<%=moduleCodeRelated%>";
                         });
                         <%
                         }
@@ -305,6 +305,17 @@
                     alert(returndata);
                 }
             });
+        });
+    });
+
+    $(function() {
+        $('input, select, textarea').each(function () {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+            }
         });
     });
 </script>

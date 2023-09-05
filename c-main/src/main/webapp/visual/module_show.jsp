@@ -16,6 +16,8 @@
 <%@ page import="com.cloudweb.oa.service.ModuleLogService" %>
 <%@ page import="com.alibaba.fastjson.JSONArray" %>
 <%@ page import="com.redmoon.oa.visual.Attachment" %>
+<%@ page import="com.redmoon.oa.security.SecurityUtil" %>
+<%@ page import="com.redmoon.oa.base.IAttachment" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
@@ -46,17 +48,18 @@
         return;
     }
 
-    int id = ParamUtil.getInt(request, "id", -1);
+    long id = ParamUtil.getLong(request, "id", -1);
     if (id == -1) {
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "err_id")));
         return;
     }
 
+    boolean canUserView = true;
     ModulePrivDb mpd = new ModulePrivDb(code);
     if (!mpd.canUserView(privilege.getUser(request))) {
-        boolean canShow = false;
-        // 从嵌套表格查看时访问
-        String visitKey = ParamUtil.get(request, "visitKey");
+        canUserView = false;
+        // 原嵌套表访问时带入的visitKey，现已改为通过Security.makeVisitKey生成
+        /*boolean canShow = false;
         if (!"".equals(visitKey)) {
             String fId = String.valueOf(id);
             com.redmoon.oa.sso.Config ssoconfig = new com.redmoon.oa.sso.Config();
@@ -67,17 +70,35 @@
             }
         }
         if (!canShow) {
+            ...
+        }*/
+        // out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
+        // return;
+    }
+
+    // @task: 其实应在有权限的同时，还得有visitKey，以免超出其数据权限范围
+    if (!canUserView) {
+        String visitKey = ParamUtil.get(request, "visitKey");
+        if (!"".equals(visitKey)) {
+            int r = SecurityUtil.validateVisitKey(visitKey, String.valueOf(id));
+            if (r != 1) {
+                out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, SecurityUtil.getValidateVisitKeyErrMsg(r)));
+                return;
+            }
+        }
+        else {
             out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));
             return;
         }
     }
 
     // 检查数据权限，判断用户是否可以存取此条数据
-    if (!ModulePrivMgr.canAccessData(request, msd, id)) {
+    // 20211215去掉，耗时且当模块过滤条件中含有request传入的动态参数，会通过不了
+    /*if (!ModulePrivMgr.canAccessData(request, msd, id)) {
         I18nUtil i18nUtil = SpringUtil.getBean(I18nUtil.class);
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, i18nUtil.get("info_access_data_fail")));
         return;
-    }
+    }*/
 
     String formCode = msd.getString("form_code");
     if ("".equals(formCode)) {
@@ -106,6 +127,8 @@
         moduleLogService.logRead(formCode, code, id, userName, privilege.getUserUnitCode(request));
     }
 
+    request.setAttribute("moduleCode", code);
+
     // 置嵌套表及关联查询选项卡生成链接需要用到的cwsId
     request.setAttribute("cwsId", "" + id);
     // 置嵌套表需要用到的页面类型
@@ -132,9 +155,14 @@
         return;
     }
 
+    // 置为已读
+    if (!fdao.isCwsVisited()) {
+        fdao.setCwsVisited(true);
+        fdao.save();
+    }
     fdm.runScriptOnSee(request, privilege, msd, fdao);
 
-    Vector<Attachment> vAttach = fdao.getAttachments();
+    Vector<IAttachment> vAttach = fdao.getAttachments();
 
     request.setAttribute("vAttach", vAttach);
     request.setAttribute("canUserLog", mpd.canUserLog(privilege.getUser(request)));
@@ -186,6 +214,7 @@
     <script type="text/javascript" src="../util/jscalendar/calendar.js"></script>
     <script type="text/javascript" src="../util/jscalendar/lang/calendar-zh.js"></script>
     <script type="text/javascript" src="../util/jscalendar/calendar-setup.js"></script>
+    <script src="../js/BootstrapMenu.min.js"></script>
     <style>
         #loading {
             position: fixed;
@@ -213,7 +242,7 @@
 <c:if test="${isShowNav==1}">
     <%@ include file="module_inc_menu_top.jsp" %>
     <script>
-        o("menu1").className = "current";
+        $('#menu1').addClass('current');
     </script>
 </c:if>
 <div class="spacerH"></div>
@@ -250,10 +279,10 @@
                                         <td width="51%" align="left">
                                             &nbsp;
                                             <span id="spanAttLink${att.id}">
-                                <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
-                                    <span id="spanAttName${att.id}">${att.name}</span>
-                                </a>
-                                </span>
+                                            <a href="preview.do?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
+                                                <span id="spanAttName${att.id}">${att.name}</span>
+                                            </a>
+                                            </span>
                                         </td>
                                         <td width="10%" align="center">${att.creatorRealName}
                                         </td>
@@ -262,7 +291,7 @@
                                         <td width="11%" align="center">${att.fileSizeMb}M
                                         </td>
                                         <td width="11%" align="center">
-                                            <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+                                            <a href="download.do?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
                                                 <lt:Label res="res.flow.Flow" key="download"/>
                                             </a>
                                             <c:if test="${canUserLog}">
@@ -293,7 +322,7 @@
                 -->
                 <c:if test="${btn_edit_display}">
                     &nbsp;&nbsp;&nbsp;&nbsp;
-                    <button class="btn btn-default" onclick="window.location.href='module_edit.jsp?parentId=${id}&id=${id}&isShowNav=${isShowNav}&code=${code}'">编辑</button>
+                    <button class="btn btn-default" onclick="window.location.href='moduleEditPage.do?parentId=${id}&id=${id}&isShowNav=${isShowNav}&code=${code}'">编辑</button>
                 </c:if>
                 </c:if>
 

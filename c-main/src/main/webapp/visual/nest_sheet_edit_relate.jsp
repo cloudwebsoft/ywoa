@@ -7,6 +7,8 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.visual.FormDAO" %>
 <%@ page import="org.json.JSONObject" %>
+<%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
+<%@ page import="com.redmoon.oa.security.SecurityUtil" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
@@ -58,10 +60,14 @@ if (id == -1) {
 	out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "err_id")));
 	return;
 }
+
+boolean canUserData = mpd.canUserData(privilege.getUser(request));
+
 // 置嵌套表需要用到的cwsId
 request.setAttribute("cwsId", String.valueOf(id));
-// 置页面类型
-request.setAttribute("pageType", "edit");
+// 置页面类型，20220130注意不能改为edit_relate，因为其它地方有关联，将来可优化
+String pageType = "edit";
+request.setAttribute("pageType", pageType);
 
 // 这里是为了使嵌套表格2表单中又存在嵌套表格2宏控件时，在getNestSheet方法中，传递给当前编辑的表单中的嵌套表格2宏控件
 // 同时也用于查询选择宏控件
@@ -80,6 +86,7 @@ FormDb fd = fm.getFormDb(formCodeRelated);
 
 com.redmoon.oa.visual.FormDAOMgr fdm = new com.redmoon.oa.visual.FormDAOMgr(fd);
 com.redmoon.oa.visual.FormDAO fdao = fdm.getFormDAO(id);
+boolean isQuote = fdao.getCwsQuoteId() != ConstUtil.QUOTE_NONE;
 
 int isShowNav = ParamUtil.getInt(request, "isShowNav", 1);
 
@@ -106,9 +113,11 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<!--原为ie-stand，但不支持360极速模式，window.opener会为null-->
-	<meta name="renderer" content="webkit">
+	<%--<meta name="renderer" content="webkit">--%>
 	<title>智能设计-编辑内容</title>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+	<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
+	<link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
 	<style>
 		input[readonly] {
 			background-color: #ddd;
@@ -148,6 +157,10 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
 
+	<link rel="stylesheet" href="../js/poshytip/tip-yellowsimple/tip-yellowsimple.css" type="text/css" />
+	<script type="text/javascript" src="../js/poshytip/jquery.poshytip.js"></script>
+
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
 	<script>
 		$(function () {
 			SetNewDate();
@@ -182,7 +195,7 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 	</script>
 </head>
 <body>
-<form action="../flow/updateNestSheetRelated.do?parentId=<%=parentId%>&id=<%=id%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&actionId=<%=actionId %>" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
+<form action="../flow/updateNestSheetRelated.do?parentId=<%=parentId%>&id=<%=id%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&actionId=<%=actionId %>&pageType=<%=pageType%>" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm" class="form-inline">
 <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
     <tr>
       <td align="left">
@@ -212,7 +225,7 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
           <table id="att<%=am.getId()%>" width="82%" border="0" cellpadding="0" cellspacing="0">
             <tr>
               <td width="5%" height="31" align="right"><img src="<%=Global.getRootPath()%>/images/attach.gif" /></td>
-              <td>&nbsp; <a target="_blank" href="<%=Global.getRootPath()%>/visual_getfile.jsp?attachId=<%=am.getId()%>"><%=am.getName()%></a>
+              <td>&nbsp; <a target="_blank" href="<%=Global.getRootPath()%>/visual/download.do?attachId=<%=am.getId()%>&visitKey=<%=SecurityUtil.makeVisitKey(am.getId())%>"><%=am.getName()%></a>
 				  &nbsp;&nbsp;&nbsp;&nbsp;
 				  [<a href="javascript:;" onclick="delAtt(<%=am.getId()%>)">删除</a>]<br />              </td>
             </tr>
@@ -225,7 +238,7 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 		<td height="30" align="center">
 			<input id="cws_id" name="cws_id" value="<%=relateFieldValue%>" type="hidden"/>
 			<input name="id" value="<%=id%>" type="hidden"/>
-			<input type="submit" class="btn" name="btnSubmit" value="确定"/>
+			<input type="submit" class="btn btn-default" name="btnSubmit" value="确定"/>
 			<input type="hidden" name="helper"/>
 		</td>
 	</tr>
@@ -235,7 +248,21 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 <link rel="stylesheet" href="../js/jquery-contextmenu/jquery.contextMenu.min.css">
 <script src="../js/jquery-contextmenu/jquery.contextMenu.js"></script>
 <script src="../js/jquery-contextmenu/jquery.ui.position.min.js"></script>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
 <script>
+	<%
+	if (msd.getPageStyle()==ConstUtil.PAGE_STYLE_LIGHT) {
+	%>
+	// 不能放在$(function中，原来的tabStyle_8风格会闪现
+	// $(function() {
+	var $table = $('#visualForm').find('.tabStyle_8');
+	$table.addClass('layui-table');
+	$table.removeClass('tabStyle_8');
+	// })
+	<%
+	}
+	%>
+
 	function delAtt(attId) {
 		jConfirm('您确定要删除吗？','提示',function(r) {
 			$.ajax({
@@ -322,17 +349,21 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
     function showResponse(responseText, statusText, xhr, $form) {
         $('#visualForm').hideLoading();
         var data = $.parseJSON($.trim(responseText));
-        if(data.ret == "1") {
-			if (data.isVisual){
-                doVisual(data.tds, data.token);
-            } else {
-                doFlow();
-            }
-        }
 		if (data.msg != null) {
 			data.msg = data.msg.replace(/\\r/ig, "<BR>");
 		}
-        jAlert(data.msg, "提示");
+        if(data.ret == "1") {
+			jAlert(data.msg, "提示", function() {
+				if (data.isVisual){
+					doVisual(data.tds, data.token);
+				} else {
+					doFlow();
+				}
+			});
+        }
+        else {
+			jAlert(data.msg, "提示");
+		}
     }
 
     function doVisual(tds,token) {
@@ -347,12 +378,63 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
         // 如果有父窗口，则自动刷新父窗口
         if (window.opener!=null) {
 			// 带分页重新加载
+			// console.log('doFlow');
 			window.opener.reloadNestSheetCtl<%=moduleCode%>();
             window.close();
         }
     }
-	
+
+	function setNotReadOnly() {
+    	var isQuote = <%=isQuote%>;
+		var obj = o("visualForm");
+		for (var i = 0; i < obj.elements.length; i++) {
+			var el = obj.elements[i];
+			var $el = $(el);
+
+			if ($el.attr('readonly')!=null) {
+				// 是否启用只读
+				var isUseReadOnly = true;
+				var readOnlyType = $el.attr('readOnlyType');
+				if (isQuote) {
+					if (readOnlyType === '2') {
+						isUseReadOnly = false;
+					}
+				}
+				else {
+					// 注意js中存在隐式转换，0=='' 为true
+					if (readOnlyType === '0') {
+						isUseReadOnly = false;
+					}
+				}
+
+				if (!isUseReadOnly) {
+					$el.removeAttr('readonly');
+					console.log($el.attr('name') + ' ' + $el.attr('title') + ' ' + obj.elements[i].tagName);
+					if (el.type == "radio") {
+						// 删除其父节点span的readonly属性
+						$el.parent().removeAttr('readonly');
+						$el.removeAttr('onchange');
+						$el.removeAttr('onfocus');
+						$el.click(function() {
+							$(this).attr('checked', true);
+						});
+					}
+					else if (el.tagName == "SELECT") {
+						$el.removeAttr('onchange');
+						$el.removeAttr('onfocus');
+					}
+					else if (el.type == "checkbox") {
+						$el.removeAttr('onclick');
+					}
+				}
+			}
+		}
+	}
+
 	$(function() {
+		// 将仅编辑时只读的字段，变为可写
+		setNotReadOnly();
+
 		$('input[type=radio]').each(function(i) {
 			var name = $(this).attr("name");
 			if ($(this).attr("readonly")==null) {
@@ -378,8 +460,41 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 		});
 
 		$('input').each(function() {
-			if ($(this).attr('kind')=='DATE') {
+			if ($(this).attr('kind')=='DATE' || $(this).attr('kind')=='DATE_TIME') {
 				$(this).attr('autocomplete', 'off');
+			}
+		});
+
+		var canUserData = <%=canUserData%>;
+
+		// 初始化tip提示及如果拥有数据权限，则去除只读
+		// 不能通过$("#visualForm").serialize()来获取所有的元素，因为radio或checkbox未被选中，则不会被包含
+		$('#visualForm input, #visualForm select, #visualForm textarea').each(function() {
+			// 如果不是富文本编辑宏控件，如果富文本编辑宏控件加上了form-control，则会因为生成ueditor时，外面包裹的div也带上了form-control，致富文本编辑器位置变成了浮于表单上
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type')!='hidden' && $(this).attr('type')!='file') {
+				$(this).addClass('form-control');
+			}
+
+			if (canUserData) {
+				$(this).removeAttr('readonly');
+			}
+
+			var tip = '';
+			if ($(this).attr('type') == 'radio') {
+				tip = $(this).parent().attr('tip');
+			}
+			else {
+				tip = $(this).attr('tip');
+			}
+			if (null!=tip && ""!=tip) {
+				$(this).poshytip({
+					content: function(){return tip;},
+					className: 'tip-yellowsimple',
+					alignTo: 'target',
+					alignX: 'center',
+					offsetY: 5,
+					allowTipHover: true
+				});
 			}
 		});
 	});

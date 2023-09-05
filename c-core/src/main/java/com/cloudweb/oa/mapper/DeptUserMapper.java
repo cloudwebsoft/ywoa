@@ -18,11 +18,12 @@ import java.util.List;
  */
 public interface DeptUserMapper extends BaseMapper<DeptUser> {
 
-    @Select("select IFNULL(MAX(orders), -1) AS orders from dept_user where dept_code=#{deptCode}")
-    int getMaxOrder(String deptCode);
+    // @Select("select IFNULL(MAX(orders), -1) AS orders from dept_user where dept_code=#{deptCode}")
+    @Select("select MAX(orders) AS orders from dept_user where dept_code=#{deptCode}")
+    Integer getMaxOrder(String deptCode);
 
     @Select("select du.* from dept_user du, users u where du.user_name=u.name and u.isValid=1 and du.DEPT_CODE=#{deptCode} order by #{orderField} asc")
-    List<DeptUser> listByDeptCode(String deptCode, String orderField);
+    List<DeptUser> listByDeptCode(@Param("deptCode") String deptCode, @Param("orderField") String orderField);
 
     /**
      * 将位于其后的同一部门下的用户的orders下降一位
@@ -31,7 +32,7 @@ public interface DeptUserMapper extends BaseMapper<DeptUser> {
      * @return
      */
     @Update("update dept_user set orders=orders-1 where DEPT_CODE=#{deptCode} and ORDERS>${orders}")
-    Integer updateOrdersGreatThan(String deptCode, int orders);
+    Integer updateOrdersGreatThan(@Param("deptCode") String deptCode, @Param("orders") int orders);
 
     /**
      * 取出属于部门deptCodes的用户的user_name

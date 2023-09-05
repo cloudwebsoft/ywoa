@@ -32,6 +32,16 @@
     if (commonJson!=null) {
         pageStyle = commonJson.getIntValue("pageStyle");
     }
+
+    int pageAddRedirect = ConstUtil.PAGE_ADD_REDIRECT_TO_DEFAULT;
+    String redirectUrl = "";
+    com.alibaba.fastjson.JSONObject addJson = null;
+    if (jsonObject.containsKey("addPage")) {
+        addJson = jsonObject.getJSONObject("addPage");
+        pageAddRedirect = addJson.getIntValue("pageAddRedirect");
+        redirectUrl = addJson.getString("redirectUrl");
+    }
+
     com.alibaba.fastjson.JSONObject editJson = jsonObject.getJSONObject("editPage");
     boolean isReloadAfterUpdate = true;
     boolean isTabStyleHorEdit = true;
@@ -56,6 +66,8 @@
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/Toolbar.css"/>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/Toolbar_slidemenu.css"/>
     <script src="../js/tabpanel/Toolbar.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
     <style>
         .toolbar {
             position: inherit;
@@ -138,19 +150,167 @@
             </td>
     </table>
 </form>
+<form id="formAdd" style="display: none">
+    <table class="tabStyle_1 percent80" width="80%" align="center">
+        <tr>
+            <td colspan="2" class="tabStyle_1_title">添加页</td>
+        <tr>
+            <td width="18%">添加后重定向至</td>
+            <td width="82%">
+                <select id="pageAddRedirect" name="pageAddRedirect">
+                    <option value="<%=ConstUtil.PAGE_ADD_REDIRECT_TO_DEFAULT%>">默认至列表页</option>
+                    <option value="<%=ConstUtil.PAGE_ADD_REDIRECT_TO_SHOW%>">详情页</option>
+                    <option value="<%=ConstUtil.PAGE_ADD_REDIRECT_TO_URL%>">指定页面</option>
+                </select>
+                <input id="redirectUrlAdd" name="redirectUrl" style="display: none" value="<%=ConstUtil.PAGE_STYLE_LIGHT%>"/>
+                <script>
+                    $(function() {
+                        $('#pageAddRedirect').val('<%=pageAddRedirect%>');
+                        $('#redirectUrlAdd').val('<%=redirectUrl%>');
+                        <%
+                        if (pageAddRedirect == ConstUtil.PAGE_ADD_REDIRECT_TO_URL) {
+                        %>
+                            $('#redirectUrlAdd').show();
+                        <%
+                        }
+                        %>
+                    })
+                    $('#pageAddRedirect').change(function(e) {
+                        if ($(this).val() == "<%=ConstUtil.PAGE_ADD_REDIRECT_TO_URL%>") {
+                            $('#redirectUrlAdd').show();
+                        }
+                        else {
+                            $('#redirectUrlAdd').hide();
+                        }
+                    })
+                </script>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                按钮
+            </td>
+            <td>
+                <div id="toolbarPageAdd" class="toolbar-box"></div>
+                <script>
+                    var toolbarAdd;
+                    function initToolbarAdd(toolbarId) {
+                        // 不能在ready中初始化toolbar，因为有时onload时间可能比较长，会致toolbar要过很长时间才能显示
+                        toolbarAdd = new Toolbar({
+                            renderTo: toolbarId,
+                            // border: 'top',
+                            items: [
+                                {
+                                    type: 'button',
+                                    text: '修改',
+                                    title: '修改',
+                                    bodyStyle: 'edit',
+                                    useable: 'T',
+                                    handler: function () {
+                                        var objLi = $("#sortableAdd").children().eq(curIndexAdd)[0];
+                                        editProp(objLi, '<%=ConstUtil.PAGE_TYPE_ADD%>');
+                                        return false;
+                                    }
+                                },
+                                {
+                                    type: 'button',
+                                    text: '删除',
+                                    title: '删除',
+                                    bodyStyle: 'del',
+                                    useable: 'T',
+                                    handler: function () {
+                                        $li = $("#sortableAdd").children().eq(curIndexAdd);
+                                        if ($li.attr('btnId') == '<%=ConstUtil.BTN_OK%>' || $li.attr('btnId') == '<%=ConstUtil.BTN_BACK%>') {
+                                            layer.msg('系统按钮不能被删除！', {
+                                                offset: '6px'
+                                            });
+                                            return false;
+                                        }
+                                        jConfirm("您确定要删除么？","提示",function(r) {
+                                            if (!r) {
+                                                return;
+                                            } else {
+                                                objLi = $li.remove();
+                                            }
+                                        });
+                                        return false;
+                                    }
+                                }
+                            ]
+                        });
+                        toolbarAdd.render();
+                    }
 
+                    initToolbarAdd('toolbarPageAdd');
+                </script>
+                <ul id="sortableAdd" class="ul-sortalbe">
+                    <%
+                        com.alibaba.fastjson.JSONArray btnProps = null;
+                        if (addJson!=null && addJson.containsKey("btnProps")) {
+                            btnProps = addJson.getJSONArray("btnProps");
+                        }
+                        if (btnProps == null || btnProps.size() == 0) {
+                    %>
+                    <li class="ui-state-default" title="按下图标可拖动，双击图标可编辑属性" btnId="<%=ConstUtil.BTN_OK%>">
+                        <img class="btn-icon handle" src="../images/setup.png"/>
+                        <span style="margin-top:5px">确定</span>
+                        <textarea id="<%=ConstUtil.BTN_OK%>Prop" style="display:none"></textarea>
+                    </li>
+                    <li class="ui-state-default" title="按下图标可拖动，双击图标可编辑属性" btnId="<%=ConstUtil.BTN_BACK%>">
+                        <img class="btn-icon handle" src="../images/setup.png"/>
+                        <span style="margin-top:5px">返回</span>
+                        <textarea id="<%=ConstUtil.BTN_BACK%>Prop" style="display:none"></textarea>
+                    </li>
+                    <%
+                    }
+                    else {
+                        for (int i = 0; i < btnProps.size(); i++) {
+                            com.alibaba.fastjson.JSONObject btnJson = btnProps.getJSONObject(i);
+                            String btnId = btnJson.getString("id");
+                            String btnName = "";
+                            if (btnJson.containsKey("name")) {
+                                btnName = btnJson.getString("name");
+                            }
+                            else {
+                                btnName = ModuleUtil.getBtnDefaultName(btnId);
+                            }
+                            boolean enabled = true;
+                            if (btnJson.containsKey("enabled")) {
+                                enabled = btnJson.getBoolean("enabled");
+                            }
+                    %>
+                    <li class="ui-state-default <%=enabled?"":"ui-state-disabled"%>" title="按下图标可拖动，双击图标可编辑属性" btnId="<%=btnId%>">
+                        <img class="btn-icon handle" src="../images/setup.png"/>
+                        <span style="margin-top:5px"><%=btnName%></span>
+                        <textarea id="<%=btnId%>Prop" style="display:none"><%=btnJson.toString()%></textarea>
+                    </li>
+                    <%
+                            }
+                        }
+                    %>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                <button id="btnOkAdd" class="btn btn-default">保存</button>
+                <input name="moduleCode" value="<%=moduleCode%>" type="hidden"/>
+                <input id="btnPropsAdd" name="btnProps" type="hidden"/>
+            </td>
+    </table>
+</form>
 <form id="formEdit">
     <table class="tabStyle_1 percent80" width="80%" align="center">
         <tr>
             <td colspan="2" class="tabStyle_1_title">编辑页</td>
-        <tr>
+        <tr style="display: none">
             <td width="18%">保存后自动刷新</td>
             <td width="82%" title="如果有附件需上传，建议保存后自动刷新以看到效果">
                 <input name="isReloadAfterUpdate" type="radio" value="true" checked/>&nbsp;是
                 <input name="isReloadAfterUpdate" type="radio" value="false"/>&nbsp;否
             </td>
         </tr>
-        <tr>
+        <tr style="display: none">
             <td>关联模块显示方向</td>
             <td>
                 <input name="isTabStyleHor" value="true" type="radio" checked/>&nbsp;横向
@@ -202,8 +362,10 @@
                                     useable: 'T',
                                     handler: function () {
                                         $li = $("#sortableEdit").children().eq(curIndexEdit);
-                                        if ($li.attr('btnId') == '<%=ConstUtil.BTN_OK%>') {
-                                            jAlert('系统按钮不能被删除！', '提示');
+                                        if ($li.attr('btnId') == '<%=ConstUtil.BTN_OK%>' || $li.attr('btnId') == '<%=ConstUtil.BTN_CLOSE%>') {
+                                            layer.msg('系统按钮不能被删除！', {
+                                                offset: '6px'
+                                            });
                                             return false;
                                         }
                                         jConfirm("您确定要删除么？","提示",function(r) {
@@ -228,28 +390,35 @@
                     function createBtn(moduleCode, pageType) {
                         action = 'create';
                         curPageType = pageType;
-                        openWin('module_page_btn_prop.jsp?moduleCode=<%=moduleCode%>', 800, 400);
+                        openWin('module_page_btn_prop.jsp?moduleCode=<%=moduleCode%>&pageType=' + pageType, 800, 400);
                     }
                 </script>
                 <ul id="sortableEdit" class="ul-sortalbe">
                     <%
-                        com.alibaba.fastjson.JSONArray btnProps = null;
                         if (editJson!=null && editJson.containsKey("btnProps")) {
                             btnProps = editJson.getJSONArray("btnProps");
                         }
                         if (btnProps == null || btnProps.size() == 0) {
                     %>
-                    <li class="ui-state-default" title="按下图标可拖动，双击图标可编辑属性" btnId="<%=ConstUtil.BTN_OK%>">
+                    <%--<li class="ui-state-default" title="按下图标可拖动，双击图标可编辑属性" btnId="<%=ConstUtil.BTN_OK%>">
                         <img class="btn-icon handle" src="../images/setup.png"/>
                         <span style="margin-top:5px">确定</span>
                         <textarea id="<%=ConstUtil.BTN_OK%>Prop" style="display:none"></textarea>
                     </li>
+                    <li class="ui-state-default" title="按下图标可拖动，双击图标可编辑属性" btnId="<%=ConstUtil.BTN_CLOSE%>">
+                        <img class="btn-icon handle" src="../images/setup.png"/>
+                        <span style="margin-top:5px">关闭</span>
+                        <textarea id="<%=ConstUtil.BTN_CLOSE%>Prop" style="display:none"></textarea>
+                    </li>--%>
                     <%
                     }
                     else {
                         for (int i = 0; i < btnProps.size(); i++) {
                             com.alibaba.fastjson.JSONObject btnJson = btnProps.getJSONObject(i);
                             String btnId = btnJson.getString("id");
+                            /*if (btnId.equals(ConstUtil.BTN_OK) || btnId.equals(ConstUtil.BTN_CLOSE)) {
+                                continue;
+                            }*/
                             String btnName = "";
                             if (btnJson.containsKey("name")) {
                                 btnName = btnJson.getString("name");
@@ -287,7 +456,7 @@
         <tr>
             <td colspan="2" class="tabStyle_1_title">详情页</td>
         </tr>
-        <tr>
+        <tr style="display: none">
             <td width="18%">关联模块显示方向</td>
             <td>
                 <input name="isTabStyleHor" value="true" type="radio" checked/>&nbsp;横向
@@ -341,7 +510,9 @@
                                     handler: function () {
                                         $li = $("#sortableShow").children().eq(curIndexShow);
                                         if ($li.attr('btnId') == '<%=ConstUtil.BTN_PRINT%>' || $li.attr('btnId') == '<%=ConstUtil.BTN_EDIT%>') {
-                                            jAlert('系统按钮不能被删除！', '提示');
+                                            layer.msg('系统按钮不能被删除！', {
+                                                offset: '6px'
+                                            });
                                             return false;
                                         }
                                         jConfirm("您确定要删除么？","提示",function(r) {
@@ -439,7 +610,47 @@
                 },
                 success: function (data, status) {
                     data = $.parseJSON(data);
-                    jAlert(data.msg, "提示");
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+
+        $('#btnOkAdd').click(function (e) {
+            e.preventDefault();
+            if ($('#pageAddRedirect').val() == '<%=ConstUtil.PAGE_ADD_REDIRECT_TO_URL%>') {
+                if ($('#redirectUrlAdd').val() == '') {
+                    layer.msg('指定页面不能为空', {
+                        offset: '6px'
+                    });
+                    return;
+                }
+            }
+
+            $('#btnPropsAdd').val(makeBtnProps('sortableAdd'));
+
+            $.ajax({
+                type: "post",
+                url: "putAddPageSetup.do",
+                // contentType: "application/x-www-form-urlencoded; charset=iso8859-1",
+                data: $('#formAdd').serialize(),
+                dataType: "html",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    data = $.parseJSON(data);
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
                 },
                 complete: function (XMLHttpRequest, status) {
                     $('body').hideLoading();
@@ -467,7 +678,9 @@
                 },
                 success: function (data, status) {
                     data = $.parseJSON(data);
-                    jAlert(data.msg, "提示");
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
                 },
                 complete: function (XMLHttpRequest, status) {
                     $('body').hideLoading();
@@ -495,7 +708,9 @@
                 },
                 success: function (data, status) {
                     data = $.parseJSON(data);
-                    jAlert(data.msg, "提示");
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
                 },
                 complete: function (XMLHttpRequest, status) {
                     $('body').hideLoading();
@@ -510,6 +725,7 @@
 
     var curIndexShow = -1;
     var curIndexEdit = -1;
+    var curIndexAdd = -1;
     var curPropObj;
     var curLiObj;
 
@@ -568,6 +784,33 @@
         $("#sortableEdit li").dblclick(function () {
             editProp(this, 'showPage');
         });
+
+        $("#sortableAdd")
+            .sortable({
+                handle: ".handle",
+                stop: function () {
+                }
+            })
+            .selectable({
+                stop: function () {
+                    $(".ui-selected", this).each(function () {
+                        curIndexAdd = $("#sortableAdd li").index(this);
+                    });
+                }
+            })
+            .find("li")
+            .addClass("ui-corner-all");
+
+        // 实现单选
+        $("#sortableAdd").selectable({
+            selected: function (event, ui) {
+                $(ui.selected).siblings().removeClass("ui-selected");
+            }
+        });
+
+        $("#sortableAdd li").dblclick(function () {
+            editProp(this, '<%=ConstUtil.PAGE_TYPE_ADD%>');
+        });
     });
 
     function editProp(objLi, pageType) {
@@ -577,7 +820,7 @@
         curLiObj = objLi;
 
         var btnId = $(objLi).attr('btnId');
-        openWin('module_page_btn_prop.jsp?btnId=' + btnId + '&moduleCode=<%=moduleCode%>', 800, 400);
+        openWin('module_page_btn_prop.jsp?btnId=' + btnId + '&moduleCode=<%=moduleCode%>&pageType=' + pageType, 800, 400);
     }
 
     function setBtnProp(prop) {

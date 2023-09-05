@@ -14,6 +14,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -98,7 +103,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, Group> implements
         Group group = new Group();
         group.setCode(code);
         group.setDescription(desc);
-        group.setIsDept(isDept==1);
+//        group.setIsDept(isDept==1);
         group.setIsIncludeSubDept(isIncludeSubDept);
         group.setUnitCode(unitCode);
         group.setKind(kind);
@@ -126,6 +131,47 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, Group> implements
             groupCache.refreshSave(code);
         }
         return re;
+    }
+
+    /**
+     * 取出用户所在的所有部门组，含部门型用户组
+     * @param userName
+     * @return
+     */
+    @Override
+    public List<Group> getAllGroupsOfUser(String userName) {
+        List<Group> groupList = getGroupsOfUser(userName, true);
+
+        // 取用户所属的部门型的用户组
+        // 20220313 用户组与角色不再关联
+        /*List<Group> deptGrouplist = listByIsDept(true);
+        for (Group group : deptGrouplist) {
+            boolean isOfGroup = false;
+            if (group.getIsIncludeSubDept()==1) {
+                // 判断用户是否属于该部门型用户组，如果用户属于deptCode部门的子部门，则判定为属于该组
+                if (deptUserService.isUserBelongToDept(userName, group.getDeptCode())) {
+                    isOfGroup = true;
+                }
+            }
+            else {
+                if (deptUserService.isUserOfDept(userName, group.getDeptCode())) {
+                    isOfGroup = true;
+                }
+            }
+            if (isOfGroup) {
+                boolean isFound = false;
+                for (Group gp : groupList) {
+                    if (gp.getCode().equals(group.getCode())) {
+                        isFound = true;
+                        break;
+                    }
+                }
+                if (!isFound) {
+                    groupList.add(group);
+                }
+            }
+        }*/
+        return groupList;
     }
 
     @Override
@@ -164,10 +210,11 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, Group> implements
             }
         }
 
-        Group group = getGroup(groupCode);
+        // 20220313 用户组与部门及角色不再关联
+        /*Group group = getGroup(groupCode);
         if (group.getIsDept()) {
             // 取得部门(或者及子部门)中的用户
-            List<Department> deptList = new ArrayList();
+            List<Department> deptList = new ArrayList<>();
             deptList.add(departmentService.getDepartment(group.getDeptCode()));
 
             if (group.getIsIncludeSubDept()==1) {
@@ -194,11 +241,14 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, Group> implements
                     }
                 }
             }
-
-        }
-        return list;
+        }*/
+        return list.stream().filter(distinctByKey(User::getName)).collect(Collectors.toList());
     }
 
+    public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Map<Object,Boolean> seen = new ConcurrentHashMap<>();
+        return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+    }
 
     @Override
     public List<Group> list(String searchUnitCode, String op, String what, String kind) {

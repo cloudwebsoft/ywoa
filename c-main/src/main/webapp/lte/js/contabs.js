@@ -210,7 +210,12 @@ function showMenuItem(dataUrl, dataIndex, menuName) {
 
 		// 添加选项卡对应的iframe
 		var str1 = '<iframe class="J_iframe" data-name="' + tabNameIndex + '" name="iframe' + dataIndex + '" width="100%" height="100%" src="' + dataUrl + '" frameborder="0" data-id="' + dataUrl + '" seamless></iframe>';
+        /*console.log('dataUrl=' + dataUrl);
+        if (dataUrl == '/oa/doc_show.jsp?id=5') {
+            return;
+        }*/
 		$('.J_mainContent').find('iframe.J_iframe').hide().parents('.J_mainContent').append(str1);
+
 		//显示loading提示
 //            var loading = layer.load();
 //
@@ -455,6 +460,7 @@ $(function () {
             $('.J_mainContent .J_iframe').each(function () {
                 if ($(this).data('id') == currentId) {
                     $(this).show().siblings('.J_iframe').hide();
+                    // console.log('activeTab renewFrameset');
                     // 防止嵌套的frameset当tab切换回来时内容不能显示
 					renewFrameset(this);
                     return false;

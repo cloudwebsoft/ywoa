@@ -5,7 +5,10 @@ import bsh.Interpreter;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.api.IFormulaUtil;
+import com.cloudweb.oa.entity.PostUser;
 import com.cloudweb.oa.service.IDeptUserService;
+import com.cloudweb.oa.service.IPostUserService;
 import com.cloudweb.oa.service.IUserOfRoleService;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
@@ -19,12 +22,16 @@ import com.redmoon.oa.flow.strategy.StrategyUnit;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.person.UserSetupDb;
+import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.pvg.RoleMgr;
+import com.redmoon.oa.shell.BSHShell;
 import com.redmoon.oa.util.BeanShellUtil;
 import com.redmoon.oa.visual.Formula;
-import com.redmoon.oa.visual.FormulaUtil;
-import org.apache.log4j.Logger;
+import nl.bitwalker.useragentutils.DeviceType;
+import nl.bitwalker.useragentutils.OperatingSystem;
+import nl.bitwalker.useragentutils.UserAgent;
+import org.apache.commons.lang3.StringUtils;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -36,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class WorkflowRouter {
 
@@ -75,6 +83,27 @@ public class WorkflowRouter {
         // 如果是自选节点
         if (nextAction.getJobCode().equals(WorkflowActionDb.PRE_TYPE_USER_SELECT) || nextAction.getJobCode().equals(WorkflowActionDb.PRE_TYPE_USER_SELECT_IN_ADMIN_DEPT)) {
             // nextAction.getJobCode().equals(PRE_TYPE_MYLEADER) || nextAction.getJobCode().equals(PRE_TYPE_MYSUBORDINATE)) {
+            // 判断是否来自手机端
+            boolean isMobile = false;
+            OperatingSystem os = null;
+            try {
+                // 当从第三方接口对接时，因没有User-Agent，会导致出现异常
+                UserAgent ua = UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
+                os = ua.getOperatingSystem();
+            }
+            catch (Exception e) {
+                LogUtil.getLog(getClass()).error(e);
+            }
+            if(os==null || DeviceType.MOBILE.equals(os.getDeviceType())) {
+                isMobile = true;
+            }
+            if (isMobile) {
+                UserDb user = new UserDb();
+                user.setName(WorkflowActionDb.PRE_TYPE_USER_SELECT);
+                // user.setName("PRE_TYPE_USER_SELECT");
+                user.setRealName("自选用户");
+                vt.addElement(user);
+            }
             /*
             String[] ary = StrUtil.split(nextAction.getUserName(), ",");
             int len = 0;
@@ -87,14 +116,14 @@ public class WorkflowRouter {
             return vt;
         }
 
-        Logger.getLogger(getClass()).info("matchActionUser: deptOfUserWithMultiDept=" + deptOfUserWithMultiDept + " isTest=" + isTest + " nextAction.isRelateRoleToOrganization()=" + nextAction.isRelateRoleToOrganization());
+        LogUtil.getLog(getClass()).info("matchActionUser: deptOfUserWithMultiDept=" + deptOfUserWithMultiDept + " isTest=" + isTest + " nextAction.isRelateRoleToOrganization()=" + nextAction.isRelateRoleToOrganization());
 
         WorkflowActionDb actionRelated = curAction; // 所关联的节点，上一节点或开始节点
         Vector vu = new Vector();
         DeptUserDb du = new DeptUserDb();
         // 关联发起人节点，相当于以发起人为上一节点，然后按行文方向匹配
         WorkflowActionDb startAction = curAction.getStartAction(nextAction.getFlowId());
-        if (nextAction.isRelateRoleToOrganization()) {
+        if (nextAction.isRelateRoleToOrganization() && nextAction.getNodeMode()==WorkflowActionDb.NODE_MODE_ROLE) {
             if (nextAction.getRelateToAction().equals(WorkflowActionDb.RELATE_TO_ACTION_STARTER)) {
                 // 如果当前节点为发起节点
                 if (startAction.getId()==curAction.getId()) {
@@ -103,10 +132,10 @@ public class WorkflowRouter {
                 else {
                     actionRelated = startAction;
 
-                    Logger.getLogger(getClass()).info("startAction.getDept()=" + startAction.getDept() + " startAction.getUserName()=" + startAction.getUserName());
+                    LogUtil.getLog(getClass()).info("startAction.getDept()=" + startAction.getDept() + " startAction.getUserName()=" + startAction.getUserName());
 
                     // 如果开始节点上未保存单位（发起者无兼职）
-                    // Logger.getLogger(getClass()).info("matchActionUser dept.name=" + ((DeptDb)du.getDeptsOfUser(startAction.getUserName()).elementAt(0)).getName());
+                    // LogUtil.getLog(getClass()).info("matchActionUser dept.name=" + ((DeptDb)du.getDeptsOfUser(startAction.getUserName()).elementAt(0)).getName());
                     MyActionDb madStarterActionDb = new MyActionDb();
                     madStarterActionDb = madStarterActionDb.getFirstMyActionDbOfFlow(curAction.getFlowId());
                     // 取得madStarterActionDb中所选的兼职部门
@@ -139,7 +168,7 @@ public class WorkflowRouter {
                     FormField ff = (FormField)ir.next();
                     if (ff.getType().equals(FormField.TYPE_MACRO)) {
                         MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-                        if (mu.getIFormMacroCtl() instanceof DeptSelectCtl || mu.getIFormMacroCtl() instanceof DeptSelectWinCtl || mu.getIFormMacroCtl() instanceof MyDeptSelectCtl) {
+                        if (mu.getIFormMacroCtl() instanceof DeptSelectCtl || mu.getIFormMacroCtl() instanceof DeptSelectWinCtl) { // || mu.getIFormMacroCtl() instanceof MyDeptSelectCtl) {
                             DeptDb dd = new DeptDb();
                             dd = dd.getDeptDb(ff.getValue());
                             if (dd!=null && dd.isLoaded()) {
@@ -174,10 +203,10 @@ public class WorkflowRouter {
             // 如果当前节点不是开始节点，且下一节点关联的是开始节点，则不需要判断是否选择了兼职部门
             if (curAction.getId()!=startAction.getId() && nextAction.getRelateToAction().equals(WorkflowActionDb.RELATE_TO_ACTION_STARTER)) {
                 isNeedCheckCurUserMultiDept = false;
-                Logger.getLogger(getClass()).info("matchActionUser vu.size=" + vu.size() + " deptOfUserWithMultiDept=" + deptOfUserWithMultiDept);
+                LogUtil.getLog(getClass()).info("matchActionUser vu.size=" + vu.size() + " deptOfUserWithMultiDept=" + deptOfUserWithMultiDept);
             }
             else {
-                Logger.getLogger(getClass()).info("matchActionUser vu.size()=" + vu.size() + " deptOfUserWithMultiDept2=" + deptOfUserWithMultiDept);
+                LogUtil.getLog(getClass()).info("matchActionUser vu.size()=" + vu.size() + " deptOfUserWithMultiDept2=" + deptOfUserWithMultiDept);
                 // 判断角色关联fgf 20140115，注意：当从子流程中返回父流程时注意不能设为角色关联
                 if (nextAction.isRelateRoleToOrganization()) {
                     if (vu.size() > 1) {
@@ -211,6 +240,7 @@ public class WorkflowRouter {
             }
         }
 
+        // 如果用户上的用户已被匹配选择
         if (nextAction.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE_SELECTED || nextAction.getNodeMode() == WorkflowActionDb.NODE_MODE_USER_SELECTED) {
             int nextActionFromCount = 0;
             Vector fromV = nextAction.getLinkFromActions();
@@ -242,7 +272,7 @@ public class WorkflowRouter {
                     boolean canSelUserWhenReturned = "1".equals(WorkflowActionDb.getActionProperty(wpd, curAction.getInternalName(), "canSelUserWhenReturned"));
                     // 如果被退回再提交时不可以重新选择用户
                     if (!canSelUserWhenReturned) {
-                        if (!nextAction.getUserName().equals("")) {
+                        if (!"".equals(nextAction.getUserName())) {
                             String[] users = StrUtil.split(nextAction.getUserName(), ",");
                             for (String user : users) {
                                 vt.addElement(um.getUserDb(user));
@@ -254,11 +284,10 @@ public class WorkflowRouter {
             }
         }
 
-        Logger.getLogger(getClass()).info("matchActionUser username=" + nextAction.getUserName() +
-                " nodemode=" + nextAction.getNodeMode());
+        LogUtil.getLog(getClass()).info("matchActionUser username=" + nextAction.getUserName() + " nodemode=" + nextAction.getNodeMode());
 
         // 用于匹配下一节点跟当前节点角色与部门相关联的情况中，当前节点用户数大于1时，当前处理用户应能够看见的关联用户，如：当前用户应只能看见自己的处长
-        Vector myVt = new Vector();
+        Vector<UserDb> myVt = new Vector<>();
 
         if (nextAction.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE || nextAction.getNodeMode() == WorkflowActionDb.NODE_MODE_ROLE_SELECTED) {
             // 如果为role型，检查role中是否只有一个用户，如果是则自动填充action中的用户，如果不是，则根据角色与组织机构相关联或者繁忙程度，自动分配
@@ -283,7 +312,7 @@ public class WorkflowRouter {
                     Vector v_user = rd.getAllUserOfRole();
                     // 下面的只有一个用户，就认为匹配成功，而在支持跳过的情况下，该用户可能根据行文方向并不存在，但因其它部门中有一个这样角色的用户，却错误匹配了
                     // 该角色中只有一个用户，则匹配成功
-                    Logger.getLogger(getClass()).info("matchActionUser: v_user size=" + v_user.size());
+                    LogUtil.getLog(getClass()).info("matchActionUser: v_user size=" + v_user.size());
                     if (v_user.size() == 1) {
                         UserDb ud = (UserDb) v_user.get(0);
                         vt.addElement(ud);
@@ -293,7 +322,7 @@ public class WorkflowRouter {
                     if (vu.size()==0 && isTest) {
                         return vt;
                     }
-                    Logger.getLogger(getClass()).info("vu size=" + vu.size() + " deptOfUserWithMultiDept=" + deptOfUserWithMultiDept);
+                    LogUtil.getLog(getClass()).info("vu size=" + vu.size() + " deptOfUserWithMultiDept=" + deptOfUserWithMultiDept);
 
                     boolean isRelateActionMultiUser = false;
                     String[] aryUser = StrUtil.split(actionRelated.getUserName(), ",");
@@ -346,39 +375,47 @@ public class WorkflowRouter {
                             }
                         }
                         vt.addAll(doMatchActionUser(nextAction, curAction, dd, rd));
+                        // 去重
+                        ArrayList<UserDb> userList = vt.stream().collect(Collectors.collectingAndThen(
+                                Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(UserDb::getName))), ArrayList::new));
+                        vt = new Vector<>(userList);
                     }
                     else {
                         // fgf 20170316 如果是关联的上一节点，则应允许节点中存在多个人的情况，场景：地税意见建议流程中，选择部门管理员（可能多个）后至部门处长
                         if (nextAction.isRelateRoleToOrganization()) {
-                            for (int i=0; i<aryUser.length; i++) {
-                                vu = du.getDeptsOfUser(aryUser[i]);
+                            for (String s : aryUser) {
+                                vu = du.getDeptsOfUser(s);
 
                                 DeptDb dd = new DeptDb();
                                 if (isNeedCheckCurUserMultiDept) {
-                                    if (vu.size()>1) {
+                                    if (vu.size() > 1) {
                                         // 当提交后
-                                        if (deptOfUserWithMultiDept==null || deptOfUserWithMultiDept.equals(""))
+                                        if (StringUtils.isEmpty(deptOfUserWithMultiDept)) {
                                             throw new ErrMsgException("请选择您所在的部门！"); // 提交时未选择部门
-                                        else
+                                        } else {
                                             dd = dd.getDeptDb(deptOfUserWithMultiDept);
-                                    }
-                                    else {
-                                        if (vu.size()>0) {
+                                        }
+                                    } else {
+                                        if (vu.size() > 0) {
                                             dd = (DeptDb) vu.get(0);
                                         }
                                     }
-                                }
-                                else {
-                                    if (vu.size()>0) {
+                                } else {
+                                    if (vu.size() > 0) {
                                         dd = (DeptDb) vu.get(0);
                                     }
                                 }
 
-                                Vector v = doMatchActionUser(nextAction, curAction, dd, rd);
+                                Vector<UserDb> v = doMatchActionUser(nextAction, curAction, dd, rd);
                                 vt.addAll(v);
+                                // 去重
+                                ArrayList<UserDb> userList = vt.stream().collect(Collectors.collectingAndThen(
+                                        Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(UserDb::getName))), ArrayList::new));
+                                vt = new Vector<>(userList);
 
-                                if (curUserName.equals(aryUser[i])) {
-                                    myVt = v;
+                                if (curUserName.equals(s)) {
+                                    // 20220812更改为addAll，原来为直接赋值为v，而在循环中，当前用户可能要根据行文方向有多个角色去匹配，而不是只有一个角色，所以需addAll
+                                    myVt.addAll(v);
                                 }
                             }
                         }
@@ -386,7 +423,7 @@ public class WorkflowRouter {
                 }
             }
             else {
-/*              Logger.getLogger(getClass()).info("aryrolelen23456=" + aryrolelen + " rankCod1e=" +
+/*              LogUtil.getLog(getClass()).info("aryrolelen23456=" + aryrolelen + " rankCod1e=" +
                             rankCode + " dept=" + dept + "333");*/
 
                 // 如果没有自动匹配
@@ -394,16 +431,14 @@ public class WorkflowRouter {
                 for (int i = 0; i < aryrolelen; i++) {
                     RoleDb rd = rm.getRoleDb(ary[i]);
                     if (!rd.isLoaded()) {
-                        throw new ErrMsgException("角色不存在! 注意删除重建了角色后，需要重新在流程节点上指定角色！");
+                        throw new ErrMsgException("角色:" + ary[i] + " 不存在! 注意删除重建了角色后，需要重新在流程节点上配置角色！");
                     }
-                    Vector v_user = rd.getAllUserOfRole();
+                    Vector<UserDb> v_user = rd.getAllUserOfRole();
 
                     // 根据关联的职级查找用户
                     String rankCode = nextAction.getRankCode();
-                    if (!rankCode.equals("")) {
-                        Iterator ir = v_user.iterator();
-                        while (ir.hasNext()) {
-                            UserDb ud = (UserDb) ir.next();
+                    if (!"".equals(rankCode)) {
+                        for (UserDb ud : v_user) {
                             // 职级匹配
                             if (ud.getRankCode().equals(rankCode)) {
                                 addUserDbToVector(vt, ud);
@@ -416,12 +451,9 @@ public class WorkflowRouter {
                     // 只加入限定部门范围内的用户
                     if (!"".equals(dept)) {
                         String[] arydept = StrUtil.split(dept, ",");
-                        int len1 = arydept.length;
-                        Iterator ir = v_user.iterator();
-                        while (ir.hasNext()) {
-                            UserDb ud = (UserDb) ir.next();
-                            for (int j = 0; j < len1; j++) {
-                                if (du.isUserOfDept(ud.getName(), arydept[j])) {
+                        for (UserDb ud : v_user) {
+                            for (String s : arydept) {
+                                if (du.isUserOfDept(ud.getName(), s)) {
                                     addUserDbToVector(vt, ud);
                                 }
                             }
@@ -452,12 +484,9 @@ public class WorkflowRouter {
 
                         String[] arydept = StrUtil.split(depts, ",");
                         if (arydept!=null) {
-                            int len1 = arydept.length;
-                            Iterator ir = v_user.iterator();
-                            while (ir.hasNext()) {
-                                UserDb ud = (UserDb) ir.next();
-                                for (int j = 0; j < len1; j++) {
-                                    if (du.isUserOfDept(ud.getName(), arydept[j])) {
+                            for (UserDb ud : v_user) {
+                                for (String s : arydept) {
+                                    if (du.isUserOfDept(ud.getName(), s)) {
                                         addUserDbToVector(vt, ud);
                                     }
                                 }
@@ -466,33 +495,26 @@ public class WorkflowRouter {
                     }
 
                     // 过滤被选中的用户，使满足职级条件的用户同时满足部门条件
-                    if (!dept.equals("") && !rankCode.equals("")) {
-                        Vector vv = new Vector(); // 用以记录vt中将要被删除的UserDb
+                    if (!"".equals(dept) && !"".equals(rankCode)) {
+                        Vector<UserDb> vv = new Vector<>(); // 用以记录vt中将要被删除的UserDb
                         String[] arydept = StrUtil.split(dept, ",");
-                        int len1 = arydept.length;
-                        int size = vt.size();
-                        for (int k = 0; k < size; k++) {
-                            UserDb ud = (UserDb) vt.get(k);
-                            for (int j = 0; j < len1; j++) {
-                                if (!du.isUserOfDept(ud.getName(), arydept[j])) {
+                        for (UserDb ud : vt) {
+                            for (String s : arydept) {
+                                if (!du.isUserOfDept(ud.getName(), s)) {
                                     vv.addElement(ud);
                                 }
                             }
                         }
-                        Iterator ir = vv.iterator();
-                        while (ir.hasNext()) {
-                            UserDb ud = (UserDb) ir.next();
+                        for (UserDb ud : vv) {
                             vt.remove(ud);
                         }
                     }
 
                     // 如果既未设部门范围，也未设职级，则将角色中的所有人员列出
-                    if (dept.equals("") && rankCode.equals("") && "".equals(deptField)) {
-                        Iterator ir = v_user.iterator();
-                        Logger.getLogger(getClass()).info("v_user.size=" + v_user.size());
-                        while (ir.hasNext()) {
-                            UserDb ud = (UserDb) ir.next();
-                            Logger.getLogger(getClass()).info("user name=" + ud.getName() +
+                    if ("".equals(dept) && "".equals(rankCode) && "".equals(deptField)) {
+                        LogUtil.getLog(getClass()).info("v_user.size=" + v_user.size());
+                        for (UserDb ud : v_user) {
+                            LogUtil.getLog(getClass()).info("user name=" + ud.getName() +
                                     " realname=" + ud.getRealName());
                             addUserDbToVector(vt, ud);
                         }
@@ -502,10 +524,27 @@ public class WorkflowRouter {
 
                 }
             }
-        } else {
+        }
+        else if (nextAction.getNodeMode() == WorkflowActionDb.NODE_MODE_POST || nextAction.getNodeMode() == WorkflowActionDb.NODE_MODE_POST_SELECTED) {
+            // 取得职位中的用户
+            String postIds = nextAction.getJobCode();
+            String[] ary = StrUtil.split(postIds, ",");
+            if (ary == null) {
+                return vt;
+            }
+            IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+            for (String postId : ary) {
+                List<PostUser> list = postUserService.listByPostId(StrUtil.toInt(postId));
+                UserDb ud = new UserDb();
+                for (PostUser postUser : list) {
+                    vt.addElement(ud.getUserDb(postUser.getUserName()));
+                }
+            }
+        }
+        else {
             // 用户型，则检查是否只有一个用户，如果是，则自动填充action中的用户，不是，则返回所有设定的人员
             String users = nextAction.getJobCode();
-            Logger.getLogger(getClass()).info("matchActionUser: users=" + users);
+            LogUtil.getLog(getClass()).info("matchActionUser: users=" + users);
             if (users.equals(WorkflowActionDb.PRE_TYPE_STARTER) || users.equals(WorkflowActionDb.PRE_TYPE_SELF)) {
                 if (!isTest) {
                     // 填充为流程发起人员
@@ -540,9 +579,7 @@ public class WorkflowRouter {
                     do {
                         // 在本部门中寻找
                         boolean isFound = false;
-                        Iterator ir = du.list(deptCode).iterator();
-                        while (ir.hasNext()) {
-                            DeptUserDb dud = (DeptUserDb) ir.next();
+                        for (DeptUserDb dud : du.list(deptCode)) {
                             // 取得该本部门的管理员
                             if (com.redmoon.oa.pvg.Privilege.canUserAdminDept(dud.getUserName(), dCode)) {
                                 vt.addElement(um.getUserDb(dud.getUserName()));
@@ -553,40 +590,41 @@ public class WorkflowRouter {
                             break;
                         }
 
-                        if (dd.getParentCode().equals("-1")) {
+                        if ("-1".equals(dd.getParentCode())) {
                             break;
                         }
                         // 取出父部门
                         parentDept = dd.getDeptDb(dd.getParentCode());
-                        if (parentDept == null)
+                        if (parentDept == null) {
                             break;
+                        }
 
                         // 在兄弟节点中寻找
-                        Iterator ir2 = parentDept.getChildren().iterator();
-                        while (ir2.hasNext()) {
-                            DeptDb dd2 = (DeptDb)ir2.next();
+                        for (DeptDb dd2 : parentDept.getChildren()) {
                             // 跳过本部门
-                            if (dd2.getCode().equals(dd.getCode()))
+                            if (dd2.getCode().equals(dd.getCode())) {
                                 continue;
+                            }
 
-                            ir = du.list(dd2.getCode()).iterator();
-                            while (ir.hasNext()) {
-                                DeptUserDb dud = (DeptUserDb) ir.next();
+                            for (DeptUserDb dud : du.list(dd2.getCode())) {
                                 // 取得该本部门的管理员
                                 if (com.redmoon.oa.pvg.Privilege.canUserAdminDept(dud.getUserName(), dCode)) {
                                     vt.addElement(um.getUserDb(dud.getUserName()));
                                     isFound = true;
                                 }
                             }
-                            if (isFound)
+                            if (isFound) {
                                 break;
+                            }
                         }
 
-                        if (isFound)
+                        if (isFound) {
                             break;
+                        }
 
-                        if (parentDept.getCode().equals(DeptDb.ROOTCODE))
+                        if (parentDept.getCode().equals(DeptDb.ROOTCODE)) {
                             break;
+                        }
 
                         // 往上寻找
                         deptCode = parentDept.getCode();
@@ -598,15 +636,14 @@ public class WorkflowRouter {
             else if (users.equals(WorkflowActionDb.PRE_TYPE_FORE_ACTION)) {
                 if (!isTest) {
                     // 如果为预定义节点（上一节点处理人员）填充为其上一节点的处理人员,如果有多个节点，则将上一节点的处理人员全部置入
-                    Vector v = curAction.getLinkFromActions();
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        WorkflowActionDb w = (WorkflowActionDb) ir.next();
+                    Vector<WorkflowActionDb> v = curAction.getLinkFromActions();
+                    for (WorkflowActionDb w : v) {
                         users = w.getUserName();
                         String[] ary = StrUtil.split(users, ",");
                         int len = 0;
-                        if (ary != null)
+                        if (ary != null) {
                             len = ary.length;
+                        }
                         if (len > 1) {
                             for (int i = 0; i < len; i++) {
                                 vt.addElement(um.getUserDb(ary[i]));
@@ -626,8 +663,9 @@ public class WorkflowRouter {
                     users = w.getUserName();
                     String[] ary = StrUtil.split(users, ",");
                     int len = 0;
-                    if (ary != null)
+                    if (ary != null) {
                         len = ary.length;
+                    }
                     if (len > 1) {
                         for (int i = 0; i < len; i++) {
                             vt.addElement(um.getUserDb(ary[i]));
@@ -652,13 +690,10 @@ public class WorkflowRouter {
                         fieldNames = fieldNames.substring("nest.".length());
 
                         // 取得嵌套表
-                        Vector v = fd.getFields();
-                        Iterator ir = v.iterator();
                         boolean isFound = false;
-                        while (ir.hasNext()) {
-                            FormField ff = (FormField) ir.next();
+                        Vector<FormField> v = fd.getFields();
+                        for (FormField ff : v) {
                             if (ff.getType().equals(FormField.TYPE_MACRO)) {
-                                // System.out.println(getClass() + " ff.getMacroType()=" + ff.getMacroType());
                                 if ("nest_table".equals(ff.getMacroType()) || "nest_sheet".equals(ff.getMacroType())) {
                                     isFound = true;
                                     String nestFormCode = ff.getDescription();
@@ -667,7 +702,7 @@ public class WorkflowRouter {
                                         JSONObject json = new JSONObject(defaultVal);
                                         nestFormCode = json.getString("destForm");
                                     } catch (JSONException e) {
-                                        e.printStackTrace();
+                                        LogUtil.getLog(getClass()).error(e);
                                     }
 
                                     FormDAO fdaoMain = new FormDAO();
@@ -677,24 +712,22 @@ public class WorkflowRouter {
                                     nestfd = nestfd.getFormDb(nestFormCode);
                                     String cwsId = String.valueOf(fdaoMain.getId());
                                     // 取得嵌套表中的数据
-                                    String sql = "select id from " + nestfd.getTableNameByForm() + " where cws_id=" + StrUtil.sqlstr(cwsId);
+                                    String sql = "select id from " + nestfd.getTableNameByForm() + " where cws_id='" + cwsId + "'";
                                     sql += " and cws_parent_form=" + StrUtil.sqlstr(ff.getFormCode());
                                     sql += " order by cws_order";
 
                                     // out.print(sql);
 
                                     com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
-                                    Vector vNest = fdao.list(nestFormCode, sql);
-                                    Iterator irNest = vNest.iterator();
-                                    while (irNest.hasNext()) {
-                                        fdao = (com.redmoon.oa.visual.FormDAO)irNest.next();
+                                    Vector<com.redmoon.oa.visual.FormDAO> vNest = fdao.list(nestFormCode, sql);
+                                    for (com.redmoon.oa.visual.FormDAO formDAO : vNest) {
+                                        fdao = formDAO;
                                         String val = fdao.getFieldValue(fieldNames);
                                         LogUtil.getLog(getClass()).info("matchActionUser val=" + val + fdao.getId() + " sql=" + sql);
                                         UserDb user = um.getUserDb(val);
                                         if (user.isLoaded()) {
                                             vt.addElement(user);
-                                        }
-                                        else {
+                                        } else {
                                             throw new ErrMsgException("嵌套表字段：" + fieldNames + "对应的用户：" + val + "不存在");
                                         }
                                     }
@@ -723,12 +756,11 @@ public class WorkflowRouter {
                         FormDAO fdao = new FormDAO();
                         fdao = fdao.getFormDAO(curAction.getFlowId(), fd);
 
-                        for (int k=0; k<fieldAry.length; k++) {
-                            String fieldName = fieldAry[k];
-
+                        for (String fieldName : fieldAry) {
                             FormField ff = fd.getFormField(fieldName);
-                            if (ff == null)
+                            if (ff == null) {
                                 throw new ErrMsgException("指定人员的表单域：" + fieldName + "不存在！");
+                            }
 
                             String userNames = StrUtil.getNullStr(fdao.getFieldValue(fieldName));
                             if (isReMatchUser) {
@@ -740,19 +772,18 @@ public class WorkflowRouter {
                             if (!"".equals(userNames)) {
                                 // 如果是部门宏控件，则取出部门中的全部用户
                                 if (ff.getType().equals(FormField.TYPE_MACRO)) {
-                                    if (ff.getMacroType().equals("macro_my_dept_select")
-                                            || ff.getMacroType().equals("macro_dept_sel_win")
-                                            || ff.getMacroType().equals("macro_dept_select")
+                                    if ("macro_my_dept_select".equals(ff.getMacroType())
+                                            || "macro_dept_sel_win".equals(ff.getMacroType())
+                                            || "macro_dept_select".equals(ff.getMacroType())
                                     ) {
                                         DeptUserDb dud = new DeptUserDb();
                                         Iterator ir = dud.list(userNames).iterator();
                                         userNames = "";
                                         while (ir.hasNext()) {
-                                            dud = (DeptUserDb)ir.next();
+                                            dud = (DeptUserDb) ir.next();
                                             if ("".equals(userNames)) {
                                                 userNames = dud.getUserName();
-                                            }
-                                            else {
+                                            } else {
                                                 userNames += "," + dud.getUserName();
                                             }
                                         }
@@ -788,10 +819,6 @@ public class WorkflowRouter {
                 }
             }
             else if (users.startsWith(WorkflowActionDb.PRE_TYPE_PROJECT_ROLE)) {
-                if (!com.redmoon.oa.kernel.License.getInstance().isPlatform()) {
-                    throw new ErrMsgException("系统版本中无此功能！");
-                }
-
                 if (!isTest) {
                     // 所选节点上的用户
                     String prjRole = users.substring((WorkflowActionDb.PRE_TYPE_PROJECT_ROLE + "_").length());
@@ -806,14 +833,13 @@ public class WorkflowRouter {
                     com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
                     String formCode = "project_members";
                     String sql = "select id from " + FormDb.getTableName(formCode) + " where cws_id='" + projectId + "' and prj_role=" + StrUtil.sqlstr(prjRole);
-                    Vector v = fdao.list(formCode, sql);
+                    Vector<com.redmoon.oa.visual.FormDAO> v = fdao.list(formCode, sql);
                     if (v.size()==0) {
                         throw new ErrMsgException("项目角色" + prjRole + "中无对应人员！");
                     }
                     else {
-                        Iterator ir = v.iterator();
-                        while (ir.hasNext()) {
-                            fdao = (com.redmoon.oa.visual.FormDAO)ir.next();
+                        for (Object o : v) {
+                            fdao = (com.redmoon.oa.visual.FormDAO) o;
                             String prjUser = fdao.getFieldValue("prj_user");
                             vt.addElement(um.getUserDb(prjUser));
                         }
@@ -826,36 +852,33 @@ public class WorkflowRouter {
                 Leaf lf = new Leaf();
                 lf = lf.getLeaf(wf.getTypeCode());
                 if (script != null) {
-                    Interpreter bsh = new Interpreter();
-                    try {
-                        StringBuffer sb = new StringBuffer();
-                        FormDAO fdao = new FormDAO();
-                        FormDb fd = new FormDb();
-                        fd = fd.getFormDb(lf.getFormCode());
-                        fdao = fdao.getFormDAO(wf.getId(), fd);
+                    BSHShell bsh = new BSHShell();
 
-                        BeanShellUtil.setFieldsValue(fdao, sb);
+                    StringBuffer sb = new StringBuffer();
+                    FormDAO fdao = new FormDAO();
+                    FormDb fd = new FormDb();
+                    fd = fd.getFormDb(lf.getFormCode());
+                    fdao = fdao.getFormDAO(wf.getId(), fd);
 
-                        // 赋值给用户
-                        // sb.append("userName=\"" + privilege.getUser(request)
-                        // 		+ "\";");
-                        sb.append("int flowId=" + wf.getId() + ";");
+                    BeanShellUtil.setFieldsValue(fdao, sb);
 
-                        bsh.set("actionId", curAction);
-                        bsh.set("request", request);
+                    // 赋值给用户
+                    // sb.append("userName=\"" + privilege.getUser(request)
+                    // 		+ "\";");
+                    sb.append("int flowId=" + wf.getId() + ";");
 
-                        // bsh.set("fileUpload", fu);
+                    bsh.set("actionId", curAction);
+                    bsh.set("request", request);
+                    bsh.set("fdao", fdao);
 
-                        bsh.eval(BeanShellUtil.escape(sb.toString()));
+                    // bsh.set("fileUpload", fu);
+                    bsh.eval(BeanShellUtil.escape(sb.toString()));
 
-                        bsh.eval(script);
-                        Object obj = bsh.get("ret");
-                        if (obj != null) {
-                            Vector v = (Vector) obj;
-                            vt.addAll(v);
-                        }
-                    } catch (EvalError e) {
-                        e.printStackTrace();
+                    bsh.eval(script);
+                    Object obj = bsh.get("ret");
+                    if (obj != null) {
+                        Vector v = (Vector) obj;
+                        vt.addAll(v);
                     }
                 }
             }
@@ -865,19 +888,17 @@ public class WorkflowRouter {
                 String uName = usd.getMyleaders();
                 if (uName!=null && !"".equals(uName)) {
                     String[] nameAry = StrUtil.split(uName, ",");
-                    int aryLen = nameAry.length;
-                    for (int k = 0; k < aryLen; k++) {
-                        UserDb ud = um.getUserDb(nameAry[k]);
+                    for (String s : nameAry) {
+                        UserDb ud = um.getUserDb(s);
                         addUserDbToVector(vt, ud);
                     }
                 }
             } else if (nextAction.getJobCode().equals(WorkflowActionDb.PRE_TYPE_MYSUBORDINATE)) {
                 // 我的下属
                 UserSetupDb usd = new UserSetupDb(pvg.getUser(request));
-                Vector mySubordinates = usd.getMySubordinates();
-                Iterator myit = mySubordinates.iterator();
-                while (myit.hasNext()) {
-                    usd = (UserSetupDb) myit.next();
+                Vector<UserSetupDb> mySubordinates = usd.getMySubordinates();
+                for (UserSetupDb mySubordinate : mySubordinates) {
+                    usd = mySubordinate;
                     if (usd == null || !usd.isLoaded()) {
                         continue;
                     }
@@ -888,8 +909,9 @@ public class WorkflowRouter {
             else {
                 String[] ary = StrUtil.split(users, ",");
                 int len = 0;
-                if (ary != null)
+                if (ary != null) {
                     len = ary.length;
+                }
                 if (len > 1) {
                     for (int i = 0; i < len; i++) {
                         vt.addElement(um.getUserDb(ary[i]));
@@ -900,11 +922,9 @@ public class WorkflowRouter {
             }
         }
 
-        int roleRankMode = 1; // 1 - 小于等于角色级别的节点跳过
-
         // 如果只匹配到一个用户，则填充action中的用户
         if (vt.size() == 1) {
-            UserDb ud = (UserDb) vt.get(0);
+            UserDb ud = vt.get(0);
             boolean isIgnored = false;
             if (nextAction.getIgnoreType()==WorkflowActionDb.IGNORE_TYPE_USER_ACCESSED_BEFORE) {
                 // 检查用户是否之前已经处理过流程，且可以跳过，则清空vt
@@ -914,22 +934,20 @@ public class WorkflowRouter {
                 }
             }
 
-            Logger.getLogger(getClass()).info("Only one user matched name=" +
-                    ud.getName() +
-                    " realName=" + ud.getRealName());
+            LogUtil.getLog(getClass()).info("Only one user matched name=" + ud.getName() + " realName=" + ud.getRealName());
             if (!isIgnored && !isTest) {
                 WorkflowActionDb.setActionUserOnMatch(nextAction, vt);
             }
         } else if (vt.size() > 1) { // 角色中的用户数或者预设的员工数目大于1
             // 如果定义了策略，则应用策略
             String strategy = nextAction.getStrategy();
-            if (!strategy.equals("")) {
+            if (!"".equals(strategy)) {
                 StrategyMgr sm = new StrategyMgr();
                 StrategyUnit su = sm.getStrategyUnit(strategy);
-                // Logger.getLogger(getClass()).info("strategy strategy=" + strategy);
+                // LogUtil.getLog(getClass()).info("strategy strategy=" + strategy);
                 if (su != null) {
                     IStrategy ist = su.getIStrategy();
-                    Vector v = ist.selectUser(vt);
+                    Vector<UserDb> v = ist.selectUser(vt);
                     // 有些策略在处理前不选择人员，而在处理后，忽略掉其他的待处理人员
                     if (v!=null && v.size()>0) {
                         if (!isTest) {
@@ -941,8 +959,10 @@ public class WorkflowRouter {
             }
         }
 
+        // 当角色关联时，如果关联上一节点
         if (nextAction.isRelateRoleToOrganization() && nextAction.getRelateToAction().equals(WorkflowActionDb.RELATE_TO_ACTION_DEFAULT)) {
-            if (curAction.getUserName().indexOf(",")!=-1) {
+            // 如果当前节点上存在多个用户，则只取当前用户处理时匹配到的关联用户
+            if (curAction.getUserName().contains(",")) {
                 return myVt;
             }
         }
@@ -964,20 +984,20 @@ public class WorkflowRouter {
         UserMgr um = new UserMgr();
         boolean re = false;
         // 在本部门中寻找
-        Logger.getLogger(getClass()).info("mydept=" + dd.getName());
+        LogUtil.getLog(getClass()).info("mydept=" + dd.getName());
         Iterator ir = du.list(dd.getCode()).iterator();
         while (ir.hasNext()) {
             DeptUserDb dud = (DeptUserDb) ir.next();
             // 取得用户的所有角色
             UserDb ud = um.getUserDb(dud.getUserName());
-            Logger.getLogger(getClass()).info("user=" + ud.getRealName());
+            LogUtil.getLog(getClass()).info("user=" + ud.getRealName());
             RoleDb[] roles = ud.getRoles();
             int rlen = roles.length;
             for (int i = 0; i < rlen; i++) {
                 // 用户的某个角色与预置的角色一致，职级也一致
-                Logger.getLogger(getClass()).info("user=" + ud.getRealName() + " role=" + roles[i].getDesc() + " finding role=" + rd.getDesc());
+                LogUtil.getLog(getClass()).info("user=" + ud.getRealName() + " role=" + roles[i].getDesc() + " finding role=" + rd.getDesc());
                 if (roles[i].getCode().equals(rd.getCode())) {
-                    // Logger.getLogger(getClass()).info("rd name:" + rd.getDesc() + "" + ud.getRealName());
+                    // LogUtil.getLog(getClass()).info("rd name:" + rd.getDesc() + "" + ud.getRealName());
                     // 	判断用户在部门中是否拥有角色
                     boolean found = userOfRoleService.isRoleOfDept(dud.getUserName(), roles[i].getCode(), dud.getDeptCode());
                     if (!found) {
@@ -1202,9 +1222,9 @@ public class WorkflowRouter {
      * @param rd
      * @return
      */
-    public Vector doMatchActionUser(WorkflowActionDb nextAction, WorkflowActionDb curAction, DeptDb dd, RoleDb rd) {
+    public Vector<UserDb> doMatchActionUser(WorkflowActionDb nextAction, WorkflowActionDb curAction, DeptDb dd, RoleDb rd) {
         String deptCode = dd.getCode(); // 记录dd，用于判断canUserAdminDept
-        Vector vt = new Vector();
+        Vector<UserDb> vt = new Vector<>();
         int direction = nextAction.getDirection();
         // 上行文
         if (direction == WorkflowActionDb.DIRECTION_UP) {
@@ -1252,13 +1272,7 @@ public class WorkflowRouter {
 
         if (nextAction.isRelateDeptManager()) {
             // 删除掉不能管理关联节点用户所在部门的人员
-            Iterator ir = vt.iterator();
-            while (ir.hasNext()) {
-                UserDb user = (UserDb)ir.next();
-                if (!com.redmoon.oa.pvg.Privilege.canUserAdminDept(user.getName(), deptCode)) {
-                    ir.remove();
-                }
-            }
+            vt.removeIf(user -> !com.redmoon.oa.pvg.Privilege.canUserAdminDept(user.getName(), deptCode));
         }
 
         return vt;
@@ -1306,7 +1320,7 @@ public class WorkflowRouter {
                             }
                         }
                         if (found) {
-                            Logger.getLogger(getClass()).info(
+                            LogUtil.getLog(getClass()).info(
                                     "doMatchDirectionDown:" +
                                             nextAction.getDept() + " ud.getName()=" +
                                             ud.getRealName());
@@ -1318,12 +1332,12 @@ public class WorkflowRouter {
                                 String[] arydept = StrUtil.split(dept, ",");
                                 int arydeptlen = arydept.length;
                                 for (int m = 0; m < arydeptlen; m++) {
-                                    Logger.getLogger(getClass()).info(
+                                    LogUtil.getLog(getClass()).info(
                                             "doMatchDirectionDown:arydept[" + m +
                                                     "]=" + arydept[m]);
                                     // 用户属于预置的部门
                                     if (du.isUserOfDept(ud.getName(), arydept[m])) {
-                                        Logger.getLogger(getClass()).info(
+                                        LogUtil.getLog(getClass()).info(
                                                 "doMatchDirectionDown:isUserOfDept=true");
                                         found = true;
                                         break;
@@ -1361,18 +1375,20 @@ public class WorkflowRouter {
      * 2012-7-11使支持多个分支同时满足条件 fgf
      * @return WorkflowLinkDb
      */
-    public static Vector matchNextBranch(WorkflowActionDb wad, String userName, StringBuffer condBuf, long myActionId) throws ErrMsgException {
+    public static Vector<WorkflowLinkDb> matchNextBranch(WorkflowActionDb wad, String userName, StringBuffer condBuf, long myActionId) throws ErrMsgException {
         int flowId = wad.getFlowId();
-        Vector v = new Vector();
+        Vector<WorkflowLinkDb> v = new Vector<>();
         WorkflowLinkDb wld = new WorkflowLinkDb();
-        Iterator ir = wld.getToWorkflowLinks(wad).iterator();
         // 当分支上定义的标题为空时，该分支为默认分支，如果没有其它条件满足条件，则返回此默认分支
         WorkflowLinkDb defaultWld = null;
         int blankCondBranchCount = 0; // 条件为空的分支数
-        while (ir.hasNext()) {
-            wld = (WorkflowLinkDb)ir.next();
+        for (WorkflowLinkDb workflowLinkDb : wld.getToWorkflowLinks(wad)) {
+            wld = workflowLinkDb;
             // @task:是否该改为condType为-1
             String cond = wld.getTitle().trim(); // title为条件表达式，condDesc才是分支线上的标注
+
+            cond = cond.replaceAll("#@#quot", "\"");
+
             LogUtil.getLog(WorkflowRouter.class).info("matchNextBranch:cond=" + cond);
             // 判别条件
             boolean isValid = false;
@@ -1382,26 +1398,23 @@ public class WorkflowRouter {
                     && !wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_MUST)) {
                 defaultWld = wld;
 
-                LogUtil.getLog(WorkflowRouter.class).info("matchNextBranch:title=" + wld.getTitle() + " " + wld.getCondDesc() + " " + wld.getCondType());
+                LogUtil.getLog(WorkflowRouter.class).info("matchNextBranch: 默认条件 title=" + wld.getTitle() + " condDesc=" + wld.getCondDesc() + " condType=" + wld.getCondType());
 
-                blankCondBranchCount ++;
+                blankCondBranchCount++;
                 // 如果title为空的分支线有两条以上，则表示没有默认条件，如果全部不满足条件，需手动选择分支
-                if (blankCondBranchCount>=2) {
+                if (blankCondBranchCount >= 2) {
                     defaultWld = null;
                 }
-                continue;
-            }
-            else {
+            } else {
                 if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_NONE)) {
                     continue;
                 }
                 condBuf.append(wld.getCondDesc() + "  ");
                 if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_MUST)) {
                     isValid = true;
-                }
-                else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_FORM)) {
+                } else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_FORM)) {
                     boolean isDefaultCondition = false;
-                    if (cond.length()>1) { // 长度如果为1，有可能cond字符串只有=号字符
+                    if (cond.length() > 1) { // 长度如果为1，有可能cond字符串只有=号字符
                         if (cond.indexOf(">=") != -1) {
                             int[] retAry = judgeCondition(cond, ">=", myActionId, flowId);
                             isValid = retAry[0] == 1;
@@ -1434,28 +1447,25 @@ public class WorkflowRouter {
                         }
                     }
                     // 如果条件的判断符号后的值为空，则表示默认条件，即当其它条件都不满足时，使用此条件
-                    // System.out.println(getClass() + " matchNextBranch:isDefaultCondition=" + isDefaultCondition);
+                    // LogUtil.getLog(getClass()).info(getClass() + " matchNextBranch:isDefaultCondition=" + isDefaultCondition);
 
                     if (isDefaultCondition) {
                         defaultWld = wld;
                     }
-                }
-                else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_DEPT)) {
+                } else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_DEPT)) {
                     String[] depts = StrUtil.split(cond, ",");
                     int deptlen = depts.length;
                     // 检查用户所在的部门，其实此处的userName是当前处理用户，不是workflowaction中的用户，不存在多个，所以不需要split
                     String[] userAry = StrUtil.split(userName, ",");
-                    if (userAry!=null) {
+                    if (userAry != null) {
                         int len = userAry.length;
                         DeptUserDb dud = new DeptUserDb();
-                        for (int k=0; k<len; k++) {
-                            Iterator dir = dud.getDeptsOfUser(userAry[k]).iterator();
+                        for (String s : userAry) {
                             // 遍历用户所属部门
-                            while (dir.hasNext()) {
-                                DeptDb dd = (DeptDb)dir.next();
+                            for (DeptDb dd : dud.getDeptsOfUser(s)) {
                                 // 遍历条件中的部门
-                                for (int m=0; m<deptlen; m++) {
-                                    if (depts[m].equals(dd.getCode())) {
+                                for (String dept : depts) {
+                                    if (dept.equals(dd.getCode())) {
                                         isValid = true;
                                         break;
                                     }
@@ -1467,19 +1477,17 @@ public class WorkflowRouter {
                             }
                         }
                     }
-                }
-                else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_DEPT_BELONG)) {
+                } else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_DEPT_BELONG)) {
                     String[] depts = StrUtil.split(cond, ",");
                     int deptlen = depts.length;
                     // 检查用户所在的部门
                     String[] userAry = StrUtil.split(userName, ",");
-                    if (userAry!=null) {
-                        int len = userAry.length;
+                    if (userAry != null) {
                         IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
-                        for (int k = 0; k < len; k++) {
+                        for (String uName : userAry) {
                             // 遍历条件中的部门
-                            for (int m = 0; m < deptlen; m++) {
-                                if (deptUserService.isUserBelongToDept(userAry[k], depts[m])) {
+                            for (String dept : depts) {
+                                if (deptUserService.isUserBelongToDept(uName, dept)) {
                                     isValid = true;
                                     break;
                                 }
@@ -1490,20 +1498,19 @@ public class WorkflowRouter {
                             break;
                         }
                     }
-                }
-                else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_ROLE)) {
+                } else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_ROLE)) {
                     String[] roles = StrUtil.split(cond, ",");
                     int roleLen = roles.length;
                     // 检查用户所在的部门
                     String[] userAry = StrUtil.split(userName, ",");
-                    if (userAry!=null) {
+                    if (userAry != null) {
                         int len = userAry.length;
                         UserMgr um = new UserMgr();
-                        for (int k=0; k<len; k++) {
-                            UserDb user = um.getUserDb(userAry[k]);
+                        for (String s : userAry) {
+                            UserDb user = um.getUserDb(s);
                             // 遍历条件中的角色
-                            for (int m = 0; m < roleLen; m++) {
-                                if (user.isUserOfRole(roles[m])) {
+                            for (String role : roles) {
+                                if (user.isUserOfRole(role)) {
                                     isValid = true;
                                     break;
                                 }
@@ -1513,8 +1520,7 @@ public class WorkflowRouter {
                             }
                         }
                     }
-                }
-                else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_SCRIPT)) {
+                } else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_SCRIPT)) {
                     // 通过脚本判别下一分支节点
                     WorkflowDb wfd = new WorkflowDb();
                     wfd = wfd.getWorkflowDb(flowId);
@@ -1528,8 +1534,7 @@ public class WorkflowRouter {
 
                     BranchMatcher bm = new BranchMatcher(fd, fdao, userName);
                     isValid = bm.doMatch(cond);
-                }
-                else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_COMB_COND)) {
+                } else if (wld.getCondType().equals(WorkflowLinkDb.COND_TYPE_COMB_COND)) {
                     WorkflowDb wfd = new WorkflowDb();
                     wfd = wfd.getWorkflowDb(flowId);
 
@@ -1555,7 +1560,7 @@ public class WorkflowRouter {
                      * ErrMsgException("权限非法！"); }
                      */
 
-                    // System.out.println(getClass() + " roleRankMode=" + roleRankMode);
+                    // LogUtil.getLog(getClass()).info(getClass() + " roleRankMode=" + roleRankMode);
 
                     String wld_linkProp = wpd.getLinkProp();
                     if (!"".equals(wld_linkProp)) {
@@ -1585,15 +1590,15 @@ public class WorkflowRouter {
                                         String firstBracket = e.getChildText("firstBracket");
                                         String twoBracket = e.getChildText("twoBracket");
 
-                                        formFlag  = filedList.contains(fieldName);
-                                        if(!formFlag){
+                                        formFlag = filedList.contains(fieldName);
+                                        if (!formFlag) {
                                             break;
                                         }
 
-                                        if(null == firstBracket || "".equals(firstBracket)){
+                                        if (null == firstBracket || "".equals(firstBracket)) {
                                             firstBracket = "";
                                         }
-                                        if(null == twoBracket || "".equals(twoBracket)){
+                                        if (null == twoBracket || "".equals(twoBracket)) {
                                             twoBracket = "";
                                         }
                                         if (name.equals(WorkflowPredefineDb.COMB_COND_TYPE_FIELD)) {
@@ -1605,22 +1610,25 @@ public class WorkflowRouter {
                                                     try {
                                                         JSONObject json = new JSONObject(desc);
                                                         String formulaCode = json.getString("code");
-                                                        FormulaUtil formulaUtil = new FormulaUtil();
+                                                        IFormulaUtil formulaUtil = SpringUtil.getBean(IFormulaUtil.class);
                                                         Formula formula = formulaUtil.getFormula(new JdbcTemplate(), formulaCode);
                                                         // 使字段类型为函数中所设的数据类型
                                                         ff.setFieldType(formula.getFieldType());
                                                     } catch (JSONException ex) {
-                                                        ex.printStackTrace();
+                                                        LogUtil.getLog(WorkflowRouter.class).error(ex);
                                                     }
                                                 }
                                             }
-                                            boolean isTextOrBoolean = false; // 是否为字符型或布尔型
+                                            boolean isText = false; // 是否为字符型
                                             if (ff.getFieldType() == FormField.FIELD_TYPE_TEXT ||
                                                     ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR ||
-                                                    ff.getFieldType() == FormField.FIELD_TYPE_BOOLEAN) {
-                                                isTextOrBoolean = true;
+                                                    ff.getFieldType() == FormField.FIELD_TYPE_LONGTEXT)
+                                            // 20220701 将FIELD_TYPE_BOOLEAN即checkbox视为数值型
+                                            // || ff.getFieldType() == FormField.FIELD_TYPE_BOOLEAN)
+                                            {
+                                                isText = true;
                                             }
-                                            if (isTextOrBoolean) {
+                                            if (isText) {
                                                 if ("=".equals(op)) {
                                                     sb.append(firstBracket);
                                                     sb.append("{$" + fieldName + "}");
@@ -1655,8 +1663,7 @@ public class WorkflowRouter {
                                                 IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
                                                 boolean re = deptUserService.isUserBelongToDept(userName, value);
                                                 sb.append("\"true\".equals(\"" + String.valueOf(re) + "\")");
-                                            }
-                                            else {
+                                            } else {
                                                 DeptUserDb dud = new DeptUserDb();
                                                 Vector<DeptDb> vDept = dud.getDeptsOfUser(userName);
                                                 // 如果有多个部门
@@ -1696,21 +1703,21 @@ public class WorkflowRouter {
                                             UserDb user = new UserDb();
                                             user = user.getUserDb(userName);
                                             RoleDb[] ary = user.getRoles();
-
                                             // 如果有多个角色
                                             if (ary.length > 1) {
                                                 // 去掉member
-                                                RoleDb[] tmp = new RoleDb[ary.length - 1];
-                                                int m = 0;
-                                                for (int k = 0; k < ary.length; k++) {
-                                                    if (!ary[k].getCode().equals(RoleDb.CODE_MEMBER)) {
-                                                        tmp[m] = ary[k];
-                                                        m++;
+                                                List<RoleDb> list = new ArrayList<>();
+                                                for (RoleDb roleDb : ary) {
+                                                    if (!roleDb.getCode().equals(RoleDb.CODE_MEMBER)) {
+                                                        list.add(roleDb);
                                                     }
                                                 }
-                                                ary = tmp;
-                                                sb.append("(");
+                                                ary = list.toArray(new RoleDb[list.size()]);
+                                                if (ary.length > 1) {
+                                                    sb.append("(");
+                                                }
                                             }
+
                                             for (int k = 0; k < ary.length; k++) {
                                                 RoleDb rd = ary[k];
 
@@ -1752,9 +1759,9 @@ public class WorkflowRouter {
 
                                         // 去除最后一个逻辑判断
                                         // if ( i!=vroot.size()-1 ) {
-                                        if(logical.equals("or")){
+                                        if (logical.equals("or")) {
                                             logical = "||";
-                                        }else{
+                                        } else {
                                             logical = "&&";
                                         }
 
@@ -1770,12 +1777,13 @@ public class WorkflowRouter {
                                 //boolean flag = checkComCond(tempCond);
 
                                 // 如果配置了条件
-                                if (!tempCond.equals("")) {
+                                if (!"".equals(tempCond)) {
                                     String script = sb.toString();
                                     int p = script.lastIndexOf(" " + lastLogical + " ");
 
                                     LogUtil.getLog(WorkflowRouter.class).info("script=" + script);
-                                    if (p!=-1) {
+                                    if (p != -1) {
+                                        // script可能为 !"ZZBZ".equals("ZZBZ") &&
                                         script = script.substring(0, p);
                                     }
                                     LogUtil.getLog(WorkflowRouter.class).info("script2=" + script);
@@ -1786,12 +1794,11 @@ public class WorkflowRouter {
                                     //}else{
                                     //isValid = false;
                                     //}
-                                }
-                                else {
+                                } else {
                                     isValid = true;
                                 }
 
-                                if(!formFlag){
+                                if (!formFlag) {
                                     isValid = false;
                                 }
 
@@ -1833,7 +1840,7 @@ public class WorkflowRouter {
      * @return int[] int[0]表示是否满足条件 int[1]表示是否为默认条件
      */
     public static int[] judgeCondition(String cond, String token, long myActionId, int flowId) {
-        // System.out.println(getClass() + " token=" + token);
+        // LogUtil.getLog(getClass()).info(getClass() + " token=" + token);
         int[] ary = {0,0};
         String[] pairs = cond.split(token);
         String leftField = pairs[0].trim();
@@ -1878,9 +1885,9 @@ public class WorkflowRouter {
             }
         }
 
-        Logger.getLogger(WorkflowRouter.class).info("token=" + token);
-        // Logger.getLogger(getClass()).info("leftField=" + leftField);
-        // Logger.getLogger(getClass()).info("leftFieldvalue=" + value);
+        LogUtil.getLog(WorkflowRouter.class).info("token=" + token);
+        // LogUtil.getLog(getClass()).info("leftField=" + leftField);
+        // LogUtil.getLog(getClass()).info("leftFieldvalue=" + value);
 
         double a=0, b=0;
         boolean isADouble = false;
@@ -1891,7 +1898,7 @@ public class WorkflowRouter {
             isADouble = true;
         }
         catch (Exception e) {
-            Logger.getLogger(WorkflowRouter.class).info("judgeCondition1:" + e.getMessage());
+            LogUtil.getLog(WorkflowRouter.class).info("judgeCondition1:" + e.getMessage());
             if (token.equals("=") || token.equals("<>")) {
                 ;
             } else {
@@ -1903,7 +1910,7 @@ public class WorkflowRouter {
             isBDouble = true;
         }
         catch (Exception e) {
-            Logger.getLogger(WorkflowRouter.class).info("judgeCondition2:" + e.getMessage());
+            LogUtil.getLog(WorkflowRouter.class).info("judgeCondition2:" + e.getMessage());
             if (token.equals("=") || token.equals("<>")) {
                 ;
             } else {
@@ -1920,7 +1927,7 @@ public class WorkflowRouter {
             return ary;
         }
         else if (token.equals("=")) {
-            Logger.getLogger(WorkflowRouter.class).info("rightField=" + rightField + " value=" + value + " isADouble=" + isADouble + " isBDouble=" + isBDouble);
+            LogUtil.getLog(WorkflowRouter.class).info("rightField=" + rightField + " value=" + value + " isADouble=" + isADouble + " isBDouble=" + isBDouble);
 
             if (isADouble && isBDouble) {
                 ary[0] = a==b?1:0;
@@ -1933,7 +1940,7 @@ public class WorkflowRouter {
                     for (int i = 0; i < len; i++) {
                         if (value.equals(ary2[i])) {
                             ary[0]=1;
-                            Logger.getLogger(WorkflowRouter.class).info("i=" + i + " value=" + value + " ary[0]=" + ary[0]);
+                            LogUtil.getLog(WorkflowRouter.class).info("i=" + i + " value=" + value + " ary[0]=" + ary[0]);
 
                             return ary;
                         }
@@ -1951,7 +1958,7 @@ public class WorkflowRouter {
             return ary;
         }
         else if (token.equals("<>")) {
-            // System.out.println(getClass() + " rightField=" + rightField + " value=" + value);
+            // LogUtil.getLog(getClass()).info(getClass() + " rightField=" + rightField + " value=" + value);
             if (isADouble && isBDouble) {
                 ary[0] = a!=b?1:0;
                 return ary;

@@ -143,8 +143,7 @@ public class ModuleSetupDb extends QObjectDb {
 				count = rr.getInt(1);
 			}
 		} catch (SQLException e) {
-			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return count;
 	}
@@ -322,6 +321,9 @@ public class ModuleSetupDb extends QObjectDb {
 		String str = StrUtil.getNullStr(getString(fieldName));
 		String listField = StrUtil.getNullStr(getString("list_field"));
 		String[] aryField = StrUtil.split(listField, ",");
+		if (aryField == null) {
+			return new String[0];
+		}
 
 		String[] ary = StrUtil.split(str, ",");
 		boolean isNeedRepair = false;
@@ -380,6 +382,10 @@ public class ModuleSetupDb extends QObjectDb {
 
 	public String getCode() {
 		return getString("code");
+	}
+
+	public String getFormCode() {
+		return getString("form_code");
 	}
 
 	public String getName() {
@@ -478,8 +484,11 @@ public class ModuleSetupDb extends QObjectDb {
 		if (ConstUtil.PAGE_TYPE_SHOW.equals(pageType)) {
 			pType = "showPage";
 		}
-		else {
+		else if (ConstUtil.PAGE_TYPE_EDIT.equals(pageType)) {
 			pType = "editPage";
+		}
+		else {
+			pType = "addPage";
 		}
 		com.alibaba.fastjson.JSONObject pageJson = jsonObject.getJSONObject(pType); // showPage editPage
 		JSONArray btnProps = null;
@@ -536,8 +545,11 @@ public class ModuleSetupDb extends QObjectDb {
 					}
 				}
 
-				if (!ModuleUtil.isLinkShow(request, this, fdao, linkCond, "", linkValue)) {
-					continue;
+				// 当为addPage时，fdao为null
+				if (fdao != null) {
+					if (!ModuleUtil.isLinkShow(request, this, fdao, linkCond, "", linkValue)) {
+						continue;
+					}
 				}
 
 				// 当有编辑或管理权限时，编辑按钮才出现
@@ -561,7 +573,8 @@ public class ModuleSetupDb extends QObjectDb {
 						}
 						break;
 					case ConstUtil.BTN_EDIT:
-						jsonObj.put("href", "module_edit.jsp?parentId=" + fdao.getId() + "&id=" + fdao.getId() + "&isShowNav=" + isShowNav + "&code=" + moduleCode);
+						linkEvent = "click";
+						jsonObj.put("href", "moduleEditPage.do?parentId=" + fdao.getId() + "&id=" + fdao.getId() + "&isShowNav=" + isShowNav + "&code=" + moduleCode);
 						jsonObj.put("target", "curTab");
 						if ("".equals(linkName)) {
 							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
@@ -575,7 +588,24 @@ public class ModuleSetupDb extends QObjectDb {
 							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
 						}
 						break;
+					case ConstUtil.BTN_CLOSE:
+						linkEvent = "click";
+						jsonObj.put("href", "");
+						jsonObj.put("target", "curTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
+					case ConstUtil.BTN_BACK:
+						linkEvent = "click";
+						jsonObj.put("href", "");
+						jsonObj.put("target", "curTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
 					default:
+						linkEvent = "click";
 						jsonObj.put("target", "newTab");
 						int flag = 1;
 						jsonObj.put("href", ModuleUtil.renderLinkUrl(request, fdao, linkHref, linkId, moduleCode, flag, pageType));
@@ -587,5 +617,176 @@ public class ModuleSetupDb extends QObjectDb {
 			}
 		}
 		return ary;
+	}
+
+	/**
+	 * 取得编辑页、详情页中的按钮
+	 * @param request
+	 * @param pageType
+	 * @param fdao
+	 * @param isShowNav
+	 * @return
+	 */
+	public JSONArray getButtonsForFront(HttpServletRequest request, String pageType, FormDAO fdao, int isShowNav) {
+		String moduleCode = getString("code");
+		Privilege privilege = new Privilege();
+		String pageSetup = getString("page_setup");
+		if (StringUtils.isEmpty(pageSetup)) {
+			pageSetup = "{}";
+		}
+		JSONArray ary = new JSONArray();
+		com.alibaba.fastjson.JSONObject jsonObject = com.alibaba.fastjson.JSONObject.parseObject(pageSetup);
+		String pType;
+		if (ConstUtil.PAGE_TYPE_SHOW.equals(pageType)) {
+			pType = "showPage";
+		}
+		else if (ConstUtil.PAGE_TYPE_EDIT.equals(pageType)) {
+			pType = "editPage";
+		}
+		else {
+			pType = "addPage";
+		}
+		com.alibaba.fastjson.JSONObject pageJson = jsonObject.getJSONObject(pType); // showPage editPage
+		JSONArray btnProps = null;
+		if (pageJson!=null && pageJson.containsKey("btnProps")) {
+			btnProps = pageJson.getJSONArray("btnProps");
+			for (int i = 0; i < btnProps.size(); i++) {
+				com.alibaba.fastjson.JSONObject json = btnProps.getJSONObject(i);
+				boolean enabled = true;
+				if (json.containsKey("enabled")) {
+					enabled = json.getBoolean("enabled");
+				}
+				if (!enabled) {
+					continue;
+				}
+
+				String linkId = json.getString("id");
+				String linkName = StrUtil.getNullStr(json.getString("name"));
+				String linkCond = StrUtil.getNullStr(json.getString("cond"));
+				String linkValue = StrUtil.getNullStr(json.getString("value"));
+				String linkEvent = StrUtil.getNullStr(json.getString("event"));
+				String linkRole = StrUtil.getNullStr(json.getString("role"));
+				String linkHref = StrUtil.getNullStr(json.getString("href"));
+				String title = StrUtil.getNullStr(json.getString("title"));
+
+				// 检查是否拥有权限
+				if (!privilege.isUserPrivValid(request, Privilege.ADMIN)) {
+					boolean canSeeLink = false;
+					if (!"".equals(linkRole)) {
+						String[] codeAry = StrUtil.split(linkRole, ",");
+						if (codeAry != null) {
+							UserDb user = new UserDb();
+							user = user.getUserDb(privilege.getUser(request));
+							RoleDb[] rdAry = user.getRoles();
+							if (rdAry != null) {
+								for (RoleDb rd : rdAry) {
+									String roleCode = rd.getCode();
+									for (String codeAllowed : codeAry) {
+										if (roleCode.equals(codeAllowed)) {
+											canSeeLink = true;
+											break;
+										}
+									}
+								}
+							}
+						} else {
+							canSeeLink = true;
+						}
+					} else {
+						canSeeLink = true;
+					}
+
+					if (!canSeeLink) {
+						continue;
+					}
+				}
+
+				// 当为addPage时，fdao为null
+				if (fdao != null) {
+					if (!ModuleUtil.isLinkShow(request, this, fdao, linkCond, "", linkValue)) {
+						continue;
+					}
+				}
+
+				// 当有编辑或管理权限时，编辑按钮才出现
+				if (ConstUtil.BTN_EDIT.equals(linkId)) {
+					ModulePrivDb mpd = new ModulePrivDb(moduleCode);
+					if (!mpd.canUserModify(privilege.getUser(request)) && !mpd.canUserManage(privilege.getUser(request))) {
+						continue;
+					}
+				}
+
+				com.alibaba.fastjson.JSONObject jsonObj = new JSONObject();
+				jsonObj.put("id", linkId);
+				jsonObj.put("name", linkName);
+				switch (linkId) {
+					case ConstUtil.BTN_PRINT:
+						linkEvent = "click";
+						jsonObj.put("href", "showFormReport()");
+						jsonObj.put("target", "newTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
+					case ConstUtil.BTN_EDIT:
+						linkEvent = "click";
+						// jsonObj.put("href", "moduleEditPage.do?parentId=" + fdao.getId() + "&id=" + fdao.getId() + "&isShowNav=" + isShowNav + "&code=" + moduleCode);
+						jsonObj.put("target", "curTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
+					case ConstUtil.BTN_OK:
+						linkEvent = "click";
+						jsonObj.put("href", "");
+						jsonObj.put("target", "curTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
+					case ConstUtil.BTN_CLOSE:
+						linkEvent = "click";
+						jsonObj.put("href", "");
+						jsonObj.put("target", "curTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
+					case ConstUtil.BTN_BACK:
+						linkEvent = "click";
+						jsonObj.put("href", "");
+						jsonObj.put("target", "curTab");
+						if ("".equals(linkName)) {
+							jsonObj.put("name", ModuleUtil.getBtnDefaultName(linkId));
+						}
+						break;
+					default:
+						jsonObj.put("target", "newTab");
+						int flag = 1;
+						// jsonObj.put("href", ModuleUtil.renderLinkUrl(request, fdao, linkHref, linkId, moduleCode, flag, pageType));
+						jsonObj.putAll(ModuleUtil.renderLinkUrlToJson(request, fdao, linkHref, linkName, moduleCode, flag, pageType));
+						break;
+				}
+				jsonObj.put("event", linkEvent);
+				jsonObj.put("title", title);
+				ary.add(jsonObj);
+			}
+		}
+		return ary;
+	}
+
+	/**
+	 * 取得过滤条件
+	 * @param userName
+	 * @return
+	 */
+	public String getFilter(String userName) {
+		ModulePrivDb modulePrivDb = new ModulePrivDb();
+		String filter = modulePrivDb.getFilterForUser(getCode(), userName);
+		if (filter == null) {
+			// 如果模块权限中未设置过滤条件，则返回默认条件
+			filter = getString("filter");
+		}
+		return filter;
 	}
 }

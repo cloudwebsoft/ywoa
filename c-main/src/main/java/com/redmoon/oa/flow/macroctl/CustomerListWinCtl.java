@@ -207,7 +207,7 @@ public class CustomerListWinCtl extends AbstractMacroCtl {
 			return new JSONArray().toString();
 		}
 		StringBuilder sqlSb = new StringBuilder();
-		sqlSb.append("select id from form_table_").append("sales_customer")
+		sqlSb.append("select id from ft_").append("sales_customer")
 				.append(" where 1 = 1 ");
 		sqlSb.append(" and unit_code = ").append("'").append(
 				priv.getUserUnitCode(request)).append("' ");

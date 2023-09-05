@@ -7,30 +7,36 @@
 <%@ page import="com.redmoon.oa.flow.*" %>
 <%@ page import="com.redmoon.oa.flow.strategy.*" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
+<%@ page import="org.json.JSONObject" %>
 <%
 String op = ParamUtil.get(request, "op");
-if (op.equals("getActions")) {
-	String flowString = ParamUtil.get(request, "flowString");
+if ("getActions".equals(op)) {
+	String flowJson = ParamUtil.get(request, "flowJson");
+	WorkflowActionDb wad = new WorkflowActionDb();
 	String internalName = ParamUtil.get(request, "internalName");
 	String str = "";
-	WorkflowDb wf = new WorkflowDb();
-	Vector v = wf.getActionsFromString(flowString);
-	Iterator ir = v.iterator();
-	while (ir.hasNext()) {
-		WorkflowActionDb wa = (WorkflowActionDb)ir.next();
-		// 过滤掉当前节点
-		if (!wa.getInternalName().equals(internalName))
-			str += "<option value='" + wa.getInternalName() + "'>" + wa.getJobName() + "：" + wa.getTitle() + "</option>";
-	}
+    JSONObject flowJsonObject = new JSONObject(WorkflowActionDb.tran(flowJson));
+    JSONObject stateJsonObject = flowJsonObject.getJSONObject("states");
+    Iterator ir = stateJsonObject.keys();
+    while (ir.hasNext()) {
+        String key = (String) ir.next();
+        JSONObject state = stateJsonObject.getJSONObject(key);
+        if (!state.getString("ID").equals(internalName)) {
+            JSONObject props = state.getJSONObject("props");
+            String title = wad.tranReverseForFlowJson(props.getJSONObject("ActionTitle").getString("value"));
+            String jobName = wad.tranReverseForFlowJson(props.getJSONObject("ActionJobName").getString("value"));
+            str += "<option value='" + state.getString("ID") + "'>" + jobName + "：" + title + "</option>";
+        }
+    }
 	out.print(str);
 	return;
 }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<HEAD>
+<!DOCTYPE html>
+<html>
+<head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<TITLE>流程动作选择</TITLE>
+<title>流程动作选择</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
 <jsp:useBean id="cfg" scope="page" class="com.redmoon.oa.Config"/>
@@ -47,20 +53,20 @@ if (!privilege.isUserPrivValid(request,priv)) {
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
 <script language="JavaScript">
 function sel() {
-	dialogArguments.setAction(o("action").value, $("#action").find("option:selected").text());
+	window.opener.setAction(o("action").value, $("#action").find("option:selected").text());
 	window.close();
 }
 
 function window_onload() {
-	var flowStr = dialogArguments.getFlowString();
-	var curInternalName = dialogArguments.getInternalName();
+	var flowJson = window.opener.getFlowJson();
+	var curInternalName = window.opener.getInternalName();
 	$.ajax({
 		type: "post",
 		url: "flow_designer_action_sel.jsp",
 		data : {
 			op: "getActions",
 			internalName: curInternalName,
-			flowString: flowStr
+            flowJson: flowJson
 		},
 		dataType: "html",
 		beforeSend: function(XMLHttpRequest){
@@ -79,9 +85,9 @@ function window_onload() {
 	});	
 }
 </script>
-</HEAD>
-<BODY onLoad="window_onload()">
-<table align="center" cellpadding="2" cellspacing="0" class="tabStyle_1" id="mainTable" style="padding:0px; margin:0px; margin-top:3px;">
+</head>
+<body onLoad="window_onload()">
+<table align="center" cellpadding="2" cellspacing="0" class="tabStyle_1 percent98" id="mainTable" style="margin-top:3px;">
   <thead>
   <tr>
     <td height="22" align="center">选择动作</td>
@@ -99,5 +105,5 @@ function window_onload() {
     </td>
   </tr>
 </table>
-</BODY>
+</body>
 </HTML>

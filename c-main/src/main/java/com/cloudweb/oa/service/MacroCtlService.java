@@ -13,4 +13,11 @@ public interface MacroCtlService {
     IBasicSelectCtl getBasicSelectCtl();
 
     IModuleFieldSelectCtl getModuleFieldSelectCtl();
+
+    IBarcodeCtl getBarcodeCtl();
+
+    IFormulaCtl getFormulaCtl();
+
+    IQrcodeCtl getQrcodeCtl();
+
 }

@@ -7,9 +7,8 @@
 <%@ page import="com.redmoon.oa.dept.*"%>
 <%@ page import="com.redmoon.oa.flow.*"%>
 <%@ page import="com.redmoon.oa.person.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <title>公文文号管理</title>
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
@@ -77,7 +76,7 @@ else if(op.equals("del")){
     <tr>
       <td width="30%">年份</td>
 	  <td width="29%">值</td>
-	  <td width="41%"><lt:Label key="op"/></td>
+	  <td width="41%">操作</td>
     </tr>
   </thead>
   <tbody>
@@ -104,7 +103,7 @@ while (ir.hasNext()) {
       <td align="center">
         <a href="javascript:form<%=id%>.submit()">编辑</a>
         &nbsp;&nbsp;
-        <a onClick="if (!confirm('<lt:Label key="confirm_del"/>')) return false" href="flow_paper_no_list.jsp?op=del&id=<%=id%>&prefixId=<%=prefixId%>"><lt:Label key="op_del"/></a>
+        <a onClick="if (!confirm('您确定要删除么')) return false" href="flow_paper_no_list.jsp?op=del&id=<%=id%>&prefixId=<%=prefixId%>">删除</a>
         &nbsp;&nbsp;
       <input name="id" value="<%=id%>" type="hidden">
       <input name="prefixId" value="<%=prefixId%>" type="hidden">

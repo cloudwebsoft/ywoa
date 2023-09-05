@@ -38,7 +38,6 @@ public class SessionListener implements HttpSessionListener {
     public void sessionCreated(HttpSessionEvent httpSessionEvent) {
         HttpSession session = httpSessionEvent.getSession();
         String sessionId = session.getId();
-        // System.out.println(getClass() + " Create a session:" + sessionId);
         sessionMaps.put(sessionId, session);
 
         sessionCount++;
@@ -56,7 +55,7 @@ public class SessionListener implements HttpSessionListener {
         sessionMaps.remove(sessionId); // 利用会话ID标示特定会话
         sessionCount--;
 
-        String userName = (String)session.getAttribute(ConstUtil.SESSION_NAME);
+        /*String userName = (String)session.getAttribute(ConstUtil.SESSION_NAME);
         if (userName!=null) {
             // userName=null 表示会话已被invalidate，即用户已在privilege中logout
             Locale locale = (Locale) session.getAttribute("locale");
@@ -66,12 +65,12 @@ public class SessionListener implements HttpSessionListener {
                     ResBundle rb = new ResBundle("res.module.log", locale);
                     str = rb.get("action_logout");
                 } catch (Exception e) {
-                    System.out.println(this.getClass().getName() + ":" + e.getMessage());
+                    LogUtil.getLog(getClass()).info(this.getClass().getName() + ":" + e.getMessage());
                 }
             }
 
             LogUtil.log((String) session.getAttribute(ConstUtil.SESSION_NAME), "", LogDb.TYPE_LOGOUT, str);
-        }
+        }*/
     }
 
     public static int getSessionCount() {

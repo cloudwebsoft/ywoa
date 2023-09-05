@@ -12,8 +12,8 @@
 	<title>报表关联</title>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 	<script src="../inc/common.js"></script>
-	<script language=JavaScript src='../netdisk/showDialog/jquery.min.js'></script>
-	<script type="text/javascript" src="../js/jquery.toaster.netdisk.js"></script> 
+	<script language=JavaScript src='../js/jquery-1.9.1.min.js'></script>
+	<script type="text/javascript" src="../js/jquery.toaster.js"></script>
 	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />

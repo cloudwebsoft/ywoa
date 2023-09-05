@@ -9,59 +9,39 @@ package com.redmoon.oa.flow;
  * @version 1.0
  */
 
-import org.jdom.*;
-import org.jdom.output.*;
-import org.jdom.input.*;
-import java.io.*;
-import java.net.URL;
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.impl.jam.internal.javadoc.JavadocClassloadingException;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.jdom.Attribute;
+import org.jdom.Element;
+import org.jdom.input.SAXBuilder;
+import org.xml.sax.InputSource;
 
-import cn.js.fan.util.ParamUtil;
-
-import java.net.URLDecoder;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
+/**
+ *
+ */
 public class FlowConfig {
-    // public: constructor to load driver and connect db
-    boolean debug = true;
+
     final String configxml = "config_flow.xml"; //同步配置文件
-    String xmlpath = "";
     org.jdom.Document doc = null;
     Element root = null;
-   //  String deskey = "bluewind"; //DES密钥长度为64bit，1个字母为八位，需8个字母，不能超过8个，否则会出错
-    Logger logger = Logger.getLogger(FlowConfig.class.getName());
-;
-    public FlowConfig() {
-        URL confURL = getClass().getResource("/" + configxml);
-        xmlpath = confURL.getFile();
-        try {
-            xmlpath = URLDecoder.decode(xmlpath, "utf-8");
-        } catch (UnsupportedEncodingException ex) {
-            ex.printStackTrace();
-        }
 
-        SAXBuilder sb = new SAXBuilder();
-        FileInputStream fin = null;
+    public FlowConfig() {
         try {
-        	fin = new FileInputStream(xmlpath);
-            doc = sb.build(fin); 
+            ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+            String xml = configUtil.getXml(configxml);
+
+            SAXBuilder sb = new SAXBuilder();
+            doc = sb.build(new InputSource(new StringReader(xml)));
             root = doc.getRootElement();
         }  catch (java.lang.Exception e) {
-        	logger.error(getClass().getName()+":"+"配置config_flow.xml文件出现异常");
-		} finally {
-        	if (fin!=null){
-        		try {
-        			fin.close();
-				} catch (Exception e) {
-					logger.error(getClass().getName()+":"+"关闭流出现异常");
-				}
-        	}
-        } 
+        	LogUtil.getLog(getClass()).error(getClass().getName()+":"+"配置config_flow.xml文件出现异常");
+		}
     }
 
     public Element getRootElement() {
@@ -70,7 +50,6 @@ public class FlowConfig {
 
     public String getDescription(String name) {
         Element which = root.getChild(name);
-        // System.out.println("name=" + name + " which=" + which);
         if (which == null) {
             return null;
         }
@@ -94,7 +73,7 @@ public class FlowConfig {
         try {
             r = Integer.parseInt(which.getText());
         } catch (Exception e) {
-            logger.error("getInt:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getInt:" + e.getMessage());
         }
         return r;
     }
@@ -108,7 +87,7 @@ public class FlowConfig {
         if (attr == null) {
             return true;
         } else {
-            return which.getAttribute("isDisplay").getValue().equals("true");
+            return "true".equals(which.getAttribute("isDisplay").getValue());
         }
     }
 
@@ -144,18 +123,8 @@ public class FlowConfig {
     }
 
     public void writemodify() {
-        String indent = "    ";
-        boolean newLines = true;
-        // XMLOutputter outp = new XMLOutputter(indent, newLines, "gb2312");
-        Format format = Format.getPrettyFormat();
-        format.setIndent(indent);
-        format.setEncoding("utf-8");
-        XMLOutputter outp = new XMLOutputter(format);
-        try {
-            FileOutputStream fout = new FileOutputStream(xmlpath);
-            outp.output(doc, fout);
-            fout.close();
-        } catch (java.io.IOException e) {}
+        ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+        configUtil.putXml(configxml, doc);
     }
     
     public String getBtnName(String btnTag) {

@@ -5,6 +5,7 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ResKeyException;
 import com.cloudwebsoft.framework.base.QObjectDb;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -21,7 +22,7 @@ public class PortalMenuDb extends QObjectDb {
                 return true;
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return false;
     }
@@ -34,11 +35,11 @@ public class PortalMenuDb extends QObjectDb {
         try {
             ri = jt.executeQuery(sql, new Object[] {new Long(portalId), code});
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
-                return (PortalMenuDb)getQObjectDb(new Long(rr.getLong(1)));
+                ResultRecord rr = ri.next();
+                return (PortalMenuDb)getQObjectDb(rr.getLong(1));
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return null;
     }
@@ -54,7 +55,7 @@ public class PortalMenuDb extends QObjectDb {
                 return rr.getInt(1) + 1;
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return 0;
     }
@@ -67,7 +68,7 @@ public class PortalMenuDb extends QObjectDb {
             try {
                 smd.del();
             } catch (ResKeyException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
     }

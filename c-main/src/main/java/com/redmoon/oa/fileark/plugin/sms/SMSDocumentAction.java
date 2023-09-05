@@ -8,10 +8,10 @@ import cn.js.fan.util.*;
 import com.cloudwebsoft.framework.aop.*;
 import com.cloudwebsoft.framework.aop.Pointcut.*;
 import com.cloudwebsoft.framework.aop.base.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.fileark.*;
 import com.redmoon.oa.fileark.plugin.base.*;
 import com.redmoon.oa.message.*;
-import org.apache.log4j.*;
 import org.htmlparser.*;
 import org.htmlparser.filters.*;
 import org.htmlparser.nodes.*;
@@ -19,7 +19,6 @@ import org.htmlparser.tags.*;
 import org.htmlparser.util.*;
 
 public class SMSDocumentAction implements IPluginDocumentAction {
-    Logger logger = Logger.getLogger(this.getClass().getName());
 
     public SMSDocumentAction() {
     }
@@ -52,7 +51,7 @@ public class SMSDocumentAction implements IPluginDocumentAction {
             }
         }
         catch (ParserException e) {
-            Logger.getLogger(SMSDocumentAction.class).error("getAbstract:" + e.getMessage());
+            LogUtil.getLog(SMSDocumentAction.class).error("getAbstract:" + e.getMessage());
         }
         return str;
     }

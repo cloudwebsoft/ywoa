@@ -21,11 +21,12 @@ public class MultipartResolverConfig {
         commonsMultipartResolver.setResolveLazily(true); // resolveLazily属性启用是为了推迟文件解析，以在在UploadAction中捕获文件大小异常
 
         // 置被排除的目录
-        String[] excludeUrlArray = {"notice/create", "notice/save", "flow", "address", "module", "fileark", "android", "project", "form_m", "stamp", "workplan", "fwebedit", "visual", "message_oa", "setup", "ueditor", "config_weixin.jsp", "netdisk", "forum"};
+        String[] excludeUrlArray = {"modular/create", "modular/update", "notice/create", "notice/save", "flow", "address", "module", "fileark", "android", "project", "form_m", "stamp", "workplan", "fwebedit", "visual", "message_oa", "setup", "ueditor", "wx/admin"};
         commonsMultipartResolver.setExcludeUrlArray(excludeUrlArray);
 
         // 置被排除的目录中的例外目录
-        String[] exceptionUrlArray = {"android/i/uploadHeadImage", "android/i/modifyPersonInfor", "android/filecase/upload", "public/android/netdisk"};
+        String[] exceptionUrlArray = {"android/i/uploadHeadImage", "android/i/modifyPersonInfor", "android/filecase/upload", "flow/setConds"};
+        // "visual/savePageMobileList",
         commonsMultipartResolver.setExceptionArray(exceptionUrlArray);
 
         return commonsMultipartResolver;

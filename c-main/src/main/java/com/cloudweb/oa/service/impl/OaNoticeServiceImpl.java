@@ -15,7 +15,9 @@ import com.cloudweb.oa.service.IOaNoticeReplyService;
 import com.cloudweb.oa.service.IOaNoticeService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysProperties;
 import com.cloudweb.oa.vo.OaNoticeVO;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.redmoon.oa.Config;
@@ -26,6 +28,7 @@ import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.dozer.DozerBeanMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -56,6 +59,9 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
 
     @Autowired
     HttpServletRequest request;
+
+    @Autowired
+    SysProperties sysProperties;
 
     /**
      *
@@ -112,26 +118,42 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
         PageInfo<OaNotice> pageInfo = new PageInfo<>(list);
 
         ListResult lr = new ListResult();
-        Vector v = new Vector();
+        Vector<OaNoticeVO> v = new Vector<>();
 
         // 逐条遍历list判断是否读过
-        Iterator<OaNotice> ir = list.iterator();
-        while (ir.hasNext()) {
-            OaNotice oaNotice = ir.next();
-
+        for (OaNotice oaNotice : list) {
             OaNoticeVO oaNoticeVO = dozerBeanMapper.map(oaNotice, OaNoticeVO.class);
 
             // 判断是否读过
             boolean isReaded = true;
             OaNoticeReply oaNoticeReply = oaNoticeReplyService.getOaNoticeReply(oaNotice.getId(), userName);
-            if (oaNotice.getIsBold()==1 || (oaNoticeReply!=null && "0".equals(oaNoticeReply.getIsReaded()))) {
+            if (oaNotice.getIsBold() == 1 || (oaNoticeReply != null && "0".equals(oaNoticeReply.getIsReaded()))) {
                 isReaded = false;
             }
             oaNoticeVO.setReaded(isReaded);
 
+            if (oaNoticeVO.getIsDeptNotice()) {
+                oaNoticeVO.setKind("部门通知");
+            } else {
+                oaNoticeVO.setKind("公共通知");
+            }
+
             // 置是否为新通知
             oaNoticeVO.setFresh(!isReaded && (oaNotice.getEndDate() == null || !oaNotice.getEndDate().isBefore(LocalDate.now())));
 
+//            String caption = oaNotice.getTitle();
+//            LocalDate now = LocalDate.now();
+//            if (oaNotice.getEndDate() != null && oaNotice.getEndDate().isBefore(now)) {
+//                caption = "<span style=\"color:#cccccc\">" + caption + "</span>";
+//            } else {
+//                if (!StringUtils.isEmpty(oaNotice.getColor())) {
+//                    caption = "<span style=\"color:" + oaNotice.getColor() + "\">" + caption + "</span>";
+//                }
+//                if (!isReaded) {
+//                    caption = "<b>" + caption + "</b>";
+//                }
+//            }
+//            oaNoticeVO.setCaption(caption);
             v.add(oaNoticeVO);
         }
 
@@ -195,16 +217,13 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
         } else if (ConstUtil.NOTICE_IS_DEPT == oaNotice.getIsAll()) { // 部门管理员选择全部人员 取出部门下全部用户,含子部门用户
             String userName = oaNotice.getUserName();
             DeptUserDb dud = new DeptUserDb();
-            Vector v1 = dud.getDeptsOfUser(userName); // 取得用户所在部门的deptcode
-
+            Vector<DeptDb> v1 = dud.getDeptsOfUser(userName); // 取得用户所在部门的deptcode
             if (v1.size() > 0) {
                 List<String> list = new ArrayList<String>();
-                for (int j = 0; j < v1.size(); j++) {
-                    DeptDb deptDb = (DeptDb) v1.get(j);
-                    Vector v = dud.getAllUsersOfUnit(deptDb.getCode());
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        UserDb user = (UserDb)ir.next();
+                for (Object o : v1) {
+                    DeptDb deptDb = (DeptDb) o;
+                    Vector<UserDb> v = dud.getAllUsersOfUnit(deptDb.getCode());
+                    for (UserDb user : v) {
                         list.add(user.getName());
                     }
                 }
@@ -213,12 +232,10 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
                 list.toArray(userNames);
             }
         } else if (ConstUtil.NOTICE_IS_ALL == oaNotice.getIsAll()) { // 系统管理员选择全部人员
-            List<String> list = new ArrayList();
+            List<String> list = new ArrayList<>();
             DeptUserDb dud = new DeptUserDb();
-            Vector v = dud.getAllUsersOfUnit(DeptDb.ROOTCODE);
-            Iterator ir = v.iterator();
-            while (ir.hasNext()) {
-                UserDb user = (UserDb) ir.next();
+            Vector<UserDb> v = dud.getAllUsersOfUnit(DeptDb.ROOTCODE);
+            for (UserDb user : v) {
                 list.add(user.getName());
             }
 
@@ -233,23 +250,22 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
         }
 
         List<OaNoticeReply> list = new ArrayList<>();
-        for (int i=0; i<userNames.length; i++) {
+        for (String userName : userNames) {
             OaNoticeReply reply = new OaNoticeReply();
             reply.setNoticeId(oaNotice.getId());
-            reply.setUserName(userNames[i]);
+            reply.setUserName(userName);
             list.add(reply);
         }
         boolean re = oaNoticeReplyService.createBatch(list);
 
         if (re) {
             MessageDb mdb = new MessageDb();
-            Config cfg = Config.getInstance();
-            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
-            boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
+            boolean mqIsOpen = sysProperties.isMqOpen();
 
             String txt = StrUtil.getAbstract(null, oaNotice.getContent(), 380, "", false) + "......";
             try {
                 if (mqIsOpen) {
+                    IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                     msgProducer.sendSysMsg(userNames, "请注意查看：通知公告 " + oaNotice.getTitle(), txt, MessageDb.ACTION_NOTICE, "", String.valueOf(oaNotice.getId()));
                 } else {
                     mdb.sendSysMsgNotice(oaNotice.getId(), userNames, "请注意查看：通知公告 " + oaNotice.getTitle(), txt);
@@ -258,6 +274,7 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
                 if (isToMobile) {
                     if (com.redmoon.oa.sms.SMSFactory.isUseSMS()) {
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendSmsBatch(userNames, txt, oaNotice.getUserName());
                         }
                         else {
@@ -267,7 +284,7 @@ public class OaNoticeServiceImpl extends ServiceImpl<OaNoticeMapper, OaNotice> i
                     }
                 }
             } catch (ErrMsgException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
                 re = false;
             }
         }

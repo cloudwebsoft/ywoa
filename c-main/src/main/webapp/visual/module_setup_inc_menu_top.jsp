@@ -5,6 +5,10 @@
 <%@page import="com.redmoon.oa.flow.FormDb" %>
 <%
     String codeTop = ParamUtil.get(request, "code");
+    if ("".equals(codeTop)) {
+        // 从前端界面上直接点击管理进入
+        codeTop = ParamUtil.get(request, "moduleCode");
+    }
     String formCodeTop = ParamUtil.get(request, "formCode");
     if ("".equals(codeTop)) {
         // module_relate.jsp中添加关联模块时，code因为是关联表单的编码
@@ -24,6 +28,9 @@
         <li id="menu11"><a
                 href="<%=request.getContextPath()%>/visual/module_page_setup.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>页面设置</span></a>
         </li>
+        <li id="menu13"><a
+                href="<%=request.getContextPath()%>/visual/module_mobile_list_setup.jsp?moduleCode=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>手机端列表</span></a>
+        </li>
         <li id="menu12"><a
                 href="<%=request.getContextPath()%>/visual/module_css_iframe.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>页面样式</span></a>
         </li>
@@ -37,10 +44,10 @@
                 href="<%=request.getContextPath()%>/visual/module_view_edit.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>选项卡设置</span></a>
         </li>
         <li id="menu6"><a
-                href="<%=request.getContextPath()%>/visual/module_import_list.do?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>导入设置</span></a>
+                href="<%=request.getContextPath()%>/visual/module_import_list.do?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>导入模板</span></a>
         </li>
         <li id="menu9"><a
-                href="<%=request.getContextPath()%>/visual/module_export_list.do?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>导出设置</span></a>
+                href="<%=request.getContextPath()%>/visual/module_export_list.do?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>导出模板</span></a>
         </li>
         <%if (codeTop.equals(formCodeTop)) {%>
         <%
@@ -56,9 +63,9 @@
                 href="<%=request.getContextPath()%>/visual/module_relate.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>关联模块</span></a>
         </li>
         <%}%>
-        <li id="menu8"><a
+        <%--<li id="menu8"><a
                 href="<%=request.getContextPath()%>/admin/form_reports.jsp?code=<%=codeTop%>&formCode=<%=formCodeTop%>"><span>报表关联</span></a>
-        </li>
+        </li>--%>
         <%
             FormDb fedb = new FormDb();
             fedb = fedb.getFormDb(formCodeTop);

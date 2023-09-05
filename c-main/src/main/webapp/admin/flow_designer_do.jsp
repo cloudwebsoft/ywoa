@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=utf-8" import = "java.io.File" import = "cn.js.fan.util.*"%><%@page import="net.sf.json.JSONObject"%><%@page import="com.redmoon.oa.pvg.Privilege"%><%
+<%@ page contentType="text/html;charset=utf-8" import = "java.io.File" import = "cn.js.fan.util.*"%><%@page import="org.json.JSONObject"%><%@page import="com.redmoon.oa.pvg.Privilege"%><%
 String priv="admin.user";
 if (!new Privilege().isUserPrivValid(request, priv)) {
 	out.println(cn.js.fan.web.SkinUtil.makeErrMsg(request, cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid")));

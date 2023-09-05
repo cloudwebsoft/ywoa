@@ -1,6 +1,6 @@
 package cn.js.fan.cache.jcs;
 
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -15,10 +15,9 @@ import org.apache.log4j.Logger;
  * @version 1.0
  */
 public class CacheLoader {
-    private Logger logger;
 
     public CacheLoader(String cacheName) {
-        logger = Logger.getLogger("CacheLoader");
+        
     }
 
     public ICache getInstance(String cacheName) {
@@ -27,7 +26,7 @@ public class CacheLoader {
             Class newClass = Class.forName(cacheName);
             obj = (ICache)newClass.newInstance();
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return obj;
     }

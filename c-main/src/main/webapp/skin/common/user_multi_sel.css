@@ -61,6 +61,7 @@ body {
 .usermulti-main-box2-cont {
 	height: 482px;
 	position: relative;
+	clear:both;
 }
 .usermulti-cont-left {
 	float: left;

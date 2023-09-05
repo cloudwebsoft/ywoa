@@ -93,12 +93,27 @@
         </tr>
         <tr>
             <th>只读</th>
-            <th><span id="spanOrgtype">字段类型</span></th>
+            <th>只读类型</th>
         </tr>
         <tr>
             <td>
                 <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1"/>
             </td>
+            <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span id="spanOrgtype">字段类型</span></th>
+            <th>默认值</th>
+        </tr>
+        <tr>
             <td>
                 <select name="orgtype" id="orgtype" class="span7">
                     <option value="0">字符串型</option>
@@ -111,7 +126,13 @@
                     <option value="7">日期型</option>
                     <option value="8">日期时间型</option>
                     <option value="9">价格型</option>
+                    <option value="10">长文本型</option>
                 </select>
+            </td>
+            <td>
+                <textarea type="text" id="orgvalue" placeholder="无则不填" style="width:260px; height:100px;"></textarea>
+                <br/>
+                默认值以宏控件内置默认的为准，如：基础数据的默认值，如果为空，则使用此处的默认值
             </td>
         </tr>
         <tr>
@@ -124,7 +145,13 @@
             <th><span>长度/大小</span></th>
         </tr>
         <tr>
-            <td><input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/> px</td>
+            <td>
+                <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>
+                <select id="unit" style="width:60px">
+                    <option value="px" selected>px</option>
+                    <option value="%">%</option>
+                </select>
+            </td>
             <td>
                 <select id="minT" name="minT" style="width:60px">
                     <option value="d=">>=</option>
@@ -148,15 +175,11 @@
             <td colspan="2">
                 <table class="table table-hover table-condensed" id="options_table">
                     <tr>
-                        <th>默认值</th>
                         <th>描述</th>
                     </tr>
                     <tr>
                         <td>
-                            <textarea type="text" id="orgvalue" placeholder="无则不填" style="width:260px; height:100px;"></textarea>
-                        </td>
-                        <td>
-                            <textarea type="text" id="description" placeholder="无则不填" style="width:260px; height:100px;"></textarea>
+                            <textarea type="text" id="description" placeholder="无则不填" style="width:100%; height:100px;"></textarea>
                             <span style="display:none">
                                 <label class="checkbox"> 可见性
                                 <input id="orghide" type="checkbox"> 隐藏 </label>
@@ -177,6 +200,13 @@
             var gTitle = oNode.getAttribute('title').replace(/&quot;/g, "\"");
 
             var gHidden = oNode.getAttribute('orghide'), gFontSize = oNode.getAttribute('orgfontsize'), gWidth = oNode.getAttribute('orgwidth');
+            var gUnit = 'px';
+            if (gWidth.endsWith('%')) {
+                gUnit = '%';
+                gWidth = gWidth.substring(0, gWidth.length - 1);
+            } else if (gWidth.endsWith('px')) {
+                gWidth = gWidth.substring(0, gWidth.length - 2);
+            }
 
             var gType = oNode.getAttribute('fieldType');
             var gCanNull = oNode.getAttribute("canNull");
@@ -191,13 +221,21 @@
             }
             $G('orgtype').value = gType;
             $G('orgwidth').value = gWidth;
+            $G('unit').value = gUnit;
             $G('orgfontsize').value = gFontSize;
 
             $G('orgname').setAttribute("readonly", true);
 
+            var gReadOnlyType = oNode.getAttribute("readOnlyType");
+            if (gReadOnlyType == null) {
+                gReadOnlyType = '';
+            }
+            $G('readOnlyType').value = gReadOnlyType;
+
             $G('macroType').value = oNode.getAttribute("macroType");
             $G('macroType').disabled = true;
             if (oNode.getAttribute("macroType") == "macro_current_user"
+                || oNode.getAttribute("macroType") == "macro_user_select_win"
                 || oNode.getAttribute("macroType") == "macro_image"
                 || oNode.getAttribute("macroType") == "nest_table"
                 || oNode.getAttribute("macroType") == "nest_sheet"
@@ -207,6 +245,8 @@
                 || oNode.getAttribute("macroType") == "macro_writepad_ctl"
                 || oNode.getAttribute("macroType") == "macro_icon_ctl"
                 || oNode.getAttribute("macroType") == "macro_formula_ctl"
+                || oNode.getAttribute("macroType") == "macro_flow_select"
+                || oNode.getAttribute("macroType") == "macro_basic_tree_select_ctl"
             ) {
                 $G('desc').style.display = "none";
                 $G("edit").style.display = '';
@@ -236,7 +276,7 @@
             }
 
             $G('orgtype').disabled = true;
-            if ($G('macroType').value == "macro_flow_select") {
+            if ($G('macroType').value == "macro_flow_select" || $G('macroType').value == "macro_basic_tree_select_ctl") {
                 $G("orgtype").style.display = '';
                 $G("spanOrgtype").style.display = '';
             }
@@ -281,6 +321,7 @@
         var gCanNull = $G('canNull').checked ? 0 : 1;
 
         var gFontSize = $G('orgfontsize').value, gWidth = $G('orgwidth').value;
+        var gUnit = $G('unit').value;
 
         var gMinT = $G('minT').value;
         var gMinV = $G('minV').value;
@@ -295,7 +336,7 @@
                 return false;
             }
             if (gMinV!='' && gMaxV!='') {
-                if (gMinV > gMaxV) {
+                if (parseInt(gMinV) > parseInt(gMaxV)) {
                     alert('最小长度不能大于最大长度');
                     return false;
                 }
@@ -310,6 +351,8 @@
                 return false;
             }
         }
+
+        var gReadOnlyType = $G('readOnlyType').value;
 
         if (!oNode) {
             try {
@@ -346,9 +389,13 @@
                     oNode.style.fontSize = gFontSize + 'px';
                     oNode.setAttribute('orgfontsize', gFontSize);
                 }
+
                 if (gWidth != '') {
-                    oNode.style.width = gWidth + 'px';
-                    oNode.setAttribute('orgwidth', gWidth);
+                    oNode.style.width = gWidth + gUnit;
+                    oNode.setAttribute('orgwidth', gWidth + gUnit);
+                } else {
+                    oNode.style.width = '';
+                    oNode.setAttribute('orgwidth', '');
                 }
 
                 if ($G('isReadOnly').checked) {
@@ -361,6 +408,7 @@
                 oNode.setAttribute("minV", gMinV);
                 oNode.setAttribute("maxT", gMaxT);
                 oNode.setAttribute("maxV", gMaxV);
+                oNode.setAttribute("readOnlyType", gReadOnlyType);
 
                 editor.execCommand('insertHtml', oNode.outerHTML);
                 return true;
@@ -386,8 +434,11 @@
             oNode.setAttribute('kind', 'macro');
             oNode.setAttribute('description', $G('description').value);
             if (gWidth != '') {
-                oNode.style.width = gWidth + 'px';
-                oNode.setAttribute('orgwidth', gWidth);
+                oNode.style.width = gWidth + gUnit;
+                oNode.setAttribute('orgwidth', gWidth + gUnit);
+            } else {
+                oNode.style.width = '';
+                oNode.setAttribute('orgwidth', '');
             }
             if ($G('isReadOnly').checked) {
                 oNode.setAttribute("readonly", "readonly");
@@ -399,6 +450,7 @@
             oNode.setAttribute("minV", gMinV);
             oNode.setAttribute("maxT", gMaxT);
             oNode.setAttribute("maxV", gMaxV);
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
 
             delete UE.plugins[thePlugins].editdom;
             return true;
@@ -437,14 +489,14 @@
             $G("desc").style.display = '';
             setSequence("", "");
             openWin('../../../../flow/flow_sequence_sel.jsp', 300, 40);
-        } else if (obj.options[obj.selectedIndex].value == 'macro_flow_select') {
+        } else if (obj.options[obj.selectedIndex].value == 'macro_flow_select' || obj.options[obj.selectedIndex].value == 'macro_basic_tree_select_ctl') {
             $G("canNull").disabled = false;
             $G("edit").style.display = 'none';
             setSequence("", "");
             $G("desc").style.display = '';
             $G("orgtype").style.display = '';
             $G("spanOrgtype").style.display = '';
-            openWin('../../../../flow/basic_select_sel.jsp', 640, 280);
+            openWin('../../../../flow/basic_select_sel.jsp?macroType=' + $G("macroType").value, 640, 280);
         } else if (obj.options[obj.selectedIndex].value == 'nest_table') {
             $G('canNull').checked = false;
             $G("canNull").disabled = true;
@@ -479,7 +531,7 @@
             $G("edit").style.display = 'none';
             $G("desc").style.display = '';
             setSequence("", "");
-            openWin('../../../../visual/module_field_sel.jsp?openerFormCode=<%=StrUtil.UrlEncode(formCode)%>', 800, 600);
+            openWin('../../../../visual/module_field_sel.jsp?openerFormCode=<%=StrUtil.UrlEncode(formCode)%>&fieldName=' + $G('orgname').value, 800, 600);
         } else if (obj.options[obj.selectedIndex].value == 'macro_image') {
             $G("canNull").disabled = false;
             $G("edit").style.display = 'none';
@@ -516,7 +568,13 @@
             $G("edit").style.display = 'none';
             $G("desc").style.display = '';
             setSequence("", "");
-            openWin('../../../../flow/macro/curent_user_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+            openWin('../../../../flow/macro/current_user_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+        }  else if (obj.options[obj.selectedIndex].value == 'macro_user_select_win') {
+            $G("canNull").disabled = false;
+            $G("edit").style.display = 'none';
+            $G("desc").style.display = '';
+            setSequence("", "");
+            openWin('../../../../flow/macro/user_select_win_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
         } else if (obj.options[obj.selectedIndex].value == 'macro_ntko_ctl') {
             $G("canNull").disabled = false;
             $G("edit").style.display = '';
@@ -535,7 +593,25 @@
             $G("desc").style.display = '';
             setSequence("", "");
             openWin('../../../../flow/macro/icon_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 800, 450);
-        } else {
+        }
+        else if (obj.options[obj.selectedIndex].value == 'macro_opinion') {
+            $('#maxV').val('2000');
+        }
+        else if (obj.options[obj.selectedIndex].value == 'macro_ueditor') {
+            $G("canNull").disabled = false;
+            $G('orgtype').value = '1';
+            $('#maxV').val('');
+        }
+        else if (obj.options[obj.selectedIndex].value == 'macro_year_ctl') {
+            $G('orgtype').value = '2';
+            $('#maxV').val('');
+        }
+        else if (obj.options[obj.selectedIndex].value == 'macro_month_ctl') {
+            $G('orgtype').value = '2';
+            $('#maxV').val('');
+        }
+        else {
+            $('#maxV').val('100');
             $G("canNull").disabled = false;
             $G("edit").style.display = 'none';
             $G("desc").style.display = '';
@@ -550,9 +626,12 @@
             openWin('image_ctl_prop.jsp', 450, 250);
             return;
         } else if ($G("macroType").value == "macro_current_user") {
-            openWin('../../../../flow/macro/curent_user_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+            openWin('../../../../flow/macro/current_user_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
             return;
-        } else if ($G("macroType").value == "macro_ntko_ctl") {
+        } else if ($G("macroType").value == "macro_user_select_win") {
+            openWin('../../../../flow/macro/user_select_win_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
+        }
+        else if ($G("macroType").value == "macro_ntko_ctl") {
             openWin('../../../../flow/macro/macro_ntko_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 600, 330);
             return;
         } else if ($G("macroType").value == "macro_writepad_ctl") {
@@ -560,6 +639,9 @@
             return;
         } else if ($G("macroType").value == "macro_icon_ctl") {
             openWin('../../../../flow/macro/icon_ctl_prop.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>', 800, 450);
+            return;
+        } else if ($G("macroType").value == "macro_flow_select" || $G("macroType").value == "macro_basic_tree_select_ctl") {
+            openWin('../../../../flow/basic_select_sel.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>&macroType=' + $G("macroType").value, 800, 450);
             return;
         }
 
@@ -585,7 +667,7 @@
                 openPostWindow('../../../../visual/module_field_sel_query_nest.jsp', 'nest_sheet', '<%=StrUtil.UrlEncode(formCode)%>', jsonStr, "嵌套表域选择");
                 //openWin('../../../../visual/module_field_sel_query_nest.jsp?nestType=nest_sheet&openerFormCode=<%=StrUtil.UrlEncode(formCode)%>&params=' + jsonStr, 800, 600);
             } else if (jsonStr.indexOf("idField") != -1 && jsonStr.indexOf("showField") != -1) {
-                openPostWindow('../../../../visual/module_field_sel.jsp', 'nest_table', '<%=StrUtil.UrlEncode(formCode)%>', jsonStr, "模块表单域选择");
+                openPostWindow('../../../../visual/module_field_sel.jsp?fieldName=' + $G('orgname').value, 'nest_table', '<%=StrUtil.UrlEncode(formCode)%>', jsonStr, "模块表单域选择");
                 //openWin('../../../../visual/module_field_sel.jsp&params=' + jsonStr, 900, 700);
             } else if (jsonStr.indexOf("sourceForm") != -1) {
                 // console.log("jsonString=" + jsonStr);
@@ -607,7 +689,7 @@
             }
         } else {
             if ($G("macroType").value == "module_field_select") {
-                openWin('../../../../visual/module_field_sel.jsp?openerFormCode=<%=StrUtil.UrlEncode(formCode)%>', 800, 600);
+                openWin('../../../../visual/module_field_sel.jsp?openerFormCode=<%=StrUtil.UrlEncode(formCode)%>&fieldName=' + $G('orgname').value, 800, 600);
             } else {
                 openWin('../../../../visual/module_field_sel_nest1.jsp?nestType=nest_table&openerFormCode=<%=StrUtil.UrlEncode(formCode)%>', 800, 600);
             }
@@ -713,7 +795,13 @@
                 $('#maxV').val('');
             }
             else if ($(this).val() === '0') {
-                $('#maxV').val('100');
+                // 如果是意见输入框，则最大长度置为2000
+                if ($('#macroType').val() === 'macro_opinion') {
+                    $('#maxV').val('2000');
+                }
+                else {
+                    $('#maxV').val('100');
+                }
             }
             else if ($(this).val() === '1') {
                 $('#maxV').val('65536');

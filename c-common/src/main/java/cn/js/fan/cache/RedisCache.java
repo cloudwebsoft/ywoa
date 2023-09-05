@@ -3,7 +3,7 @@ package cn.js.fan.cache;
 import cn.js.fan.cache.jcs.ICache;
 import cn.js.fan.cache.redis.RedisUtil;
 import cn.js.fan.cache.redis.SerializableUtil;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import redis.clients.jedis.Jedis;
 
 import java.io.UnsupportedEncodingException;
@@ -151,7 +151,7 @@ public class RedisCache implements ICache {
             boolean isExists = jedis.exists(group);
             boolean isExistsGroup = jedis.hexists(group, name.toString());
             if (isExists && isExistsGroup) {
-                byte[] bytes = null;
+                byte[] bytes;
                 bytes = jedis.hget(group.getBytes(), name.toString().getBytes(StandardCharsets.UTF_8));
                 if (bytes != null) {
                     // 反序列化对象

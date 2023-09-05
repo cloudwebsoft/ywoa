@@ -1,0 +1,144 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>选择角色</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <script type="text/javascript" src="inc/common.js"></script>
+    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/jquery-migrate-1.2.1.min.js"></script>
+    <link rel="stylesheet" href="js/bootstrap/css/bootstrap.min.css"/>
+    <script src="js/bootstrap/js/bootstrap.min.js"></script>
+    <script language="JavaScript">
+        function setRoles() {
+            var str = "";
+            var strText = "";
+            var opts = document.getElementById("fieldsSelected").options;
+            var len = opts.length;
+            for (var i = 0; i < len; i++) {
+                if (str == "") {
+                    str = opts[i].value;
+                    strText = opts[i].text;
+                } else {
+                    str += "," + opts[i].value;
+                    strText += "," + opts[i].text;
+                }
+            }
+            var dlg = window.opener ? window.opener : dialogArguments;
+            if (typeof(dlg.setRoles) == "function") {
+                dlg.setRoles(str, strText);
+            }
+            else {
+                dlg.setIntpuObjValue(str, strText);
+            }
+            window.close();
+        }
+
+        function sel() {
+            var opts = document.getElementById("fieldsNotSelected").options;
+            var len = opts.length;
+            var ary = new Array(len);
+            for (var i = 0; i < len; i++) {
+                ary[i] = "0";
+                if (opts[i].selected) {
+                    document.getElementById("fieldsSelected").options.add(new Option(opts[i].text, opts[i].value));
+                    ary[i] = opts[i].value;
+                }
+            }
+            for (var i = 0; i < len; i++) {
+                for (var j = 0; j < len; j++) {
+                    if (ary[i] != "0") {
+                        try {
+                            // 删除项目后，options会变短，因此用异常捕获来防止出错
+                            if (opts[j].value == ary[i])
+                                opts.remove(j);
+                        } catch (e) {
+                        }
+                    }
+                }
+            }
+        }
+
+        function notsel() {
+            var opts = document.getElementById("fieldsSelected").options;
+            var len = opts.length;
+            var ary = new Array(len);
+            for (var i = 0; i < len; i++) {
+                ary[i] = "0";
+                if (opts[i].selected) {
+                    document.getElementById("fieldsNotSelected").options.add(new Option(opts[i].text, opts[i].value));
+                    ary[i] = opts[i].value;
+                }
+            }
+
+            for (var i = 0; i < len; i++) {
+                for (var j = 0; j < len; j++) {
+                    if (ary[i] != "0") {
+                        try {
+                            // 删除项目后，options会变短，因此用异常捕获来防止出错
+                            if (opts[j].value == ary[i])
+                                opts.remove(j);
+                        } catch (e) {
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</HEAD>
+<body>
+<table width="501" height="293" border="0" align="center" cellpadding="0" cellspacing="0" class="tabStyle_1">
+    <tr>
+        <td height="23" colspan="3" class="tabStyle_1_title">&nbsp;&nbsp;<span>选择角色</span></td>
+    </tr>
+    <tr>
+        <td width="231" height="22" align="right">已选的角色</td>
+        <td width="37">&nbsp;</td>
+        <td width="231" height="22">备选的角色</td>
+    </tr>
+    <tr>
+        <td height="22" align="left">&nbsp;</td>
+        <td>&nbsp;</td>
+        <td height="22">
+            <input type="text" id="role" name="role" size="15" onkeypress="return findRoles()"/>
+            <input type="button" value="查找" onclick="findRoles()" class="btn btn-default"/>
+        </td>
+    </tr>
+    <tr>
+        <td align="right">
+            <select id="fieldsSelected" name="fieldsSelected" size=15 multiple style="width:200px;height:260px" ondblclick="notsel();" th:inline="text">
+                [(${optSelected})]
+            </select>
+        </td>
+        <td align="center" valign="middle"><input type="button" name="sel" value=" &lt; " onClick="sel()" style="font-family:'宋体'" class="btn">
+            <br>
+            <br>
+            <input type="button" name="notsel" value=" &gt; " onClick="notsel()" style="font-family:'宋体'" class="btn"></td>
+        <td>
+            <select id="fieldsNotSelected" name="fieldsNotSelected" size=15 multiple style="width:200px;height:260px" ondblclick="sel();">
+                [(${optNotSelected})]]
+            </select>
+        </td>
+    </tr>
+    <tr align="center">
+        <td height="28" colspan="3">
+            <button class="btn btn-default" name="okbtn" onclick="setRoles()">确定</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <button class="btn btn-default" name="cancelbtn" onclick="window.close()">取消</button>
+        </td>
+    </tr>
+</table>
+</body>
+<script>
+    function findRoles() {
+        var obj = o("fieldsNotSelected");
+        for (var i = 0; i < obj.options.length; i++) {
+            if (obj.options[i].text.indexOf(o("role").value) != -1) {
+                obj.options[i].selected = true;
+            } else {
+                obj.options[i].selected = false;
+            }
+        }
+    }
+</script>
+</HTML>

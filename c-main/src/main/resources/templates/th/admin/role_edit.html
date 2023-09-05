@@ -1,0 +1,217 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>修改角色</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .unit {
+            background-color: #CCC;
+        }
+        .table th, .table td {
+            vertical-align: middle!important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_role :: navRole(${role.code}, ${role.description}, 1)"></div>
+<div class="spacerH"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <form id="form1" name="form1" method="post" action="createRole.do" style="margin-top: 20px">
+                <table class="table table-bordered table-hover" width="65%" border="0" align="center" cellpadding="0" cellspacing="0">
+                    <tr class="active">
+                        <td height="31" colspan="2" align="center">
+                            修改角色
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="127" height="31" align="center">编码</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input name="code" th:value="${role.code}" class="form-control" readonly />
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">名称</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                                <input name="desc" th:value="${role.description}" class="form-control">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">邮箱配额</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                              <span id="spanMsgRadio">
+                                <label class="radio-inline">
+                                    <input type="radio" name="isMsgDefault" value="1" checked="checked"/>不指定
+                                </label>
+                                <label class="radio-inline">
+                                    <input type="radio" name="isMsgDefault" value="0"/>指定
+                                </label>
+                              </span>
+                              <span id="spanMsgQuota" style="display:none">
+                                <input id="msgSpaceQuota" name="msgSpaceQuota" class="form-control" th:value="${role.msgSpaceQuota}"/>&nbsp;字节
+                              </span>
+                            </div>
+                            <script th:inline="javascript">
+                                val = '1';
+                                [# th:if="${role.msgSpaceQuota ne -1}" ]
+                                val = '0';
+                                $('#spanMsgQuota').show();
+                                [/]
+                                setRadioValue("isMsgDefault", val);
+                            </script>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">序号</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                            <input name="orders" class="form-control" th:value="${role.orders}"/>&nbsp;（序号越大，表示角色级别越高，用于流程中比较角色大小）
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">管理本部门</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                            <select id="isDeptManager" name="isDeptManager" class="form-control">
+                                <option value="1">是</option>
+                                <option value="0">否</option>
+                            </select>
+                            （能够查看“部门工作”）
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${isAdmin}">
+                        <td height="32" align="center">系统</td>
+                        <td align="left">
+                            <div class="col-lg-10">
+                                <label class="checkbox-inline">
+                                <input type="checkbox" id="isSystem" th:checked="${role.isSystem}" name="isSystem" value="1"/>
+                                    &nbsp;(系统角色对于集团中的子单位管理员可见)
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            类别
+                        </td>
+                        <td>
+                            <div class="col-lg-10 form-inline">
+                            <select id="kind" name="kind" class="form-control">
+                                <option value="">无</option>
+                                [(${kindOpts})]
+                            </select>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">单位</td>
+                        <td align="left">
+                            <div class="col-lg-10 form-inline">
+                          <span th:switch="${isPlatForm}">
+                              <span th:case="true">
+                                <select id="unitCode" name="unitCode" class="form-control">
+                                    [(${unitOpts})]
+                                </select>
+                              </span>
+                              <span th:case="*">
+                                  [[${unitName}]]
+                                  <input type="hidden" name="unitCode" value="root"/>
+                              </span>
+                          </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="43" colspan="2" align="center">
+                            <button id="btnOk" class="btn btn-default">确定</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    $(function () {
+        $('#isDeptManager').val([[${role.isDeptManager}]]);
+        $('#kind').val([[${role.kind}]]);
+
+        $('#btnOk').click(function(e) {
+            // 阻止默认的提交
+            e.preventDefault();
+
+            if (getRadioValue("isDefault") == "0") {
+                if ($('#diskQuota').val() == "" || $('#diskQuota').val() < 0 || !isNumeric($('#diskQuota').val())) {
+                    jAlert("网盘配额请输入大于0的数字！", "提示");
+                    $('#diskQuota').focus();
+                    return false;
+                }
+            }
+            if (getRadioValue("isMsgDefault") == "0") {
+                if ($('#msgSpaceQuota').val() == "" || $('#msgSpaceQuota').val() < 0 || !isNumeric($('#msgSpaceQuota').val())) {
+                    jAlert("内部邮箱配额请输入大于0的数字！", "提示");
+                    $('#msgSpaceQuota').focus();
+                    return false;
+                }
+            }
+
+            $.ajax({
+                type: "post",
+                url: "updateRole.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret==1) {
+                        jAlert(data.msg, "提示", function() {
+                            var tabIdOpener = [[${tabIdOpener}]]
+                            reloadTab(tabIdOpener);
+                        })
+                    }
+                    else {
+                        jAlert(data.msg, "提示");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+
+        $('input[name=isMsgDefault]').click(function () {
+            if (this.value == "0") {
+                $('#spanMsgQuota').show();
+                $('#msgSpaceQuota').val("");
+            } else {
+                $('#msgSpaceQuota').val("-1");
+                $('#spanMsgQuota').hide();
+            }
+        });
+
+        $('input[name=isDefault]').click(function () {
+            if (this.value == "0") {
+                $('#spanQuota').show();
+                $('#diskQuota').val("");
+            } else {
+                $('#diskQuota').val("-1");
+                $('#spanQuota').hide();
+            }
+        });
+    });
+</script>
+</html>

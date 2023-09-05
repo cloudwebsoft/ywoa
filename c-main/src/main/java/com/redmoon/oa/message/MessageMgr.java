@@ -69,8 +69,9 @@ public class MessageMgr {
                 imsg.AddMsg(application, request, pvg.getUser(request));
             }
             
-        } else
+        } else {
             throw new ErrMsgException("您尚未登录！");
+        }
         return true;
     }
     
@@ -87,8 +88,9 @@ public class MessageMgr {
 		com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
 		if (pvg.isUserLogin(request)) {
 			re = MsgDB.AddDraftMsg(application, request, pvg.getUser(request));
-		} else
-			throw new ErrMsgException("您尚未登录！");
+		} else {
+            throw new ErrMsgException("您尚未登录！");
+        }
 		return re;
 	}
 
@@ -100,21 +102,21 @@ public class MessageMgr {
      */
     public boolean delMsg(HttpServletRequest request) throws ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        if (!pvg.isUserLogin(request))
+        if (!pvg.isUserLogin(request)) {
             throw new ErrMsgException("您尚未登录!");
+        }
         String[] ids = request.getParameterValues("ids");
-        if (ids == null)
+        if (ids == null) {
             throw new ErrMsgException("请选择消息!");
-        if (!privilege.canManage(request, ids))
+        }
+        if (!privilege.canManage(request, ids)) {
             throw new ErrMsgException("非法操作！");
+        }
         if(ids.length == 1){
         	if(ids[0].contains(",")){
         		ids = ids[0].split(",");
         	}
         }
-       
-        
-
         return MsgDB.delMsg(ids);
     }
     
@@ -126,19 +128,19 @@ public class MessageMgr {
      */
     public boolean delMsgBySenderDustbin(HttpServletRequest request) throws ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        if (!pvg.isUserLogin(request))
+        if (!pvg.isUserLogin(request)) {
             throw new ErrMsgException("您尚未登录!");
+        }
         String[] ids = request.getParameterValues("ids");
-        if (ids == null)
+        if (ids == null) {
             throw new ErrMsgException("请选择消息!");
-        if (!privilege.canManage(request, ids))
+        }
+        if (!privilege.canManage(request, ids)) {
             throw new ErrMsgException("非法操作！");
+        }
 
         return MsgDB.delMsgBySenderDustbin(ids);
     }
-    
-    
-    
     
     /**
      * 垃圾箱操作
@@ -147,19 +149,18 @@ public class MessageMgr {
      * @return
      */
     public boolean doDustbin(HttpServletRequest request, boolean isDel) throws ErrMsgException {
-        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        if (!pvg.isUserLogin(request))
-            throw new ErrMsgException("您尚未登录!");
         String[] ids = request.getParameterValues("ids");
         if(ids.length == 1){
         	if(ids[0].contains(",")){
         		ids = ids[0].split(",");
         	}
         }
-        if (ids == null)
+        if (ids == null) {
             throw new ErrMsgException("请选择消息!");
-        if (!privilege.canManage(request, ids))
+        }
+        if (!privilege.canManage(request, ids)) {
             throw new ErrMsgException("非法操作！");
+        }
 
         return MsgDB.doDustbin(ids, isDel);
     }
@@ -172,13 +173,16 @@ public class MessageMgr {
      */
     public boolean doChat(HttpServletRequest request, boolean isDel) throws ErrMsgException {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        if (!pvg.isUserLogin(request))
+        if (!pvg.isUserLogin(request)) {
             throw new ErrMsgException("您尚未登录!");
+        }
         String[] ids = request.getParameterValues("ids");
-        if (ids == null)
+        if (ids == null) {
             throw new ErrMsgException("请选择消息!");
-        if (!privilege.canManage(request, ids))
+        }
+        if (!privilege.canManage(request, ids)) {
             throw new ErrMsgException("非法操作！");
+        }
 
         return MsgDB.doChat(ids, isDel);
     }
@@ -199,8 +203,9 @@ public class MessageMgr {
         	// 用于mydeskop.jsp
         	String ids = ParamUtil.get(request, "msgIds");
         	strids = StrUtil.split(ids, ",");
-        	if (strids==null)
-        		return false;
+        	if (strids==null) {
+                return false;
+            }
         }
         int len = strids.length;
         int[] ids = new int[len];
@@ -250,11 +255,13 @@ public class MessageMgr {
             
             if (re) {
             	// 草稿箱中删除,如果是转发则不删除
-            	if (isDraft)
-            		md.del();
+            	if (isDraft) {
+                    md.del();
+                }
             }
-        } else
+        } else {
             throw new ErrMsgException("您尚未登陆！");
+        }
         return re;
     }
 
@@ -285,18 +292,13 @@ public class MessageMgr {
         jsonArray.add(json);
 
         json = new com.alibaba.fastjson.JSONObject();
-        json.put("type", MessageDb.ACTION_WORKPLAN);
-        json.put("name", "工作计划");
-        jsonArray.add(json);
-
-        json = new com.alibaba.fastjson.JSONObject();
         json.put("type", MessageDb.ACTION_NOTICE);
         json.put("name", "通知公告");
         jsonArray.add(json);
 
         json = new com.alibaba.fastjson.JSONObject();
         json.put("type", MessageDb.ACTION_PAPER_DISTRIBUTE);
-        json.put("name", "流程分发");
+        json.put("name", "流程抄送");
         jsonArray.add(json);
 
         json = new com.alibaba.fastjson.JSONObject();

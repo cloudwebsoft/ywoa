@@ -76,9 +76,7 @@ public class ResultWrapper {
           case Types.NUMERIC:
               // int  getPrecision (int column) 指定列类型的精确度(类型的长度): 。
               // int  getScale (int column) 获取指定列的小数点右边的位数。
-              // System.out.println(rm.getColumnName(col) + " type is " + t + " " + rm.getScale(col) + " " + rm.getPrecision(col));
               // oracle.jdbc.OracleResultSetMetaData orm = (oracle.jdbc.OracleResultSetMetaData )rm;
-              // System.out.println(orm.getColumnName(col) + " oracle type is " + t + " " + orm.getScale(col) + " " + orm.getPrecision(col));
               // 经测试，无论是使用oralce的OracleResultSetMetaData还是JDBC的ResultSetMetaData，两者的值都为0
               // This is a bug report on the Oracle thin jdbc driver 2001-4-30    http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4452330
               if (Global.db.equalsIgnoreCase(Global.DB_ORACLE)) {
@@ -118,7 +116,6 @@ public class ResultWrapper {
           case Types.VARCHAR: obj = rs.getString(col); break;
           default: obj = rs.getString(col);
         }
-        //System.out.print(obj.toString());
         return obj;
     }
 

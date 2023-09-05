@@ -8,12 +8,13 @@ import cn.js.fan.util.XMLConfig;
 import cn.js.fan.web.Global;
 import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.utils.ResponseUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.SpConfig;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.oa.util.TwoDimensionCode;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -114,7 +115,7 @@ public class SysController {
         try {
             rmcache.clear();
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return responseUtil.getResultJson(true).toString();
     }

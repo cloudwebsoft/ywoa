@@ -1,23 +1,21 @@
 package com.redmoon.oa.flow;
 
-import java.io.*;
-import java.net.*;
+import cn.js.fan.util.StrUtil;
+import cn.js.fan.util.XMLProperties;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.jdom.Element;
+import org.jdom.input.SAXBuilder;
+import org.xml.sax.InputSource;
 
-import cn.js.fan.util.*;
-import com.cloudwebsoft.framework.util.*;
-import org.apache.log4j.*;
-import org.jdom.*;
-import org.jdom.input.*;
-import java.util.*;
+import java.io.StringReader;
+import java.util.Vector;
 
 public class WorkflowConfig {
     // public: constructor to load driver and connect db
     private XMLProperties properties;
     private final String CONFIG_FILENAME = "config_flow.xml";
-
-    private String cfgpath;
-
-    Logger logger;
 
     org.jdom.Document doc = null;
     org.jdom.Element root = null;
@@ -31,18 +29,14 @@ public class WorkflowConfig {
     }
 
     public void init() {
-        logger = Logger.getLogger(WorkflowConfig.class.getName());
-        URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
-        cfgpath = cfgURL.getFile();
-        cfgpath = URLDecoder.decode(cfgpath);
-        properties = new XMLProperties(cfgpath);
-
-        SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
-            doc = sb.build(fin);
+            ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+            String xml = configUtil.getXml(CONFIG_FILENAME);
+
+            SAXBuilder sb = new SAXBuilder();
+            doc = sb.build(new InputSource(new StringReader(xml)));
             root = doc.getRootElement();
-            fin.close();
+            properties = new XMLProperties("config", doc, true);
         } catch (org.jdom.JDOMException e) {
             LogUtil.getLog(getClass()).error("init:" + e.getMessage());
         } catch (java.io.IOException e) {
@@ -76,13 +70,14 @@ public class WorkflowConfig {
         String p = getProperty(name);
         if (StrUtil.isNumeric(p)) {
             return Integer.parseInt(p);
-        } else
+        } else {
             return -65536;
+        }
     }
 
     public boolean getBooleanProperty(String name) {
         String p = getProperty(name);
-        return p.equals("true");
+        return "true".equals(p);
     }
 
     public void setProperty(String name, String value) {
@@ -113,9 +108,4 @@ public class WorkflowConfig {
         properties.setProperty(name, childAttributeName, childAttributeValue,
                                subChildName, value);
     }
-
-    public Vector getAssessLevels() {
-        return assessLevels;
-    }
-
 }

@@ -2,6 +2,7 @@ package com.cloudweb.oa.controller;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Formatter;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.sys.DebugUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -86,7 +88,7 @@ public class WeChatController {
                         getTokenTime = System.currentTimeMillis();
                     }
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -99,7 +101,7 @@ public class WeChatController {
                     jsApiTicket = ticketInfo.getString("ticket");
                     ticketExpireTime = ticketInfo.getLong("expires_in");
                 }catch (JSONException e){
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
 
                 getTiketTime = System.currentTimeMillis();
@@ -120,7 +122,7 @@ public class WeChatController {
         	result = new JSONObject(HttpUtil.doGet(requestUrl));
         }
         catch (Exception e) {
-        	e.printStackTrace();
+        	LogUtil.getLog(getClass()).error(e);
         }
         return result ;
     }
@@ -150,12 +152,10 @@ public class WeChatController {
 		try {
 			MessageDigest crypt = MessageDigest.getInstance("SHA-1");
 			crypt.reset();
-			crypt.update(string1.getBytes("UTF-8"));
+			crypt.update(string1.getBytes(StandardCharsets.UTF_8));
 			signature = byteToHex(crypt.digest());
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
         ret.put("url", url);
@@ -208,7 +208,7 @@ public class WeChatController {
 				// 转换为map
 				result = JSON.parseObject(responseContent);
 			} catch (IOException e) {
-				e.printStackTrace();
+				LogUtil.getLog(WeChatController.class).error(e);
 			}
 			return result;
 		}

@@ -1,10 +1,8 @@
 package com.cloudwebsoft.framework.base;
 
-import org.apache.log4j.Logger;
 import java.util.Iterator;
 
 public class QObjectBlockIterator implements Iterator {
-    public Logger logger = Logger.getLogger(this.getClass().getName());
 
     QObjectDb qObject;
 
@@ -24,13 +22,9 @@ public class QObjectBlockIterator implements Iterator {
     /**
      * Constructs a new ForumThreadBlockIterator.
      *
-     * @param threadBlock the starting threadBlock of elements to iterate
-     *      through.
      * @param query the SQL query corresponding to this iteration.
      * @param startIndex the starting index of the iteration.
      * @param endIndex the ending index of the iteration.
-     * @param forumID the forumID the threads are a part of.
-     * @param factory a ForumFactory to load data from.
      */
     public QObjectBlockIterator(QObjectDb qObject, Object[] block, String query,
                                 String groupName,

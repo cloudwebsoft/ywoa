@@ -7,6 +7,8 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import cn.js.fan.util.ParamUtil;
+import com.redmoon.oa.base.IFormDAO;
 import org.json.JSONArray;
 
 import cn.js.fan.db.ResultIterator;
@@ -67,51 +69,85 @@ public class DeptSelectWinCtl extends AbstractMacroCtl {
 		String str = "";
 		
 		String deptName = "";
-        if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
+        if (!StrUtil.isEmpty(ff.getValue())) {
 			DeptDb dept = new DeptDb();
 			dept = dept.getDeptDb(ff.getValue());
 			deptName = dept.getName();        	
         }
         
-        String dirCode = "";
-        String defaultDept = StrUtil.getNullStr(ff.getDefaultValueRaw());     
-        if (!"".equals(defaultDept)) {
-	        if (defaultDept.equals("my")) {
+        String deptCode = "", parentCode = "";
+        String defaultDept = StrUtil.getNullStr(ff.getDescription());
+		if (!"".equals(defaultDept) && StrUtil.isEmpty(ff.getValue())) {
+	        if ("my".equals(defaultDept)) {
 	        	DeptUserDb dud = new DeptUserDb();
 	        	Privilege pvg = new Privilege();
-	        	Iterator ir = dud.getDeptsOfUser(pvg.getUser(request)).iterator();
+	        	Iterator<DeptDb> ir = dud.getDeptsOfUser(pvg.getUser(request)).iterator();
 	        	if (ir.hasNext()) {
-	        		DeptDb dd = (DeptDb)ir.next();
-	        		dirCode = dd.getCode();
+	        		DeptDb dd = ir.next();
+					deptCode = dd.getCode();
+					deptName = dd.getName();
 	        	}
 	        }
 	        else if (defaultDept.startsWith("{$") && defaultDept.endsWith("}")) {
-	        	defaultDept = defaultDept.substring(2, defaultDept.length()-1);
+	        	// defaultDept = defaultDept.substring(2, defaultDept.length()-1);
 	        	// 解析出父节点对应的字段名
 	        	String fieldName = defaultDept.substring(2, defaultDept.length()-1);
 	        	if (iFormDAO!=null) {
-	        		dirCode = iFormDAO.getFieldValue(fieldName);
+					parentCode = iFormDAO.getFieldValue(fieldName);
 	        	}
 	        }	        
 	        else {
-	        	dirCode = defaultDept;
+				deptCode = defaultDept;
 	        }
         }
         
-		str = "<input type=\"text\" name=\"" + ff.getName() + "_show\" id=\""
-				+ ff.getName() + "_show\" readonly value=\"" + deptName + "\" size=\"10\" />";
-		str += "&nbsp;<input type=\"button\" class=btn name=\""
+		str = "<input type=\"text\" name=\"" + ff.getName() + "_realshow\" id=\""
+				+ ff.getName() + "_realshow\" readonly value=\"" + deptName + "\" size=\"10\" />";
+		str += "&nbsp;<input type=\"button\" class=\"btn btn-default\" name=\""
 				+ ff.getName()
 				+ "_btn\" id=\""
 				+ ff.getName()
-				+ "_btn\" value=\"选择\" onclick=\"curObjId='"
-				+ ff.getName()
-				+ "';window.open('"
-				+ request.getContextPath()
-				+ "/dept_sel.jsp?dirCode=" + dirCode + "','_blank','toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=640,height=480')\" />";
-		str += "<input type=\"hidden\" name=\"" + ff.getName() + "\" id=\""	+ ff.getName() + "\" value=\"\" />";
-		str += "<script>var curObjId;function selectNode(code, name) {o(curObjId).value=code; o(curObjId + \"_show\").value = name;}</script>";
+				+ "_btn\" value=\"选择\" onclick='openWinDeptsSelect(findObj(\"" + ff.getName() + "\"), true, \"" + parentCode + "\")' />";
+		str += "<input type=\"hidden\" name=\"" + ff.getName() + "\" id=\""	+ ff.getName() + "\" value=\"" + deptCode + "\" />";
 		return str;
+	}
+
+	@Override
+	public String getSetCtlValueScript(HttpServletRequest request,
+									   IFormDAO IFormDao, FormField ff, String formElementId) {
+		String deptCode = "";
+		if (!StrUtil.isEmpty(ff.getValue())) {
+			DeptDb dept = new DeptDb();
+			dept = dept.getDeptDb(ff.getValue());
+			deptCode = dept.getCode();
+		}
+		else {
+			String defaultDept = StrUtil.getNullStr(ff.getDescription());
+			if (!"".equals(defaultDept)) {
+				if (defaultDept.equals("my")) {
+					DeptUserDb dud = new DeptUserDb();
+					Privilege pvg = new Privilege();
+					Iterator<DeptDb> ir = dud.getDeptsOfUser(pvg.getUser(request)).iterator();
+					if (ir.hasNext()) {
+						DeptDb dd = ir.next();
+						deptCode = dd.getCode();
+					}
+				}
+				else if (defaultDept.startsWith("{$") && defaultDept.endsWith("}")) {
+					defaultDept = defaultDept.substring(2, defaultDept.length()-1);
+					// 解析出父节点对应的字段名
+					String fieldName = defaultDept.substring(2, defaultDept.length()-1);
+					if (iFormDAO!=null) {
+						deptCode = iFormDAO.getFieldValue(fieldName);
+					}
+				}
+				else {
+					deptCode = defaultDept;
+				}
+			}
+		}
+
+		return "setCtlValue('" + ff.getName() + "', '" + ff.getType() + "', '" + deptCode + "');\n";
 	}
 
 	@Override
@@ -152,11 +188,7 @@ public class DeptSelectWinCtl extends AbstractMacroCtl {
 	@Override
 	public String getReplaceCtlWithValueScript(FormField ff) {
 		String deptName = "";
-		if (ff.getValue() != null && !ff.getValue().equals("")) {
-/*			DeptMgr dm = new DeptMgr();
-			DeptDb lf = dm.getDeptDb(ff.getValue());
-			deptName = lf.getName();*/
-			
+		if (ff.getValue() != null && !"".equals(ff.getValue())) {
 			DeptMgr dm = new DeptMgr();
         	
         	DeptDb dd = new DeptDb();
@@ -187,68 +219,29 @@ public class DeptSelectWinCtl extends AbstractMacroCtl {
 
 	@Override
 	public String getControlOptions(String userName, FormField ff) {
-        UserDb ud = new UserDb();
-        ud = ud.getUserDb(userName);
-        String unitcode = ud.getUnitCode();
-        // 可能是用admin账户进行测试
-        if (unitcode==null) {
-        	unitcode = DeptDb.ROOTCODE;
-        }        
-        
-        String deptCode = unitcode;
-        boolean isInclude = true; // 是否包含指定的部门
-
-        String defaultDept = StrUtil.getNullStr(ff.getDefaultValueRaw());
-        if (!"".equals(defaultDept)) {
-	        if (defaultDept.equals("my")) {
-	        	DeptUserDb dud = new DeptUserDb();
-	        	Iterator ir = dud.getDeptsOfUser(userName).iterator();
-	        	if (ir.hasNext()) {
-	        		DeptDb lf = (DeptDb)ir.next();
-	        		deptCode = lf.getCode();
-	        	}
-	        }
-	        else if (defaultDept.startsWith("{$") && defaultDept.endsWith("}")) {
-	        	// 解析出对应的字段名
-	        	String fieldName = defaultDept.substring(2, defaultDept.length()-1);
-	        	if (iFormDAO!=null) {
-	        		deptCode = iFormDAO.getFieldValue(fieldName);
-	        	}
-	        }
-	        else if (defaultDept.startsWith("#")){
-	        	deptCode = defaultDept.substring(1);
-	        	isInclude = false;	        			        		
-	        }
-        }             
-        
-        JSONArray childrens = new JSONArray();
-        try {
-        	DeptSelectCtl dsc = new DeptSelectCtl();
-            return dsc.getDeptNameAsOptions(deptCode, childrens, isInclude).toString();
-        } catch (ErrMsgException ex1) {
-            return "";
-        }
+        return "";
 	}
 
 	@Override
 	public String getControlText(String userName, FormField ff) {
 		String deptName = "";
-		if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
+		if (!"".equals(StrUtil.getNullStr(ff.getValue()))) {
 			String deptCode = ff.getValue();
 			DeptDb dd = new DeptDb();
 			dd = dd.getDeptDb(deptCode);
 			deptName = dd.getName();
 		} else {
-			// Privilege privilege = new Privilege();
-			UserDb ud = new UserDb();
-			ud = ud.getUserDb(userName);
-			DeptUserDb udd = new DeptUserDb();
-			Vector vdept = udd.getDeptsOfUser(ud.getName());
-			if (vdept != null && vdept.size() > 0) {
-				String deptCode = ((DeptDb) vdept.get(0)).getCode();
-				DeptDb dd = new DeptDb();
-				dd = dd.getDeptDb(deptCode);
-				deptName = dd.getName();
+			if ("my".equals(ff.getDescription())) {
+				UserDb ud = new UserDb();
+				ud = ud.getUserDb(userName);
+				DeptUserDb udd = new DeptUserDb();
+				Vector<DeptDb> vdept = udd.getDeptsOfUser(ud.getName());
+				if (vdept != null && vdept.size() > 0) {
+					String deptCode = ((DeptDb) vdept.get(0)).getCode();
+					DeptDb dd = new DeptDb();
+					dd = dd.getDeptDb(deptCode);
+					deptName = dd.getName();
+				}
 			}
 		}
 		return deptName;
@@ -262,27 +255,24 @@ public class DeptSelectWinCtl extends AbstractMacroCtl {
 	@Override
 	public String getControlValue(String userName, FormField ff) {
 		String deptCode ="";
-        if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
+        if (!"".equals(StrUtil.getNullStr(ff.getValue()))) {
             deptCode = ff.getValue();
         } else {
-            // Privilege privilege = new Privilege();
-            UserDb ud = new UserDb();
-            ud = ud.getUserDb(userName);
-            DeptUserDb udd = new DeptUserDb();
-            Vector vdept = udd.getDeptsOfUser(ud.getName());
-            if (vdept != null && vdept.size() > 0) {
-                deptCode = ((DeptDb) vdept.get(0)).getCode();
-            }
+        	if ("my".equals(ff.getDescription())) {
+				UserDb ud = new UserDb();
+				ud = ud.getUserDb(userName);
+				DeptUserDb udd = new DeptUserDb();
+				Vector<DeptDb> vdept = udd.getDeptsOfUser(ud.getName());
+				if (vdept != null && vdept.size() > 0) {
+					deptCode = (vdept.get(0)).getCode();
+				}
+			}
         }
         return deptCode;
 	}
 	
 	 @Override
      public String getValueByName(FormField formField, String name) {
- /*    	DeptDb dd = new DeptDb();
-     	String deptCode = dd.getCodeByName(name);
-     	return StrUtil.getNullStr(deptCode);*/
-     	
  		String deptCode = "";
     	
  		HashMap<String, String> map = new HashMap<String, String>();
@@ -299,40 +289,41 @@ public class DeptSelectWinCtl extends AbstractMacroCtl {
  			}		
  			
  			String deptName = "";
- 			String newDeptName[] = name.split("\\\\");
- 			if (newDeptName==null) {
+ 			String[] newDeptName = name.split("\\\\");
+ 			if (newDeptName.length==0) {
  				LogUtil.getLog(getClass()).error("部门为空！");
  				return "";				
  			}
  			int depLevel = newDeptName.length;
- 			for (int j = 0; j < depLevel; j++) {
- 				deptName += deptName.equals("") ? newDeptName[j] : ("-" + newDeptName[j]);
- 			}	
+			for (String s : newDeptName) {
+				deptName += deptName.equals("") ? s : ("-" + s);
+			}
  			deptCode = map.get(deptName);
- 			if (deptCode == null || deptCode.equals("")) {
+ 			if (deptCode == null || "".equals(deptCode)) {
  				LogUtil.getLog(getClass()).error("部门：" + deptName + " 不存在！");
  				return "";
  			}
  		} catch (SQLException e) {
- 			e.printStackTrace();
+ 			LogUtil.getLog(getClass()).error(e);
  		}
  		
  		return deptCode;
      }
      
  	public String getFullNameOfDept(String code) {
- 		DeptDb dd = new DeptDb(code);
- 		String name = dd.getName();
- 		while (!dd.getParentCode().equals("-1")
- 				&& !dd.getParentCode().equals(DeptDb.ROOTCODE)) {
- 			dd = new DeptDb(dd.getParentCode());
- 			if (dd != null && !dd.getParentCode().equals("")) {
- 				name = dd.getName() + "-" + name;
- 			} else {
- 				return "";
- 			}
- 		}
- 		return name;
+		DeptDb dd = new DeptDb();
+		dd = dd.getDeptDb(code);
+		String name = dd.getName();
+		while (!"-1".equals(dd.getParentCode())
+				&& !dd.getParentCode().equals(DeptDb.ROOTCODE)) {
+			dd = dd.getDeptDb(dd.getParentCode());
+			if (!"".equals(dd.getParentCode())) {
+				name = dd.getName() + "-" + name;
+			} else {
+				return "";
+			}
+		}
+		return name;
  	}    	
  	
     /**
@@ -352,24 +343,19 @@ public class DeptSelectWinCtl extends AbstractMacroCtl {
     	if (isBlur) {
     		DeptDb dd = new DeptDb();
     		dd = dd.getDeptDb(value);
-    		Vector vt = new Vector();
+    		Vector<DeptDb> vt = new Vector<>();
     		try {
 				dd.getAllChild(vt, dd);
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			StringBuffer sb = new StringBuffer();
 			sb.append(StrUtil.sqlstr(value));
-			Iterator ir = vt.iterator();
-			while (ir.hasNext()) {
-				dd = (DeptDb)ir.next();
+			for (DeptDb deptDb : vt) {
+				dd = deptDb;
 				StrUtil.concat(sb, ",", StrUtil.sqlstr(dd.getCode()));
 			}
 			return sb.toString();
-
-/*			return "select code from department where code=" +
-          		StrUtil.sqlstr(value) + " or parentCode=" + StrUtil.sqlstr(value);*/
 		}
 		else {
 			return "";

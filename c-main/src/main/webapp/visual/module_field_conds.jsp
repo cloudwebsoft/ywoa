@@ -1,26 +1,28 @@
 <%@ page contentType="text/html;charset=utf-8"%>
-<%@ page import="java.util.*"%>
-<%@ page import="cn.js.fan.util.*"%>
-<%@ page import="com.redmoon.oa.fileark.*"%>
-<%@ page import="org.json.*"%>
-<%@ page import="cn.js.fan.web.*"%>
-<%@ page import="com.cloudwebsoft.framework.db.*"%>
-<%@ page import="com.redmoon.oa.util.*"%>
-<%@ page import="com.redmoon.oa.basic.*"%>
-<%@ page import="com.redmoon.oa.pvg.*"%>
-<%@ page import="com.redmoon.oa.person.*"%>
-<%@ page import="com.redmoon.oa.ui.*"%>
-<%@ page import="com.redmoon.oa.flow.*"%>
-<%@ page import="com.redmoon.oa.visual.*"%>
-<%@ page import="com.redmoon.oa.flow.macroctl.*"%>
-<%@ page import="org.json.JSONObject"%>
-<%@ page import="org.json.JSONArray"%>
+<%@ page import="cn.js.fan.util.ParamUtil"%>
+<%@ page import="cn.js.fan.util.StrUtil"%>
+<%@ page import="cn.js.fan.web.Global"%>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl"%>
+<%@ page import="com.cloudweb.oa.api.ICloudUtil"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService"%>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil"%>
+<%@ page import="com.cloudwebsoft.framework.util.IPUtil"%>
+<%@ page import="com.redmoon.oa.Config"%>
+<%@ page import="com.redmoon.oa.basic.SelectDb"%>
+<%@ page import="com.redmoon.oa.basic.SelectMgr"%>
+<%@ page import="com.redmoon.oa.flow.FormField"%>
+<%@ page import="com.redmoon.oa.flow.FormMgr"%>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr"%>
+<%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit"%>
 <%@ page import="com.redmoon.oa.sys.DebugUtil" %>
-<%@ page import="com.redmoon.oa.Config" %>
+<%@ page import="com.redmoon.oa.ui.SkinMgr" %>
+<%@ page import="com.redmoon.oa.visual.ModuleRelateDb" %>
+<%@ page import="com.redmoon.oa.visual.SQLBuilder" %>
 <%@ page import="org.apache.http.client.utils.URIBuilder" %>
-<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
-<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
-<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="org.json.JSONObject" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.Vector" %>
+<%@ page import="com.redmoon.oa.visual.ModuleUtil" %>
 <%
 	String op = ParamUtil.get(request, "op");
 	String code = ParamUtil.get(request, "code"); // 模块编码
@@ -36,6 +38,10 @@
 
 	Config cfg = new Config();
 	boolean isServerConnectWithCloud = cfg.getBooleanProperty("isServerConnectWithCloud");
+
+	ICloudUtil cloudUtil = SpringUtil.getBean(ICloudUtil.class);
+	String userSecret = cloudUtil.getUserSecret();
+	String ip = IPUtil.getRemoteAddr(request);
 %>
 <!DOCTYPE html>
 <html>
@@ -67,13 +73,16 @@
 <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
 <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
 
+<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+<script src="../js/layui/layui.js" charset="utf-8"></script>
+
 <script type="text/javascript" src="../js/formpost.js"></script>
 <script src="../js/json2.js"></script>
 <style>
 	.form-box {
-		width:300px;
+		width:570px;
 		height:400px;
-		margin:0px 0px 10px 10px;
+		margin:0 0 10px 10px;
 		padding-left:10px;
 		border:1px solid #eeeeee;
 		overflow-x:auto;
@@ -81,7 +90,17 @@
 		float:left;
 	}
 	.cond-title {
-		width: 70px;
+		width: 70px !important;
+	}
+	.form-box div {
+		margin-top: 5px;
+		white-space: nowrap;
+	}
+	.cond-width {
+		width: 50px !important;
+	}
+	.cond-default {
+		width: 120px !important;
 	}
 </style>
 </head>
@@ -116,7 +135,7 @@ String[] btnOrders = StrUtil.split(btn_order, ",");
 
 String btn_script = StrUtil.getNullStr(vsd.getString("btn_script"));
 String[] btnScripts = StrUtil.split(btn_script, "#");
-if (btn_script.replaceAll("#", "").equals("")) {
+if ("".equals(btn_script.replaceAll("#", ""))) {
 	btnScripts = null;
 }
 if (btnNames!=null && btnScripts==null) {
@@ -128,7 +147,7 @@ if (btnNames!=null && btnScripts==null) {
 
 String btn_role = StrUtil.getNullStr(vsd.getString("btn_role"));
 String[] btnRoles = StrUtil.split(btn_role, "#");
-if (btn_role.replaceAll("#", "").equals("")) {
+if ("".equals(btn_role.replaceAll("#", ""))) {
 	btnRoles = null;
 }
 if (btnNames!=null && btnRoles==null) {
@@ -158,7 +177,7 @@ if (btnNames!=null) {
 JSONObject json = null;
 for (i=0; i<len; i++) {
 	String btnName = btnNames[i];	
-	if (btnScripts[i].startsWith("{")) {
+	if (btnScripts[i].startsWith("{") && btnScripts[i].endsWith("}")) {
 		json = new JSONObject(btnScripts[i]);
 		if (json.getString("btnType").equals("queryFields")) {
 		  	hasCond = true;
@@ -229,12 +248,17 @@ if (hasCond) {
   <tr>
     <td align="left">
     <%
-	boolean isToolbar = true;
-	if (json.has("isToolbar")) {
-		isToolbar = json.getInt("isToolbar")==1;
-	}		  
+	boolean isAutoExpand = true;
+	if (json.has("isAutoExpand")) {
+		isAutoExpand = json.getInt("isAutoExpand")==1;
+	}
+	boolean isShowEmptyValMenu = true;
+	if (json.has("isShowEmptyValMenu")) {
+		isShowEmptyValMenu = json.getInt("isShowEmptyValMenu")==1;
+	}
 	%>
-    <input type="checkbox" id="isToolbar" name="isToolbar" value="1" <%=isToolbar?"checked":""%> />&nbsp;置于工具条
+		<input type="checkbox" id="isAutoExpand" name="isAutoExpand" value="1" <%=isAutoExpand?"checked":""%>  title="如勾选，则显示全部条件，如不勾选，则条件默认只显示一行" />&nbsp;自动展开
+		<input type="checkbox" id="isShowEmptyValMenu" name="isShowEmptyValMenu" value="1" <%=isShowEmptyValMenu?"checked":""%>  title="如勾选，则显示全部条件，如不勾选，则条件默认只显示一行" />&nbsp;显示空值选择菜单
     </td>
   </tr>
     <tr >
@@ -264,7 +288,7 @@ if (hasCond) {
           <div>
             <input type="checkbox" name="queryFields" value="<%=fieldDesc%>" />
 			  <%=ff.getTitle()%>&nbsp;&nbsp;
-			  <input name="<%=ff.getName()%>_title" class="cond-title" title="别名"/>
+			  <input name="<%=fieldDesc%>_title" class="cond-title" title="别名"/>
             <%if (ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {%>
             <select name="<%=fieldDesc%>_cond">
               <option value="0">时间段</option>
@@ -273,41 +297,59 @@ if (hasCond) {
             <%
             }else if(ff.getType().equals(FormField.TYPE_MACRO)) {
                 MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+                if (mu == null) {
+					out.print(ff.getTitle() + " 宏控件类型不存在");
+					continue;
+				}
                 int fieldType = mu.getIFormMacroCtl().getFieldType(ff);
-				if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_DOUBLE || fieldType==FormField.FIELD_TYPE_FLOAT || fieldType==FormField.FIELD_TYPE_LONG || fieldType==FormField.FIELD_TYPE_PRICE) {
-			  %>
-			  <select name="<%=fieldDesc%>_cond">
-				  <option value="=" selected="selected">等于</option>
-				  <option value="&gt;">大于</option>
-				  <option value="&lt;">小于</option>
-				  <option value="&gt;=">大于等于</option>
-				  <option value="&lt;=">小于等于</option>
-				  <option value="<%=SQLBuilder.COND_TYPE_SCOPE%>">数值范围</option>
-			  </select>
-			  <input name="<%=fieldDesc%>" type="hidden" />
-			  <%
+                if ("module_field_select".equals(ff.getMacroType())) {
+					%>
+					  <select name="<%=fieldDesc%>_cond">
+						<option value="1">等于</option>
+						<option value="0" selected="selected">包含</option>
+					  </select>
+			  		<%
 				}
 				else {
-                %>
-            <select name="<%=fieldDesc%>_cond">
-              <option value="1">等于</option>
-              <option value="0" selected="selected">包含</option>
-				<%
-					// 基础数据
-					if (ff.getMacroType().equals("macro_flow_select")) {
-						MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
-						IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
-						SelectMgr sm = new SelectMgr();
-						SelectDb sd = sm.getSelect(basicSelectCtl.getDesc(ff));
-						if (sd.getType() == SelectDb.TYPE_LIST) {
-					%>
-					<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
-					<%
-						}
+					if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_DOUBLE || fieldType==FormField.FIELD_TYPE_FLOAT || fieldType==FormField.FIELD_TYPE_LONG || fieldType==FormField.FIELD_TYPE_PRICE) {
+				  %>
+				  <select name="<%=fieldDesc%>_cond">
+					  <option value="=" selected="selected">等于</option>
+					  <option value="&gt;">大于</option>
+					  <option value="&lt;">小于</option>
+					  <option value="&gt;=">大于等于</option>
+					  <option value="&lt;=">小于等于</option>
+					  <option value="<%=SQLBuilder.COND_TYPE_SCOPE%>">数值范围</option>
+				  </select>
+				  <input name="<%=fieldDesc%>" type="hidden" />
+				  <%
 					}
-				%>
-              </select>
-            <%
+					else {
+					%>
+				<select name="<%=fieldDesc%>_cond">
+				  <option value="1">等于</option>
+				  <option value="0" selected="selected">包含</option>
+					<%
+						// 基础数据
+						if ("macro_flow_select".equals(ff.getMacroType())) {
+							MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+							IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
+							SelectMgr sm = new SelectMgr();
+							SelectDb sd = sm.getSelect(basicSelectCtl.getCode(ff));
+							if (sd.getType() == SelectDb.TYPE_LIST) {
+						%>
+						<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
+						<%
+							}
+						} else if ("macro_basic_tree_select_ctl".equals(ff.getMacroType())) {
+						%>
+						<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
+						<%
+						}
+					%>
+				  </select>
+				<%
+					}
 				}
             }
             else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
@@ -341,12 +383,28 @@ if (hasCond) {
             <%
             }
 			%>
+			  宽度
+			  <input name="<%=fieldDesc%>_width" value="" class="cond-width"/>
+			  默认
+			  <input name="<%=fieldDesc%>_default" value="" class="cond-default"/>
+			  <%
+				  if ("macro_year_ctl".equals(ff.getMacroType())) {
+			  %>
+			  <a href="javascript:;" onclick="$('[name=<%=fieldDesc%>_default]').val('{#curYear}')">当年</a>
+			  <%
+				  } else if ("macro_month_ctl".equals(ff.getMacroType())) {
+			  %>
+			  <a href="javascript:;" onclick="$('[name=<%=fieldDesc%>_default]').val('{#curMonth}')">当月</a>
+			  <%
+				  }
+			  %>
 		  </div>
           <%
 	  	}
 		
 		if (!isSub) {	  	
 		  	String fieldTitle = "";
+		  	// 使列表中的main:及other:字段也可以参与查询
 			for (int n=0; n<fields.length; n++) {
 				String field = fields[n];	
 				FormField ff = null;
@@ -379,12 +437,12 @@ if (hasCond) {
 							}
 							else {
 								if ("id".equalsIgnoreCase(ary[4])) {
-								isOtherShowNameId = true;
-								fieldTitle = otherFormDb.getName() + "：" + "ID";
+									isOtherShowNameId = true;
+									fieldTitle = otherFormDb.getName() + "：" + "ID";
 								}
 								else {
-								ff = otherFormDb.getFormField(ary[4]);
-								fieldTitle = otherFormDb.getName() + "：" + ff.getTitle();
+									ff = otherFormDb.getFormField(ary[4]);
+									fieldTitle = otherFormDb.getName() + "：" + ff.getTitle();
 								}
 							}
 						}
@@ -423,6 +481,10 @@ if (hasCond) {
 	            <%
 	                }else if(ff.getType().equals(FormField.TYPE_MACRO)) {
 	                    MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+						if (mu == null) {
+							out.print(ff.getTitle() + " 宏控件类型不存在");
+							continue;
+						}
 	                    int fieldType = mu.getIFormMacroCtl().getFieldType(ff);
 						if (fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG
 								|| fieldType == FormField.FIELD_TYPE_FLOAT || fieldType == FormField.FIELD_TYPE_DOUBLE || fieldType == FormField.FIELD_TYPE_PRICE) {
@@ -466,7 +528,11 @@ if (hasCond) {
 	              <option value="0" selected="selected">包含</option>
 	              <%}%>
 	              </select>
-	            <%}%>			
+	            <%}%>
+				  宽度
+				  <input name="<%=fields[n]%>_width" value="" class="cond-width"/>
+				  默认
+				  <input name="<%=fields[n]%>_default" value="" class="cond-default"/>
 	            </div>
 	          <%
 			}
@@ -483,6 +549,8 @@ if (hasCond) {
 				<option value="&gt;=">大于等于</option>
 				<option value="&lt;=">小于等于</option>
 			</select>
+				宽度
+				<input name="ID_width" value="" class="cond-width"/>
 			</div>
 			<%
 				if (fd.isFlow()) {
@@ -497,6 +565,8 @@ if (hasCond) {
 					<option value="&gt;=">大于等于</option>
 					<option value="&lt;=">小于等于</option>
 				</select>
+				宽度
+				<input name="flowId_width" value="" class="cond-width"/>
 			</div>
 			<div>
 				<input type="checkbox" name="queryFields" value="flow:begin_date"/>
@@ -505,6 +575,8 @@ if (hasCond) {
 					<option value="0">时间段</option>
 					<option value="1">时间点</option>
 				</select>
+				宽度
+				<input name="flow:begin_date_width" value="" class="cond-width"/>
 			</div>
 			<div>
 				<input type="checkbox" name="queryFields" value="flow:end_date"/>
@@ -513,10 +585,12 @@ if (hasCond) {
 					<option value="0">时间段</option>
 					<option value="1">时间点</option>
 				</select>
+				宽度
+				<input name="flow:end_date_width" value="" class="cond-width"/>
 			</div>
 			<%
 				}
-				}
+			}
 			%>
 	          <div>
 	            <input type="checkbox" name="queryFields" value="cws_status" />	    
@@ -525,6 +599,8 @@ if (hasCond) {
 	              <option value="=" selected="selected">等于</option>
 	              </select>
 	            <input name="cws_status" type="hidden" />
+				  宽度
+				  <input name="cws_status_width" value="" class="cond-width"/>
 	          </div>		
 	          <div>
 	            <input type="checkbox" name="queryFields" value="cws_flag" />	    
@@ -532,7 +608,9 @@ if (hasCond) {
 	            <select name="cws_flag_cond">
 	              <option value="=" selected="selected">等于</option>
 	              </select>
-	            <input name="cws_flag" type="hidden" />	
+	            <input name="cws_flag" type="hidden" />
+				  宽度
+				  <input name="cws_flag_width" value="" class="cond-width"/>
 	          </div>
 			<div>
 				<input type="checkbox" name="queryFields" value="cws_id" />
@@ -544,6 +622,8 @@ if (hasCond) {
 					<option value="&gt;=">大于等于</option>
 					<option value="&lt;=">小于等于</option>
 				</select>
+				宽度
+				<input name="cws_id_width" value="" class="cond-width"/>
 			</div>
 	      <%}%>
       	</div>
@@ -562,6 +642,11 @@ if (hasCond) {
         <input type="hidden" name="btnBclass" size="5" value="<%=btnBclasses[i]%>" />              
       </td>
     </tr>
+	<tr><td>
+		注：<BR/>
+		一行的总宽度为24，宽度如果为空，则默认为6，即1/4的宽度<br/>
+		当条件为时间段或数值范围时，默认值无效
+	</td></tr>
 </table>
 </form>
 <script>
@@ -586,12 +671,16 @@ if (hasCond) {
 					success: function (data, status) {
 						data = $.parseJSON(data);
 						if (data.ret=="1") {
-							jAlert(data.msg, "提示", function() {
-								window.location.reload();
+							layer.alert(data.msg, {
+								yes: function() {
+									window.location.reload();
+								}
 							});
 						}
 						else {
-							jAlert(data.msg, "提示");
+							layer.msg(data.msg, {
+								offset: '6px'
+							});
 						}
 					},
 					complete: function (XMLHttpRequest, status) {
@@ -620,7 +709,9 @@ if (hasCond) {
 			},
 			success: function (data, status) {
 				data = $.parseJSON(data);
-				jAlert(data.msg, "提示");
+				layer.msg(data.msg, {
+					offset: '6px'
+				});
 			},
 			complete: function (XMLHttpRequest, status) {
 				$('body').hideLoading();
@@ -639,6 +730,8 @@ if (hasCond) {
 
 		loadDataToWebeditCtrl(o("formBtn<%=i%>"), we);
 		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+		we.AddField("userSecret", "<%=userSecret%>");
+		we.AddField("ip", "<%=ip%>");
 
 		we.AddField("tName", "<%=tName%>");
 		we.AddField("tOrder", "<%=tOrder%>");
@@ -669,12 +762,9 @@ if (hasCond) {
 				},
 				success: function (data, status) {
 					data = $.parseJSON(data);
-					if (data.ret=="1") {
-						jAlert(data.msg, "提示");
-					}
-					else {
-						jAlert(data.msg, "提示");
-					}
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				},
 				complete: function (XMLHttpRequest, status) {
 					$('body').hideLoading();
@@ -686,7 +776,9 @@ if (hasCond) {
 			});
 		}
 		else {
-			jAlert(data.msg, "提示");
+			layer.msg(data.msg, {
+				offset: '6px'
+			});
 		}
 		<%
         }
@@ -696,12 +788,20 @@ if (hasCond) {
 <%
 if (json.has("fields")) {
 	String queryFields = json.getString("fields");
-	String titles = "";
+	String titles = "", widths = "", defaults = "";
 	if (json.has("titles")) {
 		titles = json.getString("titles");
 	}
+	if (json.has("widths")) {
+		widths = json.getString("widths");
+	}
+	if (json.has("defaults")) {
+		defaults = ModuleUtil.decodeFilter(json.getString("defaults"));
+	}
 	String[] ary = StrUtil.split(queryFields, ",");
 	String[] aryTitle = StrUtil.split(titles, ",");
+	String[] aryW = StrUtil.split(widths, ",");
+	String[] aryDefault = StrUtil.split(defaults, ",");
 	if (ary!=null) {
 		for (int k=0; k<ary.length; k++) {
 			if (json.has(ary[k])) {
@@ -718,7 +818,23 @@ if (json.has("fields")) {
 				// 向下兼容
 				if (aryTitle!=null) {
 				%>
-				o("<%=ary[k]%>_title").value = "<%=aryTitle[k]%>";
+				if (o("<%=ary[k]%>_title")) {
+					o("<%=ary[k]%>_title").value = "<%=aryTitle[k]%>";
+				}
+				<%
+				}
+				if (aryW != null) {
+				%>
+				if (o("<%=ary[k]%>_width")) {
+					o("<%=ary[k]%>_width").value = "<%=aryW[k]%>";
+				}
+				<%
+				}
+				if (aryDefault != null) {
+				%>
+				if (o("<%=ary[k]%>_default")) {
+					o("<%=ary[k]%>_default").value = "<%=aryDefault[k]%>";
+				}
 				<%
 				}
 			}
@@ -734,9 +850,12 @@ if (json.has("fields")) {
       <td align="center" class="tabStyle_1_title">条件</td>
     </tr>
     <tr>
-      <td>
-      <input type="checkbox" id="isToolbarNoCond" name="isToolbar" value="1" checked />&nbsp;置于工具条
-      </td>
+		<td>
+			<input type="checkbox" id="isAutoExpand" name="isAutoExpand" value="1" checked
+				   title="如勾选，则显示全部条件，如不勾选，则条件默认只显示一行"/>&nbsp;自动展开
+			<input type="checkbox" id="isShowEmptyValMenu" name="isShowEmptyValMenu" value="1" checked
+				   title="如勾选，则显示全部条件，如不勾选，则条件默认只显示一行"/>&nbsp;显示空值选择菜单
+		</td>
     </tr>
     <tr>
       <td>
@@ -763,7 +882,7 @@ if (json.has("fields")) {
           <div>
             <input type="checkbox" name="queryFields" value="<%=fieldDesc%>" />
             <%=ff.getTitle()%>
-			  <input name="<%=ff.getName()%>_title" class="cond-title" title="别名"/>
+			  <input name="<%=fieldDesc%>_title" class="cond-title" title="别名"/>
 			  <%if (ff.getType().equals(FormField.TYPE_DATE) || ff.getType().equals(FormField.TYPE_DATE_TIME)) {%>
             <select name="<%=fieldDesc%>_cond">
               <option value="0">时间段</option>
@@ -771,15 +890,31 @@ if (json.has("fields")) {
               </select>
             <%
 			} else if(ff.getType().equals(FormField.TYPE_MACRO)) {
-                MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
                 %>
             <select name="<%=fieldDesc%>_cond">
               <option value="1">等于</option>
               <option value="0" selected="selected">包含</option>
+				<%
+					// 基础数据
+					if ("macro_flow_select".equals(ff.getMacroType())) {
+						MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+						IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
+						SelectMgr sm = new SelectMgr();
+						SelectDb sd = sm.getSelect(basicSelectCtl.getCode(ff));
+						if (sd.getType() == SelectDb.TYPE_LIST) {
+				%>
+				<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
+				<%
+					}
+				} else if ("macro_basic_tree_select_ctl".equals(ff.getMacroType())) {
+				%>
+				<option value="<%=SQLBuilder.COND_TYPE_MULTI%>">多选</option>
+				<%
+					}
+				%>
               </select>
             <%
-            }
-			else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
+            } else if (ff.getFieldType()==FormField.FIELD_TYPE_INT || ff.getFieldType()==FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT || ff.getFieldType()==FormField.FIELD_TYPE_LONG || ff.getFieldType()==FormField.FIELD_TYPE_PRICE) {
 			%>
             <select name="<%=fieldDesc%>_cond">
               <option value="=" selected="selected">等于</option>
@@ -799,6 +934,8 @@ if (json.has("fields")) {
               <%}%>
               </select>
             <%}%>
+			  宽度
+			  <input name="<%=fieldDesc%>_width" value="" class="cond-width"/>
           </div>
           <%	
 	  }
@@ -892,11 +1029,13 @@ if (json.has("fields")) {
 			  else{%>
             <select name="<%=fields[n]%>_cond">
               <option value="1">等于</option>
-              <%if (ff.getType().equals(FormField.TYPE_TEXTFIELD) || ff.getType().equals(ff.TYPE_TEXTAREA)) {%>
+              <%if (ff.getType().equals(FormField.TYPE_TEXTFIELD) || ff.getType().equals(FormField.TYPE_TEXTAREA)) {%>
               <option value="0" selected="selected">包含</option>
               <%}%>
               </select>
-            <%}%>	
+            <%}%>
+			  宽度
+			  <input name="<%=fields[n]%>_width" value="" class="cond-width"/>
           </div>
           <%
 	  }	  
@@ -908,6 +1047,8 @@ if (json.has("fields")) {
               <option value="=" selected="selected">等于</option>
               </select>
             <input name="cws_status" type="hidden" />
+			  宽度
+			  <input name="cws_status_width" value="" class="cond-width"/>
           </div>
           <div>
             <input type="checkbox" name="queryFields" value="cws_flag" />	    
@@ -915,7 +1056,9 @@ if (json.has("fields")) {
             <select name="cws_flag_cond">
               <option value="=" selected="selected">等于</option>
             </select>
-            <input name="cws_flag" type="hidden" />	
+            <input name="cws_flag" type="hidden" />
+			  宽度
+			  <input name="cws_flag_width" value="" class="cond-width"/>
           </div>
 		  <div>
 			  <input type="checkbox" name="queryFields" value="cws_id" />
@@ -927,6 +1070,8 @@ if (json.has("fields")) {
 				  <option value="&gt;=">大于等于</option>
 				  <option value="&lt;=">小于等于</option>
 			  </select>
+			  宽度
+			  <input name="cws_id_width" value="" class="cond-width"/>
 		  </div>
 		<%}%>
 		</div>
@@ -960,13 +1105,18 @@ if (json.has("fields")) {
 			},
 			success: function (data, status) {
 				data = $.parseJSON(data);
+				// console.log(data);
 				if (data.ret=="1") {
-					jAlert(data.msg, "提示", function() {
-						window.location.reload();
+					layer.alert(data.msg, {
+						yes: function() {
+							window.location.reload();
+						}
 					});
 				}
 				else {
-					jAlert(data.msg, "提示");
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				}
 			},
 			complete: function (XMLHttpRequest, status) {
@@ -986,6 +1136,8 @@ if (json.has("fields")) {
 
 		loadDataToWebeditCtrl(o("formBtn"), o("webedit"));
 		we.AddField("cwsVersion", "<%=cfg.get("version")%>");
+		we.AddField("userSecret", "<%=userSecret%>");
+		we.AddField("ip", "<%=ip%>");
 
 		we.AddField("tName", "<%=tName%>");
 		we.AddField("tOrder", "<%=tOrder%>");
@@ -1016,12 +1168,16 @@ if (json.has("fields")) {
 				success: function (data, status) {
 					data = $.parseJSON(data);
 					if (data.ret=="1") {
-						jAlert(data.msg, "提示", function() {
-							window.location.reload();
+						layer.alert(data.msg, {
+							yes: function() {
+								window.location.reload();
+							}
 						});
 					}
 					else {
-						jAlert(data.msg, "提示");
+						layer.msg(data.msg, {
+							offset: '6px'
+						});
 					}
 				},
 				complete: function (XMLHttpRequest, status) {
@@ -1034,7 +1190,9 @@ if (json.has("fields")) {
 			});
 		}
 		else {
-			jAlert(data.msg, "提示");
+			layer.msg(data.msg, {
+				offset: '6px'
+			});
 		}
 		<%
         }
@@ -1084,6 +1242,18 @@ if (json.has("fields")) {
 %>
 </body>
 <script>
+	$(function() {
+		$('input, select, textarea').each(function() {
+			if (!$('body').hasClass('form-inline')) {
+				$('body').addClass('form-inline');
+			}
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+				$(this).addClass('form-control');
+				$(this).attr('autocomplete', 'off');
+			}
+		});
+	})
+
 	<%
     if (!isServerConnectWithCloud) {
 	%>

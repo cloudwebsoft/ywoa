@@ -6,12 +6,14 @@ import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.service.IFileService;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.android.Privilege;
 import com.redmoon.oa.fileark.*;
 import com.redmoon.oa.person.UserDb;
-import org.apache.log4j.Logger;
+import com.redmoon.weixin.util.HttpUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,6 +34,9 @@ public class FilecaseController {
     @Autowired
     HttpServletRequest request;
 
+    @Autowired
+    IFileService fileService;
+
     @ResponseBody
     @RequestMapping(value = "/filecase/getdircode", method = RequestMethod.POST, produces = {"application/json;charset=UTF-8;"})
     public String getDirCode(@RequestParam(defaultValue = "", required = true) String skey, @RequestParam(defaultValue = "") String dircode) {
@@ -45,7 +50,7 @@ public class FilecaseController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -65,10 +70,8 @@ public class FilecaseController {
             Leaf lf = new Leaf();
             lf = lf.getLeaf(dircode);
             if (lf != null) {
-                Vector vector = lf.getChildren();
-                Iterator ri = vector.iterator();
-                while (ri.hasNext()) {
-                    Leaf lf_c = (Leaf) ri.next();
+                Vector<Leaf> vector = lf.getChildren();
+                for (Leaf lf_c : vector) {
                     JSONObject children = new JSONObject();
 
                     LeafPriv lp = new LeafPriv(lf_c.getCode());
@@ -80,9 +83,8 @@ public class FilecaseController {
                 }
             }
             json.put("childrens", childrens);
-
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -108,8 +110,7 @@ public class FilecaseController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -145,10 +146,10 @@ public class FilecaseController {
                 sql += " and examine=" + Document.EXAMINE_PASS;
             }
 
-            if (op.equals("search")) {
-                if (cond.equals("title")) {
+            if ("search".equals(op)) {
+                if ("title".equals(cond)) {
                     sql += " and title like " + StrUtil.sqlstr("%" + what + "%");
-                } else if (cond.equals("content")) {
+                } else if ("content".equals(cond)) {
                     //sql = "select distinct id, class1,title,isHome,examine,modifiedDate,color,isBold,expire_date,type,doc_level,createDate from document as d, doc_content as c where d.id=c.doc_id and d.examine<>" + Document.EXAMINE_DUSTBIN;
                     sql += " and c.content like " + StrUtil.sqlstr("%" + what + "%");
                 } else {
@@ -208,14 +209,14 @@ public class FilecaseController {
                         result.put("childrens", childrens);
                     }
                 } catch (Exception e) {
-                    Logger.getLogger(getClass()).error(e.getMessage());
+                    LogUtil.getLog(getClass()).error(e.getMessage());
                 }
             }
             json.put("result", result);
         } catch (JSONException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return json.toString();
     }
@@ -235,8 +236,7 @@ public class FilecaseController {
                 json.put("msg","时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -265,14 +265,13 @@ public class FilecaseController {
                 if (canDownload) {
                     String downPath = "";
                     Vector attachments = doc.getAttachments(1);
-                    Iterator ri = attachments.iterator();
-                    while (ri.hasNext()) {
-                        Attachment am = (Attachment) ri.next();
+                    for (Object attachment : attachments) {
+                        Attachment am = (Attachment) attachment;
                         JSONObject file = new JSONObject();
-                        file.put("name",am.getName());
-                        downPath = "public/android/doc_getfile.jsp?"+"id="+am.getDocId()+"&attachId="+am.getId();
-                        file.put("url",downPath);
-                        file.put("size",String.valueOf(am.getSize()));
+                        file.put("name", am.getName());
+                        downPath = "public/android/doc_getfile.jsp?" + "id=" + am.getDocId() + "&attachId=" + am.getId();
+                        file.put("url", downPath);
+                        file.put("size", String.valueOf(am.getSize()));
                         files.put(file);
                     }
                     json.put("files", files);
@@ -282,7 +281,7 @@ public class FilecaseController {
                 json.put("msg","文档不存在");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -306,8 +305,7 @@ public class FilecaseController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -324,7 +322,7 @@ public class FilecaseController {
         lf = lf.getLeaf(dirCode);
 
         if(lf==null){
-            if (dirCode.equals("camera")) {
+            if ("camera".equals(dirCode)) {
                 lf = new Leaf();
                 lf.setName("现场拍照");
                 lf.setCode(dirCode);
@@ -343,7 +341,7 @@ public class FilecaseController {
                 try {
                     rootleaf.AddChild(lf);
                 } catch (ErrMsgException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                     try {
                         json.put("res", "-1");
                         json.put("msg", "添加目录失败！");
@@ -359,7 +357,7 @@ public class FilecaseController {
                     json.put("msg", "目录不存在");
                     return json.toString();
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -371,63 +369,38 @@ public class FilecaseController {
                 json.put("msg", "权限非法！");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
         Document doc = new Document();
-        // doc.setUnitCode(privilege.getUserUnitCode(getSkey()));
         doc.setKeywords(lf.getName());
         doc.setExamine(2);
-        re = doc.create(dirCode, title, content, 0, "", "", userName,
-                -1, user.getRealName());
-
+        re = doc.create(dirCode, title, content, 0, "", "", userName, -1, user.getRealName());
         if (re) {
-            FileOutputStream out;
             try {
                 Calendar cal = Calendar.getInstance();
-                String year = "" + (cal.get(cal.YEAR));
-                String month = "" + (cal.get(cal.MONTH) + 1);
+                int year = cal.get(Calendar.YEAR);
+                int month = cal.get(Calendar.MONTH);
                 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-                String filepath = cfg.get("file_folder") + "/" + year + "/" + month;
-                String path  = Global.getRealPath()+ filepath;
+                String filePath = cfg.get("file_folder") + "/" + year + "/" + month;
 
-                File file_path = new File(path);
-                if(!file_path.exists()){ //创建文件夹
-                    file_path.mkdirs();
-                }
-                String real_path = file_path.getPath();
                 Attachment att = new Attachment();
-
                 if(files!=null){
-                    for (int i = 0 ; i < files.length ; i++) {
-                        String diskName = FileUpload.getRandName();
-                        diskName += "." + StrUtil.getFileExt(files[i].getOriginalFilename());
-                        out = new FileOutputStream(real_path + File.separator + diskName);
-
-                        InputStream in = files[i].getInputStream();
-                        int size  = in.available(); //文件大小
-                        byte buffer[] = new byte[1024 * 10];
-                        int length = 0;
-                        while ((length = in.read(buffer)) > 0) {
-                            out.write(buffer, 0, length);
-                        }
-                        out.close();
-                        in.close();
+                    for (MultipartFile file : files) {
+                        String diskName = FileUpload.getRandName() + "." + StrUtil.getFileExt(file.getOriginalFilename());
+                        fileService.write(file, filePath, diskName);
 
                         att.setDocId(doc.getId());
-                        att.setFullPath(path + File.separator + diskName);
-                        att.setVisualPath(filepath);
-                        att.setSize(size);
-                        att.setName(files[i].getOriginalFilename());
+                        att.setVisualPath(filePath);
+                        att.setSize(file.getSize());
+                        att.setName(file.getOriginalFilename());
                         att.setDiskName(diskName);
                         att.setPageNum(1);
                         att.setUploadDate(new Date());
                         att.create();
                     }
                 }
-            } catch (FileNotFoundException e1) {
-                e1.printStackTrace();
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
@@ -441,7 +414,7 @@ public class FilecaseController {
                 json.put("createdate", doc.getCreateDate());
 
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         return json.toString();
@@ -462,7 +435,7 @@ public class FilecaseController {
                 json.put("msg","时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -474,7 +447,7 @@ public class FilecaseController {
                 json.put("msg","文件不存在");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         LeafPriv lp = new LeafPriv(doc.getDirCode());
@@ -487,9 +460,9 @@ public class FilecaseController {
                         json.put("msg","操作成功");
                     }
                 } catch (ErrMsgException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             else {
@@ -500,9 +473,9 @@ public class FilecaseController {
                         json.put("msg","操作成功");
                     }
                 } catch (ErrMsgException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -511,7 +484,7 @@ public class FilecaseController {
                 json.put("res","-1");
                 json.put("msg", com.redmoon.oa.pvg.Privilege.MSG_INVALID);
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         return json.toString();

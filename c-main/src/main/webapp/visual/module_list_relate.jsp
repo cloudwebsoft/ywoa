@@ -42,6 +42,7 @@ ModuleSetupDb msd = new ModuleSetupDb();
 msd = msd.getModuleSetupDbOrInit(moduleCodeRelated);
 String formCodeRelated = msd.getString("form_code");
 boolean isEditInplace = msd.getInt("is_edit_inplace")==1;
+boolean isAutoHeight = msd.getInt("is_auto_height")==1;
 
 // 通过选项卡标签关联
 boolean isSubTagRelated = "subTagRelated".equals(mode);
@@ -89,12 +90,17 @@ FormDb fd = new FormDb();
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title><%=msd.getString("name")%></title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/flexigrid/flexigrid.css" />
-<link rel="stylesheet" href="<%=request.getContextPath()%>/js/bootstrap/css/bootstrap.min.css" />  
+<link rel="stylesheet" href="<%=request.getContextPath()%>/js/bootstrap/css/bootstrap.min.css" />
 <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
 	<style>
+		i {
+			margin-right: 3px;
+		}
 		.search-form input,select {
 			vertical-align:middle;
+		}
+		.search-form select {
+			width: 80px;
 		}
 		.search-form input:not([type="radio"]):not([type="button"]):not([type="checkbox"]) {
 			width: 80px;
@@ -103,11 +109,13 @@ FormDb fd = new FormDb();
 		.cond-title {
 			margin: 0 5px;
 		}
+
+		<%=StrUtil.getNullStr(msd.getCss(ConstUtil.PAGE_TYPE_LIST))%>
 	</style>
 	<script src="../inc/common.js"></script>
 	<script src="../js/jquery-1.9.1.min.js"></script>
 	<script src="../js/jquery-migrate-1.2.1.min.js"></script>
-	<script src="../js/flexigrid.js"></script>
+	<script src="../inc/flow_js.jsp"></script>
 	<script src="../js/jquery.raty.min.js"></script>
 	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
@@ -146,6 +154,10 @@ FormDb fd = new FormDb();
 	<script type="text/javascript" src="../js/jquery.editinplace.js"></script>
 	<script src="../inc/map.js"></script>
 	<script type="text/javascript" src="../js/jquery.toaster.js"></script>
+
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+	<link rel="stylesheet" href="../js/soul-table/soulTable.css" media="all">
+	<script src="../js/layui/layui.js" charset="utf-8"></script>
 <%
 fd = fd.getFormDb(formCodeRelated);
 if (!fd.isLoaded()) {
@@ -213,11 +225,12 @@ while (ir.hasNext()) {
 	}
 }
 
+String userName = privilege.getUser(request);
 String orderBy = ParamUtil.get(request, "orderBy");
 String sort = ParamUtil.get(request, "sort");
-if (orderBy.equals("")) {
-	String filter = StrUtil.getNullStr(msd.getString("filter")).trim();
-	boolean isComb = filter.startsWith("<items>") || filter.equals("");
+if ("".equals(orderBy)) {
+	String filter = StrUtil.getNullStr(msd.getFilter(userName)).trim();
+	boolean isComb = filter.startsWith("<items>") || "".equals(filter);
 	// 如果是组合条件，则赋予后台设置的排序字段
 	if (isComb) {
 		orderBy = StrUtil.getNullStr(msd.getString("orderby"));
@@ -227,7 +240,7 @@ if (orderBy.equals("")) {
 		orderBy = "id";
 	}
 }
-if (sort.equals("")) {
+if ("".equals(sort)) {
 	sort = "desc";
 }
 
@@ -235,14 +248,13 @@ com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 int defaultPageSize = cfg.getInt("modulePageSize");
 int pagesize = ParamUtil.getInt(request, "pageSize", defaultPageSize);
 
-String querystr = "";
 int isShowNav = ParamUtil.getInt(request, "isShowNav", 1);
 
 String[] arySQL = SQLBuilder.getModuleListRelateSqlAndUrlStr(request, fd, op, orderBy, sort, relateFieldValue);
 String sqlUrlStr = arySQL[1];
 
-querystr = "op=" + op + "&mode=" + mode + "&tagName=" + StrUtil.UrlEncode(tagName) + "&code=" + moduleCode + "&menuItem=" + menuItem + "&formCode=" + formCode + "&moduleCodeRelated=" + moduleCodeRelated + "&formCodeRelated=" + moduleCodeRelated + "&parentId=" + parentId + "&orderBy=" + orderBy + "&sort=" + sort + "&isShowNav=" + isShowNav;
-if (!sqlUrlStr.equals("")) {
+String querystr = "op=" + op + "&mode=" + mode + "&tagName=" + StrUtil.UrlEncode(tagName) + "&code=" + moduleCode + "&menuItem=" + menuItem + "&formCode=" + formCode + "&moduleCodeRelated=" + moduleCodeRelated + "&formCodeRelated=" + moduleCodeRelated + "&parentId=" + parentId + "&orderBy=" + orderBy + "&sort=" + sort + "&isShowNav=" + isShowNav;
+if (!"".equals(sqlUrlStr)) {
     if (!sqlUrlStr.startsWith("&")) {
 		querystr += "&" + sqlUrlStr;
 	}
@@ -256,7 +268,6 @@ var mapEditable = new Map();
 var mapEditableOptions = new Map();
 var mapCheckboxPresent = new Map;
 <%
-String userName = privilege.getUser(request);
 if (isEditInplace) {
 	// 取得当前用户的可写字段，对在位编辑的字段进行初始化
 	String fieldWrite = mpd.getUserFieldsHasPriv(userName, "write");
@@ -303,16 +314,16 @@ if (isEditInplace) {
 						StringBuffer sb = new StringBuffer();
 						String opts = ifmc.getControlOptions(userName, ff);
 						try {
-							JSONArray arr = new JSONArray(opts);
+							org.json.JSONArray arr = new org.json.JSONArray(opts);
 							for (int i=0; i<arr.length(); i++) {
-								JSONObject json = arr.getJSONObject(i);
+								org.json.JSONObject json = arr.getJSONObject(i);
 								// 不能用getString，因为有些可能为int型
 								StrUtil.concat(sb, ",", json.get("name") + ":" + json.get("value"));
 							}
 						}
 						catch(JSONException e) {
 							DebugUtil.e("module_list_relate.jsp", "选项json解析错误，字段：", ff.getTitle() + " " + ff.getName() + " 中选项为：" + opts);
-							e.printStackTrace();
+							// e.printStackTrace();
 						}
 						%>
 						mapEditable.put("<%=ff.getName()%>", "<%=FormField.TYPE_SELECT%>");
@@ -359,7 +370,7 @@ if (isEditInplace) {
 			else
 				sort = "asc";
 				
-		window.location.href = "module_list_relate.jsp?menuItem=<%=menuItem%>&code=<%=moduleCode%>&parentId=<%=parentId%>&formCode=<%=formCode%>&menuItem=<%=menuItem%>&formCodeRelated=<%=formCodeRelated%>&moduleCodeRelated=<%=moduleCodeRelated%>&orderBy=" + orderBy + "&sort=" + sort + "&isShowNav=<%=isShowNav%>";
+		window.location.href = "module_list_relate.jsp?menuItem=<%=menuItem%>&code=<%=moduleCode%>&parentId=<%=parentId%>&formCode=<%=formCode%>&formCodeRelated=<%=formCodeRelated%>&moduleCodeRelated=<%=moduleCodeRelated%>&orderBy=" + orderBy + "&sort=" + sort + "&isShowNav=<%=isShowNav%>";
 	}
 </script>
 </head>
@@ -387,10 +398,9 @@ while (irMap.hasNext()) {
 }
 querystr += requestParams;
 
-String privurl=request.getRequestURL()+"?"+StrUtil.UrlEncode(querystr, "utf-8");
+// 加上二开传入的参数
+querystr += "&" + params.toString();
 
-int is_workLog = msd.getInt("is_workLog");
-		
 String[] fields = msd.getColAry(false, "list_field");
 String[] fieldsWidth = msd.getColAry(false, "list_field_width");
 String[] fieldsShow = msd.getColAry(false, "list_field_show");
@@ -405,6 +415,12 @@ String btnBclass = StrUtil.getNullStr(msd.getString("btn_bclass"));
 String[] btnBclasses = StrUtil.split(btnBclass, ",");	
 String btnRole = StrUtil.getNullStr(msd.getString("btn_role"));
 String[] btnRoles = StrUtil.split(btnRole, "#");
+
+boolean canView = mpd.canUserView(userName);
+boolean canLog = mpd.canUserLog(userName);
+boolean canManage = mpd.canUserManage(userName);
+
+com.alibaba.fastjson.JSONArray colProps = ModuleUtil.getColProps(msd, false);
 
 boolean isButtonsShow = false;
 isButtonsShow = mpd.canUserAppend(privilege.getUser(request)) ||
@@ -451,9 +467,6 @@ if (!isToolbar) {
 <%
 }
 %>
-<style>
-	<%=msd.getCss(ConstUtil.PAGE_TYPE_LIST)%>
-</style>
 <table id="searchTable" class="percent98" style="<%=strSearchTableDis%>" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>
     <td width="80%" height="28" align="left" style="padding-top:5px">
@@ -463,58 +476,16 @@ if (!isToolbar) {
 	ArrayList<String> dateFieldNamelist = new ArrayList<String>();
 
 	int len = 0;
-	boolean isQuery = false;
-	
-	if (btnNames!=null) {
-		len = btnNames.length;
-		for (int i=0; i<len; i++) {
-		  if (btnScripts[i].startsWith("{")) {
-			Map<String, String> checkboxGroupMap = new HashMap<String, String>();		  
-		  	FormMgr fm = new FormMgr();
-			JSONObject json = new JSONObject(btnScripts[i]);
-			if (json.get("btnType").equals("queryFields")) {
-				String condFields = (String) json.get("fields");
-				String condTitles = "";
-				if (json.has("titles")) {
-					condTitles = (String) json.get("titles");
-				}
-				String[] fieldAry = StrUtil.split(condFields, ",");
-				String[] titleAry = StrUtil.split(condTitles, ",");
-				if (fieldAry.length > 0) {
-					isQuery = true;
-				}
-				for (int j = 0; j < fieldAry.length; j++) {
-					String fieldName = fieldAry[j];
-					String fieldTitle = "#";
-					if (titleAry!=null) {
-						fieldTitle = titleAry[j];
-						if ("".equals(fieldTitle)) {
-							fieldTitle = "#";
-						}
-					}
 
-					String condType = (String) json.get(fieldName);
-					CondUnit condUnit = CondUtil.getCondUnit(request, fd, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
-					out.print("<span class=\"cond-span\">");
-					out.print("<span class=\"cond-title\">");
-					out.print(condUnit.getFieldTitle());
-					out.print("</span>");
-					out.print(condUnit.getHtml());
-					out.print("</span>");
-					out.print("<script>");
-					out.print(condUnit.getScript());
-					out.print("</script>");
-				}
-			}
-		  }		
-		}
+	String condsHtml = ModuleUtil.getConditionHtml(request, msd, dateFieldNamelist);
+	boolean isQuery = !"".equals(condsHtml);
+	out.print(condsHtml);
 
-		// 当doQuery时，需要取相关的数据，所以上面的隐藏输入框必须得有
-		if (isQuery) {
-		%>
-	        <input class="tSearch" type="submit" onclick="doQuery()" value="搜索" />
-		<%
-		}
+	// 当doQuery时，需要取相关的数据，所以上面的隐藏输入框必须得有
+	if (isQuery) {
+	%>
+	<button class="layui-btn layui-btn-primary layui-btn-sm" type="submit" onclick="doQuery()" data-type="reload"><i class="fa fa-search"></i>搜索</button>
+	<%
 	}
 	%>
 		<input type="hidden" name="code" value="<%=moduleCode%>" />
@@ -531,126 +502,103 @@ if (!isToolbar) {
     </td>
   </tr>
 </table>
-<%
-	boolean canView = mpd.canUserView(userName);
-	boolean canLog = mpd.canUserLog(userName);
-	boolean canManage = mpd.canUserManage(userName);
+<script>
+	<%
+    if (!isQuery) {
+    %>
+	$('#searchTable').hide();
+	<%
+    }
+    %>
+</script>
+<table class="layui-hide" id="table_list" lay-filter="<%=moduleCodeRelated%>"></table>
+<script type="text/html" id="toolbar_list">
+	<div class="layui-btn-container">
+		<%if (msd.getInt("btn_add_show") == 1 && mpd.canUserAppend(userName)) {%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="add" title="增加"><i class="fa fa-plus-circle"></i></i></i>增加</button>
+		<%}%>
+		<%if (msd.getInt("btn_edit_show") == 1 && mpd.canUserModify(userName)) {%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-orange" lay-event="edit" title="修改"><i class="fa fa-pencil"></i>修改</button>
+		<%}%>
+		<%if (msd.getInt("btn_del_show") == 1 && (mpd.canUserDel(userName) || canManage)) {%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-red" lay-event="delRows" title="删除"><i class="layui-icon layui-icon-delete"></i>删除</button>
+		<%}%>
+		<%if (mpd.canUserImport(userName)) {%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="importXls" title="导入Excel文件"><i class="fa fa-arrow-circle-o-down"></i>导入</button>
+		<%}%>
+		<%if (mpd.canUserExport(userName)) {%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="exportXls" title="导出Excel文件"><i class="fa fa-file-excel-o"></i>导出</button>
+		<%}%>
+		<%
+			if (btnNames != null && btnBclasses != null) {
+				len = btnNames.length;
+				for (int i = 0; i < len; i++) {
+					boolean isToolBtn = false;
+					if (!btnScripts[i].startsWith("{")) {
+						isToolBtn = true;
+					} else {
+						JSONObject json = new JSONObject(btnScripts[i]);
+						String btnType = json.getString("btnType");
+						if ("batchBtn".equals(btnType) || "flowBtn".equals(btnType)) {
+							isToolBtn = true;
+						}
+					}
+					if (isToolBtn) {
+						// 检查是否拥有权限
+						if (!privilege.isUserPrivValid(request, "admin")) {
+							boolean canSeeBtn = false;
+							if (btnRoles != null && btnRoles.length > 0) {
+								String roles = btnRoles[i];
+								String[] codeAry = StrUtil.split(roles, ",");
+								// 如果codeAry为null，则表示所有人都能看到
+								if (codeAry == null) {
+									canSeeBtn = true;
+								} else {
+									UserDb user = new UserDb();
+									user = user.getUserDb(privilege.getUser(request));
+									RoleDb[] rdAry = user.getRoles();
+									if (rdAry != null) {
+										for (RoleDb roleDb : rdAry) {
+											String roleCode = roleDb.getCode();
+											for (String codeAllowed : codeAry) {
+												if (roleCode.equals(codeAllowed)) {
+													canSeeBtn = true;
+													break;
+												}
+											}
+											if (canSeeBtn) {
+												break;
+											}
+										}
+									}
+								}
+							} else {
+								canSeeBtn = true;
+							}
 
-	StringBuffer colProps = new StringBuffer();
-
-	String promptField = StrUtil.getNullStr(msd.getString("prompt_field"));
-	String promptValue = StrUtil.getNullStr(msd.getString("prompt_value"));
-	String promptIcon = StrUtil.getNullStr(msd.getString("prompt_icon"));
-	boolean isPrompt = false;
-	if (!promptField.equals("") && !promptIcon.equals("")) {
-		isPrompt = true;
-	}
-	if (isPrompt) {
-		colProps.append("{display:'', name:'colPrompt', width:20}");
-	}
-
-	boolean isColOperateShow = true;
-
-	len = fields.length;
-	for (int i=0; i<len; i++) {
-		String fieldName = fields[i];
-		String fieldTitle = fieldsTitle[i];
-
-		String title = "";
-		boolean sortable = true;
-
-		if ("#".equals(fieldTitle)) {
-			if (fieldName.startsWith("main:")) {
-				String[] subFields = StrUtil.split(fieldName, ":");
-				if (subFields.length == 3) {
-					FormDb subfd = new FormDb(subFields[1]);
-					title = subfd.getFieldTitle(subFields[2]);
-					sortable = false;
+							if (!canSeeBtn) {
+								continue;
+							}
+						}
+		%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-green" lay-event="event<%=i%>">
+			<i class="fa <%=btnBclasses[i]%>"></i>
+			<%=btnNames[i]%>
+		</button>
+		<%
+					}
 				}
-			} else if (fieldName.startsWith("other:")) {
-				String[] otherFields = StrUtil.split(fieldName, ":");
-				if (otherFields.length == 5) {
-					FormDb otherFormDb = new FormDb(otherFields[2]);
-					title = otherFormDb.getFieldTitle(otherFields[4]);
-					sortable = false;
-				}
-			} else if (fieldName.equals("cws_creator")) {
-				title = "创建者";
 			}
-			else if (fieldName.equals("ID")) {
-				fieldName = "CWS_MID"; // ModuleController中也作了同样转换
-				title = "ID";
-			}
-			else if (fieldName.equals("cws_progress")) {
-				title = "进度";
-			}
-			else if (fieldName.equals("cws_status")) {
-				title = "状态";
-			}
-			else if (fieldName.equals("flowId")) {
-				title = "流程号";
-			}
-			else if (fieldName.equals("cws_flag")) {
-				title = "冲抵状态";
-			}
-			else if (fieldName.equals("colOperate")) {
-				title = "操作";
-			}
-			else if (fieldName.equals("cws_create_date")) {
-				title = "创建时间";
-			}
-			else if (fieldName.equals("flow_begin_date")) {
-				title = "流程开始时间";
-			}
-			else if (fieldName.equals("flow_end_date")) {
-				title = "流程结束时间";
-			}
-			else if (fieldName.equals("cws_id")) {
-				title = "关联ID";
-			}
-			else {
-				title = fd.getFieldTitle(fieldName);
-			}
-		}
-		else {
-			title = fieldTitle;
-		}
-
-		String w = fieldsWidth[i];
-		int wid = StrUtil.toInt(w, 100);
-		if (w.indexOf("%")==w.length()-1) {
-			w = w.substring(0, w.length()-1);
-			wid = 800*StrUtil.toInt(w, 20)/100;
-		}
-
-		if ("0".equals(fieldsShow[i])) {
-			if ("colOperate".equals(fieldName)) {
-				isColOperateShow = false;
-			}
-			continue;
-		}
-
-		String props;
-		if ("colOperate".equals(fieldName)) {
-			props = "{display:'操作', name:'colOperate', width:" + wid + "}";
-		}
-		else {
-			props = "{display: '" + title + "', name : '" + fieldName + "', width : " + wid + ", sortable : " + sortable + ", align: '" + fieldsAlign[i] + "', hide: false, process:editCol}";
-		}
-
-		StrUtil.concat(colProps, ",", props);
-	}
-
-	// 如果允许显示操作列，且未定义colOperate，则将其加入，宽度默认为150
-	if (isColOperateShow && colProps.lastIndexOf("colOperate")==-1) {
-		StrUtil.concat(colProps, ",", "{display:'操作', name:'colOperate', width:150}");
-	}
-%>
-<table id="grid" style="display:none"></table>
+		%>
+		<%if (privilege.isUserPrivValid(request, "admin")) {%>
+		<button class="layui-btn layui-btn-sm layui-btn-primary layui-border-blue" lay-event="manage"><i class="layui-icon layui-icon-set"></i>管理</button>
+		<%}%>
+	</div>
+</script>
 <%
 	if (!isToolbar) {
 %>
-<span id="switcher" style="cursor:pointer; position: absolute">
+<span id="switcher" style="cursor:pointer; position: absolute; display: none">
 	<img id="switchBtn" src="../images/hide.png" title="显示/隐藏 查询区域"/>
 </span>
 <script>
@@ -711,306 +659,292 @@ function changeSort(sortname, sortorder) {
 function onReload() {
 	doQuery();
 }
+var tableData;
+layui.config({
+	base: '../js/',   // 第三方模块所在目录
+	// version: 'v1.6.2' // 插件版本号
+}).extend({
+	soulTable: 'soul-table/soulTable',
+	tableChild: 'soul-table/tableChild',
+	tableMerge: 'soul-table/tableMerge',
+	tableFilter: 'soul-table/tableFilter',
+	excel: 'soul-table/excel',
+});
 
-var colModel = [<%=colProps.toString()%>];
-flex = $("#grid").flexigrid({
-	<%
-	if (!"search".equals(op)) {
-	%>
-	url: 'moduleListRelate.do?<%=querystr%>',
-	<%
-	}
-	%>
-	params: requestParams,
-	dataType: 'json',
-	colModel : colModel,
-<%
-if (isButtonsShow) {%>		
-	buttons : [
-	<%if (msd.getInt("btn_add_show")==1 && mpd.canUserAppend(userName)) {%>
-		{name: '添加', bclass: 'add', onpress : action},
-	<%}%>
-	<%if (msd.getInt("btn_edit_show")==1 && mpd.canUserModify(userName)) {%>
-		{name: '修改', bclass: 'edit', onpress : action},
-    <%}%>
-	<%if (msd.getInt("btn_edit_show")==1 && (mpd.canUserDel(userName) || canManage)) {%>
-		{name: '删除', bclass: 'delete', onpress : action},
-	<%}%>
-	<%if (mpd.canUserImport(userName)) {%>
-		{name: '导入', bclass: 'import1', onpress : action},
-	<%}%>
-	<%if (mpd.canUserExport(userName)) {%>
-		{name: '导出', bclass: 'export', onpress : action},
-    <%}%>	
-<%
-if (btnNames!=null && btnBclasses!=null) {
-	len = btnNames.length;
-	for (int i=0; i<len; i++) {
-		boolean isToolBtn = false;
-		if (!btnScripts[i].startsWith("{")) {
-			isToolBtn = true;
-		}
-		else {
-			JSONObject json = new JSONObject(btnScripts[i]);
-			String btnType = json.getString("btnType");
-			if ("batchBtn".equals(btnType) || "flowBtn".equals(btnType)) {
-				isToolBtn = true;
-			}
-		}
-		if (isToolBtn) {
-			// 检查是否拥有权限
-			if (!privilege.isUserPrivValid(request, "admin")) {
-				boolean canSeeBtn = false;
-				if (btnRoles!=null && btnRoles.length>0) {				
-					String roles = btnRoles[i];
-					String[] codeAry = StrUtil.split(roles, ",");
-					// 如果codeAry为null，则表示所有人都能看到
-					if (codeAry == null){
-					    canSeeBtn = true;
-					}
-					else{
-						UserDb user = new UserDb();
-						user = user.getUserDb(privilege.getUser(request));
-						RoleDb[] rdAry = user.getRoles();
-						if (rdAry!=null) {
-							for (RoleDb rd : rdAry) {
-								String roleCode = rd.getCode();
-								for (String codeAllowed : codeAry) {
-									if (roleCode.equals(codeAllowed)) {
-										canSeeBtn = true;
-										break;
-									}
-								}
-								if (canSeeBtn) {
-									break;
-								}
-							}
-						}
-					}
-				}
-				else {
-					canSeeBtn = true;
-				}
-				
-				if (!canSeeBtn) {
-					continue;
-				}
-			}
-							
-			// 产品基本信息模块中btnBclasses为null
-			String btnBCls = "";
-			if (btnBclasses!=null) {
-				btnBCls = btnBclasses[i];
-			}
-			%>
-			{name: '<%=btnNames[i]%>', bclass: '<%=btnBCls%>', onpress : action},
-			<%		
-		}
-	}
-}
-%>	
-		{separator: true}	
-		<%if (privilege.isUserPrivValid(request, "admin")) {%>
-		,{name: '管理', bclass: 'manage', onpress : action}
-		<%}%>		
-		<%if (isToolbar) {%>		
-		,{name: '条件', bclass: '', type: 'include', id: 'searchTable'}
+layui.use(['table', 'soulTable'], function () {
+	var table = layui.table;
+	var soulTable = layui.soulTable;
+
+	table.render({
+		elem: '#table_list'
+		, toolbar: '#toolbar_list'
+		, defaultToolbar: ['filter', 'print'/*, 'exports', {
+				title: '提示'
+				,layEvent: 'LAYTABLE_TIPS'
+				,icon: 'layui-icon-tips'
+			}*/]
+		, drag: {toolbar: true}
+		, method: 'post'
+		, url: 'moduleListRelate.do?<%=querystr%>'
+		, cols: [
+			<%=colProps.toString()%>
+		]
+		, id: 'tableList'
+		, page: true
+		, unresize: false
+		, limit: <%=pagesize%>
+		<%if (isAutoHeight) {%>
+		, height: 'full-98'
 		<%}%>
-		],
-<%}%>		
-	/*
-	searchitems : [
-		{display: 'ISO', name : 'iso'},
-		{display: 'Name', name : 'name', isdefault: true}
-		],
-	*/
-	sortname: "<%=orderBy%>",
-	sortorder: "<%=sort%>",
-	usepager: true,
-	checkbox : true,
-	useRp: true,
-	rp: <%=pagesize%>,
-	
-	// title: "通知",
-	singleSelect: true,
-	resizable: false,
-	showTableToggleBtn: true,
-	showToggleBtn: true,
-	onChangeSort: changeSort,
-	onReload: onReload,
-	onToolbarInited: doOnToolbarInited,
-	autoHeight: <%=msd.getInt("is_auto_height")==1 ? true:false%>,
-	width: document.documentElement.clientWidth,
-	height: document.documentElement.clientHeight - 84
-	}
-);
+		, parseData: function (res) { //将原始数据解析成 table 组件所规定的数据
+			return {
+				"code": res.errCode, //解析接口状态
+				"msg": res.msg, //解析提示文本
+				"count": res.total, //解析数据长度
+				"data": res.rows //解析数据列表
+			};
+		}
+		,done: function(res, curr, count){
+			tableData = res.data;
+			soulTable.render(this);
+		}
+	});
 
-function action(com, grid) {
-	if (com=="导出") {
-		var cols = "";
-		$("th[axis*='col']", this.hDiv).each(function() {
-			if (!this.hide) {
-				if(typeof($(this).attr("abbr"))!="undefined") {
-					if (cols=="") {
-						cols = $(this).attr("abbr");
-					}
-					else {
-						cols += "," + $(this).attr("abbr");
+	//头工具栏事件
+	table.on('toolbar()', function (obj) {
+		var checkStatus = table.checkStatus(obj.config.id);
+		switch (obj.event) {
+			case 'add':
+				window.location.href = "module_add_relate.jsp?parentPageType=<%=parentPageType%>&code=<%=StrUtil.UrlEncode(moduleCode)%>&parentId=<%=parentId%>&menuItem=<%=menuItem%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=<%=isShowNav%>";
+				break;
+			case 'edit':
+				var data = checkStatus.data;
+				if (data.length == 0) {
+					layer.msg('请选择记录');
+					return;
+				} else if (data.length > 1) {
+					layer.msg('只能选择一条记录');
+					return;
+				}
+				var id = data[0].id;
+
+				var tabId = getActiveTabId();
+				addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/module_edit_relate.jsp?mode=<%=mode%>&code=<%=moduleCode%>&parentId=<%=parentId%>&id=" + id + "&menuItem=<%=menuItem%>&moduleCodeRelated=<%=moduleCodeRelated%>&formCode=<%=formCode%>&tabIdOpener=" + tabId);
+				break;
+			case 'delRows':
+				var data = checkStatus.data;
+				if (data.length == 0) {
+					layer.msg('请选择记录');
+					return;
+				}
+
+				var ids = '';
+				for (var i in data) {
+					var json = data[i];
+					if (ids == '') {
+						ids = json.id;
+					} else {
+						ids += ',' + json.id;
 					}
 				}
-			}
-		});
-		<%
-		// 检查是否设置有模板
-		Vector vt = ModuleExportTemplateMgr.getTempaltes(request, msd.getString("form_code"));
-		String expUrl = "";
-		// 检查是否设置有模板
-		if (vt.size()>0) {
-			expUrl = request.getContextPath() + "/visual/module_excel_sel_templ.jsp?mode=" + mode + "&isRelate=true";
-		}
-		else {
-			expUrl = request.getContextPath() + "/visual/exportExcelRelate.do";
-		}
-		%>
-		// 生成表单，以post方式，否则IE11下，某些参数可能会有问题
-		// 如果用window.open方式，则IE11中当含有coo_address、coo_address_cond时，接收到coo_address的值为?_address_cond=0?_address=，而chrome中不会
-		var expForm = o("exportForm");
-		if (expForm != null) {
-			expForm.parentNode.removeChild(expForm);
-		}
-		expForm = document.createElement("FORM");
-		document.body.appendChild(expForm);
 
-		expForm.style.display = "none";
-		expForm.target = "_blank";
-		expForm.method = "post";
-		expForm.action = "<%=expUrl%>";
-		var fields = $(".search-form").serializeArray();
-		jQuery.each( fields, function(i, field) {
-			expForm.innerHTML += "<input name='" + field.name + "' value='" + field.value + "'/>";
-		});
-		expForm.innerHTML += "<input name='cols' value='" + cols + "'/>";
-		expForm.submit();
-	}
-	else if (com=="添加") {
-		window.location.href = "module_add_relate.jsp?parentPageType=<%=parentPageType%>&code=<%=StrUtil.UrlEncode(moduleCode)%>&parentId=<%=parentId%>&menuItem=<%=menuItem%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=<%=isShowNav%>";
-	}
-	else if (com=="修改") {
-		var id = getIdsSelected(true);
-		if (id=='') {
-			jAlert('请选择一条记录!', '提示');
-			return;
-		}
+				layer.confirm('您确定要删除么？', {icon: 3, title: '提示'}, function (index) {
+					//do something
+					try {
+						onBeforeModuleDel(ids);
+					} catch (e) {
+					}
 
-		var tabId = getActiveTabId();
-    	addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/module_edit_relate.jsp?mode=<%=mode%>&code=<%=moduleCode%>&parentId=<%=parentId%>&id=" + id + "&menuItem=<%=menuItem%>&moduleCodeRelated=<%=moduleCodeRelated%>&formCode=<%=formCode%>&tabIdOpener=" + tabId);
-	} else if (com == '导入'){
-		window.location.href = "module_import_excel.jsp?formCode=<%=formCodeRelated%>&code=<%=moduleCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&parentId=<%=parentId%>&menuItem=<%=menuItem%>";
-	}
-	else if (com=="管理") {
-		addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/module_field_list.jsp?formCode=<%=msd.getString("form_code")%>&code=<%=msd.getString("code")%>");
-	}	
-	else if (com=='删除') {
-		var ids = getIdsSelected();
-		if (ids=="") {
-			jAlert('请选择记录!','提示');
-			return;
-		}
-		jConfirm("您确定要删除么？","提示",function(r){
-			if (!r) {
-				return;
-			} else {
-				try {
-					onBeforeModuleDel<%=moduleCodeRelated%>(ids);
-				}
-				catch (e) {}
-
-				$.ajax({
-					type: "post",
-					url: "<%=request.getContextPath()%>/visual/moduleDelRelate.do",
-					data: {
-						code: "<%=moduleCodeRelated%>",
-						mode: "<%=mode%>",
-						parentId: "<%=parentId%>",
-						parentModuleCode: "<%=moduleCode%>",
-						ids: ids
-					},
-					dataType: "html",
-					beforeSend: function(XMLHttpRequest){
-						$("body").showLoading();
-					},
-					success: function(data, status){
-						data = $.parseJSON(data);
-						jAlert(data.msg, "提示");
-						if (data.ret=="1") {
-							doQuery();
-							try {
-								onModuleDel<%=moduleCodeRelated%>(ids);
+					$.ajax({
+						type: "post",
+						url: "<%=request.getContextPath()%>/visual/moduleDelRelate.do",
+						data: {
+							code: "<%=moduleCodeRelated%>",
+							mode: "<%=mode%>",
+							parentId: "<%=parentId%>",
+							parentModuleCode: "<%=moduleCode%>",
+							ids: ids
+						},
+						dataType: "html",
+						beforeSend: function(XMLHttpRequest){
+							$("body").showLoading();
+						},
+						success: function(data, status){
+							data = $.parseJSON(data);
+							jAlert(data.msg, "提示");
+							if (data.ret=="1") {
+								doQuery();
+								try {
+									onModuleDel<%=moduleCodeRelated%>(ids);
+								}
+								catch (e) {}
 							}
-							catch (e) {}
+						},
+						complete: function(XMLHttpRequest, status){
+							$("body").hideLoading();
+						},
+						error: function(XMLHttpRequest, textStatus){
+							// 请求出错处理
+							alert(XMLHttpRequest.responseText);
 						}
-					},
-					complete: function(XMLHttpRequest, status){
-						$("body").hideLoading();
-					},
-					error: function(XMLHttpRequest, textStatus){
-						// 请求出错处理
-						alert(XMLHttpRequest.responseText);
+					});
+					layer.close(index);
+				});
+				// layer.msg(checkStatus.isAll ? '全选': '未全选');
+				break;
+			case 'importXls':
+				window.location.href = "module_import_excel.jsp?formCode=<%=formCodeRelated%>&code=<%=moduleCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&parentId=<%=parentId%>&menuItem=<%=menuItem%>";
+				break;
+			case 'exportXls':
+				var cols = "";
+				// 找出未隐藏的表头
+				$("div[lay-id='" + obj.config.id + "']").find('.layui-table th').each(function () {
+					if ($(this).data("field") && $(this).data("field") != "0" && $(this).data("field") != "colOperate") {
+						if (!$(this).hasClass('layui-hide')) {
+							if (cols == "") {
+								cols = $(this).data("field");
+							} else {
+								cols += "," + $(this).data("field");
+							}
+						}
 					}
 				});
-			}
-		})
-	}
-	
-	<%
-	if (btnNames!=null) {
-		len = btnNames.length;
-		for (int i=0; i<len; i++) {
-			if (!btnScripts[i].startsWith("{")) {
-			%>
-				if (com=='<%=btnNames[i]%>') {
-				<%=btnScripts[i]%>
-				}
 			<%
+            // 检查是否设置有模板
+			Vector vt = ModuleExportTemplateMgr.getTempaltes(request, msd.getString("form_code"));
+			String expUrl = "";
+			// 检查是否设置有模板
+			if (vt.size()>0) {
+				expUrl = request.getContextPath() + "/visual/module_excel_sel_templ.jsp?mode=" + mode + "&isRelate=true";
 			}
 			else {
-				JSONObject json = new JSONObject(btnScripts[i]);
-				String btnType = json.getString("btnType");
-				if ("batchBtn".equals(btnType)) {
-					String batchField = json.getString("batchField");
-					String batchValue = json.getString("batchValue");
-				%>
-					if (com=='<%=btnNames[i]%>') {
-						var ids = getIdsSelected();
-						if (ids=="") {
-							jAlert('请选择记录!','提示');
-							return;
-						}
-						jConfirm("您确定要" + com + "么？","提示",function(r){
-							if(!r){return;}
-							else{
-								batchOp(ids, "<%=batchField%>", "<%=batchValue%>");
-								// window.location.href = "module_list_relate.jsp?action=batchOp&batchField=<%=StrUtil.UrlEncode(batchField)%>&batchValue=<%=StrUtil.UrlEncode(batchValue)%>&<%=querystr%>&privurl=<%=privurl%>&id=" + ids + "&pageSize=" + flex.getOptions().rp;
-							}
-						})					
-					}
-				<%
-				}
-				else if ("flowBtn".equals(btnType)) {
-					String flowTypeCode = json.getString("flowTypeCode");
-					Leaf lf = new Leaf();
-					lf = lf.getLeaf(flowTypeCode);
-				%>
-					if (com == '<%=btnNames[i]%>') {
-						addTab('<%=lf.getName()%>', '<%=request.getContextPath()%>/flow_initiate1_do.jsp?typeCode=<%=flowTypeCode%>');
-					}
-					<%
-				}
+				expUrl = request.getContextPath() + "/visual/exportExcelRelate.do";
 			}
-		}
+			%>
+				// 生成表单，以post方式，否则IE11下，某些参数可能会有问题
+				// 如果用window.open方式，则IE11中当含有coo_address、coo_address_cond时，接收到coo_address的值为?_address_cond=0?_address=，而chrome中不会
+				var expForm = o("exportForm");
+				if (expForm != null) {
+					expForm.parentNode.removeChild(expForm);
+				}
+				expForm = document.createElement("FORM");
+				document.body.appendChild(expForm);
+
+				expForm.style.display = "none";
+				expForm.target = "_blank";
+				expForm.method = "post";
+				expForm.action = "<%=expUrl%>";
+				var fields = $(".search-form").serializeArray();
+				jQuery.each( fields, function(i, field) {
+					expForm.innerHTML += "<input name='" + field.name + "' value='" + field.value + "'/>";
+				});
+				expForm.innerHTML += "<input name='cols' value='" + cols + "'/>";
+				expForm.submit();
+				break;
+			case 'manage':
+				addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/module_field_list.jsp?formCode=<%=msd.getString("form_code")%>&code=<%=msd.getString("code")%>");
+				break;
+				//自定义头工具栏右侧图标 - 提示
+			case 'LAYTABLE_TIPS':
+				layer.alert('这是工具栏右侧自定义的一个图标按钮');
+				break;
+				<%
+                if (btnNames!=null) {
+                    len = btnNames.length;
+                    for (int i=0; i<len; i++) {
+                        if (!btnScripts[i].startsWith("{")) {
+                        %>
+			case 'event<%=i%>':
+				<%=ModuleUtil.renderScript(request, btnScripts[i])%>
+				break;
+				<%
+                }
+                else {
+                    JSONObject json = new JSONObject(btnScripts[i]);
+                    if ((json.get("btnType")).equals("batchBtn")) {
+                        String batchField = json.getString("batchField");
+                        String batchValue = json.getString("batchValue");
+                    %>
+			case 'event<%=i%>':
+				var data = checkStatus.data;
+				if (data.length == 0) {
+					layer.msg('请选择记录');
+					return;
+				}
+
+				var ids = '';
+				for (var i in data) {
+					var json = data[i];
+					if (ids == '') {
+						ids = json.id;
+					} else {
+						ids += ',' + json.id;
+					}
+				}
+				jConfirm("您确定要<%=btnNames[i]%>么？", "提示", function (r) {
+					if (!r) {
+						return;
+					} else {
+						batchOp(ids, "<%=batchField%>", "<%=batchValue%>");
+					}
+				})
+				break;
+				<%
+                    }
+                    else if ("flowBtn".equals(json.get("btnType"))) {
+						String flowTypeCode = json.getString("flowTypeCode");
+						Leaf lf = new Leaf();
+						lf = lf.getLeaf(flowTypeCode);
+						if (lf == null) {
+							DebugUtil.e(getClass(), "流程型按钮 flowTypeCode", flowTypeCode + " 不存在");
+						}
+						else {
+                        %>
+			case 'event<%=i%>':
+				addTab('<%=lf.getName()%>', '<%=request.getContextPath()%>/flow_initiate1_do.jsp?typeCode=<%=flowTypeCode%>');
+				break;
+				<%
+                    }
+                }
+    	}
 	}
-%>
 }
+%>
+		}
+	});
+
+	$(document).on('click','.layui-table-cell',function(){
+		var $parent = $(this).parent();
+		var dataIndex = $parent.parent().attr('data-index');
+		// 如果所点的是数据行
+		if (dataIndex >= 0) {
+			var id = tableData[dataIndex].id;
+			var fieldName = $parent.attr('data-field');
+			editCol(this, id, fieldName);
+		}
+	})
+
+	$('.search-form .layui-btn').on('click', function (e) {
+		e.preventDefault();
+		table.reload('tableList', {
+			page: {
+				curr: 1 //重新从第 1 页开始
+			}
+			, where: $('.search-form').serializeJsonObject()
+		}, 'data');
+	});
+
+	//监听表格排序问题
+	table.on('sort()', function (obj) { //注：sort lay-filter="对应的值"
+		table.reload('tableList', { //testTable是表格容器id
+			initSort: obj // 记录初始排序，如果不设的话，将无法标记表头的排序状态。 layui 2.1.1 新增参数
+			, where: {
+				orderBy: obj.field //排序字段
+				, sort: obj.type //排序方式
+			}
+		});
+	});
+});
 
 function batchOp(ids, batchField, batchValue) {
 	$.ajax({
@@ -1073,19 +1007,13 @@ function getIdsSelected(onlyOne) {
 
 function onLoad() {
 	try {
-		onFlexiGridLoaded();
+		onModuleListLoaded();
 	}
 	catch(e) {}
 }
 
 function doQuery() {
-	var params = $("form").serialize();
-	var urlStr = "<%=request.getContextPath()%>/visual/moduleListRelate.do?" + params;
-	$("#grid").flexOptions({url : urlStr});
-	$("#grid").flexReload();
-
-	// 置全选checkbox为非选中状态
-	$(".hDiv input[type='checkbox']").removeAttr("checked");
+	layui.table.reload('tableList');
 }
 
 function editCol(celDiv, id, colName) {
@@ -1100,34 +1028,32 @@ function editCol(celDiv, id, colName) {
 		selectOptions = opts.value;
 	}
 	
-	$( celDiv ).click(function() {
-		// 该插件会上传值：original_value、update_value
-		$(celDiv).editInPlace({
-			field_type: fieldType,
-			url: "moduleEditInPlace.do",
-			saving_text: "保存中...",
-			saving_image: "../images/loading.gif",
-			select_text: "请选择",
-			select_options: selectOptions,
-			checkbox_present: mapCheckboxPresent.get(colName) != null ? mapCheckboxPresent.get(colName).value : "",
-			params: "colName=" + colName + "&id=" + id + "&code=<%=StrUtil.UrlEncode(moduleCodeRelated)%>",
-			error:function(obj) {
-				alert(JSON.stringify(obj));
-			},
-			success:function(data) {
-				data = $.parseJSON(data);
-				if (data.ret==-1) { // 值未更改
-					return;
-				}
-				else {
-					$.toaster({
-						"priority" : "info",
-						"message" : data.msg
-					});
-					// $("#grid").flexReload();
-				}
+	// 该插件会上传值：original_value、update_value
+	$(celDiv).editInPlace({
+		field_type: fieldType,
+		url: "moduleEditInPlace.do",
+		saving_text: "保存中...",
+		saving_image: "../images/loading.gif",
+		select_text: "请选择",
+		select_options: selectOptions,
+		checkbox_present: mapCheckboxPresent.get(colName) != null ? mapCheckboxPresent.get(colName).value : "",
+		params: "colName=" + colName + "&id=" + id + "&code=<%=StrUtil.UrlEncode(moduleCodeRelated)%>",
+		error:function(obj) {
+			alert(JSON.stringify(obj));
+		},
+		success:function(data) {
+			data = $.parseJSON(data);
+			if (data.ret==-1) { // 值未更改
+				return;
 			}
-		});
+			else {
+				$.toaster({
+					"priority" : "info",
+					"message" : data.msg
+				});
+				// $("#grid").flexReload();
+			}
+		}
 	});
 }
 

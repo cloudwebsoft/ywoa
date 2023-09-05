@@ -1,13 +1,18 @@
 package com.cloudwebsoft.framework.web;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -15,6 +20,8 @@ import cn.js.fan.cache.jcs.RMCache;
 import org.jdom.output.Format;
 import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 /**
  *
@@ -34,7 +41,6 @@ public class DomainMgr {
     final String group = "Domain";
     final String ALLREDIRECT = "ALLDomain";
 
-    static Logger logger;
     public final String FILENAME = "domain.xml";
 
     public static Document doc = null;
@@ -45,8 +51,6 @@ public class DomainMgr {
 
     public DomainMgr() {
         rmCache = RMCache.getInstance();
-
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -55,17 +59,25 @@ public class DomainMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
+                Resource resource = new ClassPathResource("domain.xml");
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
                 root = doc.getRootElement();
-                fin.close();
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(DomainMgr.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(DomainMgr.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -80,7 +92,7 @@ public class DomainMgr {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -90,7 +102,7 @@ public class DomainMgr {
             pu = (DomainUnit)rmCache.getFromGroup(subDomain, group);
         }
         catch (Exception e) {
-            logger.error("getDomainUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDomainUnit:" + e.getMessage());
         }
         if (pu==null) {
             init();
@@ -119,7 +131,7 @@ public class DomainMgr {
                             rmCache.putInGroup(subDomain, group,
                                                pu);
                         } catch (Exception e) {
-                            logger.error("getDomainUnit:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getDomainUnit:" + e.getMessage());
                         }
                         return pu;
                     }
@@ -134,7 +146,7 @@ public class DomainMgr {
         try {
             v = (Vector) rmCache.getFromGroup(ALLREDIRECT, group);
         } catch (Exception e) {
-            logger.error("getAllDomainUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getAllDomainUnit:" + e.getMessage());
         }
         if (v==null) {
             v = new Vector();
@@ -151,7 +163,7 @@ public class DomainMgr {
                     rmCache.putInGroup(ALLREDIRECT, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllDomainUnit:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllDomainUnit:" + e.getMessage());
                 }
             }
         }

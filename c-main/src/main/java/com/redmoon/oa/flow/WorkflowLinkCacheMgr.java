@@ -1,14 +1,14 @@
 package com.redmoon.oa.flow;
 
 import cn.js.fan.cache.jcs.*;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class WorkflowLinkCacheMgr extends AbstractRMCacheMgr {
     public WorkflowLinkCacheMgr() {
     }
 
     public void initLogger() {
-        logger = Logger.getLogger(WorkflowLinkCacheMgr.class.getName());
+
     }
 
     public void initCachePrix() {
@@ -18,12 +18,12 @@ public class WorkflowLinkCacheMgr extends AbstractRMCacheMgr {
     public WorkflowLinkDb getWorkflowLinkDb(int id) {
         WorkflowLinkDb wfa = (WorkflowLinkDb) rmCache.get(cachePrix + id);
         if (wfa == null) {
-            //logger.info( "getWorkflow: id=" + id);
+            //LogUtil.getLog(getClass()).info( "getWorkflow: id=" + id);
             wfa = new WorkflowLinkDb(id);
             try {
                 rmCache.put(cachePrix + id, wfa);
             } catch (Exception e) {
-                logger.error("getWorkflowLinkDb:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getWorkflowLinkDb:" + e.getMessage());
             }
             return wfa;
         } else
@@ -34,7 +34,7 @@ public class WorkflowLinkCacheMgr extends AbstractRMCacheMgr {
         try {
             rmCache.remove(cachePrix + id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 

@@ -8,6 +8,7 @@
 
 package com.redmoon.weixin.aes;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.sys.DebugUtil;
 
 import java.security.MessageDigest;
@@ -57,7 +58,7 @@ class SHA1 {
 			return hexstr.toString();
 		} catch (Exception e) {
 			DebugUtil.log(SHA1.class, "getSHA1", "token=" + token + " timestamp=" + timestamp + " nonce=" + nonce + " encrypt=" + encrypt);
-			e.printStackTrace();
+			LogUtil.getLog(SHA1.class).error(e);
 			throw new AesException(AesException.ComputeSignatureError);
 		}
 	}

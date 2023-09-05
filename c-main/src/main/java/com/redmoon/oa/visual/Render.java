@@ -1,28 +1,19 @@
 package com.redmoon.oa.visual;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.servlet.http.*;
-
-import cn.js.fan.util.*;
-
-import cn.js.fan.web.SkinUtil;
-import com.cloudweb.oa.api.IFlowRender;
+import cn.js.fan.util.DateUtil;
+import cn.js.fan.util.ErrMsgException;
+import cn.js.fan.util.ParamUtil;
+import cn.js.fan.web.Global;
 import com.cloudweb.oa.api.IModuleRender;
+import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
-import com.cloudwebsoft.framework.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.*;
-import com.redmoon.oa.flow.macroctl.*;
 import com.redmoon.oa.kernel.License;
-import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
-
-import com.redmoon.oa.base.IFormMacroCtl;
+import com.redmoon.oa.shell.BSHShell;
+import com.redmoon.oa.util.BeanShellUtil;
 import org.htmlparser.Parser;
 import org.htmlparser.filters.TagNameFilter;
 import org.htmlparser.tags.*;
@@ -34,7 +25,13 @@ import org.jdom.input.SAXBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.InputSource;
-import com.redmoon.oa.sys.DebugUtil;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>Title: </p>
@@ -119,13 +116,30 @@ public class Render {
         String ieVersion = fvd.getString("ie_version");
     	FormParser fp = new FormParser();
     	Vector<FormField> fields = fp.parseCtlFromView(fvd.getString("content"), ieVersion, fd);
-        
         String content = getContentMacroReplaced(null, form, fields);
         
         return rendForAdd(content, fields);
     }
     
     public String rendForAdd(String content, Vector<FormField> fields) {
+		String script = msd.getScript("preProcess");
+		// LogUtil.getLog(getClass()).info("rendForAdd 模块预处理事件 formCode=" + fd.getCode() + " script=" + script);
+		if (script != null) {
+			BSHShell bs = new BSHShell();
+			bs.set(ConstUtil.SCENE, ConstUtil.SCENE_MODULE_PRE_PROCESS);
+			String pageType = ParamUtil.get(request, "pageType");
+			bs.set("action", "add");
+			bs.set("request", request);
+			bs.set("moduleCode", msd.getCode());
+			bs.set("formCode", fd.getCode());
+			bs.set("fields", fields);
+			bs.set("userName", SpringUtil.getUserName());
+			bs.set("request", request);
+			bs.set("pageType", pageType);
+			bs.set("parentId", ParamUtil.getLong(request, "parentId", -1));
+			bs.eval(script);
+		}
+
 		IModuleRender moduleRender = (IModuleRender) SpringUtil.getBean("moduleRender");
 		return moduleRender.rendForAdd(msd, fd, content, fields);
     }
@@ -148,7 +162,7 @@ public class Render {
      * @param msd
      * @return
      */
-    public String rend(ModuleSetupDb msd) {    	
+    public String rend(ModuleSetupDb msd) {
     	this.msd = msd;
     	
     	String formCode = msd.getString("form_code");
@@ -207,8 +221,16 @@ public class Render {
         FormDAO fdao = fdm.getFormDAO(visualObjId);
         
         Vector<FormField> fields = fdao.getFields();
+        long t = System.currentTimeMillis();
         String content = getContentMacroReplaced(fdao, fd.getContent(), fields);
-        return rend(fdao, formElementId, content, fields);
+        if (Global.getInstance().isDebug()) {
+			LogUtil.getLog(getClass()).info("Render getContentMacroReplaced " + (System.currentTimeMillis() - t) + " ms");
+		}
+        String r = rend(fdao, formElementId, content, fields);
+		if (Global.getInstance().isDebug()) {
+			LogUtil.getLog(getClass()).info("Render rend " + (System.currentTimeMillis() - t) + " ms");
+		}
+        return r;
     }
 
     /**
@@ -217,13 +239,24 @@ public class Render {
      * @return String
      */
     public String report(boolean isNest) {
-        FormDAOMgr fdm = new FormDAOMgr(fd);
+		long t = System.currentTimeMillis();
+		FormDAOMgr fdm = new FormDAOMgr(fd);
         FormDAO fdao = fdm.getFormDAO(visualObjId);
+		if (Global.getInstance().isDebug()) {
+			LogUtil.getLog(getClass()).info("Render report after getFormDAO take " + (System.currentTimeMillis() - t) + " ms");
+		}
         Vector<FormField> fields = fdao.getFields();
 
-        String content = getContentMacroReplaced(fdao, fd.getContent(), fields);
+		String content = getContentMacroReplaced(fdao, fd.getContent(), fields);
+		if (Global.getInstance().isDebug()) {
+			LogUtil.getLog(getClass()).info("Render report after getContentMacroReplaced take " + (System.currentTimeMillis() - t) + " ms");
+		}
 		IModuleRender moduleRender = (IModuleRender) SpringUtil.getBean("moduleRender");
-		return moduleRender.report(fdao, content, isNest);
+		String re = moduleRender.report(fdao, content, isNest);
+		if (Global.getInstance().isDebug()) {
+			LogUtil.getLog(getClass()).info("Render report after report take " + (System.currentTimeMillis() - t) + " ms");
+		}
+		return re;
     }
 
     public String report() {
@@ -428,10 +461,9 @@ public class Render {
 				}
 			}
 		} catch (IOException | JDOMException | JSONException | ParserException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(Render.class).error(ex);
 		} catch (ErrMsgException ex) {
-			ex.printStackTrace();
-			LogUtil.getLog(WorkflowUtil.class).trace(ex);
+			LogUtil.getLog(Render.class).error(ex);
 		}
 
 		return formContent;

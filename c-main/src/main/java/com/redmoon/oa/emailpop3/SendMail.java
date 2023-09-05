@@ -31,7 +31,6 @@ import com.sun.org.apache.bcel.internal.generic.RETURN;
 
 import jxl.*;
 import jxl.read.biff.*;
-import org.apache.log4j.*;
 import sun.misc.*;
 import com.cloudwebsoft.framework.util.LogUtil;
 import cn.js.fan.web.Global;
@@ -59,9 +58,7 @@ public class SendMail {
     int emailId = 0;
 
     FileUpload fu = new FileUpload();
-
-    Logger logger = Logger.getLogger(SendMail.class.getName());
-
+    
 	final String SSL_FACTORY = "javax.net.ssl.SSLSocketFactory";
 
     public void setmailFooter(String s) throws Exception {
@@ -393,7 +390,7 @@ public class SendMail {
                 		try {
 							emailAddrDb.save();
 						} catch (ResKeyException e) {
-							e.printStackTrace();
+                            LogUtil.getLog(getClass()).error(e);
 						}
                 	}
                 	
@@ -420,7 +417,7 @@ public class SendMail {
                      		try {
      							emailAddrDb.save();
      						} catch (ResKeyException e) {
-     							e.printStackTrace();
+                                LogUtil.getLog(getClass()).error(e);
      						}
                      	}
                      }
@@ -446,7 +443,7 @@ public class SendMail {
                      		try {
      							emailAddrDb.save();
      						} catch (ResKeyException e) {
-     							e.printStackTrace();
+                                LogUtil.getLog(getClass()).error(e);
      						}
                      	}
                      }
@@ -476,8 +473,7 @@ public class SendMail {
                 
                 
             } catch (ErrMsgException e) {
-                LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         return re;
@@ -488,13 +484,13 @@ public class SendMail {
             Transport.send(msg);
         }
         catch (SendFailedException sendfailedexception) {
-            logger.error("send1:" + sendfailedexception.getMessage());
+            LogUtil.getLog(getClass()).error("send1:" + sendfailedexception.getMessage());
             errinfo = sendfailedexception.getMessage();
             return false;
         }
         catch (MessagingException e) {
-            // logger.error("send2:" + e.getMessage());
-            logger.error("send2:" + StrUtil.trace(e));
+            // LogUtil.getLog(getClass()).error("send2:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("send2:" + StrUtil.trace(e));
             errinfo = e.getMessage();
             return false;
         }
@@ -563,11 +559,13 @@ public class SendMail {
         CleanUp cln = null; // Clean up the image file
         HttpSession session = null;
         session = request.getSession(false);
-        if (session == null)
+        if (session == null) {
             session = request.getSession(true);
+        }
         String strlc = (String) session.getAttribute("lc"); //listenercount
-        if (strlc == null)
+        if (strlc == null) {
             strlc = "0";
+        }
         int lc = Integer.parseInt(strlc);
 
         String excelFilePath = null;
@@ -578,21 +576,21 @@ public class SendMail {
             cln = new CleanUp(tempAttachFilePath + fi.diskName);
             session.setAttribute("bindings.listener" + lc, cln);
 
-            if (fi.getFieldName().equals("excelFile")) {
+            if ("excelFile".equals(fi.getFieldName())) {
                 excelFilePath = tempAttachFilePath + fi.diskName;
                 continue;
             }
             try {
                 setAttachFile(tempAttachFilePath + fi.diskName, fi.name);
             } catch (Exception e2) {
-                logger.error("getMailInfo setAttachFile:" + e2.getMessage());
+                LogUtil.getLog(getClass()).error("getMailInfo setAttachFile:" + e2.getMessage());
             }
         }
 
         setSubject(subject);
 
         String type = StrUtil.getNullStr(mfu.getFieldValue("type"));
-        if (type.equals("input") || type.equals("")) {
+        if ("input".equals(type) || "".equals(type)) {
             setBody(content, true);
 
             to = to.replaceAll("，", ",");
@@ -604,14 +602,14 @@ public class SendMail {
             int len = ary.length;
             for (int i=0; i<len; i++) {
                 setSendTo(ary[i].trim());
-                if (send())
+                if (send()) {
                     out.print("<div>发送至" + ary[i] + "成功！</div>");
-                else {
+                } else {
                     out.print("<div>发送至" + ary[i] + "失败:" + errinfo + "</div>");
                 }
             }
         }
-        else if (type.equals("excel_addr")) {
+        else if ("excel_addr".equals(type)) {
             setBody(content, true);
 
             if (excelFilePath == null) {
@@ -639,7 +637,7 @@ public class SendMail {
                     }
                     catch (AddressException e) {
                         out.print("<div>发送至" + addr + "失败:" + e.getMessage() + "</div>");
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                         continue;
                     }
                     if (send())
@@ -648,17 +646,12 @@ public class SendMail {
                         out.print("<div>发送至" + addr + "失败:" + errinfo + "</div>");
                     }
                 }
-            } catch (BiffException ex) {
+            } catch (BiffException | IOException ex) {
                 out.print("发送失败：" + ex.getMessage());
-                ex.printStackTrace();
-                return;
-            } catch (IOException ex) {
-                out.print("发送失败：" + ex.getMessage());
-                ex.printStackTrace();
-                return;
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
-        else if (type.equals("excel_addr_content")) {
+        else if ("excel_addr_content".equals(type)) {
             if (excelFilePath==null) {
                 out.print("请选择Excel文件！");
                 return;
@@ -686,7 +679,7 @@ public class SendMail {
                      }
                      catch (AddressException e) {
                          out.print("<div>发送至" + addr + "失败:" + e.getMessage() + "</div>");
-                         e.printStackTrace();
+                         LogUtil.getLog(getClass()).error(e);
                          continue;
                     }
 
@@ -699,32 +692,17 @@ public class SendMail {
 
                      oldBodyPart = mimebodypart;
 
-                     if (send())
+                     if (send()) {
                          out.print("<div>发送至" + addr + "成功！</div>");
-                     else {
+                     } else {
                          out.print("<div>发送至" + addr + "失败:" + errinfo + "</div>");
                      }
                  }
-             } catch (BiffException ex) {
+             } catch (BiffException | IOException ex) {
                  out.print("发送失败：" + ex.getMessage());
-                 ex.printStackTrace();
-                 return;
-             } catch (IOException ex) {
-                 out.print("发送失败：" + ex.getMessage());
-                 ex.printStackTrace();
-                 return;
-            }
+                 LogUtil.getLog(getClass()).error(ex);
+             }
         }
-
-
-
-        /*
-        // 13952867098@139.com,bestfeng@163.com，后者能收到，而前者不能
-        setSendTo(ary);
-        send();
-        */
-
-
     }
 
     /**
@@ -799,13 +777,9 @@ public class SendMail {
             	blindTo = blindTo.replaceAll("，", ",");
             	blindSendAry = blindTo.split(","); //密送者
             }
-            
-            
-            
-            
             initMsgCopy(toAry ,copySendAry, blindSendAry, subject, content, true,receipt_state,email,msg_level);
         } catch (Exception e1) {
-            logger.error("SendMail initMsg:" + e1.getMessage());
+            LogUtil.getLog(getClass()).error("SendMail initMsg:" + e1.getMessage());
         }
 
         // 处理附件
@@ -832,7 +806,7 @@ public class SendMail {
             try {
                 setAttachFile(tempAttachFilePath + fi.diskName, fi.name);
             } catch (Exception e2) {
-                logger.error("getMailInfo setAttachFile:" + e2.getMessage());
+                LogUtil.getLog(getClass()).error("getMailInfo setAttachFile:" + e2.getMessage());
             }
         }
 
@@ -848,27 +822,7 @@ public class SendMail {
                     setAttachFile(Global.getRealPath() + att.getVisualPath() +
                                   "/" + att.getDiskName(), att.getName());
                 } catch (Exception ex) {
-                    logger.error("getMailInfo setAttachFile2:" + ex.getMessage());
-                }
-            }
-        }
-
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        String file_netdisk = cfg.get("file_netdisk");
-
-        // 网盘文件
-        String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-        if (netdiskFiles!=null) {
-            int len = netdiskFiles.length;
-            com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-            for (int i=0; i<len; i++) {
-                int id = StrUtil.toInt(netdiskFiles[i]);
-                att = att.getAttachment(id);
-                try {
-                    setAttachFile(Global.getRealPath() + file_netdisk + "/" + att.getVisualPath() +
-                                  "/" + att.getDiskName(), att.getName());
-                } catch (Exception ex) {
-                    logger.error("getMailInfo setAttachFile2:" + ex.getMessage());
+                    LogUtil.getLog(getClass()).error("getMailInfo setAttachFile2:" + ex.getMessage());
                 }
             }
         }
@@ -954,7 +908,7 @@ public class SendMail {
         	
             //initMsg(to, subject, content, true);
         } catch (Exception e1) {
-            logger.error("SendMail initMsg:" + e1.getMessage());
+            LogUtil.getLog(getClass()).error("SendMail initMsg:" + e1.getMessage());
         }
 
         // 处理附件
@@ -964,7 +918,7 @@ public class SendMail {
             try {
                 setAttachFile(att.getFullPath(), att.getName());
             } catch (Exception e2) {
-                logger.error("getMailInfo1 setAttachFile:" + e2.getMessage());
+                LogUtil.getLog(getClass()).error("getMailInfo1 setAttachFile:" + e2.getMessage());
             }
         }
     }
@@ -1023,7 +977,7 @@ public class SendMail {
     		
     		
     	} catch (Exception e1) {
-    		logger.error("SendMail initMsg:" + e1.getMessage());
+    		LogUtil.getLog(getClass()).error("SendMail initMsg:" + e1.getMessage());
     	}
     
     }
@@ -1042,7 +996,7 @@ public class SendMail {
         public void valueBound(HttpSessionBindingEvent e) {
             // The user's session has begun;	m_filename	indicates
             // the name of the image file that will be used for this user's session.
-            //System.out.println("Bound event: " + e.toString()
+            //LogUtil.getLog(getClass()).info("Bound event: " + e.toString()
             //	 + "\n m_filename: " + m_filename);
         }
 
@@ -1052,7 +1006,7 @@ public class SendMail {
             if (delFile != null) {
                 delFile.delete();
             }
-            //System.out.println("Unbound event: " + e.toString()
+            //LogUtil.getLog(getClass()).info("Unbound event: " + e.toString()
             //	+ "\n m_filename: " + m_filename);
         }
     }

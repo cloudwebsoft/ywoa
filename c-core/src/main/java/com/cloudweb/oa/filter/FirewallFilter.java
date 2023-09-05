@@ -2,6 +2,7 @@ package com.cloudweb.oa.filter;
 
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.sys.DebugUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +15,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Slf4j
-@WebFilter(urlPatterns="/*",filterName="fireWallFilter")
-@Order(2)
+//@WebFilter(urlPatterns="/*",filterName="fireWallFilter")
+//@Order(2)
 public class FirewallFilter implements Filter {
     FilterConfig config;
 
@@ -24,6 +25,13 @@ public class FirewallFilter implements Filter {
                          FilterChain chain) throws ServletException, IOException {
         if (req instanceof HttpServletRequest) {
             HttpServletRequest req1 = (HttpServletRequest) req;
+
+            // 预检请求直接放行，因为预检请求头部中不带有自定义的Authorization，否则预检如果被302重定向，则下一步的modular/list也会被报cors错误（仅管其带有Authorization）
+            if ("OPTIONS".equals(req1.getMethod())) {
+                chain.doFilter(req, res);
+                return;
+            }
+
             Privilege privilege = new Privilege();
 
             String requrl = req1.getRequestURL().toString();
@@ -45,7 +53,10 @@ public class FirewallFilter implements Filter {
                     com.redmoon.oa.security.Config scfg = com.redmoon.oa.security.Config.getInstance();
                     boolean isAccessUpfileNeedLogin = scfg.getBooleanProperty("isAccessUpfileNeedLogin");
                     if ("/".equals(path) ||
+                            path.contains(".css") ||
                             (!isAccessUpfileNeedLogin && path.contains("/upfile")) ||
+                            path.contains("/lte/css/") ||  // 从前端iframe直接进入时无session
+                            path.contains("/lte/fonts/") || // 从前端iframe直接进入时无session
                             path.contains("/actuator") ||
                             path.contains("/WXCallBack") ||
                             path.contains("/WXAddressCallBackServlet") ||
@@ -95,12 +106,16 @@ public class FirewallFilter implements Filter {
                             path.contains("document") ||
                             path.contains("module_check") || // 模块中字段的验证，如是否邮箱、手机号、身份证等
                             path.contains("/static") ||
-                            path.contains("/img_show") || // 导出至word时，图片宏控件需用到img_show.jsp
-                            requrl.contains("/error.jsp")) {
+                            path.contains("/showImg") || // 导出至word时，图片宏控件需用到
+                            path.contains("/error") ||
+                            path.contains(".html") ||
+                            path.contains("/mobile")
+                            // path.contains("/modular")   // modular/list 接口在options预检时需放行
+                    ) {
                         ;
                     } else {
                         com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("Filter error: path=" + path);
-                        String url = Global.getFullRootPath(req1) + "/error.jsp?type=login";
+                        String url = Global.getFullRootPath(req1) + "/error.jsp?type=login&url=" + requrl;
                         ((HttpServletResponse) res).sendRedirect(url);
                         return;
                     }
@@ -109,7 +124,7 @@ public class FirewallFilter implements Filter {
                     // 如果是流程测试员
                     String tester = (String) Privilege.getAttribute(req1, Privilege.SESSION_OA_FLOW_TESTER);
                     if (tester != null) {
-                        // 如果流程测试员不是当前的登录用户，则仅允许进入flow_dispose.jsp及flow_list_debugger.jsp
+                        // 如果流程测试员不是当前的登录用户，则仅允许进入flowDispose.do及flow_list_debugger.jsp
                         if (!tester.equals(privilege.getUser(req1))) {
                             if (!(path.contains("/skin") ||
                                     path.contains("error.jsp") ||
@@ -117,7 +132,8 @@ public class FirewallFilter implements Filter {
                                     path.contains("/inc") ||
                                     path.contains(".css") ||
                                     path.contains("images") ||
-                                    path.contains("flow_dis") || // flow_dispose.jsp
+                                    path.contains("flow_disp") || // flow_dispose_ajax_att.jsp
+                                    path.contains("flowDispose") ||
                                     path.contains("getFuncVal.do") ||
                                     // path.indexOf("flow_dispose_ajax_att")!=-1 || // flow_dispose_ajax_att.jsp
                                     path.contains("debugger") ||  // flow_list_debugger.jsp
@@ -153,14 +169,16 @@ public class FirewallFilter implements Filter {
                                     path.contains("public/getfile") || // WFDesigner需用到
                                     path.contains("favicon.ico") ||
 									path.contains("flow/") ||
-                                    path.contains("flow_modify_show_designer") ||
-                                    path.contains("module_list_sel")
+                                    path.contains("flowShowChartPage") ||
+                                    path.contains("module_list_sel") ||
+                                    path.contains("/dwr/") ||
+                                    path.contains("/info")
                             )) {
                                 try {
                                     DebugUtil.e(getClass(), "doFilter", "tester invalid path=" + path);
                                     privilege.logout(req1, (HttpServletResponse) res);
                                 } catch (ErrMsgException e) {
-                                    e.printStackTrace();
+                                    LogUtil.getLog(getClass()).error(e);
                                 }
                                 String url = Global.getFullRootPath(req1) + "/index";
                                 ((HttpServletResponse) res).sendRedirect(url);

@@ -6,7 +6,8 @@ import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Vector;
 
 public class BoardroomUsedStatusDb extends ObjectDb {
@@ -15,7 +16,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
     public BoardroomUsedStatusDb() {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("FlowTypeDb:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("FlowTypeDb:默认数据库名为空！");
         isInitFromConfigDB = false;
         init();
     }
@@ -25,7 +26,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
         this.id = id;
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("FlowTypeDb:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("FlowTypeDb:默认数据库名为空！");
         load();
         init();
     }
@@ -64,7 +65,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
                 mc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("插入时出错！");
         } finally {
             if (conn != null) {
@@ -93,7 +94,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
                 bc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -121,7 +122,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
             pstmt.setInt(8, id);
             re = conn.executePreUpdate()>0?true:false;
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -142,7 +143,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                logger.error("load:流程类型 " + id +
+                LogUtil.getLog(getClass()).error("load:流程类型 " + id +
                              " 在数据库中未找到.");
             } else {
                 boardroomId = rs.getInt(1);
@@ -155,12 +156,14 @@ public class BoardroomUsedStatusDb extends ObjectDb {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {
@@ -170,6 +173,7 @@ public class BoardroomUsedStatusDb extends ObjectDb {
         }
     }
 
+    @Override
     public ListResult listResult(String listsql, int curPage, int pageSize) throws
             ErrMsgException {
         int total = 0;
@@ -207,13 +211,15 @@ public class BoardroomUsedStatusDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {
@@ -246,12 +252,14 @@ public class BoardroomUsedStatusDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("isBoardroomUsing:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isBoardroomUsing:" + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {

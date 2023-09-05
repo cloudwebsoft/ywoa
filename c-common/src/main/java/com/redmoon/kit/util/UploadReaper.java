@@ -3,9 +3,7 @@ package com.redmoon.kit.util;
 import java.io.*;
 import java.util.*;
 
-import org.apache.log4j.*;
 import cn.js.fan.web.Global;
-import cn.js.fan.util.DateUtil;
 
 /**
  *
@@ -21,7 +19,6 @@ import cn.js.fan.util.DateUtil;
  * @version 1.0
  */
 public class UploadReaper extends Thread {
-    Logger logger = Logger.getLogger(UploadReaper.class.getName());
 
     private static long reapInterval = 1000*60*60*6; // 每隔6小时刷新一次
     private static UploadReaper uploadReaper = null;
@@ -103,7 +100,6 @@ public class UploadReaper extends Thread {
                 while (ir.hasNext()) {
                     String fileId = (String)ir.next();
                     UploadDdxc.uploadFileInfos.remove(fileId);
-                    System.out.println("UploadReaper run: Delete UploadFileInfo " + fileId);
                 }
             }
 

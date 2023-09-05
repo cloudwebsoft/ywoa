@@ -4,8 +4,6 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
@@ -17,17 +15,13 @@ import com.redmoon.oa.flow.WorkflowDb;
 
 public class MeetingValidator implements IFormValidator {
 
-	Logger logger = Logger.getLogger(MeetingValidator.class.getName());
-
 	@Override
 	public String getExtraData() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public boolean isUsed() {
-		// TODO Auto-generated method stub
 		return true;
 	}
 
@@ -44,14 +38,10 @@ public class MeetingValidator implements IFormValidator {
 
 	@Override
 	public void setExtraData(String arg0) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void setIsUsed(boolean arg0) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override

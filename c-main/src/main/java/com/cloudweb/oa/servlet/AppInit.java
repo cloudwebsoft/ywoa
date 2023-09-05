@@ -1,19 +1,21 @@
 package com.cloudweb.oa.servlet;
 
 import cn.js.fan.cache.jcs.RMCache;
-import cn.js.fan.kernel.Scheduler;
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.RandomSecquenceCreator;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Config;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysProperties;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.service.eventchange.EventChangeService;
 import com.redmoon.oa.kernel.InitializeThread;
 import com.redmoon.oa.kernel.SchedulerManager;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.util.TwoDimensionCode;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
@@ -53,13 +55,10 @@ public class AppInit implements Servlet {
      */
     @Override
     public void destroy() {
-        System.out.println(Global.AppName + " has been stopped.");
+        LogUtil.getLog(getClass()).info(Global.AppName + " has been stopped.");
         SchedulerManager sm = SchedulerManager.getInstance();
 		// 结束调度
         sm.shutdown();
-
-        // 当realod时停止该线程，以免tomcat因该线程存在，不能完全clear，致出现log4j错误
-        Scheduler.getInstance().doExit();
     }
 
     /**
@@ -90,49 +89,43 @@ public class AppInit implements Servlet {
      */
     @Override
     public void init(javax.servlet.ServletConfig servletConfig) throws ServletException {
-        System.out.println(Global.AppName + " has been started.");
+        LogUtil.getLog(getClass()).info(Global.AppName + " has been started.");
 
-		// 检查redis服务器连接
+        // 检查redis服务器连接
 		if (Global.getInstance().isUseCache()) {
 			try {
 				boolean isUseRedis = Global.getInstance().isUseRedis();
 				if (isUseRedis) {
-					String redisHost = Global.getInstance().getRedisHost();
-					int redisPort =  Global.getInstance().getRedisPort();
-					String redisPassword = Global.getInstance().getRedisPassword();
+                    SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                    if (!sysProperties.isRedisCluster()) {
+                        String redisHost = Global.getInstance().getRedisHost();
+                        int redisPort = StrUtil.toInt(Global.getInstance().getRedisPort(), 6379);
+                        String redisPassword = Global.getInstance().getRedisPassword();
 
-                    Jedis jedis = new Jedis(redisHost, redisPort);
-                    if (!"".equals(redisPassword)) {
-                        jedis.auth(redisPassword);
-                    }
-                    String ping = jedis.ping();
-                    if ("PONG".equals(ping)) {
-                        RMCache.getInstance().clear();
-                        System.out.println(" Redis服务器连接成功！ ");
-                    } else {
-                        System.out.println(" Redis服务器连接失败！ ");
+                        Jedis jedis = new Jedis(redisHost, redisPort);
+                        if (!"".equals(redisPassword)) {
+                            jedis.auth(redisPassword);
+                        }
+                        String ping = jedis.ping();
+                        if ("PONG".equals(ping)) {
+                            RMCache.getInstance().clear();
+                            LogUtil.getLog(getClass()).info("Redis服务器连接成功");
+                        } else {
+                            LogUtil.getLog(getClass()).info("Redis服务器连接失败");
+                        }
                     }
                 }
             } catch (CacheException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } catch (JedisConnectionException e) {
-                System.out.println(" Redis服务器连接失败！ ");
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error("Redis服务器连接失败");
+                LogUtil.getLog(getClass()).error(e);
             }
         }
-
-		Config config = new Config();
 
 		if (Global.getInstance().isSchedule()) {
 			// 调度初始化
 			SchedulerManager.getInstance();
-
-			Scheduler.initInstance(1000);
-			System.out.println("AppInit: Scheduler initInstance");
-
-			// 加载调度项
-			config.initScheduler();
-			System.out.println("AppInit: Scheduler unit inited");
 		}
 
 		// 加载工作日历初始化线程
@@ -150,11 +143,10 @@ public class AppInit implements Servlet {
 			String sql = "update sms_send_record set msg_flag='0' where is_sended=0 and msg_id=-1 and sendtime>? and send_count<? and is_timing=0";
 			JdbcTemplate jt = new JdbcTemplate();
 			try {
-				int r = jt.executeUpdate(sql, new Object[]{d, new Integer(sendMaxCountOnFail)});
-				System.out.println("AppInit: restore sms " + r);
-			} catch (SQLException ex) {
-				ex.printStackTrace();
-				com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(StrUtil.trace(ex));
+				int r = jt.executeUpdate(sql, new Object[]{d, sendMaxCountOnFail});
+                LogUtil.getLog(getClass()).error("AppInit: restore sms " + r);
+            } catch (SQLException ex) {
+                LogUtil.getLog(getClass()).error(ex);
 			}
 		}
 
@@ -173,45 +165,6 @@ public class AppInit implements Servlet {
 			keyValue = StrUtil.PadString(keyValue, '0', 24, true);
 			cfg.put("key", keyValue);
 		}
-
-		// 启动openfire
-		com.redmoon.oa.Config oacfg = new com.redmoon.oa.Config();
-		if (oacfg.getBooleanProperty("isLarkUsed")) {
-			String path = Global.getAppPath();
-			File file = new File(path);
-			String basePath = file.getParent();
-			path = basePath + "\\openfire\\bin\\openfire.bat";
-			file = new File(path);
-			if (!file.exists()) {
-				path = basePath + "\\yimi_openfire1.0\\bin\\openfire.bat";
-				file = new File(path);
-			}
-			try {
-				StringBuilder sb = new StringBuilder();
-				BufferedReader br = new BufferedReader(new FileReader(file));
-				String buffer = null;
-				while ((buffer = br.readLine()) != null) {
-					if (buffer.startsWith("cd ")) {
-						continue;
-					}
-					if (buffer.equals("set \"CURRENT_DIR=%cd%\"")) {
-						buffer = "cd " + file.getParent() + "\r\n" + buffer;
-					}
-					sb.append(buffer).append("\r\n");
-				}
-				br.close();
-
-                BufferedWriter bw = new BufferedWriter(new FileWriter(file));
-                bw.write(sb.toString());
-                bw.close();
-                Runtime.getRuntime().exec("cmd.exe /c \"" + path + "\"");
-            } catch (IOException e) {
-                e.printStackTrace();
-				com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(path + "----" + StrUtil.trace(e));
-
-            }
-        }
-
 
         // 注册钉钉通讯录回调事件
         com.redmoon.dingding.Config dingdingCfg = com.redmoon.dingding.Config.getInstance();

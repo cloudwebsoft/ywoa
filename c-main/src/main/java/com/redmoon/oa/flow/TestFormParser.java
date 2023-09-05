@@ -1,6 +1,8 @@
 package com.redmoon.oa.flow;
 
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.regex.*;
 import java.util.Vector;
 import java.util.Iterator;
@@ -10,10 +12,10 @@ public class TestFormParser {
         Pattern patt = Pattern.compile("Windows NT 10\\.0");
         Matcher mat = patt.matcher("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
         if(mat.find()){
-            System.out.println("find");
+            LogUtil.getLog(TestFormParser.class).info("find");
         }
         else {
-            System.out.println("not find");
+            LogUtil.getLog(TestFormParser.class).info("not find");
         }
         if (true) return;
 
@@ -39,7 +41,7 @@ public class TestFormParser {
 
             Vector v = new Vector();
             while (m.find()) {
-                System.out.println(m.group() + "---" + m.group(1));
+                LogUtil.getLog(TestFormParser.class).info(m.group() + "---" + m.group(1));
                 String val = m.group(2);
                 v.addElement(val);
             }
@@ -48,7 +50,7 @@ public class TestFormParser {
             int i = 0;
             while (ir.hasNext()) {
                 String str = (String) ir.next();
-                System.out.println("getValuesOfInput:" + str);
+                LogUtil.getLog(TestFormParser.class).info("getValuesOfInput:" + str);
                 ary[i] = str;
                 i++;
             }
@@ -63,10 +65,10 @@ public class TestFormParser {
                 Matcher m = p.matcher("<select style=\"color\" name=ss' id=\"color\" title=hh' style=\"color\" size='2' value=蓝风><option value=xx selected>xx</option></select>");
                 boolean result = m.find();
                 while (result) {
-                    System.out.println("该次查找获得匹配组的数量为：" + m.groupCount());
-                    System.out.println("group=" + m.group());
+                    LogUtil.getLog(getClass()).info("该次查找获得匹配组的数量为：" + m.groupCount());
+                    LogUtil.getLog(getClass()).info("group=" + m.group());
                     for (int i = 1; i <= m.groupCount(); i++) {
-                        System.out.println("第" + i + "组的子串内容为： " + m.group(i));
+                        LogUtil.getLog(getClass()).info("第" + i + "组的子串内容为： " + m.group(i));
                     }
                     result = m.find();
                 }
@@ -82,7 +84,7 @@ public class TestFormParser {
 
         str = "ddd,fff,kkk,,,s";
         ary = str.split(",");
-        System.out.println("length=" + ary.length);
+        LogUtil.getLog(TestFormParser.class).info("length=" + ary.length);
 
         str = "<td width=\"226\" align=\"left\"><select title=\"加班类别\" name=\"jblb\" canNull=\"1\" maxV=\"\" maxT=\"x=\" minV=\"\" minT=\"d=\" fieldType=\"0\"><option selected=\"\" value=\"平时\">平时</option><option value=\"休息日\">休息日</option><option value=\"节假日\">节假日</option></select>&nbsp;</td></tr>";
         fp = new FormParser(str);
@@ -99,10 +101,10 @@ public class TestFormParser {
         Matcher m = p.matcher("one \"cat,two cats cafts in the yard");
         boolean result = m.find();
         while (result) {
-            System.out.println("该次查找获得匹配组的数量为：" + m.groupCount());
-            System.out.println("group=" + m.group());
+            LogUtil.getLog(TestFormParser.class).info("该次查找获得匹配组的数量为：" + m.groupCount());
+            LogUtil.getLog(TestFormParser.class).info("group=" + m.group());
             for (int i = 1; i <= m.groupCount(); i++) {
-                System.out.println("第" + i + "组的子串内容为： " + m.group(i));
+                LogUtil.getLog(TestFormParser.class).info("第" + i + "组的子串内容为： " + m.group(i));
             }
             result = m.find();
         }
@@ -121,12 +123,12 @@ public class TestFormParser {
         while (result) {
             i++;
             m.appendReplacement(sb, "Kevin");
-            System.out.println("第" + i + "次匹配后sb的内容是：" + sb);
+            LogUtil.getLog(TestFormParser.class).info("第" + i + "次匹配后sb的内容是：" + sb);
             //继续查找下一个匹配对象
             result = m.find();
         }
         //最后调用appendTail()方法将最后一次匹配后的剩余字符串加到sb里；
         m.appendTail(sb);
-        System.out.println("调用m.appendTail(sb)后sb的最终内容是:" + sb.toString());
+        LogUtil.getLog(TestFormParser.class).info("调用m.appendTail(sb)后sb的最终内容是:" + sb.toString());
     }
 }

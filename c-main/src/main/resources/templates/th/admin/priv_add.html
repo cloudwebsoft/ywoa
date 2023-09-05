@@ -1,0 +1,87 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>管理权限 - 添加</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <form method="post" name="form1" id="form1" style="margin-top: 20px">
+                <table class="table table-bordered table-hover" border="0" align="center" cellpadding="0" cellspacing="0">
+                    <tr class="active">
+                        <td height="31" colspan="2" align="center">
+                            添加权限
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="91" height="31" align="center">编码</td>
+                        <td align="left">
+                            <div class="col-lg-9 form-inline form-group">
+                            <input name="priv" class="form-control"/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">描述</td>
+                        <td align="left">
+                            <div class="col-lg-9 form-inline form-group">
+                            <input name="desc" class="form-control"/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="32" align="center">层级</td>
+                        <td align="left">
+                            <div class="col-lg-9 form-inline form-group">
+                            <select id="layer" name="layer" class="form-control">
+                                <option value="1">大类</option>
+                                <option value="2">小类</option>
+                            </select>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+            <div class="text-center">
+                <button id="btnOk" class="btn btn-default">确定</button>
+                &nbsp;&nbsp;
+                <button type="reset" class="btn btn-default" onclick="window.history.back()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    $(function () {
+        $('#btnOk').click(function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "createPriv.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret == 1) {
+                        jAlert_Redirect(data.msg, [[#{prompt}]], 'listPriv.do');
+                    } else {
+                        jAlert(data.msg, [[#{prompt}]]);
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    });
+</script>
+</html>

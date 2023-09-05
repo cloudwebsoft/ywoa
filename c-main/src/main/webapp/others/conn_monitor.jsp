@@ -1,7 +1,6 @@
 <%@ page contentType="text/html; charset=utf-8"%>
 <%@ page import="com.cloudwebsoft.framework.db.*"%>
 <%@ page import="com.cloudwebsoft.framework.console.*"%>
-<%@ page import="com.redmoon.forum.*"%>
 <%@ page import="java.sql.ResultSet"%>
 <%@ page import="java.net.URLEncoder"%>
 <%@ page import="java.sql.SQLException"%>
@@ -11,11 +10,9 @@
 <%@ page import="cn.js.fan.util.*"%>
 <%@ page import="java.util.*"%>
 <%@ page import="cn.js.fan.web.*"%>
-<%@ page import="com.redmoon.forum.person.*"%>
 <%@ page import = "cn.js.fan.web.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>QuickFramework数据库连接监控</title>
@@ -76,6 +73,12 @@ else if (op.equals("clearTooLongQueries")) {
 	ConnMonitor.clearTooLongQueries();
 	out.print(StrUtil.Alert_Redirect("操作成功！", "conn_monitor.jsp"));
 	return;	
+} else if ("setDebug".equals(op)) {
+	boolean isDebug = ParamUtil.getBoolean(request, "isDebug", true);
+	ConsoleConfig consoleConfig = new ConsoleConfig();
+	consoleConfig.setDebug(isDebug);
+	out.print(StrUtil.Alert_Redirect("操作成功！", "conn_monitor.jsp"));
+	return;
 }
 /*
 // 测试ConnMonitor
@@ -114,6 +117,9 @@ while (ir.hasNext()) {
 
 // ConnMonitor.clearActiveConnections();
 %>
+<div>当前状态：<%=ConsoleConfig.isDebug()?"调试中":"非调试"%></div>
+<div><a href="javascript:;" onclick="setDebug(true)">置为调试状态</a></div>
+<div><a href="javascript:;" onclick="setDebug(false)">退出调试状态</a></div>
 <div>查询超长的连接 (<a onclick="return confirm('您确定要清空么？')" href="conn_monitor.jsp?op=clearTooLongQueries">清空</a>)</div>
 <%
 ConnMonitor.MAX_ELAPSE_TIME = 50; // 0.5秒
@@ -139,5 +145,10 @@ while (ir.hasNext()) {
 	}
 }
 %>
+<script>
+	function setDebug(isDebug) {
+		window.location.href = "conn_monitor.jsp?op=setDebug&isDebug=" + isDebug;
+	}
+</script>
 </body>
 </html>

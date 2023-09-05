@@ -503,10 +503,10 @@ public class UserSetupDb extends ObjectDb {
 		this.local = local;
 	}
 	
-	public Vector getMySubordinates() {
+	public Vector<UserSetupDb> getMySubordinates() {
 		IUserSetupService userSetupService = SpringUtil.getBean(IUserSetupService.class);
 		List<String> list = userSetupService.getMySubordinates(userName);
-		Vector v = new Vector();
+		Vector<UserSetupDb> v = new Vector<>();
 		for (String name : list) {
 			v.addElement(getUserSetupDb(name));
 		}

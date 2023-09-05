@@ -11,13 +11,12 @@ import cn.js.fan.resource.Constant;
 import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.db.Connection;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class ObjectCache implements ICacheMgr, java.io.Serializable {
     public String group;
     public String COUNT_GROUP_NAME;
 
-    public transient Logger logger;
     public transient RMCache rmCache;
     public String connname = "";
 
@@ -35,20 +34,15 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
     }
 
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(this.getClass().getName());
-        }
-
         if (rmCache==null) {
             rmCache = RMCache.getInstance();
         }
     }
 
     public void init() {
-        logger = Logger.getLogger(this.getClass().getName());
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info(Constant.DB_NAME_NOT_FOUND);
+            LogUtil.getLog(getClass()).info(Constant.DB_NAME_NOT_FOUND);
         rmCache = RMCache.getInstance();
         setGroup();
         setGroupCount();
@@ -126,7 +120,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             rmCache.invalidateGroup(group + groupName);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -150,7 +144,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             }
         }
         catch (Exception e) {
-            logger.error("refreshDel:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("refreshDel:" + e.getMessage());
         }
     }
 
@@ -162,7 +156,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             try {
                 rmCache.remove(pk.getValue(), group);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
         }
     }
@@ -173,10 +167,10 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             try {
                 obj = (ObjectDb) rmCache.getFromGroup(pk.getValue(), group);
             } catch (Exception e) {
-                logger.error("getObjectDb:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getObjectDb:" + e.getMessage());
             }
 
-            // logger.info("obj=" + obj + " pk=" + pk.getValue() + " group=" + group);
+            // LogUtil.getLog(getClass()).info("obj=" + obj + " pk=" + pk.getValue() + " group=" + group);
             if (obj == null) {
                 obj = objectDb.getObjectRaw(pk);
                 // 如果没能载入就不能放入缓存，否则放入缓存后，这个对象后来又生成了，
@@ -185,13 +179,13 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
                     try {
                         rmCache.putInGroup(pk.getValue(), group, obj);
                     } catch (Exception e) {
-                        logger.error("getObjectDb1:" + e.getMessage());
+                        LogUtil.getLog(getClass()).error("getObjectDb1:" + e.getMessage());
                     }
                 }
             } else {
-                // logger.info("logger=" + obj.logger);
+                // LogUtil.getLog(getClass()).info("LogUtil.getLog(getClass())=" + obj.LogUtil.getLog(getClass()));
                 obj.renew();
-                // obj.logger.info("yes");
+                // obj.LogUtil.getLog(getClass()).info("yes");
             }
         }
         else {
@@ -220,7 +214,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             try {
                 count = (Integer) rmCache.getFromGroup(query, COUNT_GROUP_NAME+groupName);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             // If already in cache, return the count.
             if (count != null) {
@@ -235,7 +229,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
                 rmCache.putInGroup(query, COUNT_GROUP_NAME+groupName,
                                    new Integer(docCount));
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
         }
         return docCount;
@@ -264,7 +258,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
                 objArray = (Object[]) rmCache.getFromGroup(key,
                         group + groupName);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             // If already in cache, return the block.
             if (objArray != null) {
@@ -294,8 +288,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             // Set the maxium number of rows to end at the end of this block.
             conn.setMaxRows(blockSize * (blockID + 1));
             rs = conn.executeQuery(query);
-            // System.out.println(getClass() + " sql=" + sql + " blockStart=" + blockStart);
-            //logger.info("query=" + query);
+            //LogUtil.getLog(getClass()).info("query=" + query);
             // Grab THREAD_BLOCK_ROWS rows at a time.
             conn.setFetchSize(blockSize);
             // Many JDBC drivers don't implement scrollable cursors the real
@@ -308,7 +301,6 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
             // we come to the end of the block.
             int count = 0;
             while (rs.next() && count < blockSize) {
-                // System.out.println(getClass() + " sql=" + sql + " count=" + count);
                 // 如果不是复合主键
                 if (primaryKey.getKeyCount() == 1) {
                     if (primaryKey.getType() == primaryKey.TYPE_INT)
@@ -343,7 +335,7 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
                 count++;
             }
         } catch (SQLException sqle) {
-            logger.error("getObjectBlock:" + sqle.getMessage());
+            LogUtil.getLog(getClass()).error("getObjectBlock:" + sqle.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -364,11 +356,9 @@ public class ObjectCache implements ICacheMgr, java.io.Serializable {
         // 将block加至缓存，len为0时也加入至缓存，因为如果有新数据插入了表中，则相关操作应刷新缓存，此处缓存也能得到更新
         if (listCachable) {
             try {
-                // System.out.println(getClass() + " getObjectBlock:" + group + groupName + " objkeys.length=" + objkeys.length);
-
                 rmCache.putInGroup(key, group + groupName, objkeys);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
         }
         /**

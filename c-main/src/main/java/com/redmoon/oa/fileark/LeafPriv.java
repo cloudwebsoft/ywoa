@@ -12,6 +12,7 @@ import cn.js.fan.util.*;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptMgr;
 import com.redmoon.oa.dept.DeptUserDb;
@@ -109,7 +110,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getRolesOfLeafPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRolesOfLeafPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -139,7 +140,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getDeptsOfLeafPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDeptsOfLeafPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -168,7 +169,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getRolesOfLeafPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRolesOfLeafPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -243,7 +244,7 @@ public class LeafPriv extends ObjectDbA {
                 loaded = true;
             }
         } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -313,7 +314,7 @@ public class LeafPriv extends ObjectDbA {
             ps.setInt(9, id);
             r = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         }
         return r == 1 ? true : false;
     }
@@ -334,7 +335,7 @@ public class LeafPriv extends ObjectDbA {
             return true;
         if (username==null)
             username = "";
-        // logger.info("username=" + username);
+        // LogUtil.getLog(getClass()).info("username=" + username);
         if (username.equals(UserDb.ADMIN))
             return true;
         UserDb user = new UserDb();
@@ -481,14 +482,14 @@ public class LeafPriv extends ObjectDbA {
         RoleDb[] roles = user.getRoles();
 
         // 如果属于管理员组,则拥有全部权
-        // logger.info("groups[i].code=" + groups[i].getCode());
+        // LogUtil.getLog(getClass()).info("groups[i].code=" + groups[i].getCode());
         // for (int i = 0; i < groups.length; i++)
         //    if (groups[i].getCode().equals(groups[i].ADMINISTRATORS))
         //        return true;
 
         Leaf lf = new Leaf();
         lf = lf.getLeaf(dirCode);
-        // logger.info("dirCode=" + dirCode + " name=" + lf.getName() + " code=" + lf.getCode() + " parentCode=" + lf.getParentCode());
+        // LogUtil.getLog(getClass()).info("dirCode=" + dirCode + " name=" + lf.getName() + " code=" + lf.getCode() + " parentCode=" + lf.getParentCode());
 
         if (canUserDo(lf, user, groups, roles, privType))
             return true;
@@ -498,7 +499,7 @@ public class LeafPriv extends ObjectDbA {
 
         // while (!parentCode.equals("-1") && !parentCode.equals("root")) {
         while (!parentCode.equals("-1")) {
-            // logger.info("dirCode=" + dirCode + " parentCode=" + parentCode);
+            // LogUtil.getLog(getClass()).info("dirCode=" + dirCode + " parentCode=" + parentCode);
             Leaf plf = lf.getLeaf(parentCode);
             if (plf==null || !plf.isLoaded()) {
                 return false;
@@ -639,8 +640,8 @@ public class LeafPriv extends ObjectDbA {
         boolean r = false;
         try {
             PreparedStatement ps = conn.prepareStatement(QUERY_ADD);
-            ps.setString(1, UserGroupDb.EVERYONE);
-            ps.setInt(2, TYPE_USERGROUP);
+            ps.setString(1, RoleDb.CODE_MEMBER);
+            ps.setInt(2, TYPE_ROLE);
             ps.setInt(3, see);
             ps.setInt(4, append);
             ps.setInt(5, del);
@@ -655,9 +656,9 @@ public class LeafPriv extends ObjectDbA {
             ps.setInt(11, exportWord);
             ps.setInt(12, exportPdf);
 
-            r = conn.executePreUpdate() == 1 ? true : false;
+            r = conn.executePreUpdate() == 1;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("LeafPriv:数据库操作出错！");
         }
         finally {
@@ -698,7 +699,7 @@ public class LeafPriv extends ObjectDbA {
 
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("LeafPriv:数据库操作出错！");
         }
         finally {
@@ -758,7 +759,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (SQLException e) {
-            logger.error("setRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setRoles:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -816,7 +817,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (SQLException e) {
-            logger.error("setDepts:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setDepts:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -852,7 +853,7 @@ public class LeafPriv extends ObjectDbA {
 
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error("add:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("add:" + e.getMessage());
             throw new ErrMsgException("请检查是否有重复项存在！");
         }
         finally {
@@ -869,7 +870,7 @@ public class LeafPriv extends ObjectDbA {
         try {
             leafPriv = new LeafPriv(id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return leafPriv;
     }
@@ -883,7 +884,7 @@ public class LeafPriv extends ObjectDbA {
             ps.setString(1, dirCode);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -898,7 +899,7 @@ public class LeafPriv extends ObjectDbA {
             ps.setString(1, username);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -912,7 +913,7 @@ public class LeafPriv extends ObjectDbA {
             ps.setInt(1, id);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -995,7 +996,7 @@ public class LeafPriv extends ObjectDbA {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {
@@ -1036,7 +1037,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("listUserPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("listUserPriv: " + e.getMessage());
         } finally {
             /*
             if (ps != null) {
@@ -1073,7 +1074,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1105,7 +1106,7 @@ public class LeafPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1212,7 +1213,7 @@ public class LeafPriv extends ObjectDbA {
         }
         catch (SQLException e) {
             com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(LeafPriv.class).error(e);
         }
         return v;
     }      

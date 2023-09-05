@@ -45,8 +45,6 @@ public interface IModuleViewService {
      */
     boolean addCond(HttpServletRequest request, String code) throws ErrMsgException;
 
-    boolean setUse(HttpServletRequest request, String code) throws ErrMsgException;
-
     boolean setFilter(HttpServletRequest request, String code) throws ErrMsgException;
 
     boolean setPromptIcon(HttpServletRequest request, String code) throws ErrMsgException;
@@ -58,6 +56,8 @@ public interface IModuleViewService {
     boolean addBtnBatch(HttpServletRequest request, String code) throws ErrMsgException;
 
     boolean addBtnFlow(HttpServletRequest request, String code) throws ErrMsgException;
+
+    boolean addBtnModule(HttpServletRequest request, String code) throws ErrMsgException;
 
     boolean delBtn(HttpServletRequest request, String code) throws ErrMsgException;
 
@@ -71,7 +71,7 @@ public interface IModuleViewService {
      */
     boolean modifyBtn(HttpServletRequest request, String code) throws ErrMsgException;
 
-    boolean saveBtn(ModuleSetupDb msd, JSONObject result) throws JSONException, ResKeyException;
+    boolean saveBtn(ModuleSetupDb msd, com.alibaba.fastjson.JSONObject result) throws ResKeyException;
 
     /**
      * 增加操作列链接
@@ -85,10 +85,12 @@ public interface IModuleViewService {
 
     boolean modifyLink(HttpServletRequest request, String code) throws ErrMsgException;
 
-    boolean saveLink(ModuleSetupDb msd, JSONObject result) throws JSONException, ResKeyException;
+    boolean saveLink(ModuleSetupDb msd, com.alibaba.fastjson.JSONObject result) throws ResKeyException;
 
-    boolean saveCol(ModuleSetupDb msd, JSONObject result) throws JSONException, ResKeyException;
+    boolean saveCol(ModuleSetupDb msd, com.alibaba.fastjson.JSONObject result) throws ResKeyException;
 
     boolean delLink(HttpServletRequest request, String code) throws ErrMsgException;
+
+    boolean setUse(HttpServletRequest request, String code) throws ErrMsgException;
 }
 

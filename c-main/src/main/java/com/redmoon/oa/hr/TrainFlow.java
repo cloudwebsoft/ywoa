@@ -89,8 +89,6 @@ public class TrainFlow {
         String formCode = "train_notice_create";
         ParamConfig pc = new ParamConfig(tnd.getTable().
                                          getFormValidatorFile());
-        // System.out.println(getClass() + " validateFile=" + wad.getTable().
-        //                                 getFormValidatorFile());
         ParamChecker pck = new ParamChecker(request);
         try {
             pck.doCheck(pc.getFormRule(formCode)); // "regist"));
@@ -112,7 +110,7 @@ public class TrainFlow {
 			ite = jte.executeQuery(sqr);
 		} catch (SQLException ex) {
 			// throw ex;
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 		if (ite.hasNext()) {
 			ResultRecord rre = (ResultRecord) ite.next();

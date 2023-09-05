@@ -9,12 +9,11 @@
     if ("".equals(info)) {
         info = StrUtil.getNullStr((String) request.getAttribute("info"));
     }
-    // System.out.println(getClass() + " info:" + info);
     String url = ParamUtil.get(request, "url");
     String type = ParamUtil.get(request, "type");
 
     String callingPage = request.getHeader("Referer");
-    if (type.equals("login")) {
+    if ("login".equals(type)) {
         // System.out.println(getClass() + " callingPage=" + callingPage);
         info = "您还没有登录或您的登录已过期，请关闭当前窗口重新登录！";
 %>
@@ -27,13 +26,13 @@
     window.top.location.href = "<%=request.getContextPath()%>/index.do";
 </script>
 <%
-    } else if (type.equals("protect")) {
+    } else if ("protect".equals(type)) {
         String kind = ParamUtil.get(request, "kind");
         String param = ParamUtil.get(request, "param");
         String value = ParamUtil.get(request, "value");
         String sourceUrl = ParamUtil.get(request, "sourceUrl");
 
-        if (kind.equals("XSS")) {
+        if ("XSS".equals(kind)) {
             com.redmoon.oa.LogUtil.log(privilege.getUser(request), StrUtil.getIp(request), com.redmoon.oa.LogDb.TYPE_HACK, "CSRF " + sourceUrl + " " + param + "=" + value);
             info = "XSS攻击：" + param + "=" + value + "，已记录！";
         } else {

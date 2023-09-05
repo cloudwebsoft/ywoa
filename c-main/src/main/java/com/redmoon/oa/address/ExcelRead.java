@@ -105,9 +105,9 @@ public class ExcelRead {
                 addr.create();
             }
         } catch (BiffException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
     }
 
@@ -210,7 +210,7 @@ public class ExcelRead {
         } catch (BiffException ex) {
             throw new ErrMsgException("请上传.xls格式的文件！");
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
     }

@@ -7,6 +7,7 @@ import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.*;
 import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.query.QueryScriptUtil;
 import com.redmoon.oa.hr.SalaryColumnProp;
@@ -76,8 +77,8 @@ public class SalaryController {
 				vCol.addElement(cp);
 			}
 
-			// 取得表form_table_salary_subject中的所有的记录
-			sql = "select id from form_table_salary_subject where status=1";
+			// 取得表ft_salary_subject中的所有的记录
+			sql = "select id from ft_salary_subject where status=1";
 			String formCode = "salary_subject";
 			FormDAO fdao = new FormDAO();
 			vFdao = fdao.list(formCode, sql);
@@ -112,7 +113,7 @@ public class SalaryController {
 			keepCols.put("year", "");
 			keepCols.put("month", "");
 
-			// 检查表salary_payroll中的字段，如果在form_table_salary_subject中不存在，则删除
+			// 检查表salary_payroll中的字段，如果在ft_salary_subject中不存在，则删除
 			Iterator<SalaryColumnProp> irCol = vCol.iterator();
 			while (irCol.hasNext()) {
 				SalaryColumnProp cp = irCol.next();
@@ -141,7 +142,7 @@ public class SalaryController {
 			e1.printStackTrace();
 		} catch (SQLException e) {
 			re = false;
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} finally {
 			conn.close();
 		}
@@ -156,7 +157,7 @@ public class SalaryController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return json.toString();
 	}
@@ -206,10 +207,10 @@ public class SalaryController {
 			FormDAO fdaoFormula = new FormDAO(fdFormula);
 			
 			// 取得帐套中的用户，为其生成工资
-			sql = "select person_id from form_table_salary_bk_person where cws_id=?";
+			sql = "select person_id from ft_salary_bk_person where cws_id=?";
 			for (String strBookId : aryBook) {
 				int bookId = StrUtil.toInt(strBookId, -1);
-				ResultIterator ri = jt.executeQuery(sql, new Object[] { bookId });
+				ResultIterator ri = jt.executeQuery(sql, new Object[] { String.valueOf(bookId) });
 				while (ri.hasNext()) {
 					ResultRecord rr = (ResultRecord) ri.next();
 					String personId = rr.getString(1);
@@ -239,9 +240,9 @@ public class SalaryController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", "0");
 				json.put("msg", e.getMessage());
@@ -249,7 +250,7 @@ public class SalaryController {
 				e1.printStackTrace();
 			}
 		} catch (ErrMsgException e) {
-			// e.printStackTrace();
+			// LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", "0");
 				json.put("msg", e.getMessage());
@@ -284,7 +285,7 @@ public class SalaryController {
 					json.put("ret", "0");
 					json.put("msg", "请选择帐套！");
 				} catch (JSONException e) {
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 				return json.toString();
 			}
@@ -304,7 +305,7 @@ public class SalaryController {
 			}			
 			re = true;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		finally  {
 			jt.close();
@@ -318,7 +319,7 @@ public class SalaryController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}		
 		return json.toString();
 	}
@@ -356,13 +357,13 @@ public class SalaryController {
 			ResultIterator ri = null;
 			sql = "select id,person_id," + cols + " from salary_payroll where book_id=? and year=? and month=?";
 			if (!"".equals(realName)) {
-				sql = "select s.id,person_id," + cols + " from salary_payroll s, form_table_personbasic p where s.person_id=p.id and p.realname like " + StrUtil.sqlstr("%" + realName + "%") + " and book_id=? and year=? and month=?";
+				sql = "select s.id,person_id," + cols + " from salary_payroll s, ft_personbasic p where s.person_id=p.id and p.realname like " + StrUtil.sqlstr("%" + realName + "%") + " and book_id=? and year=? and month=?";
 			}			
 			// DebugUtil.i(getClass(), "listPayroll", cols);
 			try {
 				ri = jt.executeQuery(sql, new Object[]{bookId, year, month}, curPage, pageSize);
 			} catch (SQLException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}		
 			
 			jobject.put("rows", rows);
@@ -385,7 +386,7 @@ public class SalaryController {
 					int personId = rr.getInt("person_id");
 					
 					realName = "";
-					sql = "select realName from form_table_personbasic where id=?";
+					sql = "select realName from ft_personbasic where id=?";
 					ResultIterator riPerson = jt.executeQuery(sql, new Object[]{personId});
 					if (riPerson.hasNext()) {
 						ResultRecord rrPerson = (ResultRecord)riPerson.next();
@@ -403,7 +404,7 @@ public class SalaryController {
 						jo.put(colName, NumberUtil.round(rr.getDouble(colName), mapDecimals.get(colName).intValue()));
 					}
 				}catch (JSONException e){
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 				
 				rows.put(jo);
@@ -411,7 +412,7 @@ public class SalaryController {
 		} catch (SQLException e1) {
 			e1.printStackTrace();
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} finally {
 			jt.close();
 		}
@@ -436,7 +437,7 @@ public class SalaryController {
 				json.put("ret", "-1");
 				json.put("msg", "值未更改！");
 			} catch (JSONException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 			return json.toString();
 		}
@@ -465,9 +466,9 @@ public class SalaryController {
 				refreshSalaryForPerson(jt, personId, bookId, year, month, vtSubjectOfBook, fdaoFormula, fdFormula);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		try {
@@ -479,7 +480,7 @@ public class SalaryController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}		
 		return json.toString();
 	}	
@@ -503,7 +504,7 @@ public class SalaryController {
 					json.put("ret", "0");
 					json.put("msg", "请选择记录！");
 				}catch (JSONException e){
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 				return json.toString();
 			}
@@ -515,7 +516,7 @@ public class SalaryController {
 			}			
 			re = true;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		finally  {
 			jt.close();
@@ -529,7 +530,7 @@ public class SalaryController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}		
 		return json.toString();
 	}	
@@ -562,7 +563,7 @@ public class SalaryController {
 				int id = StrUtil.toInt(strId, -1);
 				
 				String personId = "";
-				String sqlPerson = "select person_id from form_table_salary_bk_person where cws_id=" + bookId + " and id=" + id;
+				String sqlPerson = "select person_id from ft_salary_bk_person where cws_id='" + bookId + "' and id=" + id;
 				ri = jt.executeQuery(sqlPerson);
 				if (ri.hasNext()) {
 					ResultRecord rr = (ResultRecord)ri.next();
@@ -572,7 +573,7 @@ public class SalaryController {
 				ri = jt.executeQuery(sql, new Object[] { bookId, personId, year, month });
 				if (ri.hasNext()) {
 					String realName = "";
-					sql = "select realName from form_table_personbasic where id=?";
+					sql = "select realName from ft_personbasic where id=?";
 					ResultIterator riPerson = jt.executeQuery(sql, new Object[]{personId});
 					if (riPerson.hasNext()) {
 						ResultRecord rrPerson = (ResultRecord)riPerson.next();
@@ -593,7 +594,7 @@ public class SalaryController {
 			FormDAO fdaoFormula = new FormDAO(fdFormula);
 			
 			// 取得帐套中的用户，为其生成工资
-			sql = "select person_id from form_table_salary_bk_person where id=?";
+			sql = "select person_id from ft_salary_bk_person where id=?";
 			for (String strId : ary) {
 				int id = StrUtil.toInt(strId, -1);
 				ri = jt.executeQuery(sql, new Object[] { id });
@@ -609,9 +610,9 @@ public class SalaryController {
 			json.put("msg", "操作成功！");
 
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", "0");
 				json.put("msg", e.getMessage());
@@ -619,7 +620,7 @@ public class SalaryController {
 				e1.printStackTrace();
 			}
 		} catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 			try {
 				json.put("ret", "0");
 				json.put("msg", e.getMessage());
@@ -661,7 +662,7 @@ public class SalaryController {
 		try {
 			return jt.executeUpdate(sqlPayroll)==1;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return false;
 	}
@@ -693,7 +694,7 @@ public class SalaryController {
 		try {
 			return jt.executeUpdate(sqlPayroll)==1;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}		
 		return false;		
 	}
@@ -745,13 +746,13 @@ public class SalaryController {
 				ResultIterator ri = null;
 				sql = "select id,person_id," + cols + " from salary_payroll where book_id=? and year=? and month=?";
 				if (!"".equals(realName)) {
-					sql = "select s.id,person_id," + cols + " from salary_payroll s, form_table_personbasic p where s.person_id=p.id and p.realname like " + StrUtil.sqlstr("%" + realName + "%") + " and book_id=? and year=? and month=?";
+					sql = "select s.id,person_id," + cols + " from salary_payroll s, ft_personbasic p where s.person_id=p.id and p.realname like " + StrUtil.sqlstr("%" + realName + "%") + " and book_id=? and year=? and month=?";
 				}			
 				// DebugUtil.i(getClass(), "listPayroll", cols);
 				try {
 					ri = jt.executeQuery(sql, new Object[]{bookId, year, month});
 				} catch (SQLException e) {
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}		
 								
                 CellStyle cellStyle = wb.createCellStyle();
@@ -766,7 +767,7 @@ public class SalaryController {
 						int personId = rr.getInt("person_id");
 		                
 						realName = "";
-						sql = "select realName from form_table_personbasic where id=?";
+						sql = "select realName from ft_personbasic where id=?";
 						ResultIterator riPerson = jt.executeQuery(sql, new Object[]{personId});
 						if (riPerson.hasNext()) {
 							ResultRecord rrPerson = (ResultRecord)riPerson.next();
@@ -791,12 +792,12 @@ public class SalaryController {
 							jo.put(colName, NumberUtil.round(rr.getDouble(colName), 2));
 							
 							cellnum ++;
-			                cell = row.createCell(cellnum, Cell.CELL_TYPE_NUMERIC);
+			                cell = row.createCell(cellnum, CellType.NUMERIC);
 			                cell.setCellStyle(cellStyle);	
 			                cell.setCellValue(rr.getDouble(colName)); // 如果此处用rr.getString，则无论怎么设置CELL_TYPE_NUMERIC，导出的都是字符型单元格		                
 						}
 					}catch (JSONException e){
-						e.printStackTrace();
+						LogUtil.getLog(getClass()).error(e);
 					}
 				}
 			}
@@ -820,7 +821,7 @@ public class SalaryController {
 			wb.write(out);
 			out.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     }
 	
@@ -838,7 +839,7 @@ public class SalaryController {
 					json.put("ret", "0");
 					json.put("msg", "请选择记录！");
 				}catch (JSONException e){
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 				return json.toString();
 			}
@@ -862,9 +863,9 @@ public class SalaryController {
 			}			
 			re = true;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		finally  {
 			jt.close();
@@ -878,7 +879,7 @@ public class SalaryController {
 				json.put("msg", "操作失败！");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}		
 		return json.toString();		
 	}

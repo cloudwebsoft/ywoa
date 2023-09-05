@@ -1,0 +1,139 @@
+@charset "UTF-8";
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* uni.scss */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+.mainPage.data-v-b237504c {
+  height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #e3eeff 0%, #f3f8ff 100%);
+}
+.mainPage .mainPage_top.data-v-b237504c {
+  height: 813rpx;
+  width: 100%;
+  position: relative;
+  background-size: 100% 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.mainPage .mainPage_top .setting.data-v-b237504c {
+  position: absolute;
+  right: 20px;
+  top: 50px;
+}
+.mainPage .mainPage_top .mainPage_top_center.data-v-b237504c {
+  text-align: center;
+}
+.mainPage .mainPage_top .mainPage_top_center .mainPage_top_center_img.data-v-b237504c {
+  width: 130rpx;
+  height: 130rpx;
+  margin: 0 auto;
+}
+.mainPage .mainPage_top .mainPage_top_center .mainPage_top_center_img image.data-v-b237504c {
+  width: 100%;
+  height: 100%;
+}
+.mainPage .mainPage_top .mainPage_top_center .mainPage_top_center_title.data-v-b237504c {
+  margin-top: 13.5rpx;
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #2b2c2f;
+}
+.mainPage.data-v-b237504c .input-placeholder {
+  color: #abafba;
+}
+.mainPage.data-v-b237504c .uni-input-input {
+  color: #2b2c2f;
+}
+.mainPage .cententPage.data-v-b237504c {
+  margin-top: -110rpx;
+  padding: 0 60rpx;
+}
+.mainPage .logo.data-v-b237504c {
+  margin-bottom: 30rpx;
+}
+.mainPage .logo .logoImg.data-v-b237504c {
+  width: 160rpx;
+  height: 160rpx;
+}
+.mainPage .login-title.data-v-b237504c {
+  width: 100%;
+  font-size: 36rpx;
+  font-family: PingFang SC;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 123rpx;
+}
+.mainPage .login-item.data-v-b237504c {
+  width: 100%;
+  margin-bottom: 54rpx;
+  border-bottom: 1px solid #cbced8;
+}
+.mainPage .login-item .login-icon.data-v-b237504c {
+  width: 30rpx;
+  height: 30rpx;
+}
+.mainPage .login-item .CheckCode.data-v-b237504c {
+  width: 150rpx;
+  height: 70rpx;
+}
+.mainPage .login-item .login-content.data-v-b237504c {
+  height: 90rpx;
+  margin-left: 20rpx;
+  font-size: 28rpx;
+  flex: 1;
+}
+.mainPage .login-item.data-v-b237504c:nth-child(3) {
+  margin-bottom: 60rpx;
+}
+.mainPage .is_red.data-v-b237504c {
+  border-bottom: 1px solid red;
+}
+.mainPage .login-btn.data-v-b237504c {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-family: PingFang SC;
+  font-weight: bold;
+  color: #ffffff;
+  background: #4b7aff;
+  border-radius: 40rpx;
+  margin-top: 90rpx;
+  opacity: 0.9;
+  z-index: 1000;
+}
+.mainPage .forget.data-v-b237504c {
+  height: 80rpx;
+  font-size: 24rpx;
+  font-family: PingFang SC;
+  font-weight: 500;
+  color: #aaa;
+  line-height: 40rpx;
+  opacity: 0.5;
+}
+

@@ -45,7 +45,6 @@ else if (op.equals("getFields")) {
 		ResultSetMetaData rm = rs.getMetaData();
 		int colCount = rm.getColumnCount();
 		for (int i = 1; i <= colCount; i++) {
-			//System.out.println(rm.getColumnName(i));
 			%>
 			<div><a href="javascript:;" onClick="window.top.mainScriptFrame.insertScript(' <%=rm.getColumnName(i)%>');"><%=rm.getColumnName(i)%></a></div>
 			<%
@@ -363,7 +362,7 @@ $(function(){
 	});
 	
 	$('#formCode').change(function() {
-		formTableName = "form_table_" + $(this).val();
+		formTableName = "ft_" + $(this).val();
 		if ($(this).val()=="")
 			return;
 		// 取所选数据源的表名

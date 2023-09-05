@@ -1,7 +1,6 @@
 package com.redmoon.oa.fileark;
 
 import java.util.Vector;
-import org.apache.log4j.Logger;
 import java.util.Iterator;
 import cn.js.fan.web.Global;
 import cn.js.fan.db.ResultIterator;
@@ -13,19 +12,19 @@ import java.sql.ResultSet;
 import cn.js.fan.db.Conn;
 import cn.js.fan.cache.jcs.*;
 import cn.js.fan.base.IPrivilege;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class CommentMgr {
     String connname = "";
     String cachePrix = "cmt";
     String cachePrixList = "cmt_list";
     RMCache rmCache;
-    Logger logger = Logger.getLogger(CommentMgr.class.getName());
 
     public CommentMgr() {
         rmCache = RMCache.getInstance();
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("CommentMgr:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("CommentMgr:默认数据库名为空！");
     }
 
     /**
@@ -57,7 +56,7 @@ public class CommentMgr {
                     listids = v.iterator();
                 }
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             finally {
                 if (conn!=null) {
@@ -84,7 +83,7 @@ public class CommentMgr {
             try {
                 rmCache.put(cachePrix + id, cmt);
             } catch (Exception e) {
-                logger.error("getComment:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getComment:" + e.getMessage());
             }
             return cmt;
         } else {
@@ -110,7 +109,7 @@ public class CommentMgr {
             try {
                 rmCache.remove(this.cachePrixList + docId);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
         }
         return re;
@@ -134,7 +133,7 @@ public class CommentMgr {
                 rmCache.remove(cachePrixList + cmt.getDocId());
                 rmCache.remove(cachePrix + id);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
         }
         return re;
@@ -164,7 +163,7 @@ public class CommentMgr {
             }
             rmCache.remove(this.cachePrixList + cc.getDocId());
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 }

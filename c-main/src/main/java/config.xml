@@ -2,23 +2,21 @@
 <env>
     <oa>
         <enterprise kind="system" desc="系统名称">云网OA</enterprise>
-        <styleMode kind="ui" desc="界面风格" isDisplay="true" options="1|自选,2|指定">1</styleMode>
+        <styleMode kind="ui" desc="界面风格" isDisplay="true" options="1|自选,2|指定">2</styleMode>
         <styleSpecified kind="ui" desc="界面指定的风格" isDisplay="true" options="1|经典型简洁菜单,2|时尚型,3|绚丽型,4|经典型传统菜单,5|轻简型">5</styleSpecified>
-        <styleDesktop kind="ui" desc="桌面风格" isDisplay="true" options="1|传统,2|优雅(带图标)">2</styleDesktop>
-        <version kind="ui" desc="版本号" isDisplay="false">6.0</version>
+        <styleDesktop kind="ui" desc="桌面风格" isDisplay="false" options="1|传统,2|优雅(带卡片)">2</styleDesktop>
+        <version kind="ui" desc="版本号" isDisplay="true">6.1</version>
         <versionOld kind="other" desc="原版本号，即采用升级包升级前的版本号，如果是从低于3.0的版本升级上来，则应置为3.0" isDisplay="false">3.0</versionOld>
         <canUserSeeFlowChart kind="flow" desc="用户处理流程时能否看到矢量流程图">true</canUserSeeFlowChart>
         <canUserSeeFlowImage kind="flow" desc="用户处理流程时能否看到流程图片" isDisplay="false">false</canUserSeeFlowImage>
         <canUserSeeDesignerWhenDispose kind="flow" desc="用户处理流程时能否看到流程设计器">true</canUserSeeDesignerWhenDispose>
         <flowDesignerType kind="flow" desc="流程设计器类型" options="0|A版（仅可用于IE）,1|X版">1</flowDesignerType>
-        <isGenerateFlowImage kind="flow" desc="是否生成流程图片">false</isGenerateFlowImage>
+        <isGenerateFlowImage kind="flow" desc="是否生成流程图片" isDisplay="false">false</isGenerateFlowImage>
         <flowImagePath kind="flow" desc="流程图片存放路径" isDisplay="false">upfile/flow_image</flowImagePath>
         <canUserModifyFlow kind="flow" desc="用户能否修改流程(该功能暂不支持)" isDisplay="false">false</canUserModifyFlow>
         <file_folder kind="fileark" desc="文件柜路径" isDisplay="false">upfile/file_folder</file_folder>
         <file_flow kind="flow" desc="流程文档路径" isDisplay="false">upfile/file_flow</file_flow>
         <file_task kind="fileark" desc="任务文档路径" isDisplay="false">upfile/file_task</file_task>
-        <file_netdisk kind="netdisk" desc="网络硬盘路径" isDisplay="false">upfile/file_netdisk</file_netdisk>
-        <file_netdisk_public kind="netdisk" desc="公共硬盘路径" isDisplay="false">upfile/file_netdisk_public</file_netdisk_public>
         <file_message kind="msg" desc="短消息文件路径" isDisplay="false">upfile/file_message</file_message>
         <file_workplan kind="workplan" desc="工作计划文件路径" isDisplay="false">upfile/file_workplan</file_workplan>
         <file_email desc="邮件附件路径" isDisplay="false">upfile/file_email</file_email>
@@ -34,7 +32,6 @@
         <mins_after_workbegin kind="hr" desc="上班后多少分钟内可以打卡" isDisplay="false">15</mins_after_workbegin>
         <mins_ahead_of_workend kind="hr" desc="下班前多少分钟内可以打卡" isDisplay="false">15</mins_ahead_of_workend>
         <mins_after_workend kind="hr" desc="下班后多少分钟内可以打卡" isDisplay="false">15</mins_after_workend>
-        <netdisk_space_allowed kind="netdisk" isDisplay="false" desc="默认网络硬盘空间(10M)">10240000</netdisk_space_allowed>
         <msg_space_allowed kind="msg" isDisplay="false" desc="默认内部消息空间(10M)">10240000</msg_space_allowed>
         <interval_remind_user_plan kind="other" desc="用户日程提醒消息间隔(毫秒)">300000</interval_remind_user_plan>
         <!--用户日程提醒间隔 5分钟-->
@@ -45,7 +42,6 @@
         <message_to_max_user kind="msg" desc="短消息群发的默认最大用户数">5000</message_to_max_user>
         <message_user_max_count kind="msg" desc="用户短消息能保留的最大条数">800000</message_user_max_count>
         <filearkFileExt kind="fileark" desc="文件柜上传文件的合法扩展名，为空表示不限">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</filearkFileExt>
-        <netdisk_ext kind="netdisk" desc="网络硬盘上传文件的合法扩展名，为空表示不限">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,wpt,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql,pbm,pgm,pcx,jpe,tif,tiff,psd,pdd,apk,ipk</netdisk_ext>
         <!--<mailserver desc="邮件服务器">ttoactxy</mailserver>
         <pop3_port desc="pop3 端口">111</pop3_port>
         <smtp_port desc="smtp 端口">26</smtp_port>-->
@@ -76,6 +72,7 @@
         <isRecordLarkMsg kind="other" desc="是否记录精灵的消息" isDisplay="false">false</isRecordLarkMsg>
         <isBirthdayRemindUsed kind="system" desc="是否启用生日提醒">true</isBirthdayRemindUsed>
         <!--<isBirthdayRemindDate desc="生日提醒已发送日期">09.02</isBirthdayRemindDate>已放至oa_sys_ver表中-->
+        <birthdayRemindTitle kind="system" desc="生日祝贺">生日祝贺</birthdayRemindTitle>
         <birthdayRemindContent kind="system" desc="生日提醒内容">今天是您的生日,祝您生日快乐!</birthdayRemindContent>
         <!--到期时间单位day天、hour小时-->
         <flowExpireUnit kind="flow" desc="流程到期时间单位" options="day|天,hour|小时">hour</flowExpireUnit>
@@ -83,8 +80,7 @@
         <workplan_ext kind="workplan" desc="工作计划上传文件的合法扩展名">exe,jpg,jpeg,gif,zip,rar,doc,rm,avi,bmp,swf,png,mp3,wmv,rmvb,wma,xls,txt,wps,css,htm,html,mpg,ppt,dwf,docx,xlsx,mpp,pptx,vsd,pot,rtf,et,dps,pdf,epub,sql</workplan_ext>
         <canMultiLogin kind="system" desc="是否允许同一帐户同时多重登录">true</canMultiLogin>
         <weatherCode kind="system" type="textarea" desc="天气预报代码">&lt;iframe src="http://www.thinkpage.cn/weather/weather.aspx?uid=&amp;c=CHXX0008&amp;l=&amp;p=CMA&amp;a=1&amp;u=C&amp;s=1&amp;m=0&amp;x=1&amp;d=0&amp;fc=&amp;bgc=&amp;bc=&amp;ti=1&amp;in=1&amp;li=2&amp;ct=iframe" frameborder="0" scrolling="no" width="100%" height="100%" allowTransparency="true"&gt;&lt;/iframe&gt;</weatherCode>
-        <calendarCode kind="system" type="textarea" desc="日历代码">&lt;embed src="http://www.blogclock.cn/swf/S100159f1bf6d59-8.swf" Width="180px" Height="170px" type="application/x-shockwave-flash" quality="high" wmode="transparent"&gt;&lt;/embed&gt;</calendarCode>
-        <isUseNTKO desc="是否采用NTKO文档编辑控件" isDisplay="false">true</isUseNTKO>
+        <calendarCode kind="system" type="textarea" desc="日历代码">&lt;embed src="http://www.blog.cn/swf/S100159f1bf6d59-8.swf" Width="180px" Height="170px" type="application/x-shockwave-flash" quality="high" wmode="transparent"&gt;&lt;/embed&gt;</calendarCode>
         <flowActionPlan kind="flow" desc="流程待办日程标题">流程：%s</flowActionPlan>
         <flowActionPlanContent kind="flow" desc="流程待办日程内容">发起人：%s，最后办理：%s</flowActionPlanContent>
         <flowAutoSMSRemind kind="flow" desc="流程中自动短信提醒">true</flowAutoSMSRemind>
@@ -124,8 +120,11 @@
 		<personNoLen kind="system" desc="员工编号用0向左补齐的长度">4</personNoLen>
         <firstUseDate kind="system" desc="启用时间" isDisplay="false"></firstUseDate>
         <export_dept_levels kind="system" desc="导出导入用户的部门层级分为列，最大不能超过12，0表示导出时部门之间用\号分隔，因影响导入已不能再启用，只能为0" isDisplay="false">0</export_dept_levels>
-        <isArchiveUserSynAccount kind="hr" desc="人力资源档案信息是否与帐户同步">true</isArchiveUserSynAccount>
-		<isKaoqinNight kind="hr" desc="控制晚上是否考勤" isDisplay="true">true</isKaoqinNight>
+
+        <isArchiveUserSynAccount kind="hr" desc="人事信息是否与帐户同步">true</isArchiveUserSynAccount>
+		<isArchiveShowAsUserInfo kind="hr" desc="当显示个人资料时显示人事信息，为否时显示帐户信息">true</isArchiveShowAsUserInfo>
+
+        <isKaoqinNight kind="hr" desc="控制晚上是否考勤" isDisplay="true">true</isKaoqinNight>
 		<autoRefresh kind="ui" desc="桌面自动刷新时间">600000</autoRefresh>
 		<firtstUserAfterReg kind="other" desc="注册后第一次使用时间" isDisplay="false"></firtstUserAfterReg>
 		<isProjectUsed kind="other" desc="是否启用项目" isDisplay="false">false</isProjectUsed>
@@ -141,7 +140,7 @@
     	<access_id_ios kind="mobile" desc="腾讯信鸽帐号（ios）" isDisplay="false">1680001500</access_id_ios>
     	<secret_key_ios kind="mobile" desc="腾讯信鸽帐号key（ios）" isDisplay="false">05afb23376e900db60d93a0d359a0189</secret_key_ios>
 
-        <gtIsEnabled kind="mobile" desc="个推是否启用">true</gtIsEnabled>
+        <gtIsEnabled kind="mobile" desc="个推是否启用">false</gtIsEnabled>
         <gtAppId kind="mobile" desc="个推AppID"></gtAppId>
         <gtAppKey kind="mobile" desc="个推AppKey"></gtAppKey>
         <gtMasterSecret kind="mobile" desc="个推MasterSecret"></gtMasterSecret>
@@ -158,7 +157,7 @@
 		<proxy_del_msg_content kind="flow" desc="取消代理提醒内容" isDisplay="true">%fromUser取消了%proxy代理</proxy_del_msg_content>
 		
 		<isUseAccount kind="system" desc="工号是否启用" isDisplay="true">true</isUseAccount>
-		<canFlowDisposeBatch kind="flow" desc="流程能否批处理" isDisplay="false">false</canFlowDisposeBatch>
+		<canFlowDisposeBatch kind="flow" desc="流程能否批处理" isDisplay="true">true</canFlowDisposeBatch>
 		
 		<isCloud kind="system" desc="是否接入云平台" isDisplay="true">true</isCloud>
 		<cloudUrl kind="system" desc="云平台地址，默认：http://www.xiaocaicloud.com，本地测试：http://localhost:8899/oa_ide" isDisplay="true">http://www.xiaocaicloud.com</cloudUrl>
@@ -171,8 +170,7 @@
 		<isMobileGridView kind="mobile" desc="手机端是否采用九宫格视图">true</isMobileGridView>
 		
 		<isFlowLevelDisplay kind="flow" desc="是否显示流程等级">true</isFlowLevelDisplay>
-		<isNetdiskUsed kind="netdisk" desc="是否使用网盘">false</isNetdiskUsed>
-		
+
 		<isSegmentEnabled kind="other" desc="中文分词是否启用" isDisplay="false">true</isSegmentEnabled>
 		<segmentKeywordsExcepted kind="other" desc="中文分词排除的关键词，以逗号分隔" isDisplay="false">公司</segmentKeywordsExcepted>
 		
@@ -197,7 +195,6 @@
 
         <modulePageSize kind="module" desc="智能模块默认显示行数">20</modulePageSize>
 
-        <isForumOpen kind="system" desc="论坛是否开启" isDisplay="true">false</isForumOpen>
         <moduleExportQuick kind="module" desc="快速导出（生成XML格式的xls文件）" isDisplay="false">false</moduleExportQuick>
         <isModuleLogRead kind="module" desc="是否记录浏览日志">true</isModuleLogRead>
         <isModuleHistory kind="module" desc="模块历史记录是否显示">true</isModuleHistory>
@@ -208,15 +205,15 @@
         <isSmsWithSign kind="other" desc="短信是否带有签名" isDisplay="false">true</isSmsWithSign>
         <isFlowProxy kind="flow" desc="是否启用代理">false</isFlowProxy>
 
-        <mqIsOpen kind="system" desc="消息机制是否启用，如启用则可以提高发送消息的速度">true</mqIsOpen>
-        <mqServer kind="system" desc="消息服务器地址">localhost</mqServer>
-        <mqIsServerOpen kind="system" desc="本机作为消息服务器是否启用">true</mqIsServerOpen>
-        <mqIsConsumerOpen kind="system" desc="消息消费者是否启用">true</mqIsConsumerOpen>
-        <mqPort kind="system" desc="消息队列的端口号">61616</mqPort>
-        <mqUser kind="system" desc="消息队列的用户名">redmoon</mqUser>
-        <mqPwd kind="system" desc="消息队列的密码">redmoon</mqPwd>
-        <isLoginAgreement kind="system" desc="登录时是否需承诺">false</isLoginAgreement>
+        <mqIsOpen kind="system" desc="消息机制是否启用，如启用则可以提高发送消息的速度">false</mqIsOpen>
+        <mqServer kind="system" desc="ActiveMQ消息服务器地址">localhost</mqServer>
+        <mqIsServerOpen kind="system" desc="本机作为ActiveMQ消息服务器是否启用">false</mqIsServerOpen>
+        <mqIsConsumerOpen kind="system" desc="ActiveMQ消息消费者是否启用，已被application.yml中的mq.type替代，根据mq.type条件注解是否加载" isDisplay="false">false</mqIsConsumerOpen>
+        <mqPort kind="system" desc="ActiveMQ消息队列的端口号">61606</mqPort>
+        <mqUser kind="system" desc="ActiveMQ消息队列的用户名">redmoon</mqUser>
+        <mqPwd kind="system" desc="ActiveMQ消息队列的密码">redmoon</mqPwd>
 
+        <isLoginAgreement kind="system" desc="登录时是否需承诺">false</isLoginAgreement>
         <filearkCodeShow kind="fileark" desc="文件柜中目录编码是否可见" isDisplay="true">true</filearkCodeShow>
         <filearkDocCanComment kind="fileark" desc="能否评论">true</filearkDocCanComment>
         <filearkOnDesktopRemindWordNum kind="fileark" desc="发布文章消息提醒字数">200</filearkOnDesktopRemindWordNum>
@@ -237,5 +234,20 @@
 
         <isNestSheetCheckPrivilege kind="module" desc="是否检查嵌套表格拉单时的模块权限">false</isNestSheetCheckPrivilege>
         <isModuleFieldSelectCtlCheckPrivilege kind="module" desc="是否检查表单域选择宏控件所选择模块的权限">false</isModuleFieldSelectCtlCheckPrivilege>
+
+        <key kind="system" desc="系统内部使用的key，用于访问时的visitKey加密等">cloudwebcloudwebcloudweb</key>
+        <visitKeyExpire kind="system" desc="访问钥匙的超时时长（分钟）">3</visitKeyExpire>
+        <flowCanRemind kind="flow" desc="流程中能否催办">false</flowCanRemind>
+        <isRoleSwitchable kind="system" desc="角色是否可切换，用户只具备当前切换的角色">false</isRoleSwitchable>
+        <isDeptSwitchable kind="system" desc="部门是否可切换，如果是则工作流中不需要再去选兼职部门">false</isDeptSwitchable>
+        <isDeptCodeAuto kind="system" desc="部门编码是否自动生成">true</isDeptCodeAuto>
+
+        <loginMode kind="system" desc="PC端登录模式" options="0|帐户登录,1|扫码登录,2|帐户/扫码登录">0</loginMode>
+        <QRCodeLoginWaitTime kind="system" desc="扫码等待时长，默认20秒">20000</QRCodeLoginWaitTime>
+
+        <isCosUsed kind="system" desc="是否启用COS">false</isCosUsed>
+        <isCosReserveLocalFile desc="启用COS时是否保留本地上传的文件">true</isCosReserveLocalFile>
+
+        <isPostUsed kind="system" desc="是否启用岗位">true</isPostUsed>
     </oa>
 </env>

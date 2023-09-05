@@ -2,10 +2,12 @@ package com.redmoon.oa.flow;
 
 import com.redmoon.oa.base.IFormValidator;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import cn.js.fan.util.StrUtil;
-import org.apache.log4j.Logger;
 import org.jdom.Document;
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import cn.js.fan.util.XMLProperties;
 import org.jdom.Element;
@@ -13,6 +15,8 @@ import java.util.Vector;
 import java.util.Iterator;
 import java.net.URLDecoder;
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 /**
  * <p>Title: </p>
@@ -32,7 +36,6 @@ public class FormValidatorConfig {
 
     private String cfgpath;
 
-    Logger logger;
     Document doc = null;
     Element root = null;
 
@@ -41,20 +44,31 @@ public class FormValidatorConfig {
         cfgpath = cfgURL.getFile();
         cfgpath = URLDecoder.decode(cfgpath);
 
-        properties = new XMLProperties(cfgpath);
+        // properties = new XMLProperties(cfgpath);
 
-        logger = Logger.getLogger(FormValidatorConfig.class.getName());
-
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+            properties = new XMLProperties(CONFIG_FILENAME, doc);
+
+            /*FileInputStream fin = new FileInputStream(cfgpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-            logger.error("Config:" + e.getMessage());
-        } catch (java.io.IOException e) {
-            logger.error("Config:" + e.getMessage());
+            fin.close();*/
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -108,7 +122,7 @@ public class FormValidatorConfig {
 
                     return ifv;
                 } catch (Exception exp) {
-                    logger.error(exp.getMessage());
+                    LogUtil.getLog(getClass()).error(exp.getMessage());
                     exp.printStackTrace();
                 }
             }

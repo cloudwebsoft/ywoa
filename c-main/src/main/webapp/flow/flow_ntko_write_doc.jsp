@@ -153,8 +153,7 @@ function ntko_NotifyCtrlReady() {
 					} catch(err) {
 					};
 					<%
-					String sql = "select id from " + FormDb.getTableName(nestFormCode) + " where cws_id=" + StrUtil.sqlstr(String.valueOf(fdao.getId())) + " order by cws_order";
-					// System.out.println(getClass() + " sql=" + sql);
+					String sql = "select id from " + FormDb.getTableName(nestFormCode) + " where cws_id=" + fdao.getId() + " order by cws_order";
 					ModuleSetupDb msd = new ModuleSetupDb();
 					msd = msd.getModuleSetupDb(nestFormCode);
 					// String listField = StrUtil.getNullStr(msd.getString("list_field"));
@@ -178,7 +177,6 @@ function ntko_NotifyCtrlReady() {
 						table.rows.add();
 						<%
 						for (int i=0; i<len; i++) {
-							// System.out.println(getClass() + " " + fields[i]);
 							String val = fdaoNest.getFieldValue(fields[i]);
 							FormField ffNest = fdNest.getFormField(fields[i]);
 							// 如果是宏控件，则转换为html显示值

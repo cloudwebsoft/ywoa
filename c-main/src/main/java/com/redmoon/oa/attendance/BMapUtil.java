@@ -1,5 +1,8 @@
 package com.redmoon.oa.attendance;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.util.Pdf2htmlEXUtil;
+
 /**
  * 百度地图工具类
  * @author fgf
@@ -38,8 +41,7 @@ public class BMapUtil {
   
         double tt = Math.acos(t1 + t2 + t3);  
   
-        // System.out.println("两点间的距离：" + 6366000 * tt + " 米");  
-        return 6366000 * tt;  
+        return 6366000 * tt;
     }  
 
     /** 
@@ -61,8 +63,8 @@ public class BMapUtil {
                 + Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)));  
         s = s * EARTH_RADIUS;  
         s = Math.round(s * 10000) / 10000;  
-        double ss = s * 1.0936132983377;  
-        System.out.println("两点间的距离是：" + s + "米" + "," + (int) ss + "码");
+        double ss = s * 1.0936132983377;
+        LogUtil.getLog(BMapUtil.class).info("两点间的距离是：" + s + "米" + "," + (int) ss + "码");
         return ss;
     }
 

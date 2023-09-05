@@ -5,21 +5,23 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.utils.ConfigUtil;
+import com.cloudweb.oa.utils.FileUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.UserGroupDb;
 import com.redmoon.oa.ui.PortalDb;
 import com.redmoon.oa.util.TransmitData;
 import com.redmoon.oa.visual.ModuleSetupDb;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.jcs3.access.exception.CacheException;
 
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 public class SysUtil {
     /**
@@ -27,20 +29,12 @@ public class SysUtil {
      *
      * @throws ErrMsgException
      */
-    public static void initSystem() throws ErrMsgException {
+    public static void initSystem(boolean isClearUser) throws ErrMsgException {
         // 将tableNames中的表与db_dict.jsp中生成的表名对比，即可得到新增的需删除数据的表
         String[] tableNames = {
                 "account",
                 "address",
                 "address_dir",
-                // "address_type",
-                // "address_version",
-                // "basic_rank",
-                // "blog",
-                // "blog_group_user",
-                // "blog_user_config",
-                // "book",
-                // "book_type",
                 "cms_comment",
                 "cms_images",
                 "cms_site_flash_image",
@@ -51,14 +45,13 @@ public class SysUtil {
                 // "department",
                 // "dept_user",
                 "dir_kind",
-                "dir_priv",
+                // "dir_priv",
+                "doc_priv",
                 // "directory",
-                "dir_priv",
                 "doc_content",
                 "dir_kind",
                 "doc_attachment_log",
                 "doc_log",
-                "doc_priv",
                 "document",
                 "document_attach",
                 "document_poll",
@@ -89,7 +82,7 @@ public class SysUtil {
                 "flow_paper_no_prefix",
                 "flow_paper_no_prefix_dept",
                 // "flow_predefined",
-                "flow_sequence",
+                // "flow_sequence",
                 //"form_query",
                 //"form_query_condition",
                 //"form_query_privilege",
@@ -106,36 +99,10 @@ public class SysUtil {
                 "link",
                 "log",
                 "message",
-                "net_disk",
-                "netdisk_cooperate",
-                "netdisk_cooperate_log",
-                "netdisk_directory",
-                "netdisk_dir_priv",
-                "netdisk_doc_content",
-                //"netdisk_document",
-                "netdisk_document_attach",
-                "netdisk_public_attach",
-                // "netdisk_public_directory",
-                "netdisk_public_dir_priv",
-                "netdisk_public_directory",
-                "netdisk_role_template",
-                "netdisk_role_template_download",
-                // netdisk_sidebar_setup
-                "netdisk_version",
                 // "oa_calendar",
                 "oa_document_robot",
-                "oa_exam_attachment",
-                "oa_exam_database",
-                "oa_exam_database_option",
-                "oa_exam_major_priv",
-                "oa_exam_paper",
-                "oa_exam_paper_priv",
-                "oa_exam_paper_question",
-                "oa_exam_score",
-                "oa_exam_subject",
-                "oa_exam_useranswer",
                 "oa_exchange_rate",
-                "oa_lark_msg",
+                // "oa_lark_msg",
                 "oa_location",
                 // "oa_menu",
                 "oa_menu_most_recently_used",
@@ -149,33 +116,33 @@ public class SysUtil {
                 "oa_person_group_type",
                 "oa_person_group_user",
                 // oa_portal
-                // oa_privilege_center
-                "oa_questionnaire_form",
-                "oa_questionnaire_form_item",
-                "oa_questionnaire_form_subitem",
-                "oa_questionnaire_item",
-                "oa_questionnaire_priv",
-                "oa_questionnaire_subitem",
+//                // oa_privilege_center
+//                "oa_questionnaire_form",
+//                "oa_questionnaire_form_item",
+//                "oa_questionnaire_form_subitem",
+//                "oa_questionnaire_item",
+//                "oa_questionnaire_priv",
+//                "oa_questionnaire_subitem",
                 // "oa_select",
                 // "oa_select_option",
-                "oa_sales_action_setup",
-                "oa_sales_customer_distr",
+//                "oa_sales_action_setup",
+//                "oa_sales_customer_distr",
                 // "oa_sales_fahuodan_templ",
-                "oa_sales_stock_product",
+//                "oa_sales_stock_product",
                 "oa_server_ip",
                 "oa_server_ip_priv",
                 "oa_stamp",
                 "oa_stamp_log",
-                "oa_stamp_priv",
+                // "oa_stamp_priv",
                 // "oa_user_level",
-                "office_equipment",
+                /*"office_equipment",
                 "office_equipment_op",
                 "office_equipment_type",
-                "office_stocktaking",
-                "pcinfo",
+                "office_stocktaking",*/
+//                "pcinfo",
                 "photo",
                 // "plugin2_alipay",
-                "plugin_activity",
+//                "plugin_activity",
                 // "plugin_auction_bid",
                 // "plugin_auction_board",
                 // "plugin_auction_catalog",
@@ -184,7 +151,7 @@ public class SysUtil {
                 // "plugin_auction_shop",
                 // "plugin_auction_shop_dir",
                 // "plugin_auction_worth",
-                "plugin_board",
+                /*"plugin_board",
                 "plugin_debate",
                 "plugin_debate_viewpoint",
                 "plugin_dig",
@@ -197,17 +164,17 @@ public class SysUtil {
                 "plugin_group_catalog",
                 "plugin_group_photo",
                 "plugin_group_thread",
-                "plugin_group_user",
+                "plugin_group_user",*/
                 // "plugin_info",
                 // "plugin_info_board",
                 // "plugin_info_directory",
-                "plugin_present",
-                "plugin_project",
+                /*"plugin_present",
+                "plugin_project",*/
                 // "plugin_refer",
                 // "plugin_remark",
-                "plugin_reward",
+                /*"plugin_reward",
                 "plugin_reward_board",
-                "post", // 20190130 fgf 弃用
+                "post", // 20190130 fgf 弃用*/
                 // "postcode",
                 "project_favorite",
                 // "report_manage", // 模板列表
@@ -221,29 +188,29 @@ public class SysUtil {
                 "sms_template",
                 // "sq_advertisement",
                 // "sq_board",
-                "sq_board_entrance",
-                "sq_board_score",
-                "sq_board_visit_log",
-                "sq_boardmanager",
-                "sq_boardrender",
-                "sq_chat_msg",
+                /* "sq_board_entrance",
+                 "sq_board_score",
+                 "sq_board_visit_log",
+                 "sq_boardmanager",
+                 "sq_boardrender",
+                 "sq_chat_msg",*/
                 // "sq_chatroom",
                 // "sq_classmaster",
                 // "sq_faction",
-                "sq_forbid_ip",
-                "sq_forbid_ip_range",
+//                "sq_forbid_ip",
+//                "sq_forbid_ip_range",
                 // "sq_forum",
                 // "sq_forum_media_dir",
-                "sq_forum_media_file",
+                // "sq_forum_media_file",
                 // "sq_forum_menu",
                 // "sq_forum_music_dir",
-                "sq_forum_music_file",
+                /*"sq_forum_music_file",
                 "sq_forum_music_user",
-                "sq_forum_robot",
+                "sq_forum_robot",*/
                 // "sq_forum_stat",
-                "sq_friend",
+                /*"sq_friend",*/
                 // "sq_id",
-                "sq_images",
+                /*"sq_images",
                 "sq_ip_address",
                 "sq_master",
                 "sq_message",
@@ -258,21 +225,21 @@ public class SysUtil {
                 "sq_roomemcee",
                 "sq_scheduler",
                 "sq_score_log",
-                "sq_score_record",
+                "sq_score_record",*/
                 // "sq_setup_user_level",
-                "sq_tag",
+                /*"sq_tag",
                 "sq_tag_message",
                 "sq_thread",
-                "sq_thread_type",
+                "sq_thread_type",*/
                 // "sq_user",
                 // "sq_user_group",
-                "sq_user_group_priv",
-                "sq_user_priv",
+                /*"sq_user_group_priv",
+                "sq_user_priv",*/
                 // "sq_user_prop",
-                "sq_user_treasure",
+                /*"sq_user_treasure",
                 "sq_visit_board_log",
-                "sq_visit_topic_log",
-                "update_log",
+                "sq_visit_topic_log",*/
+//                "update_log",
                 "user_admin_dept",
                 // "user_archive",
                 // "user_desktop_setup",
@@ -282,20 +249,20 @@ public class SysUtil {
                 // "user_group_priv",
                 "user_key",
                 "user_mobile",
-                "user_of_group",
-                "user_of_role",
+                /*"user_of_group",
+                "user_of_role",*/
                 "user_phrase",
                 "user_plan",
                 "user_plan_periodicity",
-                "user_priv",
+                // "user_priv",
                 "user_proxy",
                 "user_recently_selected",
                 // "user_role",
-                "user_role_dept",
-                "user_role_priv",
+                // "user_role_dept",
+                // "user_role_priv",
                 // "user_setup",
                 // "users",
-                "verification_code_record",
+                // "verification_code_record",
                 "visual_attach",
                 "visual_module_export_template",
                 "visual_module_import_template",
@@ -306,7 +273,7 @@ public class SysUtil {
                 "visual_module_worklog",
                 "work_log",
                 "work_log_attach",
-                "work_log_expand",
+                // "work_log_expand",
                 "work_plan",
                 "work_plan_annex",
                 "work_plan_annex_attach",
@@ -319,36 +286,55 @@ public class SysUtil {
                 // "work_plan_type",
                 "work_plan_user",
         };
-        // System.out.println(tableNames.length);
 
+        String sql;
         JdbcTemplate jt = new JdbcTemplate();
         jt.setAutoClose(false);
         try {
-            // 取出请假申请单对应的模块，以免删除其权限
-            ModuleSetupDb msd = new ModuleSetupDb();
-            String sql = msd.getTable().getSql("listForForm") + StrUtil.sqlstr("qjsqd");
-            StringBuilder sb = new StringBuilder();
-            Vector<ModuleSetupDb> v = msd.list(sql);
-            for (ModuleSetupDb moduleSetupDb : v) {
-                String moduleCode = moduleSetupDb.getCode();
-                StrUtil.concat(sb, ",", StrUtil.sqlstr(moduleCode));
+            // map中为保留的表
+            Map<String, String> map = new HashMap<>();
+            Map<String, String> selector = new HashMap<>();
+            /*map.put("ft_data_dict_table", "");    // 数据字典 - 表格
+            map.put("ft_data_dict_column", ""); // 数据字字典 - 列
+            map.put("ft_formula", "");      // 函数
+            map.put("ft_salary_tax", "");   // 税率设置
+            map.put("ft_salary_subject", ""); // 工资科目
+            map.put("ft_personbasic", "");  // 人事信息，因为桌面图表、卡片项的设置需用到
+            map.put("ft_config_card", "");  // 桌面卡片
+            map.put("ft_config_chart", ""); // 图表设置
+            map.put("ft_ys", ""); // 预算（用于DEMO演示折线图）*/
+
+            ConfigUtil configUtil = SpringUtil.getBean(ConfigUtil.class);
+            List<String> tableReserved = FileUtil.read(configUtil.getFile("sys_init_table_reserved.txt"));
+            for (String tableName : tableReserved) {
+                tableName = tableName.trim();
+                if (StrUtil.isEmpty(tableName)) {
+                    continue;
+                }
+                if (tableName.startsWith("#")) {
+                    continue;
+                }
+                if (tableName.startsWith("!") || tableName.startsWith("$") || tableName.startsWith("^") || tableName.startsWith("&")) {
+                    selector.put(tableName.substring(0, 1), tableName.substring(1));
+                    continue;
+                }
+
+                int p = tableName.indexOf("(");
+                if (p == -1) {
+                    p = tableName.indexOf("（"); // 全角左括号，防止配置的时候录错了
+                }
+                if (p != -1) {
+                    tableName = tableName.substring(0, p);
+                }
+                map.put(tableName, ""); // 图表设置
             }
-            sql = "delete from visual_module_priv where form_code not in (" + sb.toString() + ")";
-            jt.addBatch(sql);
 
             for (String tableName : tableNames) {
-                sql = "delete from " + tableName;
-                jt.addBatch(sql);
-                System.out.println(sql);
+                if (!map.containsKey(tableName)) {
+                    sql = "delete from " + tableName;
+                    jt.addBatch(sql);
+                }
             }
-
-            // 取出所有的form_table_开头的表，去掉map中的表
-            Map map = new HashMap();
-            map.put("form_table_data_dict_table", "");    // 数据字典
-			map.put("form_table_data_dict_column", "");
-            map.put("form_table_formula", "");      // 函数
-            map.put("form_table_salary_tax", "");   // 税率设置
-            map.put("form_table_salary_subject", ""); // 工资科目
 
             Connection connection = new Connection(Global.getDefaultDB());
             try {
@@ -357,19 +343,44 @@ public class SysUtil {
                 String tableName = "";
                 while (rsTable.next()) {
                     tableName = rsTable.getObject(3).toString();
-                    if (tableName.startsWith("form_table_")) {
+                    if (tableName.startsWith("ft_")) {
                         if (!map.containsKey(tableName)) {
-                            sql = "delete from " + tableName;
-                            jt.addBatch(sql);
+                            Set<String> keys = selector.keySet();
+                            boolean isMatched = false;
+                            for (String key : keys) {
+                                if ("&".equals(key)) {
+                                    if (tableName.contains(selector.get(key))) {
+                                        isMatched = true;
+                                    }
+                                } else if ("$".equals(key)) {
+                                    if (tableName.endsWith(selector.get(key))) {
+                                        isMatched = true;
+                                    }
+                                } else if ("!".equals(key)) {
+                                    if (!tableName.startsWith(selector.get(key))) {
+                                        isMatched = true;
+                                    }
+                                } else if ("^".equals(key)) {
+                                    if (tableName.startsWith(selector.get(key))) {
+                                        isMatched = true;
+                                    }
+                                }
+                            }
+                            if (isMatched) {
+                                LogUtil.getLog(SysUtil.class).info("批处理：清空 " + tableName);
+                                sql = "delete from " + tableName;
+                                jt.addBatch(sql);
+                            }
                         }
                     }
                 }
             } catch (Exception e) {
                 throw new ErrMsgException("数据库连接错误！");
-            }
-            finally {
+            } finally {
                 connection.close();
             }
+
+            // if (true) return;
 
             sql = "update redmoonid set id=1";
             jt.addBatch(sql);
@@ -384,13 +395,61 @@ public class SysUtil {
             sql = "delete from oa_person_group_user";
             jt.addBatch(sql);
 
-            sql = "delete from users where name<>'admin' and name<>'system'";
-            jt.addBatch(sql);
+            if (isClearUser) {
+                sql = "delete from users where name<>'admin' and name<>'system'";
+                jt.addBatch(sql);
+
+                sql = "delete from user_setup where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                sql = "delete from user_of_group";
+                jt.addBatch(sql);
+
+                sql = "delete from user_of_role";
+                jt.addBatch(sql);
+
+                sql = "delete from dept_user where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                sql = "delete from user_priv where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                sql = "delete from user_role_dept where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                sql = "delete from user_role_priv where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                // 取出请假申请单对应的模块，以免删除其权限
+                ModuleSetupDb msd = new ModuleSetupDb();
+                sql = msd.getTable().getSql("listForForm") + StrUtil.sqlstr("qjsqd");
+                StringBuilder sb = new StringBuilder();
+                Vector<ModuleSetupDb> v = msd.list(sql);
+                for (ModuleSetupDb moduleSetupDb : v) {
+                    String moduleCode = moduleSetupDb.getCode();
+                    StrUtil.concat(sb, ",", StrUtil.sqlstr(moduleCode));
+                }
+                sql = "delete from visual_module_priv where form_code not in (" + sb.toString() + ")";
+                jt.addBatch(sql);
+
+                sql = "delete from user_group_priv where groupCode<>" + StrUtil.sqlstr(UserGroupDb.EVERYONE);
+                jt.addBatch(sql);
+
+                sql = "delete from oa_stamp_priv where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                sql = "delete from dir_priv where user_name<>'admin'";
+                jt.addBatch(sql);
+
+                // 序列号不清除
+                /*sql = "delete from flow_sequence";
+                jt.addBatch(sql);*/
+            }
+
             sql = "update users set diskSpaceUsed=0 where name='admin'";
             jt.addBatch(sql);
             sql = "update users set pwd='96e79218965eb72c92a549dd5a330112',pwdRaw='111111',diskSpaceUsed=0,online_time=0 where name='admin'";
             jt.addBatch(sql);
-            sql = "delete from user_setup where user_name<>'admin'";
             jt.addBatch(sql);
             sql = "delete from sq_user where name<>'admin'";
             jt.addBatch(sql);
@@ -409,9 +468,7 @@ public class SysUtil {
             // sql = "update dept_user set dept_code='root' where user_name='admin'";
             // jt.addBatch(sql);
 
-            sql = "delete from dept_user where user_name<>'admin'";
-            jt.addBatch(sql);
-            //	sql = "drop table where name like 'form_table_%'";
+            //	sql = "drop table where name like 'ft_%'";
             //	jt.addBatch(sql);
 
             sql = "update sq_forum set userCount=1, userNew='', topicCount=0, postCount=0, todayCount=0, yestodayCount=0, maxCount=0, maxOnlineCount=0, notices=''";
@@ -420,9 +477,6 @@ public class SysUtil {
             sql = "delete from directory where code<>'root' and code<>'project'";
             jt.addBatch(sql);
             sql = "update directory set child_count=0 where code='root'";
-            jt.addBatch(sql);
-
-            sql = "delete from user_group_priv where groupCode<>" + StrUtil.sqlstr(UserGroupDb.EVERYONE);
             jt.addBatch(sql);
 
             sql = "delete from flow_doc_template";
@@ -434,8 +488,6 @@ public class SysUtil {
             sql = "update department set childCount=0 where code='root'";
             jt.addBatch(sql);
 
-            sql = "delete from netdisk_public_directory where code <> 'root'";
-            jt.addBatch(sql);
             sql = "delete from user_key where user_name <> 'admin'";
             jt.addBatch(sql);
             sql = "delete from oa_slide_menu_group where user_name <> 'system' and user_name <> 'admin'";
@@ -456,7 +508,7 @@ public class SysUtil {
 
             jt.executeBatch();
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(SysUtil.class).error(e);
         } finally {
             jt.close();
         }
@@ -469,23 +521,24 @@ public class SysUtil {
         //cn.js.fan.util.file.FileUtil.del(application.getRealPath("/") + "upfile");
         //cn.js.fan.util.file.FileUtil.del(application.getRealPath("/") + "forum/upfile");
 
+        LogUtil.getLog(SysUtil.class).info("清空文件");
+
         try {
             cn.js.fan.util.file.FileUtil.del(Global.getRealPath() + "upfile");
             cn.js.fan.util.file.FileUtil.del(Global.getRealPath() + "forum/upfile");
             cn.js.fan.util.file.FileUtil.del(Global.getRealPath() + "public/users"); // 手机端上传的用户头像
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(SysUtil.class).error(e);
         }
 
         // 初始化相关表自动生成ID的序列
         initSequenceOATables();
-        initSequenceForumTables();
 
         cn.js.fan.cache.jcs.RMCache rmcache = cn.js.fan.cache.jcs.RMCache.getInstance();
         try {
             rmcache.clear();
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(SysUtil.class).error(e);
         }
     }
 
@@ -516,8 +569,8 @@ public class SysUtil {
         sequenceOATables[7][0] = "oa_message";
         sequenceOATables[7][1] = "OA_MESSAGE";
 
-        sequenceOATables[8][0] = "netdisk_document";
-        sequenceOATables[8][1] = "OA_DOCUMENT_NETDISK";
+        // sequenceOATables[8][0] = "netdisk_document";
+        // sequenceOATables[8][1] = "OA_DOCUMENT_NETDISK";
 
         sequenceOATables[9][0] = "";
         sequenceOATables[9][1] = "OA_VISUAL_DOCUMENT";
@@ -765,14 +818,14 @@ public class SysUtil {
         sequenceOATables[89][0] = "flow_paper_distribute";
         sequenceOATables[89][1] = "OA_FLOW_PAPER_DISTRIBUTE";
 
-        sequenceOATables[90][0] = "netdisk_document_attach";
-        sequenceOATables[90][1] = "OA_DOCUMENT_NETDISK_ATTACHMENT";
+        // sequenceOATables[90][0] = "netdisk_document_attach";
+        // sequenceOATables[90][1] = "OA_DOCUMENT_NETDISK_ATTACHMENT";
 
         sequenceOATables[91][0] = "report_manage";
         sequenceOATables[91][1] = "OA_REPORT_MANAGE";
 
-        sequenceOATables[92][0] = "netdisk_role_template";
-        sequenceOATables[92][1] = "OA_NETDISK_ROLE_TEMPLATE";
+        // sequenceOATables[92][0] = "netdisk_role_template";
+        // sequenceOATables[92][1] = "OA_NETDISK_ROLE_TEMPLATE";
 
         sequenceOATables[93][0] = "work_log";
         sequenceOATables[93][1] = "OA_WORK_LOG";
@@ -795,341 +848,38 @@ public class SysUtil {
         for (int i = 0; i < 95; i++) {
             String tableName = sequenceOATables[i][0];
             cmsId = i;
-            if ("".equals(tableName)) {
-
-            } else {
-                String tableId = "id";
-                if (sequenceOATables[i][2] != null)
-                    tableId = sequenceOATables[i][2];
-                sql = "select max(" + tableId + ") from " + tableName;
-                JdbcTemplate jt = new JdbcTemplate();
-                try {
-                    ResultIterator ri = jt.executeQuery(sql);
-                    if (ri.hasNext()) {
-                        ResultRecord rd = (ResultRecord) ri.next();
-                        id = rd.getInt(1);
-                    }
-                    id++;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return;
-                }
-
-                try {
-                    sql = "update redmoonid set id=" + id + " where idType=" + cmsId;
-                    int r = jt.executeUpdate(sql);
-                    if (r == 0) {
-                        sql = "insert into redmoonid (id, idType) values (" + id + "," + i + ")";
-                        jt.executeUpdate(sql);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return;
-                }
+            if (StringUtils.isEmpty(tableName)) {
+                continue;
             }
-        }
-    }
 
-    public static String[][] sequenceForumTables = new String[87][3];
-
-    static {
-        sequenceForumTables[0][0] = "sq_message";             //第一列为表名，第二列为SequenceManager.java中的常量
-        sequenceForumTables[0][1] = "MSG";
-
-        sequenceForumTables[1][0] = "";
-        sequenceForumTables[1][1] = "DOCUMENT";
-
-        sequenceForumTables[2][0] = "";
-        sequenceForumTables[2][1] = "AuctionOrderId";
-
-        sequenceForumTables[3][0] = "";
-        sequenceForumTables[3][1] = "ShopId";
-
-        sequenceForumTables[4][0] = "sq_chatroom";
-        sequenceForumTables[4][1] = "SQ_CHATROOM";
-
-        sequenceForumTables[5][0] = "sq_friend";
-        sequenceForumTables[5][1] = "SQ_FRIEND";
-
-        sequenceForumTables[6][0] = "sq_master";
-        sequenceForumTables[6][1] = "SQ_MASTER";
-
-        sequenceForumTables[7][0] = "sq_message_attach";
-        sequenceForumTables[7][1] = "SQ_MESSAGE_ATTACH";
-
-        sequenceForumTables[8][0] = "";  //sq_user表无int型ID列
-        sequenceForumTables[8][1] = "SQ_USER";
-
-        sequenceForumTables[9][0] = "";
-        sequenceForumTables[9][1] = "DOCUMENT_ATTACH";
-
-        sequenceForumTables[10][0] = "";
-        sequenceForumTables[10][1] = "COMMENT";
-
-        sequenceForumTables[11][0] = "photo";
-        sequenceForumTables[11][1] = "PHOTO";
-
-        sequenceForumTables[12][0] = "sq_forbid_ip_range";
-        sequenceForumTables[12][1] = "SQ_FORBID_IP_RANGE";
-
-        sequenceForumTables[13][0] = "cms_images";
-        sequenceForumTables[13][1] = "CMS_IMAGES";
-
-        sequenceForumTables[14][0] = "sq_images";
-        sequenceForumTables[14][1] = "SQ_IMAGES";
-
-        sequenceForumTables[15][0] = "";
-        sequenceForumTables[15][1] = "SQ_SHORT_MESSAGE";
-
-        sequenceForumTables[16][0] = "";
-        sequenceForumTables[16][1] = "INFO_ATTACH";
-
-        sequenceForumTables[17][0] = "";
-        sequenceForumTables[17][1] = "PRICE_ID";
-
-        sequenceForumTables[18][0] = "";
-        sequenceForumTables[18][1] = "MARKET_ID";
-
-        sequenceForumTables[19][0] = "";
-        sequenceForumTables[19][1] = "SQ_CHATROOM_EMCEE";
-
-        sequenceForumTables[20][0] = "";
-        sequenceForumTables[20][1] = "CMS_TEMPLATE_ID";
-
-        sequenceForumTables[21][0] = "sq_thread_type";
-        sequenceForumTables[21][1] = "THREAD_TYPE_ID";
-
-        sequenceForumTables[22][0] = "";
-        sequenceForumTables[22][1] = "SQ_AD_CONTENT_ID";
-
-        sequenceForumTables[23][0] = "sq_advertisement";
-        sequenceForumTables[23][1] = "SQ_AD_BOARD_ID";
-
-        sequenceForumTables[24][0] = "";
-        sequenceForumTables[24][1] = "DIR_PRIV_ID";
-
-        sequenceForumTables[25][0] = "";
-        sequenceForumTables[25][1] = "BLOG_ID";
-
-        sequenceForumTables[26][0] = "";
-        sequenceForumTables[26][1] = "CMS_ROBOT_ID";
-
-        sequenceForumTables[27][0] = "";
-        sequenceForumTables[27][1] = "SQ_SCORE_RECORD";
-
-        sequenceForumTables[28][0] = "sq_scheduler";
-        sequenceForumTables[28][1] = "SQ_SCHEDULER";
-
-        sequenceForumTables[29][0] = "";
-        sequenceForumTables[29][1] = "FORUM_ROBOT_ID";
-
-        sequenceForumTables[30][0] = "";
-        sequenceForumTables[30][1] = "CMS_SUBJECT_LIST_ID";
-
-        sequenceForumTables[31][0] = "";
-        sequenceForumTables[31][1] = "";
-
-        sequenceForumTables[32][0] = "";
-        sequenceForumTables[32][1] = "";
-
-        sequenceForumTables[33][0] = "";
-        sequenceForumTables[33][1] = "";
-
-        sequenceForumTables[34][0] = "";
-        sequenceForumTables[34][1] = "";
-
-        sequenceForumTables[35][0] = "";
-        sequenceForumTables[35][1] = "";
-
-        sequenceForumTables[36][0] = "";
-        sequenceForumTables[36][1] = "";
-
-        sequenceForumTables[37][0] = "";
-        sequenceForumTables[37][1] = "";
-
-        sequenceForumTables[38][0] = "";
-        sequenceForumTables[38][1] = "";
-
-        sequenceForumTables[39][0] = "";
-        sequenceForumTables[39][1] = "";
-
-        sequenceForumTables[40][0] = "";
-        sequenceForumTables[40][1] = "BLOG_LINK";
-
-        sequenceForumTables[41][0] = "";
-        sequenceForumTables[41][1] = "SQ_LINK";
-
-        sequenceForumTables[42][0] = "plugin_group";
-        sequenceForumTables[42][1] = "PLUGIN_GROUP";
-
-        sequenceForumTables[43][0] = "plugin_group_thread";
-        sequenceForumTables[43][1] = "PLUGIN_GROUP_THREAD";
-
-        sequenceForumTables[44][0] = "plugin_group_photo";
-        sequenceForumTables[44][1] = "PLUGIN_GROUP_PHOTO";
-
-        sequenceForumTables[45][0] = "plugin_group_activity";
-        sequenceForumTables[45][1] = "PLUGIN_GROUP_ACTIVITY";
-
-        sequenceForumTables[46][0] = "";
-        sequenceForumTables[46][1] = "PLUGIN_AUCTION_CATALOG_PRIV";
-
-        sequenceForumTables[47][0] = "";
-        sequenceForumTables[47][1] = "PLUGIN_AUCTION_WORTH";
-
-        sequenceForumTables[48][0] = "";
-        sequenceForumTables[48][1] = "PLUGIN_AUCTOIN_BID";
-
-        sequenceForumTables[49][0] = "";
-        sequenceForumTables[49][1] = "MESSAGE_RECOMMEND_ID";
-
-        sequenceForumTables[50][0] = "sms_send_record";
-        sequenceForumTables[50][1] = "SMS_SEND_RECORD";
-
-        sequenceForumTables[51][0] = "";
-        sequenceForumTables[51][1] = "GUESTBOOK";
-
-        sequenceForumTables[52][0] = "";
-        sequenceForumTables[52][1] = "DIG";
-
-        sequenceForumTables[53][0] = "";
-        sequenceForumTables[53][1] = "BLOG_MUSIC";
-
-        sequenceForumTables[54][0] = "";
-        sequenceForumTables[54][1] = "BLOG_VIDEO";
-
-        sequenceForumTables[55][0] = "";
-        sequenceForumTables[55][1] = "PLUGIN_FETION_ACTIVITY_MEMBER";
-
-        sequenceForumTables[56][0] = "SQ_FORUM_MUSIC_USER";
-        sequenceForumTables[56][1] = "SQ_FORUM_MUSIC_USER";
-
-        sequenceForumTables[57][0] = "";
-        sequenceForumTables[57][1] = "PLUGIN_EXAM_QUESTION";
-
-        sequenceForumTables[58][0] = "";
-        sequenceForumTables[58][1] = "PLUGIN_EXAM_QUESTION_OPTION";
-
-        sequenceForumTables[59][0] = "";
-        sequenceForumTables[59][1] = "PLUGIN_EXAM_USER_ANSWER";
-
-        sequenceForumTables[60][0] = "";
-        sequenceForumTables[60][1] = "PLUGIN_BLOG_TEMPLATE";
-
-        sequenceForumTables[61][0] = "";
-        sequenceForumTables[61][1] = "CMS_SITE_AD";
-
-        sequenceForumTables[62][0] = "";
-        sequenceForumTables[62][1] = "CMS_FLASH_STORE_FILE";
-
-        sequenceForumTables[63][0] = "";
-        sequenceForumTables[63][1] = "CMS_SITE_FLASH_IMAGE";
-
-        sequenceForumTables[64][0] = "";
-        sequenceForumTables[64][1] = "CMS_SITE_TEMPLATE";
-
-        sequenceForumTables[65][0] = "";
-        sequenceForumTables[65][1] = "CMS_SITE_SCROLL_IMG";
-
-        sequenceForumTables[66][0] = "";
-        sequenceForumTables[66][1] = "BLOG_PHOTO_COMMENT";
-
-        sequenceForumTables[67][0] = "";
-        sequenceForumTables[67][1] = "BLOG_PHOTO_CATALOG";
-
-        sequenceForumTables[68][0] = "SQ_SCORE_LOG";
-        sequenceForumTables[68][1] = "SQ_SCORE_LOG";
-
-        sequenceForumTables[69][0] = "SQ_VISIT_BOARD_LOG";
-        sequenceForumTables[69][1] = "SQ_BOARD_VISIT_LOG";
-
-        sequenceForumTables[70][0] = "";
-        sequenceForumTables[70][1] = "CMS_SOFTWARE_DOWNLOAD";
-
-        sequenceForumTables[71][0] = "";
-        sequenceForumTables[71][1] = "BLOG_MUSIC_COMMENT";
-
-        sequenceForumTables[72][0] = "";
-        sequenceForumTables[72][1] = "BLOG_VIDEO_COMMENT";
-
-        sequenceForumTables[73][0] = "";
-        sequenceForumTables[73][1] = "QUESTIONNAIRE_FORM";
-
-        sequenceForumTables[74][0] = "";
-        sequenceForumTables[74][1] = "QUESTIONNAIRE_FORM_ITEM";
-
-        sequenceForumTables[75][0] = "";
-        sequenceForumTables[75][1] = "QUESTIONNAIRE_FORM_SUBITEM";
-
-        sequenceForumTables[76][0] = "";
-        sequenceForumTables[76][1] = "QUESTIONNAIRE_ITEM";
-
-        sequenceForumTables[77][0] = "";
-        sequenceForumTables[77][1] = "QUESTIONNAIRE_SUBITEM";
-
-        sequenceForumTables[78][0] = "";
-        sequenceForumTables[78][1] = "QUESTIONNAIRE_NUM";
-
-        sequenceForumTables[79][0] = "";
-        sequenceForumTables[79][1] = "LOG";
-
-        sequenceForumTables[80][0] = "";
-        sequenceForumTables[80][1] = "CMS_DIR_VISIT_LOG";
-
-        sequenceForumTables[81][0] = "";
-        sequenceForumTables[81][1] = "CMS_VIDEO_STORE_FILE";
-
-        sequenceForumTables[82][0] = "SQ_REGIST_QUIZ";
-        sequenceForumTables[82][1] = "SQ_REGIST_QUIZ";
-
-        sequenceForumTables[83][0] = "";
-        sequenceForumTables[83][1] = "SQ_T_MSG";
-
-        sequenceForumTables[84][0] = "";
-        sequenceForumTables[84][1] = "SQ_T_MSG_ATT";
-
-        sequenceForumTables[85][0] = "";
-        sequenceForumTables[85][1] = "SNS_APP_ACTION";
-
-        sequenceForumTables[86][0] = "";
-        sequenceForumTables[86][1] = "SQ_T_TAG";
-    }
-
-    public static String[][] getSequenceForumTables() {
-        return sequenceForumTables;
-    }
-
-    public static void initSequenceForumTables() {
-        String tableName;
-        int cmsId;
-        String sql;
-        int id = 0;
-        for (int i = 0; i < 87; i++) {
-            tableName = sequenceForumTables[i][0];
-            cmsId = i;
-            if ("".equals(tableName)) {
-
-            } else {
-                sql = "select max(id) from " + tableName;
-                JdbcTemplate jt = new JdbcTemplate();
-                try {
-                    ResultIterator ri = jt.executeQuery(sql);
-                    if (ri.hasNext()) {
-                        ResultRecord rd = (ResultRecord) ri.next();
-                        id = rd.getInt(1);
-                    }
-                    id++;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    return;
+            String tableId = "id";
+            if (sequenceOATables[i][2] != null) {
+                tableId = sequenceOATables[i][2];
+            }
+            sql = "select max(" + tableId + ") from " + tableName;
+            JdbcTemplate jt = new JdbcTemplate();
+            try {
+                ResultIterator ri = jt.executeQuery(sql);
+                if (ri.hasNext()) {
+                    ResultRecord rd = ri.next();
+                    id = rd.getInt(1);
                 }
-                try {
-                    sql = "update sq_id set id=" + id + " where idType=" + cmsId;
+                id++;
+            } catch (Exception e) {
+                LogUtil.getLog(SysUtil.class).error(e);
+                return;
+            }
+
+            try {
+                sql = "update redmoonid set id=" + id + " where idType=" + cmsId;
+                int r = jt.executeUpdate(sql);
+                if (r == 0) {
+                    sql = "insert into redmoonid (id, idType) values (" + id + "," + i + ")";
                     jt.executeUpdate(sql);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return;
                 }
+            } catch (Exception e) {
+                LogUtil.getLog(SysUtil.class).error(e);
+                return;
             }
         }
     }

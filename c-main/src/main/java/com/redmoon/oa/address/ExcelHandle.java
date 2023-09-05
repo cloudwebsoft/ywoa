@@ -3,6 +3,7 @@ package com.redmoon.oa.address;
 import java.io.OutputStream;
 import java.util.Iterator;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import jxl.Workbook;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
@@ -96,7 +97,7 @@ public class ExcelHandle {
             wwb.write();
             wwb.close();
         } catch (Exception e) {
-            System.out.println(e.toString());
+            LogUtil.getLog(ExcelHandle.class).error(e);
         }
     }
     /**
@@ -129,7 +130,7 @@ public class ExcelHandle {
             wwb.write();
             wwb.close();
         } catch (Exception e) {
-            System.out.println(e.toString());
+            LogUtil.getLog(ExcelHandle.class).error(e);
         }
     }
 }

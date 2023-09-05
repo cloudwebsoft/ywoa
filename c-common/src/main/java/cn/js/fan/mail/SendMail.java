@@ -33,11 +33,10 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
 
@@ -59,9 +58,7 @@ public class SendMail {
     String subtype = "related"; // Construct a MimeMultipart object of the given subtype. A unique boundary string is generated and this string is setup as the "boundary" parameter for the contentType field.
 
     String tempAttachFilePath;
-
-    Logger logger = Logger.getLogger(SendMail.class.getName());
-
+    
     public SendMail() {
         host = "fserver";
         mailFooter = ""; // "\n\n\n===========此邮件由Bluewind发送========\n\n";
@@ -114,7 +111,6 @@ public class SendMail {
      * 以HTML的方式发送
      * @param smtpServer String
      * @param smtpPort int
-     * @param senderName String
      * @param to String
      * @param subject String
      * @param content String
@@ -133,7 +129,7 @@ public class SendMail {
             re = send();
         }
         catch (Exception e) {
-            logger.error("send(,,,,):" + e.getMessage());
+            LogUtil.getLog(getClass()).error("send(,,,,):" + e.getMessage());
         }
         return re;
     }
@@ -153,26 +149,34 @@ public class SendMail {
         	}
         	
             Properties properties = System.getProperties();
-            
+
             if (!isSsl) {
 	            properties.put("mail.host", host);
 	            properties.put("mail.transport.protocol", "smtp");
 	            properties.put("mail.smtp.auth", "true");
 	            properties.put("mail.smtp.port", "" + port);
             } else {
-            	Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());        
+            	Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
+
+                // 协议名称设置为smtps，会使用SSL
+                properties.setProperty("mail.transport.protocol", "smtps");
+                properties.setProperty("mail.smtp.ssl.enable", "true");
+
     	        properties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
     	        properties.setProperty("mail.smtp.socketFactory.fallback", "false");
-    	        properties.put("mail.smtp.auth", "true");
+                properties.setProperty("mail.smtp.socketFactory.port", "" + port);
+    	        properties.setProperty("mail.smtp.auth", "true");
     	        properties.setProperty("mail.smtp.host", host);
-    	
-    	        properties.setProperty("mail.smtp.port", "" + port);
-    	        properties.setProperty("mail.smtp.socketFactory.port", "" + port);
+    	        properties.setProperty("mail.smtp.port", String.valueOf(port));
+                properties.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
+
+                // 如果出现：454 Command not permitted when TLS active
+                properties.setProperty("mail.smtp.starttls.enable", "false");
             }
             
             // 防止超时，10秒
 	        properties.setProperty("mail.smtp.connectiontimeout", "10000");
-	        properties.setProperty("mail.smtp.timeout", "10000");            
+	        properties.setProperty("mail.smtp.timeout", "10000");
 
             PopupAuthenticator popupauthenticator = new PopupAuthenticator();
             popupauthenticator.init(username, password);
@@ -180,14 +184,15 @@ public class SendMail {
             session.setDebug(sessionDebug);
             msg = new MimeMessage(session);
             msg.setSentDate(new Date());
-            if (subtype.equals(""))
+            if ("".equals(subtype)) {
                 multipart = new MimeMultipart();
-            else
+            } else {
                 multipart = new MimeMultipart(subtype);
+            }
             msg.setContent(multipart);
         } catch (Exception e) {
             errinfo += e.getMessage();
-            logger.error("initSession: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("initSession: " + e.getMessage());
         }
     }
     
@@ -221,10 +226,6 @@ public class SendMail {
 
     /**
      * 初始化信息
-     * @param as
-     * @param s
-     * @param s1
-     * @param s2
      * @param flag 是否用HTML的方式发信
      * @throws java.lang.Exception
      */
@@ -248,7 +249,7 @@ public class SendMail {
             msg.setFrom(new InternetAddress(from));
         } catch (Exception e) {
             errinfo += e.getMessage();
-            logger.error("setFrom: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("setFrom: " + e.getMessage());
         }
     }
 
@@ -266,7 +267,7 @@ public class SendMail {
                               ainternetaddress);
         } catch (Exception e) {
             errinfo += e.getMessage();
-            logger.error("setSendTo: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("setSendTo: " + e.getMessage());
         }
     }
 
@@ -303,13 +304,12 @@ public class SendMail {
         	msg.setSubject( MimeUtility.encodeText( subject, charset, "B"));
         } catch (Exception e) {
             errinfo += e.getMessage();
-            logger.error("setSubject: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("setSubject: " + e.getMessage());
         }
     }
 
     /**
      * 置正文类型
-     * @param s
      * @param flag 如果为真，则表示用HTML的方式
      * @throws java.lang.Exception
      */
@@ -330,7 +330,7 @@ public class SendMail {
             multipart.addBodyPart(mimebodypart);
         } catch (Exception e) {
             errinfo += e.getMessage();
-            logger.error("setBody: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("setBody: " + e.getMessage());
         }
 
     }
@@ -362,8 +362,7 @@ public class SendMail {
         try {
             Transport.send(msg);
         } catch (MessagingException e) {
-        	e.printStackTrace();
-            logger.error("send: " + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
             errinfo = e.getMessage();
             return false;
         }
@@ -393,11 +392,11 @@ public class SendMail {
 
         try {
             if (mfu.doUpload(application, request) == -3) {
-                logger.error("文件太大,请把文件大小限制在30K以内!</p>");
+                LogUtil.getLog(getClass()).error("文件太大,请把文件大小限制在30K以内!</p>");
                 return;
             }
         } catch (IOException e) {
-            logger.error("getRequestInfo:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRequestInfo:" + e.getMessage());
         }
         // 取得表单中域的信息
         String to = StrUtil.getNullString(mfu.getFieldValue("to"));
@@ -406,7 +405,7 @@ public class SendMail {
         try {
             initMsg(to, subject, content, true);
         } catch (Exception e1) {
-            logger.error("SendMail initMsg:" + e1.getMessage());
+            LogUtil.getLog(getClass()).error("SendMail initMsg:" + e1.getMessage());
         }
 
         // 处理附件
@@ -432,7 +431,7 @@ public class SendMail {
             try {
                 setAttachFile(tempAttachFilePath + fi.diskName, fi.name);
             } catch (Exception e2) {
-                logger.error("getMailInfo setAttachFile:" + e2.getMessage());
+                LogUtil.getLog(getClass()).error("getMailInfo setAttachFile:" + e2.getMessage());
             }
         }
 
@@ -452,8 +451,6 @@ public class SendMail {
         public void valueBound(HttpSessionBindingEvent e) {
             // The user's session has begun;	m_filename	indicates
             // the name of the image file that will be used for this user's session.
-            //System.out.println("Bound event: " + e.toString()
-            //	 + "\n m_filename: " + m_filename);
         }
 
         public void valueUnbound(HttpSessionBindingEvent e) {
@@ -462,8 +459,6 @@ public class SendMail {
             if (delFile != null) {
                 delFile.delete();
             }
-            //System.out.println("Unbound event: " + e.toString()
-            //	+ "\n m_filename: " + m_filename);
         }
     }
 
@@ -474,7 +469,6 @@ public class SendMail {
             DataSource source = new FileDataSource("d:/zjrj/" + (String) arrayList1.get(i));
             messageBodyPart.setDataHandler(new DataHandler(source));
             String contentId = "<" + (String) arrayList2.get(i) + ">";
-            // System.out.println(contentId);
             messageBodyPart.setHeader("Content-ID", contentId);
             messageBodyPart.setFileName((String) arrayList1.get(i));
             multipart.addBodyPart(messageBodyPart);
@@ -493,8 +487,7 @@ public class SendMail {
         while (matcher.find()) {
             String path = matcher.group(1);
             if (path.indexOf("http://") != -1) {
-                // System.out.println(replaceStr);
-                // System.out.println("不需要处理图片！");
+                // LogUtil.getLog(getClass()).info("不需要处理图片！");
             } else {
                 if (path.indexOf("\"")==0 || path.indexOf("'")==0)
                     path = path.substring(1);
@@ -512,7 +505,7 @@ public class SendMail {
             afterReplaceStr = afterReplaceStr.replaceAll((String) arrayList1.get(m),
                     addString);
         }
-        // logger.info(afterReplaceStr);
+        // LogUtil.getLog(getClass()).info(afterReplaceStr);
         return afterReplaceStr;
     }
 
@@ -540,7 +533,7 @@ public class SendMail {
             msg.setContent(multipart);
         }
         catch (Exception e) {
-            logger.error("clear: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("clear: " + e.getMessage());
         }
     }
 

@@ -2,6 +2,7 @@ package com.cloudweb.oa.visual;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,7 @@ public class FuncController {
 			json.put("msg", "");
 			json.put("val", val);
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return json.toString();

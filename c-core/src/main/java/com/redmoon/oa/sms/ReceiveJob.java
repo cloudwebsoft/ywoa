@@ -5,10 +5,12 @@ import cn.js.fan.util.file.*;
 import cn.js.fan.web.*;
 import com.cloudwebsoft.framework.template.*;
 import com.cloudwebsoft.framework.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.db.ResultIterator;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 /**
  * <p>Title: </p>
@@ -22,7 +24,12 @@ import cn.js.fan.db.ResultIterator;
  * @author not attributable
  * @version 1.0
  */
-public class ReceiveJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class ReceiveJob extends QuartzJobBean {
 
     public ReceiveJob() {
     }
@@ -41,16 +48,13 @@ public class ReceiveJob implements Job {
      *
      * @param jobExecutionContext JobExecutionContext
      * @throws JobExecutionException
-     * @todo Implement this org.quartz.Job method
      */
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         try {
             receiveSms();
-
-            // System.out.println(getClass() + " sql=" + System.currentTimeMillis());
-
         } catch (Exception e) {
             LogUtil.getLog(getClass()).error("execute:" + e.getMessage());
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));

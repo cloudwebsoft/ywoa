@@ -2,6 +2,7 @@ package com.cloudweb.oa.mapper;
 
 import com.cloudweb.oa.entity.Department;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,6 @@ public interface DepartmentMapper extends BaseMapper<Department> {
     List<Department> getDeptsWithouRoot();
 
     @Update("update department set orders=orders-1 where parentCode=#{parentCode} and orders>${orders}")
-    Integer updateOrdersGreatThan(String parentCode, int orders);
+    Integer updateOrdersGreatThan(@Param("parentCode") String parentCode, @Param("orders")int orders);
 
 }

@@ -22,6 +22,7 @@
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
     <style>
         .icon-box {
+            margin-left: 10px;
             margin-bottom: 10px;
         }
         .icon {
@@ -59,7 +60,7 @@
 </table>
 <br/>
 <form id="form1" name="form1" method="post">
-    <table class="tabStyle_1 percent60" cellspacing=0 cellpadding=0 width="98%">
+    <table class="tabStyle_1 percent80" cellspacing=0 cellpadding=0 width="98%">
         <tbody>
         <tr>
             <td class=tabStyle_1_title colspan=4>增加应用</td>
@@ -78,7 +79,13 @@
                 <input id="type_link" type="radio" name="type" value="<%=MobileAppIconConfigDb.TYPE_LINK%>"
                        onclick="changeType(this);"/>
                 链接项
-                &nbsp;&nbsp;&nbsp;<font color="#FF0000">*</font></td>
+                <span style="display: none">
+                <input id="type_front" type="radio" name="type" value="<%=MobileAppIconConfigDb.TYPE_FRONT%>"
+                       onclick="changeType(this);"/>
+                前端项
+                </span>
+                &nbsp;&nbsp;&nbsp;<font color="#FF0000">*</font>
+            </td>
         </tr>
         <tr id="type_tr">
             <td align=right>选择</td>
@@ -146,7 +153,7 @@
                 &nbsp;&nbsp;&nbsp;<font color="#FF0000">*</font>
             </td>
         </tr>	
-        <tr>
+        <tr style="display: none">
             <td align="right">矢量型图标</td>
             <td align="left">&nbsp;
                 <div id="iconBox" class="icon-box">
@@ -214,7 +221,7 @@
             document.getElementById("type_tr").style.display = "none";
             $("#link_tr").hide();
         }
-        else if (type.id == "type_link") {
+        else if (type.id == "type_link" || type.id == 'type_front') {
             document.getElementById("isMobileStart_tr").style.display = "";
             document.getElementById("module_tr").style.display = "none";
             document.getElementById("type_tr").style.display = "none";
@@ -299,7 +306,7 @@
                 return false;
             }
         }
-        else if (type.id == "type_link") {
+        else if (type.id == "type_link" || type.id == 'type_front') {
             if ($('#link').val() == "") {
                 jAlert("链接不能为空", "提示");
                 return false;
@@ -321,6 +328,6 @@
 
     function selIcon(icon) {
         document.getElementById("imgUrl").value = "images/mobileAppIcons/" + icon;
-        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/images/mobileAppIcons/" + icon + "'>";
+        document.getElementById("image").innerHTML = "<img class='icon' src='<%=request.getContextPath()%>/static/images/mobileAppIcons/" + icon + "'>";
     }
 </script>

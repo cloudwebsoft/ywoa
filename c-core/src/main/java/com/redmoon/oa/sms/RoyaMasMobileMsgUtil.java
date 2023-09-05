@@ -6,7 +6,6 @@ import cn.js.fan.util.*;
 import com.redmoon.oa.person.*;
 
 import com.redmoon.oa.sys.DebugUtil;
-import org.apache.log4j.*;
 
 import java.net.URL;
 import java.net.URLConnection;
@@ -37,7 +36,6 @@ import java.sql.*;
  * @version 1.0
  */
 public class RoyaMasMobileMsgUtil implements IMsgUtil {
-    Logger logger = Logger.getLogger(RoyaMasMobileMsgUtil.class.getName());
 
     public synchronized void increaseTailAddr() {
     }
@@ -73,7 +71,6 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
         //int id = ssrd.getId();
         // re = sendSMS(msgText, user.getMobile(), "1", ""+id, "vip", "9");
         // if (re) {
-        //System.out.println(this.getClass().getName()+"调用的send（UserDb）方法");
         String[] contexts = divContext(msgText);
         for(int i = 0; i < contexts.length; i ++){
             ssrd.setUserName(sender);
@@ -109,8 +106,7 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
         SMSSendRecordDb ssrd = new SMSSendRecordDb();
         //int id = ssrd.getId();
         // re = sendSMS(msgText, mobile, "1", ""+id, "vip", "9");
-        //System.out.println(this.getClass().getName()+"调用的send（mobile）方法");
-            // 记录发送的短信
+        // 记录发送的短信
         String[] contexts = divContext(msgText);
         for(int i = 0; i < contexts.length; i ++){
             ssrd.setUserName(sender);
@@ -161,7 +157,7 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
         try {
             contentSms = java.net.URLEncoder.encode(contentSms, "GBK");
         } catch (UnsupportedEncodingException e) {
-            logger.error(getClass() + "SendSms to RoyaMas: "+ e);
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(getClass() + "SendSms to RoyaMas: "+ e);
         }
 
 //        new Exception().printStackTrace();
@@ -189,7 +185,7 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
                 DebugUtil.i(getClass(), "sendSMS", "SendSMS to " + mobilePhones + " Content=" + content + " response=" + response);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return false;
         }
         return true;
@@ -207,7 +203,6 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
         //int id = ssrd.getId();
         // re = sendSMS(msgText, user.getMobile(), "1", ""+id, "vip", "9");
         // if (re){
-        //System.out.println(this.getClass().getName()+"调用的send（UserDb）方法");
         String[] contexts = divContext(content);
         for(int i = 0; i < contexts.length; i ++){
             ssrd.setUserName(sender);
@@ -232,8 +227,7 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
         SMSSendRecordDb ssrd = new SMSSendRecordDb();
         //int id = ssrd.getId();
         // re = sendSMS(msgText, mobile, "1", ""+id, "vip", "9");
-        //System.out.println(this.getClass().getName()+"调用的send（mobile）方法");
-            // 记录发送的短信
+        // 记录发送的短信
         String[] contexts = divContext(content);
         for(int i = 0; i < contexts.length; i ++){
             ssrd.setUserName(sender);
@@ -315,8 +309,7 @@ public class RoyaMasMobileMsgUtil implements IMsgUtil {
 			}
 			jt.executeBatch();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 			return 0;
 		}         	
     	

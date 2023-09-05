@@ -1,5 +1,7 @@
 package cn.js.fan.db;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.sql.*;
 import java.util.*;
 import java.io.*;
@@ -24,10 +26,14 @@ public class ConnAry implements Serializable {
 
     public void close() { // throws Throwable
         try {
-            if (conn != null) conn.close();
-            if (result != null) result.removeAllElements();
+            if (conn != null) {
+                conn.close();
+            }
+            if (result != null) {
+                result.removeAllElements();
+            }
         } catch (java.lang.Throwable e) {
-            System.out.println("conn.close error:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -73,7 +79,7 @@ public class ConnAry implements Serializable {
 
     public void handleException(Exception e) {
         _WATCH = e.getMessage();
-        System.out.println(_WATCH);
+        LogUtil.getLog(getClass()).error(e);
     }
 
     public void init() {

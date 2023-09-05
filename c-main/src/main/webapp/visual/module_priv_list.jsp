@@ -17,21 +17,22 @@ String code = ParamUtil.get(request, "code");
 String formCode = ParamUtil.get(request, "formCode");
 FormDb fd = new FormDb(formCode);
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
-<title>智能模块设计 - 管理权限</title>
-<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<script src="../inc/common.js"></script>
-<script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
-<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
-<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
-<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
-<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
-<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
-<script type="text/javascript" src="../js/jquery.toaster.js"></script>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>智能模块设计 - 管理权限</title>
+	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+	<script src="../inc/common.js"></script>
+	<script src="../js/jquery-1.9.1.min.js"></script>
+	<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+	<script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+	<link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+	<script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+	<script src="../js/layui/layui.js" charset="utf-8"></script>
 <%
 if (!fd.isLoaded()) {
 	out.print(StrUtil.jAlert_Back("该表单不存在！","提示"));
@@ -39,7 +40,7 @@ if (!fd.isLoaded()) {
 }
 
 String orderBy = ParamUtil.get(request, "orderBy");
-if (orderBy.equals("")) {
+if ("".equals(orderBy)) {
 	orderBy = "name";
 }
 String sort = ParamUtil.get(request, "sort");
@@ -140,7 +141,7 @@ else if (op.equals("setrole")) {
 	return;
 }
 
-boolean isNav = tabIdOpener.equals("")?true:false;
+boolean isNav = "".equals(tabIdOpener);
 if (isNav) {
 %>
 <%@ include file="module_setup_inc_menu_top.jsp"%>
@@ -156,35 +157,38 @@ Iterator ir = result.iterator();
 <br/>
 <table class="percent98" width="80%" align="center">
   <tr>
-    <td align="left"><input class="btn" name="button" type="button" onclick="javascript:window.location.href='module_priv_add.jsp?code=<%=code%>&formCode=<%=formCode%>&tabIdOpener=<%=tabIdOpener%>';" value="添加" width=80 height=20 />
+    <td align="left"><input class="btn" name="button" style="margin: 10px 0" type="button" onclick="window.location.href='module_priv_add.jsp?code=<%=code%>&formCode=<%=formCode%>&tabIdOpener=<%=tabIdOpener%>';" value="添加" width=80 height=20 />
 	</td>
   </tr>
 </table>
 <table class="tabStyle_1 percent98" cellSpacing="0" cellPadding="3" width="95%" align="center">
   <tbody>
     <tr>
-      <td class="tabStyle_1_title" width="10%" style="cursor:pointer" onclick="doSort('name')">用户
-        <%if (orderBy.equals("name")) {
-			if (sort.equals("asc")) {
+      <td class="tabStyle_1_title" width="8%" style="cursor:pointer" onclick="doSort('name')">用户
+        <%if ("name".equals(orderBy)) {
+			if ("asc".equals(sort)) {
 				out.print("<img src='../netdisk/images/arrow_up.gif' width=8px height=7px align=absMiddle>");
 			} else {
 				out.print("<img src='../netdisk/images/arrow_down.gif' width=8px height=7px align=absMiddle>");
 			}
 		}%>	  
 	  </td>
-      <td class="tabStyle_1_title" width="7%" style="cursor:hand" onclick="doSort('priv_type')">类型
-        <%if (orderBy.equals("priv_type")) {
-			if (sort.equals("asc")) {
+      <td class="tabStyle_1_title" width="4%" style="cursor:hand" align="center" onclick="doSort('priv_type')">类型
+        <%if ("priv_type".equals(orderBy)) {
+			if ("asc".equals(sort)) {
 				out.print("<img src='../netdisk/images/arrow_up.gif' width=8px height=7px align=absMiddle>");
 			} else {
 				out.print("<img src='../netdisk/images/arrow_down.gif' width=8px height=7px align=absMiddle>");
 			}
 		}%>	  
       </td>
-      <td class="tabStyle_1_title" width="55%">权限</td>
-      <td width="6%" class="tabStyle_1_title">可写字段</td>
-      <td width="6%" class="tabStyle_1_title">隐藏字段</td>
-      <td width="16%" class="tabStyle_1_title">操作</td>
+      <td class="tabStyle_1_title" width="45%">权限</td>
+      <td width="5%" class="tabStyle_1_title">可写<br/>字段</td>
+		<td width="5%" class="tabStyle_1_title">隐藏<br/>字段</td>
+		<td width="5%" class="tabStyle_1_title">可导<br/>字段</td>
+      <td width="5%" class="tabStyle_1_title">过滤</td>
+      <td width="8%" class="tabStyle_1_title">过滤条件</td>
+      <td class="tabStyle_1_title">操作</td>
     </tr>
 <%
 int i = 0;
@@ -224,17 +228,20 @@ while (ir.hasNext()) {
 	  <input name="view" type="checkbox" <%=mpd.getView()==1?"checked":""%> value="1" title="查看详情及流程"/>
 	  查看&nbsp;
 	  <input name="append" type="checkbox" <%=mpd.getAppend()==1?"checked":""%> value="1" title="添加记录"/>
-	  添加 &nbsp;
+	  添加&nbsp;
 	  <input name="modify" type="checkbox" <%=mpd.getModify()==1?"checked":""%> value="1" title="修改记录"/>
-	  修改 &nbsp;      
+	  修改&nbsp;      
 	  <input name="del" type="checkbox" <%=mpd.getDel()==1?"checked":""%> value="1" title="删除记录"/>
-	  删除 &nbsp;      
-	  <input name="import" type="checkbox" <%=mpd.getImportXls()==1?"checked":""%> value="1" title="导入Excel文件"/>
-	  导入 &nbsp;      
-	  <input name="export" type="checkbox" <%=mpd.getExportXls()==1?"checked":""%> value="1" title="导出Excel文件"/>
-	  导出 &nbsp;
+	  删除&nbsp;      
 	  <input name="exportWord" type="checkbox" <%=mpd.getExportWord()==1?"checked":""%> value="1" title="生成Word文件"/>
-	  生成 &nbsp;
+	  生成&nbsp;
+	  <input name="import" type="checkbox" <%=mpd.getImportXls()==1?"checked":""%> value="1" title="导入Excel文件"/>
+	  导入&nbsp;
+	  <input name="export" type="checkbox" <%=mpd.getExportXls()==1?"checked":""%> value="1" title="导出Excel文件"/>
+	  按列导出&nbsp;
+	  <input name="setList" type="checkbox" <%=mpd.getSetList()==1?"checked":""%> value="1" title="设置列表中的字段及排序"/>
+	  列表&nbsp;
+	  <br/>
 	  <span style="display:none">
 	  <input name="search" type="hidden" type=checkbox <%=mpd.getSearch()==1?"checked":""%> value="1" title="高级查询"/> 
 	  高级查询 &nbsp;   
@@ -242,11 +249,19 @@ while (ir.hasNext()) {
 	  <input name="reActive" type="checkbox" <%=mpd.getReActive()==1?"checked":""%> value="1" title="变更记录"/>
 	  变更&nbsp;
 	  <input name="log" type="checkbox" <%=mpd.getLog()==1?"checked":""%> value="1" title="管理日志"/>
-      日志&nbsp; 	     
+      日志&nbsp;
+	  <input name="zip" type="checkbox" <%=mpd.getZip()==1?"checked":""%> value="1" title="压缩下载文件"/>
+	  压缩&nbsp;
+	  <input name="copy" type="checkbox" <%=mpd.getCopy()==1?"checked":""%> value="1" title="复制记录"/>
+	  复制&nbsp;
+	  <input name="rollBack" type="checkbox" <%=mpd.getRollBack()==1?"checked":""%> value="1" title="回滚流程及记录"/>
+	  回滚&nbsp;
 	  <input name="manage" type="checkbox" <%=mpd.getManage()==1?"checked":""%> value="1" onclick="setManage(this, <%=mpd.getId()%>)" title="可添加、修改、删除记录、导入、导出、管理日志"/>
-	  管理
+	  管理&nbsp;
 	  <input name="data" type=checkbox <%=mpd.getData()==1?"checked":""%> value="1" title="数据维护，不受校验规则限制"/>
 	  数据&nbsp;
+	  <input name="exportXlsCol" type=checkbox <%=mpd.getExportXlsCol()==1?"checked":""%> value="1" title="选择列导出"/>
+		选列导出&nbsp;
       <script>
 		  function setManage(obj, id) {
 			  if (obj.checked) {
@@ -262,17 +277,56 @@ while (ir.hasNext()) {
 				  $tr.find("input[name=reActive]").prop('checked', true);
 				  $tr.find("input[name=log]").prop('checked', true);
 				  $tr.find("input[name=exportWord]").prop('checked', true);
+				  $tr.find("input[name=zip]").prop('checked', true);
+				  $tr.find("input[name=copy]").prop('checked', true);
+				  $tr.find("input[name=rollBack]").prop('checked', true);
+				  $tr.find("input[name=exportXlsCol]").prop('checked', true);
+				  $tr.find("input[name=setList]").prop('checked', true);
 			  }
 		  }
 	  </script>
       </td>
       <td align="center">
-		<a href="javascript:OpenFormFieldSelWin('fieldWrite<%=mpd.getId()%>', '<%=mpd.getId()%>');">选择</a>
+		  <%
+			  String clrWrite = "";
+			  if (!StrUtil.isEmpty(mpd.getFieldWrite())) {
+				  clrWrite = "#ff005c";
+			  }
+			  String clrHide = "";
+			  if (!StrUtil.isEmpty(mpd.getFieldHide())) {
+				  clrHide = "#ff005c";
+			  }
+			  String clrExport = "";
+			  if (!StrUtil.isEmpty(mpd.getFieldExport())) {
+				  clrExport = "#ff005c";
+			  }
+		  %>
+		<a href="javascript:OpenFormFieldSelWin('fieldWrite<%=mpd.getId()%>', '<%=mpd.getId()%>');" style="color:<%=clrWrite%>">选择</a>
         <textarea id="fieldWrite<%=mpd.getId()%>" name="fieldWrite<%=mpd.getId()%>" style="display:none"><%=mpd.getFieldWrite()%></textarea> 
       </td>
       <td align="center">
-        <a href="javascript:OpenFormFieldSelWin('fieldHide<%=mpd.getId()%>', '<%=mpd.getId()%>');">选择</a>      
+        <a href="javascript:OpenFormFieldSelWin('fieldHide<%=mpd.getId()%>', '<%=mpd.getId()%>');" style="color:<%=clrHide%>">选择</a>
         <textarea id="fieldHide<%=mpd.getId()%>" name="fieldHide<%=mpd.getId()%>" style="display:none"><%=mpd.getFieldHide()%></textarea> 
+      </td>
+		<td align="center">
+			<a href="javascript:OpenFormFieldSelWin('fieldExport<%=mpd.getId()%>', '<%=mpd.getId()%>');" style="color:<%=clrExport%>">选择</a>
+			<textarea id="fieldExport<%=mpd.getId()%>" name="fieldExport<%=mpd.getId()%>" style="display:none"><%=mpd.getFieldExport()%></textarea>
+		</td>
+      <td align="center">
+      	<input name="isFilter" value="1" type="checkbox" title="启用过滤条件" <%=mpd.isFilter()?"checked":""%>/>
+      </td>
+      <td align="center">
+				<img src="../admin/images/combination.png" style="margin-bottom:-5px;"/>
+				<a href="javascript:" onclick="openFilterDlg(<%=mpd.getId()%>)">配置</a>
+		  <%
+			  String gouDis = "none";
+			  if (!"".equals(mpd.getFilterCond().trim())) {
+				  gouDis = "";
+			  }
+		  %>
+				<span gouId="<%=mpd.getId()%>" style="margin:5px;display:<%=gouDis%>">
+					<img src="../admin/images/gou.png" style="margin-bottom:-5px;width:10px;height:10px;"/>
+				</span>
       </td>
       <td align="center">
 	  <input class="btn" type="button" value="修改" onclick="updatePriv('<%=i%>')" />
@@ -287,6 +341,15 @@ while (ir.hasNext()) {
 </body>
 <script language="javascript">
 <!--
+function showGouImg(id, isShow) {
+	if (isShow) {
+		$('span[gouId=' + id + ']').show();
+	}
+	else {
+		$('span[gouId=' + id + ']').hide();
+	}
+}
+
 var curFields, curId;
 function OpenFormFieldSelWin(fields, id) {
 	curFields = fields;
@@ -329,6 +392,9 @@ function setFields(fieldsSeted) {
 	var op;
 	if (curFields.indexOf("fieldWrite")==0) {
 		op = "setFieldWrite";
+	}
+	else if (curFields.indexOf("fieldExport") == 0) {
+		op = "setFieldExport";
 	}
 	else {
 		op = "setFieldHide";
@@ -390,7 +456,10 @@ function delPriv(id) {
 					if (data.ret==1) {
 						$('#tr' + id).remove();
 					}
-					$.toaster({priority: 'info', message: data.msg});
+
+					layer.msg(data.msg, {
+						offset: '6px'
+					});
 				},
 				complete: function(XMLHttpRequest, status){
 					$('body').hideLoading();
@@ -432,7 +501,9 @@ function updatePriv(index) {
 		},
 		success: function(data, status) {
 			data = $.parseJSON(data);
-			$.toaster({priority: 'info', message: data.msg});
+			layer.msg(data.msg, {
+				offset: '6px'
+			});
 		},
 		complete: function(XMLHttpRequest, status){
 			$('body').hideLoading();
@@ -442,6 +513,10 @@ function updatePriv(index) {
 			alert("error:" + XMLHttpRequest.responseText);
 		}
 	});
+}
+
+function openFilterDlg(id) {
+	openWin("module_priv_filter.jsp?code=<%=code%>&id=" + id, 850, 400);
 }
 //-->
 </script>

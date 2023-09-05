@@ -9,10 +9,10 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
 <%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
-<%@ page import="net.sf.json.JSONException" %>
+<%@ page import="org.json.JSONException" %>
 <%@ page import="org.json.JSONObject" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>表单映射</title>

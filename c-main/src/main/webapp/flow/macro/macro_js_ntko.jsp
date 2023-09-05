@@ -10,6 +10,7 @@
 <%@ page import = "com.redmoon.oa.pvg.*"%>
 <%@ page import = "com.redmoon.oa.person.*"%>
 <%@ page import="com.redmoon.oa.flow.macroctl.NTKOCtl" %>
+<%@ page import="com.redmoon.oa.security.SecurityUtil" %>
 <%
 	response.setHeader("X-Content-Type-Options", "nosniff");
 	response.setHeader("Content-Security-Policy", "default-src 'self' http: https:; script-src 'self'; frame-ancestors 'self'");
@@ -75,7 +76,7 @@
 		TANGER_OCX.IsUseUTF8Data = true;
 		//创建新文档
 		//TANGER_OCX.CreateNew("Word.Document");
-		TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/flow_getfile.jsp?attachId=<%=file_id%>&flowId=<%=flowId%>");
+		TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/flow/download.do?attachId=<%=file_id%>&flowId=<%=flowId%>");
 		TANGER_OCX_SetDocUser("<%=user.getRealName()%>");
 		<%
 		if(isRevise!=0){
@@ -130,7 +131,7 @@
 		$('#bodyBox').hideLoading();
 		showResponse(data);
 	<%}else{%>
-		hideDesigner();
+		
 
 		if (!LiveValidation.massValidate(lv_cwsWorkflowResult.formObj.fields)) {
 			// jAlert("请检查表单中的内容填写是否正常！", "提示");
@@ -167,7 +168,7 @@
 
 		return;
 	<%}else{%>
-		hideDesigner();
+		
 
 		if (hasCond && !isAfterSaveformvalueBeforeXorCondSelect) {
 			// 先ajax保存表单，然后再ajax弹出对话框选择用户，然后才交办
@@ -208,7 +209,7 @@
 		<%}%>
 
 		<%if (flag.length()>=5 && flag.substring(4, 5).equals("2")) {%>
-		flowForm.formReportContent.value = hidFrame.getFormReportContent();
+		// flowForm.formReportContent.value = hidFrame.getFormReportContent();
 		<%}%>
 
 		getXorSelect();
@@ -240,9 +241,8 @@
 		<%if (wfp.getReturnStyle()==WorkflowPredefineDb.RETURN_STYLE_FREE) {%>
 			$.ajax({
 				type: "post",
-				url: "flow_dispose_ajax_return.jsp",
+				url: "flow/returnAction.do",
 				data : {
-					myActionId: "<%=myActionId%>",
 					actionId: "<%=actionId%>",
 					flowId: "<%=flowId%>"
 				},
@@ -252,60 +252,77 @@
 				},
 				success: function(data, status){
 					o("spanLoad").innerHTML = "";
-					$("#dlg").html(data);
-					hideDesigner();
+
+					data = $.parseJSON(data);
+                    var str = '';
+                    var len = data.result.length;
+                    for (var i=0; i<len; i++) {
+                        var json = data.result[i];
+                        str += '<div class="return-users">';
+                        str += '<input type="radio" name="returnId" style="vertical-align:bottom" value="' + json.returnId + '" ' + json.checked + ' />';
+                        str += '<span>&nbsp;' + json.actionTitle + ":&nbsp;" + json.userRealName;
+                        str += '&nbsp;' + json.checkDate + '</span>';
+                        str += '</div>';
+                    }
+                    $("#dlg").html(str);
+                    var $radios = $("#dlg").find("input[type='radio']");
+                    if ($radios.length == 1) {
+                        $radios[0].checked = true;
+                    }
+
+					
 					$("#dlg").dialog({title:"请选择需返回的用户", modal: true,
-										buttons: {
-											"取消":function() {
-												$(this).dialog("close");
-											},
-											"确定": function() {
-												// 必须要用clone，否则checked属性在IE9、chrome中会丢失
-												// o("dlgReturn").innerHTML = $("#dlg").html();
+						buttons: {
+							"取消":function() {
+								$(this).dialog("close");
+							},
+							"确定": function() {
+								// 必须要用clone，否则checked属性在IE9、chrome中会丢失
+								// o("dlgReturn").innerHTML = $("#dlg").html();
 
-												if (confirm('您确定要返回么？')) {
-													// 因为radio是成组的，所以不能直接用$("#dlgReturn").html($("#dlg").clone())
-													// 某一组radio只会有一个被选中，所以这里可能会导致第一次选中返回时报请选择用户，而刷新以后，再选择用户返回就可以了
-													var tmp = $("#dlg").clone().html();
-													$("#dlg").html();
-													$("#dlgReturn").html(tmp);
-													// alert($("#dlgReturn").html());
+								if (confirm('您确定要返回么？')) {
+									// 因为radio是成组的，所以不能直接用$("#dlgReturn").html($("#dlg").clone())
+									// 某一组radio只会有一个被选中，所以这里可能会导致第一次选中返回时报请选择用户，而刷新以后，再选择用户返回就可以了
+									var tmp = $("#dlg").clone().html();
+									$("#dlg").html();
+									$("#dlgReturn").html(tmp);
+									// alert($("#dlgReturn").html());
 
-													flowForm.op.value='return';
+									flowForm.op.value='return';
 
-													if (o('flowForm').onsubmit) {
-														if (o('flowForm').onsubmit()) {
-															$('#bodyBox').showLoading();
-															<%
-															if (lf.getType()==Leaf.TYPE_FREE) {
-															%>
-															var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishActionFree.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
-															<%}else{%>
-															var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishAction.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
-															<%}%>
-															showResponse(data);
-														}
-													}
-													else {
-														$('#bodyBox').showLoading();
-														<%
-														if (lf.getType()==Leaf.TYPE_FREE) {
-														%>
-														var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishActionFree.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
-														<%}else{%>
-														var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishAction.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
-														<%}%>
-														showResponse(data);
-													}
-												}
-												$(this).dialog("close");
-											}
-										},
-										closeOnEscape: true,
-										draggable: true,
-										resizable:true,
-										width:500
-									});
+									if (o('flowForm').onsubmit) {
+										if (o('flowForm').onsubmit()) {
+											$('#bodyBox').showLoading();
+											<%
+											if (lf.getType()==Leaf.TYPE_FREE) {
+											%>
+											var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishActionFree.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
+											<%}else{%>
+											var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishAction.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
+											<%}%>
+											showResponse(data);
+										}
+									}
+									else {
+										$('#bodyBox').showLoading();
+										<%
+										if (lf.getType()==Leaf.TYPE_FREE) {
+										%>
+										var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishActionFree.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
+										<%}else{%>
+										var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/flow/finishAction.do", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "flowForm");
+										<%}%>
+										showResponse(data);
+									}
+								}
+								$(this).dialog("close");
+							}
+						},
+						closeOnEscape: true,
+						draggable: true,
+						resizable:true,
+						width:500
+					});
 				},
 				complete: function(XMLHttpRequest, status){
 					//HideLoading();
@@ -317,7 +334,7 @@
 			});
 		<%}else{%>
 			$("#dlg").html(o("dlgReturn").innerHTML);
-			hideDesigner();
+			
 			$("#dlg").dialog({title:"请选择需返回的用户", modal: true,
 								buttons: {
 									"取消":function() {
@@ -422,7 +439,7 @@ else {
 		TANGER_OCX.IsUseUTF8Data = true;
 		//创建新文档
 		//TANGER_OCX.CreateNew("Word.Document");
-		TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/visual_getfile.jsp?attachId=<%=attId%>");
+		TANGER_OCX.OpenFromURL("<%=request.getContextPath()%>/visual_getfile.jsp?attachId=<%=attId%>&visitKey=<%=SecurityUtil.makeVisitKey(attId)%>");
 		TANGER_OCX_SetDocUser("<%=user.getRealName()%>");
 		<%if (!isEditable) {%>
 		// TANGER_OCX.FileSave=false;
@@ -450,7 +467,7 @@ else {
 
 <%
 	if ("add".equals(pageType)) {
-		String modUrlList = request.getContextPath() + "/" + "visual/module_list.jsp?code=" + code;
+		String modUrlList = request.getContextPath() + "/" + "visual/moduleListPage.do?code=" + code;
 %>
 	function add() {
         try {
@@ -467,7 +484,7 @@ else {
             return;
         }
 
-		var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/visual/module_add.jsp?op=saveformvalue&code=<%=code%>&formCode=<%=formCode%>", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "visualForm");
+		var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/visual/moduleAddPage.do?op=saveformvalue&code=<%=code%>&formCode=<%=formCode%>", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "visualForm");
 		showResponse(data);
 	}
 
@@ -505,7 +522,7 @@ else {
 		}
 
 		$('#visualForm').showLoading();
-		var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/visual/module_edit.jsp?op=saveformvalue&id=<%=id%>&code=<%=code%>", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "visualForm");
+		var data = TANGER_OCX.SaveToURL("<%=Global.getFullRootPath(request)%>/visual/moduleEditPage.do?op=saveformvalue&id=<%=id%>&code=<%=code%>", "<%=ntkoFieldName%>", "", "<%=att.getName()%>", "visualForm");
 		showResponse(data);
 	}
 

@@ -1,5 +1,6 @@
 package com.redmoon.oa.ui;
 
+import cn.js.fan.db.ListResult;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ResKeyException;
@@ -12,8 +13,10 @@ import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.base.QObjectDb;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserDesktopSetupDb;
+import com.redmoon.oa.sys.DebugUtil;
 
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -37,6 +40,20 @@ public class PortalDb extends QObjectDb {
 	 * 表示不属于系统门户，如用户或者admin新建一门户
 	 */
 	public static final int SYSTEM_ID_NONE = 0;
+
+	/**
+	 * 桌面型
+	 */
+	public static final int KIND_DESKTOP = 0;
+	/**
+	 * 菜单型
+	 */
+	public static final int KIND_MENU = 1;
+
+	/**
+	 * 默认桌面的ID
+	 */
+	public static final int DESKTOP_DEFAULT_ID = 55;
 	
     public PortalDb() {
     }
@@ -57,16 +74,39 @@ public class PortalDb extends QObjectDb {
                 return rr.getInt(1) + 1;
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
         return 0;
     }
 
+	/*public PortalDb getFirst(int kind) {
+		String sql = "select id from " + getTable().getName() + " where user_name='system' and status=1 and orders>1 and kind=" + kind + " order by orders asc";
+		try {
+			ListResult lr = listResult(sql, 1, 1);
+			if (lr.getTotal() > 0) {
+				return (PortalDb)lr.getResult().elementAt(0);
+			}
+		} catch (ResKeyException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}*/
+
+	/**
+	 * 用户可见的门户列表，不包含首页
+	 * @param kind
+	 * @return
+	 */
+	public Vector<PortalDb> listByKind(int kind) {
+		String sql = "select id from " + getTable().getName() + " where user_name='system' and status=1 and orders>1 and kind=" + kind + " order by orders asc";
+		return list(sql);
+	}
+
     public Vector<PortalDb> list(boolean isDefaultDeskForbid) {
-		String sql = "select id from " + getTable().getName() + " where user_name='system' order by orders asc";
+		String sql = "select id from " + getTable().getName() + " where user_name='system' and status=1 and orders>1 order by orders asc";
 		if (isDefaultDeskForbid) {
-			sql = "select id from " + getTable().getName() + " where user_name='system' and orders<>1 order by is_fixed desc, orders asc";
+			sql = "select id from " + getTable().getName() + " where user_name='system' and status=1 and orders>1 order by is_fixed desc, orders asc";
 		}
 		return list(sql);
 	}
@@ -97,7 +137,7 @@ public class PortalDb extends QObjectDb {
 	       if (pd.canUserSee(userName)) {
 	    	   return pd;
 	       }
-	    }			
+	    }
 
         return null;
     }
@@ -107,7 +147,7 @@ public class PortalDb extends QObjectDb {
      * @param userName String
      */
     public void deleteOfUser(String userName) {
-    	if (!userName.equals("system"))
+    	if (!"system".equals(userName))
     	{
 	    	UserDesktopSetupDb udsd = new UserDesktopSetupDb();
 	        
@@ -115,18 +155,14 @@ public class PortalDb extends QObjectDb {
 	        Iterator ir = list(sql, new Object[] {userName}).iterator();
 	        while (ir.hasNext()) {
 	            PortalDb pd = (PortalDb) ir.next();
-	            
 	            udsd.delDesktopOfPortal(pd.getLong("id"));
-	
 	            try {
 	                pd.del();
 	            } catch (ResKeyException ex) {
-	                ex.printStackTrace();
+	                LogUtil.getLog(getClass()).error(ex);
 	            }
 	        }
     	}
-
-
     }
         
     public boolean isSystem() {
@@ -147,8 +183,7 @@ public class PortalDb extends QObjectDb {
         UserDesktopSetupDb udsd = new UserDesktopSetupDb();
         
         // 创建门户
-        if (!userName.equals("system"))
-        {
+        if (!"system".equals(userName)) {
 	        PortalDb pd2 = new PortalDb();
 	        String sqlGetPortalId = "select id from " + getTable().getName() + " where user_name=? and orders=?";
 	        Iterator ir = list(sql, new Object[]{UserDb.SYSTEM}).iterator();
@@ -162,22 +197,20 @@ public class PortalDb extends QObjectDb {
 	                String depts = pd.getString("depts");
 	                String roles = pd.getString("roles");
 	                pd2.create(new JdbcTemplate(), new Object[] {
-	                    userName, pd.getString("name"), new Integer(orders), new Long(pd.getLong("id")), pd.getString("icon"),isFixed,depts,roles
+	                    userName, pd.getString("name"), orders, pd.getLong("id"), pd.getString("icon"),isFixed,depts,roles
 	                });
 	
 	                JdbcTemplate jt = new JdbcTemplate();
-	                ResultIterator ri = jt.executeQuery(sqlGetPortalId, new Object[]{userName, new Integer(orders)});
+	                ResultIterator ri = jt.executeQuery(sqlGetPortalId, new Object[]{userName, orders});
 	                if (ri.hasNext()) {
 	                    ResultRecord rr = (ResultRecord)ri.next();
 	                    portalId = rr.getLong(1);
 	                }
-	            } catch (ResKeyException ex1) {
+	            } catch (ResKeyException | SQLException ex1) {
 	                ex1.printStackTrace();
-	            } catch (SQLException ex) {
-	                ex.printStackTrace();
 	            }
-	
-	            udsd.initDesktopOfUser(pd, portalId, userName);
+
+				udsd.initDesktopOfUser(pd, portalId, userName);
 	            
 	            // 置用户的天气、时钟、日历与管理员一样
 	            /*
@@ -206,7 +239,7 @@ public class PortalDb extends QObjectDb {
     }
     
     /**
-     * 取得與systemId對應的所有用戶的門戶
+     * 取得與systemId对应的所有用戶的門戶
 
      * @param systemId 系统门户的id
      * @return
@@ -234,7 +267,7 @@ public class PortalDb extends QObjectDb {
     	String depts = StrUtil.getNullStr(getString("depts"));
     	String roles = StrUtil.getNullStr(getString("roles"));
     	
-    	if (depts.equals("") && roles.equals("")) {
+    	if ("".equals(depts) && "".equals(roles)) {
 			return true;
 		}
     	
@@ -242,11 +275,12 @@ public class PortalDb extends QObjectDb {
     		String[] ary = StrUtil.split(depts, ",");
     		if (ary!=null) {
 				IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
-    			for (int i=0; i<ary.length; i++) {
-					if (deptUserService.isUserBelongToDept(userName, ary[i])) {
-    					return true;
-    				}
-    			}
+				for (String s : ary) {
+					if (deptUserService.isUserBelongToDept(userName, s)) {
+						return true;
+					}
+				}
+				DebugUtil.w(getClass(), "canUserSee", userName + "不属于部门：" + depts);
     		}
     	}
     	
@@ -255,14 +289,14 @@ public class PortalDb extends QObjectDb {
     		if (ary!=null) {
     			UserDb user = new UserDb();
     			user = user.getUserDb(userName);
-    			for (int i=0; i<ary.length; i++) {
-    				if (user.isUserOfRole(ary[i])) {
-    					return true;
-    				}
-    			}
+				for (String s : ary) {
+					if (user.isUserOfRole(s)) {
+						return true;
+					}
+				}
     		}
-    	}    	
-    	
+    	}
+
     	return false;
     }
 }

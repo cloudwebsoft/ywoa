@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>关联模块详情</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
+    <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <style type="text/css">
+        #attDiv {
+            margin-top: 10px;
+        }
+
+        #loading {
+            position: fixed;
+            z-index: 400;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0%;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #595758;
+            background-color: #ffffff;
+            /*
+            filter: alpha(Opacity=60);
+            -moz-opacity: 0.6;
+            opacity: 0.6;
+            */
+        }
+
+        [(${pageCss})]
+    </style>
+    <script src="../inc/common.js"></script>
+    <script src="../inc/map.js"></script>
+    <script src="../js/jquery-1.9.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery.raty.min.js"></script>
+    <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
+    <script src="../inc/flow_dispose_js.jsp"></script>
+    <script src="../inc/flow_js.jsp"></script>
+    <script th:src="@{'/flow/form_js/form_js_' + ${formCode} + '.jsp?pageType=show&id=' + ${id} + '&moduleCode=' + ${code} + '&random=' + ${random}}"></script>
+    <script src="../inc/ajax_getpage.jsp"></script>
+
+    <link href="../js/select2/select2.css" rel="stylesheet"/>
+    <script src="../js/select2/select2.js"></script>
+    <script src="../js/select2/i18n/zh-CN.js"></script>
+
+    <script src="../js/BootstrapMenu.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../js/MyPaging/MyPaging.css">
+    <script src="../js/MyPaging/MyPaging.js"></script>
+
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+</head>
+<body>
+<div id="loading">
+    <img src="../images/loading.gif" alt="loading.." style="margin-top:50px;" />
+</div>
+<div th:if="${isNav and hasTab}" class="tabs1Box">
+    <div id="tabs1">
+        <ul>
+            <li th:each="json : ${aryTab}" th:id="${json.id}" th:attr="tagName=${json.name}">
+                <th:block th:switch="${json.get('target')!=null and json.target eq 'newTab'}">
+                    <th:block th:case="true">
+                        <a href="javascript:;" th:title="${json.name}" th:onclick="addTab('[(${json.name})]', '[(${json.url})]')"><span>[(${json.name})]</span></a>
+                    </th:block>
+                    <th:block th:case="*">
+                        <a th:href="${json.url}" title="${json.name}"><span>[(${json.name})]</span></a>
+                    </th:block>
+                </th:block>
+            </li>
+        </ul>
+    </div>
+    <script th:inline="javascript">
+        $("#menu[(${menuItem})]").addClass("current");
+    </script>
+</div>
+<div id="visualDiv" style="margin-top: 20px">
+    <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="left">
+                <form name="visualForm" id="visualForm">
+                    <table width="100%">
+                        <tr>
+                            <td>
+                                [(${rend})]
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td align="left"></td>
+        </tr>
+            <tr th:if="${isHasAttachment}">
+                <td id="attBox" align="left">
+
+                </td>
+            </tr>
+        <tr>
+            <td height="30" align="center" style="padding: 10px 0px">
+                <input name="id" th:value="${id}" type="hidden"/>
+                <button th:if="${btn_print_display}" class="btn btn-default" onclick="showFormReport()">打印</button>
+                <!--
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input class="btn" type="button" onclick="exportToWord()" value="导出至Word"/>
+                -->
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <button th:if="${btn_edit_display}" class="btn btn-default" th:onclick="window.location.href='moduleEditRelatePage.do?menuItem=[(${menuItem})]&parentId=[(${parentId})]&id=[(${id})]&isNav=[(${isNav})]&moduleCodeRelated=[(${moduleCodeRelated})]&code=[(${code})]'">编辑</button>
+            </td>
+        </tr>
+    </table>
+</div>
+<form id="formWord" name="formWord" target="_blank" action="module_show_word.jsp" method="post">
+    <textarea name="cont" style="display:none"></textarea>
+</form>
+</body>
+<script>
+    var isPageStyleLight = [(${isPageStyleLight})]
+    if (isPageStyleLight) {
+        // 不能放在$(function中，原来的tabStyle_8风格会闪现
+        // $(function() {
+        var $table = $('#visualForm').find('.tabStyle_8');
+        if ($table[0] == null) {
+            $table = $('#visualForm').find('.tabStyle_1');
+        }
+        $table.addClass('layui-table');
+        $table.removeClass('tabStyle_8');
+        // })
+    }
+
+    function refreshAttach() {
+        var isHasAttachment = [(${isHasAttachment})];
+        if (!isHasAttachment) {
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "moduleAttListPage.do",
+            data: {
+                id: "[(${id})]",
+                moduleCode: "[(${moduleCodeRelated})]",
+                isShowPage: true
+            },
+            dataType: "html",
+            beforeSend: function(XMLHttpRequest){
+                $('body').showLoading();
+            },
+            success: function(data, status){
+                $('#attBox').html(data);
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(XMLHttpRequest, textStatus){
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function getPrintContent() {
+        return "<div style='text-align:center;margin-top:10px'>" + $('#visualDiv').html() + "</div>";
+    }
+
+    function showFormReport() {
+        window.open('../print_preview.jsp?print=true', '', 'left=0,top=0,width=550,height=400,resizable=1,scrollbars=1, status=1, toolbar=1, menubar=1');
+    }
+
+    function exportToWord() {
+        o("cont").value = o("formDiv").innerHTML;
+        o("formWord").submit();
+    }
+
+    // 前提：所有ajax请求都是用jQuery的$.ajax发起的，而非原生的XHR；
+    var ajaxBack = $.ajax;
+    var ajaxCount = 0;
+    var allAjaxDone = function () {
+        // 所有 AJAX 请求已完成
+        try {
+            // 可在form_js_***.jsp中写此方法
+            onAjaxLoaded();
+        }
+        catch (e) {}
+        $("#loading").hide();
+    };
+    // 由于get/post/getJSON等，最后还是调用到ajax，因此只要改ajax函数即可
+    $.ajax = function (setting) {
+        ajaxCount++;
+        var cb = setting.complete;
+        setting.complete = function () {
+            if ($.isFunction(cb)) {
+                cb.apply(setting.context, arguments);
+            }
+            ajaxCount--;
+            if (ajaxCount == 0 && $.isFunction(allAjaxDone)) {
+                allAjaxDone();
+            }
+        };
+        ajaxBack(setting);
+    };
+
+    $(function() {
+        // 如果没有ajax，则ajaxCount为0，应置loading为hide
+        if (ajaxCount==0) {
+            $("#loading").hide();
+        }
+
+        refreshAttach();
+    })
+</script>
+</html>

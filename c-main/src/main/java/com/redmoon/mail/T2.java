@@ -1,5 +1,7 @@
 package com.redmoon.mail;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -43,7 +45,7 @@ public class T2 {
 			transport.sendMessage(message, message.getAllRecipients());
 			transport.close();
 		} catch (Exception e) {
-			System.out.println(e);
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 

@@ -29,7 +29,7 @@ if (op.equals("getFields")) {
 		String fieldName = "";
 		FormDb fd = new FormDb();
 		
-		if (tableName.toUpperCase().startsWith("FORM_TABLE_")) {
+		if (tableName.toUpperCase().startsWith("ft_")) {
 			String formCode = FormDb.getCodeByTableName(tableName);
 			fd = fd.getFormDb(formCode);
 		}
@@ -41,8 +41,9 @@ if (op.equals("getFields")) {
 			fieldName = rm.getColumnName(i);
 			if (fd.isLoaded()) {
 				FormField ff = fd.getFormField(fieldName);
-				if (ff!=null)
-					fieldName = ff.getTitle();
+				if (ff!=null) {
+                    fieldName = ff.getTitle();
+                }
 			}
 			%>
 			<option value="<%=rm.getColumnName(i)%>"><%=fieldName%></option>
@@ -55,8 +56,8 @@ if (op.equals("getFields")) {
 	return;
 }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>编辑表单</title>
@@ -91,7 +92,7 @@ if (op.equals("getFields")) {
 	display: none;
 	position: absolute;
 	top: -2%;
-	left: 0%;
+	left: 0;
 	width: 100%;
 	margin: auto;
 	height: 200%;
@@ -163,10 +164,10 @@ if (op.equals("add")) {
     <tr>
       <td >角色</td>
       <td >
-        <textarea name=roleDescs cols="40" rows="3"></textarea>
-        <input name="roles" type=hidden />      
+        <textarea name="roleDescs" cols="60" rows="3"></textarea>
+        <input name="roles" type=hidden />
       	<br />
-        <input name="button2" class="btn" type="button" onClick="showModalDialog('../role_multi_sel.jsp?roleCodes=' + o('roles').value + '&unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;')" value="选择角色">
+        <input name="button2" class="btn" type="button" onclick="openWin('../role_multi_sel.jsp?roleCodes=' + o('roles').value + '&unitCode=<%=privilege.getUserUnitCode(request)%>', 640, 480)" value="选择角色">
       </td>
     </tr>
     <tr>
@@ -200,7 +201,7 @@ if (op.equals("add")) {
 				<option value="<%=tableName%>">
 				<%=tableName%>
                 <%
-				if (tableName.toUpperCase().startsWith("FORM_TABLE_")) {
+				if (tableName.toUpperCase().startsWith("ft_")) {
 					String formCode = FormDb.getCodeByTableName(tableName);
 					fd = fd.getFormDb(formCode);
 					if (fd.isLoaded()) {
@@ -321,7 +322,7 @@ if (op.equals("add")) {
 function openWinUsers() {
 	selUserNames = form1.users.value;
 	selUserRealNames = form1.userRealNames.value;
-	showModalDialog('../user_multi_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>',window.self,'dialogWidth:800px;dialogHeight:600px;status:no;help:no;')
+    openWin('../user_multi_sel.jsp?unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600);
 }
 
 function getSelUserNames() {
@@ -336,7 +337,6 @@ function setUsers(users, userRealNames) {
 	o("users").value = users;
 	o("userRealNames").value = userRealNames;
 }
-
 
 function setRoles(roles, descs) {
 	o("roles").value = roles;

@@ -1,12 +1,20 @@
 package com.redmoon.weixin.util;
 
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.sys.DebugUtil;
 
+import javax.net.ssl.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -72,26 +80,73 @@ public class HttpPostFileUtil {
      * @throws Exception
      */
     public String send() throws IOException {
-        initConnection();
-        conn.connect();
-        outputStream = new DataOutputStream(conn.getOutputStream());
-        writeFileParams();
-        writeStringParams();
-        paramsEnd();
-        int code = conn.getResponseCode();
-        if (code == 200 || code==500) {
-            InputStream in = conn.getInputStream();
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buf = new byte[1024 * 8];
-            int len;
-            while ((len = in.read(buf)) != -1) {
-                out.write(buf, 0, len);
+        try {
+            initConnection();
+            conn.connect();
+            outputStream = new DataOutputStream(conn.getOutputStream());
+            writeFileParams();
+            writeStringParams();
+            paramsEnd();
+            int code = conn.getResponseCode();
+            if (code == 200 || code == 500) {
+                InputStream in = conn.getInputStream();
+                /*ByteArrayOutputStream out = new ByteArrayOutputStream();
+                byte[] buf = new byte[1024 * 8];
+                int len;
+                while ((len = in.read(buf)) != -1) {
+                    out.write(buf, 0, len);
+                }
+                return new String(out.toByteArray(), StandardCharsets.UTF_8);*/
+
+                InputStreamReader r = new InputStreamReader(in, StandardCharsets.UTF_8);
+                LineNumberReader din = new LineNumberReader(r);
+                String line;
+                StringBuilder sb = new StringBuilder();
+                while ((line = din.readLine()) != null) {
+                    sb.append(line + "\n");
+                }
+                return sb.toString();
             }
+        }
+        finally {
             conn.disconnect();
-            String s = new String(out.toByteArray(), "utf-8");
-            return s;
         }
         return null;
+    }
+
+    /**
+     * 绕过验证
+     *
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     */
+    public static SSLContext createIgnoreVerifySSL() throws NoSuchAlgorithmException, KeyManagementException {
+        // SSLContext sc = SSLContext.getInstance("SSLv3");
+        SSLContext sc = SSLContext.getInstance("TLS");
+
+        // 实现一个X509TrustManager接口，用于绕过验证，不用修改里面的方法
+        X509TrustManager trustManager = new X509TrustManager() {
+            @Override
+            public void checkClientTrusted(
+                    X509Certificate[] paramArrayOfX509Certificate,
+                    String paramString) throws CertificateException {
+            }
+
+            @Override
+            public void checkServerTrusted(
+                    X509Certificate[] paramArrayOfX509Certificate,
+                    String paramString) throws CertificateException {
+            }
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        };
+
+        sc.init(null, new TrustManager[] { trustManager }, null);
+        return sc;
     }
 
     /**
@@ -100,6 +155,29 @@ public class HttpPostFileUtil {
      * @throws Exception
      */
     private void initConnection() throws IOException {
+        DebugUtil.i(getClass(), "url.getProtocol()=", url.getProtocol() + " path=" + url.getProtocol());
+        if ("https".equals(url.getProtocol())) {
+            //采用绕过验证的方式处理https请求
+            SSLContext sslcontext = null;
+            try {
+                sslcontext = createIgnoreVerifySSL();
+            } catch (NoSuchAlgorithmException e) {
+                LogUtil.getLog(getClass()).error(e);
+            } catch (KeyManagementException e) {
+                LogUtil.getLog(getClass()).error(e);
+            }
+
+            HostnameVerifier ignoreHostnameVerifier = new HostnameVerifier() {
+                @Override
+                public boolean verify(String s, SSLSession sslsession) {
+                    LogUtil.getLog(getClass()).warn("WARNING: Hostname is not matched for cert.");
+                    return true;
+                }
+            };
+            HttpsURLConnection.setDefaultHostnameVerifier(ignoreHostnameVerifier);
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslcontext.getSocketFactory());
+        }
+
         conn = (HttpURLConnection) this.url.openConnection();
         conn.setDoOutput(true);
         conn.setUseCaches(false);
@@ -207,16 +285,9 @@ public class HttpPostFileUtil {
      * @throws Exception
      */
     private String encode(String value) {
+        // DebugUtil.i(getClass(), "encode", value);
         // 防止中文乱码
         return StrUtil.UTF8ToUnicode(value);
-/*
-        // controller接收的时候，不仅中文，其它也会变成乱码
-        try {
-            return URLEncoder.encode(value, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return value;*/
     }
 }
 

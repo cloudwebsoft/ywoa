@@ -1276,9 +1276,10 @@ $(incDiv).append(tmp);
 						btnDiv.onpress = btn.onpress;
 						btnDiv.name = btn.name;
 						if (btn.onpress) {
-							$(btnDiv).click(function() {
-									this.onpress(this.name, g.gDiv);
-								});
+							$(btnDiv).click(function(e) {
+								e.preventDefault();
+								this.onpress(this.name, g.gDiv);
+							});
 						}
 						$(tDiv2).append(btnDiv);
 						if ($.browser.msie && $.browser.version < 7.0) {

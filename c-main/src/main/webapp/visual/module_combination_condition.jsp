@@ -15,11 +15,10 @@
 <%@page import="cn.js.fan.web.*" %>
 <%@page import="com.redmoon.oa.flow.*" %>
 <%@page import="org.json.JSONObject" %>
-<%@page import="com.redmoon.oa.flow.macroctl.DeptSelectCtl" %>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
 <%@page import="com.redmoon.oa.flow.macroctl.MacroCtlUnit" %>
-<%@ page import="com.redmoon.oa.flow.macroctl.BasicSelectCtl" %>
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
+<%@ page import="cn.js.fan.util.StrUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	String moduleCode = ParamUtil.get(request, "moduleCode");
@@ -77,9 +76,11 @@
 	String operate = ParamUtil.get(request, "operate");
 	// 如果是模块验证，则不需要加入
 	if (!"validate".equals(operate)) {
-		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_status'>记录状态</option>";
-		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_flag'>冲抵状态</option>";
-		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_id'>关联字段</option>";
+		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_status' style='background-color: #ccc'>记录状态</option>";
+		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_flag' style='background-color: #ccc'>冲抵状态</option>";
+		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_id' style='background-color: #ccc'>关联字段</option>";
+		options += "<option id='" + FormField.FIELD_TYPE_INT + "' value='cws_role' style='background-color: #ccc'>用户的角色</option>";
+		options += "<option id='" + FormField.FIELD_TYPE_TEXT + "' value='cws_cur_user' style='background-color: #ccc'>当前用户</option>";
 	}
 	
 	String op = ParamUtil.get(request,"op");
@@ -115,7 +116,7 @@
 				json.put("msg","");
 				out.print(json);
 			}
-		}else if ("select".equals(isMacro)) {
+		} else if ("select".equals(isMacro)) {
 			// 如果表单字段不是宏控件，是下拉框形式
 			String str = FormParser.getOptionsOfSelect(fd,field);
 			// 如果没有空的选项
@@ -125,7 +126,7 @@
 			json.put("ret","2");
 			json.put("msg",str);
 			out.print(json);
-		}else{
+		} else{
 			json.put("ret","0");
 			json.put("msg","");
 			out.print(json);
@@ -135,7 +136,8 @@
 	}
 
 	int a = 0;
-	if (!"".equals(condition)) {
+	// condition如果不以<开头，则可能是脚本条件
+	if (!StrUtil.isEmpty(condition) && condition.startsWith("<")) {
 		SAXBuilder parser1 = new SAXBuilder();
 		try {
 			org.jdom.Document doc1 = parser1.build(new InputSource(new StringReader(condition)));
@@ -165,12 +167,15 @@
   <script type="text/javascript">
     var map = new Map();
   	map.put("<%=ModuleUtil.FILTER_CUR_USER%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER)%>");
-  	map.put("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT)%>");
+	map.put("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT)%>");
+	map.put("<%=ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN)%>");
   	map.put("<%=ModuleUtil.FILTER_CUR_USER_ROLE%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_ROLE)%>");
 	map.put("<%=ModuleUtil.FILTER_ADMIN_DEPT%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_ADMIN_DEPT)%>");
 	map.put("<%=ModuleUtil.FILTER_MAIN_ID%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_MAIN_ID)%>");
-  	map.put("<%=ModuleUtil.FILTER_CUR_DATE%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_DATE)%>");
-  	
+	map.put("<%=ModuleUtil.FILTER_CUR_DATE%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_DATE)%>");
+	map.put("<%=ModuleUtil.FILTER_CUR_YEAR%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_YEAR)%>");
+	map.put("<%=ModuleUtil.FILTER_CUR_MONTH%>", "<%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_MONTH)%>");
+
   	function add() {
   		var roleValue = $("#roleHidden").val();
   		var deptValue = $("#deptHidden").val();
@@ -408,7 +413,7 @@
 			return;			
 		}
 		var mainColumn = $("#mainColumn"+str).val();
-		var fieldType =obj.options[index].getAttribute("id");  
+		var fieldType = obj.options[index].getAttribute("id");
 		if (fieldType == "<%=FormField.FIELD_TYPE_TEXT%>" || fieldType == "<%=FormField.FIELD_TYPE_VARCHAR%>"){
 			$("#compare"+str).empty();
 			$("#compare"+str).append("<option value='='>=</option><option value='<>'><></option>");
@@ -472,12 +477,21 @@
         <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_DATE %>">
             <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_DATE) %></a>
         </li>
+		<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_YEAR %>">
+			<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_YEAR) %></a>
+		</li>
+		<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_MONTH %>">
+			<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_MONTH) %></a>
+		</li>
         <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER %>">
             <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER) %></a>
         </li>
         <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_DEPT %>">
             <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT) %></a>
         </li>
+		<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN %>">
+			<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN) %></a>
+		</li>
         <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_ROLE %>">
             <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_ROLE) %></a>
         </li>
@@ -553,12 +567,21 @@
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_DATE %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_DATE) %></a>
 					        </li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_YEAR %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_YEAR) %></a>
+							</li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_MONTH %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_MONTH) %></a>
+							</li>
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER) %></a>
 					        </li>
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_DEPT %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT) %></a>
 					        </li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN) %></a>
+							</li>
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_ROLE %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_ROLE) %></a>
 					        </li>
@@ -673,12 +696,21 @@
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_DATE %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_DATE) %></a>
 					        </li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_YEAR %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_YEAR) %></a>
+							</li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_MONTH %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_MONTH) %></a>
+							</li>
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER) %></a>
 					        </li>
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_DEPT %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT) %></a>
 					        </li>
+							<li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN %>">
+								<a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN) %></a>
+							</li>
 					        <li role="presentation" val="<%=ModuleUtil.FILTER_CUR_USER_ROLE %>">
 					            <a role="menuitem" tabindex="-1" href="#"><%=ModuleUtil.getFilterDesc(request, ModuleUtil.FILTER_CUR_USER_ROLE) %></a>
 					        </li>
@@ -767,10 +799,11 @@
 
 						if (val=="cws_status") {
 							var htmlStr = "<select name='columnName' id='columnName<%=i%>'>";
-							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_NOT%>'>流程未走完</option>";
-							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DONE%>'>流程已结束</option>";
-							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_REFUSED%>'>流程被拒绝</option>";
-							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DISCARD%>'>流程被放弃</option>";
+							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DRAFT%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_DRAFT)%></option>";
+							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_NOT%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_NOT)%></option>";
+							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DONE%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_DONE)%></option>";
+							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_REFUSED%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_REFUSED)%></option>";
+							htmlStr += "<option value='<%=com.redmoon.oa.flow.FormDAO.STATUS_DISCARD%>'><%=com.redmoon.oa.flow.FormDAO.getStatusDesc(com.redmoon.oa.flow.FormDAO.STATUS_DISCARD)%></option>";
 							htmlStr += "</select>";
 				
 							$("#columnInput<%=i%>").html(htmlStr);
@@ -823,7 +856,7 @@
 
 									var val = "<%=e.getChildText("value")%>";
 									if (val.indexOf("{$")==0) {
-										if (val.indexOf("<%=ModuleUtil.FILTER_CUR_DATE%>")==0 ||val.indexOf("<%=ModuleUtil.FILTER_CUR_USER%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_ROLE%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_ADMIN_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_MAIN_ID%>")==0) {
+										if (val.indexOf("<%=ModuleUtil.FILTER_CUR_DATE%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_YEAR%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_MONTH%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_ROLE%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_CUR_USER_DEPT_AND_CHILDREN%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_ADMIN_DEPT%>")==0 || val.indexOf("<%=ModuleUtil.FILTER_MAIN_ID%>")==0) {
 											$("#columnInput<%=i%>").html("<input type='text' name='columnName' id='columnName<%=i%>' value='<%=e.getChildText("value")%>'/>");								
 											$('#columnName<%=i%>').attr("val", val);
 											$('#columnName<%=i%>').val(map.get(val).value);

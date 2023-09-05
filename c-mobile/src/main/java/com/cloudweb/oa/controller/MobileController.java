@@ -6,9 +6,21 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.security.ThreeDesUtil;
 import cn.js.fan.util.*;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.cloudweb.oa.bean.Address;
+import com.cloudweb.oa.cache.DepartmentCache;
+import com.cloudweb.oa.cache.DeptUserCache;
+import com.cloudweb.oa.entity.Department;
+import com.cloudweb.oa.entity.DeptUser;
+import com.cloudweb.oa.entity.User;
 import com.cloudweb.oa.entity.UserSetup;
+import com.cloudweb.oa.security.AuthUtil;
+import com.cloudweb.oa.service.AddressService;
+import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudweb.oa.vo.Result;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.LogDb;
@@ -20,23 +32,27 @@ import com.redmoon.oa.android.system.MobileAppIconConfigMgr;
 import com.redmoon.oa.android.tools.Des3;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
-import com.redmoon.oa.flow.Directory;
-import com.redmoon.oa.flow.DirectoryView;
-import com.redmoon.oa.flow.Leaf;
+import com.redmoon.oa.flow.*;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.map.LocationDb;
+import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserSetupDb;
 import com.redmoon.oa.person.UserSetupMgr;
-import com.redmoon.oa.post.PostFlowMgr;
 import com.redmoon.oa.security.ServerIPPriv;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.usermobile.UserMobileMgr;
+import com.redmoon.oa.visual.FormDAO;
+import com.redmoon.weixin.bean.SortModel;
+import com.redmoon.weixin.util.CharacterParser;
+import com.redmoon.weixin.util.PinyinComparator;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,10 +62,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @RestController
@@ -101,6 +116,18 @@ public class MobileController {
     @Autowired
     IUserSetupService userSetupService;
 
+    @Autowired
+    AuthUtil authUtil;
+
+    @Autowired
+    IUserService userService;
+
+    @Autowired
+    DeptUserCache deptUserCache;
+
+    @Autowired
+    DepartmentCache departmentCache;
+
     /**
      * 置信鸽推送 token
      * @param name
@@ -145,7 +172,7 @@ public class MobileController {
             }
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if(!flag) {
@@ -154,7 +181,7 @@ public class MobileController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -184,7 +211,7 @@ public class MobileController {
             }
         } catch (JSONException e) {
             re = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if(!re){
@@ -193,7 +220,7 @@ public class MobileController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -226,13 +253,17 @@ public class MobileController {
             try {
                 decrypPassWord = Des3.decode(password);
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
-        String userName = name;
+        User user = userService.getUserByLoginName(name);
+        String userName = null;
         UserDb ud = new UserDb();
-        re = ud.Auth(userName, decrypPassWord);
+        if (user != null) {
+            userName = user.getName();
+            re = ud.Auth(userName, decrypPassWord);
+        }
         if (!re) {
             // 检查是否使用了工号登录
             AccountDb ad = new AccountDb();
@@ -243,7 +274,7 @@ public class MobileController {
                 try {
                     pwdMD5 = SecurityUtil.MD5(decrypPassWord);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
                 com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
                 try {
@@ -251,7 +282,7 @@ public class MobileController {
                         re = true;
                     }
                 } catch (ErrMsgException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 
@@ -273,7 +304,7 @@ public class MobileController {
 
                     log.create();
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
 
                 return jReturn.toString();
@@ -353,7 +384,7 @@ public class MobileController {
             }
 
             String serverName = request.getServerName();
-            // System.out.println(getClass() + " serverName=" + serverName);
+            // LogUtil.getLog(getClass()).info(getClass() + " serverName=" + serverName);
             ServerIPPriv sip = new ServerIPPriv(serverName);
             if (!sip.canUserLogin(ud.getName())) {
                 jReturn.put("res", 0);
@@ -378,7 +409,7 @@ public class MobileController {
             try {
                 License.getInstance().validate(request);
             } catch (ErrMsgException e) {
-                // e.printStackTrace();
+                // LogUtil.getLog(getClass()).error(e);
                 jReturn.put("res", "-1");
                 jReturn.put("msg", e.getMessage());
                 jResult.put("returnCode", "");
@@ -390,7 +421,7 @@ public class MobileController {
             com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
             boolean is_bind_mobile = cfg.getBooleanProperty("is_bind_mobile");
             if (is_bind_mobile) {
-                if (deviceId != null && !deviceId.trim().equals("")) {
+                if (deviceId != null && !"".equals(deviceId.trim())) {
                     UserSetupMgr userSetupMgr = new UserSetupMgr();
                     boolean isAllowBindMobile = userSetupMgr.isBindMobileModify(userName);
                     UserMobileMgr userMobileMgr = new UserMobileMgr();
@@ -452,7 +483,7 @@ public class MobileController {
 
             String photo;
             if (!"".equals(ud.getPhoto())) {
-                photo = "img_show.jsp?path=" + ud.getPhoto();
+                photo = "showImg.do?path=" + ud.getPhoto();
             } else {
                 if (ud.getGender() == 0) {
                     photo = "images/man.png";
@@ -462,8 +493,11 @@ public class MobileController {
             }
             jResult.put("photo", photo);
 
+            authUtil.doLoginByUserName(request, userName);
+
             // 保存个推cid
             String cid = ParamUtil.get(request, "cid");
+            DebugUtil.i(getClass(), ud.getRealName() + " passAndLogin cid", cid);
             UserSetup userSetup = userSetupService.getUserSetup(userName);
             userSetup.setCid(cid);
             userSetupService.updateByUserName(userSetup);
@@ -493,8 +527,12 @@ public class MobileController {
             com.redmoon.oa.security.Config scfg = com.redmoon.oa.security.Config.getInstance();
             boolean isPwdCanReset = scfg.getIntProperty("isPwdCanReset")==1;
             jResult.put("isPwdCanReset", isPwdCanReset);
+
+            // 登录模式，1表示扫码登录
+            int loginMode = StrUtil.toInt(com.redmoon.oa.Config.getInstance().get("loginMode"), 0);
+            jResult.put("loginMode", loginMode);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return jReturn.toString();
@@ -564,7 +602,7 @@ public class MobileController {
                 json.put("msg", "无更新");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -617,7 +655,7 @@ public class MobileController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -641,12 +679,8 @@ public class MobileController {
             jReturn.put("result", jResult);
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
-            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-        } catch (Exception e) {
-            flag = false;
-            e.printStackTrace();
-            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (!flag) {
                 try {
@@ -654,7 +688,7 @@ public class MobileController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -676,7 +710,7 @@ public class MobileController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -699,7 +733,7 @@ public class MobileController {
             jReturn.put("result", jResult);
             jReturn.put("res", RES_SUCCESS);
         } catch (JSONException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return jReturn.toString();
     }
@@ -713,7 +747,6 @@ public class MobileController {
         JSONObject jResult = new JSONObject();
         Privilege privilege = new Privilege();
         boolean re = privilege.Auth(skey);
-        PostFlowMgr pfMgr = new PostFlowMgr();
 
         if(re){
             try {
@@ -722,13 +755,12 @@ public class MobileController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
         privilege.doLogin(request, skey);
         String userName = privilege.getUserName(skey);
-        ArrayList<String> list = pfMgr.listCanUserStartFlow(userName);
 
         //取得有权限发起的流程
         Directory dir = new Directory();
@@ -747,19 +779,12 @@ public class MobileController {
                         Leaf chlf = (Leaf) ir.next();
                         if (chlf.isOpen()  && dv.canUserSeeWhenInitFlow(request, chlf)) {
                             boolean mobileCanStart = false;
-                            if(chlf.getParentCode().equals("performance")){
-                                if (list.contains(chlf.getCode())) {
-                                    if (chlf.getType() != Leaf.TYPE_NONE) {
-                                        mobileCanStart = true;
-                                    }
-                                }
-                            }else{
-                                if(chlf.isMobileStart()){
-                                    if (chlf.getType() != Leaf.TYPE_NONE) {
-                                        mobileCanStart = true;
-                                    }
+                            if(chlf.isMobileStart()){
+                                if (chlf.getType() != Leaf.TYPE_NONE) {
+                                    mobileCanStart = true;
                                 }
                             }
+
                             if (mobileCanStart) {
                                 JSONObject jObject = new JSONObject();
                                 jObject.put("flowCode", chlf.getCode());
@@ -789,7 +814,7 @@ public class MobileController {
             jReturn.put("result", jResult);
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally{
             if(!flag){
@@ -798,7 +823,7 @@ public class MobileController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
@@ -821,7 +846,7 @@ public class MobileController {
                 json.put("msg","时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         com.redmoon.oa.sms.Config cfg = new com.redmoon.oa.sms.Config();
@@ -842,7 +867,7 @@ public class MobileController {
                             realSendUserCount ++;
                         }
                     } catch (ErrMsgException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
                 // String smsSign = cfg.getSign(unitCode);
@@ -852,7 +877,7 @@ public class MobileController {
                 json.put("msg","发送完毕，本次共发送短信"+realSendCount+"条");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -876,7 +901,7 @@ public class MobileController {
                 json.put("msg", "时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -991,9 +1016,9 @@ public class MobileController {
             }
 
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ErrMsgException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -1016,7 +1041,7 @@ public class MobileController {
                 json.put("msg","时间过期");
                 return json.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -1066,9 +1091,9 @@ public class MobileController {
             result.put("locations",wldArray);
             json.put("result",result);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (ResKeyException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return json.toString();
     }
@@ -1090,21 +1115,21 @@ public class MobileController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
         privilege.doLogin(request, skey);
 
         //取得12个使用过人员的姓名
-        String sql = "select distinct userName from user_recently_selected where name=? order by times desc limit 12";
+        String sql = "select distinct userName from user_recently_selected where name=? order by times desc";
 
         JdbcTemplate jt = new JdbcTemplate();
         ResultIterator ri = null;
         ResultRecord rd = null;
 
         try {
-            ri = jt.executeQuery(sql,new Object[]{ privilege.getUserName(skey) });
+            ri = jt.executeQuery(sql,new Object[]{ privilege.getUserName(skey) }, 1, 12);
 
             if(!ri.hasNext()){
                 jReturn.put("res", RES_SUCCESS);
@@ -1117,12 +1142,12 @@ public class MobileController {
             UserDb ub = new UserDb();
             DeptDb db = new DeptDb();
             while (ri.hasNext()) {
-                rd = (ResultRecord) ri.next();
+                rd = ri.next();
 
                 String userName = rd.getString("userName");
                 ub = ub.getUserDb(userName);
                 String realName = StrUtil.getNullString(ub.getRealName());
-                String headUrl = StrUtil.getNullString(ub.getPhoto());
+                String headUrl = "showImg.do?path=" + StrUtil.getNullString(ub.getPhoto());
                 String mobile = StrUtil.getNullString(ub.getMobile());
                 String deptName = "";
 
@@ -1157,7 +1182,7 @@ public class MobileController {
                 e1.printStackTrace();
             }
 
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             jt.close();
@@ -1183,7 +1208,7 @@ public class MobileController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         privilege.doLogin(request, skey);
@@ -1245,8 +1270,7 @@ public class MobileController {
                 e1.printStackTrace();
             }
 
-            e.printStackTrace();
-            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             jt.close();
         }
@@ -1271,7 +1295,7 @@ public class MobileController {
                 jReturn.put("result", jResult);
                 return jReturn.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -1320,7 +1344,7 @@ public class MobileController {
                 e1.printStackTrace();
             }
 
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             log.error(StrUtil.trace(e));
         } finally {
             jt.close();
@@ -1354,7 +1378,7 @@ public class MobileController {
                 re = true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             jt.close();
         }
@@ -1377,7 +1401,7 @@ public class MobileController {
                 jReturn.put("result", jResult);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return jReturn.toString();
@@ -1410,7 +1434,7 @@ public class MobileController {
             }
         } catch (JSONException e) {
             flag = false;
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if(!flag) {
@@ -1419,11 +1443,184 @@ public class MobileController {
                     jResult.put("returnCode", "");
                     jReturn.put("result", jResult);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
         }
 
         return jReturn.toString();
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/getCounts", produces = {"application/json;charset=UTF-8;"})
+    public String getCounts(@RequestParam(required = true) String skey) throws JSONException {
+        Privilege privilege = new Privilege();
+        String userName = privilege.getUserName(skey);
+
+        MessageDb messageDb = new MessageDb();
+        int unReadCount = messageDb.getNewMsgCount(privilege.getUserName(skey));
+
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        json.put("unReadCount", unReadCount);
+        json.put("waitCount", WorkflowDb.getWaitCount(userName));
+        return json.toString();
+    }
+
+    @ApiOperation(value = "验证密码，用于签名宏控件", notes = "验证密码，用于签名宏控件", httpMethod = "POST")
+    @ApiResponses({ @ApiResponse(code = 200, message = "操作成功") })
+    @ResponseBody
+    @RequestMapping(value = "/getBarcode", method = RequestMethod.POST, produces = {"application/json;charset=UTF-8;"})
+    public Result<Object> getBarcode(@RequestParam(required = true) String barcode) {
+        Pattern pattern = Pattern.compile("([a-zA-Z_-]+)[0-9]*");
+        Matcher matcher = pattern.matcher(barcode);
+        if (!matcher.find()) {
+            LogUtil.getLog(getClass()).warn("条形码: " + barcode + " 未找到其前缀");
+            return new Result<>(false);
+        }
+        String prefix = matcher.group(1);
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+
+        FormDb fd = new FormDb();
+        List<FormField> list = fd.listMacorFields("macro_barcode");
+        for (FormField ff : list) {
+            String desc = ff.getDescription();
+            com.alibaba.fastjson.JSONObject jsonObject = JSON.parseObject(desc);
+            // 找到二维码宏控件对应的FormField，因只能找到第一条记录，故需注意prefix不能有重复，一个表单对应一个，且唯一
+            if (jsonObject.getString("prefix").equals(prefix)) {
+                String numStr = barcode.substring(prefix.length());
+                long num = StrUtil.toLong(numStr, 0);
+
+                com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
+                List<FormDAO> listDao = fdao.selectList(ff.getFormCode(), "select id from " + FormDb.getTableName(ff.getFormCode()) + " where " + ff.getName() + "=" + num);
+                if (listDao.size() > 0) {
+                    fdao = listDao.get(0);
+                    json.put("id", fdao.getId());
+                    json.put("moduleCode", ff.getFormCode());
+                    json.put("formCode", ff.getFormCode());
+                    json.put("fieldName", ff.getName());
+                    json.put("fieldValue", barcode);
+                }
+                break;
+            }
+        }
+        return new Result<>(json);
+    }
+
+    public int getPositionForSection(int section, List<SortModel> sortModels) {
+        for (int i = 0; i < sortModels.size(); i++) {
+            String sortStr = sortModels.get(i).getSortLetters();
+            char firstChar = sortStr.toUpperCase().charAt(0);
+            if (firstChar == section) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @ApiOperation(value = "通讯录列表", notes = "通讯录列表")
+    @ResponseBody
+    @RequestMapping(value = "/user/listAddress", method = RequestMethod.GET, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public String listAddress() {
+        JSONObject json = new JSONObject();
+        Privilege privilege = new Privilege();
+        boolean re = privilege.auth(request);
+        if (!re) {
+            try {
+                json.put("res", "-1");
+                // json.put("msg", "时间过期");
+                return json.toString();
+            } catch (JSONException e) {
+                LogUtil.getLog(getClass()).error(e);
+            }
+        }
+
+        com.alibaba.fastjson.JSONArray arr = new com.alibaba.fastjson.JSONArray();
+        List<SortModel> sortModels = new ArrayList<SortModel>();
+        com.alibaba.fastjson.JSONObject obj = new com.alibaba.fastjson.JSONObject();
+
+        String what = ParamUtil.get(request, "what");
+
+        User addr;
+        List<User> list = userService.listForAddress(what);
+        for (User user : list) {
+            String person = user.getRealName();
+            String pinyin = CharacterParser.getInstance().getSelling(person);
+            String sortString = pinyin.substring(0, 1).toUpperCase();
+            SortModel sortUserModel = new SortModel();
+            // 正则表达式，判断首字母是否是英文字母
+            if (sortString.matches("[A-Z]")) {
+                sortUserModel.setSortLetters(sortString.toUpperCase());
+            } else {
+                sortUserModel.setSortLetters("#");
+            }
+            sortUserModel.setObjs(user);
+            sortModels.add(sortUserModel);
+        }
+
+        if (sortModels.size() > 0) {
+            PinyinComparator pinyinComparator = new PinyinComparator();
+            Collections.sort(sortModels, pinyinComparator);
+            for (int i = 0; i < sortModels.size(); i++) {
+                com.alibaba.fastjson.JSONObject itemObj = new com.alibaba.fastjson.JSONObject();
+                int sec = sortModels.get(i).getSortLetters().charAt(0);
+                addr = (User) sortModels.get(i).getObjs();
+                com.alibaba.fastjson.JSONObject userObj = new com.alibaba.fastjson.JSONObject();
+                userObj.put("person", addr.getRealName());
+                userObj.put("mobile", addr.getMobile());
+                List<DeptUser> listDeptUser = deptUserCache.listByUserName(addr.getName());
+                StringBuilder deptNames = new StringBuilder();
+                for (DeptUser du : listDeptUser) {
+                    Department dept = departmentCache.getDepartment(du.getDeptCode());
+                    String deptName = "不存在";
+                    if (dept != null) {
+                        if (!ConstUtil.DEPT_ROOT.equals(dept.getParentCode()) && !ConstUtil.DEPT_ROOT.equals(dept.getCode())) {
+                            Department parentDept = departmentCache.getDepartment(dept.getParentCode());
+                            if (parentDept != null) {
+                                deptName = parentDept.getName() + dept.getName();
+                            }
+                        } else {
+                            deptName = dept.getName();
+                        }
+                    }
+
+                    StrUtil.concat(deptNames, "，", deptName);
+                }
+
+                if (listDeptUser.size() > 0) {
+                    userObj.put("company", deptNames);
+                } else {
+                    userObj.put("company", "");
+                }
+                userObj.put("email", addr.getEmail());
+                userObj.put("id", addr.getId());
+
+                if (i == getPositionForSection(sec, sortModels)) {
+                    itemObj.put("isGroup", true);
+                    itemObj.put("name", sortModels.get(i).getSortLetters());
+                    itemObj.put("pyName", sortModels.get(i).getSortLetters());
+                    arr.add(itemObj);
+
+                    com.alibaba.fastjson.JSONObject itemObj2 = new com.alibaba.fastjson.JSONObject();
+                    itemObj2.put("isGroup", false);
+                    itemObj2.put("name", addr.getRealName());
+                    itemObj2.put("pyName", CharacterParser.getInstance().getSelling(addr.getRealName()));
+                    itemObj2.put("user", userObj);
+                    arr.add(itemObj2);
+                } else {
+                    itemObj.put("isGroup", false);
+                    itemObj.put("name", addr.getRealName());
+                    itemObj.put("pyName", CharacterParser.getInstance().getSelling(addr.getRealName()));
+                    itemObj.put("user", userObj);
+                    arr.add(itemObj);
+                }
+            }
+        }
+        if (arr.size() > 0) {
+            obj.put("res", 0);
+            obj.put("datas", arr);
+        } else {
+            obj.put("res", -1);
+        }
+        return obj.toString();
     }
 }

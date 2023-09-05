@@ -35,7 +35,7 @@ public class SignMgr {
 			return jt.executeUpdate(insertSQL, new Object[] {accountId, userName,
                     workDateString, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0, 0, 0, 0, 0, 0});
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return -1;
 	}
@@ -89,8 +89,7 @@ public class SignMgr {
 				}
 			}			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		finally {
 			jt.close();
@@ -143,15 +142,15 @@ public class SignMgr {
 				xbsj = end_hour + ":" + end_time;
 			}
 
-			// 根据人员编号查询form_table_kaoqin_sign_time表中的考勤数据
+			// 根据人员编号查询ft_kaoqin_sign_time表中的考勤数据
 			String sql;
 			com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 			boolean isUseKqj = cfg.getBooleanProperty("isUseKqj");
 			if (isUseKqj) {
-				sql = "select number,name,sign_time,sign_type,is_supplement from form_table_kaoqin_time_sign where number = " + StrUtil.sqlstr(personNo);
+				sql = "select number,name,sign_time,sign_type,is_supplement from ft_kaoqin_time_sign where number = " + StrUtil.sqlstr(personNo);
 			}
 			else {
-				sql = "select number,name,sign_time,sign_type,is_supplement from form_table_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName);
+				sql = "select number,name,sign_time,sign_type,is_supplement from ft_kaoqin_time_sign where name = " + StrUtil.sqlstr(userName);
 			}
 			sql += " and sign_time >= "+SQLFilter.getDateStr(workDateString+" 00:00:00", "yyyy-MM-dd HH:mm:ss")+" and sign_time <= "+SQLFilter.getDateStr(workDateString+" 23:59:59", "yyyy-MM-dd HH:mm:ss")+" order by sign_time";
 			ResultIterator signIterator = jt.executeQuery(sql);
@@ -278,8 +277,9 @@ public class SignMgr {
 							sign_timeArr[0], earlycount, latecount, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, kqsbsj, kqxbsj, 0, 0, minutes, supplemeneCount});
 				} else {
 					String set = " set earlycount = "+earlycount+",latecount = "+latecount + ",supplement_count=" + supplemeneCount;
-					if (kqsbsj!=null)
+					if (kqsbsj!=null) {
 						set += ",sbsj = "+SQLFilter.getDateStr(kqsbsj, "yyyy-MM-dd HH:mm:ss");
+					}
 					if (kqxbsj!=null)
 						set += ",xbsj = "+SQLFilter.getDateStr(kqxbsj, "yyyy-MM-dd HH:mm:ss");
 					String updateSQL = "update kaoqin_arrange "+set+" where id = "+ id;
@@ -373,7 +373,7 @@ public class SignMgr {
 				return count;
 			}
 
-			String sql = "select id,start_date,start_date_ampm,end_date,end_date_ampm from form_table_trip_apply where apply = "+SQLFilter.sqlstr(userName)+" and start_date <= "+SQLFilter.getDateStr(workDateString,
+			String sql = "select id,start_date,start_date_ampm,end_date,end_date_ampm from ft_trip_apply where apply = "+SQLFilter.sqlstr(userName)+" and start_date <= "+SQLFilter.getDateStr(workDateString,
 				"yyyy-MM-dd")+" and end_date >= "+SQLFilter.getDateStr(workDateString,"yyyy-MM-dd")+" and cws_status = 1";
 			ResultIterator ri = jt.executeQuery(sql);
 			if (ri.hasNext()) {
@@ -423,7 +423,7 @@ public class SignMgr {
 				return count;
 			}
 
-			String sql ="select jqlb,qjkssj,qjkssj_ampm,qjjssj,qjjssj_ampm from form_table_qjsqd where applier = "+SQLFilter.sqlstr(userName)+" and qjkssj <= "+SQLFilter.getDateStr(workDateString,
+			String sql ="select jqlb,qjkssj,qjkssj_ampm,qjjssj,qjjssj_ampm from ft_qjsqd where applier = "+SQLFilter.sqlstr(userName)+" and qjkssj <= "+SQLFilter.getDateStr(workDateString,
 					"yyyy-MM-dd")+" and qjjssj >= "+SQLFilter.getDateStr(workDateString,"yyyy-MM-dd")+" and cws_status = 1";
 			ResultIterator leaveIterator = jt.executeQuery(sql);
 			if (leaveIterator.hasNext()) {
@@ -524,14 +524,13 @@ public class SignMgr {
 				return count;
 			}
 			// 加班不会跨天，故以加班开始时间作为判断依据
-			String sql = "select jb.kssj,jb.day_count,jb.jssj from form_table_jbsqd jb where jb.applier=" + StrUtil.sqlstr(userName) + " and jb.kssj >= "
+			String sql = "select jb.kssj,jb.day_count,jb.jssj from ft_jbsqd jb where jb.applier=" + StrUtil.sqlstr(userName) + " and jb.kssj >= "
 					+ SQLFilter.getDateStr(DateUtil.format(workDate, "yyyy-MM-dd 00:00:00"), "yyyy-MM-dd HH:mm:ss") + " and jb.kssj <= "+SQLFilter.getDateStr(DateUtil.format(workDate, "yyyy-MM-dd 23:59:59"), "yyyy-MM-dd HH:mm:ss") + " and jb.result=1 and jb.cws_status = 1";
 			ResultIterator ri = jt.executeQuery(sql);
 			// day_count为加班时长（小时）
 			if (ri.hasNext()) {
 				ResultRecord rr = (ResultRecord) ri.next();
 				double h = rr.getDouble(2);
-				System.out.println(getClass() + " h=" + h);
 				if (id == -1) {
 					count = jt.executeUpdate(insertSQL, new Object[]{accountId, userName,
 							workDate, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, h, 0, 0, 0, 0, 0, 0});
@@ -559,7 +558,7 @@ public class SignMgr {
 		int count = -1;
 		SimpleDateFormat sf = new SimpleDateFormat ("yyyy-MM-dd");
 		String workDateString = sf.format(workDate);
-		String sql = "select txsc from form_table_txsqd where txsqr="+StrUtil.sqlstr(userName)+" and startrq <= "+SQLFilter.getDateStr(workDateString+" 23:59:59", "yyyy-MM-dd HH:mm:ss")+
+		String sql = "select txsc from ft_txsqd where txsqr="+StrUtil.sqlstr(userName)+" and startrq <= "+SQLFilter.getDateStr(workDateString+" 23:59:59", "yyyy-MM-dd HH:mm:ss")+
 			" and endrq >= "+SQLFilter.getDateStr(workDateString+" 00:00:00", "yyyy-MM-dd HH:mm:ss")+" and cws_status = 1";
 		JdbcTemplate jt = new JdbcTemplate();
 		jt.setAutoClose(false);
@@ -620,7 +619,7 @@ public class SignMgr {
 				return count;
 			}
 
-			String sql = "select id from form_table_wcsq wc where wc.applier = "+StrUtil.sqlstr(userName)+" and wc.qjkssj <= "+SQLFilter.getDateStr(workDateString+" 23:59:59", "yyyy-MM-dd HH:mm:ss")+
+			String sql = "select id from ft_wcsq wc where wc.applier = "+StrUtil.sqlstr(userName)+" and wc.qjkssj <= "+SQLFilter.getDateStr(workDateString+" 23:59:59", "yyyy-MM-dd HH:mm:ss")+
 					" and wc.qjjssj >= "+SQLFilter.getDateStr(workDateString+" 00:00:00", "yyyy-MM-dd HH:mm:ss")+" and cws_status = 1";
 			ResultIterator txIterator = jt.executeQuery(sql);
 			if (txIterator.hasNext()) {
@@ -785,7 +784,7 @@ public class SignMgr {
 
 		double ts = 0; // 假期天数
 		JdbcTemplate jt = new JdbcTemplate();
-		String sql = "select qjkssj, qjjssj, qjkssj_ampm, qjjssj_ampm, jqlb from form_table_qjsqd where applier=? and qjkssj <=? and qjjssj >= ? and jqlb=? and cws_status = 1";
+		String sql = "select qjkssj, qjjssj, qjkssj_ampm, qjjssj_ampm, jqlb from ft_qjsqd where applier=? and qjkssj <=? and qjjssj >= ? and jqlb=? and cws_status = 1";
 		ResultIterator ri = null;
 		try {
 			ri = jt.executeQuery(sql, new Object[]{userName, ed, bd, jqlb});
@@ -807,7 +806,7 @@ public class SignMgr {
 				ts += SignMgr.getWorkDays(startDate, startAmpm, endDate, endAmpm);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(SignMgr.class).error(e);
 		}
 
 		return ts;
@@ -828,7 +827,7 @@ public class SignMgr {
 
 		double ccts = 0; // 出差天数
 		JdbcTemplate jt = new JdbcTemplate();
-		String sql = "select start_date, end_date from form_table_trip_apply where apply=? and start_date <=? and end_date >= ? and cws_status = 1";
+		String sql = "select start_date, end_date from ft_trip_apply where apply=? and start_date <=? and end_date >= ? and cws_status = 1";
 		ResultIterator ri = null;
 		try {
 			ri = jt.executeQuery(sql, new Object[]{userName, ed, bd});
@@ -846,7 +845,7 @@ public class SignMgr {
 				ccts += DateUtil.datediff(endDate, startDate);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(SignMgr.class).error(e);
 		}
 
 		return ccts;
@@ -867,7 +866,7 @@ public class SignMgr {
 
 		double ts = 0; // 出差天数
 
-		String sql = "select id from form_table_wcsq wc where wc.applier = ? and wc.qjkssj <= ? and wc.qjjssj >=? and cws_status = 1";
+		String sql = "select id from ft_wcsq wc where wc.applier = ? and wc.qjkssj <= ? and wc.qjjssj >=? and cws_status = 1";
 		ResultIterator ri = null;
 		try {
 			JdbcTemplate jt = new JdbcTemplate();
@@ -886,7 +885,7 @@ public class SignMgr {
 				ts += DateUtil.datediff(endDate, startDate);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(SignMgr.class).error(e);
 		}
 
 		return ts;
@@ -918,7 +917,7 @@ public class SignMgr {
 				r[1] = rr.getInt(2);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(SignMgr.class).error(e);
 		}
 
 		return r;
@@ -950,7 +949,7 @@ public class SignMgr {
 				r[2] = rr.getInt(3);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(SignMgr.class).error(e);
 		}
 
 		return r;
@@ -971,7 +970,7 @@ public class SignMgr {
 
 		int r = 0;
 		JdbcTemplate jt = new JdbcTemplate();
-		String sql = "select count(*) from form_table_kaoqin_supplement where name=? and date <=? and date >= ? and cws_status = 1";
+		String sql = "select count(*) from ft_kaoqin_supplement where name=? and date <=? and date >= ? and cws_status = 1";
 		ResultIterator ri = null;
 		try {
 			ri = jt.executeQuery(sql, new Object[]{userName, ed, bd});
@@ -980,7 +979,7 @@ public class SignMgr {
 				r = rr.getInt(1);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		return r;

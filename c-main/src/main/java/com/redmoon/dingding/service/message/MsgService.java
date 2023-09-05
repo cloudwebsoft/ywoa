@@ -2,6 +2,7 @@ package com.redmoon.dingding.service.message;
 
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.dingding.Config;
 import com.redmoon.dingding.domain.*;
 import com.redmoon.dingding.enums.Enum;
@@ -121,7 +122,7 @@ public class MsgService extends BaseService {
             }
 
         } catch (DdException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return taskId;
     }

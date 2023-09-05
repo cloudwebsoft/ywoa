@@ -5,11 +5,8 @@ import cn.js.fan.util.StrUtil;
 import java.util.Vector;
 import javax.servlet.jsp.JspWriter;
 import java.util.Iterator;
-import org.apache.log4j.Logger;
-
 
 public class DirectoryView {
-    Logger logger = Logger.getLogger(Leaf.class.getName());
     Leaf rootLeaf;
     Vector UprightLineNodes = new Vector(); //用于显示竖线
 
@@ -64,7 +61,6 @@ public class DirectoryView {
 
         if (!isLastChild) {
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -73,15 +69,12 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + code;
 
@@ -99,7 +92,6 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -196,9 +188,7 @@ public class DirectoryView {
         String description = leaf.getDescription();
 
         if (!isLastChild) {
-            // System.out.println("get leaf brother" + leaf.getName());
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -207,15 +197,12 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) { // =0的也计入的话会在树底端的结点产生多余竖线
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -233,7 +220,6 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;
@@ -452,7 +438,6 @@ public class DirectoryView {
 
         if (!isLastChild) {
             Leaf brotherleaf = leaf.getBrother("down");
-            // System.out.println("brother=" + brotherleaf);
             // 如果兄弟结点存在
             if (brotherleaf != null) {
                 // 取其所有的孩子结点
@@ -461,15 +446,12 @@ public class DirectoryView {
                 int count = r.size();
                 if (count>0) {
                     UprightLineNode uln = new UprightLineNode(layer, count);
-                    // System.out.println(leaf.getCode() + " layer=" + layer +
-                    //                   " count=" + count);
                     UprightLineNodes.addElement(uln);
                 }
             }
         }
 
         int childcount = leaf.getChildCount();
-        // System.out.println(code + " childcount=" + childcount);
 
         String tableid = "table" + leaf.getCode();
 
@@ -487,7 +469,6 @@ public class DirectoryView {
                     node.show(out, "images/i_plus-2.gif");
                     if (node.getCount() == 0) {
                         UprightLineNodes.remove(node);
-                        //System.out.println("Remove " + node);
                     }
                     isShowed = true;
                     break;

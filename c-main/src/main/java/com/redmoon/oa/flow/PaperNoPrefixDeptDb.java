@@ -7,6 +7,7 @@ import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.base.QObjectDb;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 
@@ -45,8 +46,7 @@ public class PaperNoPrefixDeptDb extends QObjectDb {
 				pndd.del();
 			}
 		} catch (ResKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 	}
 

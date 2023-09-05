@@ -8,7 +8,9 @@ import com.redmoon.oa.Config;
 import cn.js.fan.util.DateUtil;
 
 public class DebugUtil {
-    // 系统调试等级debugLevel，-1不输出，0通过System.out及日志输出debug、info、warn及error，1通过System.out及日志输出info、warn、error, 2通过日志输出info、warn及error，3通过日志输出warn及error
+    // 系统调试等级debugLevel，-1不输出，0通过System.out及日志输出debug、info、warn及error，
+    // 1通过System.out及日志输出info、warn、error,
+    // 2通过日志输出info、warn及error，3通过日志输出warn及error
 
     public static void log(Class cls, String func, String msg) {
         log(cls.getName(), func, msg);
@@ -24,7 +26,7 @@ public class DebugUtil {
             case 1:
             case 0:
                 LogUtil.getLog(clsName).info(func + ":" + msg);
-                System.out.println(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss") + " info: " + clsName + " " + func + ": " + msg);
+                // System.out.println(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss") + " info: " + clsName + " " + func + ": " + msg);
                 break;
             case -1:
             default:
@@ -57,16 +59,16 @@ public class DebugUtil {
     }
 
     public static void error(String clsName, String func, String msg) {
-        Config cfg = new Config();
+        Config cfg = Config.getInstance();
         int debugLevel = cfg.getInt("debugLevel");
         switch (debugLevel) {
             case 3:
             case 2:
-                LogUtil.getLog(clsName).error("func:" + msg);
+                LogUtil.getLog(clsName).error(func + ":" + msg);
                 break;
             case 1:
             case 0:
-                LogUtil.getLog(clsName).error("func:" + msg);
+                LogUtil.getLog(clsName).error(func + ":" + msg);
                 System.out.println(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss") + " error: " + clsName + " " + func + ": " + msg);
                 break;
             case -1:
@@ -76,7 +78,7 @@ public class DebugUtil {
     }
 
     public static void warn(String clsName, String func, String msg) {
-        Config cfg = new Config();
+        Config cfg = Config.getInstance();
         int debugLevel = cfg.getInt("debugLevel");
         switch (debugLevel) {
             case 3:
@@ -95,7 +97,7 @@ public class DebugUtil {
     }
 
     public static void debug(String clsName, String func, String msg) {
-        Config cfg = new Config();
+        Config cfg = Config.getInstance();
         int debugLevel = cfg.getInt("debugLevel");
         switch (debugLevel) {
             case 3:

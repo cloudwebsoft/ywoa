@@ -1,5 +1,6 @@
 package com.redmoon.oa.flow.macroctl;
 
+import cn.js.fan.web.Global;
 import com.redmoon.oa.base.IFormMacroCtl;
 
 import java.util.Iterator;
@@ -27,6 +28,13 @@ import com.cloudwebsoft.framework.util.LogUtil;
 
 import cn.js.fan.util.CheckErrException;
 import cn.js.fan.util.ErrMsgException;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.parser.Tag;
+import org.jsoup.select.Elements;
 
 /**
  * <p>Title: </p>
@@ -61,6 +69,18 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
     }
 
     /**
+     * 取得导出时的值
+     * @param request
+     * @param ff
+     * @param fieldValue
+     * @return
+     */
+    @Override
+    public String getValueForExport(HttpServletRequest request, FormField ff, String fieldValue) {
+        return StrUtil.getAbstract(request, converToHtml(request, ff, fieldValue), 1000, "");
+    }
+
+    /**
      * 将宏控件展开为HTML字符串
      * @param request HttpServletRequest
      * @param ff FormField
@@ -83,12 +103,23 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
     /**
      * 替换宏控件输入框为html，原方法取消，改为htmlparser fgf 20170923
      * @param macroFormField FormField
-     * @param content String
+     * @param doc String
      * @param htmlCtl String
      * @return String
      */
-    public String doReplaceMacroCtlWithHTMLCtl(FormField macroFormField,
-                                             String content, String htmlCtl) {
+    public void doReplaceMacroCtlWithHTMLCtl(FormField macroFormField,
+                                               Document doc, String htmlCtl) {
+        Elements myImgs = doc.select("input[name='" + macroFormField.getName() + "']");
+        for (Element element : myImgs) {
+            element.replaceWith(new Element(Tag.valueOf("span"), "").html(htmlCtl));
+            // 比上行略快一点，而且外部不包裹有span，但不含有生成的js
+            // element.replaceWith(Jsoup.parse(htmlCtl).body().child(0));
+            // html()后会多出<#root>
+            // element.replaceWith(Jsoup.parse(htmlCtl).body());
+        }
+        // return doc.html();
+
+        /*
         Parser parser;
 		try {
 			parser = new Parser(content);
@@ -96,8 +127,11 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
 			AndFilter filter = new AndFilter(new TagNameFilter("input"),
 					new HasAttributeFilter("name", macroFormField.getName()));
 			NodeList nodes = parser.parse(filter);//
+
+            // LogUtil.getLog(getClass()).info("宏控件: " + macroFormField.getTitle() + " " + macroFormField.getName() + " html:" + nodes.toHtml());
 			
 			if (nodes == null || nodes.size() == 0) {
+			    LogUtil.getLog(getClass()).warn("宏控件: " + macroFormField.getTitle() + " " + macroFormField.getName() + " 未能解析");
 				return content;
 			}
 
@@ -111,25 +145,33 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
 			c += content.substring(e);
 			return c;
 		} catch (ParserException e) {
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}		
 		
-		return content;        
+		return content;    */
     }    
     
     /**
      * 将表单中的宏控件用strHtmlCtl来替代
      * @param request HttpServletRequest
      * @param macroFormField FormField
-     * @param content String
+     * @param doc String
      * @return String
      */
     @Override
-    public String replaceMacroCtlWithHTMLCtl(HttpServletRequest request,
+    public void replaceMacroCtlWithHTMLCtl(HttpServletRequest request,
                                              FormField macroFormField,
-                                             String content) {
+                                             Document doc) {
+        long t = System.currentTimeMillis();
         String strHtmlCtl = convertToHTMLCtl(request, macroFormField);
-        return doReplaceMacroCtlWithHTMLCtl(macroFormField, content, strHtmlCtl);
+        if (Global.getInstance().isDebug()) {
+            LogUtil.getLog(getClass()).info("replaceMacroCtlWithHTMLCtl convertToHTMLCtl " + macroFormField.getTitle() + " " + macroFormField.getName() + " take " + (System.currentTimeMillis() - t) + " ms");
+        }
+        doReplaceMacroCtlWithHTMLCtl(macroFormField, doc, strHtmlCtl);
+        if (Global.getInstance().isDebug()) {
+            LogUtil.getLog(getClass()).info("replaceMacroCtlWithHTMLCtl doReplaceMacroCtlWithHTMLCtl " + macroFormField.getTitle() + " " + macroFormField.getName() + " take " + (System.currentTimeMillis() - t) + " ms");
+        }
+        // return re;
     }
 
     /**
@@ -137,8 +179,8 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
      * @return String
      */
     @Override
-    public String getSetCtlValueScript(HttpServletRequest request, IFormDAO IFormDao, FormField ff, String formElementId) {
-        return FormField.getSetCtlValueScript(request, IFormDao, ff, formElementId);
+    public String getSetCtlValueScript(HttpServletRequest request, IFormDAO iFormDao, FormField ff, String formElementId) {
+        return FormField.getSetCtlValueScript(request, iFormDao, ff, formElementId);
     }
 
     /**
@@ -466,4 +508,14 @@ public abstract class AbstractMacroCtl implements IFormMacroCtl {
     public void onFormDAOSave(HttpServletRequest request, IFormDAO ifdao, FormField field,
                               FileUpload fu) throws ErrMsgException {}
 
+    public JSONObject getProps(FormField ff) {
+        JSONObject json = null;
+        try {
+            json = new JSONObject(ff.getDescription());
+        }
+        catch (JSONException e) {
+            json = new JSONObject();
+        }
+        return json;
+    }
 }

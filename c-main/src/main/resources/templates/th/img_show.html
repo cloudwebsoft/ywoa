@@ -1,0 +1,32 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>查看图片</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" th:href="@{/js/bootstrap/css/bootstrap.min.css}"/>
+    <style>
+        img {
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+    <script th:src="@{/inc/common.js}"></script>
+    <script th:src="@{/js/jquery-1.9.1.min.js}"></script>
+    <script th:src="@{/js/jquery-migrate-1.2.1.min.js}"></script>
+    <script th:src="@{/js/bootstrap/js/bootstrap.min.js}"></script>
+</HEAD>
+<body style="text-align: center">
+    <img id="myImg" th:src="@{'/showImg.do?path=' + ${imgPath}}" onload="fitSize()" onclick="show()"/>
+</body>
+<script th:inline="javascript">
+    function fitSize() {
+        $('#myImg').css('width', $('#myImg').width() > 800 ? '800px' : $('#myImg').width() + 'px');
+    }
+
+    function show() {
+        var contextPath= [[@{/}]];
+        window.open(contextPath + 'showImg.do?path=[(${imgPath})]');
+    }
+</script>
+</HTML>

@@ -7,7 +7,6 @@ import javax.servlet.http.*;
 import com.cloudweb.oa.entity.Menu;
 import com.cloudweb.oa.service.IMenuService;
 import com.cloudweb.oa.utils.SpringUtil;
-import org.apache.log4j.Logger;
 import java.util.*;
 import com.redmoon.oa.pvg.Privilege;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
@@ -30,7 +29,6 @@ import com.cloudwebsoft.framework.util.LogUtil;
  * @version 1.0
  */
 public class FormQueryMgr {
-    Logger logger = Logger.getLogger(FormQueryMgr.class.getName());
 
     public FormQueryMgr() {
     }
@@ -165,7 +163,9 @@ public class FormQueryMgr {
             // 删除菜单项
             IMenuService menuService = SpringUtil.getBean(IMenuService.class);
             Menu menu = menuService.getMenu("query_" + id);
-            menuService.del(menu);
+            if (menu != null) {
+                menuService.del(menu);
+            }
 			
             aqd.del();
         }

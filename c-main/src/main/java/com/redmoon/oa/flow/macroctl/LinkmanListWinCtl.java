@@ -178,7 +178,7 @@ public class LinkmanListWinCtl extends AbstractMacroCtl {
 		}
 		
     	StringBuilder sqlSb = new StringBuilder();
-		sqlSb.append(" select a.id from form_table_sales_linkman a, form_table_sales_customer b where a.customer=b.id  ");
+		sqlSb.append(" select a.id from ft_sales_linkman a, ft_sales_customer b where a.customer=b.id  ");
 		sqlSb.append("  and a.unit_code = ").append("'").append(
 				priv.getUserUnitCode(request)).append("' ");
 		if(!priv.isUserPrivValid(request, "admin")

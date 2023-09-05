@@ -1,13 +1,9 @@
 package com.redmoon.weixin.servlet;
 
-import com.itextpdf.text.DocumentException;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.aes.AesException;
 import com.redmoon.weixin.aes.WXBizMsgCrypt;
-import org.dom4j.Document;
-import org.dom4j.Element;
-import org.dom4j.io.SAXReader;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +40,7 @@ public class WXAddressCallBackServlet extends HttpServlet {
             WXBizMsgCrypt wxcpt = new WXBizMsgCrypt(sToken,sEncodingAESKey,sCorpID);
             result = wxcpt.VerifyURL(msg_signature, timestamp, nonce, echostr);
         } catch (AesException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }finally{
             if (result == null) {
                 result = sToken;

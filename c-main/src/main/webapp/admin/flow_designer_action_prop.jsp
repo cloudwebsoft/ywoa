@@ -779,7 +779,6 @@
             if (nodeMode.value == "<%=WorkflowActionDb.NODE_MODE_ROLE%>") {
                 roleCodes = o("userName").value
             }
-            // showModalDialog('../role_multi_sel.jsp?unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>&roleCodes=' + roleCodes, window.self, 'dialogWidth:526px;dialogHeight:435px;status:no;help:no;');
             openWin('../role_multi_sel.jsp?unitCode=<%=StrUtil.UrlEncode(privilege.getUserUnitCode(request))%>&roleCodes=' + roleCodes, 526, 435);
             return;
         }
@@ -844,9 +843,8 @@
 	<BR/>
     <a title="流程中某个节点的处理人员" href="javascript:;" onclick="selAction()">所选节点上的人员</a><br/>
     <a title="表单中指定的人员" href="javascript:;" onclick="selField()">表单中指定的人员</a><br/>
-    <%if (com.redmoon.oa.kernel.License.getInstance().isPlatform()) {%>
     <a title="通过脚本选择人员" href="javascript:;" onclick="showNodeScript()">通过脚本选人</a><br/>
-	<span title="表单中需存在项目选择宏控件">
+	<span title="表单中需存在项目选择宏控件" style="display: none">
     项目角色<select id="projectRole" name="projectRole" onchange="setProjectRole()">
     <option value="">请选择</option>
 	<%
@@ -863,16 +861,15 @@
         %>
     </select>
     </span>
-    <%}%>
-    </div>    
+    </div>
     </span>
             <script>
                 function selAction() {
-                    showModalDialog('flow_designer_action_sel.jsp', window.self, 'dialogWidth:200px;dialogHeight:100px;status:no;help:no;resizable:yes;');
+                    openWin('flow_designer_action_sel.jsp', 200, 100);
                 }
 
                 function selField() {
-                    showModalDialog('flow_designer_field_sel.jsp?flowTypeCode=<%=flowTypeCode%>', window.self, 'dialogWidth:300px;dialogHeight:220px;status:no;help:no;');
+                    openWin('flow_designer_field_sel.jsp?flowTypeCode=<%=flowTypeCode%>', 300, 220);
                 }
 
                 function setAction(iName, iText) {
@@ -1066,7 +1063,7 @@
             <input title="模板套红" onchange="ModifyAction(false)" type="checkbox" id="flagReceiveRevise" name="flagReceiveRevise" value="1" checked/>
             模板套红
             <%
-                String disBtnName = "流程分发";
+                String disBtnName = "流程抄送";
                 String disBtnDesc = "将流程表单分发给相关人员";
                 String kind = com.redmoon.oa.kernel.License.getInstance().getKind();
                 if (kind.equalsIgnoreCase(com.redmoon.oa.kernel.License.KIND_COM)) {

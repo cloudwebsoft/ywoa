@@ -131,7 +131,7 @@
                 String cond = "";
                 int formViewId = -1;
                 String canAdd = "", canEdit = "", canImport = "", canDel = "", canSel = "", canExport = "", propStat = "";
-                int isTab = 0, isPage = 0, pageSize = 20, isSearchable = 0, isAddHighlight = 0;
+                int isTab = 0, isPage = 0, pageSize = 20, isSearchable = 0, isAddHighlight = 0, isUseModuleFilter = 0, isShowFlow = 0, isNoShow=1;
                 boolean isAgainst = false;
                 boolean isAutoSel = false;
                 JSONArray maps = new JSONArray();
@@ -180,6 +180,15 @@
                         if (jsonObject.has("isAddHighlight")) {
                             isAddHighlight = jsonObject.getInt("isAddHighlight");
                         }
+                        if (jsonObject.has("isUseModuleFilter")) {
+                            isUseModuleFilter = jsonObject.getInt("isUseModuleFilter");
+                        }
+                        if (jsonObject.has("isShowFlow")) {
+                            isShowFlow = jsonObject.getInt("isShowFlow");
+                        }
+                        if (jsonObject.has("isNoShow")) {
+                            isNoShow = jsonObject.getInt("isNoShow");
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -214,14 +223,17 @@
                 }
 
                 ModuleSetupDb msd = new ModuleSetupDb();
+                ModuleSetupDb msdSource = null;
+                ModuleSetupDb msdDest = null;
                 if (!"".equals(sourceFormCode)) {
-                    msd = msd.getModuleSetupDb(sourceFormCode);
-                    if (msd == null) {
-                        out.print(SkinUtil.makeErrMsg(request, "表单 " + sourceFormCode + " 不存在"));
+                    msdSource = msd.getModuleSetupDb(sourceFormCode);
+                    if (msdSource == null) {
+                        out.print(SkinUtil.makeErrMsg(request, "模块 " + sourceFormCode + " 不存在"));
                         return;
                     }
-                    sourceFormName = msd.getString("name");
+                    sourceFormName = msdSource.getString("name");
                     msd = msd.getModuleSetupDb(destFormCode);
+                    msdDest = msd;
                     destFormName = msd.getString("name");
                 }
                 Vector v = msd.listUsed();
@@ -497,7 +509,7 @@
         <td height="42" align="left"><input id="isAddHighlight" name="isAddHighlight" title="区别于拉单的数据，手工新增的数据高亮显示" value="1" type="checkbox" <%=isAddHighlight==1?"checked":""%> /></td>
         <td height="42" align="center">
             <%
-                if (!"nest_table".equals(nestType)) {
+                if (false && !"nest_table".equals(nestType)) {
             %>
             显示为选项卡
             <%
@@ -505,7 +517,7 @@
             %>
         </td>
         <td height="42" align="left">
-            <input type="checkbox" id="isTab" name="isTab" value="1" <%=isTab==1?"checked":"" %> style="display: <%=!"nest_table".equals(nestType) ? "" : "none"%>;" />
+            <input type="checkbox" id="isTab" name="isTab" value="1" <%=isTab==1?"checked":"" %> style="display: none;" />
         </td>
     </tr>
     <%
@@ -529,10 +541,26 @@
     <tr style="<%=dis%>">
         <td height="42" align="center">查询</td>
         <td height="42" align="left">
-            <input id="isSearchable" name="isSearchable" value="1" type="checkbox" <%=isSearchable==1?"checked":"" %> title="是否能查询" />
+            <input id="isSearchable" name="isSearchable" value="1" type="checkbox" <%=isSearchable==1?"checked":"" %> title="是否显示查询条件" />
         </td>
-        <td width="17%" height="42" align="center">&nbsp;</td>
-        <td height="42" align="left"></td>
+        <td align="center">
+            显示引用记录或流程
+        </td>
+        <td height="42" align="left">
+            <input id="isShowFlow" name="isShowFlow" value="1" type="checkbox" <%=isShowFlow==1?"checked":""%> title="如果拉单的记录存在，则显示详情"/>
+            <span style="display: none"><!--始终启用过滤条件--><input id="isUseModuleFilter" name="isUseModuleFilter" <%=isUseModuleFilter==1?"checked":""%> type="checkbox"/>&nbsp;嵌套表中使用模块中的过滤条件</span>
+        </td>
+    </tr>
+    <tr>
+        <td height="42" align="center">显示序号</td>
+        <td height="42" align="left">
+            <input id="isNoShow" name="isNoShow" value="1" type="checkbox" <%=isNoShow==1?"checked":"" %> title="是否显示序号" />
+        </td>
+        <td align="center">
+            启用模块操作列
+        </td>
+        <td height="42" align="left">
+        </td>
     </tr>
     <tr>
         <td height="42" align="center">过滤条件</td>
@@ -556,8 +584,8 @@
                     </div>
                 </div>
                 <div class="tab-pane fade <%=cssScript %>" id="script">
-                    <div>
-                        <textarea id="conds" name="conds" style="width:600px; height:150px"></textarea>
+                    <div style="margin-bottom: 10px">
+                        <textarea id="conds" name="conds" style="width:100%; height:150px"></textarea>
                         <br />
                         <a href="javascript:;" onclick="o('conds').value += ' {$curDate}';" title="当前日期">当前日期</a>
                         &nbsp;&nbsp;
@@ -569,7 +597,7 @@
                         &nbsp;&nbsp;
                         <a href="javascript:;" onclick="o('conds').value += ' {$mainId}';" title="主模块记录的ID，可用于流程中拉单时获取流程表单记录的ID、模块编辑时的主模块ID或与操作列中自定义链接联用">主模块记录的ID</a>
                         &nbsp;&nbsp;
-                        <a href="javascript:;" onclick="o('conds').value += ' in ({$admin.dept})';" title="用户可以管理的部门">当前用户管理的部门</a>&nbsp;&nbsp;(注：条件不能以and开头)
+                        <a href="javascript:;" onclick="o('conds').value += ' in ({$admin.dept})';" title="用户可以管理的部门">当前用户管理的部门</a>&nbsp;&nbsp;
                         <input type="button" value="设计器" class="btn btn-default" onclick="openIdeWin()" />
                         <textarea id="condsHelper" style="display:none"><%=cond %></textarea>
                         <script>
@@ -579,6 +607,10 @@
                                 $("#conds").val(cond);
                             }
                         </script>
+                        <br/>
+                        注：<br/>
+                        1、条件不能以and开头<br/>
+                        2、当为集团版时，如果记录不需要限定为本单位的，则点击维护，在源模块的过滤条件中配置“单位”为不限制
                     </div>
                     <div style="float:left; padding-top:4px">源表单中的</div>
                     <div id="sourceCondFieldDiv" style="float:left"><div id="sourceCondField" style="float:left"></div></div>
@@ -646,8 +678,10 @@
     </tr>
     <%
         if (list != null){
-            FormDb sourceFd = new FormDb(sourceFormCode);
-            FormDb destFd = new FormDb(destFormCode);
+            FormDb sourceFd = new FormDb();
+            sourceFd = sourceFd.getFormDb(msdSource.getString("form_code"));
+            FormDb destFd = new FormDb();
+            destFd = destFd.getFormDb(msdDest.getString("form_code"));
             for (NestFieldMaping nf : list) {
                 String sourceFieldCode = nf.getSourceFieldCode();
                 String title = "";
@@ -1140,7 +1174,21 @@
             isAddHighlight = 1;
         }
 
-        return "{\"sourceForm\":\"" + sourceFormVal + "\", \"destForm\":\"" + destFormVal + "\", \"propStat\":" + calcCodesStr + ", \"isTab\":" + isTab + ", \"isSearchable\":" + isSearchable + ", \"isAddHighlight\":" + isAddHighlight + ", \"isPage\":" + isPage + ", \"pageSize\":" + pageSize + ", \"isAgainst\":\"" + isAgainst + "\", \"isAutoSel\":\"" + isAutoSel + "\", \"filter\":\"" + condVal + "\", \"maps\":[" + mapsNest + "], \"formViewId\":\"" + $('#formView').val() + "\", " + canStr + "}";
+        var isUseModuleFilter = 0;
+        if (o("isUseModuleFilter").checked) {
+            isUseModuleFilter = 1;
+        }
+
+        var isShowFlow = 0;
+        if (o("isShowFlow").checked) {
+            isShowFlow = 1;
+        }
+
+        var isNoShow = 0;
+        if (o("isNoShow").checked) {
+            isNoShow = 1;
+        }
+        return "{\"sourceForm\":\"" + sourceFormVal + "\", \"destForm\":\"" + destFormVal + "\", \"propStat\":" + calcCodesStr + ", \"isTab\":" + isTab + ", \"isSearchable\":" + isSearchable + ", \"isShowFlow\":" + isShowFlow + ", \"isNoShow\":" + isNoShow + ", \"isAddHighlight\":" + isAddHighlight + ", \"isUseModuleFilter\":" + isUseModuleFilter + ",\"isPage\":" + isPage + ", \"pageSize\":" + pageSize + ", \"isAgainst\":\"" + isAgainst + "\", \"isAutoSel\":\"" + isAutoSel + "\", \"filter\":\"" + condVal + "\", \"maps\":[" + mapsNest + "], \"formViewId\":\"" + $('#formView').val() + "\", " + canStr + "}";
     }
 
     function combinationStr4DestFormChange(){

@@ -1,13 +1,18 @@
 package com.cloudwebsoft.framework.base;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.List;
 import java.util.Iterator;
 import cn.js.fan.cache.jcs.RMCache;
@@ -17,12 +22,13 @@ import cn.js.fan.db.PrimaryKey;
 import cn.js.fan.db.KeyUnit;
 import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class DBConfig {
     RMCache rmCache;
     final String group = "cws_config_db";
 
-    static Logger logger;
     public final String FILENAME = "configDB1.xml"; // 暂无使用XML文件初始化的ObjectDb
 
     public static Document doc = null;
@@ -33,8 +39,6 @@ public class DBConfig {
 
     public DBConfig() {
         rmCache = RMCache.getInstance();
-
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -43,17 +47,29 @@ public class DBConfig {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
+                Resource resource = new ClassPathResource("configDB1.xml");
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
+                root = doc.getRootElement();
+
+                /*FileInputStream fin = new FileInputStream(xmlPath);
                 doc = sb.build(fin);
                 root = doc.getRootElement();
-                fin.close();
+                fin.close();*/
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(DBConfig.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(DBConfig.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -68,7 +84,7 @@ public class DBConfig {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -83,7 +99,7 @@ public class DBConfig {
             dt = (DBTable)rmCache.getFromGroup(objectName, group);
         }
         catch (Exception e) {
-            logger.error("getDBTable1:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDBTable1:" + e.getMessage());
         }
         if (dt==null) {
             init();
@@ -94,7 +110,7 @@ public class DBConfig {
                 while (ir.hasNext()) {
                     Element child = (Element) ir.next();
                     String objName = child.getAttributeValue("objName");
-                    // logger.info("objName=" + objName + " objectName=" + objectName);
+                    // LogUtil.getLog(getClass()).info("objName=" + objName + " objectName=" + objectName);
                     if (objName.equals(objectName)) {
                         String name = child.getAttributeValue("name");
                         String create = child.getChildText("create");
@@ -111,7 +127,7 @@ public class DBConfig {
                         try {
                             oc = (ObjectCache) Class.forName(objCache).newInstance();
                         } catch (Exception e) {
-                            logger.error("getDBTable:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getDBTable:" + e.getMessage());
                         }
 
                         dt = new DBTable(name, objName);
@@ -176,21 +192,21 @@ public class DBConfig {
                                         key.put(keyName, new KeyUnit(PrimaryKey.TYPE_DATE, orders));
                                         break;
                                     default:
-                                        logger.info("getDBTable: Parsing primary key of " + name + "，type=" + keyType + " is unknown!");
+                                        LogUtil.getLog(getClass()).info("getDBTable: Parsing primary key of " + name + "，type=" + keyType + " is unknown!");
                                         break;
                                 }
                                 orders++;
                             }
                             dt.primaryKey = new PrimaryKey(key);
                         } else {
-                            logger.info("getDBTable2: Parsing primary key of " + name + "，type=" + pkType + " is unknown!");
+                            LogUtil.getLog(getClass()).info("getDBTable2: Parsing primary key of " + name + "，type=" + pkType + " is unknown!");
                         }
 
                         try {
                             rmCache.putInGroup(objName, group,
                                                dt);
                         } catch (Exception e) {
-                            logger.error("getDBTable:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getDBTable:" + e.getMessage());
                         }
                         return dt;
                     }

@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "文档中心",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "u-time-line": "/node-modules/uview-ui/components/u-time-line/u-time-line",
+    "u-time-line-item": "/node-modules/uview-ui/components/u-time-line-item/u-time-line-item",
+    "u-tag": "/node-modules/uview-ui/components/u-tag/u-tag"
+  }
+}

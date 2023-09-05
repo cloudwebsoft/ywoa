@@ -1,6 +1,7 @@
 package com.redmoon.oa.util;
 
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.cloudwebsoft.framework.util.OSUtil;
 import com.itextpdf.text.*;
 import com.itextpdf.text.html.simpleparser.HTMLWorker;
@@ -73,12 +74,12 @@ public class PdfUtil {
             renderer.layout();
             renderer.createPDF(os);
         } catch (IOException | com.lowagie.text.DocumentException e) {
-            e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
         } finally {
             try {
                 os.close();
             } catch (IOException e) {
-                e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
             }
         }
     }*/
@@ -160,7 +161,7 @@ public class PdfUtil {
                     content = sb.toString();
                 }
             } catch (ParserException e) {
-                e.printStackTrace();
+                LogUtil.getLog(PdfUtil.class).error(e);
             }
 
             String prefixFont = "";
@@ -205,7 +206,7 @@ public class PdfUtil {
                 output.writeByte(bytes[x]);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(PdfUtil.class).error(e);
         }
     }
 
@@ -264,7 +265,7 @@ public class PdfUtil {
                 content = sb.toString();
             }
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(PdfUtil.class).error(e);
         }
         return content;
     }
@@ -331,7 +332,7 @@ public class PdfUtil {
                         null,
                         Charset.forName("UTF-8"), new AsianFontProvider());
             } catch (IOException e) {
-                e.printStackTrace();
+                LogUtil.getLog(PdfUtil.class).error(e);
             }
 
             // 不能放在finally块中，要放在buffer.toByteArray()前，否则生成的pdf将无法打开
@@ -344,7 +345,7 @@ public class PdfUtil {
                 output.writeByte(bytes[x]);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(PdfUtil.class).error(e);
         }
     }
 }

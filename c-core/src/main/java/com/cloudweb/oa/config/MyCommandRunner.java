@@ -1,5 +1,6 @@
 package com.cloudweb.oa.config;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,8 +39,7 @@ public class MyCommandRunner implements CommandLineRunner {
                     run.exec(cmd);
                     logger.debug("启动浏览器打开项目成功");
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    logger.error(e.getMessage());
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
             else {
@@ -49,7 +49,7 @@ public class MyCommandRunner implements CommandLineRunner {
                     // 打开默认浏览器
                     // Runtime.getRuntime().exec("cmd /c start " + loginUrl);
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
             }
         }

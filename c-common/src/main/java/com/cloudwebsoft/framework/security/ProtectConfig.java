@@ -1,24 +1,22 @@
 package com.cloudwebsoft.framework.security;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import cn.js.fan.cache.jcs.RMCache;
+import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.jdom.Document;
+import org.jdom.Element;
+import org.jdom.output.Format;
+import org.jdom.output.XMLOutputter;
+
+import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import org.jdom.Document;
-import java.io.FileOutputStream;
-
-import org.jdom.JDOMException;
-import org.jdom.output.XMLOutputter;
-import org.jdom.input.SAXBuilder;
-import org.jdom.Element;
-import org.apache.log4j.Logger;
-import java.util.Vector;
-import java.util.List;
-import java.util.Iterator;
-import cn.js.fan.cache.jcs.RMCache;
-import org.jdom.output.Format;
 import java.net.URLDecoder;
-import cn.js.fan.util.StrUtil;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 public class ProtectConfig {
     RMCache rmCache;
@@ -27,7 +25,6 @@ public class ProtectConfig {
     private final String ALLUNPRORECT = "ALLUNPRORECT";
     private final String FILENAME = "config_protect.xml";
 
-    private static Logger logger;
     private static Document doc = null;
     private static Element root = null;
     private static String xmlPath;
@@ -36,8 +33,6 @@ public class ProtectConfig {
 
     public ProtectConfig() {
         rmCache = RMCache.getInstance();
-
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -48,20 +43,14 @@ public class ProtectConfig {
             try {
                 xmlPath = URLDecoder.decode(xmlPath, "utf-8");
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                LogUtil.getLog(ProtectConfig.class).error(e);
             }
 
-            SAXBuilder sb = new SAXBuilder();
-            try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
-                root = doc.getRootElement();
-                fin.close();
-                isInited = true;
-            } catch (JDOMException | IOException e) {
-                logger.error(e.getMessage());
-                e.printStackTrace();
-            }
+            IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+            doc = configUtil.getDocument("config_protect.xml");
+            root = doc.getRootElement();
+
+            isInited = true;
         }
     }
 
@@ -75,7 +64,7 @@ public class ProtectConfig {
             rmCache.invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -84,7 +73,7 @@ public class ProtectConfig {
         try {
             v = (Vector<ProtectUnit>) rmCache.getFromGroup(ALLPRORECT, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector<ProtectUnit>();
@@ -109,7 +98,7 @@ public class ProtectConfig {
                     rmCache.putInGroup(ALLPRORECT, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllDeskTopUnit:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllDeskTopUnit:" + e.getMessage());
                 }
             }
         }
@@ -121,7 +110,7 @@ public class ProtectConfig {
         try {
             v = (Vector<ProtectUnit>) rmCache.getFromGroup(ALLUNPRORECT, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector<>();
@@ -144,7 +133,7 @@ public class ProtectConfig {
                     rmCache.putInGroup(ALLUNPRORECT, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllDeskTopUnit:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllDeskTopUnit:" + e.getMessage());
                 }
             }
         }
@@ -163,7 +152,9 @@ public class ProtectConfig {
             FileOutputStream fout = new FileOutputStream(xmlPath);
             outp.output(doc, fout);
             fout.close();
-        } catch (java.io.IOException e) {e.printStackTrace();}
+        } catch (java.io.IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
     }
 }
 

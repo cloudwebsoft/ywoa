@@ -1,8 +1,7 @@
 package com.redmoon.oa.job;
 
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 
 import com.redmoon.oa.Config;
 import com.redmoon.oa.dept.DeptDb;
@@ -16,6 +15,8 @@ import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
@@ -42,7 +43,12 @@ import java.util.Vector;
  * @author not attributable
  * @version 1.0
  */
-public class InitOACalendar implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class InitOACalendar extends QuartzJobBean {
 	public InitOACalendar() {
 	}
 	
@@ -52,9 +58,9 @@ public class InitOACalendar implements Job {
 	 * @param jobExecutionContext
 	 *            JobExecutionContext
 	 * @throws JobExecutionException
-	 * @todo Implement this org.quartz.Job method
 	 */
-	public void execute(JobExecutionContext jobExecutionContext)
+	@Override
+	public void executeInternal(JobExecutionContext jobExecutionContext)
 			throws JobExecutionException {
 		int year = DateUtil.getYear(new Date());
 		OACalendarDb ocd = new OACalendarDb();

@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.*;
 
 /**
@@ -87,7 +88,7 @@ public class AddressTypeDb extends ObjectDb {
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
         }
         finally {
@@ -120,7 +121,7 @@ public class AddressTypeDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -163,7 +164,7 @@ public class AddressTypeDb extends ObjectDb {
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -200,7 +201,7 @@ public class AddressTypeDb extends ObjectDb {
                  rc.refreshSave(primaryKey);
              }
          } catch (SQLException e) {
-             logger.error("save: " + e.getMessage());
+             LogUtil.getLog(getClass()).error("save: " + e.getMessage());
          } finally {
              if (conn != null) {
                  conn.close();
@@ -219,7 +220,7 @@ public class AddressTypeDb extends ObjectDb {
                                    StrUtil.sqlstr(userName));
             if (rs.next())return true;
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -238,7 +239,7 @@ public class AddressTypeDb extends ObjectDb {
                                    StrUtil.sqlstr(userName) + " and unit_code=" + StrUtil.sqlstr(unitCode));
             if (rs.next())return true;
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -266,7 +267,7 @@ public class AddressTypeDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();

@@ -209,11 +209,10 @@ function save() {
 	if(uEditor.hasContents()){
 		uEditor.sync();/*同步内容*/
 		var html = uEditor.getContent().replace(eval("/"+"\"selected\""+"/gi"),"\"\"").replace("<p>&nbsp;</p>","");//替换selected为"" 删除头部空行
- 		//alert(html + "<!--cwsplugins-->");
- 		if (html.indexOf("<!--cwsplugins-->") < 0){
+ 		/*if (html.indexOf("<!--cwsplugins-->") < 0){
  		     html += "<!--cwsplugins-->";
- 		}
- 		window.opener.setFormContent(html);
+ 		}*/
+        window.opener.setFormContent(html);
 	}
 	else{
 	   var html = uEditor.getContent();

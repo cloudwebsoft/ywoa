@@ -61,12 +61,12 @@ public class WxBaseService {
 				default:
 				break;
 			}
-			if(result!=null && !result.equals("")){
+			if(result!=null && !"".equals(result)){
 				JSONObject json = new JSONObject(result);
-				if(json!=null && !json.isNull(Constant.ERRCODE)){
+				if(!json.isNull(Constant.ERRCODE)){
 					errorCode = json.getInt(Constant.ERRCODE);
 				} 
-				if (json!=null && json.has("errmsg")) {
+				if (json.has("errmsg")) {
 					if (errorCode!=0) {
 						LogUtil.getLog(WxBaseService.class).error(result);
 						LogUtil.getLog(WxBaseService.class).error("url=" + url + " body=" + body);
@@ -74,10 +74,8 @@ public class WxBaseService {
 				}
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			// System.out.println("result=" + result);
 			LogUtil.getLog(WXDeptMgr.class).error(e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return errorCode;
 	}
@@ -133,8 +131,9 @@ public class WxBaseService {
 			res = StrUtil.getNullString(osv.getString("weixin_accesstoken"));
 			Date t = osv.getDate("weixin_accesstoken_time");
 			long weixinAccesstokenTime = 0;
-			if (t!=null)
+			if (t!=null) {
 				weixinAccesstokenTime = t.getTime();
+			}
 
 			// 当前时间
 			long now = System.currentTimeMillis();
@@ -143,7 +142,7 @@ public class WxBaseService {
 				String sCorpID = config.getProperty("corpId");
 				String url = Constant.GET_TOKEN+"corpid="+sCorpID+"&corpsecret="+agentSecret;
 				String result = HttpUtil.MethodGet(url);
-				if(result != null && !result.equals("")){
+				if(result != null && !"".equals(result)){
 					// LogUtil.getLog(WXBaseMgr.class).info(result);
 					JSONObject json = new JSONObject(result);
 					// {"expires_in":7200,"errmsg":"ok","access_token":"5_nG3fIPHamgL_oyhdEHJSFQ_WY59dm-xfEnHFxRWclxqITHypxN4hOgU7g1tfEhzTQPuwQ_0vQrt9H4tsmzW7PXCBGbnvwob7ik-i-_PJa78S5cV3bepIDSrf_1gmZbpDyErK1fcqDKg60WDKrRUxQGtCXaTosm9IC97p9-NJd1gInN2Qsa2OhNfZWVjXI-bb0-cdXJAKIXM_jpxC9lcg","errcode":0}
@@ -151,7 +150,6 @@ public class WxBaseService {
 						int errcode = json.getInt("errcode");
 						if (errcode!=0) {
 							LogUtil.getLog(getClass()).error("getToken2: " + json.toString());
-							LogUtil.getLog(getClass()).error("getToken2: " + StrUtil.trace(new Exception()));
 							DebugUtil.log(WxBaseService.class, "getToken", json.toString());
 						}
 						else {
@@ -171,15 +169,15 @@ public class WxBaseService {
 			}
 		} catch (JSONException e) {
 			LogUtil.getLog(WxBaseService.class).error(e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ResKeyException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return res;
 	}
 	
 	/**
-	 * 获得accessToken
+	 * 为微信企业号获得accessToken
 	 * @Description: 
 	 * @return
 	 */
@@ -194,7 +192,7 @@ public class WxBaseService {
 	 */
 	public String getTokenContacts(){
 		String secret = config.getProperty("secretContacts");
-		return  getToken(secret);
+		return getToken(secret);
 	}
 
 	/**
@@ -284,7 +282,7 @@ public class WxBaseService {
 			deptObj.put("parentid", parentCode.equals(DeptDb.ROOTCODE)?1:p_deptdb.getId());
 			deptObj.put("order", 1000 - deptDb.getOrders()); // 微信文档称按从小到大排序，实测却是从大到小排序
 		} catch (JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return deptObj.toString();
 	}

@@ -84,7 +84,7 @@
         <td width="13%" align="center">函数</td>
         <td width="87%" align="left"><%
             FormDAO fdao = new FormDAO();
-            String sql = "select id from form_table_formula order by id desc";
+            String sql = "select id from ft_formula order by id desc";
             java.util.Iterator ir = fdao.list("formula", sql).iterator();
             String opts = "";
             while (ir.hasNext()) {

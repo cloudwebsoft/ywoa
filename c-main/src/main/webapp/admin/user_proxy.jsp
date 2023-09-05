@@ -42,7 +42,7 @@ function SelectDate(ObjName,FormatDate){
 	PostAtt[0]= FormatDate;
 	PostAtt[1]= findObj(ObjName);
 
-	GetDate = showModalDialog("../util/calendar/calendar.htm", PostAtt ,"dialogWidth:286px;dialogHeight:221px;status:no;help:no;");
+	GetDate = openWin("../util/calendar/calendar.htm", 286, 221);
 }
 
 function SetDate(){ 
@@ -50,7 +50,7 @@ function SetDate(){
 }
 
 function SelectDateTime(objName){
-	var dt = showModalDialog("../util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
+	var dt = openWin("../util/calendar/time.jsp", 266, 185);
 	if (dt!=null)
 		findObj(objName).value = dt;
 }

@@ -58,7 +58,7 @@ if (ri==null) {
 String colP = aqd.getColProps();
 JSONArray jsonArray = new JSONArray(colP);
 %>
-<table id="formQueryTable">
+<table id="formQueryTable" class="tabStyle_1">
 <thead>
 	<tr>
 <%
@@ -95,7 +95,7 @@ if (formCode != null) {
 }
 	
 while(ri.hasNext()){
-	ResultRecord rr = (ResultRecord)ri.next();
+	ResultRecord rr = ri.next();
 	JSONObject jo = new JSONObject();
 	HashMap mapIndex = qsu.getMapIndex();
 	Iterator irMap = mapIndex.keySet().iterator();

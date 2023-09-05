@@ -3,6 +3,7 @@ package com.redmoon.oa.xmpp;
 import java.io.StringReader;
 
 import cn.js.fan.util.DateUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.*;
@@ -89,7 +90,7 @@ public class MessageUtil {
             String xmlStr = getXML(fromUser, toUser, msg, type);
             re = executeHttpRequest(xmlStr);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return re;
         }
         return re;
@@ -110,8 +111,6 @@ public class MessageUtil {
             String result = post.getResponseBodyAsString();
             if (post.getStatusCode() == HttpStatus.SC_OK) {
                 result = new String(post.getResponseBody());
-                System.out.println(getClass() + " result===" + result);
-                // System.out.print(info);
                 StringReader read = new StringReader(result);
                 // 创建新的输入源SAX 解析器将使用 InputSource 对象来确定如何读取 XML 输入
                 InputSource source = new InputSource(read);
@@ -132,12 +131,12 @@ public class MessageUtil {
                         return true;
                     }
                     else {
-                        System.out.println("SyncUtil executeHttpRequest: OperCode=" + OperCode + " OperType=" + OperType + " status=" + status );
+                        LogUtil.getLog(getClass()).warn("SyncUtil executeHttpRequest: OperCode=" + OperCode + " OperType=" + OperType + " status=" + status );
                     }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             post.releaseConnection();
         }

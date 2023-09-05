@@ -1,13 +1,18 @@
 package com.redmoon.oa.flow.strategy;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -17,6 +22,8 @@ import cn.js.fan.util.StrUtil;
 import org.jdom.output.Format;
 
 import com.redmoon.oa.kernel.License;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import java.net.URLDecoder;
 
@@ -24,8 +31,7 @@ public class StrategyMgr {
     static final String group = "FLOW_STRATEGY"; 
     static final String ALLRSTRATEGY = "ALL_FLOW_STRATEGY";
 
-    static Logger logger; 
-    public final String FILENAME = "flow_user_sel_strategy.xml";
+    public static final String FILENAME = "flow_user_sel_strategy.xml";
  
     public static Document doc = null;
     public static Element root = null;
@@ -34,7 +40,6 @@ public class StrategyMgr {
     public static URL confURL;
 
     public StrategyMgr() {
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -44,17 +49,25 @@ public class StrategyMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
+                Resource resource = new ClassPathResource(FILENAME);
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
                 root = doc.getRootElement();
-                fin.close();
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(StrategyMgr.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(StrategyMgr.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -69,7 +82,7 @@ public class StrategyMgr {
         	RMCache.getInstance().invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(StrategyMgr.class).error(e.getMessage());
         }
     }
 
@@ -79,7 +92,7 @@ public class StrategyMgr {
     		pu = (StrategyUnit)RMCache.getInstance().getFromGroup(code, group);
         }
         catch (Exception e) {
-            logger.error("getStrategyUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getStrategyUnit:" + e.getMessage());
         }
         if (pu==null) {
             init();
@@ -106,7 +119,7 @@ public class StrategyMgr {
                         try {
                         	RMCache.getInstance().putInGroup(ecode, group, pu);
                         } catch (Exception e) {
-                            logger.error("getStrategyUnit:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getStrategyUnit:" + e.getMessage());
                         }
                         return pu;
                     }
@@ -125,7 +138,7 @@ public class StrategyMgr {
         try {
             v = (Vector) RMCache.getInstance().getFromGroup(ALLRSTRATEGY, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector();
@@ -149,7 +162,7 @@ public class StrategyMgr {
                 	RMCache.getInstance().putInGroup(ALLRSTRATEGY, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllStrategy:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllStrategy:" + e.getMessage());
                 }
             }
         }

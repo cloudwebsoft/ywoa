@@ -25,7 +25,6 @@
         // request.setCharacterEncoding("UTF-8");
         String phrase = ParamUtil.get(request, "phrase");
         phrase = java.net.URLDecoder.decode(phrase, "UTF-8");
-        // System.out.println(getClass() + " phrase=" + phrase);
         UserPhraseDb upd = new UserPhraseDb();
         boolean re = false;
         re = upd.create(new com.cloudwebsoft.framework.db.JdbcTemplate(), new Object[]{new Privilege().getUser(request), phrase, new Integer(1), new java.util.Date()});
@@ -81,15 +80,15 @@
 %>
 <style>
     #phraseBox {
-        margin: 0px auto 0;
+        margin: 0 auto 0;
         position: absolute;
         display: none
     }
 
     #phraseBox cite {
         position: relative;
-        margin: 0px;
-        padding: 0px 30px 1px;
+        margin: 0;
+        padding: 0 30px 1px;
         background: transparent url(images/tip.gif) no-repeat 50px 10px;
         font-style: normal;
     }
@@ -154,7 +153,7 @@
             },
             dataType: "html",
             beforeSend: function (XMLHttpRequest) {
-                //ShowLoading();
+                // ShowLoading();
             },
             success: function (data, status) {
                 // $.toaster({priority : 'info', message : '操作成功！' });

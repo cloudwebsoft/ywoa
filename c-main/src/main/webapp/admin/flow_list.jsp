@@ -7,7 +7,6 @@
 <%@ page import="com.redmoon.oa.dept.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.JSONObject" %>
-<jsp:useBean id="docmanager" scope="page" class="com.redmoon.oa.fileark.DocumentMgr"/>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 	String priv="admin.flow";
@@ -107,8 +106,8 @@
 		return;
 	}
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title>流程列表</title>
@@ -146,14 +145,15 @@
 </head>
 <body>
 <div id="bodyBox">
-<%@ include file="flow_inc_menu_top.jsp"%>
+<%--<%@ include file="flow_inc_menu_top.jsp"%>
 <script>
 o("menu5").className="current";
-</script>
+</script>--%>
 <%
 WorkflowDb wf = new WorkflowDb();
 
-String sql = "select id from flow where status<>" + WorkflowDb.STATUS_NONE + " and status<>" + WorkflowDb.STATUS_DELETED;
+// String sql = "select id from flow where status<>" + WorkflowDb.STATUS_NONE + " and status<>" + WorkflowDb.STATUS_DELETED;
+String sql = "select id from flow where status>" + WorkflowDb.STATUS_NONE;
 if (op.equals("search")) {
 	if (by.equals("user")) {
 		// sql = "select id from flow where username like " + StrUtil.sqlstr("%" + what + "%") +  " order by begin_date desc";
@@ -364,7 +364,7 @@ if (op.equals("search")) {
 <table id="mainTable" width="98%" class="tabStyle_1 percent98">
  <thead>
     <tr>
-      <td width="3%" align="center" class="tabStyle_1_title" style="text-align:left"><input type="checkbox" onClick="if (this.checked) selAllCheckBox('ids'); else clearAllCheckBox('ids');" /></td>
+      <td width="3%" align="center" class="tabStyle_1_title" style="text-align:center"><input type="checkbox" onClick="if (this.checked) selAllCheckBox('ids'); else clearAllCheckBox('ids');" /></td>
       <td width="4%" align="left" class="tabStyle_1_title" style="text-align:left">&nbsp;</td>
       <td width="6%" align="center" class="tabStyle_1_title" style="text-align:center">ID</td>
       <td class="tabStyle_1_title" width="33%">标题</td>
@@ -379,19 +379,36 @@ if (op.equals("search")) {
     <%
 Leaf ft = new Leaf();
 ft = ft.getLeaf(typeCode);
-FormDb fd = new FormDb(ft.getFormCode());
+FormDb fd = new FormDb();
+if (!StrUtil.isEmpty(ft.getFormCode())) {
+	fd = fd.getFormDb(ft.getFormCode());
+}
 FormDAO fdao = new FormDAO();
 UserMgr um = new UserMgr();
 while (ir.hasNext()) {
  	WorkflowDb wfd = (WorkflowDb)ir.next();
 
-	fdao = fdao.getFormDAO(wfd.getId(),fd);
+	if ("ID".equals(by)) {
+		ft = ft.getLeaf(wfd.getTypeCode());
+		fd = fd.getFormDb(ft.getFormCode());
+		fdao = fdao.getFormDAO(wfd.getId(), fd);
+	}
+	else {
+		if (!fd.isLoaded()) {
+			ft = ft.getLeaf(wfd.getTypeCode());
+			fd = fd.getFormDb(ft.getFormCode());
+		}
+		fdao = fdao.getFormDAO(wfd.getId(), fd);
+	}
+
 	UserDb user = null;
-	if (wfd.getUserName()!=null)
+	if (wfd.getUserName()!=null) {
 		user = um.getUserDb(wfd.getUserName());
+	}
 	String userRealName = "";
-	if (user!=null)
-		userRealName = user.getRealName();	
+	if (user!=null) {
+		userRealName = user.getRealName();
+	}
 	%>
 	<tr id="tr_<%=wfd.getId()%>" class="highlight">
 		<td align="center"><input type="checkbox" name="ids" value="<%=wfd.getId()%>"/></td>
@@ -400,7 +417,7 @@ while (ir.hasNext()) {
 		<td align="center"><%=wfd.getId()%>
 		</td>
 		<td><a href="javascript:;"
-			   onClick="addTab('<%=StrUtil.HtmlEncode(wfd.getTitle())%>', '<%=request.getContextPath()%>/flow_modify.jsp?flowId=<%=wfd.getId()%>')"><%=wfd.getTitle()%>
+			   onClick="addTab('<%=StrUtil.HtmlEncode(wfd.getTitle())%>', '<%=request.getContextPath()%>/flowShowPage.do?flowId=<%=wfd.getId()%>')"><%=wfd.getTitle()%>
 		</a></td>
 		<td>
 			<%
@@ -421,8 +438,8 @@ while (ir.hasNext()) {
 				if (lf != null) {
 					wfp = wfp.getPredefineFlowOfFree(lf.getCode());
 				}
-				String taburl = request.getContextPath() + "/" + (wfp.isLight() ? "flow_dispose_light_show.jsp" : "flow_modify.jsp") + "?flowId=" + wfd.getId();
-				String modifyUrl = request.getContextPath() + "/" + "visual/module_edit.jsp?id=" + fdao.getId() + "&code=" + ft.getFormCode() + "&parentId=" + fdao.getId() + "&formCode=" + ft.getFormCode();
+				String taburl = request.getContextPath() + "/" + (wfp.isLight() ? "flow_dispose_light_show.jsp" : "flowShowPage.do") + "?flowId=" + wfd.getId();
+				String modifyUrl = request.getContextPath() + "/" + "visual/moduleEditPage.do?id=" + fdao.getId() + "&code=" + ft.getFormCode() + "&parentId=" + fdao.getId() + "&formCode=" + ft.getFormCode();
 			%>
 			<a href="javascript:;" onClick="addTab('<%=StrUtil.HtmlEncode(wfd.getTitle())%>', '<%=taburl%>')">查看</a>
 			&nbsp;&nbsp; <a href="javascript:;"

@@ -1,7 +1,6 @@
 package cn.js.fan.base;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 import java.io.Serializable;
 import cn.js.fan.resource.Constant;
 import java.sql.ResultSet;
@@ -16,12 +15,12 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.db.ListResult;
 import cn.js.fan.db.SQLFilter;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public abstract class ObjectDb implements Serializable {
     public static final PrimaryKey[] EMPTY_BLOCK = new PrimaryKey[0];
 
     protected String connname = "";
-    protected transient Logger logger = null;
     protected String QUERY_LOAD;
     protected String QUERY_DEL;
     protected String QUERY_SAVE;
@@ -43,10 +42,9 @@ public abstract class ObjectDb implements Serializable {
      * 初始化，在构造函数中调用
      */
     public void init() {
-        logger = Logger.getLogger(this.getClass().getName());
         connname = Global.getDefaultDB();
-        if (connname.equals("")) {
-            logger.info(Constant.DB_NAME_NOT_FOUND);
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info(Constant.DB_NAME_NOT_FOUND);
         }
         setQueryCreate();
         setQuerySave();
@@ -64,9 +62,6 @@ public abstract class ObjectDb implements Serializable {
      * @return Logger
      */
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(this.getClass().getName());
-        }
         if (objectCache!=null) {
             objectCache.renew();
         }
@@ -91,7 +86,7 @@ public abstract class ObjectDb implements Serializable {
         DBConfig dc = new DBConfig();
         DBTable dt = dc.getDBTable(this.getClass().getName());
         if (dt == null) {
-            logger.info(this +" cann't find table defination in config file.");
+            // LogUtil.getLog(getClass()).info(this +" cann't find table defination in config file.");
             return;
         }
         this.tableName = dt.getName();
@@ -225,15 +220,15 @@ public abstract class ObjectDb implements Serializable {
                     return result;
                 }
                 do {
-                    if (primaryKey.getType()==PrimaryKey.TYPE_INT)
+                    if (primaryKey.getType()==PrimaryKey.TYPE_INT) {
                         result.addElement(getObjectDb(new Integer(rs.getInt(1))));
-                    else if (primaryKey.getType()==PrimaryKey.TYPE_STRING)
+                    } else if (primaryKey.getType()==PrimaryKey.TYPE_STRING) {
                         result.addElement(getObjectDb(rs.getString(1)));
-                    else if (primaryKey.getType()==PrimaryKey.TYPE_LONG)
+                    } else if (primaryKey.getType()==PrimaryKey.TYPE_LONG) {
                         result.addElement(getObjectDb(new Long(rs.getLong(1))));
-                    else if (primaryKey.getType() == PrimaryKey.TYPE_DATE)
+                    } else if (primaryKey.getType() == PrimaryKey.TYPE_DATE) {
                         result.addElement(getObjectDb(new java.util.Date(rs.getTimestamp(1).getTime())));
-                    else if (primaryKey.getType() == PrimaryKey.TYPE_COMPOUND) {
+                    } else if (primaryKey.getType() == PrimaryKey.TYPE_COMPOUND) {
                         HashMap keys = ((PrimaryKey)primaryKey.clone()).getKeys();
                         Iterator ir = keys.keySet().iterator();
                         while (ir.hasNext()) {
@@ -256,7 +251,7 @@ public abstract class ObjectDb implements Serializable {
                 } while(rs.next());
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -308,7 +303,6 @@ public abstract class ObjectDb implements Serializable {
                     else if (primaryKey.getType()==PrimaryKey.TYPE_STRING)
                         result.addElement(getObjectDb(rs.getString(1)));
                     else if (primaryKey.getType()==PrimaryKey.TYPE_LONG) {
-                        // System.out.println(getClass() + " long primaryKey value:" + rs.getLong(1));
                         result.addElement(getObjectDb(new Long(rs.getLong(1))));
                     }
                     else if (primaryKey.getType() == primaryKey.TYPE_DATE)
@@ -339,7 +333,7 @@ public abstract class ObjectDb implements Serializable {
                 } while(rs.next());
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -410,21 +404,21 @@ public abstract class ObjectDb implements Serializable {
                      if (primaryKey.getType()==PrimaryKey.TYPE_INT) {
                          result.addElement(getObjectDb(new Integer(rs.getInt(1))));
                      }
-                     else if (primaryKey.getType()==PrimaryKey.TYPE_STRING)
+                     else if (primaryKey.getType()==PrimaryKey.TYPE_STRING) {
                          result.addElement(getObjectDb(rs.getString(1)));
-                     else if (primaryKey.getType()==PrimaryKey.TYPE_LONG)
+                     } else if (primaryKey.getType()==PrimaryKey.TYPE_LONG) {
                          result.addElement(getObjectDb(new Long(rs.getLong(1))));
-                     else if (primaryKey.getType() == primaryKey.TYPE_DATE)
-                        result.addElement(getObjectDb(new java.util.Date(rs.getTimestamp(1).getTime())));
-                     else if (primaryKey.getType() == PrimaryKey.TYPE_COMPOUND) {
+                     } else if (primaryKey.getType() == PrimaryKey.TYPE_DATE) {
+                         result.addElement(getObjectDb(new java.util.Date(rs.getTimestamp(1).getTime())));
+                     } else if (primaryKey.getType() == PrimaryKey.TYPE_COMPOUND) {
                          HashMap keys = ((PrimaryKey)primaryKey.clone()).getKeys();
                          Iterator ir = keys.keySet().iterator();
                          while (ir.hasNext()) {
                              String keyName = (String) ir.next();
                              KeyUnit ku = (KeyUnit) keys.get(keyName);
-                             if (ku.getType() == primaryKey.TYPE_INT) {
+                             if (ku.getType() == PrimaryKey.TYPE_INT) {
                                  ku.setValue(new Integer(rs.getInt(ku.getOrders() + 1)));
-                             } else if (ku.getType() == primaryKey.TYPE_LONG ) {
+                             } else if (ku.getType() == PrimaryKey.TYPE_LONG ) {
                                  ku.setValue(new Long(rs.getLong(ku.getOrders() + 1)));
                              }
                              else if (ku.getType() == PrimaryKey.TYPE_DATE) {
@@ -439,19 +433,15 @@ public abstract class ObjectDb implements Serializable {
                  } while (rs.next());
              }
          } catch (SQLException e) {
-             logger.error("listResult:" + e.getMessage());
+             LogUtil.getLog(getClass()).error("listResult:" + e.getMessage());
              throw new ErrMsgException("Db error.");
          } finally {
              if (rs != null) {
                  try {
                      rs.close();
                  } catch (Exception e) {}
-                 rs = null;
              }
-             if (conn != null) {
-                 conn.close();
-                 conn = null;
-             }
+             conn.close();
          }
 
          lr.setResult(result);

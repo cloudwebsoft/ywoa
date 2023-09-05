@@ -23,11 +23,11 @@
     }
     .con {
         display:none;
-        padding: 5px 10px;
+        /*padding: 15px 10px;*/
     }
     .nav-tab {
         list-style:none;
-        height:40px;
+        height:47px;
         overflow:hidden;
         margin-bottom: 0px;
     }
@@ -38,21 +38,20 @@
         background:#eee;
         color:#000;
         text-align:center;
-        line-height:40px;
+        line-height:45px;
         cursor: pointer;
     }
     .nav-con-on {
         display:block;
     }
     .nav-tab li.act {
-        background:#ccc;
+        background:#fff;
         color:#000;
     }
 </style>
 <div id="drag_<%=id%>" dragTitle="<%=udsd.getTitle()%>" count="<%=udsd.getCount()%>" wordCount="<%=udsd.getWordCount()%>" class="portlet drag_div bor ibox">
     <%if (ary!=null && ary.length==1) {%>
     <div id="drag_<%=id%>_h" class="box ibox-title">
-        <!-- <span class="titletxt"><img src="<%=SkinMgr.getSkinPath(request)%>/images/titletype.png" width="8" height="12" /> <a href="attendance/leave_list.jsp"><%=udsd.getTitle()%></a></span>  -->
         <!-- <div class="opbut-1"> <img onclick="mini('<%=udsd.getId()%>')" title="最小化" class="btnIcon" src="<%=SkinMgr.getSkinPath(request)%>/images/minimization.png" align="absmiddle" width="19" height="19"/></div>  -->
         <!-- <div class="opbut-2"><img onclick="mod('<%=udsd.getId()%>')" title="修改显示方式" class="btnIcon" src="<%=SkinMgr.getSkinPath(request)%>/images/configure.png" align="absmiddle" width="19" height="19"/></div>  -->
         <!-- <div class="opbut-3"><img onclick="clo('<%=udsd.getId()%>')" title="关闭" class="btnIcon" src="<%=SkinMgr.getSkinPath(request)%>/images/close.png" align="absmiddle" width="19" height="19"/></div>  -->
@@ -84,7 +83,7 @@
                 out.print("<div class='no_content'><img title='文件柜无内容' src='images/desktop/no_content.jpg'></div>");
                 canSee = false;
             }
-            if (!dirCode.equals("")) {
+            if (!"".equals(dirCode)) {
                 com.redmoon.oa.fileark.LeafPriv lp = new com.redmoon.oa.fileark.LeafPriv(dirCode);
                 if (!lp.canUserSee(request)) {
                     out.print(SkinUtil.LoadString(request, "pvg_invalid"));
@@ -101,11 +100,11 @@
         }
         else {
     %>
-        <div id="drag_<%=id%>_h" style="height:1px;padding:0px;margin:0px; font-size:1px"></div>
-        <ul class="nav-tab">
+        <div id="drag_<%=id%>_h" class="drag-h" style="height:1px;padding:0px;margin:0px; font-size:1px"></div>
+        <ul class="nav-tab" style="border-color: #e7eaec; border-style:solid solid none; border-width: 4px 0 0;">
         <%
             Leaf lf = new Leaf();
-            for (int i=0; i<ary.length; i++) {
+            for (int i = 0; i < ary.length; i++) {
                 String cls = i == 0 ? "act" : "";
                 lf = lf.getLeaf(ary[i]);
                 if (lf==null) {

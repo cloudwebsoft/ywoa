@@ -20,7 +20,8 @@ public class SSLMailSender  extends AbstractSender {
 
  
 
-	protected Message populateCommonInfo(MailSenderInfo mailInfo)
+	@Override
+    protected Message populateCommonInfo(MailSenderInfo mailInfo)
 			throws AddressException, MessagingException {
 		Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
 		props = System.getProperties();

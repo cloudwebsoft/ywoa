@@ -9,16 +9,19 @@ package com.redmoon.oa.ui.menu;
  * @version 1.0
  */
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
 
 import cn.js.fan.util.*;
-import org.apache.log4j.*;
 import cn.js.fan.cache.jcs.RMCache;
 import com.cloudwebsoft.framework.util.LogUtil;
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
-import java.io.FileInputStream;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class Config {
     final String group = "OA_MENU_CACHE";
@@ -30,8 +33,6 @@ public class Config {
     public Element root = null;
     private String cfgpath;
 
-    Logger logger;
-
     public static Config cfg = null;
 
     private static Object initLock = new Object();
@@ -40,22 +41,34 @@ public class Config {
     }
 
     public void init() {
-        logger = Logger.getLogger(Config.class.getName());
         URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
         cfgpath = cfgURL.getFile();
         cfgpath = URLDecoder.decode(cfgpath);
-        properties = new XMLProperties(cfgpath);
+        // properties = new XMLProperties(cfgpath);
 
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+            properties = new XMLProperties(CONFIG_FILENAME, doc);
+
+            /*FileInputStream fin = new FileInputStream(cfgpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
+            fin.close();*/
+        } catch (JDOMException | IOException e) {
             LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
-        } catch (java.io.IOException e) {
-            LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -124,7 +137,7 @@ public class Config {
             RMCache.getInstance().invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 }

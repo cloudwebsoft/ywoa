@@ -228,7 +228,7 @@ function window_onload() {
 }
 
 function openWinDepts() {
-	var ret = showModalDialog('../dept_multi_sel.jsp',window.self,'dialogWidth:480px;dialogHeight:320px;status:no;help:no;')
+	var ret = showModalDialog('../dept_multi_sel.jsp', 800, 600);
 	if (ret==null)
 		return;
 	dept.value = "";
@@ -302,37 +302,10 @@ function setRoles(roleCodes, roleDescs) {
 
 function openWinUserRoles() {
 	var roleCodes = "";
-	if (nodeMode.value=="<%=WorkflowActionDb.NODE_MODE_ROLE%>")
+	if (nodeMode.value == "<%=WorkflowActionDb.NODE_MODE_ROLE%>")
 		roleCodes = userName.value
-	showModalDialog('../role_multi_sel.jsp?roleCodes=' + roleCodes,window.self,'dialogWidth:526px;dialogHeight:435px;status:no;help:no;');
+    openWin('../role_multi_sel.jsp?roleCodes=' + roleCodes, 526, 435);
 	return;
-	
-	var ret = showModalDialog('../userrole_multi_sel.jsp',window.self,'dialogWidth:500px;dialogHeight:480px;status:no;help:no;')
-	if (ret==null)
-		return;
-	
-	userName.value = "";
-	userRealName.value = "";
-	// deptName.value = "";
-	// dept.value = "";
-	for (var i=0; i<ret.length; i++) {
-		if (userRealName.value=="") {
-			userName.value += ret[i][0];
-			userRealName.value += ret[i][1];
-		}
-		else {
-			userName.value += "," + ret[i][0];
-			userRealName.value += "," + ret[i][1];
-		}
-	}
-	nodeMode.value = "<%=WorkflowActionDb.NODE_MODE_ROLE%>";
-	spanMode.innerHTML = "角色";
-	if (relateRoleToOrganization.checked) {
-		if (ret.length>1) {
-			relateRoleToOrganization.checked = false;
-			alert("多个角色被选择，角色关联已经被取消！");
-		}
-	}
 }
 
 function checkRelation() {
@@ -355,7 +328,7 @@ function checkRelation() {
     <td height="22" colspan="3" align="center">
 	  <span id="span_self">
 	  	<a title="自动转换为发起人" href="#" onClick="userName.value='$self';userRealName.value='本人';nodeMode.value='1';spanMode.innerHTML='用户'">本人</a>&nbsp;&nbsp;	  </span>
-	  <a href="#" onClick="openWinUserRoles()">选择角色</a>&nbsp;&nbsp;&nbsp;<a href="#" onClick="javascript:showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:600px;dialogHeight:480px;status:no;help:no;')">选择用户</a>&nbsp;&nbsp;<!--<a href="#" onClick="userName.value='$deptLeader';userRealName.value='部门领导';jobCode.value='';jobName.value='';proxyJobCode.value='';proxyJobName.value=''">部门领导</a>-->
+	  <a href="#" onClick="openWinUserRoles()">选择角色</a>&nbsp;&nbsp;&nbsp;<a href="javascript:;" onclick="openWin('../user_multi_sel.jsp', 800, 600)">选择用户</a>&nbsp;&nbsp;<!--<a href="#" onClick="userName.value='$deptLeader';userRealName.value='部门领导';jobCode.value='';jobName.value='';proxyJobCode.value='';proxyJobName.value=''">部门领导</a>-->
 	<!--&nbsp;&nbsp;<a href="#" onClick="userName.value='<%=WorkflowActionDb.PRE_TYPE_USER_SELECT%>';userRealName.value='用户自选';jobCode.value='';jobName.value='';proxyJobCode.value='';proxyJobName.value=''">用户自选</a>-->
 	<span id="span_starter"><a title="自动转换为发起人" href="#" onClick="userName.value='$starter';userRealName.value='自动转换为发起人';nodeMode.value='1';spanMode.innerHTML='发起人'">发起人</a>&nbsp;&nbsp;<a title="由前一用户自行指定" href="#" onClick="userName.value='<%=WorkflowActionDb.PRE_TYPE_USER_SELECT%>';userRealName.value='自选用户';nodeMode.value='1';spanMode.innerHTML='发起人'">自选用户</a>&nbsp;&nbsp;&nbsp;<a title="自动转换为本节点往前两个节点处理人员" href="#" onClick="userName.value='<%=WorkflowActionDb.PRE_TYPE_FORE_ACTION%>';userRealName.value='自动转换为本节点往前两个节点处理人员';nodeMode.value='1';spanMode.innerHTML='往前两个节点人员'">往前两个节点人员</a></span></td>
   </tr>

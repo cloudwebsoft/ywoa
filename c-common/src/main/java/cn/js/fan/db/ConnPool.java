@@ -6,6 +6,7 @@ import javax.sql.DataSource;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class ConnPool {
   // public: connection parameters
@@ -35,12 +36,10 @@ public class ConnPool {
     }
     // display corresponding error message when onload error occur
     catch (NamingException e) {
-      System.out.println("Connection pool fail. Message is:");
-      System.out.println(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     catch (SQLException e) {
-      System.out.print("SQL Exception occur. Message is:");
-      System.out.print(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     inited = true;
   }
@@ -56,12 +55,10 @@ public class ConnPool {
     }
     // display corresponding error message when onload error occur
     catch (NamingException e) {
-      System.out.println("Connection pool fail. Message is:");
-      System.out.println(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     catch (SQLException e) {
-      System.out.print("SQL Exception occur. Message is:");
-      System.out.print(e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     PoolName = pn;
     inited = true;
@@ -88,7 +85,8 @@ public class ConnPool {
       rs = stmt.executeQuery(sql);
     }
     catch (SQLException e) {
-      System.out.print("Query:" + sql+"---"+ e.getMessage());
+      LogUtil.getLog(getClass()).error("sql:" + sql);
+      LogUtil.getLog(getClass()).error(e);
       throw e;
     }
     this.rs = rs;
@@ -104,10 +102,8 @@ public class ConnPool {
       rowcount = stmt.executeUpdate(sql);
     }
     catch (SQLException e) {
-      if (debug) {
-        System.out.println("Update:" + e.getMessage());
-        System.out.println("sql:" + sql);
-      }
+      LogUtil.getLog(getClass()).error("sql:" + sql);
+      LogUtil.getLog(getClass()).error(e);
       throw e;
     }
     finally {
@@ -136,7 +132,7 @@ public class ConnPool {
       rs.beforeFirst();
     }
     catch (SQLException e) {
-      System.out.println("getRows error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     return this.rows;
   }
@@ -149,7 +145,7 @@ public class ConnPool {
       }
     }
     catch (SQLException e) {
-      System.out.println("Conn finalize: "+e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     try {
       if (con != null && !con.isClosed())
@@ -159,7 +155,7 @@ public class ConnPool {
       }
     }
     catch (SQLException e) {
-      System.out.println("Conn finalize: "+e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     super.finalize();
   }
@@ -169,7 +165,7 @@ public class ConnPool {
       finalize();
     }
     catch (java.lang.Throwable e) {
-      System.out.println("conn.close error:" + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
   }
 
@@ -179,10 +175,9 @@ public class ConnPool {
       try {
           //boolean autoCommit=con.getAutoCommit();
           con.setAutoCommit(false);
-      } catch (SQLException ex) {
-          ex.printStackTrace();
-          System.out.print("beginTrans Errors");
-          throw ex;
+      } catch (SQLException e) {
+          LogUtil.getLog(getClass()).error(e);
+          throw e;
       }
   }
 
@@ -192,10 +187,9 @@ public class ConnPool {
       try {
           con.commit();
           con.setAutoCommit(true);
-      } catch (SQLException ex) {
-          ex.printStackTrace();
-          System.out.print("Commit Errors");
-          throw ex;
+      } catch (SQLException e) {
+          LogUtil.getLog(getClass()).error(e);
+          throw e;
       }
   }
 
@@ -205,10 +199,8 @@ public class ConnPool {
       try {
           con.rollback();
           con.setAutoCommit(true);
-      } catch (SQLException ex) {
-          ex.printStackTrace();
-          System.out.print("Rollback Errors");
-          //throw ex;
+      } catch (SQLException e) {
+          LogUtil.getLog(getClass()).error(e);
       }
   }
 
@@ -217,10 +209,9 @@ public class ConnPool {
     try {
       result = con.getAutoCommit();
     }
-    catch (SQLException ex) {
-      ex.printStackTrace();
-      System.out.println("getAutoCommit fail" + ex.getMessage());
-      throw ex;
+    catch (SQLException e) {
+      LogUtil.getLog(getClass()).error(e);
+      throw e;
     }
     return result;
   }
@@ -231,8 +222,7 @@ public class ConnPool {
       re = con.getTransactionIsolation();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      System.out.println("getTransactionIsolation fail" + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
     return re;
   }
@@ -242,7 +232,7 @@ public class ConnPool {
       stmt.setFetchSize(s);
     }
     catch (SQLException e) {
-      System.out.println("setFetchSize fail:" + e.getMessage());
+      LogUtil.getLog(getClass()).error(e);
     }
 
   }
@@ -266,7 +256,7 @@ public class ConnPool {
        // However, it is a good idea to update the meta-data so that
        // we don't have to incur the cost of catching an exception
        // each time.
-       System.out.println("conn.setMaxRows:"+t.getMessage());
+       LogUtil.getLog(getClass()).error(t);
      }
    }
 

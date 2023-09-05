@@ -111,43 +111,17 @@ function doGetAllChildren(response){
 }
 
 function selDepts() {
-	var deptCodes = "";
-	for(var i=0; i<form1.elements.length; i++) {
-		if (form1.elements[i].type=="checkbox"){
-			if (form1.elements[i].checked) {
-				if (form1.elements[i].name=="isIncludeChild")
-					continue;
-				if (deptCodes=="")
-					deptCodes = form1.elements[i].name;
-				else
-					deptCodes += "," + form1.elements[i].name;
-			}
-		}
-	}
-	if (deptCodes=="") {
-		window.returnValue = getDepts();
-		window.close();
-	}
-	else
-		getAllChildren(deptCodes);
+    if (window.opener) {
+        window.opener.setDepts(getDepts());
+    } else {
+        window.returnValue = getDepts();
+    }
+    window.close();
 }
 
 function ShowChild(imgobj, name) {
-	/*
-	if (document.getElementById){ 
-		if (iframeObj){
-			if (iframeObj.contentDocument && iframeObj.contentDocument.body.offsetHeight){
-				iframeObj.height = iframeObj.contentDocument.body.offsetHeight;
-			} else if (document.frames[iframeObj.name].document && document.frames[iframeObj.name].document.body.scrollHeight){ 
-				iframeObj.height = document.frames[iframeObj.name].document.body.scrollHeight;
-			}
-		}
-	}
-	*/
-	
 	var tableobj = o("childof"+name);
 	if (tableobj==null) {
-		// document.frames.ifrmGetChildren.location.href = "admin/dept_ajax_getchildren.jsp?op=funcCheckbox&func=func&target=_self&parentCode=" + name;
 		document.frames["ifrmGetChildren"].location.href = "unit_ajax_getchildren.jsp?op=funcCheckbox&func=func&target=_self&isOnlyUnitCheckable=<%=isOnlyUnitCheckable%>&parentCode=" + name;
 		if (imgobj.src.indexOf("i_puls-root-1.gif")!=-1)
 			imgobj.src = "images/i_puls-root.gif";
@@ -198,11 +172,12 @@ function insertAdjacentHTML(objId,code,isStart){
 // 在onload及ajax取孩子节点时被调用，onload调用时，不带parentCode参数
 function setDepts(parentCode) {
    	var depts;
-	<%if (openType.equals("open")) {%>
-		depts = window.opener.getDepts();
-	<%}else{%>
-   		depts = dialogArguments.getDepts();
-   	<%}%>
+	if (window.opener) {
+        depts = window.opener.getDepts();
+    }
+	else {
+        depts = dialogArguments.getDepts();
+    }
 	var ary = depts.split(",");
 	for(var i=0; i<form1.elements.length; i++) {
 		if (form1.elements[i].type=="checkbox"){
@@ -223,10 +198,10 @@ function setDepts(parentCode) {
 	}
 }
 
-function getDepts(){
+function getDepts() {
    var ary = new Array();
    var j = 0;
-   for(var i=0; i<form1.elements.length; i++) {
+   for(var i=0; i < form1.elements.length; i++) {
    		if (form1.elements[i].type=="checkbox"){
 			if (form1.elements[i].name=="isIncludeChild")
 				continue;

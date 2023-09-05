@@ -22,5 +22,10 @@ public interface OaNoticeReplyMapper extends BaseMapper<OaNoticeReply> {
     /*@Select("select * from oa_notice_reply where notice_id = #{noticeId} and user_name = #{userName}")
     List<OaNoticeReply> selectIsReaded(@Param("noticeId") long noticeId, @Param("userName") String userName);*/
 
+    /*@Select("select * from oa_notice_reply where notice_id = #{noticeId} and is_readed = #{isReaded}")
+    List<OaNoticeReply> getReplyReadOrNot(@Param("noticeId") long noticeId, @Param("isReaded") int isReaded);*/
+
+    List<OaNoticeReply> getReplyReadOrNot(@Param("noticeId") long noticeId, @Param("isReaded") int isReaded);
+
     List<OaNoticeReply> getReplyHasContent(@Param("noticeId") long noticeId);
 }

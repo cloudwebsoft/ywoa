@@ -7,6 +7,7 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="cn.js.fan.security.ThreeDesUtil" %>
 <%@ page import="cn.js.fan.web.SkinUtil" %>
+<%@ page import="com.redmoon.oa.sys.DebugUtil" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt" %>
 <!DOCTYPE html>
 <html>
@@ -53,7 +54,11 @@
             if (ary!=null) {
                 for (String fieldName : ary) {
                     FormField ff = fd.getFormField(fieldName);
-                    selOptions += "<option value='" + ff.getName() + "'>" + ff.getTitle() + "</option>";
+                    if (ff == null) {
+                        DebugUtil.w(getClass(), "exportColProps", "字段: " + fieldName + " 不存在");
+                    } else {
+                        selOptions += "<option value='" + ff.getName() + "'>" + ff.getTitle() + "</option>";
+                    }
                 }
 
                 List list = Arrays.asList(ary);
@@ -97,7 +102,7 @@
             var ary = new Array(len);
             for (var i = 0; i < len; i++) {
                 ary[i] = "0";
-                if (opts(i).selected) {
+                if (opts[i].selected) {
                     fieldsSelected.options.add(new Option(opts[i].text, opts[i].value));
                     ary[i] = opts[i].value;
                 }
@@ -125,7 +130,7 @@
             var ary = new Array(len);
             for (var i = 0; i < len; i++) {
                 ary[i] = "0";
-                if (opts(i).selected) {
+                if (opts[i].selected) {
                     fieldsNotSelected.options.add(new Option(opts[i].text, opts[i].value));
                     ary[i] = opts[i].value;
                 }

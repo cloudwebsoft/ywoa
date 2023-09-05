@@ -5,6 +5,7 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,98 +31,89 @@ public class PaperNoSelectCtl extends AbstractMacroCtl {
      * @param fieldValue String
      * @return String
      */
+    @Override
     public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
         return fieldValue;
     }
 
-	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-		return convertToHTMLCtl(request, ff.getName(), ff.getDefaultValueRaw());
+	@Override
+    public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
+		return convertToHTMLCtl(request, ff, ff.getName(), ff.getDefaultValueRaw());
 	}
 
-   /**
-    * 用于流程处理
-    * @param ff FormField
-    * @return Object
-    */
-   public Object getValueForCreate(FormField ff) {
-       MacroCtlMgr mm = new MacroCtlMgr();
-       // MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-       SelectMgr sm = new SelectMgr();
-       SelectDb sd = sm.getSelect(ff.getDefaultValue());
-       if (sd.getType() == SelectDb.TYPE_LIST)
-           return sd.getDefaultValue();
-       else
-           return ff.getDefaultValue();
-   }
+    public static String convertToHTMLCtl(HttpServletRequest request, FormField ff, String fieldName, String code) {
+        String style = "";
+        if (!"".equals(ff.getCssWidth())) {
+            style = "style='width:" + ff.getCssWidth() + "'";
+        }
+        else {
+            style = "style='width:150px'";
+        }
 
-    public static String convertToHTMLCtl(HttpServletRequest request, String fieldName, String code) {
-		StringBuffer str = new StringBuffer();
-		str.append("<select id='" + fieldName + "' name='" + fieldName
-				+ "'>");
+        StringBuilder str = new StringBuilder();
+		str.append("<select id='" + fieldName + "' name='" + fieldName + "' " + style + " >");
 		str.append("<option value=''>无</option>");
 
 		Privilege pvg = new Privilege();
 		PaperNoPrefixDb pdpd = new PaperNoPrefixDb();
-		Vector v = pdpd.getPaperNoFrefixs(pvg.getUser(request));
-		Iterator ir = v.iterator();
-		while (ir.hasNext()) {
-			pdpd = (PaperNoPrefixDb)ir.next();
-			str.append("<option value='" + pdpd.getString("name") + "'>" + pdpd.getString("name") + "</option>");
-		}
+		Vector<PaperNoPrefixDb> v = pdpd.getPaperNoFrefixs(pvg.getUser(request));
+        for (PaperNoPrefixDb paperNoPrefixDb : v) {
+            pdpd = paperNoPrefixDb;
+            str.append("<option value='" + pdpd.getString("name") + "'>" + pdpd.getString("name") + "</option>");
+        }
 
 		str.append("</select>");
 		return str.toString();
     }
 
 	@Override
-    public String convertToHTMLCtlForQuery(HttpServletRequest request,
-                                           FormField ff) {
-		StringBuffer str = new StringBuffer();
-		str.append("<select id='" + ff.getName() + "' name='" + ff.getName()
-				+ "'>");
+    public String convertToHTMLCtlForQuery(HttpServletRequest request, FormField ff) {
+		StringBuilder str = new StringBuilder();
+		str.append("<select id='" + ff.getName() + "' name='" + ff.getName() + "'>");
 		str.append("<option value=''>无</option>");
 
 		Privilege pvg = new Privilege();
 		PaperNoPrefixDb pdpd = new PaperNoPrefixDb();
-		Vector v = pdpd.getPaperNoFrefixs(pvg.getUser(request));
-		Iterator ir = v.iterator();
-		while (ir.hasNext()) {
-			pdpd = (PaperNoPrefixDb)ir.next();
-			str.append("<option value='" + pdpd.getString("name") + "'>" + pdpd.getString("name") + "</option>");
-		}
+		Vector<PaperNoPrefixDb> v = pdpd.getPaperNoFrefixs(pvg.getUser(request));
+        for (PaperNoPrefixDb paperNoPrefixDb : v) {
+            pdpd = paperNoPrefixDb;
+            str.append("<option value='" + pdpd.getString("name") + "'>" + pdpd.getString("name") + "</option>");
+        }
 
 		str.append("</select>");
 		return str.toString();
 	}
 
+    @Override
     public String getControlType() {
         return "select";
     }
 
+    @Override
     public String getControlOptions(String userName, FormField ff) {
-		Privilege pvg = new Privilege();
 		PaperNoPrefixDb pdpd = new PaperNoPrefixDb();
-		Vector v = pdpd.getPaperNoFrefixs(userName);
-		Iterator ir = v.iterator();
         JSONArray selects = new JSONArray();
-        while (ir.hasNext()) {
-			pdpd = (PaperNoPrefixDb)ir.next();
+		Vector<PaperNoPrefixDb> v = pdpd.getPaperNoFrefixs(userName);
+        for (PaperNoPrefixDb paperNoPrefixDb : v) {
+            pdpd = paperNoPrefixDb;
             JSONObject select = new JSONObject();
             try {
                 select.put("name", pdpd.getString("name"));
                 select.put("value", pdpd.getString("name"));
                 selects.put(select);
             } catch (JSONException ex) {
-                ex.printStackTrace();
+                LogUtil.getLog(getClass()).error(ex);
             }
         }
         return selects.toString();
     }
 
+    @Override
     public String getControlValue(String userName, FormField ff) {
          return StrUtil.getNullStr(ff.getValue());
     }
 
+    @Override
     public String getControlText(String userName, FormField ff) {
         return StrUtil.getNullStr(ff.getValue());
     }

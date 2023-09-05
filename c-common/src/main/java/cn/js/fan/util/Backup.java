@@ -3,6 +3,7 @@ package cn.js.fan.util;
 import java.io.*;
 import cn.js.fan.util.file.*;
 import cn.js.fan.db.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class Backup {
     public Backup() {
@@ -50,7 +51,7 @@ public class Backup {
         try {
             conn.executeUpdate(sql);
         } catch (Exception e) {
-            System.out.print("BackupDB:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             return false;
         } finally {
             if (conn != null) {

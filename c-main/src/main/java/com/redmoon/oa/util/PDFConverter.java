@@ -16,7 +16,7 @@ public class PDFConverter {
             app = new IDispatch(rm, "PDFMakerAPI.PDFMakerApp");
             Object o = app.method("CreatePDF", new Object[] {inputFile, pdfFile});
         } catch (Exception e) {
-            e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
         } finally {
             app = null;
             rm.release();

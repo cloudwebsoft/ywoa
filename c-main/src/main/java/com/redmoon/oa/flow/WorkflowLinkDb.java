@@ -12,7 +12,6 @@ import cn.js.fan.web.Global;
 import com.cloudweb.oa.api.IWorkflowHelper;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.db.SequenceManager;
-import org.apache.log4j.Logger;
 import com.cloudwebsoft.framework.util.LogUtil;
 import cn.js.fan.util.DateUtil;
 import com.redmoon.oa.oacalendar.OACalendarDb;
@@ -32,7 +31,7 @@ import com.redmoon.oa.oacalendar.OACalendarDb;
  */
 public class WorkflowLinkDb implements Serializable{
     String connname = "";
-    final String INSERT = "insert into flow_link (id, flow_id, action_from, action_to,speedup_date,isSpeedup,title,type,cond_desc,item1,expire_hour,expire_action) values (?,?,?,?,?,?,?,?,?,?,?,?)";
+    static final String INSERT = "insert into flow_link (id, flow_id, action_from, action_to,speedup_date,isSpeedup,title,type,cond_desc,item1,expire_hour,expire_action) values (?,?,?,?,?,?,?,?,?,?,?,?)";
     final String LOAD = "select flow_id,action_from,action_to,isSpeedup,speedup_date,title,type,cond_desc,item1,expire_hour,expire_action from flow_link where id=?";
     final String SAVE = "update flow_link set action_from=?,action_to=?,isSpeedup=?,speedup_date=?,title=?,type=?,cond_desc=?,item1=?,expire_hour=?,expire_action=? where id=?";
     final String DELETE = "delete from flow_link where id=?";
@@ -98,9 +97,7 @@ public class WorkflowLinkDb implements Serializable{
      * @return WorkflowLinkDb
      */
     public WorkflowLinkDb getWorkflowLinkDbForward(WorkflowActionDb from, WorkflowActionDb to) {
-        String sql =
-                "select id from flow_link where flow_id=? and action_from=? and action_to=?";
-        // Based on the id in the object, get the message data from the database.
+        String sql = "select id from flow_link where flow_id=? and action_from=? and action_to=?";
         Conn conn = new Conn(connname);
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -133,15 +130,42 @@ public class WorkflowLinkDb implements Serializable{
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getToLinks:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getToLinks:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         return null;
+    }
+
+    /**
+     * 取得流程中的所有连线
+     * @param flowId
+     * @return
+     */
+    public Vector<WorkflowLinkDb> getLinksOfFlow(int flowId) {
+        Vector<WorkflowLinkDb> ret = new Vector<>();
+        String sql = "select id from flow_link where flow_id=? order by id asc";
+        Conn conn = new Conn(connname);
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, flowId);
+            rs = conn.executePreQuery();
+            if (rs != null) {
+                while (rs.next()) {
+                    int linkId = rs.getInt(1);
+                    ret.addElement(getWorkflowLinkDb(linkId));
+                }
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("getLinksOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            conn.close();
+        }
+        return ret;
     }
 
     /**
@@ -170,12 +194,38 @@ public class WorkflowLinkDb implements Serializable{
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getToWorkflowLinks:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getToWorkflowLinks:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
         return ret;
+    }
+
+    public WorkflowLinkDb getWorkflowLinkDb(int flowId, String from, String to) {
+        String sql = "select id from flow_link where flow_id=? and action_from=? and action_to=?";
+        Conn conn = new Conn(connname);
+        PreparedStatement pstmt;
+        ResultSet rs;
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, flowId);
+            pstmt.setString(2, from);
+            pstmt.setString(3, to);
+            rs = conn.executePreQuery();
+            if (!rs.next()) {
+                return null;
+            } else {
+                int id = rs.getInt(1);
+                return getWorkflowLinkDb(id);
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("getWorkflowLinkDb:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            conn.close();
+        }
+        return null;
     }
     
     /**
@@ -204,12 +254,9 @@ public class WorkflowLinkDb implements Serializable{
                 }
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("getFromWorkflowLinksCount:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getFromWorkflowLinksCount:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return ret;
     }    
@@ -314,6 +361,27 @@ public class WorkflowLinkDb implements Serializable{
         return workflowHelper.fromString(this, str);
     }
 
+    public void createAddBatch(PreparedStatement pstmt) {
+        this.id = (int) SequenceManager.nextID(SequenceManager.OA_WORKFLOW_LINK);
+        try {
+            pstmt.setInt(1, id);
+            pstmt.setInt(2, flowId);
+            pstmt.setString(3, from);
+            pstmt.setString(4, to);
+            pstmt.setDate(5, new java.sql.Date(speedupDate.getTimeInMillis()));
+            pstmt.setInt(6, isSpeedup);
+            pstmt.setString(7, title);
+            pstmt.setInt(8, type);
+            pstmt.setString(9, condDesc);
+            pstmt.setString(10, condType);
+            pstmt.setDouble(11, expireHour);
+            pstmt.setString(12, expireAction);
+            pstmt.addBatch();
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
+        }
+    }
+
     public boolean create() {
         this.id = (int) SequenceManager.nextID(SequenceManager.OA_WORKFLOW_LINK);
         Conn conn = new Conn(connname);
@@ -334,10 +402,11 @@ public class WorkflowLinkDb implements Serializable{
             pstmt.setDouble(11, expireHour);
             pstmt.setString(12, expireAction);
             int r = conn.executePreUpdate();
-            if (r==1)
+            if (r==1) {
                 return true;
+            }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -355,10 +424,11 @@ public class WorkflowLinkDb implements Serializable{
             pstmt.setString(1, from);
             pstmt.setString(2, to);
             pstmt.setInt(3, isSpeedup);
-            if (speedupDate==null)
+            if (speedupDate==null) {
                 pstmt.setTimestamp(4, null);
-            else
+            } else {
                 pstmt.setTimestamp(4, new Timestamp(speedupDate.getTimeInMillis()));
+            }
             pstmt.setString(5, title);
             pstmt.setInt(6, type);
             pstmt.setString(7, condDesc);
@@ -370,7 +440,7 @@ public class WorkflowLinkDb implements Serializable{
             if (r==1)
                 return true;
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -396,7 +466,7 @@ public class WorkflowLinkDb implements Serializable{
 
     public boolean del() {
         Conn conn = new Conn(connname);
-        PreparedStatement pstmt = null;
+        PreparedStatement pstmt;
         try {
             pstmt = conn.prepareStatement(DELETE);
             pstmt.setInt(1, id);
@@ -408,13 +478,10 @@ public class WorkflowLinkDb implements Serializable{
                 return true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return false;
     }
@@ -434,7 +501,7 @@ public class WorkflowLinkDb implements Serializable{
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                Logger.getLogger(getClass()).error("流程连接id= " + id +
+                LogUtil.getLog(getClass()).error("流程连接id= " + id +
                              " 在数据库中未找到.");
             } else {
                 this.flowId = rs.getInt(1);
@@ -451,7 +518,7 @@ public class WorkflowLinkDb implements Serializable{
                 loaded = true;
             }
         } catch (SQLException e) {
-            Logger.getLogger(getClass()).error("loadFromDb:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("loadFromDb:" + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -468,7 +535,6 @@ public class WorkflowLinkDb implements Serializable{
 
     /**
      * 取得到期时间
-     * @param wld WorkflowLinkDb
      * @return Date
      */
     public java.util.Date calulateExpireDate() {
@@ -477,11 +543,11 @@ public class WorkflowLinkDb implements Serializable{
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
         LogUtil.getLog(getClass()).info("flowExpireRelateOACalendar id=" + cfg.get("flowExpireRelateOACalendar"));
 
-        if (cfg.get("flowExpireRelateOACalendar").equals("true")) {
+        if ("true".equals(cfg.get("flowExpireRelateOACalendar"))) {
             String flowExpireUnit = cfg.get("flowExpireUnit");
             LogUtil.getLog(getClass()).info("flowExpireUnit id=" + flowExpireUnit);
 
-            if (flowExpireUnit.equals("day")) {
+            if ("day".equals(flowExpireUnit)) {
                 // 当天不计入超时时间
                 // 遍历指定的当天其后的expire天，如果是休息日，则不计入，往后顺延
                 int expireDay = (int)getExpireHour();
@@ -494,7 +560,7 @@ public class WorkflowLinkDb implements Serializable{
         }
         else {
             String flowExpireUnit = cfg.get("flowExpireUnit");
-            if (flowExpireUnit.equals("day")) {
+            if ("day".equals(flowExpireUnit)) {
                 return DateUtil.addDate(new java.
                         util.
                         Date(),
@@ -509,9 +575,14 @@ public class WorkflowLinkDb implements Serializable{
         }
     }
 
+    public static String getINSERT() {
+        return INSERT;
+    }
+
     private int type = TYPE_TOWARD;
     private String condDesc;
     private String condType;
     private boolean loaded = false;
     private double expireHour = 0;
+
 }

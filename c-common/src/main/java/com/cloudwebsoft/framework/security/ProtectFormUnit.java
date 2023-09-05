@@ -1,20 +1,13 @@
 package com.cloudwebsoft.framework.security;
 
-import org.apache.log4j.Logger;
-
 import java.io.Serializable;
 import java.util.List;
 
 public class ProtectFormUnit implements Serializable {
-    transient Logger logger = Logger.getLogger(this.getClass().getName());
-
     public ProtectFormUnit() {
     }
 
     public void renew() {
-        if (logger == null) {
-            logger = Logger.getLogger(this.getClass().getName());
-        }
     }
 
     public void setFormCode(String formCode) {

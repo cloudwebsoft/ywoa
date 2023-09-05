@@ -5,7 +5,7 @@ import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.*;
-import org.apache.log4j.Logger;
+
 /**
  * <p>Title: </p>
  * <p>Description: </p>
@@ -16,7 +16,6 @@ import org.apache.log4j.Logger;
  */
 //日程安排
 public class AddressTypeMgr {
-  Logger logger = Logger.getLogger( AddressTypeMgr.class.getName() );
 
   public AddressTypeMgr() {
 

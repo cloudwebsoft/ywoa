@@ -20,7 +20,7 @@ function openWin(url,width,height)
 }
 
 function openWinUsers() {
-	showModalDialog('user_multi_sel.jsp',window.self,'dialogWidth:600px;dialogHeight:480px;status:no;help:no;')
+  openWin('user_multi_sel.jsp', 800, 600);
 }
 
 function openWinUserGroup() {

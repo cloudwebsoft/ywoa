@@ -10,7 +10,6 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="org.json.*" %>
 <%@ page import="com.cloudweb.oa.utils.ConstUtil" %>
-<%@ taglib uri="/WEB-INF/tlds/HelpDocTag.tld" prefix="help" %>
 <%
     String op = ParamUtil.get(request, "op");
     String code = ParamUtil.get(request, "code");

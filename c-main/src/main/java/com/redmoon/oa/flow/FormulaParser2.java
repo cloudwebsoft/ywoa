@@ -14,6 +14,8 @@ package com.redmoon.oa.flow;
  */
 import java.util.LinkedList;
 import java.util.ArrayList;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.input.SAXBuilder;
 import org.xml.sax.InputSource;
 import java.io.StringReader;
@@ -33,14 +35,14 @@ public class FormulaParser2 {
         double returnValue = 0;
         try {
             returnValue = doAnalysis(formula);
-        } catch (NumberFormatException nfe) {
-            System.out.println("函数格式有误1，请检查:" + formula);
-            nfe.printStackTrace();
+        } catch (NumberFormatException e) {
+            LogUtil.getLog(getClass()).error("函数格式有误1，请检查:" + formula);
+            LogUtil.getLog(getClass()).error(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         if (!isRightFormat) {
-            System.out.println("函数格式有误，请检查:" + formula);
+            LogUtil.getLog(getClass()).error("函数格式有误，请检查:" + formula);
         }
         return returnValue;
     }
@@ -74,14 +76,14 @@ public class FormulaParser2 {
                         stack.clear();
                         break;
                     } else {
-                        System.out.println("有未关闭的右括号！");
+                        LogUtil.getLog(getClass()).error("有未关闭的右括号");
                         isRightFormat = false;
                     }
                 }
                 curPos++;
             }
             if (stack.size() > 0) {
-                System.out.println("有未关闭的左括号！");
+                LogUtil.getLog(getClass()).error("有未关闭的左括号");
                 break;
             }
         }
@@ -92,7 +94,6 @@ public class FormulaParser2 {
     }
 
     private double doCalculation(String formula) {
-        System.out.println("formula=" + formula);
         ArrayList values = new ArrayList();
         ArrayList operators = new ArrayList();
         int curPos = 0;
@@ -102,8 +103,6 @@ public class FormulaParser2 {
         for (int i=0; i<len; i++) {
             char s = ary[i];
             if (s == '+' || s == '-' || s == '*' || s == '/') {
-                System.out.println("formula.substring(" + prePos + ", " + curPos + ").trim()=" + formula.substring(prePos, curPos)
-                                              .trim());
                 values.add(new Double(Double.parseDouble(formula.substring(prePos, curPos)
                                               .trim())));
                 operators.add("" + s);
@@ -151,8 +150,6 @@ public class FormulaParser2 {
     }
 
      public static void main(String[] args) {
-         System.out.println("here");
-
          String content = "xx<IMG onclick='SelectDate(\"date_ng\",\"yyyy-mm-dd\")' name=date_ng_btnImg align=absMiddle src=\"http://localhost:8080/oa/images/form/calendar.gif\" width=26 height=26>ee<input abc deb ><IMG onclick='SelectDate(\"date_ng\",\"yyyy-mm-dd\")' name=date_ng_btnImg align=absMiddle src=\"http://localhost:8080/oa/images/form/calendar.gif\" width=26 height=26>kkk";
          String pat = "<img([^>]*?)calendar.gif([^>]*?)>";
 
@@ -186,20 +183,14 @@ public class FormulaParser2 {
                  Element e = (Element)ir.next();
                  String prop = e.getChildText("property");
                  JSONObject jobj = new JSONObject(prop);
-                 System.out.println("subFlowTypeCode = " + jobj.get("subFlowTypeCode"));
-                 System.out.println("parentToSubMap = " + jobj.get("parentToSubMap"));
                  JSONArray ary = jobj.getJSONArray("parentToSubMap");
-                 System.out.println("parentField = " + ary.getJSONObject(0).get("parentField"));
-
              }
-
          } catch (IOException ex) {
-             ex.printStackTrace();
+             LogUtil.getLog(FormulaParser2.class).error(ex);
          } catch (JDOMException ex) {
-             ex.printStackTrace();
+             LogUtil.getLog(FormulaParser2.class).error(ex);
          } catch (JSONException ex) {
-            /** @todo Handle this exception */
-            ex.printStackTrace();
+            LogUtil.getLog(FormulaParser2.class).error(ex);
         }
 
         if (true)
@@ -210,7 +201,7 @@ public class FormulaParser2 {
          long k = System.currentTimeMillis();
          double r = fc.getResult(str);
          long interval = System.currentTimeMillis() - k;
-         System.out.println( str + "=" + r + " 用时：" + interval);
+         LogUtil.getLog(FormulaParser2.class).info( str + "=" + r + " 用时：" + interval);
      }
 
 }

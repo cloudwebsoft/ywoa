@@ -19,6 +19,8 @@
 <%@ page import="com.cloudweb.oa.cond.CondUtil" %>
 <%@ page import="com.cloudweb.oa.cond.CondUnit" %>
 <%@ page import="com.redmoon.oa.pvg.RoleDb" %>
+<%@ page import="com.redmoon.oa.visual.Attachment" %>
+<%@ page import="com.redmoon.oa.base.IAttachment" %>
 <%@ taglib uri="/WEB-INF/tlds/i18nTag.tld" prefix="lt" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
@@ -83,7 +85,7 @@
     }
 
     String formCode = msd.getString("form_code");
-    if (formCode.equals("")) {
+    if ("".equals(formCode)) {
         out.print(SkinUtil.makeErrMsg(request, "编码不能为空！"));
         return;
     }
@@ -110,6 +112,8 @@
         moduleLogService.logRead(formCode, code, id, userName, privilege.getUserUnitCode(request));
     }
 
+    request.setAttribute("moduleCode", code);
+
     // 置嵌套表及关联查询选项卡生成链接需要用到的cwsId
     request.setAttribute("cwsId", "" + id);
     // 置嵌套表需要用到的页面类型
@@ -134,7 +138,7 @@
 
     fdm.runScriptOnSee(request, privilege, msd, fdao);
 
-    Vector vAttach = fdao.getAttachments();
+    Vector<IAttachment> vAttach = fdao.getAttachments();
 
     request.setAttribute("vAttach", vAttach);
     request.setAttribute("canUserLog", mpd.canUserLog(privilege.getUser(request)));
@@ -148,7 +152,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>智能模块设计-显示内容</title>
+    <title>智能模块设计-重直显示</title>
     <link type="text/css" rel="stylesheet" href="${skinPath}/css.css"/>
     <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
@@ -194,7 +198,7 @@
             width: 100%;
             height: 100%;
             top: 0;
-            left: 0%;
+            left: 0;
             text-align: center;
             font-size: 0.9rem;
             color: #595758;
@@ -255,7 +259,7 @@
                                             <td width="51%" align="left">
                                                 &nbsp;
                                                 <span id="spanAttLink${att.id}">
-                                <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+                                <a href="preview.do.jsp?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
                                     <span id="spanAttName${att.id}">${att.name}</span>
                                 </a>
                                 </span>
@@ -267,7 +271,7 @@
                                             <td width="11%" align="center">${att.fileSizeMb}M
                                             </td>
                                             <td width="11%" align="center">
-                                                <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+                                                <a href="download.do?attachId=${att.id}&visitKey=${att.visitKey}&isDownload=true" target="_blank">
                                                     <lt:Label res="res.flow.Flow" key="download"/>
                                                 </a>
                                                 <c:if test="${canUserLog}">
@@ -297,7 +301,7 @@
                     -->
                     <c:if test="${btn_edit_display}">
                         &nbsp;&nbsp;&nbsp;&nbsp;
-                        <button class="btn btn-default" onclick="window.location.href='module_edit.jsp?parentId=${id}&id=${id}&isShowNav=${isShowNav}&code=${code}'">编辑</button>
+                        <button class="btn btn-default" onclick="window.location.href='moduleEditPage.do?parentId=${id}&id=${id}&isShowNav=${isShowNav}&code=${code}'">编辑</button>
                     </c:if>
                 </td>
             </tr>
@@ -418,7 +422,6 @@
         // -----------以下为关联模块部分---------------
     %>
     <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
-    <script src="../js/layui/layui.js" charset="utf-8"></script>
     <%
         ArrayList<String> dateFieldNamelist = new ArrayList<String>();
         ModuleRelateDb mrd = new ModuleRelateDb();
@@ -513,7 +516,7 @@
                                             }
 
                                             String condType = (String) json.get(fieldName);
-                                            CondUnit condUnit = CondUtil.getCondUnit(request, fdRelated, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
+                                            CondUnit condUnit = CondUtil.getCondUnit(request, msd, fdRelated, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
                                             out.print("<span class=\"cond-span\">");
                                             out.print("<span class=\"cond-title\">");
                                             out.print(condUnit.getFieldTitle());
@@ -762,7 +765,7 @@
                             shadeClose: true,
                             shade: 0.6,
                             area: ['90%', '90%'],
-                            content: 'module_add_relate.jsp?isTabStyleHor=false&code=<%=StrUtil.UrlEncode(code)%>&parentId=<%=parentId%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=0'
+                            content: 'moduleAddRelatePage.do?isTabStyleHor=false&code=<%=StrUtil.UrlEncode(code)%>&parentId=<%=parentId%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=0'
                         });
                         break;
                     case 'editRelate':
@@ -781,7 +784,7 @@
                             shadeClose: true,
                             shade: 0.6,
                             area: ['90%', '90%'],
-                            content: 'module_edit_relate.jsp?isTabStyleHor=false&code=<%=StrUtil.UrlEncode(code)%>&parentId=<%=parentId%>&id=' + id + '&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=0'
+                            content: 'moduleEditRelatePage.do?isTabStyleHor=false&code=<%=StrUtil.UrlEncode(code)%>&parentId=<%=parentId%>&id=' + id + '&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=0'
                         });
                         break;
                     case 'delRows':
@@ -910,7 +913,7 @@
                             if (!btnScripts[i].startsWith("{")) {
                             %>
                     case 'event_<%=moduleCodeRelated%><%=i%>':
-                    <%=btnScripts[i]%>
+                        <%=ModuleUtil.renderScript(request, btnScripts[i])%>
                         break;
                     <%
                     }

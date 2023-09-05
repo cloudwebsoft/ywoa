@@ -71,7 +71,6 @@ if(!"".equals(endDate)){
 }
 
 sql += " GROUP BY l.user_name ORDER BY countName DESC";
-// System.out.println(getClass() + " sql=" + sql);
 int pagesize = ParamUtil.getInt(request, "pageSize", 20);
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">

@@ -9,11 +9,13 @@ import com.redmoon.oa.account.AccountDb;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.person.UserDb;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.config.Constant;
 import com.redmoon.weixin.util.HttpUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,41 +28,63 @@ import java.util.Vector;
  * @Date: 2016-8-26上午11:20:11
  */
 public class WeixinDo {
+
     /**
      * 一键同步OA部门人员至微信端
      */
     public void syncDeptUsers() {
+        /*
         WXMenuMgr wxMenuMgr = new WXMenuMgr();
         wxMenuMgr.batchDeleteMenu();// 批量删除
         wxMenuMgr.batchCreateMenu();// 批量新增菜单按钮
+        */
         Config config = Config.getInstance();
         boolean isUserIdUseEmail = config.isUserIdUseEmail();
         boolean isUserIdUseAccount = config.isUserIdUseAccount();
         boolean isUserIdUseMobile = config.isUserIdUseMobile();
 
-        WXUserMgr wum = new WXUserMgr();
-        String accessToken = wum.getTokenContacts();
-
         WXDeptMgr wxDeptMgr = new WXDeptMgr();
         WXUserMgr wxUserMgr = new WXUserMgr();
+
+        // 获取所有的部门成员
+        JSONArray aryListId = wxDeptMgr.wxUserListId();
+        // 获取全量的部门id
+        JSONArray aryDeptListId = wxDeptMgr.wxDeptListId();
 
         IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
         List<Department> list = departmentService.getDeptsNotHide();
         for (Department dept : list) {
             if (!dept.getCode().equals(DeptDb.ROOTCODE)) {
+                // 判断用户是否存在，如存在，则更新
+                boolean isDeptExist = false;
+                for (int i=0; i<aryDeptListId.length(); i++) {
+                    try {
+                        JSONObject obj = aryDeptListId.getJSONObject(i);
+                        if (dept.getId() == obj.getInt("id")) {
+                            isDeptExist = true;
+                        }
+                    } catch (JSONException e) {
+                        LogUtil.getLog(getClass()).error(e);
+                    }
+                }
+                // 不能直接删除部门，因为不允许删除有成员的部门
+                // wxDeptMgr.deleteWxDept(dept.getId());
                 // 加部门
-                wxDeptMgr.deleteWxDept(dept.getId()); // 删除部门
-                wxDeptMgr.createWxDept(dept);// 创建部门
+                if (!isDeptExist) {
+                    int errCode = wxDeptMgr.createWxDept(dept);// 创建部门
+                    if (errCode != 0) {
+                        DebugUtil.e(getClass(), "syncDeptUsers createWxDept errCode", String.valueOf(errCode));
+                        // throw new ErrMsgException(wxDeptMgr.getErrMsg());
+                    }
+                }
             }
 
             String deptCode = dept.getCode();
             DeptUserDb dud = new DeptUserDb();
-            Vector duv = dud.list(deptCode);
-            Iterator uit = duv.iterator();
+            Vector<DeptUserDb> duv = dud.list(deptCode);
             //加用户
-            while (uit.hasNext()) {
-                DeptUserDb du = (DeptUserDb) uit.next();
-                if (du.getUserName().equals("admin")) {
+            for (DeptUserDb du : duv) {
+                if ("admin".equals(du.getUserName())) {
                     continue;
                 }
                 String userId = du.getUserName();
@@ -77,24 +101,44 @@ public class WeixinDo {
                 }
 
                 // 判断用户是否存在，如存在，则更新
-                boolean isUserExist = true;
+                boolean isUserExist = false;
+                for (int i=0; i<aryListId.length(); i++) {
+                    try {
+                        JSONObject obj = aryListId.getJSONObject(i);
+                        if (userId.equals(obj.getString("userid"))) {
+                            isUserExist = true;
+                        }
+                    } catch (JSONException e) {
+                        LogUtil.getLog(getClass()).error(e);
+                    }
+                }
+
+                /*
+                以下方面自2022.8.20已停用
                 // wxUserMgr.deleteUser(userId);// 删除用户会删除管理员权限
                 String url = Constant.GET_USER_INFO + accessToken + "&userid=" + userId;
                 String userInfoAll = HttpUtil.MethodGet(url);
                 try {
                     org.json.JSONObject json = new org.json.JSONObject(userInfoAll);
-                    if (json.getInt("errcode")!=0) {
+                    if (json.getInt("errcode") != 0) {
                         isUserExist = false;
                     }
                 } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
+                    LogUtil.getLog(getClass()).error(e);
+                }*/
+                int errorCode = 0;
                 if (!isUserExist) {
-                    wxUserMgr.createWxUser(userDb); // 创建用户
+                    errorCode = wxUserMgr.createWxUser(userDb); // 创建用户
+                } else {
+                    errorCode = wxUserMgr.updateWxUser(userDb);
                 }
-                else {
-                    wxUserMgr.updateWxUser(userDb);
+                if (errorCode != 0) {
+                    // 60129,"errmsg":"missing mobile or email"
+                    if (errorCode == 60129) {
+                        throw new ErrMsgException(userDb.getRealName() + ": 个人信息中没有手机号或邮箱");
+                    } else {
+                        throw new ErrMsgException(userDb.getRealName() + ": " + wxUserMgr.getErrMsg());
+                    }
                 }
             }
         }
@@ -151,10 +195,9 @@ public class WeixinDo {
                             }
                         }
                     }
-                } catch (JSONException e) {
+                } catch (JSONException | ErrMsgException e) {
                     LogUtil.getLog(WeixinDo.class).info("微信企业号获取部门列表异常" + e.getMessage());
-                } catch (ErrMsgException e) {
-                    LogUtil.getLog(WeixinDo.class).info("微信企业号获取部门列表异常" + e.getMessage());
+                    LogUtil.getLog(getClass()).error(e);
                 }
             }
 

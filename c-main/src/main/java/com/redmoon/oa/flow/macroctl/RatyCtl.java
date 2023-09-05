@@ -1,6 +1,8 @@
 package com.redmoon.oa.flow.macroctl;
 
 import javax.servlet.http.HttpServletRequest;
+
+import com.github.pagehelper.util.StringUtil;
 import com.redmoon.oa.flow.FormField;
 import cn.js.fan.util.StrUtil;
 
@@ -40,37 +42,39 @@ public class RatyCtl extends AbstractMacroCtl {
      * @param fieldValue String
      * @return String
      */
-    public String converToHtml(HttpServletRequest request, FormField ff,
-                               String fieldValue) {
-        String v = StrUtil.getNullStr(fieldValue);
+    @Override
+    public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
+        if (StringUtil.isNotEmpty(fieldValue)) {
+            return "<img src='" + request.getContextPath() + "/images/rate/star" + fieldValue + ".png'/>";
+        }
+        // 下面这段在flexigrid中会出现两组重复的星标
         // 控件默认值：0,5（0表示默认不选，5表示5级）
-        String props = ff.getDefaultValueRaw();
+        /*String props = ff.getDefaultValueRaw();
         String[] ary = StrUtil.split(props, ",");
         int number = 5;
-        int start = 0;
         if (ary!=null) {
-            start = StrUtil.toInt(ary[0], 0);
-            if (ary.length>1)
+            if (ary.length>1) {
                 number = StrUtil.toInt(ary[1], 5);
+            }
         }
 
         String rand = RandomSecquenceCreator.getId(5);
-
         String str = "<span id='" + ff.getName() + "_raty" + rand + "'></span>";
 
-        str += "<script>";
+        str += "<script>\n";
         str += "var is_" + rand + "_launched = false;\n"; // 防止当flexigrid时被多次运行
-        str += "function raty_" + rand + "_func() {";
-        str += "if (is_" + rand + "_launched) return;";
-        str += "$('#" + ff.getName() + "_raty" + rand + "').raty({";
-        str += "readOnly:'true',";
+        str += "function raty_" + rand + "_func() {\n";
+        str += "if (is_" + rand + "_launched) return;\n";
+        str += "$('#" + ff.getName() + "_raty" + rand + "').raty({\n";
+        str += "readOnly:'true',\n";
         // str += "scoreName:'" + ff.getName() + "',";
-        str += "number:'" + number + "',";
+        str += "number:'" + number + "',\n";
         str += "path: '" + request.getContextPath() + "/images/rate'";
 
-        UserSetupDb usd = new UserSetupDb(new Privilege().getUser(request));
+        UserSetupDb usd = new UserSetupDb();
+        usd = usd.getUserSetupDb(new Privilege().getUser(request));
 		if (usd != null && usd.isLoaded()) {
-			if (usd.getLocal().equals("zh-CN")) {
+			if ("zh-CN".equals(usd.getLocal())) {
 				str += ",cancelHint: '取消'";
 				str += ",hintList:['一星级','二星级','三星级','四星级','五星级']";
 			} else {
@@ -79,18 +83,18 @@ public class RatyCtl extends AbstractMacroCtl {
 			}
 		}
         
-        if (!v.equals("")) {
-            str += ",start:'" + v + "'";
+        if (!"".equals(v)) {
+            str += ",start:'" + v + "'\n";
         }
 
-        str += "});";
+        str += "});\n";
         
-        str += "is_" + rand + "_launched = true;\n";        
-        str += "}";
+        str += "is_" + rand + "_launched = true;\n";
+        str += "}\n";
         // str += "cwAddLoadEvent(raty_" + rand + "_func);";
-        str += "$(function() {raty_" + rand + "_func();});";
-        str += "</script>";
-        return str;
+        str += "$(function() {raty_" + rand + "_func();});\n";
+        str += "</script>";*/
+        return "";
     }
 
     public static String render(HttpServletRequest request, FormField ff) {
@@ -106,8 +110,9 @@ public class RatyCtl extends AbstractMacroCtl {
         int start = 0;
         if (ary!=null) {
             start = StrUtil.toInt(ary[0], 0);
-            if (ary.length>1)
+            if (ary.length>1) {
                 number = StrUtil.toInt(ary[1], 5);
+            }
         }
 
         String rand = RandomSecquenceCreator.getId(5);
@@ -116,14 +121,16 @@ public class RatyCtl extends AbstractMacroCtl {
 
         str += "<script>";
         str += "$('#" + ff.getName() + "_raty" + rand + "').raty({";
-        if (readonly)
+        if (readonly) {
             str += "readOnly:'true',";
+        }
         str += "number:'" + number + "',";
         str += "path: '" + Global.getRootPath() + "/images/rate'";
         
-        UserSetupDb usd = new UserSetupDb(new Privilege().getUser(request));
+        UserSetupDb usd = new UserSetupDb();
+        usd = usd.getUserSetupDb(new Privilege().getUser(request));
 		if (usd != null && usd.isLoaded()) {
-			if (usd.getLocal().equals("zh-CN")) {
+			if ("zh-CN".equals(usd.getLocal())) {
 				str += ",cancelHint: '取消'";
 				str += ",hintList:['一星级','二星级','三星级','四星级','五星级']";
 			} else {
@@ -132,7 +139,7 @@ public class RatyCtl extends AbstractMacroCtl {
 			}
 		}
 		
-        if (!v.equals("")) {
+        if (!"".equals(v)) {
             str += ",start:'" + v + "'";
         }
         /*
@@ -152,8 +159,8 @@ public class RatyCtl extends AbstractMacroCtl {
      * @param request HttpServletRequest
      * @param ff FormField
      * @return String
-     * @todo Implement this com.redmoon.oa.base.IFormMacroCtl method
      */
+    @Override
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
         String v = StrUtil.getNullStr(ff.getValue());
         // 控件默认值：0,5（0表示默认不选，5表示5级）
@@ -199,6 +206,7 @@ public class RatyCtl extends AbstractMacroCtl {
         return str;
     }
 
+    @Override
     public String getReplaceCtlWithValueScript(FormField ff) {
         if (ff.getValue()==null) {
             return "$.fn.raty.start(0, '#" + ff.getName() + "_raty');$.fn.raty.readOnly(true, '#" + ff.getName() + "_raty');";
@@ -212,7 +220,6 @@ public class RatyCtl extends AbstractMacroCtl {
      */
     @Override
     public String getSetCtlValueScript(HttpServletRequest request, IFormDAO IFormDao, FormField ff, String formElementId) {
-        // System.out.println(getClass() + " " + ff.getName() + " " + ff.getValue());
         String pageType = StrUtil.getNullStr((String)request.getAttribute("pageType"));
         if (pageType.equals("edit")) {
             if (ff.getValue() == null || ff.getValue().equals("")) {
@@ -284,18 +291,27 @@ public class RatyCtl extends AbstractMacroCtl {
 		return v;
     }
 
+    @Override
     public String getControlType() {
-        return "";
+        return "img";
     }
 
+    @Override
     public String getControlValue(String userName, FormField ff) {
-        return "";
+        return ff.getValue();
     }
 
+    @Override
     public String getControlText(String userName, FormField ff) {
-        return "";
+        if (StringUtil.isNotEmpty(ff.getValue())) {
+            return "images/rate/star" + ff.getValue() + ".png";
+        }
+        else {
+            return "";
+        }
     }
 
+    @Override
     public String getControlOptions(String userName, FormField ff) {
         return "";
     }

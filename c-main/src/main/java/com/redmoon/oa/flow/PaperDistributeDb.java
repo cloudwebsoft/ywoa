@@ -11,6 +11,7 @@ import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.base.QObjectDb;
 import com.cloudwebsoft.framework.db.Connection;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.person.PlanDb;
 import com.redmoon.oa.person.UserDb;
@@ -26,9 +27,8 @@ public class PaperDistributeDb extends QObjectDb {
 	 */
 	public static final int KIND_USER = 1;
 	
-	
 	public PaperDistributeDb getPaperDistributeDb(long id) {
-		return (PaperDistributeDb)getQObjectDb(new Long(id));
+		return (PaperDistributeDb)getQObjectDb(id);
 	}
 
 	public int getCountOfWorkflow(int flowId) {
@@ -42,14 +42,13 @@ public class PaperDistributeDb extends QObjectDb {
 				return rr.getInt(1);
 			}			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
-
 		return 0;
 	}
 	
-    public boolean del() throws ResKeyException {
+    @Override
+	public boolean del() throws ResKeyException {
 		int kind = getInt("kind");
 		MessageDb md = new MessageDb();
 		PlanDb pd = new PlanDb();
@@ -60,8 +59,9 @@ public class PaperDistributeDb extends QObjectDb {
 			String swRoles = pc.getProperty("swRoles");
 			String[] aryRole = StrUtil.split(swRoles, ",");
 			int aryRoleLen = 0;
-			if (aryRole!=null)
+			if (aryRole!=null) {
 				aryRoleLen = aryRole.length;
+			}
 			RoleDb[] aryR = new RoleDb[aryRoleLen];
 			RoleDb rd = new RoleDb();
 			// 取出收文角色
@@ -71,20 +71,17 @@ public class PaperDistributeDb extends QObjectDb {
 			String toUnit = getString("to_unit");
 			for (int j=0; j<aryRoleLen; j++) {
 				// 取出角色中的全部用户
-				java.util.Iterator ir = aryR[j].getAllUserOfRole().iterator();
-				while (ir.hasNext()) {
-					UserDb user = (UserDb)ir.next();
+				for (UserDb user : aryR[j].getAllUserOfRole()) {
 					// 如果用户属于收文单位
 					if (user.getUnitCode().equals(toUnit)) {
 						// 删除相关消息、待办事项
 						md.del(user.getName(), MessageDb.ACTION_PAPER_DISTRIBUTE, String.valueOf(getLong("id")));
-						
+
 						// 删除日程安排
 						try {
 							pd.del(user.getName(), PlanDb.ACTION_TYPE_PAPER_DISTRIBUTE, String.valueOf(getLong("id")));
 						} catch (ErrMsgException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							LogUtil.getLog(getClass()).error(e);
 						}
 					}
 				}
@@ -98,12 +95,10 @@ public class PaperDistributeDb extends QObjectDb {
 			try {
 				pd.del(getString("to_unit"), PlanDb.ACTION_TYPE_PAPER_DISTRIBUTE, String.valueOf(getLong("id")));
 			} catch (ErrMsgException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 
         return super.del();
-        
     }
 }

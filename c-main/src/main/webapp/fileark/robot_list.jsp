@@ -6,9 +6,8 @@
 <%@ page import="com.redmoon.oa.fileark.*"%>
 <%@ page import="com.redmoon.oa.fileark.robot.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <title>Robot List</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -175,7 +174,7 @@ while (oir.hasNext()) {
       <td><%=rd.getInt("gather_count")%></td>
       <td><%=rd.getString("charset")%> </td>
       <td align="center">
-	  [<a href="robot_edit.jsp?robotId=<%=rd.getInt("id")%>"><lt:Label res="res.label.cms.dir" key="modify"/></a>]&nbsp;[<a href="#" onClick="jConfirm('您确定要删除吗？','提示',function(r){if(!r){return;}else{window.location.href='robot_list.jsp?op=del&id=<%=rd.getInt("id")%>'}}) "><lt:Label res="res.label.cms.dir" key="del"/></a>]&nbsp;[<a href="robot_do.jsp?op=gather&robotId=<%=rd.getInt("id")%>">采集</a>]&nbsp;[<a href="robot_list.jsp?op=copy&id=<%=rd.getInt("id")%>">复制</a>]&nbsp;[<a href="robot_export.jsp?op=export&id=<%=rd.getInt("id")%>">导出</a>]</td>
+	  [<a href="robot_edit.jsp?robotId=<%=rd.getInt("id")%>">修改</a>]&nbsp;[<a href="#" onClick="jConfirm('您确定要删除吗？','提示',function(r){if(!r){return;}else{window.location.href='robot_list.jsp?op=del&id=<%=rd.getInt("id")%>'}}) ">删除</a>]&nbsp;[<a href="robot_do.jsp?op=gather&robotId=<%=rd.getInt("id")%>">采集</a>]&nbsp;[<a href="robot_list.jsp?op=copy&id=<%=rd.getInt("id")%>">复制</a>]&nbsp;[<a href="robot_export.jsp?op=export&id=<%=rd.getInt("id")%>">导出</a>]</td>
     </tr>
 <%}%>
   </tbody>

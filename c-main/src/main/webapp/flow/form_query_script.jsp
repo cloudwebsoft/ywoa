@@ -11,9 +11,17 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.cloudwebsoft.framework.db.*"%>
 <%@ page import="org.json.*"%>
-<%@ taglib uri="/WEB-INF/tlds/HelpDocTag.tld" prefix="help" %>
+<%@ page import="cn.js.fan.web.SkinUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
+	if (!privilege.isUserPrivValid(request, "admin.flow.query")) {
+%>
+<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+<%
+		out.print(SkinUtil.makeErrMsg(request, SkinUtil.LoadString(request, "pvg_invalid")));
+		return;
+	}
+
 String op = ParamUtil.get(request, "op");
 
 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
@@ -81,8 +89,8 @@ if (id==-1) {
 	op = "modify";
 }
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <HEAD>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <TITLE>脚本</TITLE>
@@ -115,8 +123,6 @@ o("menu3").className="current";
 <input type="button" onclick="saveScript()" value="保存" class="btn" />
 <input type="button" value="设计器" class="btn" onclick="openIdeWin()" />
 <input type="button" value="查询" class="btn" onclick="addTab('<%=fqd.getQueryName()%>', '<%=request.getContextPath()%>/flow/form_query_script_list_do.jsp?id=<%=fqd.getId()%>&op=query')" />
-<help:HelpDocTag id="728" type="content" size="200"></help:HelpDocTag>
-
 <script>
 $.fn.outerHTML = function(){  return $("<p></p>").append(this.clone()).html(); }
 

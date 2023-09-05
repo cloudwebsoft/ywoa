@@ -1,62 +1,20 @@
 package com.cloudweb.oa.servlet;
 
+import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.DispatcherServlet;
 
 @Configuration
 public class ServletConfig {
 
-    @Bean
+    /*@Bean
     public ServletRegistrationBean<cn.js.fan.util.Log4jInit> log4jServlet() {
-        ServletRegistrationBean<cn.js.fan.util.Log4jInit> servletRegistrationBean = new ServletRegistrationBean<>(
-                new cn.js.fan.util.Log4jInit(), "/log4j");
-        servletRegistrationBean.addInitParameter("log4j", "WEB-INF/log4j.properties");
+        ServletRegistrationBean<cn.js.fan.util.Log4jInit> servletRegistrationBean = new ServletRegistrationBean<>(new cn.js.fan.util.Log4jInit(), "/log4j");
         servletRegistrationBean.setLoadOnStartup(1);
         return servletRegistrationBean;
-    }
-
-    @Bean
-    public ServletRegistrationBean<org.jfree.chart.servlet.DisplayChart> jfreeChartServlet() {
-        ServletRegistrationBean<org.jfree.chart.servlet.DisplayChart> servletRegistrationBean = new ServletRegistrationBean<>(
-                new org.jfree.chart.servlet.DisplayChart(), "/servlet/DisplayChart");
-        return servletRegistrationBean;
-    }
-
-    @Bean
-    public ServletRegistrationBean<uk.ltd.getahead.dwr.DWRServlet> dwrServlet() {
-        ServletRegistrationBean<uk.ltd.getahead.dwr.DWRServlet> servletRegistrationBean = new ServletRegistrationBean<>(
-                new uk.ltd.getahead.dwr.DWRServlet(), "/dwr/*");
-        servletRegistrationBean.addInitParameter("debug", "false");
-        return servletRegistrationBean;
-    }
-
-    @Bean
-    public ServletRegistrationBean<com.runqian.report4.view.ReportServlet> reportServlet() {
-        ServletRegistrationBean<com.runqian.report4.view.ReportServlet> servletRegistrationBean = new ServletRegistrationBean<>(
-                new com.runqian.report4.view.ReportServlet(), "/reportServlet");
-        servletRegistrationBean.addInitParameter("configFile", "/WEB-INF/reportConfig.xml");
-        servletRegistrationBean.setLoadOnStartup(2);
-        return servletRegistrationBean;
-    }
-
-    @Bean
-    public ServletRegistrationBean<com.runqian.util.webutil.SetContextServlet> setContextServlet() {
-        ServletRegistrationBean<com.runqian.util.webutil.SetContextServlet> servletRegistrationBean = new ServletRegistrationBean<>(
-                new com.runqian.util.webutil.SetContextServlet(), "/setContextServlet");
-        servletRegistrationBean.setLoadOnStartup(3);
-        return servletRegistrationBean;
-    }
-
-    @Bean
-    public ServletRegistrationBean<com.raq.web.view.DMServlet> dmServlet() {
-        ServletRegistrationBean<com.raq.web.view.DMServlet> servletRegistrationBean = new ServletRegistrationBean<>(
-                new com.raq.web.view.DMServlet(), "/DMServlet");
-        servletRegistrationBean.addInitParameter("configFile", "/WEB-INF/dmConfig.xml");
-        servletRegistrationBean.addUrlMappings("/DMServletAjax");
-        servletRegistrationBean.setLoadOnStartup(4);
-        return servletRegistrationBean;
-    }
+    }*/
 
     @Bean
     public ServletRegistrationBean<com.cloudweb.oa.servlet.AppInit> appInitServlet() {
@@ -91,13 +49,6 @@ public class ServletConfig {
     public ServletRegistrationBean<com.redmoon.oa.ue.UploadFile> ueUploadFileServlet() {
         ServletRegistrationBean<com.redmoon.oa.ue.UploadFile> servletRegistrationBean = new ServletRegistrationBean<>(
                 new com.redmoon.oa.ue.UploadFile(), "/ueditor/UploadFile");
-        return servletRegistrationBean;
-    }
-
-    @Bean
-    public ServletRegistrationBean<com.redmoon.oa.exam.UploadFile> examUploadFileServlet() {
-        ServletRegistrationBean<com.redmoon.oa.exam.UploadFile> servletRegistrationBean = new ServletRegistrationBean<>(
-                new com.redmoon.oa.exam.UploadFile(), "/ueditor/ExamUploadFile");
         return servletRegistrationBean;
     }
 

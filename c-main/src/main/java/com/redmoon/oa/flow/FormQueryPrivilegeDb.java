@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.*;
 
 /**
@@ -72,7 +73,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
                 apc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (conn != null) {
                 conn.close();
@@ -98,7 +99,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
                 apc.refreshSave(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (conn != null) {
                 conn.close();
@@ -138,7 +139,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (conn != null) {
                 conn.close();
@@ -161,7 +162,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
                 apc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (conn != null) {
                 conn.close();
@@ -172,6 +173,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
 
     }
 
+    @Override
     public ListResult listResult(String listsql, int curPage, int pageSize) throws
             ErrMsgException {
         int total = 0;
@@ -212,7 +214,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (rs != null) {
                 try {
@@ -244,7 +246,7 @@ public class FormQueryPrivilegeDb extends ObjectDb{
                 }
             }
         } catch (SQLException e) {
-            logger.error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(StrUtil.trace(e));
         } finally {
             if (conn != null) {
                 conn.close();

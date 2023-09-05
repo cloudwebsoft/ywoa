@@ -127,17 +127,6 @@ form1.target.value = "<%=leaf.getTarget()%>";
         <input id="description" name="description" value="<%=description%>" />
           <input type="hidden" name="parent_code" value="<%=parent_code%>" />
         (链接型节点的链接地址)&nbsp;
-        <!--
-        公共共享目录
-		<select id="publicNetdiskDir" onchange="changeLink()">
-        <%
-		com.redmoon.oa.netdisk.PublicLeaf lf = new com.redmoon.oa.netdisk.PublicLeaf();
-		lf = lf.getLeaf(com.redmoon.oa.netdisk.PublicLeaf.ROOTCODE);
-		com.redmoon.oa.netdisk.PublicDirectoryView pdv = new com.redmoon.oa.netdisk.PublicDirectoryView(lf);
-		pdv.ShowDirectoryAsOptions(out, lf, lf.getLayer());
-		%>
-        </select>
-        -->
       </td>
     </tr>
     <tr>

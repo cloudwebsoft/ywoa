@@ -18,7 +18,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta content="telephone=no" name="format-detection"/>
     <link rel="stylesheet" href="../css/mui.css"/>
-    <link rel="stylesheet" href="../css/iconfont.css" />
+    <link rel="stylesheet" href="../css/iconfont.css"/>
     <link rel="stylesheet" href="../css/mui.picker.min.css"/>
     <link rel="stylesheet" href="../css/at_flow.css"/>
     <link rel="stylesheet" href="../css/my_dialog.css"/>
@@ -27,7 +27,10 @@
     <link href="../../lte/css/font-awesome.css?v=4.4.0" rel="stylesheet">
     <link href="../../lte/css/animate.css" rel="stylesheet">
     <link href="../../lte/css/style.css?v=4.1.0" rel="stylesheet">
-
+    <!-- mui.js 不要放到</body>的前面，因为页面中如果return了，后退按钮就不生效了 -->
+    <script type="text/javascript" src="../../inc/common.js"></script>
+    <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="../js/mui.js"></script>
     <%
         String skey = ParamUtil.get(request, "skey");
         Privilege pvg = new Privilege();
@@ -45,6 +48,8 @@
         WorkflowPredefineDb wpd = new WorkflowPredefineDb();
         wpd = wpd.getPredefineFlowOfFree(wf.getTypeCode());
         boolean isRecall = wpd.isRecall();
+        // 通过uniapp的webview载入
+        boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
     %>
     <style type="text/css">
         body {
@@ -71,6 +76,10 @@
 
         .reply-progress {
             margin: 0px 10px;
+        }
+
+        .remark {
+            color: #3b86a0;
         }
     </style>
 </head>
@@ -121,6 +130,7 @@
                     </div>
                 </div>
             </div>
+            <div style="height:160px"></div>
         </div>
 
         <%if (!wpd.isLight()) {%>
@@ -164,11 +174,15 @@
                                 }
                                 if (mad.getCheckStatus() != 0 && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_TRANSFER && mad.getCheckStatus() != MyActionDb.CHECK_STATUS_SUSPEND) {
                                     if (mad.getResultValue() != WorkflowActionDb.RESULT_VALUE_RETURN) {
-                                        if (mad.getSubMyActionId() == MyActionDb.SUB_MYACTION_ID_NONE)
+                                        if (mad.getSubMyActionId() == MyActionDb.SUB_MYACTION_ID_NONE) {
                                             out.print("(" + WorkflowActionDb.getResultValueDesc(mad.getResultValue()) + ")");
+                                        }
                                     }
                                 }
                             %>
+                        </p>
+                        <p class="remark">
+                            留言: <%=mad.getResult()%>
                         </p>
                         <%
                             if (isRecall && mad.canRecall(userName)) {
@@ -176,10 +190,10 @@
                         <a href="#" class="btn btn-sm btn-success btn-recall" myActionId="<%=mad.getId()%>">撤回</a>
                         <%} %>
                         <span class="vertical-date">
-                                	<%=userRealName %> <br>
-                                <small><%=DateUtil.format(mad.getCheckDate(), "MM-dd HH:mm")%>
-                                </small>
-                        		</span>
+                            <%=userRealName %> <br>
+                            <small><%=DateUtil.format(mad.getCheckDate(), "MM-dd HH:mm")%>
+                            </small>
+                        </span>
                     </div>
                 </div>
                 <%} %>
@@ -188,13 +202,18 @@
         <%} %>
     </div>
 </div>
-<script type="text/javascript" src="../../inc/common.js"></script>
-<script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jq_mydialog.js"></script>
+<script src="form_js/<%=lf.getFormCode()%>.jsp?flowId=<%=flowId%>&myActionId=-1"></script>
+<jsp:include page="../inc/navbar.jsp">
+    <jsp:param name="skey" value="<%=pvg.getSkey()%>"/>
+    <jsp:param name="isBarBottomShow" value="false"/>
+</jsp:include>
+
+<script type="text/javascript" src="../js/jq_mydialog.js"></script>
 <script type="text/javascript" src="../js/newPopup.js"></script>
-<script src="../js/macro/macro.js"></script>
-<script type="text/javascript" src="../js/mui.js"></script>
+<script type="text/javascript" src="../js/macro/macro.js"></script>
 <script type="text/javascript" src="../js/mui.picker.min.js"></script>
+<script type="text/javascript" src="../js/weixin.js"></script>
+<script type="text/javascript" src="../js/uniapps.js"></script>
 
 <link rel="stylesheet" href="../css/photoswipe.css">
 <link rel="stylesheet" href="../css/photoswipe-default-skin/default-skin.css">
@@ -205,9 +224,22 @@
 <script type="text/javascript" src="../js/base/mui.form.js"></script>
 <script type="text/javascript" src="../js/mui.flow.wx.js"></script>
 <script type="text/javascript" charset="utf-8">
-    if(!mui.os.plus) {
+    var isUniWebview = <%=isUniWebview%>;
+
+    if(!mui.os.plus || isUniWebview) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
+    }
+
+    if(mui.os.plus) {
+        // 注册beforeback方法，以使得在流程处理完后退至待办列表页面时能刷新页面
+        if (isUniWebview) {
+            mui.init({
+                keyEventBind: {
+                    backbutton: false // 关闭back按键监听
+                }
+            });
+        }
     }
 
     var skey = '<%=skey%>';
@@ -304,10 +336,5 @@
         });
     });
 </script>
-<script src="form_js/<%=lf.getFormCode()%>.jsp?flowId=<%=flowId%>&myActionId=-1"></script>
-<jsp:include page="../inc/navbar.jsp">
-    <jsp:param name="skey" value="<%=pvg.getSkey()%>"/>
-    <jsp:param name="isBarBottomShow" value="false"/>
-</jsp:include>
 </body>
 </html>

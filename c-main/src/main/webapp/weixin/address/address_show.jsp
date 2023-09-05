@@ -14,16 +14,13 @@
 <%@ page import="org.htmlparser.util.ParserException" %>
 <%@ page import="com.redmoon.oa.address.AddressDb" %>
 <%
-    com.redmoon.oa.robot.Config robotCfg = com.redmoon.oa.robot.Config.getInstance();
-    boolean isRobotOpen = robotCfg.getBooleanProperty("isRobotOpen");
-
     Privilege pvg = new Privilege();
     if (!pvg.auth(request)) {
         out.print(StrUtil.p_center("请登录"));
         return;
     }
-
     String skey = pvg.getSkey();
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 
     int id = ParamUtil.getInt(request, "id", -1);
     if (id==-1) {
@@ -32,9 +29,10 @@
     AddressDb addr = new AddressDb();
     addr = addr.getAddressDb(id);
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>通讯录</title>
     <meta http-equiv="pragma" content="no-cache">
     <meta http-equiv="cache-control" content="no-cache">
@@ -173,10 +171,17 @@
 <script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
 <script src="../js/jq_mydialog.js"></script>
 <script>
-    if(!mui.os.plus) {
-        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
+    var isUniWebview = <%=isUniWebview%>;
+
+    if(!mui.os.plus || isUniWebview) {        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
     }
+
+    mui.init({
+        keyEventBind: {
+            backbutton: !isUniWebview //关闭back按键监听
+        }
+    });
 
     function callJS() {
         return {"btnAddShow": 0, "btnAddUrl": ""};

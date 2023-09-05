@@ -34,7 +34,6 @@ if ("getActionNode".equals(op)) {
 	Iterator actionIterator = actionVector.iterator();
 	while (actionIterator.hasNext()) {
 		WorkflowActionDb wa = (WorkflowActionDb)actionIterator.next();
-		// System.out.println(getClass() + " " + wa.getTitle());
 		%>
 		<div><input name="actionNames" type="checkbox" value="<%=wa.getInternalName()%>"  />&nbsp;<%=wa.getJobName()%>：<%=wa.getTitle()%></div>
         <%

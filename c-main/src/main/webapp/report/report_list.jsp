@@ -29,9 +29,8 @@
     String cond = ParamUtil.get(request, "condition");
 
 %>
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>报表管理</title>
@@ -93,13 +92,9 @@
             background: #F39814;
             color: white;
         }
-    
     </style>
-
-
 </head>
 <body>
-
 <%
     String sql = "";
     if (isSearch) {
@@ -189,7 +184,7 @@
             %>
             &nbsp;&nbsp;
             <a href="javascript:;"
-               onclick="addTab('<%=name%> 日志', '<%=request.getContextPath()%>/visual/module_list.jsp?op=search&code=module_log_read&read_type=1&module_id=<%=id%>')">日志</a>
+               onclick="addTab('<%=name%> 日志', '<%=request.getContextPath()%>/visual/moduleListPage.do?op=search&code=module_log_read&read_type=1&module_id=<%=id%>')">日志</a>
             <%
                 }
             %>

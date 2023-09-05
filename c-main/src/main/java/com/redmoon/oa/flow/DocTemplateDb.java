@@ -10,9 +10,12 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.base.IObjectDb;
 import com.cloudwebsoft.framework.base.ObjectDb;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
 
@@ -50,21 +53,19 @@ public class DocTemplateDb extends ObjectDb {
     private String kind;
 
     public DocTemplateDb getDocTemplateDb(int id) {
-        return (DocTemplateDb)getObjectDb(new Integer(id));
+        return (DocTemplateDb)getObjectDb(id);
     }
 
+    @Override
     public IObjectDb getObjectRaw(PrimaryKey pk) {
         return new DocTemplateDb(pk.getIntValue());
     }
 
     public String getFileUrl(HttpServletRequest request) {
-        // String rootPath = Global.getFullRootPath(request);
-        String rootPath = request.getContextPath();
-        String attachmentBasePath = rootPath + "/upfile/" +
-                                    linkBasePath + "/";
-        return attachmentBasePath + StrUtil.UrlEncode(fileName);
+        return request.getContextPath() + "/flow/getTemplateFile.do?id=" + id;
     }
 
+    @Override
     public void initDB() {
         this.tableName = "flow_doc_template";
         primaryKey = new PrimaryKey("id", PrimaryKey.TYPE_INT);
@@ -73,133 +74,137 @@ public class DocTemplateDb extends ObjectDb {
         this.QUERY_DEL =
                 "delete FROM " + tableName + " WHERE id=?";
         this.QUERY_CREATE =
-                "INSERT INTO " + tableName + " (title,file_name,sort, depts, unit_code) VALUES (?,?,?,?,?)";
+                "INSERT INTO " + tableName + " (title,file_name,sort, depts, unit_code, file_name_tail) VALUES (?,?,?,?,?,?)";
         this.QUERY_LOAD =
-                "SELECT title,file_name,sort,depts,unit_code FROM " + tableName + " WHERE id=?";
+                "SELECT title,file_name,sort,depts,unit_code,file_name_tail FROM " + tableName + " WHERE id=?";
         this.QUERY_SAVE =
-                "UPDATE " + tableName + " SET title=?,file_name=?,sort=?,depts=? WHERE id=?";
+                "UPDATE " + tableName + " SET title=?,file_name=?,sort=?,depts=?,file_name_tail=? WHERE id=?";
         this.QUERY_LIST = "select id from " + tableName + " order by sort";
         isInitFromConfigDB = false;
     }
 
+    @Override
     public boolean save(JdbcTemplate jt) {
-        // Based on the id in the object, get the message data from the database.
         boolean re = false;
         try {
-            re = jt.executeUpdate(this.QUERY_SAVE, new Object[] {title, fileName, new Integer(sort), depts, new Integer(id)})==1;
+            re = jt.executeUpdate(QUERY_SAVE, new Object[] {title, fileName, sort, depts, fileNameTail, id})==1;
             if (re) {
                 DocTemplateCache mc = new DocTemplateCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 mc.refreshSave(primaryKey);
-                return true;
             }
-            else
-                return false;
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         }
         return re;
     }
 
     public boolean save(FileUpload fu) throws ErrMsgException {
-        String newFileName = writeFile(fu);
-        /*
-        if (!newFileName.equals("")) {
-            // 如果上传了文件，则删除原来的文件
-            delFile();
-            fileName = newFileName;
-        }
-        */
+        writeFile(fu);
         return save(new JdbcTemplate());
     }
 
+    @Override
     public void load(JdbcTemplate jt) {
-        // Based on the id in the object, get the message data from the database.
         try {
-            ResultIterator ri = jt.executeQuery(this.QUERY_LOAD, new Object[] {new Integer(id)});
+            ResultIterator ri = jt.executeQuery(this.QUERY_LOAD, new Object[] {id});
             if (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord)ri.next();
+                ResultRecord rr = ri.next();
                 this.title = rr.getString(1);
                 this.fileName = StrUtil.getNullString(rr.getString(2));
                 this.sort = rr.getInt(3);
                 depts = StrUtil.getNullStr(rr.getString(4));
                 unitCode = StrUtil.getNullStr(rr.getString(5));
-                primaryKey.setValue(new Integer(id));
+                fileNameTail = StrUtil.getNullStr(rr.getString(6));
+                primaryKey.setValue(id);
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
+    @Override
     public boolean del(JdbcTemplate jt) {
         boolean re = false;
         try {
-            re = jt.executeUpdate(this.QUERY_DEL, new Object[] {new Integer(id)})==1;
+            re = jt.executeUpdate(this.QUERY_DEL, new Object[] {id})==1;
             if (re) {
                 delFile();
                 DocTemplateCache mc = new DocTemplateCache(this);
                 mc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return re;
     }
 
     public void delFile() {
-        if (fileName != null && !fileName.equals("")) {
-            try {
-                File file = new File(Global.realPath + "upfile/" + linkBasePath +
-                                     "/" + fileName);
-                file.delete();
-            } catch (Exception e) {
-                logger.info(e.getMessage());
-            }
+        IFileService fileService = SpringUtil.getBean(IFileService.class);
+        if (fileName != null && !"".equals(fileName)) {
+            fileService.del("upfile/" + linkBasePath, fileName);
+        }
+        if (fileNameTail != null && !"".equals(fileNameTail)) {
+            fileService.del("upfile/" + linkBasePath, fileNameTail);
         }
     }
 
-    public String writeFile(FileUpload fu) throws ErrMsgException {
+    public String writeFile(FileUpload fu) {
         if (fu.getRet() == FileUpload.RET_SUCCESS) {
-            Vector v = fu.getFiles();
-            FileInfo fi = null;
-            if (v.size() > 0)
-                fi = (FileInfo) v.get(0);
-            if (fi != null) {
-                // 置保存路径
-                String filepath = Global.getRealPath() + "upfile/" + linkBasePath + "/";
-                // 置本地路径
-                fu.setSavePath(filepath);
-                // 使用原来的名称写入磁盘
-                if (fileName.equals(""))
-                    fi.write(filepath, true); // 中文路径可能weboffice控件不支持，所以不使用文件本来的名称
-                else
-                    fi.write(filepath, fileName);
-                return fi.getDiskName();
+            Vector<FileInfo> v = fu.getFiles();
+            if (v!=null && v.size()>0) {
+                for (FileInfo fi : v) {
+                    IFileService fileService = SpringUtil.getBean(IFileService.class);
+                    if ("filename".equals(fi.getFieldName())) {
+                        // 使用原来的名称写入磁盘
+                        if ("".equals(fileName)) {
+                            // 中文路径可能weboffice控件不支持，所以不使用文件本来的名称
+                            fileService.write(fi, "upfile/" + linkBasePath);
+                        } else {
+                            fi.setName(fileName);
+                            fileService.write(fi, "upfile/" + linkBasePath, false);
+                        }
+                        fileName = fi.getDiskName();
+                    } else {
+                        // 使用原来的名称写入磁盘
+                        if ("".equals(fileNameTail)) {
+                            // 中文路径可能weboffice控件不支持，所以不使用文件本来的名称
+                            fileService.write(fi, "upfile/" + linkBasePath);
+                        } else {
+                            fi.setName(fileNameTail);
+                            fileService.write(fi, "upfile/" + linkBasePath, false);
+                        }
+                        fileNameTail = fi.getDiskName();
+                    }
+                }
+                return fileName;
             }
         }
         return "";
     }
 
+    @Override
     public boolean create(JdbcTemplate jt) {
         boolean re = false;
         try {
             re = jt.executeUpdate(QUERY_CREATE, new Object[] {title,
-                                  fileName, new Integer(sort), depts, unitCode}) == 1;
+                                  fileName, sort, depts, unitCode, fileNameTail,}) == 1;
             if (re) {
                 DocTemplateCache mc = new DocTemplateCache(this);
                 mc.refreshCreate();
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         }
         return re;
     }
 
     public boolean create(FileUpload fu) throws ErrMsgException {
         fileName = writeFile(fu);
-        if (fileName.equals("")) {
+        if ("".equals(fileName)) {
             throw new ErrMsgException("请选择文件！");
         }
         return create(new JdbcTemplate());
@@ -251,6 +256,7 @@ public class DocTemplateDb extends ObjectDb {
 
 	private String title;
     private String fileName = "";
+    private String fileNameTail = "";
     private int sort;
     private String unitCode;
 
@@ -261,4 +267,12 @@ public class DocTemplateDb extends ObjectDb {
 	public void setUnitCode(String unitCode) {
 		this.unitCode = unitCode;
 	}
+
+    public String getFileNameTail() {
+        return fileNameTail;
+    }
+
+    public void setFileNameTail(String fileNameTail) {
+        this.fileNameTail = fileNameTail;
+    }
 }

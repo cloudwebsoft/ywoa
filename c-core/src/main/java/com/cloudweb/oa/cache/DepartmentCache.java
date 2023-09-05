@@ -6,8 +6,9 @@ import com.cloudweb.oa.base.ObjCache;
 import com.cloudweb.oa.entity.Department;
 import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -66,7 +67,7 @@ public class DepartmentCache extends ObjCache {
         try {
             RMCache.getInstance().remove(cachePrix + parentCode, group);
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -98,9 +99,9 @@ public class DepartmentCache extends ObjCache {
                             isNotExist = true;
                             // throw new RuntimeException("This data could not be empty. code=" + code);
                             // 将代表null值的menu置于缓存，如置menu.name为 &&，且通常置到期时间为5分钟
-                            Department menu = new Department();
-                            menu.setCode(ConstUtil.CACHE_NONE);
-                            list.add(menu);
+                            Department department = new Department();
+                            department.setCode(ConstUtil.CACHE_NONE);
+                            list.add(department);
                             RMCache.getInstance().putInGroup(cachePrix + parentCode, group, list, ConstUtil.CACHE_NONE_EXPIRE);
                         } else {
                             RMCache.getInstance().putInGroup(cachePrix + parentCode, group, list);
@@ -140,10 +141,8 @@ public class DepartmentCache extends ObjCache {
                         list = getChildren(parentCode);
                     }
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (CacheException e) {
-                e.printStackTrace();
+            } catch (InterruptedException | CacheException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                     distributedLock.unlock(getClass().getName(), indentifier);
@@ -166,6 +165,9 @@ public class DepartmentCache extends ObjCache {
     }
 
     public Department getDepartment(String code) {
+        if (code == null) {
+            return null;
+        }
         Department department = null;
         try {
             department = (Department) RMCache.getInstance().getFromGroup(code, group);

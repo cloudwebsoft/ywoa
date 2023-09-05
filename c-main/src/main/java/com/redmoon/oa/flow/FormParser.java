@@ -1,20 +1,21 @@
 package com.redmoon.oa.flow;
 
-import SuperDog.DogStatus;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
-import com.cloudweb.oa.api.INestSheetCtl;
-import com.cloudweb.oa.api.INestTableCtl;
+import cn.js.fan.web.SkinUtil;
+import com.cloudweb.oa.api.*;
 import com.cloudweb.oa.service.MacroCtlService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysUtil;
+import com.cloudwebsoft.framework.util.IPUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.macroctl.MacroCtlMgr;
 import com.redmoon.oa.flow.macroctl.MacroCtlUnit;
-import com.redmoon.oa.superCheck.CheckSuperKey;
 import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.util.RequestUtil;
 import com.redmoon.weixin.util.HttpPostFileUtil;
@@ -66,60 +67,39 @@ public class FormParser {
     public final String DEFAULTVALUE = "default";
 
     public FormParser() {
-        checkSuper();
     }
 
     String content;
 
     Vector<FormField> fields = new Vector<>();
 
-    public FormParser(String content) throws ResKeyException {
-        checkSuper();
-
+    public FormParser(String content) throws ErrMsgException {
         this.content = content;
 
         String retStr = doParse(content);
         try {
-            JSONObject json = new JSONObject(retStr);
-            int ret = json.getInt("ret");
-            if (ret == 1) {
-                JSONArray jsonAry = json.getJSONArray("fields");
-                getFields(jsonAry);
-            } else {
-                String msg = json.getString("msg");
-                DebugUtil.log(getClass(), "FormParser", msg);
-                throw new ResKeyException(msg);
-            }
+            JSONArray arr = new JSONArray(retStr);
+            getFields(arr);
+//            JSONObject json = new JSONObject(retStr);
+//            int ret = json.getInt("ret");
+//            if (ret == 1) {
+//                JSONArray jsonAry = json.getJSONArray("fields");
+//                getFields(jsonAry);
+//            } else {
+//                String msg = json.getString("msg");
+//                DebugUtil.log(getClass(), "FormParser", msg);
+//                HttpServletRequest request = SpringUtil.getRequest();
+//                throw new ErrMsgException(SkinUtil.LoadString(request, msg));
+//            }
         } catch (JSONException e) {
             DebugUtil.log(getClass(), "FormParser", "retStr=" + retStr);
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
     }
 
-    public static String doParse(String content) throws ResKeyException {
-        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        String cloudUrl = cfg.get("cloudUrl");
-        cloudUrl += "/public/module/parseForm.do";
-
-        String retStr = "";
-        File file = new File(Global.getRealPath() + "/WEB-INF/license.dat");
-        HttpPostFileUtil post = null;
-        try {
-            post = new HttpPostFileUtil(cloudUrl);
-            post.addParameter("filename0", file);
-            post.addParameter("content", content);
-            retStr = post.send();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            throw new ResKeyException("err_lic_not_found");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (retStr == null || "".equals(retStr)) {
-            // DebugUtil.log(getClass(), "FormParser", "网络连接错误！");
-            throw new ResKeyException("err_network");
-        }
-        return retStr;
+    public static String doParse(String content) throws ErrMsgException {
+        ICloudUtil cloudUtil = SpringUtil.getBean(ICloudUtil.class);
+        return cloudUtil.parseForm(content);
     }
 
     public void getFields(JSONArray jsonAry) throws JSONException {
@@ -145,6 +125,12 @@ public class FormParser {
             ff.setFunc(js.getBoolean("func"));
             ff.setCanNull(js.getBoolean("canNull"));
             ff.setMacroType(js.getString("macroType"));
+            if (js.has("readOnlyType")) {
+                ff.setReadOnlyType(js.getString("readOnlyType"));
+            }
+            if (js.has("format")) {
+                ff.setFormat(js.getString("format"));
+            }
             fields.addElement(ff);
         }
     }
@@ -155,27 +141,6 @@ public class FormParser {
 
     public boolean isKeywords(String fieldName) {
         return SQLGeneratorFactory.getSQLGenerator().isFieldKeywords(fieldName);
-    }
-
-    /**
-     * 校验超级狗
-     */
-    private void checkSuper() {
-        //校验超级狗
-        CheckSuperKey csdk = CheckSuperKey.getInstance();
-        Config cfg = new Config();
-        try {
-            int status = csdk.checkKey();
-            //验证失败
-            if (status != DogStatus.DOG_STATUS_OK) {
-                cfg.put("systemIsOpen", "false");
-                cfg.put("systemStatus", "请使用正版授权系统");
-            }
-        } catch (Exception e) {
-            cfg.put("systemIsOpen", "false");
-            cfg.put("systemStatus", "请使用正版授权系统");
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -195,9 +160,24 @@ public class FormParser {
 			}*/
 
             if (ff.getName().contains("-")) {
-                // MySQL的字段中不允许有-号
                 throw new ErrMsgException(ff.getTitle() + " 的编码中不能含有-号");
             }
+            else if (ff.getName().contains(".")) {
+                throw new ErrMsgException(ff.getTitle() + " 的编码中不能含有.号");
+            }
+            else if (ff.getName().contains("#")) {
+                throw new ErrMsgException(ff.getTitle() + " 的编码中不能含有#号");
+            }
+            else if (ff.getName().contains("@")) {
+                throw new ErrMsgException(ff.getTitle() + " 的编码中不能含有@号");
+            }
+            else if (ff.getName().contains("。")) {
+                throw new ErrMsgException(ff.getTitle() + " 的编码中不能含有。号");
+            }
+            else if (ff.getName().contains(" ")) {
+                throw new ErrMsgException(ff.getTitle() + " 的编码中不能含有空格");
+            }
+            
             if (isKeywords(ff.getName())) {
                 throw new ErrMsgException(ff.getTitle() + " 的编码不能使用SQL的关键字："
                         + ff.getName());
@@ -252,6 +232,14 @@ public class FormParser {
     public static String replaceTextfieldWithValue(HttpServletRequest request,
                                                    String content, IFormDAO fdao, FormDb fd) {
         RequestUtil.setFormDAO(request, fdao);
+        boolean isReportForArchive = RequestUtil.getAttribute(request, RequestUtil.REPORT_FOR_ARCHIVE) != null;
+        SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+        String contextPath;
+        if (isReportForArchive) {
+            contextPath = Global.getFullRootPath(request);
+        } else {
+            contextPath = sysUtil.getPublicPath() + "/resource";
+        }
 
         Parser parser;
         try {
@@ -273,54 +261,69 @@ public class FormParser {
                     String value = StringEscapeUtils.unescapeHtml3(node.getAttribute("value"));
 
                     FormField ff = fdao.getFormField(node.getAttribute("name"));
-                    String realValue = StrUtil.getNullStr(fdao.getFieldValue(ff.getName()));
-
-                    if (ff.getType().equals(FormField.TYPE_MACRO)) {
-                        String macroType = ff.getMacroType();
-                        if (macroType.equals(ConstUtil.NEST_TABLE)) {
-                            // 加入嵌套表格
-                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
-                            INestTableCtl nac = macroCtlService.getNestTableCtl();
-                            request.setAttribute("cwsId", "" + fdao.getId());
-                            request.setAttribute("pageType", "archive");
-                            String str = nac.getNestTable(request, ff);
-                            // 去除script，以免其中jquery的$带来异常java.lang.IllegalArgumentException:
-                            // Illegal group reference
-                            Matcher matScript = SCRIPT_TAG_PATTERN.matcher(str);
-                            str = matScript.replaceAll("");
-                            realValue = str;
-                        } else if (macroType.equals(ConstUtil.NEST_SHEET)
-                                || macroType.equals("macro_detaillist_ctl")) {
-                            // 加入嵌套表格2
-                            MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
-                            INestSheetCtl nac = macroCtlService.getNestSheetCtl();
-                            request.setAttribute("cwsId", "" + fdao.getId());
-                            request.setAttribute("pageType", "archive");
-                            request.setAttribute("formCode", fd.getCode());
-                            String str = nac.getNestSheet(request, ff);
-                            // 去除script，以免其中jquery的$带来异常java.lang.IllegalArgumentException:
-                            // Illegal group reference
-                            Matcher matScript = SCRIPT_TAG_PATTERN.matcher(str);
-                            str = matScript.replaceAll("");
-                            realValue = str;
-                        } else {
-                            MacroCtlUnit mcu = mcm.getMacroCtlUnit(macroType);
-                            realValue = mcu.getIFormMacroCtl().converToHtml(request, ff, realValue);
-                            realValue = StrUtil.getNullStr(realValue);
-                        }
-                    } else {
-                        if (ff.getType().equals(FormField.TYPE_RADIO)) {
-                            // radio控件中，当为
-                            if (!"".equals(realValue) && value.equals(realValue)) {
-                                realValue = "<img src='" + Global.getRootPath(request) + "/images/radio_y.gif' />";
+                    String realValue;
+                    if (ff == null) {
+                        realValue = "不存在";
+                    }
+                    else {
+                        realValue = StrUtil.getNullStr(fdao.getFieldValue(ff.getName()));
+                        if (ff.getType().equals(FormField.TYPE_MACRO)) {
+                            String macroType = ff.getMacroType();
+                            if (macroType.equals(ConstUtil.NEST_TABLE)) {
+                                // 加入嵌套表格
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                INestTableCtl nac = macroCtlService.getNestTableCtl();
+                                request.setAttribute("cwsId", "" + fdao.getId());
+                                request.setAttribute("pageType", "archive");
+                                String str = nac.getNestTable(request, ff);
+                                // 去除script，以免其中jquery的$带来异常java.lang.IllegalArgumentException:
+                                // Illegal group reference
+                                Matcher matScript = SCRIPT_TAG_PATTERN.matcher(str);
+                                str = matScript.replaceAll("");
+                                realValue = str;
+                            } else if (macroType.equals(ConstUtil.NEST_SHEET)
+                                    || "macro_detaillist_ctl".equals(macroType)) {
+                                // 加入嵌套表格2
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                INestSheetCtl nac = macroCtlService.getNestSheetCtl();
+                                request.setAttribute("cwsId", "" + fdao.getId());
+                                request.setAttribute("pageType", "archive");
+                                request.setAttribute("formCode", fd.getCode());
+                                String str = nac.getNestSheet(request, ff);
+                                // 去除script，以免其中jquery的$带来异常java.lang.IllegalArgumentException:
+                                // Illegal group reference
+                                Matcher matScript = SCRIPT_TAG_PATTERN.matcher(str);
+                                str = matScript.replaceAll("");
+                                realValue = str;
+                            } else if ("macro_barcode".equals(macroType)) {
+                                if (!StrUtil.isEmpty(ff.getValue())) {
+                                    MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                    IBarcodeCtl barcodeCtl = macroCtlService.getBarcodeCtl();
+                                    realValue = "<img src='" + barcodeCtl.getBracodeSteamBase64(barcodeCtl.getBarcodeStr(StrUtil.toInt(ff.getValue(), 0))) + "'/>";
+                                }
+                            } else if ("macro_qrcode".equals(macroType)) {
+                                MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+                                IQrcodeCtl qrcodeCtl = macroCtlService.getQrcodeCtl();
+                                realValue = "<img src='" + qrcodeCtl.getQrcodeSteamBase64(qrcodeCtl.getQrcodeStr(ff), 150, 150) + "'/>";
                             } else {
-                                realValue = "<img src='" + Global.getRootPath(request) + "/images/radio_n.gif' />";
+                                MacroCtlUnit mcu = mcm.getMacroCtlUnit(macroType);
+                                realValue = mcu.getIFormMacroCtl().converToHtml(request, ff, realValue);
+                                realValue = StrUtil.getNullStr(realValue);
                             }
-                        } else if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
-                            if (!"".equals(realValue) && value.equals(realValue)) {
-                                realValue = "<img src='" + Global.getRootPath(request) + "/images/checkbox_y.gif' />";
-                            } else {
-                                realValue = "<img src='" + Global.getRootPath(request) + "/images/checkbox_n.gif' />";
+                        } else {
+                            if (ff.getType().equals(FormField.TYPE_RADIO)) {
+                                // radio控件中，当为
+                                if (!"".equals(realValue) && value.equals(realValue)) {
+                                    realValue = "<img src='" + contextPath + "/images/radio_y.gif' />";
+                                } else {
+                                    realValue = "<img src='" + contextPath + "/images/radio_n.gif' />";
+                                }
+                            } else if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
+                                if (!"".equals(realValue) && value.equals(realValue)) {
+                                    realValue = "<img src='" + contextPath + "/images/checkbox_y.gif' />";
+                                } else {
+                                    realValue = "<img src='" + contextPath + "/images/checkbox_n.gif' />";
+                                }
                             }
                         }
                     }
@@ -334,7 +337,7 @@ public class FormParser {
                 }
             } while (isFound);
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return content;
     }
@@ -372,7 +375,7 @@ public class FormParser {
                 }
             } while (isFound);
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return content;
@@ -411,7 +414,7 @@ public class FormParser {
                 }
             } while (isFound);
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return content;
     }
@@ -422,22 +425,29 @@ public class FormParser {
         Parser parser;
         try {
             parser = new Parser(content);
-            parser.setEncoding("utf-8");//
+            parser.setEncoding("utf-8");
             AndFilter filter = new AndFilter(new TagNameFilter("span"),
                     new HasAttributeFilter("orgname", ff.getName()));
-            NodeList nodes = parser.parse(filter);//
+            NodeList nodes = parser.parse(filter);
 
             if (nodes == null || nodes.size() == 0) {
                 return ary;
             }
 
             Node node = nodes.elementAt(0);
-            // System.out.println("aaaa===" + node.toHtml());
             NodeList nodesChildren = node.getChildren();
             int size = nodesChildren.size();
             ary = new String[size / 2][2];
-            for (int i = 0; i <= size - 2; i += 2) {
+            int i = 0;
+            while (i <= size -2) {
                 Node nd = nodesChildren.elementAt(i);
+                // 第一个元素如果为文本，有可能里面都是空格 &nbsp;，故跳过
+                if (i == 0) {
+                    if (nd instanceof TextNode) {
+                        i = 1;
+                        continue;
+                    }
+                }
                 String value = "", text = "";
                 if (nd instanceof InputTag) {
                     InputTag it = (InputTag) nd;
@@ -446,13 +456,14 @@ public class FormParser {
                 nd = nodesChildren.elementAt(i + 1);
                 if (nd instanceof TextNode) {
                     text = nd.getText().replaceAll("&nbsp;", "");
-                    // System.out.println(FormParser.class.getName() + " " + nd.getClass() + " " + text);
                 }
                 ary[i / 2][0] = value;
                 ary[i / 2][1] = text;
+
+                i+=2;
             }
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return ary;
@@ -500,7 +511,7 @@ public class FormParser {
                 }
             }
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return ary;
@@ -530,9 +541,16 @@ public class FormParser {
 
             Node node = nodes.elementAt(0);
             NodeList nodesChild = node.getChildren();
-            options = nodesChild.toHtml();
+            for (int i = 0; i < nodesChild.size(); i++) {
+                if (nodesChild.elementAt(i) instanceof OptionTag) {
+                    OptionTag tag = (OptionTag) nodesChild.elementAt(i);
+                    options += "<option value='" + tag.getValue() + "'>" + StringEscapeUtils.unescapeHtml3(tag.getOptionText()) + "</options>";
+                }
+            }
+            // 因为options中可能含有默认值，所以不采用，在有的chrome上初始看起来为空，但是在我的流程中的查询条件，切换流程类型后，会显示默认值为否，如：是否到市局
+            // options = nodesChild.toHtml();
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return options;
@@ -542,6 +560,15 @@ public class FormParser {
         for (String[] strings : optionAry) {
             if (strings[1].equals(optionVal)) {
                 return strings[0];
+            }
+        }
+        return "";
+    }
+
+    public static String getOptionTextForRadio(String[][] optionAry, String optionVal) {
+        for (String[] strings : optionAry) {
+            if (strings[0].equals(optionVal)) {
+                return strings[1];
             }
         }
         return "";
@@ -570,15 +597,27 @@ public class FormParser {
 
             Node node = nodes.elementAt(0);
             NodeList nodesChild = node.getChildren();
-            String[][] ary = new String[nodesChild.size()][2];
+            int realSize = 0;
             for (int i = 0; i < nodesChild.size(); i++) {
-                OptionTag tag = (OptionTag) nodesChild.elementAt(i);
-                ary[i][0] = StringEscapeUtils.unescapeHtml3(tag.getOptionText());
-                ary[i][1] = tag.getValue();
+                // 需判断一下，有可能为文字，org.htmlparser.nodes.TextNode cannot be cast to org.htmlparser.tags.OptionTag
+                if (nodesChild.elementAt(i) instanceof OptionTag) {
+                    realSize ++;
+                }
+            }
+            int k = 0;
+            String[][] ary = new String[realSize][2];
+            for (int i = 0; i < nodesChild.size(); i++) {
+                // 需判断一下，有可能为文字，org.htmlparser.nodes.TextNode cannot be cast to org.htmlparser.tags.OptionTag
+                if (nodesChild.elementAt(i) instanceof OptionTag) {
+                    OptionTag tag = (OptionTag) nodesChild.elementAt(i);
+                    ary[k][0] = StringEscapeUtils.unescapeHtml3(tag.getOptionText());
+                    ary[k][1] = tag.getValue();
+                    k++;
+                }
             }
             return ary;
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return new String[0][2];
     }
@@ -612,7 +651,7 @@ public class FormParser {
                 ary[i] = it.getAttribute("value");
             }
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return ary;
     }
@@ -655,7 +694,6 @@ public class FormParser {
         String ctlHTML = getFieldCtlHTML(ff, fd.getContent(), fd.getIeVersion());
         return getAttribute(attName, ctlHTML);
     }
-
 
     public boolean setFieldAttribute(FormDb fd, String fieldName, String attName, String attVal) {
         String content = fd.getContent();
@@ -726,7 +764,7 @@ public class FormParser {
 
             return c;
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return content;
     }
@@ -765,7 +803,7 @@ public class FormParser {
             c += content.substring(e);
             return c;
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return content;
     }
@@ -802,7 +840,7 @@ public class FormParser {
             c += content.substring(e);
             return c;
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return content;
@@ -843,7 +881,7 @@ public class FormParser {
                 v.addElement(ff);
             }
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return v;
     }
@@ -885,7 +923,7 @@ public class FormParser {
             Node node = nodes.elementAt(0);
             ctl = node.toHtml();
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return ctl;
     }
@@ -908,7 +946,7 @@ public class FormParser {
             Node node = nodes.elementAt(0);
             ctl = node.toHtml();
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return ctl;
@@ -931,7 +969,7 @@ public class FormParser {
             Node node = nodes.elementAt(0);
             ctl = node.toHtml();
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
         return ctl;
     }
@@ -971,6 +1009,7 @@ public class FormParser {
 
                     if ("".equals(title)) {
                         if (node.getChildCount() > 0) {
+                            // 取一行中第一个单元格的label
                             TableColumn tc = (TableColumn) node.getChild(0);
                             title = tc.getChild(0).toPlainTextString();
                         }
@@ -1054,7 +1093,7 @@ public class FormParser {
             }
 
         } catch (ParserException | JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(FormParser.class).error(e);
         }
 
         return ary;
@@ -1179,9 +1218,38 @@ public class FormParser {
 			}
 
 		} catch (ParserException | JSONException e) {
-			e.printStackTrace();
+			LogUtil.getLog(FormParser.class).error(e);
 		}
 
         return ary;
-	}	
+	}
+
+    public static String setAttribute(String content, String fieldName, String attrName, String attrVal) {
+        Parser parser;
+        try {
+            parser = new Parser(content);
+            parser.setEncoding("utf-8");
+            TagNameFilter filter = new TagNameFilter("input");
+            NodeList nodes = parser.parse(filter);
+            if (nodes != null) {
+                for (int k = 0; k < nodes.size(); k++) {
+                    InputTag node = (InputTag) nodes.elementAt(k);
+                    String name = node.getAttribute("name");
+                    if (fieldName.equals(name)) {
+                        node.setAttribute(attrName, attrVal);
+                        int s = node.getStartPosition();
+                        int e = node.getEndPosition();
+                        String c = content.substring(0, s);
+                        c += node.toHtml();
+                        c += content.substring(e);
+                        content = c;
+                        return content;
+                    }
+                }
+            }
+        } catch (ParserException e) {
+            LogUtil.getLog(FormParser.class).error(e);
+        }
+        return content;
+    }
 }

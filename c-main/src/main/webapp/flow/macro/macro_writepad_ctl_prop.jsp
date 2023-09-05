@@ -43,10 +43,10 @@
 </head>
 <body>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
-<table width="100%" height="324" cellPadding="0" cellSpacing="0">
+<table width="100%" cellPadding="0" cellSpacing="0">
     <tbody>
     <tr>
-        <td height="28" colspan="2" class="tabStyle_1_title">&nbsp;映射字段</td>
+        <td height="28" colspan="2" class="tabStyle_1_title">&nbsp;属性</td>
     </tr>
     <tr>
         <td width="15%" height="42" align="center">宽度</td>

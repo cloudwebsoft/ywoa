@@ -1,6 +1,6 @@
 package cn.js.fan.cache.redis;
 
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.io.*;
 
@@ -10,7 +10,6 @@ import java.io.*;
  * @Date: 2019/1/10 16:20
  */
 public class SerializableUtil {
-	private static Logger logger = Logger.getLogger(SerializableUtil.class);
 
 	/**
 	 * 序列化对象
@@ -25,7 +24,7 @@ public class SerializableUtil {
 			objectOutputStream.flush();
 			return byteArrayOutputStream.toByteArray();
 		} catch (IOException e) {
-			logger.error(e.getMessage());
+			LogUtil.getLog(SerializableUtil.class).error(e.getMessage());
 		}
 		return null;
 	}
@@ -39,13 +38,11 @@ public class SerializableUtil {
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
 		try {
 			ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-			Object obj = objectInputStream.readObject();
-			return obj;
+			return objectInputStream.readObject();
 		} catch (IOException e) {
-//			logger.error(e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(SerializableUtil.class).error(e);
 		} catch (ClassNotFoundException e) {
-			logger.error(e.getMessage());
+			LogUtil.getLog(SerializableUtil.class).error(e.getMessage());
 		}
 		return null;
 	}

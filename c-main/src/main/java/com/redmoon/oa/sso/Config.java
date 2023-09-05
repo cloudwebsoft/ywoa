@@ -9,12 +9,16 @@ package com.redmoon.oa.sso;
  * @version 1.0
  */
 
+import cn.js.fan.util.XMLProperties;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.*;
 import org.jdom.output.*;
 import org.jdom.input.*;
 import java.io.*;
 import java.net.URL;
-import org.apache.log4j.Logger;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+
 import java.net.URLDecoder;
 
 public class Config {
@@ -25,7 +29,6 @@ public class Config {
     Document doc = null;
     Element root = null;
     String deskey = "bluewind"; //DES密钥长度为64bit，1个字母为八位，需8个字母，不能超过8个，否则会出错
-    Logger logger = Logger.getLogger(Config.class.getName());
 
     public Config() {
         URL confURL = getClass().getResource("/" + configxml);
@@ -33,16 +36,31 @@ public class Config {
         try {
             xmlpath = URLDecoder.decode(xmlpath, "utf-8");
         } catch (UnsupportedEncodingException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(xmlpath);
+            Resource resource = new ClassPathResource(configxml);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+
+            /*FileInputStream fin = new FileInputStream(xmlpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {} catch (java.io.IOException e) {
+            fin.close();*/
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -56,7 +74,6 @@ public class Config {
 
     public String getDescription(String name) {
         Element which = root.getChild("sso").getChild(name);
-        // System.out.println("name=" + name + " which=" + which);
         if (which == null)
             return null;
         return which.getAttribute("desc").getValue();
@@ -77,7 +94,7 @@ public class Config {
         try {
             r = Integer.parseInt(which.getText());
         } catch (Exception e) {
-            logger.error("getInt:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getInt:" + e.getMessage());
         }
         return r;
     }

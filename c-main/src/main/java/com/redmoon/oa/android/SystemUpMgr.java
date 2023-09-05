@@ -5,6 +5,7 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
@@ -67,7 +68,7 @@ public class SystemUpMgr {
 			try {
 				del(StrUtil.toInt(ids[i]));
 			} catch (Exception e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 	}

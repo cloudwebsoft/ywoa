@@ -8,6 +8,8 @@ import cn.js.fan.web.Global;
 import javax.servlet.jsp.JspWriter;
 import java.io.IOException;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.util.Vector;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -114,7 +116,6 @@ public class TransmitData extends ObjectDb {
             ResultSet rs = dmd.getColumns(null, "XNC", table.toUpperCase(), null);
             ResultSetMetaData rmd = rs.getMetaData();
             int cols = rmd.getColumnCount();
-            System.out.println(cols + "gggHHH");
             while (rs.next()) {
                 Hashtable hash = new Hashtable();
                 hash.put("列定义大小", rs.getString("CHAR_OCTET_LENGTH") + "");
@@ -123,7 +124,6 @@ public class TransmitData extends ObjectDb {
                                                 table);
                 ResultSetMetaData rm = r.getMetaData();
                 hash.put("字段名", f + "");
-                System.out.println(f + "");
                 hash.put("列类型编号", rm.getColumnType(1) + "");
                 hash.put("列标准类型名", rm.getColumnTypeName(1) + "");
                 hash.put("是否可为空", rm.isNullable(1) + "");
@@ -141,11 +141,10 @@ public class TransmitData extends ObjectDb {
             if (stmt != null) {
                 stmt.close();
             }
-            System.out.println("____" + vect);
-        } catch (SQLException sqle) {
-            System.out.println("调用DataBase.getTableStruct()函数错误:\r\n" + sqle);
+        } catch (SQLException e) {
+            LogUtil.getLog(CSSUtil.class).error(e);
         } catch (AbstractMethodError e) {
-            System.out.println("调用DataBase.getTableStruct()函数错误:\r\n" + e);
+            LogUtil.getLog(CSSUtil.class).error(e);
         }
         return vect;
     }
@@ -171,7 +170,6 @@ public class TransmitData extends ObjectDb {
             conn = new Conn(conName);
             Connection con = conn.getCon();
             DatabaseMetaData dmd = con.getMetaData();
-            System.out.println(getClass() + " con.getSchema()=" + con.getSchema());
             // mysql-connector-java 6.0以下用这个方法，高版本用此方法会取出所有的库中的所有的表
             // ResultSet rs = dmd.getTables(null, null, null, new String[]{"TABLE"});
             // mysql-connector-java 6.0以上用这个方法
@@ -257,7 +255,7 @@ public class TransmitData extends ObjectDb {
                     continue;
                 //sql_insert:insert into lastly (BC,OS,IP,Date) values (?,?,?,?)
 
-                System.out.println("tableName=" + tableName);
+                LogUtil.getLog(getClass()).info("tableName=" + tableName);
 
                 sql_insert = "insert into " + tableName;
                 rs_column = getColumns(rs_table.getObject(3).toString());
@@ -293,20 +291,15 @@ public class TransmitData extends ObjectDb {
 
                 // 获得数据
                 sql_select = "select " + columns + " from " + tableName;
-                // System.out.println(getClass() + " " + sql_select);
                 pstmt_mysql = conn_mysql.prepareStatement(sql_select);
                 rs = conn_mysql.executePreQuery();
 
                 sql_insert = "insert into " + tableName + " (" + columns +
                              ") values (" + columnValues + ")";
-                // System.out.println("sql_insert:" + sql_insert);
                 while (rs.next()) {
                     pstmt_ora = conn_ora.prepareStatement(sql_insert);
                     int i = 0;
                     while (i < rowCount) {
-                        // System.out.println(v.elementAt(i) + " " + columnType[i] +
-                        //                   " = " + rs.getString(i + 1));
-
                         // tinyint(1)在getString()后得到的为布尔值true或false
                         if (columnType[i] == java.sql.Types.VARCHAR) {
                             pstmt_ora.setString(i + 1, rs.getString(i + 1));
@@ -349,7 +342,7 @@ public class TransmitData extends ObjectDb {
             conn_ora.commit();
         } catch (SQLException e) {
             conn_ora.rollback();
-            System.out.println(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(StrUtil.trace(e));
         } finally {
             if (rs != null) {
@@ -400,7 +393,7 @@ public class TransmitData extends ObjectDb {
                     continue;
                 //sql_insert:insert into lastly (BC,OS,IP,Date) values (?,?,?,?)
 
-                System.out.println("tableName=" + tableName);
+                LogUtil.getLog(getClass()).info("tableName=" + tableName);
 
                 sql_insert = "insert into " + tableName;
                 rs_column = getColumns(rs_table.getObject(3).toString());
@@ -435,13 +428,10 @@ public class TransmitData extends ObjectDb {
 
                 sql_insert = "insert into " + tableName + " (" + columns +
                              ") values (" + columnValues + ")";
-                //System.out.println("sql_insert:" + sql_insert);
                 while (rs.next()) {
                     pstmt_ora = conn_mssql.prepareStatement(sql_insert);
                     int i = 0;
                     while (i < rowCount) {
-                        //System.out.println(v.elementAt(i) + " " + columnType[i] + " = " + rs.getString(i + 1));
-
                         // tinyint(1)在getString()后得到的为布尔值true或false
                         if (columnType[i] == java.sql.Types.VARCHAR) {
                             pstmt_ora.setString(i + 1, rs.getString(i + 1));
@@ -484,8 +474,8 @@ public class TransmitData extends ObjectDb {
             conn_mssql.commit();
         } catch (SQLException e) {
             conn_mssql.rollback();
-            System.out.println(e.getMessage());
-            throw new ErrMsgException(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
+            throw new ErrMsgException(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -549,7 +539,7 @@ public class TransmitData extends ObjectDb {
                     continue;
 
                 // BIN$zZkhwwD1R2+zRgBqPnjWWg==$0表之前都是ORACLE的系统表，注意这个表的表名不一定是确定的
-                // 要根据实际的情况来看是什么表名，通过System.out.println(tableName)来观察表名
+                // 要根据实际的情况来看是什么表名，通过LogUtil.getLog(getClass()).info(tableName)来观察表名
                 // 经测试每次观察的表名都是系统表在前面出现
                 if (tableName.equalsIgnoreCase("BIN$zZkhwwD1R2+zRgBqPnjWWg==$0")) {
                     isBegin = true;
@@ -565,7 +555,7 @@ public class TransmitData extends ObjectDb {
 
                 //sql_insert:insert into lastly (BC,OS,IP,Date) values (?,?,?,?)
 
-                System.out.println("tableName=" + tableName);
+                LogUtil.getLog(getClass()).info("tableName=" + tableName);
 
                 sql_insert = "insert into " + tableName;
                 rs_column = getColumns(tableName);
@@ -606,19 +596,15 @@ public class TransmitData extends ObjectDb {
 
                 // 获得数据
                 sql_select = "select " + columns + " from " + tableName;
-                System.out.println(sql_select);
                 pstmt_mysql = conn_mysql.prepareStatement(sql_select);
                 rs = conn_mysql.executePreQuery();
 
                 sql_insert = "insert into " + tableName + " (" + columns +
                              ") values (" + columnValues + ")";
-                System.out.println("sql_insert:" + sql_insert);
                 while (rs.next()) {
                     pstmt_ora = conn_ora.prepareStatement(sql_insert);
                     int i = 0;
                     while (i < rowCount) {
-                        System.out.println(v.elementAt(i) + " " + columnType[i] + " = " + rs.getString(i + 1));
-
                         // tinyint(1)在getString()后得到的为布尔值true或false
                         if (columnType[i] == java.sql.Types.VARCHAR) {
                             pstmt_ora.setString(i+1, rs.getString(i + 1));
@@ -658,8 +644,8 @@ public class TransmitData extends ObjectDb {
             conn_ora.commit();
         } catch (SQLException e) {
             conn_ora.rollback();
-            System.out.println(e.getMessage());
-            throw new ErrMsgException(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
+            throw new ErrMsgException(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -714,7 +700,7 @@ public class TransmitData extends ObjectDb {
                 columnValues = "";
 
                 // BIN$zZkhwwD1R2+zRgBqPnjWWg==$0表之前都是ORACLE的系统表，注意这个表的表名不一定是确定的
-                // 要根据实际的情况来看是什么表名，通过System.out.println(tableName)来观察表名
+                // 要根据实际的情况来看是什么表名，通过LogUtil.getLog(getClass()).info(tableName)来观察表名
                 // 经测试每次观察的表名都是系统表在前面出现
                 if (tableName.equalsIgnoreCase("BIN$zZkhwwD1R2+zRgBqPnjWWg==$0")) {
                     isBegin = true;

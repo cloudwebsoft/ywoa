@@ -13,6 +13,7 @@ package cn.js.fan.util;
 import javax.servlet.http.*;
 
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
@@ -160,7 +161,10 @@ public class ParamUtil {
             return true;
         } else if ("false".equals(temp) || "off".equals(temp)) {
             return false;
-        } else {
+        } else if ("1".equals(temp)) {
+            return true;
+        }
+        else {
             return defaultVal;
         }
     }
@@ -181,7 +185,7 @@ public class ParamUtil {
     public static int getInt(HttpServletRequest request,
                              String name, int defaultValue) {
         String temp = request.getParameter(name);
-        if (temp!=null) {
+        if (!StrUtil.isEmpty(temp)) {
             temp = temp.trim();
         }
         else {
@@ -190,7 +194,7 @@ public class ParamUtil {
         try {
             return Integer.parseInt(temp);
         } catch (Exception e) {
-            // System.out.println("ParamUtil getInt:" + name + " error:" + e.getMessage());
+            LogUtil.getLog(ParamUtil.class).warn(temp + " is not int value");
         }
         return defaultValue;
     }
@@ -208,10 +212,10 @@ public class ParamUtil {
         try {
             num = Integer.parseInt(temp);
         } catch (Exception e) {
-            if (isThrow)
+            LogUtil.getLog(ParamUtil.class).error(e);
+            if (isThrow) {
                 throw new ErrMsgException(name + " is not of int type！");
-            //else
-            //    System.out.print("ParamUtil getInt:" + name + "-" + e.getMessage());
+            }
         }
         return num;
     }

@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.FileOutputStream;
 import javax.swing.ImageIcon;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.sun.image.codec.jpeg.JPEGCodec;
 import com.sun.image.codec.jpeg.JPEGImageEncoder;
 import java.io.FileNotFoundException;
@@ -80,7 +82,7 @@ public class Thumbnail {
             encoder.encode(outImage);
             os.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(Thumbnail.class).error(e);
         }
     }
 
@@ -139,7 +141,7 @@ public class Thumbnail {
             encoder.encode(outImage);
             os.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(Thumbnail.class).error(e);
         }
     }
 

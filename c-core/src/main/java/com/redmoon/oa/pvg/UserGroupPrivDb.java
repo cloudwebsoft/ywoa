@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -80,12 +81,9 @@ public class UserGroupPrivDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("isUserGroupHasPrivStartWith:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("isUserGroupHasPrivStartWith:" + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return false;
     }
@@ -96,7 +94,6 @@ public class UserGroupPrivDb extends ObjectDb {
      * @return boolean
      * @throws ErrMsgException
      * @throws ResKeyException
-     * @todo Implement this cn.js.fan.base.ObjectDb method
      */
     public boolean del() throws ErrMsgException {
         Conn conn = new Conn(connname);
@@ -111,7 +108,7 @@ public class UserGroupPrivDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -136,7 +133,7 @@ public class UserGroupPrivDb extends ObjectDb {
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     }    
 
@@ -177,7 +174,7 @@ public class UserGroupPrivDb extends ObjectDb {
                 loaded = true;
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -209,7 +206,7 @@ public class UserGroupPrivDb extends ObjectDb {
             primaryKey.setKeyValue("priv", priv);
             uc.refreshSave(primaryKey);
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
             throw new ErrMsgException(e.getMessage());
         } finally {
             if (conn != null) {

@@ -17,6 +17,7 @@ import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptMgr;
@@ -161,7 +162,7 @@ public class AddressDb extends ObjectDb {
                 rc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
         } finally {
             if (conn != null) {
@@ -193,7 +194,7 @@ public class AddressDb extends ObjectDb {
                 rc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -271,7 +272,7 @@ public class AddressDb extends ObjectDb {
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -343,7 +344,7 @@ public class AddressDb extends ObjectDb {
                 rc.refreshSave(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("save: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("save: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -365,6 +366,7 @@ public class AddressDb extends ObjectDb {
         return type;
     }
 
+    @Override
     public ListResult listResult(String listsql, int curPage, int pageSize) throws
             ErrMsgException {
         int total = 0;
@@ -407,14 +409,14 @@ public class AddressDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
                 } catch (SQLException e) {
-                	e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
                 rs = null;
             }

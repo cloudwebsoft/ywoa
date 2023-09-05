@@ -17,6 +17,7 @@ import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.base.IFuncImpl;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.FormField;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.visual.FuncUtil;
 
 /**
@@ -30,6 +31,8 @@ import com.redmoon.oa.visual.FuncUtil;
  * @Date: 2017-9-8上午07:40:47
  */
 public class CalculateFuncImpl implements IFuncImpl {
+
+	@Override
 	public String func(IFormDAO fdao, String[] func) throws ErrMsgException {
 		String[] params = StrUtil.split(func[1], ",");
 		String formula = params[0];
@@ -70,12 +73,13 @@ public class CalculateFuncImpl implements IFuncImpl {
 			    		}
 			    		else {
 							String v = StrUtil.getNullStr(fdao.getFieldValue(el));
-							if (v.equals("") || !StrUtil.isDouble(v)) {
+							if ("".equals(v) || !StrUtil.isDouble(v)) {
 								// ary[i] = "1"; // 置为0会导致出现除0问题
 								throw new ErrMsgException(ffSub.getTitle() + "为空");
 							}
-							else
+							else {
 								ary[i] = "(" + v + ")";
+							}
 			    		}
 			    	}
 				}
@@ -90,8 +94,8 @@ public class CalculateFuncImpl implements IFuncImpl {
     	ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("javascript");
         try {
-        	LogUtil.getLog(CalculateFuncImpl.class).info("formula=" + formula);
-        	Double ret = (Double)engine.eval(formula);
+        	DebugUtil.i(CalculateFuncImpl.class, "formula" ,formula);
+        	Double ret = StrUtil.toDouble(engine.eval(formula).toString(), -65536);
         	if (digit==-1) {
         		// digit=-1 表示不需要精度
         		if (ret==null) {
@@ -133,8 +137,9 @@ public class CalculateFuncImpl implements IFuncImpl {
 	public static ArrayList<String> getSymbolsWithBracket(String str) {
 	    // 去除空格
 	    str = str.replaceAll(" ", "");
-	    if (str.indexOf("+")==0)
-	        str = str.substring(1); // 去掉开头的+号
+	    if (str.indexOf("+")==0) {
+			str = str.substring(1); // 去掉开头的+号
+		}
 	    ArrayList<String> list = new ArrayList<String>();
 	    int curPos = 0;
 	    int prePos = 0;

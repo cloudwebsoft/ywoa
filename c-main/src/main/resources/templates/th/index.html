@@ -1,0 +1,383 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:inline="text">[[${appName}]]</title>
+    <link rel="stylesheet" href="js/bootstrap/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="skin/lte/css/login.css"/>
+    <link rel="stylesheet" href="js/layui/css/layui.css" media="all">
+</head>
+<body onunload="onunload()">
+<div class="container-fluid">
+    <div class="row top">
+        <div class="logo-box">
+            <div class="logo-title">
+                <div class="logo"><img src="images/login/logo.png"/></div>
+                <div class="logo-br"><img src="images/login/logo_line.png"/></div>
+                <div class="logo-font"><img src="images/login/logo_title.png"/></div>
+            </div>
+        </div>
+    </div>
+    <div class="row center">
+        <div class="col-sm-6 left">
+            <!-- <img src="images/login/yun_icon.png" width="690px"  height="519px" /> -->
+            <div class="left-img">
+                <img src="images/login/yun_icon.png"/>
+            </div>
+        </div>
+        <div class="col-sm-6 right right-login">
+            <div class="form row">
+                <form id="loginForm" name="loginForm" class="form-horizontal" method="post" action="doLogin.do">
+                    <h3 class="form-title">欢 迎 登 录</h3>
+                    <div class="form-con">
+                        <div class="form-group">
+                            <i class="fa fa-user fa-lg"></i>
+                            <input class="form-control required" type="text" id="loginName" name="name" autocomplete="off" placeholder="请输入用户名">
+                        </div>
+                        <div class="form-group">
+                            <i class="fa fa-lock fa-lg"></i>
+                            <input class="form-control required" type="password" id="loginPwd" name="pwd" autocomplete="off" placeholder="请输入密码">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-pass">
+                                <div class="checkbox-pass-left">
+                                    <input th:if="${isRememberPwdDisplay}" type="checkbox" class="remeber_pwd" id="isSavePwd" name="isSavePwd"/>
+                                    <span th:if="${isRememberPwdDisplay}" style="color: #018ded; font-weight: normal;">记住密码</span>
+                                </div>
+                                <div class="er-box" title="Android手机直接扫描二维码,Apple手机扫描二维码进入App Store下载">
+                                    <img src="images/login/erwei.jpg" width="20px" height="20px"/>
+                                    <div class="er-box-children">
+                                        <img th:src="${'images/' + qrcode_mobile_png_path}" width="100px" height="100px"/>
+                                        <div><a th:href="${qrcode_andriod_download_path}">手机客户端</a></div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="form-group" th:if="${isPwdCanReset}">
+                            <a href="public/userResetPwd.do" title="通过邮箱重置密码">重置密码</a>
+                        </div>
+                        <div class="form-group">
+                            <div type="submit" class="btn btn-success" onclick="doLogin()">登录</div>
+                            <input name="signature" type="hidden"/>
+                            <input name="op" type="hidden"/>
+                            <input name="mainTitle" type="hidden" th:value="${mainTitle}"/>
+                            <input name="mainPage" type="hidden" th:value="${mainPage}"/>
+                            [(${tokenHidden})]
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="inc/common.js"></script>
+<script src="js/jquery-1.9.1.min.js"></script>
+<script src="js/jquery-migrate-1.2.1.min.js"></script>
+<script src="js/bootstrap/js/bootstrap.min.js?v=3.3.6"></script>
+<script src="js/layui/layui.js" charset="utf-8"></script>
+<script src="js/aes.min.js" type="text/javascript"></script>
+<!--[if lt IE 9]>
+<script th:src="@{/js/bootstrap/js/respond.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/bootstrap/js/html5shiv.min.js}" type="text/javascript"></script>
+<![endif]-->
+<script th:inline="javascript">
+    // 不允许在框架页中打开
+    /*if(top != self) {
+        top.location = self.location;
+    }*/
+
+    // 浏览器是否合法
+    var isBrowserValid = true;
+    var browserInfo = "";
+
+    // 判断是否为手机端，如果是则转至手机端界面
+    var isMobile = false;
+    var ua = navigator.userAgent.toLowerCase();
+    if (ua.match(/MicroMessenger/i) == 'micromessenger') { // 微信浏览器判断
+        isMobile = true;
+    } else if (ua.match(/QQ/i) == 'qq') { // QQ浏览器判断
+        // isMobile = true;
+    } else if (ua.match(/WeiBo/i) == "weibo") {
+        isMobile = true;
+    } else if (/(iPhone|iPad|iPod|iOS)/i.test(ua)) {
+        isMobile = true;
+    } else if (/(Android)/i.test(ua)) {
+        isMobile = true;
+    }
+    if (isMobile) {
+        window.location.href = "wap/index.jsp";
+    }
+
+    $(function () {
+        [# th:if="${isRememberUserName}"]
+        o("name").value = unescape(get_cookie("name"));
+        if (o("name").value == "") {
+            o("name").focus();
+        }
+        else {
+            o("pwd").focus();
+        }
+
+        o("pwd").value = aesDecrypt(get_cookie("pwd"));
+        if (o("pwd").value == "") {
+            $('#isSavePwd').prop("checked", false);
+        } else {
+            $('#isSavePwd').prop("checked", true);
+        }
+        [/]
+    });
+
+    function onunload() {
+        var skincode = [[${skincode}]];
+        var expdate = new Date();
+        var expday = 60;
+        expdate.setTime(expdate.getTime() + (24 * 60 * 60 * 1000 * expday));
+        document.cookie = "skincode" + "=" + skincode + ";expires=" + expdate.toGMTString();
+        document.cookie = "name" + "=" + escape(o("name").value) + ";expires=" + expdate.toGMTString();
+        if ($('#isSavePwd').is(":checked")) {
+            document.cookie = "pwd" + "=" + aesMinEncrypt(o("pwd").value) + ";expires=" + expdate.toGMTString();
+        } else {
+            document.cookie = "pwd" + "=;expires=" + expdate.toGMTString();
+        }
+    }
+
+    var isIEVersionValid = true;
+    var browserIEMinVersion = [(${browserIEMinVersion})];
+
+    // AES密钥 (需要前端和后端保持一致，十六位)
+    var KEY = [[${pwdAesKey}]];
+    // AES密钥偏移量 (需要前端和后端保持一致，十六位)
+    var IV = [[${pwdAesIV}]];
+
+    /**
+     * 加密（需要先加载aes.min.js文件）
+     * @param word
+     * @returns {*}
+     */
+    function aesMinEncrypt(word){
+        var _word = CryptoJS.enc.Utf8.parse(word),
+            _key = CryptoJS.enc.Utf8.parse(KEY),
+            _iv = CryptoJS.enc.Utf8.parse(IV);
+        var encrypted = CryptoJS.AES.encrypt(_word, _key, {
+            iv: _iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return encrypted.toString();
+    }
+
+    /**
+     * 解密
+     * @param word
+     * @returns {*}
+     */
+    function aesDecrypt(word) {
+        var _key = CryptoJS.enc.Utf8.parse(KEY);
+        var _iv = CryptoJS.enc.Utf8.parse(IV);
+        var decrypted = CryptoJS.AES.decrypt(word, _key, {
+            iv: _iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return decrypted.toString(CryptoJS.enc.Utf8);
+    }
+
+    // 登录
+    function doLogin() {
+        if (!isBrowserValid) {
+            jAlert("请勿使用" + browserInfo.toUpperCase() + "浏览器，请换用" + [[${browserValid}]] + ", 提示");
+            return;
+        }
+        if (!isIEVersionValid) {
+            jAlert("IE浏览器请使用" + browserIEMinVersion + "以上版本", "提示");
+            return;
+        }
+        var userName = $('#loginName').val();
+        var pwd = $('#loginPwd').val();
+        if (userName == '') {
+            layer.msg('请输入用户名', {
+                offset: '6px'
+            })
+            return;
+        }
+        if (pwd == '') {
+            layer.msg('请输入密码', {
+                offset: '6px'
+            })
+            return;
+        }
+        $.ajax({
+            type: "post",
+            url: "doLogin.do",
+            data: {
+                name: userName,
+                [[${pwdName}]]: aesMinEncrypt(pwd),
+                signature: o("signature").value,
+                op: o("op").value,
+                // mainTitle: o("mainTitle").value,
+                // mainPage: o("mainPage").value,
+                mainTitle: "流程管理",
+                mainPage: "admin/flow_predefine_frame.jsp",
+                form_token: o("form_token").value,
+                isSavePwd: o("isSavePwd").value
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                // $('#bodyBox').showLoading();
+            },
+            success: function (data, status) {
+                if (data.ret == "0") {
+                    data.msg = data.msg.replace(/\\r/ig, "<BR>");
+                    layer.msg(data.msg, {
+                        offset: '6px'
+                    });
+                } else {
+                    window.location.href = data.redirect;
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                // $('#bodyBox').hideLoading();
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                consoleLog(XMLHttpRequest.responseText);
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function namePresskey(event) {
+        var event = event || window.event;
+        var keyCode = event.keyCode;
+        if (event.keyCode == 13) {
+            event.keyCode = 9;
+            if (typeof event.stopPropagation != "undefined") {
+                event.stopPropagation();
+            } else {
+                event.cancelBubble = true;
+            }
+            o("loginPwd").focus();
+            return false;
+        }
+    }
+
+    $(function () {
+        $("#loginPwd").keydown(function (e) {
+            var e = e || event,
+                keycode = e.which || e.keyCode;
+            if (keycode == 13) {
+                doLogin();
+            }
+        });
+    });
+
+    function callback() {
+    }
+
+    $(function () {
+        $('#loginName').focus(function () {
+            if ($('#loginName').val() == "请输入您的用户名") {
+                $('#loginName').val("");
+            }
+        });
+        $('#loginPwd').focus(function () {
+            if ($('#loginPwd').val() == "请输入您的密码") {
+                $('#loginPwd').val("");
+            }
+        });
+
+        $('.QRcode').hover(function () {
+                $('#qrCodeBox').show();
+                $('#qrCodeBox').css("left", $('.QRcode').offset().left);
+                $('#qrCodeBox').css("top", $('.QRcode').offset().top - $('#qrCodeBox').height() + 3);
+            },
+            function () {
+                $('#qrCodeBox').hide();
+            }
+        );
+
+        $('#qrCodeBox').hover(function () {
+                $('#qrCodeBox').show();
+                // $('#qrCodeBox').css("left", $('.QRcode').offset().left);
+                // $('#qrCodeBox').css("top", $('.QRcode').offset().top - $('#qrCodeBox').height() + 3);
+            },
+            function () {
+                $('#qrCodeBox').hide();
+            }
+        );
+    });
+
+    function showTip(msg) {
+        var options = {
+            'priority': 'info',
+            'message': msg,
+            'settings': {
+                'toast': {
+                    'css': {
+                        'background': '#d4eefe',
+                        'color': '#008ced',
+                        'font-size': '15px',
+                        'font-family': '宋体',
+                        'filter': 'filter:alpha(opacity=80)',
+                        'vertical-align': 'middle',
+                        'border': '1px solid #a8deff',
+                        '-moz-border-radius': '5px',
+                        '-webkit-border-radius': '5px',
+                        'border-radius': '5px',
+                        'line-height': '20px',
+                        'padding': '12px'
+                    }
+                },
+                'toaster': {
+                    'css': {
+                        'min-width': '200px',
+                        'max-width': '220px',
+                        'height': '40px',
+                        'position': 'fixed',
+                        'top': '10px',
+                        'left': '40%'
+                    }
+                }
+            }
+        };
+        $.toaster(options);
+    }
+
+    $(document).ready(function () {
+        var ieVer = parseInt(_IE);
+        if (ieVer < browserIEMinVersion) {
+            isIEVersionValid = false;
+            jAlert("IE浏览器请使用" + browserIEMinVersion + "以上版本", "提示");
+            return;
+        }
+
+        [# th:if="${isBrowserForbid}"]
+        // 猎豹浏览器在request的agent中含有 LEBROWSER，但是通过js获取的agent中则没有
+        var browserValid = [[${browserValid}]];
+        var aryValid = browserValid.split(",");
+        browserInfo = getBrowserInfo().toLowerCase();
+        // 如果是chrome型的，则赋予browserType，以得到真正的浏览器类型
+        if (browserInfo == "chrome") {
+            browserInfo = [[${browserType}]];
+        }
+        isBrowserValid = false;
+        for (var i = 0; i < aryValid.length; i++) {
+            if (browserInfo == aryValid[i].toLowerCase()) {
+                isBrowserValid = true;
+            }
+        }
+        if (!isBrowserValid) {
+            jAlert("请勿使用" + browserInfo.toUpperCase() + "浏览器，请换用" + browserValid, "提示");
+        }
+        // consoleLog(navigator.userAgent.toLocaleLowerCase());
+        if (!isBrowserValid) {
+            showTip([[${browserInfo}]]);
+        }
+        [/]
+    });
+</script>
+</body>
+</html>

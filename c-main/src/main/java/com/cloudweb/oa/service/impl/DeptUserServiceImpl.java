@@ -5,22 +5,19 @@ import cn.js.fan.db.ListResult;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.cloudweb.oa.entity.Department;
-import com.cloudweb.oa.entity.DeptUser;
-import com.cloudweb.oa.entity.User;
+import com.cloudweb.oa.cache.*;
+import com.cloudweb.oa.entity.*;
 import com.cloudweb.oa.mapper.DeptUserMapper;
-import com.cloudweb.oa.service.IDepartmentService;
-import com.cloudweb.oa.service.IDeptUserService;
+import com.cloudweb.oa.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloudweb.oa.service.IUserSetupService;
-import com.cloudweb.oa.service.IUserService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.redmoon.oa.Config;
 import com.redmoon.oa.db.SequenceManager;
-import com.cloudweb.oa.module.PersonBasicService;
-import org.apache.jcs.access.exception.CacheException;
+import com.cloudweb.oa.visual.PersonBasicService;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +51,30 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
     @Autowired
     PersonBasicService personBasicService;
 
+    @Autowired
+    IUserAuthorityService userAuthorityService;
+
+    @Autowired
+    UserAuthorityCache userAuthorityCache;
+
+    @Autowired
+    RoleCache roleCache;
+
+    @Autowired
+    UserCache userCache;
+
+    @Autowired
+    DeptUserCache deptUserCache;
+
+    @Autowired
+    IUserRoleDepartmentService userRoleDepartmentService;
+
+    @Autowired
+    IUserOfRoleService userOfRoleService;
+
+    @Autowired
+    DepartmentCache departmentCache;
+
     /**
      * 删除用户及钉钉、企业微信同步时调用
      * @param userName
@@ -68,7 +89,15 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
 
         QueryWrapper<DeptUser> qw = new QueryWrapper<>();
         qw.eq("user_name", userName);
-        return remove(qw);
+        boolean re = remove(qw);
+        if (re) {
+            deptUserCache.refreshDeptUser(userName);
+
+            userAuthorityService.refreshUserAuthority(userName);
+            userAuthorityCache.refreshUserAuthorities(userName);
+            userCache.refreshRoles(userName);
+        }
+        return re;
     }
 
     @Override
@@ -78,19 +107,56 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
         QueryWrapper<DeptUser> qw = new QueryWrapper<>();
         qw.eq("user_name", deptUser.getUserName());
         qw.eq("dept_code", deptUser.getDeptCode());
-        return remove(qw);
+        boolean re = remove(qw);
+        if (re) {
+            deptUserCache.refreshDeptUser(deptUser.getUserName());
+
+            // 取出部门所属的角色
+            List<UserRoleDepartment> list = userRoleDepartmentService.listByDeptCode(deptUser.getDeptCode());
+            for (UserRoleDepartment userRoleDepartment : list) {
+                // 删除用户所属的角色
+                userOfRoleService.del(deptUser.getUserName(), userRoleDepartment.getRoleCode());
+            }
+            userAuthorityService.refreshUserAuthority(deptUser.getUserName());
+            userAuthorityCache.refreshUserAuthorities(deptUser.getUserName());
+            userCache.refreshRoles(deptUser.getUserName());
+        }
+        return re;
     }
 
     @Override
     public boolean create(String userName, String deptCode) {
-        int order = deptUserMapper.getMaxOrder(deptCode) + 1;
+        Integer order = deptUserMapper.getMaxOrder(deptCode);
+        if (order == null) {
+            order = 0;
+        }
+        else {
+            order += 1;
+        }
         int id = (int) SequenceManager.nextID(SequenceManager.OA_DEPT_USER);
         DeptUser deptUser = new DeptUser();
         deptUser.setUserName(userName);
         deptUser.setDeptCode(deptCode);
         deptUser.setId(id);
         deptUser.setOrders(order);
-        return deptUser.insert();
+        boolean re = deptUser.insert();
+        if (re) {
+            // 取出部门所属的角色
+            List<UserRoleDepartment> list = userRoleDepartmentService.listByDeptCode(deptUser.getDeptCode());
+            for (UserRoleDepartment userRoleDepartment : list) {
+                // 如果不屬于該角色，則添加用户的角色
+                // 不能用userCache.isUserOfRole判斷，因為該方法會查出用戶所屬的角色，包括其部門所屬的角色
+                // if (!userCache.isUserOfRole(deptUser.getUserName(), userRoleDepartment.getRoleCode())) {
+                if (userOfRoleService.getUserOfRole(deptUser.getUserName(), userRoleDepartment.getRoleCode()) == null) {
+                    userOfRoleService.create(deptUser.getUserName(), userRoleDepartment.getRoleCode());
+                }
+            }
+
+            userAuthorityService.refreshUserAuthority(userName);
+            userAuthorityCache.refreshUserAuthorities(userName);
+            userCache.refreshRoles(userName);
+        }
+        return re;
     }
 
     @Override
@@ -150,7 +216,7 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
             if (!isFound) {
                 // 如果原部门不在新选的部门中，则删除
                 DeptUser duOld = getDeptUser(userName, deptUser.getDeptCode());
-                duOld.deleteById();
+                del(duOld);
             }
         }
 
@@ -169,6 +235,12 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
         }
 
         if (ary.length >= 1) {
+            deptUserCache.refreshDeptUser(userName);
+
+            userAuthorityService.refreshUserAuthority(userName);
+            userAuthorityCache.refreshUserAuthorities(userName);
+            userCache.refreshRoles(userName);
+
             // 置为排在第一个的部门所在的单位
             Department dept = departmentService.getDepartment(deptCode);
             String unitCode = departmentService.getUnitOfDept(dept).getCode();
@@ -215,6 +287,10 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
 
             // 判断用户所在的单位是否为deptCode
             Department department = departmentService.getDepartment(deptUser.getDeptCode());
+            if (department == null) {
+                LogUtil.getLog(getClass()).error("isUserBelongToDept: " + deptUser.getUserName() + " 的部门 " + deptUser.getDeptCode() + " 不存在");
+                continue;
+            }
             deptList.add(department);
 
             String unitCode = departmentService.getUnitOfDept(department).getCode();
@@ -256,6 +332,29 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
         return deptUserMapper.listByDeptCode(deptCode, orderField);
     }
 
+    /**
+     * 取出部门及其子部门下的所有的用户
+     * @param deptCode
+     * @return
+     */
+    @Override
+    public List<DeptUser> listAllByDeptCode(String deptCode) {
+        com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+        boolean showByDeptSort = cfg.getBooleanProperty("show_dept_user_sort");
+        String orderField = showByDeptSort ? "du.orders" : "u.orders";
+        List<DeptUser> list = new ArrayList<>();
+        listAllByDeptCode(deptCode, orderField, list);
+        return list;
+    }
+
+    public void listAllByDeptCode(String deptCode, String orderField, List<DeptUser> list) {
+        list.addAll(deptUserMapper.listByDeptCode(deptCode, orderField));
+        List<Department> children = departmentCache.getChildren(deptCode);
+        for (Department department : children) {
+            listAllByDeptCode(department.getCode(), orderField, list);
+        }
+    }
+
     @Override
     public List<String> listUserNameInDepts(String deptCodes) {
         return deptUserMapper.listUserNameInDepts(deptCodes);
@@ -293,7 +392,7 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
             RMCache rmcache = RMCache.getInstance();
             rmcache.clear();
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -345,7 +444,7 @@ public class DeptUserServiceImpl extends ServiceImpl<DeptUserMapper, DeptUser> i
         PageInfo<DeptUser> pageInfo = new PageInfo<>(list);
 
         ListResult lr = new ListResult();
-        Vector v = new Vector();
+        Vector<DeptUser> v = new Vector<>();
         v.addAll(list);
         lr.setResult(v);
         lr.setTotal(pageInfo.getTotal());

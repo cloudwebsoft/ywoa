@@ -9,6 +9,8 @@ import cn.js.fan.util.file.FileUtil;
 import java.io.FileNotFoundException;
 import java.io.BufferedReader;
 import java.io.FileReader;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import sun.misc.BASE64Encoder;
 import sun.misc.BASE64Decoder;
 
@@ -47,8 +49,8 @@ public class TestWord2BASE64 {
                 strline = file.readLine();
             }
             re = true;
-        } catch (IOException e) { //错误处理
-            System.out.println("读取数据错误.");
+        } catch (IOException e) {
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             try {
@@ -57,7 +59,7 @@ public class TestWord2BASE64 {
                 file.close();
             }
             catch (Exception e) {
-                System.out.println(e.getMessage());
+                LogUtil.getLog(getClass()).error(e);
             }
         }
 
@@ -81,10 +83,11 @@ public class TestWord2BASE64 {
                      hexString += su.byte2hex(b);
                  }
                  input.close();
-             } else
+             } else {
                  System.out.print("debug:" + filePathSrc + "已不存在！");
+             }
          } catch (IOException e) {
-             System.out.print(e.getMessage());
+             LogUtil.getLog(getClass()).error(e);
          }
 
         return hexString;
@@ -108,17 +111,18 @@ public class TestWord2BASE64 {
                 }
                 input.close();
                 re = true;
-            } else
+            } else {
                 System.out.print("debug:" + filePathSrc + "已不存在！");
+            }
         } catch (IOException e) {
-            System.out.print(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         try {
             FileUtil fut = new FileUtil();
             fut.WriteFile(filePathDes, hexString);
         }
         catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
+            LogUtil.getLog(getClass()).info(e.getMessage());
         }
         return re;
     }
@@ -131,7 +135,7 @@ public class TestWord2BASE64 {
             fut.WriteFile(filePathDes, hexString);
         }
         catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
+            LogUtil.getLog(getClass()).info(e.getMessage());
         }
         return re;
     }
@@ -182,7 +186,7 @@ public class TestWord2BASE64 {
             }
             re = true;
         } catch (IOException e) { //错误处理
-            System.out.println("读取数据错误.");
+            LogUtil.getLog(getClass()).info("读取数据错误.");
         }
         finally {
             try {
@@ -191,7 +195,7 @@ public class TestWord2BASE64 {
                 file.close();
             }
             catch (Exception e) {
-                System.out.println(e.getMessage());
+                LogUtil.getLog(getClass()).info(e.getMessage());
             }
         }
 
@@ -207,13 +211,13 @@ public class TestWord2BASE64 {
             output.write(bytes, 0, bytes.length);
             re = true;
         } catch (IOException e) { //错误处理
-            System.out.println("读取数据错误.");
+            LogUtil.getLog(getClass()).info("读取数据错误.");
         } finally {
             try {
                 output.flush();
                 output.close();
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                LogUtil.getLog(getClass()).info(e.getMessage());
             }
         }
 

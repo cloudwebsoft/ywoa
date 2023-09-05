@@ -1,26 +1,17 @@
 package com.redmoon.oa.pvg;
 
-import javax.servlet.http.HttpServletRequest;
-
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.web.Global;
-import com.cloudweb.oa.service.IUserAuthorityService;
-import com.cloudweb.oa.utils.SpringUtil;
-import org.apache.log4j.Logger;
 
-import com.redmoon.oa.person.UserDb;
-
-import java.util.Vector;
-import java.util.Iterator;
+import javax.servlet.http.HttpServletRequest;
 
 public class PrivMgr {
     String connname;
-    Logger logger = Logger.getLogger(PrivMgr.class.getName());
 
     public PrivMgr() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("PrivDb:默认数据库名为空！");
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).info("PrivDb:默认数据库名为空！");
         }
     }
 

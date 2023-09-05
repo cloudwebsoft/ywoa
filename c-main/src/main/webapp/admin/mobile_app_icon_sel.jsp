@@ -4,7 +4,10 @@
 <%@ page import="java.io.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.person.*" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
+<%@ page import="com.cloudweb.oa.utils.JarFileUtil" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="java.util.ArrayList" %>
 <%
     String skincode = UserSet.getSkin(request);
     if (skincode == null || skincode.equals("")) skincode = UserSet.defaultSkin;
@@ -18,7 +21,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link href="../<%=skinPath%>/css.css" rel="stylesheet" type="text/css"/>
     <script src="../js/jquery-1.9.1.min.js"></script>
-<script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
     <style>
         td {
             font-size: 10pt;
@@ -43,8 +46,9 @@
     </script>
     <body class="menu_sel_body">
         <%
-        com.redmoon.forum.ui.FileViewer fileViewer = new com.redmoon.forum.ui.FileViewer(Global.getAppPath(request) + "/images/mobileAppIcons/");
-        fileViewer.init();
+        JarFileUtil jarFileUtil = SpringUtil.getBean(JarFileUtil.class);
+        List<String> list = new ArrayList<>();
+        jarFileUtil.loadFiles("static/images/mobileAppIcons", "", list);
         %>
     <table width="100%" class="tTable">
         <center>
@@ -60,18 +64,22 @@
                         <td>
                         <%
                             int k = 0;
-                            while (fileViewer.nextFile()) {
-                                if (fileViewer.getFileName().lastIndexOf("gif") != -1 || fileViewer.getFileName().lastIndexOf("jpg") != -1 || fileViewer.getFileName().lastIndexOf("png") != -1 || fileViewer.getFileName().lastIndexOf("bmp") != -1 && fileViewer.getFileName().indexOf("face") != -1) {
-                                    if (k == 0)
+                            for (String fileName : list) {
+                                if (fileName.lastIndexOf("gif") != -1 || fileName.lastIndexOf("jpg") != -1 || fileName.lastIndexOf("png") != -1 || fileName.lastIndexOf("bmp") != -1 && fileName.indexOf("face") != -1) {
+                                    if (k == 0) {
                                         out.print("<tr align=center style='height:50px;'>");
-                                    String fileName = fileViewer.getFileName();
+                                    }
+                                    String name = fileName.substring(fileName.lastIndexOf("/") + 1);
                         %>
-                        <img class="icon" onClick="changeface('<%=fileName%>')" alt='<lt:Label res="res.label.forum.user" key="check_selected"/>' src="<%=request.getContextPath()%>/images/mobileAppIcons/<%=fileViewer.getFileName()%>" border="0"/>
+                        <img class="icon" onClick="changeface('<%=name%>')" src="../showImgInJar.do?path=<%=fileName%>" border="0" style="width: 60px; height: 60px"/>
                         <%
                                     k++;
-                                    if (k == 10)
+                                    if (k == 10) {
                                         out.write("</tr>");
-                                    if (k == 10) k = 0;
+                                    }
+                                    if (k == 10) {
+                                        k = 0;
+                                    }
                                 }
                             }%>
                         </td>

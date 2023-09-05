@@ -2,7 +2,9 @@ package com.redmoon.weixin.mgr;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.sf.json.JSONArray;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.cloudwebsoft.framework.util.LogUtil;
@@ -25,7 +27,6 @@ public class WXAgentMgr extends WXBaseMgr{
 		String accessToken = getToken();
 		List<WxAgent> agents = new ArrayList<WxAgent>();
 		String result = HttpUtil.MethodGet(Constant.AGENT_LIST+accessToken);
-		System.out.print(result);
 		if (result != null && !result.equals("")) {
 			JSONObject json;
 			try {
@@ -34,13 +35,10 @@ public class WXAgentMgr extends WXBaseMgr{
 					int errorCode = json.getInt(Constant.ERRCODE);
 					if (errorCode == Constant.ERROR_CODE_SUCCESS) {
 						String agentList = json.getString(Constant.AGENTLIST);
-						JSONArray jsonArr = net.sf.json.JSONArray
-								.fromObject(agentList);
-						agents = jsonArr.toList(jsonArr, WxAgent.class);
+						agents = JSON.parseArray(agentList, WxAgent.class);
 					}
 				}
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				LogUtil.getLog(WXAgentMgr.class).info(e.getMessage());
 			}
 		}

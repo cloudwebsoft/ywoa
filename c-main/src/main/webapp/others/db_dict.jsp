@@ -16,7 +16,7 @@
     boolean isShowField = ParamUtil.getBoolean(request, "isShowField", false);
     boolean isFilterForm = ParamUtil.getBoolean(request, "isFilterForm", false);
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -115,7 +115,7 @@
 
     // 取出数据字典置于map中
     Map mapDict = new HashMap();
-    String sql = "select id,name,title from form_table_data_dict_table order by id asc";
+    String sql = "select id,name,title from ft_data_dict_table order by id asc";
     ResultIterator riTable = jt.executeQuery(sql);
     while (riTable.hasNext()) {
         ResultRecord rrTable = (ResultRecord)riTable.next();
@@ -123,7 +123,7 @@
         String tableName = rrTable.getString("name");
         String title = StrUtil.getNullStr(rrTable.getString("title"));
 
-        sql = "select id,name,title,def,len,nullable,data_type,is_autoincrement,remarks from form_table_data_dict_column where cws_id=?";
+        sql = "select id,name,title,def,len,nullable,data_type,is_autoincrement,remarks from ft_data_dict_column where cws_id=?";
         ResultIterator ri = jt.executeQuery(sql, new Object[]{tableId});
         mapDict.put(tableName, new Object[]{tableId, title, ri});
     }
@@ -136,7 +136,7 @@
         tableName = rsTable.getObject(3).toString();
 
         if (isFilterForm) {
-            if (tableName.startsWith("form_table_")) {
+            if (tableName.startsWith("ft_")) {
                 continue;
             }
         }
@@ -166,19 +166,18 @@
             tableTitle = "新增表格";
         }
 %>
-<table style='clear:both; margin-left:30px' id="table<%=n%>">
-    <tr>
-        <td><%=n%>、<a name="#<%=tableName%>"><%=tableName%></a>
-        </td>
-        <td id="<%=tableName%>_title" class="<%=isNew?"diff":""%>">
+<div id="table<%=n%>" style="clear:both; margin-left:30px">
+    <h3>
+        <%--<%=n%>、--%><a name="#<%=tableName%>"><%=tableName%></a>
+        <span id="<%=tableName%>_title" class="<%=isNew?"diff":""%>">
             <%=tableTitle%>
-        </td>
-        <td>
+        </span>
+        <span>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <a href="javascript:;" onclick="syn('<%=tableName%>')">同步</a>
-        </td>
-    </tr>
-</table>
+        </span>
+    </h3>
+</div>
 <script>
     var domEditor, enteredText, originalHtml;
     // 该插件会上传值：original_value、update_value
@@ -237,13 +236,14 @@
         if (tableId != -1) {
             ResultIterator ri = (ResultIterator)aryTable[2];
             while (ri.hasNext()) {
-                ResultRecord rr = (ResultRecord) ri.next();
+                ResultRecord rr = ri.next();
                 mapCol.put(rr.getString("name").toLowerCase(), rr);
             }
         }
         Connection con_new = conn.getCon();
         DatabaseMetaData dmd = con_new.getMetaData();
-        ResultSet rsColumn = dmd.getColumns(null, null, rsTable.getObject(3).toString(), null);
+        // mysql-connector-java 6.0以下用这个方法，高版本用此方法会取出所有的库中的所有的表
+        ResultSet rsColumn = dmd.getColumns(con_new.getCatalog(), con_new.getSchema(), tableName, null);
         while (rsColumn.next()) {
             String columnName = rsColumn.getObject(4).toString().toLowerCase();
 

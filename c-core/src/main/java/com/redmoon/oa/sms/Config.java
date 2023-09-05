@@ -1,21 +1,25 @@
 package com.redmoon.oa.sms;
 
-import java.io.FileInputStream;
+import java.io.*;
 import java.net.URL;
-import org.apache.log4j.Logger;
+
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.util.Iterator;
+
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import cn.js.fan.util.XMLProperties;
 import org.jdom.Element;
 import java.net.URLDecoder;
 import org.jdom.output.XMLOutputter;
-import java.io.FileOutputStream;
 import org.jdom.output.Format;
 import java.util.Date;
 import cn.js.fan.util.DateUtil;
 import java.sql.SQLException;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 /**
  * <p>Title: </p>
@@ -31,38 +35,45 @@ import cn.js.fan.util.StrUtil;
  */
 public class Config {
     private XMLProperties properties;
-    private final String CONFIG_FILENAME = "config_sms.xml";
 
     public static final int SMS_BOUNDARY_DEFAULT = 0;
     public static final int SMS_BOUNDARY_YEAR = 1;
     public static final int SMS_BOUNDARY_MONTH = 2;
     public static final int CONTEXT_DIV = 70;
 
-    private String cfgpath;
+    private String cfgPath;
 
-    Logger logger;
     Document doc = null;
     Element root = null;
 
     public Config() {
-        URL cfgURL = getClass().getResource("/" + CONFIG_FILENAME);
-        cfgpath = cfgURL.getFile();
-        cfgpath = URLDecoder.decode(cfgpath);
+        String CONFIG_FILENAME = "config_sms.xml";
+        URL cfgUrl = getClass().getResource("/" + "config_sms.xml");
+        cfgPath = cfgUrl.getFile();
+        try {
+            cfgPath = URLDecoder.decode(cfgPath, "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
 
-        properties = new XMLProperties(cfgpath);
-
-        logger = Logger.getLogger(Config.class.getName());
-
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
-            doc = sb.build(fin);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-            logger.error("Config:" + e.getMessage());
-        } catch (java.io.IOException e) {
-            logger.error("Config:" + e.getMessage());
+            properties = new XMLProperties(CONFIG_FILENAME, doc);
+        } catch (JDOMException | IOException e) {
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -94,7 +105,7 @@ public class Config {
         while (ir.hasNext()) {
             Element e = (Element) ir.next();
             String isUsed = e.getAttributeValue("isUsed");
-            if (isUsed.equals("true")) {
+            if ("true".equals(isUsed)) {
                 return e.getChildText("className");
             }
         }
@@ -205,34 +216,32 @@ public class Config {
 
     public IMsgUtil getIsUsedIMsg() {
         String className = getIsUsedClassName();
-        if (className.equals(""))
+        if ("".equals(className)) {
             return null;
+        }
         IMsgUtil imsg = null;
         try {
             Class cls = Class.forName(className);
             imsg = (IMsgUtil) cls.newInstance();
-        } catch (ClassNotFoundException cnfe) {
-            System.out.println("getIsUsedIMsg: ClassNotFoundException:" +
-                               cnfe.getMessage());
+        } catch (ClassNotFoundException e) {
+            LogUtil.getLog(getClass()).error(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return imsg;
     }
 
     public void writemodify() {
         String indent = "    ";
-        boolean newLines = true;
-        // XMLOutputter outp = new XMLOutputter(indent, newLines, "utf-8");
         Format format = Format.getPrettyFormat();
         format.setIndent(indent);
         format.setEncoding("utf-8");
         XMLOutputter outp = new XMLOutputter(format);
         try {
-            FileOutputStream fout = new FileOutputStream(cfgpath);
+            FileOutputStream fout = new FileOutputStream(cfgPath);
             outp.output(doc, fout);
             fout.close();
-        } catch (java.io.IOException e) {}
+        } catch (java.io.IOException e) {LogUtil.getLog(getClass()).error(e);}
     }
 
     public int getBoundary() {
@@ -323,8 +332,9 @@ public class Config {
      * @return boolean
      */
     public int canSendSMS(int count, int msgLength) throws SQLException {
-        if (!SMSFactory.isUseSMS())
+        if (!SMSFactory.isUseSMS()) {
             return 0;
+        }
 
         int boundary = StrUtil.toInt(getProperty("sms.boundary"),
                                      SMS_BOUNDARY_DEFAULT);
@@ -404,7 +414,6 @@ public class Config {
                 !mobile.startsWith("152")
                 && !mobile.startsWith("158") && !mobile.startsWith("159") &&
                 !mobile.startsWith("188")) {
-                // System.out.println(getClass()+"ddd");
                 return false;
             }
         }

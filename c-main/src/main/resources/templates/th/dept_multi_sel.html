@@ -1,0 +1,139 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>选择部门</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/js/jstree/themes/default/style.css}"/>
+</head>
+<body>
+<form id="form1" name="form1" method="post">
+    <table border="0" align="center" cellpadding="0" cellspacing="0" class="percent98">
+        <tr>
+            <td align="center" class="tdStyle_1"><strong>请选择部门</strong></td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div>
+                    <div id="deptTree"></div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<br/>
+<div style="text-align: center; margin-bottom: 10px">
+    <button type="button" class="btn btn-default" onclick="getChecked()">确定</button>
+    &nbsp;&nbsp;
+    <button type="button" class="btn btn-default" onclick="cancel()">取消</button>
+</div>
+<script th:src="@{/js/jstree/jstree.js}"></script>
+<script th:inline="javascript">
+    function setDepts() {
+        var depts = window.opener.getDepts();
+        var ary = depts.split(",");
+        if (ary.length == 0) {
+            return;
+        }
+        // 将传入的部门置为选中状态
+        $("#deptTree").find("li").each(function () {
+            console.log(this);
+            var $this = $(this);
+            for (var k in ary) {
+                if ($this.attr("id") == ary[k]) {
+                    $("#deptTree").jstree("check_node", $this);
+                }
+            }
+
+            $("#deptTree").jstree("save_selected");
+        });
+    }
+
+    function bindClick() {
+        $("a").bind("click", function () {
+            $("a").css("color", "");
+            $(this).css("color", "red");
+        });
+    }
+
+    $(document).ready(function () {
+        var a = $('#deptTree').jstree({
+                "core": {
+                    "data": [(${treeJsonData})],
+                    "themes": {
+                        "theme": "default",
+                        "dots": true,
+                        "icons": true
+                    },
+                    "check_callback": false,
+                },
+                "checkbox": {
+                    "keep_selected_style": true,
+                    "real_checkboxes": true
+                },
+
+                "plugins": ["wholerow", "themes", "checkbox", "ui", "types", "state"],
+            })
+            .bind('ready.jstree', function () {
+                $("#deptTree").find("li").each(function () {
+                    var $this = $(this);
+                    $("#deptTree").jstree("uncheck_node", $this);
+                });
+
+                [# th:each="code, deptStat : ${deptSelectedList}"]
+                    // 将传入的部门置为选中状态
+                    $("#deptTree").find("li").each(function () {
+                        var $this = $(this);
+                        if ($this.attr("id") == [[${code}]]) {
+                            $("#deptTree").jstree("check_node", $this);
+                        }
+
+                        $("#deptTree").jstree("save_selected");
+                    });
+                [/]
+
+                setDepts();
+            });
+
+        bindClick();
+    });
+
+    // 获得被选中项的ID串，以空格隔开
+    function getChecked() {
+        var codes = $("#deptTree").jstree("get_checked");
+
+        if (codes.length==0) {
+            jAlert("请选择部门", "[(#{prompt})]");
+            return;
+        }
+
+        // 取得所选元素的名称
+        var deptNames = "";
+        for (i in codes) {
+            var code = codes[i];
+            $("#deptTree").find("li").each(function () {
+                var $this = $(this);
+                if ($this.attr("id") == code) {
+                    if (deptNames=="") {
+                        deptNames = $this.children("a").first().text();
+                    }
+                    else {
+                        deptNames += "," + $this.children("a").first().text();
+                    }
+                }
+            });
+        }
+
+        selectNode(codes.toString(), deptNames);
+    }
+
+    function selectNode(code, name) {
+        window.opener.selectNode(code, name);
+        window.close();
+    }
+
+    function cancel() {
+        window.close();
+    }
+</script>
+</body>
+</HTML>

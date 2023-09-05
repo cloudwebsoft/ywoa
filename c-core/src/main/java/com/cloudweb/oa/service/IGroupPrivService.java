@@ -23,4 +23,6 @@ public interface IGroupPrivService extends IService<GroupPriv> {
     boolean delGroupPriv(String groupCode, String priv);
 
     boolean setPrivs(String groupCode, String[] privs);
+
+    boolean create(String groupCode, String priv);
 }

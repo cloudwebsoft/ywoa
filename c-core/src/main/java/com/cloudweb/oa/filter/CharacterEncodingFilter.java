@@ -19,7 +19,7 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
-@WebFilter(urlPatterns="/*",filterName="CharacterEncodingFilter")
+@WebFilter(urlPatterns="/*",filterName="CharacterEncodingFilter", asyncSupported = true)
 @Order(1)
 public class CharacterEncodingFilter implements Filter {
 

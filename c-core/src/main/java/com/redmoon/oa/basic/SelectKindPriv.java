@@ -8,6 +8,7 @@ import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.pvg.RoleDb;
@@ -81,7 +82,7 @@ public class SelectKindPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getRolesOfSelectKindPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRolesOfSelectKindPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -146,7 +147,7 @@ public class SelectKindPriv extends ObjectDbA {
                 loaded = true;
             }
         } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             /*
             if (ps != null) {
@@ -209,7 +210,7 @@ public class SelectKindPriv extends ObjectDbA {
             ps.setInt(6, id);
             r = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error("数据库错误！");
+            LogUtil.getLog(getClass()).error("数据库错误！");
         }
         return r == 1 ? true : false;
     }
@@ -448,7 +449,7 @@ public class SelectKindPriv extends ObjectDbA {
             ps.setInt(8, kindId);
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("SelectKindPriv:数据库操作出错");
         }
         finally {
@@ -497,7 +498,7 @@ public class SelectKindPriv extends ObjectDbA {
             	}
             }
         } catch (SQLException e) {
-            logger.error("setRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setRoles:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -525,7 +526,7 @@ public class SelectKindPriv extends ObjectDbA {
             ps.setInt(8, kindId);
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error("add:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("add:" + e.getMessage());
             throw new ErrMsgException("请检查是否有重复项存在?");
         }
         finally {
@@ -542,7 +543,7 @@ public class SelectKindPriv extends ObjectDbA {
         try {
             sPriv = new SelectKindPriv(id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return sPriv;
     }
@@ -556,7 +557,7 @@ public class SelectKindPriv extends ObjectDbA {
             ps.setInt(1, kindId);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -575,7 +576,7 @@ public class SelectKindPriv extends ObjectDbA {
             ps.setString(1, username);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -589,7 +590,7 @@ public class SelectKindPriv extends ObjectDbA {
             ps.setInt(1, id);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -670,13 +671,15 @@ public class SelectKindPriv extends ObjectDbA {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错");
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
                 rs = null;
             }
             if (conn != null) {
@@ -727,8 +730,7 @@ public class SelectKindPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("listPriv: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (conn != null) {
                 conn.close();
@@ -757,7 +759,7 @@ public class SelectKindPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("listUserPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("listUserPriv: " + e.getMessage());
         } finally {
             /*
             if (ps != null) {
@@ -794,7 +796,7 @@ public class SelectKindPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -826,7 +828,7 @@ public class SelectKindPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             /*
             if (ps != null) {

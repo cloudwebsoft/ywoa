@@ -1,10 +1,10 @@
 package com.redmoon.oa.message;
 
 import cn.js.fan.util.DateUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.Config;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 
 import com.redmoon.oa.android.xinge.SendNotice;
 import com.redmoon.oa.person.UserDb;
@@ -17,8 +17,14 @@ import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.StrUtil;
 import java.util.Calendar;
 import cn.js.fan.util.ErrMsgException;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
-public class SendMessageJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class SendMessageJob extends QuartzJobBean {
 	public static final int SEND_MESSAGE_SCHEDULE = 20;
 	
 	public SendMessageJob() {
@@ -26,7 +32,7 @@ public class SendMessageJob implements Job {
     }
 	
 	@Override
-	public void execute(JobExecutionContext arg0) throws JobExecutionException {
+	public void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
 		String tableName = "oa_message";
 		String sql_query = "select id from " + tableName + " where box=" + MessageDb.DRAFT + " and is_sent=0 and send_time<= " + SQLFilter.getDateStr(DateUtil.format(new java.util.Date(), "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss");
 		
@@ -60,9 +66,8 @@ public class SendMessageJob implements Job {
 							se.PushNoticeSingleByToken(receiver, md.getTitle(), md.getContent(), id);
 						}
 					}
-	    	        // System.out.println(md.getContent()+"---------------");
 	            } catch(ErrMsgException e) {
-	            	e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 	            }
 	        }
 	        

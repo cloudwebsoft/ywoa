@@ -190,7 +190,7 @@ Iterator mainFields = fd.getFields().iterator();
 	 	})
 	 }) 
 	 function set(){
-	 	var mathValue = $("#mathValue").text();
+	 	var mathValue = $("#mathValue").val();
 	 	var win = window.opener ? window.opener : dialogArguments;
 	 	win.setMath("<%=textAreaId%>",mathValue);
 	 	window.close();

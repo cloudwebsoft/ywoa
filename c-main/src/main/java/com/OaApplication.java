@@ -6,6 +6,7 @@ import com.github.pagehelper.autoconfigure.PageHelperAutoConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JndiDataSourceAutoConfiguration;
@@ -19,6 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jms.annotation.EnableJms;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
@@ -27,7 +30,7 @@ import javax.sql.DataSource;
 
 // pagehelper-spring-boot-starter依赖，提供了自动配置分页插件的功能
 @EnableJms
-@SpringBootApplication(scanBasePackages = {"com.cloudweb.oa", "com.redmoon.oa.exam.controller"}, exclude = {DruidDataSourceAutoConfigure.class, DataSourceAutoConfiguration.class, JndiDataSourceAutoConfiguration.class, PageHelperAutoConfiguration.class, MultipartAutoConfiguration.class, QuartzAutoConfiguration.class, FreeMarkerAutoConfiguration.class})
+@SpringBootApplication(scanBasePackages = {"com.cloudweb.oa"}, exclude = {DruidDataSourceAutoConfigure.class, DataSourceAutoConfiguration.class, JndiDataSourceAutoConfiguration.class, PageHelperAutoConfiguration.class, MultipartAutoConfiguration.class, QuartzAutoConfiguration.class, FreeMarkerAutoConfiguration.class/*, RedisAutoConfiguration.class*/})
 // @MapperScan(value = {"com.cloudweb.oa.dao", "com.cloudweb.oa.mapper"})
 // @ComponentScan(basePackages={"com.cloudweb.oa"})
 @ServletComponentScan
@@ -35,6 +38,7 @@ import javax.sql.DataSource;
 // @EnableAutoConfiguration(exclude={DruidDataSourceAutoConfigure.class, JndiDataSourceAutoConfiguration.class,})
 @EnableSwagger2
 @EnableTransactionManagement // 注解事务管理，等同于xml配置方式的 <tx:annotation-driven />
+@EnableAsync
 @ImportResource("classpath:com/cloudweb/config/applicationContext.xml")
 public class OaApplication extends SpringBootServletInitializer {
 
@@ -53,8 +57,6 @@ public class OaApplication extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
         OaApplication.args = args;
-
-        // SpringApplication.run(OaApplication.class, args);
 
         SpringApplication springApplication = new SpringApplication(OaApplication.class);
         // 在bean初始化前启动proxool监听器

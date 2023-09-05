@@ -71,4 +71,13 @@ public class OaNoticeVO {
 
     private User user;
 
+    /**冗余类别
+     */
+    private String kind;
+
+    /**
+     * title渲染后的效果
+     */
+    private String caption;
+
 }

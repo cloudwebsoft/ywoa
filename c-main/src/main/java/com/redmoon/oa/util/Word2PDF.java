@@ -3,6 +3,7 @@ package com.redmoon.oa.util;
 import java.io.File;
 
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.ComThread;
 import com.jacob.com.Dispatch;
@@ -20,7 +21,7 @@ public class Word2PDF {
 	static final int ppSaveAsPDF = 32;// PDF 格式 
 	
     public static boolean convert2PDF(String inputFile, String pdfFile) throws ErrMsgException {
-		System.out.println("启动Word...");
+		LogUtil.getLog(Word2PDF.class).info("启动Word...");
 		long start = System.currentTimeMillis();
 		boolean isJacobSeted = false;
 		ActiveXComponent app = null;
@@ -32,7 +33,6 @@ public class Word2PDF {
 			app.setProperty("Visible", false);
 
 			Dispatch docs = app.getProperty("Documents").toDispatch();
-			System.out.println("打开文档..." + inputFile);
 			Dispatch doc = Dispatch.call(docs,//
 					"Open", //
 					inputFile,// FileName
@@ -40,7 +40,7 @@ public class Word2PDF {
 					true // ReadOnly
 					).toDispatch();
 
-			System.out.println("转换文档到PDF..." + pdfFile);
+			LogUtil.getLog(Word2PDF.class).info("转换文档到PDF..." + pdfFile);
 			File tofile = new File(pdfFile);
 			if (tofile.exists()) {
 				tofile.delete();
@@ -52,18 +52,15 @@ public class Word2PDF {
 
 			Dispatch.call(doc, "Close", false);
 			long end = System.currentTimeMillis();
-			System.out.println("转换完成..用时：" + (end - start) + "ms.");
+			LogUtil.getLog(Word2PDF.class).info("转换完成..用时：" + (end - start) + "ms.");
 			return true; 
 		}
 		catch (NoClassDefFoundError e) {
-			// java.lang.NoClassDefFoundError: Could not initialize class com.jacob.com.ComThread
-			System.out.println("文档转换失败：jacob 尚未配置！");
-			// e.printStackTrace();
+			LogUtil.getLog(Word2PDF.class).error(e);
 			throw new ErrMsgException("文档转换失败：jacob 尚未配置！");
 		}
 		catch (Exception e) {
-			System.out.println("文档转换失败：" + e.getMessage());
-			// e.printStackTrace();
+			LogUtil.getLog(Word2PDF.class).error(e);
 			throw new ErrMsgException("文档转换失败：" + e.getMessage());
 		} finally {
 			if (app != null) {
@@ -78,7 +75,6 @@ public class Word2PDF {
 	public static void main(String[] args) {
 		String filename = "f:/temp/测试文档.docx";
 		String toFilename = filename + ".pdf";
-		System.out.println("启动Word...");
 		long start = System.currentTimeMillis();
 		ActiveXComponent app = null;
 		try {
@@ -86,7 +82,6 @@ public class Word2PDF {
 			app.setProperty("Visible", false);
 
 			Dispatch docs = app.getProperty("Documents").toDispatch();
-			System.out.println("打开文档..." + filename);
 			Dispatch doc = Dispatch.call(docs,//
 					"Open", //
 					filename,// FileName
@@ -94,7 +89,6 @@ public class Word2PDF {
 					true // ReadOnly
 					).toDispatch();
 
-			System.out.println("转换文档到PDF..." + toFilename);
 			File tofile = new File(toFilename);
 			if (tofile.exists()) {
 				tofile.delete();
@@ -106,12 +100,12 @@ public class Word2PDF {
 
 			Dispatch.call(doc, "Close", false);
 			long end = System.currentTimeMillis();
-			System.out.println("转换完成..用时：" + (end - start) + "ms.");
 		} catch (Exception e) {
-			System.out.println("========Error:文档转换失败：" + e.getMessage());
+			LogUtil.getLog(Word2PDF.class).error(e);
 		} finally {
-			if (app != null)
+			if (app != null) {
 				app.invoke("Quit", wdDoNotSaveChanges);
+			}
 		}
 	}
 }

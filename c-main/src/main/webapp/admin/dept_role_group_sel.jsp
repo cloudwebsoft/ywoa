@@ -98,19 +98,32 @@
     DeptDb leaf = dir.getDeptDb(dirCode);
     DeptView tv = new DeptView(request, leaf);
     String jsonData = tv.getJsonString();
+    boolean isDept = ParamUtil.getBoolean(request, "isDept", true);
 %>
 <div style="width: 100%; height: 100%">
     <div style="width: 60%; float: left; height: 90%">
         <div id="tabs" style="height:100%; overflow-y: auto">
             <ul>
+                <%
+                    if (isDept) {
+                %>
                 <li><a href="#tabs-1">部门</a></li>
+                <%
+                    }
+                %>
                 <li><a href="#tabs-2">角色</a></li>
                 <li><a href="#tabs-3">用户组</a></li>
-                <li><a href="#tabs-4">人员</a></li>
+                <li><a href="#tabs-4" class="tabs-person">人员</a></li>
             </ul>
+            <%
+                if (isDept) {
+            %>
             <div id="tabs-1" class="tabDiv">
                 <div id="deptTree"></div>
             </div>
+            <%
+                }
+            %>
             <div id="tabs-2" class="tabDiv">
                 <div class="form-inline form-group text-center">
                     <input id="role" name="role" class="form-control"/>
@@ -343,15 +356,16 @@
         // 记住之前点的是哪个tab
         var lastTabId = 'ui-id-1';
         $("a[role='presentation']").click(function() {
-            if ($(this).attr('id')!='ui-id-4') {
+            if ($(this).attr('href') != '#tabs-4') {
                 lastTabId = $(this).attr('id');
             }
         });
 
-        $('#ui-id-4').click(function() {
+        $('.tabs-person').click(function() {
             selUsers();
             // 使点击人员选项卡后，仍显示之前最后一次点的选项卡，否则人员选项卡的下方会显示出一块空白的区域
             clickTab($('#' + lastTabId)[0]);
+
             // 无效，得用clickTab
             // $('#' + lastTabId).trigger("click");
         });

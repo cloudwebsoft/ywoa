@@ -1,13 +1,19 @@
 package com.redmoon.oa.fileark.plugin;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+
+import cn.js.fan.util.XMLProperties;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -17,13 +23,14 @@ import java.net.URLDecoder;
 import cn.js.fan.util.StrUtil;
 import com.redmoon.oa.fileark.ui.Skin;
 import com.redmoon.oa.fileark.Leaf;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class PluginMgr {
     static final String group = "FILEARK_PLUGIN";
     static final String ALLPLUGIN = "FILEARK_ALLPLUGIN";
 
-    static Logger logger;
-    public final String FILENAME = "fileark_plugin.xml";
+    public static final String FILENAME = "fileark_plugin.xml";
 
     public static Document doc = null;
     public static Element root = null;
@@ -32,7 +39,6 @@ public class PluginMgr {
     public static URL confURL;
 
     public PluginMgr() {
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -41,17 +47,25 @@ public class PluginMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
-                doc = sb.build(fin);
+                Resource resource = new ClassPathResource(FILENAME);
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
                 root = doc.getRootElement();
-                fin.close();
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(PluginMgr.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(PluginMgr.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -66,7 +80,7 @@ public class PluginMgr {
         	RMCache.getInstance().invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(PluginMgr.class).error(e.getMessage());
         }
     }
 
@@ -76,7 +90,7 @@ public class PluginMgr {
             pu = (PluginUnit)RMCache.getInstance().getFromGroup(code, group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (pu==null) {
             init();
@@ -127,7 +141,7 @@ public class PluginMgr {
                         	RMCache.getInstance().putInGroup(code, group,
                                                pu);
                         } catch (Exception e) {
-                            logger.error("getPluginUnit:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error("getPluginUnit:" + e.getMessage());
                         }
                         return pu;
                     }
@@ -145,7 +159,7 @@ public class PluginMgr {
         try {
             v = (Vector) RMCache.getInstance().getFromGroup(ALLPLUGIN, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector();
@@ -162,7 +176,7 @@ public class PluginMgr {
                 	RMCache.getInstance().putInGroup(ALLPLUGIN, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllPlugin:" + e.getMessage());
+                    LogUtil.getLog(getClass()).error("getAllPlugin:" + e.getMessage());
                 }
             }
         }
@@ -186,7 +200,6 @@ public class PluginMgr {
 
     /**
      * 取得对应于boardCode版面的所有PluginUnit，此处可以考虑加入缓存
-     * @param boardCode String
      * @return Vector
      */
     public PluginUnit getPluginUnitOfDir(String dirCode) {

@@ -1,7 +1,6 @@
 package com.cloudweb.oa.controller;
 
 
-import cn.js.fan.util.RandomSecquenceCreator;
 import cn.js.fan.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -15,13 +14,18 @@ import com.cloudweb.oa.service.*;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.ResponseUtil;
+import com.cloudweb.oa.vo.Result;
 import com.cloudweb.oa.vo.RoleVO;
 import com.cloudweb.oa.vo.UserAuthorityVO;
+import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.basic.SelectDb;
 import com.redmoon.oa.basic.SelectOptionDb;
 import com.redmoon.oa.db.SequenceManager;
-import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.oa.pvg.Privilege;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.dozer.DozerBeanMapper;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,9 +104,15 @@ public class GroupController {
      * @throws ValidateException
      */
     @SuppressWarnings("AlibabaAvoidPatternCompileInMethod")
+    @ApiOperation(value = "添加用户组", notes = "添加用户组", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userNames", value = "组编码", dataType = "String"),
+            @ApiImplicitParam(name = "desc", value = "描述", dataType = "String"),
+    })
+    @ResponseBody
     @RequestMapping(value = "/addUserGroup", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String addUserGroup(String userNames, @Length(min = 0, max = 50, message = "{usergroup.desc.tooLong}") String desc) throws ValidateException {
-        JSONObject json = new JSONObject();
+    public Result<Object> addUserGroup(String userNames, @Length(min = 0, max = 50, message = "{usergroup.desc.tooLong}") String desc) throws ValidateException {
+        Result<Object> result = new Result();
         String[] users = StrUtil.split(userNames, ",");
         String groupCode = String.valueOf(SequenceManager.nextID(SequenceManager.OA_USER_GROUP));
 
@@ -123,13 +133,10 @@ public class GroupController {
                 userOfGroup.setUserName(userName);
                 userOfGroup.insert();
             }
-            json.put("ret", "1");
-            json.put("result", i18nUtil.get("info_op_success"));
-        } else {
-            json.put("ret", "2");
-            json.put("result", i18nUtil.get("info_op_fail"));
+        }else{
+            result.setResult(false);
         }
-        return json.toString();
+        return result;
     }
 
     /**
@@ -137,32 +144,36 @@ public class GroupController {
      * @return
      * @throws ValidateException
      */
-    @ResponseBody
-    @RequestMapping(value = "/refreshUserGroup", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String refreshUserGroup() throws ValidateException {
-        String sql = "";
-        String result = "";
+//    @ResponseBody
+//    @RequestMapping(value = "/refreshUserGroup", produces = {"text/html;", "application/json;charset=UTF-8;"})
+//    public String refreshUserGroup() throws ValidateException {
+//        String sql = "";
+//        String result = "";
+//
+//        QueryWrapper<Group> qw = new QueryWrapper<>();
+//        qw.orderByDesc("isSystem").orderByAsc("code");
+//        List<Group> list = groupService.list(qw);
+//        result = "<ul>";
+//        for (Group group : list) {
+//            String groupCode = group.getCode();
+//            String desc = group.getDescription();
+//            result += "<li onMouseOver='addLiClass(this);' onMouseOut='removeLiClass(this);' onclick='getLiGroup(this);' id='" + groupCode + "' name='" + groupCode + "'>&nbsp;&nbsp;&nbsp;&nbsp;" + desc + "</li>";
+//        }
+//        result += "</ul>";
+//
+//        JSONObject json = new JSONObject();
+//        json.put("ret", "1");
+//        json.put("result", result);
+//        return json.toString();
+//    }
 
-        QueryWrapper<Group> qw = new QueryWrapper<>();
-        qw.orderByDesc("isSystem").orderByAsc("code");
-        List<Group> list = groupService.list(qw);
-        result = "<ul>";
-        for (Group group : list) {
-            String groupCode = group.getCode();
-            String desc = group.getDescription();
-            result += "<li onMouseOver='addLiClass(this);' onMouseOut='removeLiClass(this);' onclick='getLiGroup(this);' id='" + groupCode + "' name='" + groupCode + "'>&nbsp;&nbsp;&nbsp;&nbsp;" + desc + "</li>";
-        }
-        result += "</ul>";
-
-        JSONObject json = new JSONObject();
-        json.put("ret", "1");
-        json.put("result", result);
-        return json.toString();
-    }
-
+    @ApiOperation(value = "用户组管理描述", notes = "用户组管理描述", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupDesc", value = "组编码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/listGroupByDesc", method = RequestMethod.POST, produces = { "text/html;charset=UTF-8;","application/json;" })
-    public String listGroupByDesc(String groupDesc) {
+    public Result<Object> listGroupByDesc(String groupDesc) {
         List<Group> list = groupService.list("", "search", groupDesc, "");
         com.alibaba.fastjson.JSONArray jsonArray = new com.alibaba.fastjson.JSONArray();
         for (Group group : list) {
@@ -174,29 +185,38 @@ public class GroupController {
         com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
         jsonObject.put("ret", 1);
         jsonObject.put("result", jsonArray);
-        return jsonObject.toString();
+        return new Result<>(jsonObject);
     }
 
+    @ApiOperation(value = "用户组管理", notes = "用户组管理", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "searchUnitCode", value = "单位", dataType = "String"),
+            @ApiImplicitParam(name = "op", value = "操作", dataType = "String"),
+            @ApiImplicitParam(name = "what", value = "名称", dataType = "String"),
+            @ApiImplicitParam(name = "kind", value = "类别", dataType = "String"),
+    })
+    @ResponseBody
     @RequestMapping(value = "/listGroup")
-    public String listGroup(@RequestParam(defaultValue = "") String searchUnitCode,
+    public Result<Object> listGroup(@RequestParam(defaultValue = "") String searchUnitCode,
                             @RequestParam(defaultValue = "") String op,
                             @RequestParam(defaultValue = "") String what,
                             @RequestParam(defaultValue = "") String kind,
                             Model model) throws ValidateException {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+        JSONObject object = new JSONObject();
 
-        model.addAttribute("searchUnitCode", searchUnitCode);
-        model.addAttribute("op", op);
-        model.addAttribute("what", what);
-        model.addAttribute("kind", kind);
+        object.put("searchUnitCode", searchUnitCode);
+        object.put("op", op);
+        object.put("what", what);
+        object.put("kind", kind);
 
         List<Group> list = groupService.list(searchUnitCode, op, what, kind);
-
+        SelectOptionDb selectOptionDb = new SelectOptionDb();
         JSONArray jsonArr = new JSONArray();
         for (Group group : list) {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("code", group.getCode());
             jsonObject.put("desc", group.getDescription());
+            jsonObject.put("unitCode", group.getUnitCode());
             String deptName = "";
             if (group.getDeptCode()!=null && !"".equals(group.getDeptCode())) {
                 Department department = departmentService.getDepartment(group.getDeptCode());
@@ -204,6 +224,12 @@ public class GroupController {
                     deptName = department.getName();
                 }
             }
+            if(!StrUtil.isEmpty(group.getKind())){
+                jsonObject.put("kindName",selectOptionDb.getOptionName("usergroup_kind", group.getKind()));
+            }else{
+                jsonObject.put("kindName","");
+            }
+
             jsonObject.put("deptName", deptName);
             jsonObject.put("isDept", group.getIsDept());
             jsonObject.put("isIncludeSubDept", group.getIsIncludeSubDept());
@@ -215,119 +241,106 @@ public class GroupController {
             jsonObject.put("unitName", unitName);
             jsonObject.put("isSystem", group.getIsSystem());
 
-            String kindName = "";
-            if (group.getKind()!=null && !"".equals(group.getKind())) {
-                SelectOptionDb selectOptionDb = new SelectOptionDb();
-                kindName = selectOptionDb.getOptionName("usergroup_kind", group.getKind());
-            }
-            jsonObject.put("kindName", kindName);
+//            String kindName = "";
+//            if (group.getKind()!=null && !"".equals(group.getKind())) {
+//                SelectOptionDb selectOptionDb = new SelectOptionDb();
+//                kindName = selectOptionDb.getOptionName("usergroup_kind", group.getKind());
+//            }
+//            jsonObject.put("kindName", kindName);
 
             jsonArr.add(jsonObject);
         }
 
-        model.addAttribute("jsonArr", jsonArr);
+        object.put("list", jsonArr);
 
-        SelectDb sd = new SelectDb();
-        sd = sd.getSelectDb("usergroup_kind");
-        StringBuffer opts = new StringBuffer();
-        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
-        Iterator irType = vType.iterator();
-        while (irType.hasNext()) {
-            SelectOptionDb sod = (SelectOptionDb) irType.next();
-            opts.append("<option value='" + sod.getValue() + "'>" + sod.getName() + "</option>");
-        }
-        model.addAttribute("kindOpts", opts);
+//        SelectDb sd = new SelectDb();
+//        sd = sd.getSelectDb("usergroup_kind");
+//        StringBuffer opts = new StringBuffer();
+//        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
+//        Iterator irType = vType.iterator();
+//
+//        object.put("kindOpts", irType);
 
-        return "th/admin/group_list";
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "删除用户组", notes = "删除用户组", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "组编码", dataType = "String"),
+    })
+    @ResponseBody
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/delGroup", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    @ResponseBody
-    public String delGroup(@RequestParam(required = true) String groupCode) throws ValidateException {
+    public Result<Object> delGroup(@RequestParam(required = true) String groupCode) throws ValidateException {
         Group group = groupService.getGroup(groupCode);
         if (group == null) {
             throw new ValidateException("#group.notexist", new Object[]{groupCode});
         }
-        return responseUtil.getResultJson(groupService.del(groupCode)).toString();
+        return new Result<>(groupService.del(groupCode));
     }
 
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
-    @RequestMapping(value = "/addGroup")
-    public String addGroup(String groupCode, Model model) throws ValidateException {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        StringBuffer sb = new StringBuffer();
-        Department department = departmentService.getDepartment(ConstUtil.DEPT_ROOT);
-        departmentService.getUnitAsOptions(sb, department, department.getLayer());
-        model.addAttribute("unitOpts", sb.toString());
+//    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+//    @RequestMapping(value = "/addGroup")
+//    public String addGroup(String groupCode, Model model) throws ValidateException {
+//        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+//        StringBuffer sb = new StringBuffer();
+//        Department department = departmentService.getDepartment(ConstUtil.DEPT_ROOT);
+//        departmentService.getUnitAsOptions(sb, department, department.getLayer());
+//        model.addAttribute("unitOpts", sb.toString());
+//
+//        String code = RandomSecquenceCreator.getId(20);
+//        model.addAttribute("code", code);
+//
+//        sb = new StringBuffer();
+//        departmentService.getDeptAsOptions(sb, department, department.getLayer());
+//        model.addAttribute("deptOpts", sb.toString());
+//
+//        SelectDb sd = new SelectDb();
+//        sd = sd.getSelectDb("usergroup_kind");
+//        StringBuffer opts = new StringBuffer();
+//        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
+//        Iterator irType = vType.iterator();
+//        while (irType.hasNext()) {
+//            SelectOptionDb sod = (SelectOptionDb) irType.next();
+//            opts.append("<option value='" + sod.getValue() + "'>" + sod.getName() + "</option>");
+//        }
+//        model.addAttribute("kindOpts", opts);
+//
+//        return "th/admin/group_add";
+//    }
 
-        String code = RandomSecquenceCreator.getId(20);
-        model.addAttribute("code", code);
-
-        sb = new StringBuffer();
-        departmentService.getDeptAsOptions(sb, department, department.getLayer());
-        model.addAttribute("deptOpts", sb.toString());
-
-        SelectDb sd = new SelectDb();
-        sd = sd.getSelectDb("usergroup_kind");
-        StringBuffer opts = new StringBuffer();
-        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
-        Iterator irType = vType.iterator();
-        while (irType.hasNext()) {
-            SelectOptionDb sod = (SelectOptionDb) irType.next();
-            opts.append("<option value='" + sod.getValue() + "'>" + sod.getName() + "</option>");
-        }
-        model.addAttribute("kindOpts", opts);
-
-        return "th/admin/group_add";
-    }
-
+    @ApiOperation(value = "修改设置用户组的角色画面", notes = "修改设置用户组的角色画面", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "组编码", dataType = "String"),
+    })
+    @ResponseBody
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/editGroup")
-    public String editGroup(String groupCode, String tabIdOpener, Model model) throws ValidateException {
+    public Result<Object> editGroup(String groupCode) throws ValidateException {
+        JSONObject object = new JSONObject();
         Group group = groupService.getGroup(groupCode);
-        model.addAttribute("group", group);
+        object.put("group", group);
 
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        StringBuffer sb = new StringBuffer();
-        Department department = departmentService.getDepartment(ConstUtil.DEPT_ROOT);
-        departmentService.getUnitAsOptions(sb, department, department.getLayer());
-        model.addAttribute("unitOpts", sb.toString());
-
-        sb = new StringBuffer();
-        departmentService.getDeptAsOptions(sb, department, department.getLayer());
-        model.addAttribute("deptOpts", sb.toString());
-
-        SelectDb sd = new SelectDb();
-        sd = sd.getSelectDb("usergroup_kind");
-        StringBuffer opts = new StringBuffer();
-        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
-        Iterator irType = vType.iterator();
-        while (irType.hasNext()) {
-            SelectOptionDb sod = (SelectOptionDb) irType.next();
-            opts.append("<option value='" + sod.getValue() + "'>" + sod.getName() + "</option>");
-        }
-        model.addAttribute("kindOpts", opts);
-
-        model.addAttribute("tabIdOpener", tabIdOpener);
-
-        return "th/admin/group_edit";
+        return new Result<>(object);
     }
 
     /**
      * 进入设置用户组的角色画面
      * @param groupCode
-     * @param tabIdOpener
-     * @param model
      * @return
      * @throws ValidateException
      */
+    @ApiOperation(value = "进入设置用户组的角色画面", notes = "进入设置用户组的角色画面", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "组编码", dataType = "String"),
+    })
+    @ResponseBody
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/groupRole")
-    public String groupRole(String groupCode, String tabIdOpener, Model model) throws ValidateException {
+    public Result<Object> groupRole(String groupCode) throws ValidateException {
+        JSONObject object = new JSONObject();
         Group group = groupService.getGroup(groupCode);
-        model.addAttribute("group", group);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+        object.put("group", group);
 
         List<Role> roleList = roleService.getRolesOfUnit(group.getUnitCode(), true);
 
@@ -356,8 +369,8 @@ public class GroupController {
             roleVOList.add(roleVO);
         }
 
-        model.addAttribute("roleVOList", roleVOList);
-        return "th/admin/group_role";
+        object.put("roleVOList", roleVOList);
+        return new Result<>(object);
     }
 
     /**
@@ -367,17 +380,25 @@ public class GroupController {
      * @param isDept
      * @param isIncludeSubDept
      * @param unitCode
-     * @param model
      * @return
      * @throws ValidateException
      */
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+    @ApiOperation(value = "创建用户组", notes = "创建用户组", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "code", value = "编码", dataType = "String"),
+            @ApiImplicitParam(name = "desc", value = "描述", dataType = "String"),
+            @ApiImplicitParam(name = "isDept", value = "是否部门", dataType = "Integer"),
+            @ApiImplicitParam(name = "isIncludeSubDept", value = "是否为部门组", dataType = "Integer"),
+            @ApiImplicitParam(name = "unitCode", value = "单位编码", dataType = "String"),
+            @ApiImplicitParam(name = "kind", value = "类别", dataType = "String"),
+    })
     @ResponseBody
+    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/createGroup", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String createGroup(String code, String desc, Integer isDept, @RequestParam(defaultValue = "0") Integer isIncludeSubDept,
-                              String unitCode,  @RequestParam(defaultValue = "") String kind, Model model) throws ValidateException {
+    public Result<Object> createGroup(String code, String desc, Integer isDept, @RequestParam(defaultValue = "0") Integer isIncludeSubDept,
+                              String unitCode,  @RequestParam(defaultValue = "") String kind) throws ValidateException {
 
-        return responseUtil.getResultJson(groupService.create(code, desc, isDept, isIncludeSubDept, unitCode, kind)).toString();
+        return new Result<>(groupService.create(code, desc, isDept, isIncludeSubDept, unitCode, kind));
     }
 
     /**
@@ -388,32 +409,45 @@ public class GroupController {
      * @param isDept
      * @param isIncludeSubDept
      * @param unitCode
-     * @param model
      * @return
      * @throws ValidateException
      */
+    @ApiOperation(value = "编辑用户组", notes = "编辑用户组", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "code", value = "编码", dataType = "String"),
+            @ApiImplicitParam(name = "desc", value = "描述", dataType = "String"),
+            @ApiImplicitParam(name = "deptCode", value = "部门编码", dataType = "String"),
+            @ApiImplicitParam(name = "isDept", value = "是否部门", dataType = "Integer"),
+            @ApiImplicitParam(name = "isIncludeSubDept", value = "是否为部门组", dataType = "Integer"),
+            @ApiImplicitParam(name = "unitCode", value = "单位编码", dataType = "String"),
+            @ApiImplicitParam(name = "kind", value = "类别", dataType = "String"),
+    })
     @ResponseBody
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/updateGroup", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String updateGroup(String code, String desc, String deptCode, Integer isDept, @RequestParam(defaultValue = "0") Integer isIncludeSubDept, String unitCode, String kind, Model model) throws ValidateException {
+    public Result<Object> updateGroup(String code, String desc, String deptCode, Integer isDept, @RequestParam(defaultValue = "0") Integer isIncludeSubDept, String unitCode, String kind) throws ValidateException {
 
-        return responseUtil.getResultJson(groupService.update(code, desc, deptCode, isDept, isIncludeSubDept, unitCode, kind)).toString();
+        return new Result<>(groupService.update(code, desc, deptCode, isDept, isIncludeSubDept, unitCode, kind));
     }
 
     /**
      * 置用户组所属的角色
      * @param groupCode
      * @param roleCode
-     * @param model
      * @return
      * @throws ValidateException
      */
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+    @ApiOperation(value = "置用户组所属的角色", notes = "置用户组所属的角色", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "分组编码", dataType = "String"),
+            @ApiImplicitParam(name = "roleCode", value = "角色编码", dataType = "Arrray"),
+    })
     @ResponseBody
+    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/setGroupOfRole", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String setGroupOfRole(String groupCode, String[] roleCode, Model model) throws ValidateException {
+    public Result<Object> setGroupOfRole(String groupCode, String[] roleCode) throws ValidateException {
 
-        return responseUtil.getResultJson(groupOfRoleService.setGroupOfRole(groupCode, roleCode)).toString();
+        return new Result<>(groupOfRoleService.setGroupOfRole(groupCode, roleCode));
     }
 
 
@@ -443,17 +477,22 @@ public class GroupController {
         }
     }
 
+    @ApiOperation(value = "用户组权限", notes = "用户组权限", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "分组编码", dataType = "String"),
+    })
+    @ResponseBody
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/groupPriv")
-    public String groupPriv(String groupCode, Model model) throws ValidateException {
+    public Result<Object> groupPriv(String groupCode) throws ValidateException {
+        JSONObject object = new JSONObject();
         Group group = groupService.getGroup(groupCode);
         if (group == null) {
             throw new ValidateException("#group.notexist", new Object[]{groupCode});
         }
 
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        model.addAttribute("group", group);
-        model.addAttribute("isMeAdmin", new Privilege().isUserPrivValid(request, Privilege.ADMIN));
+        object.put("group", group);
+        object.put("isMeAdmin", new Privilege().isUserPrivValid(request, Privilege.ADMIN));
 
         Map<String, List<Menu>> map = new HashMap<>();
         List<Menu> menuList = menuService.getChildren(ConstUtil.MENU_ROOT);
@@ -496,46 +535,58 @@ public class GroupController {
             authorityVOList.add(userAuthorityVO);
         }
 
-        model.addAttribute("authorityVOList", authorityVOList);
+        object.put("list", authorityVOList);
 
-        return "th/admin/group_priv";
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "设置用户组权限", notes = "设置用户组权限", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "分组编码", dataType = "String"),
+            @ApiImplicitParam(name = "priv", value = "权限", dataType = "Array"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/setGroupPrivs", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public JSONObject setGroupPrivs(String groupCode, String[] priv) throws ValidateException {
+    public Result<Object> setGroupPrivs(String groupCode, String privs) throws ValidateException {
+        String[] priv = privs.split(",");
         Group group = groupService.getGroup(groupCode);
         if (group == null) {
             throw new ValidateException("#group.notexist", new Object[]{groupCode});
         }
-
-        return responseUtil.getResultJson(groupPrivService.setPrivs(groupCode, priv));
+        return new Result<>(groupPrivService.setPrivs(groupCode, priv));
     }
 
+    @ApiOperation(value = "用户组列表", notes = "用户组列表", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "分组编码", dataType = "String"),
+    })
+    @ResponseBody
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/listUserOfGroup")
-    public String listUserOfGroup(String groupCode, Model model) throws ValidateException {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+    public Result<Object> listUserOfGroup(String groupCode) throws ValidateException {
+        JSONObject object = new JSONObject();
 
         Group group = groupService.getGroup(groupCode);
         if (group == null) {
             throw new ValidateException("#group.notexist", new Object[]{groupCode});
         }
-        model.addAttribute("group", group);
+        object.put("group", group);
 
-        StringBuffer sbUserOpts = new StringBuffer();
+//        StringBuffer sbUserOpts = new StringBuffer();
         List<UserOfGroup> list = userOfGroupService.listByGroupCode(groupCode);
         JSONArray jsonArray = new JSONArray();
         for (UserOfGroup userOfGroup : list) {
             JSONObject json = new JSONObject();
-            json.put("name", userOfGroup.getUserName());
-
             User user = userService.getUser(userOfGroup.getUserName());
+            if (user == null) {
+                // 删除垃圾数据
+                LogUtil.getLog(getClass()).error("用户: " + userOfGroup.getUserName() + " 不存在");
+                userOfGroupService.del(userOfGroup.getGroupCode(), new String[] {userOfGroup.getUserName()});
+                continue;
+            }
+            json.put("name", user.getLoginName());
             json.put("realName", user.getRealName());
-
-            sbUserOpts.append("<option value='" + user.getName() + "'>" + user.getRealName() + "</option>");
-
 
             json.put("gender", user.getGender()?"女":"男");
 
@@ -546,7 +597,7 @@ public class GroupController {
                 String deptName;
                 if (!dept.getParentCode().equals(ConstUtil.DEPT_ROOT) && !dept.getCode().equals(ConstUtil.DEPT_ROOT)) {
                     Department parentDept = departmentService.getDepartment(dept.getParentCode());
-                    deptName = parentDept.getName() + "<span style='font-family:宋体'>&nbsp;->&nbsp;</span>" + dept.getName();
+                    deptName = parentDept.getName() + dept.getName();
                 } else {
                     deptName = dept.getName();
                 }
@@ -557,30 +608,43 @@ public class GroupController {
             jsonArray.add(json);
         }
 
-        model.addAttribute("userOpts", sbUserOpts.toString());
-        model.addAttribute("jsonAry", jsonArray);
-        model.addAttribute("unitCode", new Privilege().getUserUnitCode());
+        object.put("list", jsonArray);
+        object.put("unitCode", new Privilege().getUserUnitCode());
 
-        return "th/admin/group_user_list";
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "用户组管理", notes = "用户组管理", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "分组编码", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "groupDesc", value = "分组描述", dataType = "String"),
+            @ApiImplicitParam(name = "userNames", value = "userNames", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "userRealNames", value = "userRealNames", dataType = "String"),
+    })
     @SysLog(type = LogType.AUTHORIZE, action = "将用户组${roleDesc}赋予给用户${userRealNames}", remark="将用户组${roleDesc}赋予给用户${userRealNames}", debug = true, level = LogLevel.NORMAL)
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/addGroupUser")
     @ResponseBody
-    public JSONObject addGroupUser(@RequestParam(required = true)String groupCode, String groupDesc,
+    public Result<Object> addGroupUser(@RequestParam(required = true)String groupCode, String groupDesc,
                                   @NotEmpty(message = "{user.select.none}") @RequestParam(required = true) String userNames, String userRealNames) {
         String[] userAry = StrUtil.split(userNames, ",");
-        return responseUtil.getResultJson(userOfGroupService.create(groupCode, userAry));
+        return new Result<>(userOfGroupService.create(groupCode, userAry));
     }
 
+    @ApiOperation(value = "用户组删除", notes = "用户组删除", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "分组编码", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "groupDesc", value = "分组描述", dataType = "String"),
+            @ApiImplicitParam(name = "userNames", value = "userNames", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "userRealNames", value = "userRealNames", dataType = "String"),
+    })
     @SysLog(type = LogType.AUTHORIZE, action = "将用户组${groupDesc}中的用户${userNames}删除", remark="将用户组${groupDesc}中的用户${userNames}删除", debug = true, level = LogLevel.NORMAL)
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @RequestMapping(value = "/delGroupUserBatch")
     @ResponseBody
-    public JSONObject delGroupUserBatch(@RequestParam(required = true)String groupCode, String groupDesc,
+    public Result<Object> delGroupUserBatch(@RequestParam(required = true)String groupCode, String groupDesc,
                                        @NotEmpty(message = "{user.select.none}") @RequestParam(required = true) String userNames) {
         String[] userAry = StrUtil.split(userNames, ",");
-        return responseUtil.getResultJson(userOfGroupService.del(groupCode, userAry));
+        return new Result<>(userOfGroupService.del(groupCode, userAry));
     }
 }

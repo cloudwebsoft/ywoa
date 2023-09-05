@@ -43,4 +43,6 @@ public interface IMenuService extends IService<Menu> {
     String getName(Menu menu);
 
     boolean move(String code, String parentCode, int position) throws ErrMsgException;
+
+    String getRealLinkBack(Menu menu);
 }

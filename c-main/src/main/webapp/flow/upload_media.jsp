@@ -3,7 +3,6 @@
 <%@ page import = "cn.js.fan.util.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
 <%@ page import = "com.redmoon.oa.flow.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="pvg" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 // 安全验证

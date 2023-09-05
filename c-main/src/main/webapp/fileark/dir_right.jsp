@@ -379,36 +379,6 @@
                 <input id="isCopyable" name="isCopyable" title="允许复制文章内容" value="1" <%=isCopyableChecked%> type="checkbox"/>
             </td>
         </tr>
-        <%
-            cn.js.fan.module.cms.plugin.wiki.Config wikiCfg = cn.js.fan.module.cms.plugin.wiki.Config.getInstance();
-            boolean isUse = wikiCfg.getBooleanProperty("isUse");
-            if (isUse) {
-        %>
-        <tr>
-            <td align="left">应用插件</td>
-            <td align="left">
-                <select id="pluginCode" name="pluginCode">
-                    <option value="<%=PluginUnit.DEFAULT%>">默认</option>
-                    <%
-                        PluginMgr pm = new PluginMgr();
-                        Vector v = pm.getAllPlugin();
-                        Iterator ir = v.iterator();
-                        while (ir.hasNext()) {
-                            PluginUnit pu = (PluginUnit) ir.next();
-                    %>
-                    <option value="<%=pu.getCode()%>"><%=pu.getName(request)%>
-                    </option>
-                    <%}%>
-                    <%if (op.equals("modify")) {%>
-                    <script>
-                        o("pluginCode").value = "<%=leaf.getPluginCode()%>";
-                    </script>
-                    <%}%>
-                </select></td>
-        </tr>
-        <%
-            }
-        %>
         <tr>
             <td align="left">其它</td>
             <td align="left">
@@ -454,9 +424,4 @@
     </table>
 </form>
 </body>
-<script>
-    function changeLink() {
-        o("description").value = "netdisk/netdisk_public_attach_list.jsp?dir_code=" + o("publicNetdiskDir").value;
-    }
-</script>
 </html>

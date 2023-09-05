@@ -103,6 +103,9 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title>智能模块设计-添加内容</title>
 	<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+	<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
+	<link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
 	<style>
 		input[readonly] {
 			background-color: #ddd;
@@ -148,11 +151,12 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 	<script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 	<link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
 
-	<script>
-		$(function () {
-			SetNewDate();
-		});
+	<link rel="stylesheet" href="../js/poshytip/tip-yellowsimple/tip-yellowsimple.css" type="text/css" />
+	<script type="text/javascript" src="../js/poshytip/jquery.poshytip.js"></script>
 
+	<script src="../js/layui/layui.js" charset="utf-8"></script>
+
+	<script>
 		function setradio(myitem, v) {
 			var radioboxs = document.all.item(myitem);
 			if (radioboxs != null) {
@@ -180,7 +184,7 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 	}
 %>
 <div class="spacerH"></div>
-<form action="../flow/createNestSheetRelated.do?actionId=<%=actionId %>&parentId=<%=parentId%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&pageType=<%=pageType%>" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
+<form action="../flow/createNestSheetRelated.do?actionId=<%=actionId %>&parentId=<%=parentId%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCodeRelated%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&pageType=<%=pageType%>" method="post" enctype="multipart/form-data" name="visualForm" id="visualForm" class="form-inline">
 	<table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
 		<tr>
 			<td align="left">
@@ -194,7 +198,7 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 			</td>
 		</tr>
 		<tr>
-			<td height="30" align="center"><input class="btn" type="submit" value="确定"/>
+			<td height="30" align="center"><input class="btn btn-default" type="submit" value="确定"/>
 				<input id="cws_id" name="cws_id" value="<%=relateFieldValue%>" type="hidden"/>
 				<%
 					if (parentId != -1 && flowId != com.redmoon.oa.visual.FormDAO.NONEFLOWID) {
@@ -214,145 +218,217 @@ int flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.N
 <script src="../js/jquery-contextmenu/jquery.contextMenu.js"></script>
 <script src="../js/jquery-contextmenu/jquery.ui.position.min.js"></script>
 <script>
-// 记录添加的嵌套表格2记录的ID
-function addTempCwsId(formCode, cwsId) {
-	var name = "<%=com.redmoon.oa.visual.FormDAO.NAME_TEMP_CWS_IDS%>_" + formCode;
-    var inp;
-    try {
-        inp = document.createElement('<input type="hidden" name="' + name + '" />');
-    } catch(e) {
-        inp = document.createElement("input");
-        inp.type = "hidden";
-        inp.name = name;
-    }
-    inp.value = cwsId;
-	
-	spanTempCwsIds.appendChild(inp);
-}
-$(function() {
-    var options = {
-        //target:        '#output2',   // target element(s) to be updated with server response
-        beforeSubmit:  preSubmit,  // pre-submit callback
-        success:       showResponse  // post-submit callback
+	<%
+	if (msd.getPageStyle()==ConstUtil.PAGE_STYLE_LIGHT) {
+	%>
+		// 不能放在$(function中，原来的tabStyle_8风格会闪现
+		// $(function() {
+		var $table = $('#visualForm').find('.tabStyle_8');
+		$table.addClass('layui-table');
+		$table.removeClass('tabStyle_8');
+		// })
+	<%
+	}
+	%>
 
-        // other available options:
-        //url:       url         // override for form's 'action' attribute
-        //type:      type        // 'get' or 'post', override for form's 'method' attribute
-        //dataType:  null        // 'xml', 'script', or 'json' (expected server response type)
-        //clearForm: true        // clear all form fields after successful submit
-        //resetForm: true        // reset the form after successful submit
-
-        // $.ajax options can be used here too, for example:
-        //timeout:   3000
-    };
-
-    // bind to the form's submit event
-    var lastSubmitTime = new Date().getTime();
-    $('#visualForm').submit(function() {
-		var lv_flowId = new LiveValidation('flowId');
-		if (!LiveValidation.massValidate(lv_flowId.formObj.fields)) {
-			jAlert(LiveValidation.liveErrMsg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
-			return false;
+	// 记录添加的嵌套表格2记录的ID
+	function addTempCwsId(formCode, cwsId) {
+		var name = "<%=com.redmoon.oa.visual.FormDAO.NAME_TEMP_CWS_IDS%>_" + formCode;
+		var inp;
+		try {
+			inp = document.createElement('<input type="hidden" name="' + name + '" />');
+		} catch(e) {
+			inp = document.createElement("input");
+			inp.type = "hidden";
+			inp.name = name;
 		}
-    	
-        // 通过判断时间，禁多次重复提交
-        var curSubmitTime = new Date().getTime();
-        // 在0.5秒内的点击视为连续提交两次，实际当出现重复提交时，测试时间差为0
-        if (curSubmitTime - lastSubmitTime < 500) {
-            lastSubmitTime = curSubmitTime;
-            $('#visualForm').hideLoading();
-            return false;
-        }
-        else {
-            lastSubmitTime = curSubmitTime;
-        }
+		inp.value = cwsId;
 
-        $(this).ajaxSubmit(options);
-        return false;
-    });
-});
+		spanTempCwsIds.appendChild(inp);
+	}
 
-function preSubmit() {
-    $('#visualForm').showLoading();
-}
+	$(function() {
+		var options = {
+			//target:        '#output2',   // target element(s) to be updated with server response
+			beforeSubmit:  preSubmit,  // pre-submit callback
+			success:       showResponse  // post-submit callback
 
-function showResponse(responseText, statusText, xhr, $form) {
-	$('#visualForm').hideLoading();
-	var data = $.parseJSON($.trim(responseText));
-	if (data.ret === "1") {
-		if (data.isVisual) {
-			doVisual(data.fdaoId, data.tds, data.token);
-		} else {
-			doFlow(data.fdaoId, data.tds, data.token, data.sums);
+			// other available options:
+			//url:       url         // override for form's 'action' attribute
+			//type:      type        // 'get' or 'post', override for form's 'method' attribute
+			//dataType:  null        // 'xml', 'script', or 'json' (expected server response type)
+			//clearForm: true        // clear all form fields after successful submit
+			//resetForm: true        // reset the form after successful submit
+
+			// $.ajax options can be used here too, for example:
+			//timeout:   3000
+		};
+
+		// bind to the form's submit event
+		var lastSubmitTime = new Date().getTime();
+		$('#visualForm').submit(function() {
+			var lv_flowId = new LiveValidation('flowId');
+			if (!LiveValidation.massValidate(lv_flowId.formObj.fields)) {
+				jAlert(LiveValidation.liveErrMsg, '<lt:Label res="res.flow.Flow" key="prompt"/>');
+				return false;
+			}
+
+			// 通过判断时间，禁多次重复提交
+			var curSubmitTime = new Date().getTime();
+			// 在0.5秒内的点击视为连续提交两次，实际当出现重复提交时，测试时间差为0
+			if (curSubmitTime - lastSubmitTime < 500) {
+				lastSubmitTime = curSubmitTime;
+				$('#visualForm').hideLoading();
+				return false;
+			}
+			else {
+				lastSubmitTime = curSubmitTime;
+			}
+
+			$(this).ajaxSubmit(options);
+			return false;
+		});
+	});
+
+	function preSubmit() {
+		$('#visualForm').showLoading();
+	}
+
+	function showResponse(responseText, statusText, xhr, $form) {
+		$('#visualForm').hideLoading();
+		var data = $.parseJSON($.trim(responseText));
+		if (data.ret === "1") {
+			if (data.isVisual) {
+				doVisual(data.fdaoId, data.tds, data.token);
+			} else {
+				doFlow(data.fdaoId, data.tds, data.token, data.sums);
+			}
+		}
+		if (data.msg != null)
+			data.msg = data.msg.replace(/\\r/ig, "<BR>");
+		jAlert(data.msg, "提示");
+	}
+
+	function doVisual(fdaoId,tds,token){
+		// 如果有父窗口，则自动刷新父窗口
+		if (window.opener!=null) {
+			window.opener.addTempCwsId("<%=formCodeRelated%>", fdaoId);
+			try {
+				window.opener.insertRow_<%=moduleCode%>("<%=formCodeRelated%>", fdaoId, tds, token);
+				// 计算控件合计
+				window.opener.callCalculateOnload();
+			}
+			catch (e) {
+			}
+			window.close();
 		}
 	}
-	if (data.msg != null)
-		data.msg = data.msg.replace(/\\r/ig, "<BR>");
-	jAlert(data.msg, "提示");
-}
 
-function doVisual(fdaoId,tds,token){
-	// 如果有父窗口，则自动刷新父窗口
-    if (window.opener!=null) {    
-        window.opener.addTempCwsId("<%=formCodeRelated%>", fdaoId);        
-        try {
-            window.opener.insertRow_<%=moduleCode%>("<%=formCodeRelated%>", fdaoId, tds, token);
-            // 计算控件合计
-            window.opener.callCalculateOnload();
-        }
-        catch (e) {
-        }
-        window.close();
-    }
-}
-
-function doFlow(fdaoId,tds,token,sums){
-    // 如果有父窗口，则自动刷新父窗口
-    if (window.opener!=null) {
-        // 不能刷新，因为在insertRow还将调用onNestInsertRow事件
-        // window.parent.refreshNestSheetCtl<%=moduleCode%>();
-        try {
-            window.opener.insertRow_<%=moduleCode%>("<%=formCodeRelated%>", fdaoId, tds, token);
-            // 计算控件合计
-            // window.opener.callCalculateOnload();
-			window.opener.callByNestSheet(sums, '<%=formCodeRelated%>');
-        }
-        catch (e) {
-        }
-        window.close();
-    }
-}
-
-$(function() {
-	$('input[type=radio]').each(function(i) {
-		var name = $(this).attr("name");
-		if ($(this).attr("readonly")==null) {
-			$(this).addClass('radio-menu');
-		}
-	});
-	
-	// 不能用BootstrapMenu，因为chrome上会导致radio无法点击
-	$.contextMenu({
-		selector: '.radio-menu',
-		trigger: 'hover',
-		delay: 1000,
-		callback: function(key, options) {
-			if (key == 'cancel') {
-				var $obj = options.$trigger;
-				var name = $obj.attr('name');
-				$('input[type=radio][name="' + name + '"]:checked').attr("checked", false);
+	function doFlow(fdaoId,tds,token,sums){
+		// 如果有父窗口，则自动刷新父窗口
+		if (window.opener!=null) {
+			// 不能刷新，因为在insertRow还将调用onNestInsertRow事件
+			// window.parent.refreshNestSheetCtl<%=moduleCode%>();
+			try {
+				window.opener.insertRow_<%=moduleCode%>("<%=formCodeRelated%>", fdaoId, tds, token);
+				// 计算控件合计
+				// window.opener.callCalculateOnload();
+				window.opener.callByNestSheet(sums, '<%=formCodeRelated%>');
 			}
-		},
-		items: {
-			"cancel": {name: "取消选择", icon: function($element, key, item){ return 'context-menu-icon context-menu-icon-quit'; }}
+			catch (e) {
+			}
+			window.close();
 		}
-	});
+	}
 
-	$('input').each(function() {
-		if ($(this).attr('kind')=='DATE') {
-			$(this).attr('autocomplete', 'off');
+	function setNotReadOnly() {
+		var obj = o("visualForm");
+		for (var i = 0; i < obj.elements.length; i++) {
+			var el = obj.elements[i];
+			var $el = $(el);
+			if ($el.attr('readonly')!=null && ($el.attr('readOnlyType') == 1 || $el.attr('readOnlyType') == 2)) {
+				$el.removeAttr('readonly');
+				// console.log($el.attr('name') + ' ' + $el.attr('title') + ' ' + obj.elements[i].tagName);
+				if (el.type == "radio") {
+					// 删除其父节点span的readonly属性
+					$el.parent().removeAttr('readonly');
+					$el.removeAttr('onchange');
+					$el.removeAttr('onfocus');
+					$el.click(function() {
+						$(this).attr('checked', true);
+					});
+				}
+				else if (el.tagName == "SELECT") {
+					$el.removeAttr('onchange');
+					$el.removeAttr('onfocus');
+				}
+				else if (el.type == "checkbox") {
+					$el.removeAttr('onclick');
+				}
+			}
 		}
+	}
+
+	$(function() {
+		// 将仅编辑时只读的字段，变为可写
+		setNotReadOnly();
+
+		$('input[type=radio]').each(function(i) {
+			if ($(this).attr("readonly")==null) {
+				$(this).addClass('radio-menu');
+			}
+		});
+
+		// 不能用BootstrapMenu，因为chrome上会导致radio无法点击
+		$.contextMenu({
+			selector: '.radio-menu',
+			trigger: 'hover',
+			delay: 1000,
+			callback: function(key, options) {
+				if (key == 'cancel') {
+					var $obj = options.$trigger;
+					var name = $obj.attr('name');
+					$('input[type=radio][name="' + name + '"]:checked').attr("checked", false);
+				}
+			},
+			items: {
+				"cancel": {name: "取消选择", icon: function($element, key, item){ return 'context-menu-icon context-menu-icon-quit'; }}
+			}
+		});
+
+		$('input').each(function() {
+			if ($(this).attr('kind')=='DATE' || $(this).attr('kind')=='DATE_TIME') {
+				$(this).attr('autocomplete', 'off');
+			}
+		});
+
+		SetNewDate();
+
+		// 初始化tip提示
+		// 不能通过$("#visualForm").serialize()来获取所有的元素，因为radio或checkbox未被选中，则不会被包含
+		$('#visualForm input, #visualForm select, #visualForm textarea').each(function() {
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type')!='hidden' && $(this).attr('type')!='file') {
+				$(this).addClass('form-control');
+			}
+
+			var tip = '';
+			if ($(this).attr('type') == 'radio') {
+				tip = $(this).parent().attr('tip');
+			}
+			else {
+				tip = $(this).attr('tip');
+			}
+			if (null!=tip && ""!=tip) {
+				$(this).poshytip({
+					content: function(){return tip;},
+					className: 'tip-yellowsimple',
+					alignTo: 'target',
+					alignX: 'center',
+					offsetY: 5,
+					allowTipHover: true
+				});
+			}
+		});
 	});
-});
 </script>
 </html>

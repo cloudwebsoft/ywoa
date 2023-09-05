@@ -9,18 +9,20 @@ import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
-import com.cloudweb.oa.api.IForumService;
-import com.cloudweb.oa.entity.GroupOfRole;
-import com.cloudweb.oa.entity.User;
-import com.cloudweb.oa.entity.UserOfGroup;
-import com.cloudweb.oa.entity.UserOfRole;
+import com.cloudweb.oa.cache.RoleCache;
+import com.cloudweb.oa.cache.UserAuthorityCache;
+import com.cloudweb.oa.cache.UserCache;
+import com.cloudweb.oa.entity.*;
 import com.cloudweb.oa.listener.SessionListener;
 import com.cloudweb.oa.security.AuthUtil;
 import com.cloudweb.oa.service.*;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.security.AesUtil;
+import com.cloudwebsoft.framework.util.IPUtil;
+import com.redmoon.oa.Config;
 import com.redmoon.oa.LogDb;
 import com.redmoon.oa.LogUtil;
 import com.redmoon.oa.account.AccountDb;
@@ -32,6 +34,16 @@ import com.redmoon.oa.person.InvalidNameException;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.person.WrongPasswordException;
+import com.redmoon.oa.sys.DebugUtil;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -205,43 +217,6 @@ public class Privilege implements IPrivilege {
     }
 
     /**
-     * 在论坛和社区间跳转，同步权限，实现单点登录
-     * @param request HttpServletRequest
-     * @param response HttpServletResponse
-     * @param fromWhere String
-     * @param toWhere String
-     * @return boolean
-     * @throws ErrMsgException
-     */
-    public boolean jump(HttpServletRequest request,
-                        HttpServletResponse response, String fromWhere,
-                        String toWhere) throws ErrMsgException {
-        if ("oa".equals(fromWhere)) {
-            if (!isUserLogin(request)) {
-                throw new ErrMsgException("非法登录或您的登录已过期！");
-            }
-            // 填充toWhere的权限
-            if ("forum".equals(toWhere)) {
-                IForumService forumService = SpringUtil.getBean(IForumService.class);
-                String name = getUser(request);
-                return forumService.JumpToCommunity(request, response, name);
-            }
-        }
-        else if ("forum".equals(fromWhere)) {
-            IForumService forumService = SpringUtil.getBean(IForumService.class);
-            if (!forumService.isUserLogin(request)) {
-                throw new ErrMsgException("非法登录！");
-            }
-            if ("oa".equals(toWhere)) {
-                String name = forumService.getUser(request);
-                return JumpToOA(request, response, name);
-            }
-        }
-
-        throw new ErrMsgException("跳转来源错误！");
-    }
-
-    /**
      * 判断用户是否已登录
      * @param request HttpServletRequest
      * @return boolean
@@ -258,12 +233,46 @@ public class Privilege implements IPrivilege {
      */
     @Override
     public String getUser(HttpServletRequest request) {
+        String userName = null;
         HttpSession session = request.getSession(true);
-        return (String) session.getAttribute(NAME);
+        if (session != null) {
+            userName = (String) session.getAttribute(NAME);
+            if (userName != null) {
+                return userName;
+            }
+        }
+
+        userName = SpringUtil.getUserName();
+        // 当对Spring Security permitAll的路径进行访问时，SprintUtil.getUserName取得的用户名为 ANONYMOUS_USER
+        if (ConstUtil.ANONYMOUS_USER.equals(userName)) {
+            return null;
+        }
+
+        return userName;
     }
 
     public String getUser() {
         return SpringUtil.getUserName();
+    }
+
+    public static String getCurRoleCode() {
+        HttpSession session = SpringUtil.getRequest().getSession(true);
+        return (String)session.getAttribute(ConstUtil.SESSION_CUR_ROLE);
+    }
+
+    public static String getCurDeptCode() {
+        HttpSession session = SpringUtil.getRequest().getSession(true);
+        return (String)session.getAttribute(ConstUtil.SESSION_CUR_DEPT);
+    }
+
+    public static void setCurRoleCode(String curRoleCode) {
+        HttpSession session = SpringUtil.getRequest().getSession(true);
+        session.setAttribute(ConstUtil.SESSION_CUR_ROLE, curRoleCode);
+    }
+
+    public static void setCurDeptCode(String curDeptCode) {
+        HttpSession session = SpringUtil.getRequest().getSession(true);
+        session.setAttribute(ConstUtil.SESSION_CUR_DEPT, curDeptCode);
     }
     
     public static Object getAttribute(HttpServletRequest request, String attName) {
@@ -291,8 +300,20 @@ public class Privilege implements IPrivilege {
             else
             	return "";
          */
+        String unitCode = null;
         HttpSession session = request.getSession(true);
-        return (String) session.getAttribute(UNITCODE);
+        if (session != null) {
+            unitCode = (String) session.getAttribute(UNITCODE);
+        }
+        if (unitCode == null) {
+            String userName = getUser(request);
+            if (userName != null) {
+                DeptUserDb dud = new DeptUserDb();
+                unitCode = dud.getUnitOfUser(userName).getCode();
+                session.setAttribute(UNITCODE, unitCode);
+            }
+        }
+        return unitCode;
     }
 
     public String getUserUnitCode() {
@@ -407,11 +428,11 @@ public class Privilege implements IPrivilege {
      * 取得用户拥有管理权的部门，包括用户自身能管理的部门及用户所属角色能够管理的部门
      * @return Vector 存储部门对象DeptDb
      */
-    public Vector getUserAdminDepts(HttpServletRequest request) throws ErrMsgException {
+    public Vector<DeptDb> getUserAdminDepts(HttpServletRequest request) throws ErrMsgException {
         if (isUserPrivValid(request, ADMIN)) {
             DeptDb dd = new DeptDb();
             dd = dd.getDeptDb(DeptDb.ROOTCODE);
-            Vector v = new Vector();
+            Vector<DeptDb> v = new Vector<>();
             dd.getAllChild(v, dd);
             return v;
         }
@@ -496,20 +517,17 @@ public class Privilege implements IPrivilege {
         	if (roles[i].isDeptManager()) {
         		// 判断deptCode是否为自己所管理的部门
         		DeptUserDb dud = new DeptUserDb();
-        		Iterator ir = dud.getDeptsOfUser(userName).iterator();
-        		while (ir.hasNext()) {
-        			DeptDb dd = (DeptDb)ir.next();
-        			if (dd.getCode().equals(deptCode)) {
-        				return true;
-        			}
-        		}
+                for (DeptDb dd : dud.getDeptsOfUser(userName)) {
+                    if (dd.getCode().equals(deptCode)) {
+                        return true;
+                    }
+                }
         	}
         	
             String[] depts = roles[i].getAdminDepts();
             if (depts != null) {
-                int len = depts.length;
-                for (int j = 0; j < len; j++) {
-                    if (depts[j].equals(deptCode)) {
+                for (String dept : depts) {
+                    if (dept.equals(deptCode)) {
                         return true;
                     }
                 }
@@ -519,9 +537,8 @@ public class Privilege implements IPrivilege {
         // 判断用户能管理的部门
         String[] depts = ud.getAdminDepts();
         if (depts != null) {
-            int len = depts.length;
-            for (int i = 0; i < len; i++) {
-                if (depts[i].equals(deptCode)) {
+            for (String dept : depts) {
+                if (dept.equals(deptCode)) {
                     return true;
                 }
             }
@@ -631,43 +648,34 @@ public class Privilege implements IPrivilege {
         oud = oud.getOnlineUserDb(name);
         String sessionId = req.getSession().getId();
 
-        /*
-         Iterator ir = SessionListener.getSessionMaps().keySet().iterator();
-                 while (ir.hasNext()) {
-            HttpSession session = (HttpSession)SessionListener.getSessionMaps().get(ir.next());
-            System.out.println(getClass() + " sessiondId=" + session.getId());
-                 }
-         */
         // 如果该用户已处于在线记录中
         if (oud.isLoaded()) {
-        	 // sessionId当手机端登录时，为null
+            // sessionId当手机端登录时，为null
         	// 如果是pc端
         	if (oud.getClient().equals(OnlineUserDb.CLIENT_PC)) {
 	            if (!oud.getSessionId().equals(sessionId)) {
-	                HttpSession session = SessionListener.getSession(oud.
-	                        getSessionId());
-	                // System.out.println(getClass() + " online sessionId=" +
-	                //                   oud.getSessionId() + " session=" + session);
+	                /*HttpSession session = SessionListener.getSession(oud.getSessionId());
 	                if (session != null) {
 	                    // 一个帐户多重登录
+                        // 前后端分离后，有可能会碰到session无效的情况，setAttribute: Session [*****] has already been invalidated
 	                    session.setAttribute("loginOnOtherPlace", "y");
 	                } else {
 	                    com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).
 	                            info("doLogin:Session with sessionId=" +
 	                                  oud.getSessionId() +
 	                                  " is not found in session filter's map.");
-	                }
+	                }*/
 	                oud.setSessionId(sessionId);
 	                oud.setClient(OnlineUserDb.CLIENT_PC);
-	                oud.save();
+                    oud.setIp(StrUtil.getIp(req));
+                    oud.save();
 	            }
         	}
         	else {
-                HttpSession session = SessionListener.getSession(oud.
-                        getSessionId());        		
                 oud.setSessionId(sessionId);
                 oud.setClient(OnlineUserDb.CLIENT_PC);
-                oud.save();        		
+                oud.setIp(StrUtil.getIp(req));
+                oud.save();
         	}
         } else {
             // 如果在线记录中没有该用户，则创建在线记录
@@ -702,6 +710,128 @@ public class Privilege implements IPrivilege {
         // 放在Authorization中，会致测试时，因reload而被从session中清除掉，但是reload却不会致NAME及PWDMD5被清除
         session.setAttribute(SESSION_OA_AUTH, auth);
         session.setAttribute(UNITCODE, unitCode);
+
+        Config cfg = Config.getInstance();
+        boolean isRoleSwitchable = cfg.getBooleanProperty("isRoleSwitchable");
+        if (isRoleSwitchable) {
+            String curRoleCode = getDefaultCurRoleCode(name);
+            if (curRoleCode != null) {
+                setCurRoleCode(curRoleCode);
+
+                // 根据当前切换的角色，赋予相应的权限以便于spring security控制权限
+                UserCache userCache = SpringUtil.getBean(UserCache.class);
+                com.cloudweb.oa.entity.User user = userCache.getUser(name);
+
+                List<UserOfRole> userOfRoleList = new ArrayList<>();
+                IUserOfRoleService userOfRoleService = SpringUtil.getBean(IUserOfRoleService.class);
+                userOfRoleList.add(userOfRoleService.getUserOfRole(name, curRoleCode));
+
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(name, user.getPwd(), getRolesAndAuthorities(name, userOfRoleList));
+                // 存放authentication到SecurityContextHolder
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }
+
+        if (cfg.getBooleanProperty("isDeptSwitchable")) {
+            String curDeptCode = getDefaultCurDeptCode(name);
+            if (curDeptCode!=null) {
+                setCurDeptCode(curDeptCode);
+            }
+        }
+    }
+
+    public static Collection<GrantedAuthority> getRolesAndAuthorities(String userName, List<UserOfRole> roles) {
+        if (Privilege.ADMIN.equals(userName)) {
+            // 给admin加入ROLE_ADMIN角色
+            return AuthorityUtils.commaSeparatedStringToAuthorityList("admin,ROLE_ADMIN");
+        }
+
+        List<GrantedAuthority> list = new ArrayList<>();
+
+        // 加入ROLE_LOGIN，表示已登录
+        SimpleGrantedAuthority grantedAuthority = new SimpleGrantedAuthority("ROLE_LOGIN");
+        list.add(grantedAuthority);
+
+        // 1. 放入角色时需要加前缀ROLE_，而在controller使用时不需要加ROLE_前缀
+        // 2. 放入的是权限时，不能加ROLE_前缀，hasAuthority与放入的权限名称对应即可
+        if (roles!=null) {
+            for (UserOfRole userOfRole : roles) {
+                grantedAuthority = new SimpleGrantedAuthority("ROLE_" + userOfRole.getRoleCode());
+                list.add(grantedAuthority);
+            }
+        }
+
+        UserAuthorityCache userAuthorityCache = SpringUtil.getBean(UserAuthorityCache.class);
+        List<String> listAuthority = userAuthorityCache.getUserAuthorities(userName);
+        for (String authority : listAuthority) {
+            grantedAuthority = new SimpleGrantedAuthority(authority);
+            list.add(grantedAuthority);
+        }
+
+        return list;
+    }
+
+    /**
+     * 取得默认角色
+     * @param name
+     * @return
+     */
+    public static String getDefaultCurRoleCode(String name) {
+        // 取最大的角色为默认角色
+        UserCache userCache = SpringUtil.getBean(UserCache.class);
+        List<Role> list = userCache.getRoles(name);
+        if (list.size() > 1) {
+            Comparator<Role> comp = (o1, o2) -> {
+                //相当于从大到小排序，大值返回负值，往前放
+                return -(o1.getOrders() - o2.getOrders());
+            };
+            list.sort(comp);
+        }
+        if (list.size() >= 1) {
+            return list.get(0).getCode();
+        }
+        else {
+            DebugUtil.w(Privilege.class, "doLoginSession", name + " has no role");
+            return null;
+        }
+    }
+
+    public static String getDefaultCurDeptCode(String userName) {
+        Config cfg = Config.getInstance();
+        boolean isRoleSwitchable = cfg.getBooleanProperty("isRoleSwitchable");
+        // 如果角色可切换
+        if (isRoleSwitchable) {
+            String curRoleCode = getCurRoleCode();
+            if (curRoleCode != null) {
+                IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
+                IUserOfRoleService userOfRoleService = SpringUtil.getBean(IUserOfRoleService.class);
+                List<Department> list = departmentService.getDeptsOfUser(userName);
+                for (Department department : list) {
+                    // 取得第一个角色与当前部门均对应的记录作为默认的当前部门
+                    if (userOfRoleService.isRoleOfDept(userName, curRoleCode, department.getCode())) {
+                        return department.getCode();
+                    }
+                }
+            }
+            else {
+                if (!ConstUtil.USER_ADMIN.equals(userName)) {
+                    DebugUtil.e(Privilege.class, "getDefaultCurDeptCode", userName + " has none role");
+                }
+            }
+        }
+        else {
+            IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
+            List<Department> list = departmentService.getDeptsOfUser(userName);
+            if (list.size() > 0) {
+                return list.get(0).getCode();
+            }
+            else {
+                if (!ConstUtil.USER_ADMIN.equals(userName)) {
+                    DebugUtil.w(Privilege.class, "getDefaultCurDeptCode", userName + " has no dept");
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -713,14 +843,71 @@ public class Privilege implements IPrivilege {
      * @throws InvalidNameException
      * @throws ErrMsgException
      */
+    public boolean login(HttpServletRequest req, HttpServletResponse res, Authentication authentication) throws
+            WrongPasswordException, ErrMsgException {
+        String name = (String)authentication.getPrincipal();
+
+        // 许可证验证
+        License.getInstance().validate(req);
+
+        com.redmoon.oa.security.Config myconfig = com.redmoon.oa.security.Config.getInstance();
+        String pwdName = myconfig.getProperty("pwdName");
+        String pwd = req.getParameter(pwdName);
+        String pwdAesKey = myconfig.getProperty("pwdAesKey");
+        String pwdAesIV = myconfig.getProperty("pwdAesIV");
+        try {
+            pwd = AesUtil.aesDecrypt(pwd, pwdAesKey, pwdAesIV);
+        } catch (Exception e) {
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(e);
+        }
+
+        // 通过key登录
+        String pwdMD5 = "";
+        if (pwd == null) {
+            throw new WrongPasswordException();
+        }
+        try {
+            pwdMD5 = SecurityUtil.MD5(pwd);
+        } catch (Exception e) {
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("login MD5 exception: " + e.getMessage());
+        }
+
+        UserDb user = new UserDb();
+        user = user.getUserDb(name);
+        if (user.isValid()) {
+            name = user.getName();
+            user.setLastLogin(new java.util.Date());
+            user.save();
+        } else {
+            LogUtil.log(name, IPUtil.getRemoteAddr(req), LogDb.TYPE_LOGIN, "非法用户");
+            throw new ErrMsgException("非法用户");
+        }
+
+        // 记录日志
+        // LogUtil.log(name, IPUtil.getRemoteAddr(req), LogDb.TYPE_LOGIN, LogUtil.get(req, "action_login"));
+        LogUtil.log(name, IPUtil.getRemoteAddr(req), LogDb.TYPE_LOGIN, SpringUtil.getBean(I18nUtil.class).get("action_login"));
+
+        doLogin(req, name, pwdMD5);
+        return true;
+    }
+
+    /**
+     * 登录，用于手机端
+     * @param req HttpServletRequest
+     * @param res HttpServletResponse
+     * @return boolean
+     * @throws WrongPasswordException
+     * @throws InvalidNameException
+     * @throws ErrMsgException
+     */
     public boolean login(HttpServletRequest req, HttpServletResponse res) throws
             WrongPasswordException, ErrMsgException {
         String name = "";
-		try {
-			name = URLDecoder.decode(ParamUtil.get(req, "name", true),"utf-8");
-		} catch (UnsupportedEncodingException e2) {
-			e2.printStackTrace();
-		}
+        try {
+            name = URLDecoder.decode(ParamUtil.get(req, "name", true),"utf-8");
+        } catch (UnsupportedEncodingException e2) {
+            e2.printStackTrace();
+        }
 
         // 许可性验证
         License.getInstance().validate(req);
@@ -743,34 +930,41 @@ public class Privilege implements IPrivilege {
         try {
             pwd = AesUtil.aesDecrypt(pwd, pwdAesKey, pwdAesIV);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(e);
         }
 
         // 通过key登录
         String keyId = ParamUtil.get(req, "keyId", true);
         String pwdMD5 = "";
         if (!"".equals(keyId)){
-        	String sql = "select name,pwd from user_setup t, users u where t.USER_NAME = u.name and t.key_id = " + StrUtil.sqlstr(keyId);
-        	JdbcTemplate jt = new JdbcTemplate();
-        	ResultIterator ri = null;
-        	ResultRecord rr = null;
-        	try {
-				ri = jt.executeQuery(sql);
-				if(ri.hasNext()){
-					rr = (ResultRecord)ri.next();
-					name = rr.getString("name");
-					pwdMD5 = rr.getString("pwd");
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+            String sql = "select name,pwd from user_setup t, users u where t.USER_NAME = u.name and t.key_id = " + StrUtil.sqlstr(keyId);
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = null;
+            ResultRecord rr = null;
+            try {
+                ri = jt.executeQuery(sql);
+                if(ri.hasNext()){
+                    rr = ri.next();
+                    name = rr.getString("name");
+                    pwdMD5 = rr.getString("pwd");
+                }
+            } catch (SQLException e) {
+                com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(e);
+            }
         }else{
-        	if (pwd == null) {
+            IUserService userService = SpringUtil.getBean(IUserService.class);
+            User user = userService.getUserByLoginName(name);
+            if (user == null) {
+                throw new ErrMsgException("非法用户!");
+            }
+            name = user.getName();
+
+            if (pwd == null) {
                 throw new WrongPasswordException();
             }
-        	try {
+            try {
                 pwdMD5 = SecurityUtil.MD5(pwd);
-            } catch (Exception e) { 
+            } catch (Exception e) {
                 com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("login MD5 exception: " + e.getMessage());
             }
         }
@@ -789,37 +983,34 @@ public class Privilege implements IPrivilege {
                 throw new ErrMsgException("非法用户");
             }
         } else {
-            // 检查是否使用了工号登录
-            AccountDb ad = new AccountDb();
-            ad = ad.getAccountDb(name);
-            if (ad.isLoaded()) {
-                name = ad.getUserName();
-                if (!"".equals(name) && Authenticate(name, pwdMD5)) {
-                    UserDb user = new UserDb();
-                    user = user.getUserDb(name);
-                    if (user.isValid()) {
-                        isAuthValid = true;
-                    } else {
-                        throw new ErrMsgException("非法用户");
+            Config cfg = Config.getInstance();
+            boolean isUseAccount = cfg.getBooleanProperty("isUseAccount");
+            if (isUseAccount) {
+                // 检查是否使用了工号登录
+                AccountDb ad = new AccountDb();
+                ad = ad.getAccountDb(name);
+                if (ad.isLoaded()) {
+                    name = ad.getUserName();
+                    if (!"".equals(name) && Authenticate(name, pwdMD5)) {
+                        UserDb user = new UserDb();
+                        user = user.getUserDb(name);
+                        if (user.isValid()) {
+                            isAuthValid = true;
+                        } else {
+                            throw new ErrMsgException("非法用户");
+                        }
                     }
                 }
             }
         }
         if (isAuthValid) {
-            LogUtil.log(name, req.getRemoteAddr(), LogDb.TYPE_LOGIN, LogUtil.get(req, "action_login"));
-            doLogin(req, name, pwdMD5);
+            // 记录日志
+            LogUtil.log(name, IPUtil.getRemoteAddr(req), LogDb.TYPE_LOGIN, SpringUtil.getBean(I18nUtil.class).get("action_login"));
 
-            // 2011-2-17 fgf 改为OA登录时同步登录论坛，无需再jump
-            IForumService forumService = SpringUtil.getBean(IForumService.class);
-            try {
-                forumService.JumpToCommunity(req, res, name);
-            }
-            catch (ErrMsgException e) {
-                com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(StrUtil.trace(e));
-            }
+            doLogin(req, name, pwdMD5);
             return true;
         } else {
-            LogUtil.log(name, req.getRemoteAddr(), LogDb.TYPE_LOGIN, LogUtil.get(req, "warn_login_fail"));
+            LogUtil.log(name, IPUtil.getRemoteAddr(req), LogDb.TYPE_LOGIN, SpringUtil.getBean(I18nUtil.class).get("warn_login_fail"));
             return false;
         }
     }
@@ -834,7 +1025,7 @@ public class Privilege implements IPrivilege {
     public boolean logout(HttpServletRequest req, HttpServletResponse res) throws
             ErrMsgException {
         HttpSession session = req.getSession(true);
-        // LogUtil.log(getUser(req), req.getRemoteAddr(), LogDb.TYPE_LOGOUT, LogUtil.get(req, "action_logout"));
+        // LogUtil.log(getUser(req), IPUtil.getRemoteAddr(req), LogDb.TYPE_LOGIN, SpringUtil.getBean(I18nUtil.class).get("action_logout"));
         session.invalidate();
         return true;
     }
@@ -846,6 +1037,11 @@ public class Privilege implements IPrivilege {
      * @return boolean
      */
     public boolean isRolePrivValid(String roleCode, String priv) {
+        RoleCache roleCache = SpringUtil.getBean(RoleCache.class);
+        // 如果角色未启用，则无权限
+        if (!roleCache.getRole(roleCode).getStatus()) {
+            return false;
+        }
 
         IRolePrivService rolePrivService = SpringUtil.getBean(IRolePrivService.class);
         boolean re = rolePrivService.isRolePrivValid(roleCode, ConstUtil.PRIV_ADMIN);
@@ -875,13 +1071,14 @@ public class Privilege implements IPrivilege {
         }
 
         // 检查用户组所属的角色是否拥有权限
-        IGroupOfRoleService groupOfRoleService = SpringUtil.getBean(IGroupOfRoleService.class);
+        // 20220313 用户组与部门及角色不再关联
+        /*IGroupOfRoleService groupOfRoleService = SpringUtil.getBean(IGroupOfRoleService.class);
         List<GroupOfRole> list = groupOfRoleService.listByGroupCode(groupCode);
         for (GroupOfRole groupOfRole : list) {
             if (isRolePrivValid(groupOfRole.getRoleCode(), priv)) {
                 return true;
             }
-        }
+        }*/
 
         return false;
     }
@@ -961,8 +1158,8 @@ public class Privilege implements IPrivilege {
             }
 
             // 操作日志
-            com.redmoon.oa.LogUtil.log(new Privilege().getUser(request), request.getRemoteAddr(), LogDb.TYPE_PRIVILEGE, com.redmoon.oa.LogUtil.format(request, "action_role_grant", new Object[]{rd.getDesc(), desc}));
-
+            // com.redmoon.oa.LogUtil.log(new Privilege().getUser(request), IPUtil.getRemoteAddr(request), LogDb.TYPE_PRIVILEGE, com.redmoon.oa.LogUtil.format(request, "action_role_grant", new Object[]{rd.getDesc(), desc}));
+            LogUtil.log(getUser(request), IPUtil.getRemoteAddr(request), LogDb.TYPE_PRIVILEGE, StrUtil.format(SpringUtil.getBean(I18nUtil.class).get("action_role_grant"), new Object[]{rd.getDesc(), desc}));
         } catch (SQLException e) {
             conn.rollback();
             com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("setRolePriv:" + e.getMessage());
@@ -1054,7 +1251,8 @@ public class Privilege implements IPrivilege {
                     userAuthorityService.refreshUserAuthority(user.getName());
                 }
 
-                com.redmoon.oa.LogUtil.log(new Privilege().getUser(request), StrUtil.getIp(request), LogDb.TYPE_PRIVILEGE, com.redmoon.oa.LogUtil.format(request, "action_group_grant", new Object[]{ug.getDesc(), desc}));
+                // com.redmoon.oa.LogUtil.log(new Privilege().getUser(request), StrUtil.getIp(request), LogDb.TYPE_PRIVILEGE, com.redmoon.oa.LogUtil.format(request, "action_group_grant", new Object[]{ug.getDesc(), desc}));
+                LogUtil.log(getUser(request), IPUtil.getRemoteAddr(request), LogDb.TYPE_PRIVILEGE, StrUtil.format(SpringUtil.getBean(I18nUtil.class).get("action_group_grant"), new Object[]{ug.getDesc(), desc}));
             }
         } catch (SQLException e) {
             if (len > 0) {
@@ -1063,17 +1261,20 @@ public class Privilege implements IPrivilege {
             com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error("setGroupPriv:" + e.getMessage());
             return false;
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return true;
     }
 
     public boolean isUserPrivValid(String userName, String priv) {
-        AuthUtil authUtil = SpringUtil.getBean(AuthUtil.class);
-        return authUtil.isUserPrivValid(userName, priv);
+        Config cfg = Config.getInstance();
+        if (cfg.getBooleanProperty("isRoleSwitchable")) {
+            return isUserPrivValidByDb(userName, priv);
+        }
+        else {
+            AuthUtil authUtil = SpringUtil.getBean(AuthUtil.class);
+            return authUtil.isUserPrivValid(userName, priv);
+        }
     }
 
     /**
@@ -1097,11 +1298,8 @@ public class Privilege implements IPrivilege {
             return true;
         }
 
-        /*UserDb user = new UserDb();
-        user = user.getUserDb(userName);*/
-
-        IUserService userService = SpringUtil.getBean(IUserService.class);
-        User user = userService.getUser(userName);
+        // IUserService userService = SpringUtil.getBean(IUserService.class);
+        // User user = userService.getUser(userName);
 
         /*
         判断全部用户角色是否拥有权限，因为user.getRoles()已经包含了全部用户，因此不需要在此判断
@@ -1112,26 +1310,31 @@ public class Privilege implements IPrivilege {
         */
 
         // 根据其所属角色来判断是否具有相应的权限
-/*        RoleDb[] rgs = user.getRoles();
-        if (rgs != null) {
-            int k = rgs.length;
-            for (int i = 0; i < k; i++) {
-                if (isRolePrivValid(rgs[i], priv)) {
-                    return true;
-                }
-            }
-        }*/
-
         IRolePrivService rolePrivService = SpringUtil.getBean(IRolePrivService.class);
         if (rolePrivService.isRolePrivValid(ConstUtil.ROLE_MEMBER, priv)) {
             return true;
         }
         else {
-            IUserOfRoleService userOfRoleService = SpringUtil.getBean(IUserOfRoleService.class);
-            List<UserOfRole> uorList = userOfRoleService.listByUserName(userName);
-            for (UserOfRole userOfRole : uorList) {
-                if (isRolePrivValid(userOfRole.getRoleCode(), priv)) {
-                    return true;
+            Config cfg = Config.getInstance();
+            if (cfg.getBooleanProperty("isRoleSwitchable")) {
+                String curRoleCode = getCurRoleCode();
+                if (curRoleCode!=null) {
+                    if (isRolePrivValid(getCurRoleCode(), priv)) {
+                        return true;
+                    }
+                }
+                else {
+                    DebugUtil.e(getClass(), "isUserPrivValidByDb", "curRoleCode is null");
+                }
+            }
+            else {
+                // 取用户所属的全部角色
+                IRoleService roleService = SpringUtil.getBean(IRoleService.class);
+                List<Role> roleList = roleService.getAllRolesOfUser(userName, false);
+                for (Role role : roleList) {
+                    if (isRolePrivValid(role.getCode(), priv)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -1151,10 +1354,10 @@ public class Privilege implements IPrivilege {
             return true;
         }
         else {
-            IUserOfGroupService userOfGroupService = SpringUtil.getBean(IUserOfGroupService.class);
-            List<UserOfGroup> list = userOfGroupService.listByUserName(userName);
-            for (UserOfGroup userOfGroup : list) {
-                if (isGroupPrivValid(userOfGroup.getGroupCode(), priv)) {
+            IGroupService groupService = SpringUtil.getBean(IGroupService.class);
+            List<Group> groupList = groupService.getAllGroupsOfUser(userName);
+            for (Group group : groupList) {
+                if (isGroupPrivValid(group.getCode(), priv)) {
                     return true;
                 }
             }
@@ -1272,8 +1475,7 @@ public class Privilege implements IPrivilege {
             }
         }
         catch (SQLException e) {
-            com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(StrUtil.trace(e));
-            e.printStackTrace();
+            com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(e);
         }
         return v;
     }
@@ -1364,8 +1566,7 @@ public class Privilege implements IPrivilege {
             }
         }
         catch (SQLException e) {
-            com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(StrUtil.trace(e));
-            e.printStackTrace();
+            com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(e);
         }
         return v;
     }

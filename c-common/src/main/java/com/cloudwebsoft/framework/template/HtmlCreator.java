@@ -5,6 +5,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: 生成HTML文件</p>
@@ -32,14 +33,12 @@ public class HtmlCreator {
             // 接下来对元素的操作
         }
         */
-       // System.out.print(getClass().getName() + " filePath=" + filePath);
        try {
            TemplateLoader tl = new TemplateLoader(request, filePath);
            String pageContent = tl.toString();
-           // System.out.print(getClass().getName() + " pageContent=" + pageContent);
            response.getWriter().write(pageContent);
        } catch (ErrMsgException e) {
-           System.out.print(getClass() + e.getMessage());
+           LogUtil.getLog(getClass()).error(e);
        }
     }
 }

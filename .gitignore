@@ -27,5 +27,7 @@ build/
 /c-core/target
 /c-bbs/target
 /c-common/target
-/tomcat启动时报ZipException.docx
 /c-main/src/main/webapp/js/flow/myflow.js
+*.iml
+/logs
+*.iml

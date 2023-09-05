@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 
 import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.weixin.Config;
 import com.redmoon.weixin.aes.AesException;
 import com.redmoon.weixin.aes.WXBizMsgCrypt;
@@ -72,8 +73,8 @@ public class WXCallBackServlet extends HttpServlet {
         try {  
         	WXBizMsgCrypt wxcpt = new WXBizMsgCrypt(sToken,sEncodingAESKey,sCorpID);  
         	result = wxcpt.VerifyURL(msg_signature, timestamp, nonce, echostr);  
-        } catch (AesException e) {  
-            e.printStackTrace();  
+        } catch (AesException e) {
+			LogUtil.getLog(getClass()).error(e);
         }finally{
         	if (result == null) {  
             	result = sToken;
@@ -106,12 +107,10 @@ public class WXCallBackServlet extends HttpServlet {
             //解析对象
             wxAddressCallBack.dispose();
 		}  catch (AesException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		} catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
-
-
 	}
 
 	/**

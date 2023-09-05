@@ -10,6 +10,7 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
@@ -419,7 +420,7 @@ public class DeptUsersMultiSelectWinCtl extends AbstractMacroCtl {
         			}
         		}
         	}catch(Exception e){
-        		e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
         	}
         	return userNames;
         }
@@ -444,7 +445,7 @@ public class DeptUsersMultiSelectWinCtl extends AbstractMacroCtl {
         			}
         		}
         	}catch(Exception e){
-        		e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
         	}
         	return userNames;
         }

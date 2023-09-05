@@ -1,17 +1,15 @@
-<%@ page contentType="text/html; charset=utf-8" language="java" import="java.sql.*" errorPage="" %>
-<%@ page import="java.util.*" %>
-<%@ page import="com.redmoon.oa.*" %>
-<%@ page import="cn.js.fan.db.*" %>
-<%@ page import="cn.js.fan.util.*" %>
-<%@ page import="com.redmoon.oa.person.*" %>
-<%@ page import="com.redmoon.oa.ui.*" %>
-<%@ page import="com.redmoon.oa.dept.*" %>
-<%@ page import="com.redmoon.oa.person.*" %>
-<%@ page import="com.redmoon.oa.notice.*" %>
-<%@ page import="org.json.*" %>
-<%@ page import="com.cloudweb.oa.service.IOaNoticeService" %>
+<%@ page contentType="text/html; charset=utf-8" language="java" import="cn.js.fan.util.ParamUtil" errorPage="" %>
 <%@ page import="com.cloudweb.oa.entity.OaNotice" %>
+<%@ page import="com.cloudweb.oa.service.IOaNoticeService" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
+<%@ page import="com.redmoon.oa.Config" %>
+<%@ page import="com.redmoon.oa.person.UserDesktopSetupDb" %>
+<%@ page import="com.redmoon.oa.person.UserSet" %>
+<%@ page import="com.redmoon.oa.ui.*" %>
+<%@ page import="org.json.JSONObject" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Vector" %>
 <%
     /**
      * 注意因为引入了prototype.js，所以$不能用了，得用jQuery，所有include进来的内容也需要把$改为jQuery，如desktop_clock.jsp
@@ -117,11 +115,12 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>桌面</title>
     <link href="<%=skinPath%>/css.css" rel="stylesheet" type="text/css"/>
-    <link href="lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
-    <link href="lte/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
     <link href="<%=skinPath%>/main.css" rel="stylesheet" type="text/css"/>
+    <link href="lte/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
     <style>
         .btnIcon {
             cursor: pointer;
@@ -226,12 +225,26 @@
         .t-right {
             float: right;
         }
-    </style>
 
+        .chart-title {
+            height: 22px;
+            text-align: center;
+            padding: 0;
+        }
+        .chart-title h5 {
+            font-size: 14px !important;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        .chart-title i {
+            margin-right: 20px;
+        }
+    </style>
     <script type="text/javascript" src="inc/common.js"></script>
     <script src="js/jquery-1.9.1.min.js"></script>
     <script src="js/jquery-migrate-1.2.1.min.js"></script>
     <script src="lte/js/bootstrap.min.js?v=3.3.6"></script>
+    <script src="js/echarts/echarts.js"></script>
     <script type="text/javascript" src="js/prototype.js"></script>
     <script type="text/javascript" src="js/drag.js"></script>
     <script type="text/javascript" src="js/google_drag_2.js"></script>

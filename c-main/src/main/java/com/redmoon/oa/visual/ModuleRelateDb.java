@@ -46,7 +46,7 @@ public class ModuleRelateDb extends QObjectDb {
      * @param mainFormCode String
      * @return Vector
      */
-    public Vector getModulesRelated(String mainFormCode) {
+    public Vector<ModuleRelateDb> getModulesRelated(String mainFormCode) {
         String sql = "select code, relate_code from " + getTable().getName() + " where code=? order by relate_order";
         return list(sql, new Object[]{mainFormCode});
     }

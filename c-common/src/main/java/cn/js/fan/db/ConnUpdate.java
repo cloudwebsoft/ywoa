@@ -8,8 +8,8 @@ import javax.naming.NamingException;
 
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudweb.oa.utils.DruidManager;
-import org.apache.log4j.Logger;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
@@ -29,7 +29,6 @@ public class ConnUpdate {
     String DBDriver = "";  // "com.microsoft.jdbc.sqlserver.SQLServerDriver";
     String ConnStr = "";   // "jdbc:microsoft:sqlserver://127.0.0.1:1433;DatabaseName=zjnldw;User=sa;Password=111111";
 
-    Logger logger;
     boolean isUsePool = false;
 
     /**
@@ -37,8 +36,6 @@ public class ConnUpdate {
      */
     // public: constructor to load driver and connect db
     public ConnUpdate(String connname) {
-        logger = Logger.getLogger(ConnUpdate.class.getName());
-
         isUsePool = Global.getDBInfo(connname).isUsePool;
         DBDriver = Global.getDBInfo(connname).DBDriver;
         ConnStr = Global.getDBInfo(connname).ConnStr;
@@ -56,9 +53,9 @@ public class ConnUpdate {
         }
         // display corresponding error message when onload error occur
         catch (java.lang.ClassNotFoundException e) {
-            logger.error(
+            LogUtil.getLog(getClass()).error(
                     "警告:Class not found exception occur. Message is:");
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         // establish connection to the database throught driver
         try {
@@ -71,8 +68,8 @@ public class ConnUpdate {
         }
         // display sql error message
         catch (SQLException e) {
-            logger.error("SQL Exception occur. Message is:");
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error("SQL Exception occur. Message is:");
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -85,11 +82,11 @@ public class ConnUpdate {
         }
         // display corresponding error message when onload error occur
         catch (NamingException e) {
-            logger.error("Connection pool fail. Message is:");
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error("Connection pool fail. Message is:");
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } catch (SQLException e) {
-            logger.error("SQL Exception occur. Message is:");
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error("SQL Exception occur. Message is:");
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -108,7 +105,8 @@ public class ConnUpdate {
         try {
             rs = stmt.executeQuery(sql);
         } catch (SQLException e) {
-            System.out.print("Query:" + sql + "=" + e.getMessage());
+            LogUtil.getLog(getClass()).error("sql:" + sql);
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
         this.rs = rs;
@@ -126,9 +124,8 @@ public class ConnUpdate {
         try {
             rowcount = stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            if (debug) {
-                System.out.println("Update:" + sql + "--" + e.getMessage());
-            }
+            LogUtil.getLog(getClass()).error("sql:" + sql);
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         } finally {
 
@@ -156,7 +153,7 @@ public class ConnUpdate {
             rows = rs.getRow();
             rs.beforeFirst();
         } catch (SQLException e) {
-            System.out.println("getRows error:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return this.rows;
     }
@@ -178,7 +175,6 @@ public class ConnUpdate {
                 stmt = null;
             }
         } catch (SQLException e) {
-            System.out.println("Conn finalize: " + e.getMessage());
         }
         try {
             if (prestmt != null) {
@@ -186,7 +182,6 @@ public class ConnUpdate {
                 prestmt = null;
             }
         } catch (SQLException e) {
-            System.out.println("Conn finalize: " + e.getMessage());
         }
 
         try {
@@ -195,7 +190,6 @@ public class ConnUpdate {
                 con = null; //防止因为多线程,导致二次关闭,使得其他线程出错
             }
         } catch (SQLException e) {
-            System.out.println("Conn finalize: " + e.getMessage());
         }
         */
     }
@@ -206,10 +200,9 @@ public class ConnUpdate {
         try {
             //boolean autoCommit=con.getAutoCommit();
             con.setAutoCommit(false);
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            System.out.print("beginTrans Errors");
-            throw ex;
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            throw e;
         }
     }
 
@@ -219,10 +212,9 @@ public class ConnUpdate {
         try {
             con.commit();
             con.setAutoCommit(true);
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            System.out.print("Commit Errors");
-            throw ex;
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            throw e;
         }
     }
 
@@ -232,9 +224,8 @@ public class ConnUpdate {
         try {
             con.rollback();
             con.setAutoCommit(true);
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            System.out.print("Rollback Errors");
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
             //throw ex;
         }
     }
@@ -243,10 +234,9 @@ public class ConnUpdate {
         boolean result = false;
         try {
             result = con.getAutoCommit();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            System.out.println("getAutoCommit fail" + ex.getMessage());
-            throw ex;
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
+            throw e;
         }
         return result;
     }
@@ -256,8 +246,7 @@ public class ConnUpdate {
         try {
             re = con.getTransactionIsolation();
         } catch (SQLException e) {
-            e.printStackTrace();
-            System.out.println("getTransactionIsolation fail" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }
@@ -266,9 +255,8 @@ public class ConnUpdate {
         try {
             stmt.setFetchSize(s);
         } catch (SQLException e) {
-            System.out.println("setFetchSize fail:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
-
     }
 
     /**
@@ -288,7 +276,7 @@ public class ConnUpdate {
             // However, it is a good idea to update the meta-data so that
             // we don't have to incur the cost of catching an exception
             // each time.
-            System.out.println("conn.setMaxRows:" + t.getMessage());
+            LogUtil.getLog(getClass()).error(t);
         }
     }
 
@@ -302,7 +290,8 @@ public class ConnUpdate {
         try {
             rs = prestmt.executeQuery();
         } catch (SQLException e) {
-            System.out.print("Query:" + prestmt.toString() + "---" + e.getMessage());
+            LogUtil.getLog(getClass()).error("Query:" + prestmt.toString());
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         }
 
@@ -317,9 +306,8 @@ public class ConnUpdate {
         try {
             rowcount = prestmt.executeUpdate();
         } catch (SQLException e) {
-            if (debug) {
-                System.out.println("executePreUpdate:" + prestmt.toString() + "---" + e.getMessage());
-            }
+            LogUtil.getLog(getClass()).error("Query:" + prestmt.toString());
+            LogUtil.getLog(getClass()).error(e);
             throw e;
         } finally {
             return rowcount;

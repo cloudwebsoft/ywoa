@@ -4,15 +4,21 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import net.sf.json.JSONObject;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
 
+import com.alibaba.fastjson.JSONObject;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.FormField;
 import com.redmoon.oa.person.UserDb;
+import com.redmoon.oa.pvg.Privilege;
+import org.apache.commons.lang3.StringUtils;
+import org.json.JSONException;
 
 /**
  * <p>
@@ -42,7 +48,7 @@ public class UserSelectWinCtl extends AbstractMacroCtl {
 	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
 		String str = "";
 		String realName = "";
-		if (!StrUtil.getNullStr(ff.getValue()).equals("")) {
+		if (!"".equals(StrUtil.getNullStr(ff.getValue()))) {
 			UserDb user = new UserDb();
 			String[] ary = StrUtil.split(ff.getValue(), ",");
 			for (String s : ary) {
@@ -55,76 +61,113 @@ public class UserSelectWinCtl extends AbstractMacroCtl {
 			}
 		}
 
+		boolean isCurrent = false;
+		String deptField = "";
+		String desc = ff.getDescription();
+		if (StringUtils.isNotEmpty(desc)) {
+			org.json.JSONObject json = null;
+			try {
+				json = new org.json.JSONObject(desc);
+				isCurrent = json.getBoolean("isCurrent");
+				deptField = json.getString("deptField");
+			} catch (JSONException e) {
+				LogUtil.getLog(getClass()).error(e);
+			}
+		}
+
+		if (isCurrent) {
+			if ("".equals(realName)) {
+				UserDb user = new UserDb();
+				user = user.getUserDb(SpringUtil.getUserName());
+				realName = user.getRealName();
+			}
+		}
+
 		String style = "";
 		if (!"".equals(ff.getCssWidth())) {
 			style = "style='width:" + ff.getCssWidth() + "'";
 		}
 		
-		str += "<input id='" + ff.getName() + "_realshow' name='"
-				+ ff.getName() + "_realshow' value='" + realName
-				+ "' " + style + " readonly>";
+		str += "<input id='" + ff.getName() + "_realshow' name='" + ff.getName() + "_realshow' title='" + ff.getTitle() + "' value='" + realName
+				+ "' " + style + " readonly/>";
 		str += "<input id='" + ff.getName() + "' name='" + ff.getName()
-				+ "' title='" + ff.getTitle() + "' value='' type='hidden'>";
+				+ "' title='" + ff.getTitle() + "' value='" + StrUtil.getNullStr(ff.getValue()) + "' type='hidden'/>";
 
-		if ("project_members".equals(ff.getFormCode())
-				&& "prj_user".equals(ff.getName())
-				&& (ff.getValue() == null || "".equals(ff.getValue()))) {
-			str += "&nbsp;<input id='"
-					+ ff.getName()
-					+ "_btn' type=button class='btn' value='选择' onClick='openWinUserMultiSelect("
-					+ "$(this).prev()[0])'>";
-		} else {
-			str += "&nbsp;<input id='" + ff.getName()
-					+ "_btn' type=button class='btn btn-default' value='选择' onClick='openWinUserSelect("
-					+ "$(this).prev()[0])'>";
-		}
+		// 20220527如果在嵌套表格中因为字段被动态修改了id，因为字段有可能变为了所以得注意不能直接用下行
+		/*str += "<input id='" + ff.getName()
+				+ "_btn' type='button' class='btn btn-default' value='选择' onclick=\"openWinUserSelect("
+				+ "o('" + ff.getName() + "'))\">";*/
+
+		// nest_field_xm_btn_1 字段修改后去掉了_btn变为nest_field_xm_1
+		str += "<input id='" + ff.getName()
+				+ "_btn' type='button' class='btn btn-default' value='选择' onclick=\"var k=$(this).attr('id').lastIndexOf('_btn');openWinUserSelect("
+				+ "$('#' + $(this).attr('id').substring(0, k) + $(this).attr('id').substring(k + 4))[0])\">";
 		
 	    String isUserSelectWinCtlJSWrited = (String) request.getAttribute("isUserSelectWinCtlJSWrited");
 	    if (isUserSelectWinCtlJSWrited == null) {
-	       str += "<script src='" + request.getContextPath() +
-	               "/flow/macro/macro_user_select_win_ctl_js.jsp" + "'></script>";
-	       request.setAttribute("isUserSelectWinCtlJSWrited", "y");
+			String pageType = (String) request.getAttribute("pageType");
+			// str += "<script src='" + request.getContextPath() + "/flow/macro/macro_user_select_win_ctl_js.jsp?pageType=" + pageType + "'></script>";
+			// 动态引入前端的文件
+			SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+			str += "<script src='" + sysUtil.getPublicPath() + "/resource/js/macro/macro_user_select_win_ctl.js?pageType=" + pageType + "&fieldName=" + ff.getName() + "&deptField=" + deptField + "&formCode=" + ff.getFormCode() + "'></script>";
+	       	request.setAttribute("isUserSelectWinCtlJSWrited", "y");
 	    }
 	    
-	    String deptField = "";
-        String defaultVal = ff.getDefaultValueRaw();
-        if (defaultVal.startsWith("{")) {
-            if (defaultVal.endsWith("}")) {
-                deptField = defaultVal.substring(1, defaultVal.length() - 1);
-            }
-        }
-	    
-	    str += "<script>\n";
-	    str += "try{$(function() {\n";
-	    str += "bindUserSelectWinCtlEvent('" + ff.getName() + "','"+ff.getFormCode()+"', '" + deptField + "');\n";
-	    str += "});\n}catch(e){}";
-	    str += "</script>\n";
+	    /*str += "<script>\n";
+	    // str += "console.log('"+ ff.getName() + " script.');\n";
+	    str += "var isEventBinded_" + ff.getName() + " = false;\n";
+	    str += "function bindEventForUserSelectWinCtl_" + ff.getName() + "() {\n";
+		str += "	if (typeof(bindUserSelectWinCtlEvent)=='function') {\n";
+		str += "		bindUserSelectWinCtlEvent('" + ff.getName() + "','"+ff.getFormCode()+"', '" + deptField + "');\n";
+		str += " 		isEventBinded_" + ff.getName() + "=true;\n";
+		str += "	} else {\n";
+		str += "		console.warn('bindUserSelectWinCtlEvent is not defined');\n";
+		str += "	}\n";
+	    str += "}\n";
+
+		str += "var tryCount_" + ff.getName() + "=0;\n";
+		str += "var sint = setInterval(function() {\n";
+		str += "	if (!isEventBinded_" + ff.getName() + ") {\n";
+		str += " 		tryCount_" + ff.getName() + "++;\n";
+		str += "		bindEventForUserSelectWinCtl_" + ff.getName() + "();\n";
+		str += "		console.log('tryCount', tryCount_"+ ff.getName() + ");\n";
+		str += " 		if (tryCount_" + ff.getName() + ">30) window.clearInterval(sint);\n";
+		str += "	}\n";
+		str += "},100)";
+
+		str += "</script>\n";*/
 	    
 		return str;
 	}
-	
-	/**
-	 * @Description: 解决客户表中，客户经理的部门，没有显示的问题
-	 * @param request
-	 * @param iFormDao
-	 * @param ff
-	 * @param formElementId
-	 * @return
-	 */
+
 	@Override
-	public String getSetCtlValueScript(HttpServletRequest request, IFormDAO iFormDao, FormField ff, String formElementId) {
-		String department_real = "";
-		if (!"".equals(StrUtil.getNullStr(ff.getValue()))) {
-			DeptUserDb du = new DeptUserDb();
-			Vector<DeptDb> v = du.getDeptsOfUser(ff.getValue());
-			if (v.size() > 0) {
-				DeptDb dd = v.get(0);
-				department_real = dd.getName();
-			}
+	public String getOuterHTMLOfElementsWithRAWValueAndHTMLValue(HttpServletRequest request, FormField ff) {
+		boolean isCurrent = false;
+		String desc = ff.getDescription();
+		if (StringUtils.isNotEmpty(desc)) {
+			JSONObject json = JSONObject.parseObject(desc);
+			isCurrent = json.getBoolean("isCurrent");
 		}
-		String str = "$('#dept_name').html('" + department_real + "');\n";
-		str += "setCtlValue('" + ff.getName() + "', '" + ff.getType() + "', '" + StrUtil.getNullStr(ff.getValue()) + "');\n";
-		return str;
+
+		if (isCurrent) {
+			// 如果是当前用户宏控件，则检查如果没有赋值就赋予其当前用户名称
+			FormField ffNew = new FormField();
+			ffNew.setName(ff.getName());
+			ffNew.setValue(ff.getValue());
+			ffNew.setType(ff.getType());
+			ffNew.setFieldType(ff.getFieldType());
+
+			// 检查如果没有赋值就赋予其当前用户名称
+			if ("".equals(StrUtil.getNullStr(ff.getValue()))) {
+				Privilege privilege = new Privilege();
+				ffNew.setValue(privilege.getUser(request));
+			}
+
+			return super.getOuterHTMLOfElementsWithRAWValueAndHTMLValue(request, ffNew);
+		}
+		else {
+			return super.getOuterHTMLOfElementsWithRAWValueAndHTMLValue(request, ff);
+		}
 	}
 
 	/**

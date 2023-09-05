@@ -1,12 +1,19 @@
 package com.redmoon.oa.flow.macroctl;
 import cn.js.fan.util.StrUtil;
-import com.redmoon.oa.post.PostDb;
-import com.redmoon.oa.post.PostUserDb;
-import com.redmoon.oa.post.PostUserMgr;
+import com.cloudweb.oa.entity.Post;
+import com.cloudweb.oa.entity.PostUser;
+import com.cloudweb.oa.service.IPostService;
+import com.cloudweb.oa.service.IPostUserService;
+import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.pvg.Privilege;
 import javax.servlet.http.HttpServletRequest;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.FormField;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.List;
 
 /**
  * <p>
@@ -32,145 +39,169 @@ public class CurUserPostSelectCtl extends AbstractMacroCtl {
 	public CurUserPostSelectCtl() {
 	}
 
+	@Override
 	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-		StringBuilder sb = new StringBuilder();
-		int post_id = 0;
+		String str = "";
+		String style = "";
+		if (!"".equals(ff.getCssWidth())) {
+			style = "style='width:" + ff.getCssWidth() + "'";
+		}
+		else {
+			style = "style='width:150px'";
+		}
+
+		if (ff.isReadonly()) {
+			str = "<select id='" + ff.getName() + "' name='" + ff.getName() + "' title='" + ff.getTitle() + "' " + style + " onfocus='this.defaultIndex=this.selectedIndex;' onchange='this.selectedIndex=this.defaultIndex;'>";
+		}
+		else {
+			str += "<select id='" + ff.getName() + "' name='" + ff.getName() + "' title='" + ff.getTitle() + "' " + style + ">";
+		}
+		str += "<option value=''>" + ConstUtil.NONE + "</option>";
+
+		String userName = SpringUtil.getUserName();
+		IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+		List<PostUser> list = postUserService.listByUserName(userName);
+		for (PostUser postUser : list) {
+			str += "<option value='" + postUser.getPostId() + "'>" + getPostNameById(postUser.getPostId()) + "</option>";
+		}
+
+		str += "</select>";
+
+		/*StringBuilder sb = new StringBuilder();
+		int postId = 0;
 		String value = StrUtil.getNullStr(ff.getValue());
-		if(value.equals("")){
-			PostUserMgr pum = new PostUserMgr();
+		if("".equals(value)){
 			Privilege privilege = new Privilege();
 			String userName = privilege.getUser(request);
-			pum.setUserName(userName);
-			PostUserDb pud = pum.postByUserName();
-			if(pud != null && pud.isLoaded()){
-				 post_id = pud.getInt("post_id");
+			IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+			PostUser postUser = postUserService.getPostUserByUserName(userName);
+			if(postUser!=null){
+				postId = postUser.getPostId();
 			}
 		}else{
-			post_id = Integer.parseInt(value);
+			postId = Integer.parseInt(value);
 		}
 		
-		if(post_id != 0){
-			PostDb pd = new PostDb();
-			pd = pd.getPostDb(post_id);
-			if(pd.isLoaded() ){
-				String pName = StrUtil.getNullStr(pd.getString("name"));
-				if(ff.isEditable()){
-					sb.append("<span>").append(pName).append("</span>");
-					sb.append("<input type='text' id='").append(ff.getName())
-							.append("'").append(" name = '").append(ff.getName()).append("'").append(" value='").append(post_id).append(
-									"' />");
-				}else{
-					sb.append("<span name = '"+ff.getName()+"'>").append(pName).append("</span>");
-				}
-				
+		if(postId != 0){
+			IPostService postService = SpringUtil.getBean(IPostService.class);
+			Post post = postService.getById(postId);
+			if(post != null){
+				String pName = post.getName();
+				sb.append("<span id='" + ff.getName() + "_realshow'>").append(pName).append("</span>");
+				sb.append("<input id='").append(ff.getName())
+						.append("'").append(" name = '").append(ff.getName()).append("'").append(" type='hidden' value='").append(postId).append(
+								"' />");
 			}
 		}else{
 			//当没有岗位的时候  默认显示o
 			if(ff.isEditable()){
-				sb.append("<input type='text' id='").append(ff.getName())
-				.append("'").append(" name = '").append(ff.getName()).append("'").append(" value='").append(post_id).append(
+				sb.append("<input id='").append(ff.getName())
+				.append("'").append(" name = '").append(ff.getName()).append("'").append(" type='hidden' value='").append(postId).append(
 						"' />");
 			}
-		}
-		
-		
-		return sb.toString();
+		}*/
+		return str;
 	}
 
 	@Override
-	public String getControlOptions(String userName, FormField arg1) {
-		// TODO Auto-generated method stub
-	
-		return "";
+	public String getControlOptions(String userName, FormField ff) {
+		IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+		List<PostUser> list = postUserService.listByUserName(userName);
+		com.alibaba.fastjson.JSONArray ary = new com.alibaba.fastjson.JSONArray();
+		com.alibaba.fastjson.JSONObject children = new com.alibaba.fastjson.JSONObject();
+		children.put("name", ConstUtil.NONE);
+		children.put("value", "");
+		ary.add(children);
+		for (PostUser postUser : list) {
+			children = new com.alibaba.fastjson.JSONObject();
+			children.put("name", getPostNameById(postUser.getPostId()));
+			children.put("value", postUser.getPostId());
+			ary.add(children);
+		}
+		return ary.toString();
 	}
 
 	@Override
 	public String getControlText(String userName, FormField ff) {
-		// TODO Auto-generated method stub
-		String value = StrUtil.getNullStr(ff.getValue());
-		if(value.equals("")){
-			PostUserMgr pum = new PostUserMgr();
-			pum.setUserName(userName);
-			PostUserDb pud = pum.postByUserName();
-			if(pud != null && pud.isLoaded()){
-				value = String.valueOf(pud.getInt("post_id"));
+		int value = StrUtil.toInt(ff.getValue(), -1);
+		if(value != -1) {
+			return getPostNameById(value);
+		} else {
+			if (ff.isEditable()) {
+				IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+				PostUser postUser = postUserService.getPostUserByUserName(userName);
+				if (postUser != null) {
+					value = postUser.getPostId();
+					return getPostNameById(value);
+				}
 			}
 		}
-		return postNameById(value);
+		return "";
 	}
 
 	@Override
 	public String getControlType() {
-		// TODO Auto-generated method stub
-		return "text";
+		return "select";
 	}
 
 	@Override
 	public String getControlValue(String userName, FormField ff) {
-		// TODO Auto-generated method stub
 		String value = StrUtil.getNullStr(ff.getValue());
-		if(value.equals("")){
-			PostUserMgr pum = new PostUserMgr();
-			pum.setUserName(userName);
-			PostUserDb pud = pum.postByUserName();
-			if(pud != null && pud.isLoaded()){
-				value = String.valueOf(pud.getInt("post_id"));
+		if(StrUtil.isEmpty(value)) {
+			if (ff.isEditable()) {
+				IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+				List<PostUser> list = postUserService.listByUserName(userName);
+				if (list.size() == 1) {
+					PostUser postUser = list.get(0);
+					return String.valueOf(postUser.getPostId());
+				}
 			}
 		}
 		return value;
 	}
 
+	@Override
 	public String getSetCtlValueScript(HttpServletRequest request,
-			IFormDAO IFormDao, FormField ff, String formElementId) {
+									   IFormDAO IFormDao, FormField ff, String formElementId) {
 			String value = StrUtil.getNullStr(ff.getValue());
 			String str = "";
-		if (value.equals("") && ff.isEditable()) {
-			str += "o('" + ff.getName() + "').style.display='none';";
-			PostUserMgr pum = new PostUserMgr();
+		if ("".equals(value) && ff.isEditable()) {
 			Privilege privilege = new Privilege();
 			String userName = privilege.getUser(request);
-			pum.setUserName(userName);
-			PostUserDb pud = pum.postByUserName();
-			if(pud != null && pud.isLoaded()){
-				 int post_id = pud.getInt("post_id");
-				 str += "setCtlValue('" + ff.getName() + "', '"+ff.getType()+"', '" + post_id + "');\n";
+			IPostUserService postUserService = SpringUtil.getBean(IPostUserService.class);
+			List<PostUser> list = postUserService.listByUserName(userName);
+			if (list.size() == 1) {
+				PostUser postUser = list.get(0);
+				if (postUser != null) {
+					int postId = postUser.getPostId();
+					str += "setCtlValue('" + ff.getName() + "', '" + ff.getType() + "', '" + postId + "');\n";
+				}
 			}
 		} else {
-			
 			str += "setCtlValue('" + ff.getName() + "', '"+ff.getType()+"', '" + value + "');\n";
-			
-
 		}
 		return str;
 	}
 
+	@Override
 	public String converToHtml(HttpServletRequest request, FormField ff,
-			String fieldValue) {
-		return postNameById(fieldValue);
+							   String fieldValue) {
+		return getPostNameById(StrUtil.toInt(fieldValue, -1));
 	}
 
+	@Override
 	public String getReplaceCtlWithValueScript(FormField ff) {
-
 		return "ReplaceCtlWithValue('" + ff.getName() + "', '" + ff.getType()
-				+ "','" + postNameById(ff.getValue()) + "');\n";
+				+ "','" + getPostNameById(StrUtil.toInt(ff.getValue(), -1)) + "');\n";
 	}
 
-	public String postNameById(String id) {
+	public String getPostNameById(int id) {
 		String res = "";
-		try {
-			if (id != null && !id.equals("")) {
-				PostDb postDb = new PostDb();
-				postDb = postDb.getPostDb(Integer.parseInt(id));
-				if (postDb != null && postDb.isLoaded()) {
-					res = postDb.getString("name");
-				}
-			}
-
-		} catch (java.lang.NumberFormatException e) {
-
+		IPostService postService = SpringUtil.getBean(IPostService.class);
+		Post post = postService.getById(id);
+		if (post != null) {
+			res = post.getName();
 		}
-
 		return res;
-
 	}
 }

@@ -6,11 +6,11 @@
 <%@ page import="com.redmoon.oa.fileark.*"%>
 <%@ page import="com.redmoon.oa.fileark.robot.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <%
 int id = ParamUtil.getInt(request, "robotId");
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
+<html>
 <HEAD><TITLE>CMS edit robot</TITLE>
 <META http-equiv=Content-Type content="text/html; charset=utf-8">
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -37,7 +37,7 @@ function findObj(theObj, theDoc)
 }
 
 function SelectDateTime(objName) {
-	var dt = showModalDialog("../util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:125px;status:no;help:no;");
+	var dt = openWin("../util/calendar/time.jsp", 226, 125);
 	if (dt!=null)
 		findObj(objName).value = dt;
 }
@@ -391,8 +391,8 @@ showUrlType("<%=StrUtil.getNullString(rd.getString("list_url_type"))%>");
     <TD align="left" bgcolor="#FFFFFF">存入时审核状态</TD>
     <TD align="left" bgcolor="#FFFFFF">
 	<select name="examine">
-	  <option value="0"><lt:Label res="res.label.webedit" key="has_not_checked"/></option>
-	  <option value="2"><lt:Label res="res.label.webedit" key="has_passed"/></option>
+	  <option value="0">未审核</option>
+	  <option value="2">已通过</option>
 	</select>	
 	<script>
 	form1.examine.value = "<%=rd.getInt("examine")%>";

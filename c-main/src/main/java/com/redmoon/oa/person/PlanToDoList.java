@@ -33,7 +33,6 @@ public class PlanToDoList implements IDesktopUnit {
         String sql = "select id from user_plan where userName=" +
                      StrUtil.sqlstr(privilege.getUser(request)) +
                      " and is_closed=0 order by mydate desc";
-        // System.out.println("PlanDb.java display sql=" + sql);
         DesktopMgr dm = new DesktopMgr();
         DesktopUnit du = dm.getDesktopUnit(uds.getModuleCode());
 		int count = uds.getCount();
@@ -62,7 +61,6 @@ public class PlanToDoList implements IDesktopUnit {
             			fdao = fdao.getFormDAO(id, fd);
             			String lxrId = fdao.getFieldValue("lxr");
             			fd = fd.getFormDb("sales_linkman");
-            			// System.out.println(PlanMgr.class.getName() + " renderAction: pd.getActionData()=" + pd.getActionData() + " lxrId=" + lxrId);
             			fdao = fdao.getFormDAO(StrUtil.toLong(lxrId), fd);
             			// return "<a target='_blank' href='" + request.getContextPath() + "/visual/module_show.jsp?id=" + pd.getActionData() + "&action=&formCode=day_lxr&isShowNav=0'>点击查看</a>";			
             			str += "<tr><td class='article_content'><a href='javascript:;' onclick=\"addTab('行动', '" + request.getContextPath() + "/sales/customer_visit_list.jsp?customerId=" + fdao.getFieldValue("customer") + "')\">" + t + "</a></td><td class='article_time'>[" + mydate + "]</td></tr>";			
@@ -81,10 +79,10 @@ public class PlanToDoList implements IDesktopUnit {
     		        	}
             	  
             			if (lf!=null && lf.getType()==com.redmoon.oa.flow.Leaf.TYPE_LIST) {
-            				str += "<tr><td class='article_content'><a " + cls + " href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flow_dispose.jsp?myActionId=" + pd.getActionData() + "')\">" + t + "</a></td><td class='article_time'>[" + mydate + "]</td></tr>";
+            				str += "<tr><td class='article_content'><a " + cls + " href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flowDispose.do?myActionId=" + pd.getActionData() + "')\">" + t + "</a></td><td class='article_time'>[" + mydate + "]</td></tr>";
             			}
             			else {
-            				str += "<tr><td class='article_content'><a " + cls + " href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flow_dispose_free.jsp?myActionId=" + pd.getActionData() + "')\">" + t + "</a></td><td class='article_time'>[" + mydate + "]</td></tr>";
+            				str += "<tr><td class='article_content'><a " + cls + " href='javascript:;' onclick=\"addTab('处理流程', '" + request.getContextPath() + "/flowDisposeFree.do?myActionId=" + pd.getActionData() + "')\">" + t + "</a></td><td class='article_time'>[" + mydate + "]</td></tr>";
             			}
             		}	
             		else if (PlanDb.ACTION_TYPE_PAPER_DISTRIBUTE == pd.getActionType()) {

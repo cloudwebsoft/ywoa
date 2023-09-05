@@ -27,21 +27,21 @@ public class BoardroomSQLBuilder {
 
     public static String getBoardroomApplySearchSql() {
         String sql =
-                "select id from form_table_hysqd where myresult = " +
+                "select id from ft_hysqd where myresult = " +
                 StrUtil.sqlstr(RESULT_APPLY) + " and cws_status <> -1 order by flowId desc";
         return sql;
     }
 
     public static String getBoardroomAgreeSearchSql() {
         String sql =
-                "select id from form_table_hysqd where myresult = " +
+                "select id from ft_hysqd where myresult = " +
                 StrUtil.sqlstr(RESULT_AGREE) + " order by flowId desc";
         return sql;
     }
 
     public static String getBoardroomDisagreeSearchSql() {
         String sql =
-                "select id from form_table_hysqd where myresult = " +
+                "select id from ft_hysqd where myresult = " +
                 StrUtil.sqlstr(RESULT_DISAGREE) + " order by flowId desc";
         return sql;
     }
@@ -50,19 +50,19 @@ public class BoardroomSQLBuilder {
         String sql = "";
         if (Global.db.equals(Global.DB_SQLSERVER)) {
             sql =
-            "select id from form_table_hysqd where myresult = " +
+            "select id from ft_hysqd where myresult = " +
             StrUtil.sqlstr(RESULT_AGREE) +
                 " and start_date < getDate() and end_date > getDate() order by flowId desc";
         }
         else if (Global.db.equals(Global.DB_ORACLE)) {
             sql =
-            "select id from form_table_hysqd where myresult = " +
+            "select id from ft_hysqd where myresult = " +
             StrUtil.sqlstr(RESULT_AGREE) +
                 " and start_date < sysdate and end_date > sysdate order by flowId desc";
         }
         else {
             sql =
-            "select id from form_table_hysqd where myresult = " +
+            "select id from ft_hysqd where myresult = " +
             StrUtil.sqlstr(RESULT_AGREE) +
                 " and start_date < now() and end_date > now() order by flowId desc";
         }
@@ -74,17 +74,17 @@ public class BoardroomSQLBuilder {
         String sql = "";
         if (Global.db.equals(Global.DB_SQLSERVER)) {
             sql =
-                    "select id from form_table_hysqd where myresult = " +
+                    "select id from ft_hysqd where myresult = " +
                     StrUtil.sqlstr(RESULT_AGREE) +
                     " and end_date < getDate() order by flowId desc";
         } else if (Global.db.equals(Global.DB_ORACLE)) {
             sql =
-                    "select id from form_table_hysqd where myresult = " +
+                    "select id from ft_hysqd where myresult = " +
                     StrUtil.sqlstr(RESULT_AGREE) +
                     " and end_date < sysdate order by flowId desc";
         } else {
             sql =
-                    "select id from form_table_hysqd where myresult = " +
+                    "select id from ft_hysqd where myresult = " +
                     StrUtil.sqlstr(RESULT_AGREE) +
                     " and end_date < now() order by flowId desc";
         }
@@ -95,12 +95,12 @@ public class BoardroomSQLBuilder {
         String sql;
         if ("".equals(boardroomId)) {
         	sql =
-                "select id from form_table_hysqd where myresult = " +
+                "select id from ft_hysqd where myresult = " +
                     StrUtil.sqlstr(RESULT_AGREE) +" order by flowId desc";
         }
         else {
         	sql =
-                "select id from form_table_hysqd where hyshi = " +
+                "select id from ft_hysqd where hyshi = " +
                 StrUtil.sqlstr(boardroomId) + " and  myresult = " +
                     StrUtil.sqlstr(RESULT_AGREE) +
                 " order by flowId desc";        	

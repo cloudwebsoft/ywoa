@@ -7,7 +7,7 @@
 <%@ page import="java.net.URL" %>
 <%@ page import="java.net.URLDecoder" %>
 <%
-    // 在form_table_***表中添加cws_quote_form字段
+    // 在ft_***表中添加cws_quote_form字段
     URL confURL = getClass().getResource("/application.properties");
     String xmlpath = confURL.getFile();
     xmlpath = URLDecoder.decode(xmlpath);
@@ -29,7 +29,7 @@
     while (ri.hasNext()) {
         ResultRecord rr = (ResultRecord) ri.next();
         String tableName = rr.getString(1).toLowerCase();
-        if ((tableName.startsWith("form_table_") && !tableName.endsWith("_log")) || "form_table_module_log".equals(tableName)) {
+        if ((tableName.startsWith("ft_") && !tableName.endsWith("_log")) || "ft_log".equals(tableName)) {
             sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `cws_quote_form` varchar(20) AFTER `cws_status`";
             try {
                 jt.executeUpdate(sql);

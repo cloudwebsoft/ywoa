@@ -1,6 +1,5 @@
 package com.cloudwebsoft.framework.base;
 
-import org.apache.log4j.Logger;
 import java.util.Iterator;
 import cn.js.fan.db.PrimaryKey;
 import cn.js.fan.db.KeyUnit;
@@ -9,8 +8,6 @@ import java.util.HashMap;
 public class ObjectBlockIterator implements Iterator {
     public ObjectBlockIterator() {
     }
-
-    public Logger logger = Logger.getLogger(this.getClass().getName());
 
     ObjectDb objectDb;
 
@@ -32,13 +29,10 @@ public class ObjectBlockIterator implements Iterator {
     /**
      * Constructs a new ForumThreadBlockIterator.
      *
-     * @param threadBlock the starting threadBlock of elements to iterate
      *      through.
      * @param query the SQL query corresponding to this iteration.
      * @param startIndex the starting index of the iteration.
      * @param endIndex the ending index of the iteration.
-     * @param forumID the forumID the threads are a part of.
-     * @param factory a ForumFactory to load data from.
      */
     public ObjectBlockIterator(ObjectDb objectDb, Object[] block, String query,
                                String groupKey,
@@ -69,7 +63,6 @@ public class ObjectBlockIterator implements Iterator {
 
     public boolean hasNext() {
         // If we are at the end of the list there are no more elements.
-        // System.out.println(getClass() + " currentIndex=" + currentIndex + " endIndex=" + endIndex);
         if (currentIndex == endIndex) {
             return false;
         }
@@ -78,8 +71,6 @@ public class ObjectBlockIterator implements Iterator {
         // means we've already checked to make sure it exists.
         if (nextElement == null) {
             nextElement = getNextElement();
-            // System.out.println(getClass() + " currentIndex=" + currentIndex + " nextElement=" + nextElement);
-
             // If getting the next element failed, return false.
             if (nextElement == null) {
                 return false;

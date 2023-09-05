@@ -168,7 +168,6 @@
 		File tmpFile=fileList[i];
 		 if(tmpFile.isFile()&&!tmpFile.isHidden())
 		{
-			//System.out.println(tmpFile.getName());
 			String report=tmpFile.getAbsolutePath().substring(reportFileHome.length()).replace('\\','/');
 			//report=URLEncoder.encode(report);
 			if(!tmpFile.getName().endsWith(".jsp"))

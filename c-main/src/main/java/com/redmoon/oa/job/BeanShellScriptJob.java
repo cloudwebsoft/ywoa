@@ -1,28 +1,32 @@
 package com.redmoon.oa.job;
 
-import org.quartz.Job;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import cn.js.fan.util.ErrMsgException;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.shell.BSHShell;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 
 import bsh.EvalError;
 import bsh.Interpreter;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
-public class BeanShellScriptJob implements Job {
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class BeanShellScriptJob extends QuartzJobBean {
 
 	@Override
-	public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-		// TODO Auto-generated method stub
+	public void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         String script = data.getString("script");
-        Interpreter bsh = new Interpreter();
 		try {
-			bsh.eval(script);
-		} catch (EvalError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			BSHShell bs = new BSHShell();
+			bs.eval(script);
+		} catch (ErrMsgException e) {
+			LogUtil.getLog(getClass()).error(e);
 		}
-
 	}
 
 }

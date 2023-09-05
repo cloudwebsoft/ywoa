@@ -5,6 +5,7 @@ import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.db.ResultIterator;
 import java.sql.*;
 import cn.js.fan.db.ResultRecord;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: </p>
@@ -36,7 +37,7 @@ public class WorkflowFavoriteDb extends QObjectDb {
                 return (WorkflowFavoriteDb)getQObjectDb(new Long(rr.getLong(1)));
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return null;
     }

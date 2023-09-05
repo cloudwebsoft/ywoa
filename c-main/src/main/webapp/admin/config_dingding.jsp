@@ -8,10 +8,9 @@
 <%@ page import="cn.js.fan.web.SkinUtil" %>
 <%@ page import="com.redmoon.dingding.*" %>
 <%@ page import="org.json.JSONObject" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <jsp:useBean id="fchar" scope="page" class="cn.js.fan.util.StrUtil"/>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>钉钉配置</title>
@@ -74,7 +73,6 @@
                 continue;
 
             String isDisplay = StrUtil.getNullStr(e.getAttributeValue("isDisplay"));
-            // System.out.println(getClass() + " name=" + name + " isDisplay=" + isDisplay);
             if (isDisplay.equals("false")) {
                 continue;
             }
@@ -91,10 +89,10 @@
                 <%if (!"isSyncDingDingToOA".equals(name) && (value.equals("true") || value.equals("false"))) {%>
                 <select id="attr<%=k%>" name="value">
                     <option value="true">
-                        <lt:Label key="yes"/>
+                        是
                     </option>
                     <option value="false">
-                        <lt:Label key="no"/>
+                        否
                     </option>
                 </select>
                 <script>
@@ -133,8 +131,8 @@
                         }
                     }
                 %></td>
-            <td width="14%" align="center"><input class="btn" type="submit" name='edit'
-                                                  value='<lt:Label key="op_modify"/>'/>
+            <td width="14%" align="center">
+                <input class="btn" type="submit" name='edit' value='修改'/>
             </td>
         </tr>
     </form>
@@ -142,12 +140,12 @@
             k++;
         }
     %>
-        <tr>
-          <td>从钉钉仅同步帐户至系统，只需在初始化时同步一次</td>
-          <td colspan="2">
-          <input id="btnSyn" type="button" value="同步" onclick="sync()" />
-          </td>
-        </tr>    
+    <tr>
+        <td>从钉钉仅同步帐户至系统，只需在初始化时同步一次</td>
+        <td colspan="2">
+            <input id="btnSyn" class="btn" type="button" value="同步用户" title="仅根据配置'钉钉帐户与系统用户关联字段'同步用户帐户至用户表中dingding字段" onclick="sync()"/>
+        </td>
+    </tr>
 </table>
 </body>
 <script>

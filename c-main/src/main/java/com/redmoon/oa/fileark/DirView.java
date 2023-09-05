@@ -1,24 +1,17 @@
 package com.redmoon.oa.fileark;
 
 import cn.js.fan.util.ErrMsgException;
-import com.raq.expression.function.Debug;
-import com.redmoon.oa.Config;
-import com.redmoon.oa.dept.DeptDb;
-import com.redmoon.oa.dept.DeptMgr;
-import com.redmoon.oa.fileark.DirectoryView;
-import com.redmoon.oa.fileark.Leaf;
-import javax.servlet.jsp.JspWriter;
 import cn.js.fan.util.StrUtil;
-
-import java.util.*;
-
-import com.redmoon.oa.fileark.UprightLineNode;
-import javax.servlet.http.HttpServletRequest;
-import com.redmoon.oa.pvg.Privilege;
-import com.redmoon.oa.fileark.LeafPriv;
 import cn.js.fan.web.Global;
-import com.redmoon.oa.fileark.Directory;
-import com.redmoon.oa.sys.DebugUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import com.redmoon.oa.pvg.Privilege;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.JspWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * <p>
@@ -277,7 +270,6 @@ public class DirView extends DirectoryView {
 
 		if (!isLastChild) {
 			Leaf brotherleaf = leaf.getBrother("down");
-			// System.out.println("brother=" + brotherleaf);
 			// 如果兄弟结点存在
 			if (brotherleaf != null) {
 				// 取其所有的孩子结点
@@ -286,15 +278,12 @@ public class DirView extends DirectoryView {
 				int count = r.size();
 				if (count > 0) {
 					UprightLineNode uln = new UprightLineNode(layer, count);
-					// System.out.println(leaf.getCode() + " layer=" + layer +
-					// " count=" + count);
 					UprightLineNodes.addElement(uln);
 				}
 			}
 		}
 
 		int childcount = leaf.getChildCount();
-		// System.out.println(code + " childcount=" + childcount);
 
 		String tableid = "table" + leaf.getCode();
 
@@ -322,7 +311,6 @@ public class DirView extends DirectoryView {
 					node.show(out, "images/i_plus-2.gif");
 					if (node.getCount() == 0) {
 						UprightLineNodes.remove(node);
-						// System.out.println("Remove " + node);
 					}
 					isShowed = true;
 					break;
@@ -454,7 +442,6 @@ public class DirView extends DirectoryView {
 
 		if (!isLastChild) {
 			Leaf brotherleaf = leaf.getBrother("down");
-			// System.out.println("brother=" + brotherleaf);
 			// 如果兄弟结点存在
 			if (brotherleaf != null) {
 				// 取其所有的孩子结点
@@ -463,7 +450,6 @@ public class DirView extends DirectoryView {
 				int count = r.size();
 				if (count > 0) {
 					UprightLineNode uln = new UprightLineNode(layer, count);
-					// System.out.println(leaf.getCode() + " layer=" + layer +
 					// " count=" + count);
 					UprightLineNodes.addElement(uln);
 				}
@@ -471,7 +457,6 @@ public class DirView extends DirectoryView {
 		}
 
 		int childcount = leaf.getChildCount();
-		// System.out.println(code + " childcount=" + childcount);
 
 		String tableid = "table" + leaf.getCode();
 
@@ -499,7 +484,6 @@ public class DirView extends DirectoryView {
 					node.show(out, "images/i_plus-2.gif");
 					if (node.getCount() == 0) {
 						UprightLineNodes.remove(node);
-						// System.out.println("Remove " + node);
 					}
 					isShowed = true;
 					break;
@@ -825,7 +809,6 @@ public class DirView extends DirectoryView {
 		str = str.substring(0, str.length() - 1);
 		str += ",{id:\"" + Leaf.CODE_DRAFT + "\",parent:\"" + Leaf.ROOTCODE + "\",text:\"草稿箱\", icon: \"images/draft.png\"} ";
 		str += "]";
-		// System.out.println(str);
 		return str;
 	}
 
@@ -875,7 +858,6 @@ public class DirView extends DirectoryView {
 	}
 
 	public void getJsonByUser(Directory dir, String parentCode, String userName, ArrayList<String> list) {
-
 		Leaf lf = new Leaf();
 		lf = lf.getLeaf(parentCode);
 		// DebugUtil.i(getClass(), "getJsonByUser", lf.getName());
@@ -891,16 +873,13 @@ public class DirView extends DirectoryView {
 			}
 		}
 		
-       	cn.js.fan.module.cms.plugin.wiki.Config wikiCfg = cn.js.fan.module.cms.plugin.wiki.Config.getInstance();
-       	boolean isUse = wikiCfg.getBooleanProperty("isUse");
-		
 		// 把顶层的查出来
 		List<String> defaultSeeChildren= new ArrayList<String>();
 		Vector<Leaf> children = null;
 		try {
 			children = dir.getChildren(parentCode);
 		} catch (ErrMsgException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 		for (Leaf childlf : children) {
@@ -910,9 +889,7 @@ public class DirView extends DirectoryView {
 					continue;
 				}
 			}
-			if (!isUse && "wiki".equalsIgnoreCase(childlf.getCode())) {
-				continue;
-			}
+
 			/**
 			 * --a
 			 * -----a1

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="warn">
+    <properties>
+        <!--部分彩色输出-->
+        <property name="PATTERN"
+                  value="%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{black} [%highlight{%thread}] %highlight{%-5level} %style{%C}{bright,Magenta} %logger{36} - %style{%msg}{bright,Green}%n"/>
+        <property name="CHARSET" value="utf-8"/>
+        <property name="MAX_FILE_SIZE" value="100KB"/>
+        <Property name="APP_NAME">${bundle:bootstrap:spring.application.name}</Property>
+        <!-- ${sys:user.home} :项目路径 -->
+        <!--<property name="BASE_LOG_PATH" value="${sys:user.home}/logs/${APP_NAME}"/>-->
+        <property name="BASE_LOG_PATH" value="${sys:catalina.home}/logs/${APP_NAME}"/>
+    </properties>
+
+    <appenders>
+        <console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${PATTERN}" charset="${CHARSET}"/>
+        </console>
+
+        <RollingFile name="allAppender" fileName="${BASE_LOG_PATH}/all.log"
+                     filePattern="${BASE_LOG_PATH}/$${date:yyyy-MM}/all-%d{yyyy-MM-dd}-%i.log">
+            <ThresholdFilter level="ALL"/>
+            <PatternLayout pattern="${PATTERN}" charset="${CHARSET}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+            </Policies>
+        </RollingFile>
+
+        <RollingFile name="errorAppender" fileName="${BASE_LOG_PATH}/error.log"
+                     filePattern="${BASE_LOG_PATH}/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log">
+            <ThresholdFilter level="ERROR"/>
+            <PatternLayout pattern="${PATTERN}" charset="${CHARSET}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}"/>
+            </Policies>
+        </RollingFile>
+    </appenders>
+
+    <loggers>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.mybatis.spring" level="INFO"/>
+        <logger name="com.cloudweb.oa.mapper" level="DEBUG"/>
+        <root level="info">
+            <appender-ref ref="console"/>
+            <appender-ref ref="allAppender"/>
+            <appender-ref ref="errorAppender"/>
+        </root>
+    </loggers>
+</configuration>

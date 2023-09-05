@@ -7,7 +7,7 @@ import javax.servlet.http.*;
 
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.fileark.plugin.base.IPluginUnit;
 import com.redmoon.oa.fileark.plugin.base.IPluginUI;
 import com.redmoon.oa.fileark.plugin.base.IPluginDocumentAction;
@@ -17,14 +17,11 @@ public class PluginUnit implements Serializable {
 
     public final String TYPE_DIR = "dir"; // 应用于分类型
     public final String TYPE_ALLDIR = "allDir";  // 应用于所有类别
-    transient Logger logger = Logger.getLogger(this.getClass().getName());
 
     public PluginUnit() {
     }
 
     public void renew() {
-        if (logger==null)
-            logger = Logger.getLogger(this.getClass().getName());
     }
 
     public PluginUnit(String code) {
@@ -126,7 +123,7 @@ public class PluginUnit implements Serializable {
         try {
             ipu = (IPluginUnit) Class.forName(classUnit).newInstance();
         } catch (Exception e) {
-            logger.error("getUnit:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getUnit:" + e.getMessage());
         }
         return ipu;
     }

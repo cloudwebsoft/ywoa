@@ -99,7 +99,7 @@
         <th width="136">名称</th>
         <th width="91">类型</th>
         <th width="80">图片型图标</th>
-	    <th width="80">矢量型图标</th>
+	    <th width="80" style="display: none">矢量型图标</th>
         <th width="163">上传时间</th>
         <th width="69">增加</th>
         <th width="75">发起</th>
@@ -146,8 +146,8 @@
         </td>
         <td><%=typeName%>
         </td>
-        <td><img width="20" height="20" src='<%=request.getContextPath()%>/<%=imgUrl%>'></td>
-        <td>
+        <td><img width="20" height="20" src='<%=request.getContextPath()%>/static/<%=imgUrl%>'></td>
+        <td style="display: none">
             <svg class="icon svg-icon" aria-hidden="true">
                 <use id="useFontIcon" xlink:href="<%=icon%>"></use>
             </svg>
@@ -264,7 +264,7 @@
             return;
         }
         var tabIdOpener = getActiveTabId();
-        addTab('修改应用', 'admin/mobile_applist_config_edit.jsp?id=' + id + "&tabIdOpener=" + tabIdOpener);
+        addTab('修改应用', '<%=request.getContextPath()%>/admin/mobile_applist_config_edit.jsp?id=' + id + "&tabIdOpener=" + tabIdOpener);
     }
 
     function doDel() {

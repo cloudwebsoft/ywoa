@@ -12,6 +12,7 @@ import cn.js.fan.util.*;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptMgr;
 import com.redmoon.oa.dept.DeptUserDb;
@@ -98,7 +99,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getRolesOfLeafPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRolesOfLeafPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -128,7 +129,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getDeptsOfDocPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getDeptsOfDocPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -157,7 +158,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("getRolesOfLeafPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("getRolesOfLeafPriv: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -231,7 +232,7 @@ public class DocPriv extends ObjectDbA {
                 loaded = true;
             }
         } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -281,7 +282,7 @@ public class DocPriv extends ObjectDbA {
             ps.setInt(5, id);
             r = conn.executePreUpdate();
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         }
         return r == 1 ? true : false;
     }
@@ -394,7 +395,7 @@ public class DocPriv extends ObjectDbA {
         // list该节点的所有拥有权限的用户
         Vector r = docPriv.list();
         
-        // 如果没有指派权限，则默认允许
+        // 如果没有转办权限，则默认允许
         if (r.size()==0)
         	return true;
         
@@ -558,7 +559,7 @@ public class DocPriv extends ObjectDbA {
 
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("LeafPriv:数据库操作出错！");
         }
         finally {
@@ -618,7 +619,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (SQLException e) {
-            logger.error("setRoles:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setRoles:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -676,7 +677,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (SQLException e) {
-            logger.error("setDepts:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("setDepts:" + e.getMessage());
         }
         finally {
             if (conn!=null) {
@@ -705,7 +706,7 @@ public class DocPriv extends ObjectDbA {
 
             r = conn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error("add:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("add:" + e.getMessage());
             throw new ErrMsgException("请检查是否有重复项存在！");
         }
         finally {
@@ -722,7 +723,7 @@ public class DocPriv extends ObjectDbA {
         try {
             docPriv = new DocPriv(id);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return docPriv;
     }
@@ -736,7 +737,7 @@ public class DocPriv extends ObjectDbA {
             ps.setInt(1, docId);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -751,7 +752,7 @@ public class DocPriv extends ObjectDbA {
             ps.setString(1, username);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -765,7 +766,7 @@ public class DocPriv extends ObjectDbA {
             ps.setInt(1, id);
             r = rmconn.executePreUpdate() == 1 ? true : false;
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         }
         return r;
@@ -831,7 +832,7 @@ public class DocPriv extends ObjectDbA {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {
@@ -864,7 +865,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("listUserPriv: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("listUserPriv: " + e.getMessage());
         } finally {
             /*
             if (ps != null) {
@@ -901,7 +902,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -934,7 +935,7 @@ public class DocPriv extends ObjectDbA {
                 }
             }
         } catch (Exception e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             /*
             if (ps != null) {
@@ -985,7 +986,7 @@ public class DocPriv extends ObjectDbA {
         // list该节点的所有拥有权限的用户
         Vector r = docPriv.list();
         
-        // 如果没有指派权限，则默认允许
+        // 如果没有转办权限，则默认允许
         if (r.size()==0) {
         	Document doc = new Document();
         	doc = doc.getDocument(docId);
@@ -1072,7 +1073,6 @@ public class DocPriv extends ObjectDbA {
         }
         catch (SQLException e) {
             com.cloudwebsoft.framework.util.LogUtil.getLog(Privilege.class).error(StrUtil.trace(e));
-            e.printStackTrace();
         }
         return v;
     }

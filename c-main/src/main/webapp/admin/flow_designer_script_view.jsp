@@ -38,20 +38,21 @@ lf = lf.getLeaf(flowTypeCode);
 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 
 String eventType = ParamUtil.get(request, "eventType");
-if (eventType.equals("")) {
-	if (internalName.equals(""))
+if ("".equals(eventType)) {
+	if ("".equals(internalName)) {
 		eventType = "onFinish";
-	else
+	} else {
 		eventType = "validate";
+	}
 }
 
-if (internalName.equals("")) {
+if ("".equals(internalName)) {
 	// out.print(StrUtil.p_center("请选择节点！"));
 	// return;
-	if (eventType.equals("onFinish")) {
+	if ("onFinish".equals(eventType)) {
 		scriptStr = StrUtil.getNullStr(wpfm.getOnFinishScript(scripts));
 	}
-	else if (eventType.equals("discard")) {
+	else if ("discard".equals(eventType)) {
 		scriptStr = StrUtil.getNullStr(wpfm.getDiscardScript(scripts));
 	}
 	else if ("deleteValidate".equals(eventType)) {
@@ -60,6 +61,9 @@ if (internalName.equals("")) {
 	else if ("recall".equals(eventType)) {
 		scriptStr = StrUtil.getNullStr(wpfm.getRecallScript(scripts));
 	}
+	else if ("preInit".equals(eventType)) {
+		scriptStr = StrUtil.getNullStr(wpfm.getPreInitScript(scripts));
+	}
 	else {
 		// form_js
 		scriptStr = FileUtil.ReadFile(Global.getRealPath() + "flow/form_js/form_js_" + lf.getFormCode() + ".jsp", "utf-8");
@@ -67,29 +71,42 @@ if (internalName.equals("")) {
 	}
 }
 else {
-	if (eventType.equals("validate")) {
+	if ("validate".equals(eventType)) {
 		scriptStr = StrUtil.getNullStr(wpfm.getValidateScript(scripts, internalName));
 	}
-	else if (eventType.equals("actionReturn")) {
+	else if ("actionReturn".equals(eventType)) {
 		scriptStr = StrUtil.getNullStr(wpfm.getActionReturnScript(scripts, internalName));
+	}
+	else if ("preDispose".equals(eventType)) {
+		scriptStr = StrUtil.getNullStr(wpfm.getActionPreDisposeScript(scripts, internalName));
+	}
+	else if ("actionActive".equals(eventType)) {
+		scriptStr = StrUtil.getNullStr(wpfm.getActionActiveScript(scripts, internalName));
 	}
 	else {
 		scriptStr = StrUtil.getNullStr(wpfm.getActionFinishScript(scripts, internalName));
 	}
 }
 
-if (op.equals("saveNodeScript")) {
+if ("saveNodeScript".equals(op)) {
 	String script = ParamUtil.get(request, "script");
 	boolean re = false;
-	JSONObject json = new JSONObject();
+	com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
 	try {
-		if (eventType.equals("validate"))
+		if ("validate".equals(eventType)) {
 			re = wpfm.saveValidateScript(wpd, internalName, script);
-		else if (eventType.equals("actionReturn")) {
+		} else if ("actionReturn".equals(eventType)) {
 			re = wpfm.saveActionReturnScript(wpd, internalName, script);
+		} else if ("preDispose".equals(eventType)) {
+			re = wpfm.saveActionPreDisposeScript(wpd, internalName, script);
+		} else if ("actionActive".equals(eventType)) {
+			re = wpfm.saveActionActiveScript(wpd, internalName, script);
+		} else if ("preInit".equals(eventType)) {
+			re = wpfm.savePreInitScript(wpd, script);
 		}
-		else
+		else {
 			re = wpfm.saveActionFinishScript(wpd, internalName, script);
+		}
 		if (re) {
 			json.put("ret", "true");
 			json.put("msg", "操作成功！");
@@ -106,26 +123,29 @@ if (op.equals("saveNodeScript")) {
 	out.print(json);
 	return;
 }
-else if (op.equals("saveOnFinishScript")) {
+else if ("saveOnFinishScript".equals(op)) {
 	String script = ParamUtil.get(request, "script");
 	boolean re = false;
-	JSONObject json = new JSONObject();
+	com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
 	try {
-		if (eventType.equals("onFinish")) {
+		if ("onFinish".equals(eventType)) {
 			re = wpfm.saveOnFinishScript(wpd, script);
 		}
-		else if (eventType.equals("discard")) {
+		else if ("discard".equals(eventType)) {
 			re = wpfm.saveDiscardScript(wpd, script);
 		}
-		else if (eventType.equals("recall")) {
+		else if ("recall".equals(eventType)) {
 			re = wpfm.saveRecallScript(wpd, script);
 		}
 		else if ("deleteValidate".equals(eventType)) {
 			re = wpfm.saveDeleteValidateScript(wpd, script);
 		}
-		else if (eventType.equals("form_js")) {
+		else if ("form_js".equals(eventType)) {
 			FileUtil.WriteFile(Global.getRealPath() + "/flow/form_js/form_js_" + lf.getFormCode() + ".jsp", script, "utf-8");
 			re = true;
+		}
+		else if ("preInit".equals(eventType)) {
+			re = wpfm.savePreInitScript(wpd, script);
 		}
 		
 		if (re) {
@@ -161,10 +181,12 @@ else if (op.equals("saveOnFinishScript")) {
 </style>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
 <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
-<script src="../js/bootstrap/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+<script src="../js/bootstrap/js/bootstrap.min.js"></script>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
 <script>
 var ideWin;
 </script>
@@ -172,19 +194,29 @@ var ideWin;
 <body style="padding:0px; margin:0px">
 <div class="form-inline form-group" style="text-align:center; border:1px solid #cccccc; margin:0; height:45px; padding:1px; font-size:10pt">
 	<select id="eventType" name="eventType" style="width:150px" onchange="onEventTypeChange()">
-		<%if (!internalName.equals("")) {%>
-		<option value="validate">提交验证事件</option>
-		<option value="actionFinish">流转事件</option>
-		<option value="actionReturn">返回事件</option>
+		<%if (!"".equals(internalName)) {%>
+		<option value="validate">节点验证事件</option>
+		<option value="preDispose">节点预处理事件</option>
+		<option value="actionActive">节点激活事件</option>
+		<option value="actionFinish">节点流转事件</option>
+		<option value="actionReturn">节点返回事件</option>
 		<%}%>
-		<option value="onFinish">结束事件</option>
-		<option value="discard">放弃事件</option>
-		<option value="recall">撤回事件</option>
-		<option value="deleteValidate">删除验证事件</option>
-		<option value="form_js">前台脚本</option>
+		<option value="preInit">流程初始化事件</option>
+		<option value="onFinish">流程结束事件</option>
+		<option value="discard">流程放弃事件</option>
+		<option value="recall">流程撤回事件</option>
+		<option value="deleteValidate">删除流程验证事件</option>
+		<option value="form_js">前台脚本(javascript)</option>
 	</select>
 	<script>
-		o("eventType").value = "<%=eventType%>";
+		$(function() {
+			var inDegree = window.parent.GetActionProperty("curSelected", "inDegree");
+			if (inDegree == "0") {
+				$("#eventType option[value='actionActive']").remove();
+			}
+
+			o("eventType").value = "<%=eventType%>";
+		})
 	</script>
 	<%if (!internalName.equals("")) {%>
 	<input type="button" onClick="saveScript()" value="保存" class="btn btn-default"/>
@@ -217,6 +249,11 @@ var ideWin;
 </script>
 </body>
 <script>
+	var layer;
+	layui.use('layer', function(){
+		layer = layui.layer;
+	});
+
 	function onEventTypeChange() {
 		var type = o("eventType").value;
 		if (type == "onFinish" || type == "discard" || type == "form_js" || type == "deleteValidate" || type == "recall") {
@@ -239,16 +276,14 @@ var ideWin;
 			},
 			dataType: "html",
 			beforeSend: function (XMLHttpRequest) {
-				//ShowLoading();
+				// ShowLoading();
 			},
 			success: function (data, status) {
 				data = $.parseJSON(data);
-				alert(data.msg);
-				if (window.opener)
-					window.opener.location.reload();
+				layer.msg(data.msg);
 			},
 			complete: function (XMLHttpRequest, status) {
-				//HideLoading();
+				// HideLoading();
 			},
 			error: function (XMLHttpRequest, textStatus) {
 				// 请求出错处理
@@ -281,11 +316,7 @@ var ideWin;
 			},
 			success: function (data, status) {
 				data = $.parseJSON(data);
-				alert(data.msg);
-				if (window.opener)
-					window.opener.location.reload();
-				else if (window.top.opener) // 在flow_designer_script_frame.jsp框架页中
-					window.top.opener.location.reload();
+				layer.msg(data.msg);
 			},
 			complete: function (XMLHttpRequest, status) {
 				//HideLoading();

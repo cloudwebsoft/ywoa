@@ -1,28 +1,28 @@
 package cn.js.fan.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.*;
 import org.jdom.output.*;
 import org.jdom.input.*;
 import java.io.*;
 import java.net.URL;
 import cn.js.fan.util.XMLProperties;
-import org.apache.log4j.Logger;
 import cn.js.fan.util.StrUtil;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+
 import java.util.Vector;
 import java.util.Iterator;
 import java.util.List;
 import java.net.URLDecoder;
 
 public class ParamConfig {
-    // public: constructor to load driver and connect db
     private XMLProperties properties;
     private String fileName;
     private String filePath;
-    Logger logger;
     Document doc = null;
     Element root = null;
 
-    String rootChild = "";
     String encoding = "utf-8";
 
     public ParamConfig(String fileName) {
@@ -32,19 +32,30 @@ public class ParamConfig {
         filePath = cfgURL.getFile();
         filePath = URLDecoder.decode(filePath);
 
-        File file = new File(filePath);
+        // File file = new File(filePath);
 
-        logger = Logger.getLogger(ParamConfig.class.getName());
-
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            doc = sb.build(file);
+            Resource resource = new ClassPathResource(fileName);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
             root = doc.getRootElement();
-            properties = new XMLProperties(file, doc);
-        } catch (org.jdom.JDOMException e) {
-            logger.error("XMLConfig:" + e.getMessage());
-        } catch (java.io.IOException e) {
-            logger.error("XMLConfig:" + e.getMessage());
+            properties = new XMLProperties(fileName, doc);
+
+            /*doc = sb.build(file);
+            root = doc.getRootElement();
+            properties = new XMLProperties(file, doc);*/
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error("XMLConfig:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -106,6 +117,8 @@ public class ParamConfig {
             FileOutputStream fout = new FileOutputStream(filePath);
             outp.output(doc, fout);
             fout.close();
-        } catch (java.io.IOException e) {}
+        } catch (java.io.IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
     }
 }

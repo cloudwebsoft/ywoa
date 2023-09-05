@@ -3,6 +3,7 @@ package com.redmoon.oa.system;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.sql.SQLException;
 import java.util.Date;
@@ -23,6 +24,16 @@ public class OaSysVerMgr {
 	private String dd_jspapi_ticket;
 	private Date dd_jspapi_ticket_time;
 	private String birthdayRemindDate;
+
+	public String getUiSetup() {
+		return uiSetup;
+	}
+
+	public void setUiSetup(String uiSetup) {
+		this.uiSetup = uiSetup;
+	}
+
+	private String uiSetup;
 
 	public String getDd_jspapi_ticket() {
 		return dd_jspapi_ticket;
@@ -93,6 +104,7 @@ public class OaSysVerMgr {
 			oaSysVerMgr.dd_jspapi_ticket = db.getString("dd_jspapi_ticket");
 			oaSysVerMgr.dd_jspapi_ticket_time =db.getDate("dd_jspapi_ticket_time");
 			oaSysVerMgr.birthdayRemindDate = StrUtil.getNullStr(db.getString("birthday_remind_date"));
+			oaSysVerMgr.uiSetup = StrUtil.getNullStr(db.getString("ui_setup"));
 		}
 		return oaSysVerMgr;
 	}
@@ -101,11 +113,11 @@ public class OaSysVerMgr {
 		boolean flag = false;
 		try {
 			JdbcTemplate jt = new JdbcTemplate();
-			String sql = "update oa_sys_ver set dd_accesstoken = ?,dd_accesstoken_time =? where id = 1";
-			int _res = jt.executeUpdate(sql, new Object[] { dd_accesstoken, dd_accesstoken_time });
-			flag  = _res>0?true:false;
+			String sql = "update oa_sys_ver set dd_accesstoken=?,dd_accesstoken_time=? where id = 1";
+			int res = jt.executeUpdate(sql, new Object[] { dd_accesstoken, dd_accesstoken_time });
+			flag = res > 0;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return flag;
 	}
@@ -124,7 +136,7 @@ public class OaSysVerMgr {
 			int _res = jt.executeUpdate(sql, new Object[] { dd_jspapi_ticket, dd_jspapi_ticket_time });
 			flag  = _res>0?true:false;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return flag;
 	}
@@ -137,9 +149,41 @@ public class OaSysVerMgr {
 		try {
 			re = db.save();
 		} catch (ResKeyException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return re;
+	}
+
+	public boolean updateUiSetup(String uiSetup) {
+		OaSysVerDb db = new OaSysVerDb();
+		db = db.getOaSysVerDb(1);
+		db.set("ui_setup", uiSetup);
+		boolean re = false;
+		try {
+			re = db.save();
+		} catch (ResKeyException e) {
+			LogUtil.getLog(getClass()).error(e);
+		}
+		return re;
+	}
+
+	public boolean updateAc(String ac) {
+		OaSysVerDb db = new OaSysVerDb();
+		db = db.getOaSysVerDb(1);
+		db.set("ac", ac);
+		boolean re = false;
+		try {
+			re = db.save();
+		} catch (ResKeyException e) {
+			LogUtil.getLog(getClass()).error(e);
+		}
+		return re;
+	}
+
+	public String getAc() {
+		OaSysVerDb db = new OaSysVerDb();
+		db = db.getOaSysVerDb(1);
+		return db.getString("ac");
 	}
 
 	public String getBirthdayRemindDate() {

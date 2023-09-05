@@ -1,6 +1,8 @@
 package com.redmoon.oa.ui;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import com.cloudweb.oa.entity.UserSetup;
@@ -8,13 +10,15 @@ import com.cloudweb.oa.security.AuthUtil;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.pvg.Privilege;
 import org.jdom.Document;
 import java.io.FileOutputStream;
+
+import org.jdom.JDOMException;
 import org.jdom.output.XMLOutputter;
 import org.jdom.input.SAXBuilder;
 import org.jdom.Element;
-import org.apache.log4j.Logger;
 import java.util.Vector;
 import java.util.List;
 import java.util.Iterator;
@@ -31,12 +35,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.swing.*;
 
 import cn.js.fan.web.Global;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 public class SkinMgr {
     static final String group = "OA_SKIN";
     static final String ALLSKIN = "ALL_OA_SKIN";
 
-    static Logger logger;
     static final String FILENAME = "oa_skin.xml";
 
     public static Document doc = null;
@@ -50,7 +55,6 @@ public class SkinMgr {
     public static final String DEFAULT_SKIN_CODE = SKIN_CODE_LTE;
 
     public SkinMgr() {
-        logger = Logger.getLogger(this.getClass().getName());
         confURL = getClass().getResource("/" + FILENAME);
     }
 
@@ -59,17 +63,30 @@ public class SkinMgr {
             xmlPath = confURL.getPath();
             xmlPath = URLDecoder.decode(xmlPath);
 
+            InputStream inputStream = null;
             SAXBuilder sb = new SAXBuilder();
             try {
-                FileInputStream fin = new FileInputStream(xmlPath);
+                Resource resource = new ClassPathResource("oa_skin.xml");
+                inputStream = resource.getInputStream();
+                doc = sb.build(inputStream);
+                root = doc.getRootElement();
+
+                /*FileInputStream fin = new FileInputStream(xmlPath);
                 doc = sb.build(fin);
                 root = doc.getRootElement();
-                fin.close();
+                fin.close();*/
+
                 isInited = true;
-            } catch (org.jdom.JDOMException e) {
-                logger.error(e.getMessage());
-            } catch (java.io.IOException e) {
-                logger.error(e.getMessage());
+            } catch (JDOMException | IOException e) {
+                LogUtil.getLog(SkinMgr.class).error(e.getMessage());
+            } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LogUtil.getLog(SkinMgr.class).error(e);
+                    }
+                }
             }
         }
     }
@@ -104,7 +121,7 @@ public class SkinMgr {
         	RMCache.getInstance().invalidateGroup(group);
         }
         catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(SkinMgr.class).error(e.getMessage());
         }
     }
 
@@ -126,6 +143,7 @@ public class SkinMgr {
     /**
      * 取得皮肤的路径
      * @param request HttpServletRequest
+     * @param isPrefixRootPath 是否加上rootPath前缀
      * @return String
      */
     public static String getSkinPath(HttpServletRequest request, boolean isPrefixRootPath) {
@@ -138,7 +156,7 @@ public class SkinMgr {
         }
         
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        boolean isSpecified = cfg.get("styleMode").equals("2");  
+        boolean isSpecified = "2".equals(cfg.get("styleMode"));
 		// 如果风格为轻简型，则只能使用lte皮肤
 		if (isSpecified) {
 			int styleSpecified = StrUtil.toInt(cfg.get("styleSpecified"), -1);
@@ -188,7 +206,7 @@ public class SkinMgr {
             skin = (Skin)RMCache.getInstance().getFromGroup(code, group);
         }
         catch (Exception e) {
-            logger.error("getSkin:" + e.getMessage());
+            LogUtil.getLog(SkinMgr.class).error("getSkin:" + e.getMessage());
         }
         if (skin==null) {
             init();
@@ -232,7 +250,7 @@ public class SkinMgr {
                         try {
                         	RMCache.getInstance().putInGroup(code, group, skin);
                         } catch (Exception e) {
-                            logger.error("getSkin:" + e.getMessage());
+                            LogUtil.getLog(SkinMgr.class).error("getSkin:" + e.getMessage());
                         }
                         break;
                     }
@@ -257,7 +275,7 @@ public class SkinMgr {
         try {
             v = (Vector<Skin>) RMCache.getInstance().getFromGroup(ALLSKIN, group);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(SkinMgr.class).error(e.getMessage());
         }
         if (v==null) {
             v = new Vector<>();
@@ -277,7 +295,7 @@ public class SkinMgr {
                 	RMCache.getInstance().putInGroup(ALLSKIN, group, v);
                 }
                 catch (Exception e) {
-                    logger.error("getAllSkin:" + e.getMessage());
+                    LogUtil.getLog(SkinMgr.class).error("getAllSkin:" + e.getMessage());
                 }
             }
         }

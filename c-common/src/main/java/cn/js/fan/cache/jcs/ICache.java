@@ -1,6 +1,6 @@
 package cn.js.fan.cache.jcs;
 
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 
 /**
  * <p>Title: </p>

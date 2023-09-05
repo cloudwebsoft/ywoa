@@ -2,11 +2,8 @@ package com.cloudwebsoft.framework.security;
 
 import java.io.Serializable;
 
-import org.apache.log4j.Logger;
-
 public class ProtectUnit implements Serializable {
-    transient Logger logger = Logger.getLogger(this.getClass().getName());
-    
+
     /**
      * 包含
      */
@@ -21,9 +18,6 @@ public class ProtectUnit implements Serializable {
     }
 
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(this.getClass().getName());
-        }
     }
 
     public void setRule(String rule) {

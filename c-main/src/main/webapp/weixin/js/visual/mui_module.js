@@ -1,11 +1,10 @@
-(function($,window,document,undefined){
+(function ($, document, window, undefined) {
 	$.ajaxSettings.beforeSend = function(xhr, setting) {
 		jQuery.myloading();
 	};
 	$.ajaxSettings.complete = function(xhr, status) {
 		jQuery.myloading("hide");
 	}
-	var w = window;
 	var self ;
 	var Form;
 	$.ModuleForm = $.Class.extend({
@@ -23,7 +22,7 @@
 			var openPhotoSwipe = function() {
 			var pswpElement = jQuery('.pswp')[0];
 				var items = [{
-					// src: "../../public/img_show.jsp?path="+encodeURI(path),
+					// src: "../../public/showImg.do?path="+encodeURI(path),
 					src: path,
 					w: 964,
 					h: 1024
@@ -53,38 +52,42 @@
 			var parentId = self.options.parentId;
 			var pageType = self.options.pageType;
 			var datas = {"skey":skey,"id":id,"moduleCode":moduleCode};
-			 if(id != 0 && parentId == 0){
-				 // 正常编辑
-				 if ("add"==pageType) {
-					 url =  AJAX_REQUEST_URL.MODULE_ADD_INIT;
-				 }
-				 else {
-					 url =  AJAX_REQUEST_URL.MODULE_EDIT_INIT;
-				 }
-			 }else if(id==0 && parentId == 0){
-				 // 正常新增
-				 url =  AJAX_REQUEST_URL.MODULE_ADD_INIT;
-			 }else if(id = 0 && parentId != 0){
-				 // 嵌套表 新增
-				 url =  AJAX_REQUEST_URL.MODULE_CHILD_ADD_INIT;
-			 }else{
-				 // 嵌套表编辑
-				 url =  AJAX_REQUEST_URL.MODULE_CHILD_EDIT_INIT;
-				 datas.formCodeRelated = formCodeRelated;
-				 datas.parentId = parentId;
-			 }
-			 $.post(url,datas,function(data){
-				 var res = data.res;
-				 if(res == '0'){
+			var extraData = self.options.extraData;
+			extraData = $.parseJSON(extraData);
+			// 合并
+			datas = $.extend({}, datas, extraData);
+
+			if (id != 0 && parentId == 0) {
+				// 正常编辑
+				if ("add" == pageType) {
+					url = AJAX_REQUEST_URL.MODULE_ADD_INIT;
+				} else {
+					url = AJAX_REQUEST_URL.MODULE_EDIT_INIT;
+				}
+			} else if (id == 0 && parentId == 0) {
+				// 正常新增
+				url = AJAX_REQUEST_URL.MODULE_ADD_INIT;
+			} else if (id = 0 && parentId != 0) {
+				// 嵌套表 新增
+				url = AJAX_REQUEST_URL.MODULE_CHILD_ADD_INIT;
+			} else {
+				// 嵌套表编辑
+				url = AJAX_REQUEST_URL.MODULE_CHILD_EDIT_INIT;
+				datas.formCodeRelated = formCodeRelated;
+				datas.parentId = parentId;
+			}
+			$.post(url, datas, function (data) {
+				var res = data.res;
+				if (res == '0') {
 					var hasAttach = data.hasAttach;
 					var fields = data.fields;
-					// console.info(fields);
-					if(fields.length>0){
-						Form.initForms(0,-1,fields);// 初始化Form表单
+					console.log('data', data);
+					if (fields.length > 0) {
+						Form.initForms(0, -1, fields, data.formCode, data);// 初始化Form表单
 					}
-					if("files" in data){
+					if ("files" in data) {
 						var _files = data.files;
-						if(_files.length>0){
+						if (_files.length > 0) {
 							var _ul = Form.flowInitFiles(_files);
 							jQuery(".mui-input-group").append(_ul);
 						}
@@ -95,20 +98,26 @@
 					if (hasAttach) {
 						btnContent += '	<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined capture_btn">照片</button>';
 					}
-					btnContent += '<input type="hidden" id="cws_id" name="cws_id" value="'+parentId+'"/>'
+					btnContent += '<input type="hidden" id="cws_id" name="cws_id" value="' + parentId + '"/>'
 					btnContent += '</div>';
-					jQuery(".mui-input-group").append(btnContent);	
+					jQuery(".mui-input-group").append(btnContent);
+
+					if (data.viewJs) {
+						var s0 = document.createElement('script');
+						s0.text = data.viewJs;
+						document.body.appendChild(s0);
+					}
 
 					try {
-					    onModuleInited();
-                    }
-                    catch (e) {}
+						onModuleInited();
+					} catch (e) {
+					}
 					try {
 						initPhotoSwipe();
+					} catch (e) {
 					}
-					catch (e) {}						
-				 }
-			},"json");
+				}
+			}, "json");
 			 
 			mui(".mui-input-group").on("tap",".form_submit",function(){
 				var _tips = "";
@@ -123,10 +132,12 @@
 					}
 
 					var _code = jQuery(this).data("code");
-					var _val = jQuery("#"+_code).val();
-					if(_val == undefined || _val == ""){
-					   var _text = jQuery(this).find("span:first").text();
-					   _tips+= _text+" 不能为空\n"
+					// var _val = jQuery("#"+_code).val();
+					// raty标值控件的name对应字段，而id值为***_raty-scroe
+					var _val = jQuery("[name=" + _code + "]").val();
+					if (_val == undefined || _val == "") {
+						var _text = jQuery(this).find("span:first").text();
+						_tips += _text + " 不能为空\n";
 					}
 				});
 				if(_tips != null && _tips !=""){
@@ -140,24 +151,26 @@
 			// iphone只能用原生的方式来绑定事件
 			if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
 				var btnCapture = $('.capture_btn')[0];
-				btnCapture.onclick = function () {
-					captureFieldName = jQuery(btnCapture).attr("captureFieldName");
-					// 置图像宏控件是否只允许拍照
-					if (jQuery(btnCapture).attr("isOnlyCamera")) {
-						setIsOnlyCamera(jQuery(btnCapture).attr("isOnlyCamera"));
+				if (btnCapture) {
+					btnCapture.onclick = function () {
+						captureFieldName = jQuery(btnCapture).attr("captureFieldName");
+						// 置图像宏控件是否只允许拍照
+						if (jQuery(btnCapture).attr("isOnlyCamera")) {
+							setIsOnlyCamera(jQuery(btnCapture).attr("isOnlyCamera"));
+						}
+						else {
+							// 恢复默认设置
+							resetIsOnlyCamera();
+						}
+						// 如果只允许拍照
+						if (appProp.isOnlyCamera == "true") {
+							jQuery("#captureFile").attr('capture', 'camera');
+						}
+						var cap = jQuery("#captureFile").get(0);
+						cap.click();
+						// 会出错，因为页面中可能含有多个captureFile
+						// document.getElementById('captureFile').click();
 					}
-					else {
-						// 恢复默认设置
-						resetIsOnlyCamera();
-					}
-					// 如果只允许拍照
-					if (appProp.isOnlyCamera == "true") {
-						jQuery("#captureFile").attr('capture', 'camera');
-					}
-					var cap = jQuery("#captureFile").get(0);
-					cap.click();
-					// 会出错，因为页面中可能含有多个captureFile
-					// document.getElementById('captureFile').click();
 				}
 			}
 			else {
@@ -276,11 +289,25 @@
 
 							// 如果是添加操作，则返回列表页，且刷新，如果是编辑，则不作处理
 							if (isAdd) {
-								//获得父页面的webview
-								var listView = plus.webview.currentWebview().opener();
-								// 触发父页面的自定义事件(refreshList),从而进行刷新
-								mui.fire(listView, 'refreshList');
-								mui.back();
+								if (self.options.isUniWebview) {
+									wx.miniProgram.getEnv(function(res) {
+										console.log("当前环境：" + JSON.stringify(res));
+									});
+									wx.miniProgram.postMessage({
+										data: {
+											res: 0,
+											url: ""
+										},
+									});
+									uni.navigateBack();
+								}
+								else {
+									//获得父页面的webview
+									var listView = plus.webview.currentWebview().opener();
+									// 触发父页面的自定义事件(refreshList),从而进行刷新
+									mui.fire(listView, 'refreshList');
+									mui.back();
+								}
 							}
 						}
 					},
@@ -292,14 +319,14 @@
 		moduleDetail:function(){
 			var self = this;
 			var content = self.element;
-			var url = AJAX_REQUEST_URL.MODULE_SHOW;
+			var url = AJAX_REQUEST_URL.MODULE_SHOW + "?isTab=" + self.options.isTab;
 			var skey = self.options.skey;
 			var id = self.options.id;
 			var moduleCode = self.options.moduleCode;
 			var datas = {"skey":skey,"id":id,"moduleCode":moduleCode};
-			 $.post(url,datas,function(data){
+			$.post(url,datas,function(data){
 				 var res = data.res;
-				 // console.log(data);
+				 console.log('moduleDetail data', data);
 				 if(res == "0"){
 					 var _formRelated = data.formRelated;
 					 $.each(_formRelated,function(index,item){
@@ -352,7 +379,7 @@
 					 
 					 var _fields = data.fields;
 					 if(_fields.length>0){
-							Form.flowInitDetailForm(_fields); // 加载流程表单
+					 	Form.flowInitDetailForm(_fields); // 加载流程表单
 					 }
 					 var _files = data.files;
 					 
@@ -361,6 +388,12 @@
 						 jQuery("#formDetailScroll").append(_ul);
 						 Form.bindFileDel();// 加载事件
 					 }
+
+					 if (data.viewJs) {
+						 var s0 = document.createElement('script');
+						 s0.text = data.viewJs;
+						 document.body.appendChild(s0);
+					 }
 					 						
 					try {
 						initPhotoSwipe();
@@ -368,16 +401,18 @@
 					catch (e) {}						 
 				 }
 			},"json");
-			
-			mui('body').on("tap", ".attFile", function(){
+
+			mui('body').on("tap", ".attFile", function () {
 				var url = jQuery(this).attr("link");
 				var ext = jQuery(this).attr("ext");
+				console.log('ext', ext);
 				if (ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp") {
 					var w=0, h=0;
 					if (this.tagName=="IMG") { // 图像宏控件
 						w = jQuery(this).width();
 						h = jQuery(this).height();
 					}
+					console.log('url', url);
 					self.showImg(url, w, h);
 				} else {
 					if (mui.os.plus) {
@@ -456,8 +491,8 @@
 			});
 		},
 		getContextPath: function () {
-			var strFullPath = document.location.href;
-			var strPath = document.location.pathname;
+			var strFullPath = window.location.href;
+			var strPath = window.location.pathname;
 			var pos = strFullPath.indexOf(strPath);
 			var prePath = strFullPath.substring(0, pos);
 			var postPath = strPath.substring(0, strPath.substr(1).indexOf('/') + 1);

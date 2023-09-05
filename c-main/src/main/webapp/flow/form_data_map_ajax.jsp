@@ -12,6 +12,7 @@
 <%@ page import="com.redmoon.oa.flow.macroctl.MacroCtlMgr" %>
 <%@ page import="org.json.JSONObject" %>
 <%@ page import="org.json.JSONException" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
 String priv="read";
@@ -89,7 +90,7 @@ if (op.equals("getNestTableFields")) {
 				  json += ",{\"id\":\"" + ff.getName() + "\", \"name\":\"" + ff.getTitle() + "\", \"type\":\"" + ff.getType() + "\", \"macroType\":\"" + ff.getMacroType() + "\", \"defaultValue\":\"" + ff.getDefaultValue().replaceAll("\\r\\n", "") + "\"}";
 			}
 			json = "{\"result\":[" + json + "], \"total\":" + v.size() + ", \"formNest\":\"" + nestFormCode + "\"}";
-			System.out.println(getClass() + " --" + json);
+			LogUtil.getLog(getClass()).info(json);
 			out.print(json);
 			break;
 		}
@@ -146,7 +147,5 @@ else {
 	}	
 	json = "{\"result\":[" + json + "], \"total\":" + v.size() + "}";
 	out.print(json);
-	
-	// System.out.println(getClass() + " " + json);
 }
 %>

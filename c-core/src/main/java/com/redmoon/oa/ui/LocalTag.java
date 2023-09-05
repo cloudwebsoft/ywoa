@@ -2,8 +2,6 @@ package com.redmoon.oa.ui;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.BodyTagSupport;
 
-import org.apache.log4j.Logger;
-
 /**
  * <p>Title: </p>
  *
@@ -18,8 +16,6 @@ import org.apache.log4j.Logger;
  */
 
 public class LocalTag extends BodyTagSupport {
-
-    Logger logger = Logger.getLogger(LocalTag.class.getName());
 
     public LocalTag() {
     }
@@ -45,7 +41,7 @@ public class LocalTag extends BodyTagSupport {
                 str = LocalUtil.LoadString((HttpServletRequest)pageContext.getRequest(), res, key);
             pageContext.getOut().print(str);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).error(e.getMessage());
         }
         return EVAL_PAGE;
     }

@@ -1,0 +1,357 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head_nostyle :: head(~{::title}, ~{::link})">
+    <title>角色中的用户管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/js/checkbox-three/checkbox-three.css}"/>
+</head>
+<body>
+<div th:replace="th/include/tab_role :: navRole(${role.code}, ${role.description}, 2)"></div>
+<div class="spacerH"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12 col-lg-offset-0">
+            <div th:inline="text" class="text-center">属于角色：[[${role.description}]]&nbsp;的用户</div>
+            <div style="margin: 10px 0px">
+                <button class="btn btn-success" title="选择并增加人员" onclick="openWinUsers()">添加</button>
+                &nbsp;&nbsp;
+                <button class="btn btn-danger" onclick="delBatch()">删除</button>
+            </div>
+            <form id="formRoleUser" name="formRoleUser" method="post">
+                <input type="hidden" name="op" value="delBatch"/>
+                <input type="hidden" name="role_code" th:value="${role.code}"/>
+                <table id="mainTable" align="center" class="table table-bordered table-hover">
+                    <thead>
+                    <tr class="active">
+                        <td width="3%" align="center">
+                            <input id="checkbox" name="checkbox" type="checkbox" onclick="if (this.checked) selAllCheckBox('ids'); else deSelAllCheckBox('ids')"/>
+                        </td>
+                        <td width="15%" align="center">用户名</td>
+                        <td width="17%" align="center">真实姓名</td>
+                        <td width="12%" th:if="${isUseAccount}">工号</td>
+                        <td width="7%" align="center">性别</td>
+                        <td width="24%" align="center">所属部门</td>
+                        <td width="17%" align="center">操作</td>
+                    </tr>
+                    </thead>
+                    <tbody th:each="json : ${jsonAry}">
+                    <tr th:id="'tr_' + ${json[name]}">
+                        <td align="center">
+                            <input type="checkbox" name="ids" th:value="${json[name]}"/>
+                        </td>
+                        <td>
+                            <a href="javascript:;" th:onclick="addTab('[(${json[realName]})]', 'admin/organize/editUser.do?userName=' + encodeURI([[${json[name]}]]))">[[${json[name]}]]</a>
+                        </td>
+                        <td th:inline="text">[[${json[realName]}]]</td>
+                        <td th:if="${isUseAccount}" th:text="${json[account]}"></td>
+                        <td align="center" th:text="${json[gender]}"></td>
+                        <td align="left" th:inline="text">
+                            <th:block th:each="jsonObj : ${json[deptJson]}">
+                                <i><input type="checkbox" th:value="${jsonObj[roleOfDept]}" status="three" th:attr="user=${json[name]},dept=${jsonObj[deptCode]}" /></i>&nbsp;[(${jsonObj[deptName]})]<br/>
+                            </th:block>
+                        </td>
+                        <td align="center">
+                            <a href="javascript:;" th:onclick="move('up', [[${json[name]}]], [[${role.code}]])">上移</a>
+                            &nbsp;&nbsp;
+                            <a href="javascript:;" th:onclick="move('down', [[${json[name]}]], [[${role.code}]])">下移</a>
+                            &nbsp;&nbsp;
+                            <a href="javascript:;" data-toggle="modal" data-target="#myModal" th:onclick="moveTo('[(${json[name]})]', '[(${json[realName]})]')">移至</a>
+                        </td>
+                    </tr>
+                    </thead>
+                </table>
+                <div>
+                    <i><input status="three" value="0" type="checkbox"/></i>&nbsp;不属于&nbsp;
+                    <i><input status="three" value="2" type="checkbox"/></i>&nbsp;默认属于&nbsp;
+                    <i><input status="three" value="1" type="checkbox"/></i>&nbsp;显式属于&nbsp;
+                    （默认属于与显式属于的效果一样）
+                </div>
+            </form>
+
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                            <h4 class="modal-title" id="myModalLabel">移至用户</h4>
+                        </div>
+                        <div class="modal-body form-inline">
+                            <select id="targetUser" name="targetUser" class="form-control">
+                                <option value="">请选择</option>
+                                <th:block th:utext="${userOpts}"></th:block>
+                            </select>
+                            <input name="pos" checked value="0" type="radio"/>之前
+                            <input name="pos" value="1" type="radio"/>之后
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                            <button id="btnMoveTo" type="button" class="btn btn-primary">确定</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script text="type/javascript" th:src="@{/js/checkbox-three/checkbox-three.js}"></script>
+<script th:inline="javascript">
+    var contextPath= [[@{/}]];
+
+    var selUserNames = "";
+    var selUserRealNames = "";
+
+    function getSelUserNames() {
+        return selUserNames;
+    }
+
+    function getSelUserRealNames() {
+        return selUserRealNames;
+    }
+
+    function openWinUsers() {
+        selUserNames = $('#form1 #users').val();
+        selUserRealNames = $('#form1 #userRealNames').val();
+        openWin(contextPath + 'userMultiSel.do?unitCode=' + [[${unitCode}]], 800, 600);
+    }
+
+    function setUsers(userNames, userRealNames) {
+        if (userNames == '') {
+            return;
+        }
+        $.ajax({
+            type: "post",
+            url: "addRoleUser.do",
+            data: {
+                userNames: userNames,
+                userRealNames: userRealNames,
+                roleCode: [[${role.code}]],
+                roleDesc: [[${role.description}]]
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                if (data.ret==1) {
+                    jAlert(data.msg, [[#{prompt}]], function() {
+                        window.location.reload();
+                    })
+                }
+                else {
+                    jAlert(data.msg, [[#{prompt}]]);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                //请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function delBatch() {
+        var userNames = getCheckboxValue("ids");
+        if (userNames=="") {
+            jAlert("请先选择记录！", [[#{prompt}]]);
+            return;
+        }
+        jConfirm("您确定要删除么？", "提示", function (r) {
+            if (!r) {
+                return;
+            } else {
+                $.ajax({
+                    type: "post",
+                    url: "delRoleUserBatch.do",
+                    data: {
+                        userNames: userNames,
+                        roleCode: [[${role.code}]]
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        if (data.ret==1) {
+                            jAlert(data.msg, [[#{prompt}]], function() {
+                                var ary = userNames.split(",");
+                                for (var i in ary) {
+                                    $('#tr_' + ary[i]).remove();
+                                }
+                            })
+                        }
+                        else {
+                            jAlert(data.msg, [[#{prompt}]]);
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        // 请求出错处理
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            }
+        })
+    }
+
+    function selAllCheckBox(checkboxname) {
+        var checkboxboxs = document.getElementsByName(checkboxname);
+        if (checkboxboxs != null) {
+            // 如果只有一个元素
+            if (checkboxboxs.length == null) {
+                checkboxboxs.checked = true;
+            }
+            for (i = 0; i < checkboxboxs.length; i++) {
+                checkboxboxs[i].checked = true;
+            }
+        }
+    }
+
+    function deSelAllCheckBox(checkboxname) {
+        var checkboxboxs = document.getElementsByName(checkboxname);
+        if (checkboxboxs != null) {
+            if (checkboxboxs.length == null) {
+                checkboxboxs.checked = false;
+            }
+            for (i = 0; i < checkboxboxs.length; i++) {
+                checkboxboxs[i].checked = false;
+            }
+        }
+    }
+
+    var curUserToMove = "";
+
+    $(function () {
+        $('#btnMoveTo').click(function () {
+            if ($("#targetUser").val() == "") {
+                jAlert("请选择用户！", [[#{prompt}]]);
+                return;
+            } else {
+                if (curUserToMove == $("#targetUser").val()) {
+                    jAlert("请选择别的用户！", [[#{prompt}]]);
+                    return;
+                }
+                // $("#userName").val(curUserToMove);
+            }
+
+            $.ajax({
+                type: "post",
+                url: "moveToRoleUser.do",
+                data: {
+                    userName: curUserToMove,
+                    targetUser: $("#targetUser").val(),
+                    pos: getRadioValue("pos"),
+                    roleCode: [[${role.code}]]
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret==1) {
+                        jAlert(data.msg, [[#{prompt}]], function() {
+                            window.location.reload();
+                        })
+                    }
+                    else {
+                        jAlert(data.msg, [[#{prompt}]]);
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    // 请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+
+            $('#myModal').modal('hide');
+        });
+    })
+
+    function moveTo(userName, realName) {
+        curUserToMove = userName;
+    }
+
+    $(function () {
+        [# th:if="${isNeedSort}" ]
+        $('#btnSort').show();
+        [/]
+    });
+
+    function move(direction, userName, roleCode) {
+        $.ajax({
+            type: "post",
+            url: "moveRoleUser.do",
+            data: {
+                direction: direction,
+                userName: userName,
+                roleCode: roleCode
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                if (data.ret==1) {
+                    jAlert(data.msg, [[#{prompt}]], function() {
+                        window.location.reload();
+                    })
+                }
+                else {
+                    jAlert(data.msg, [[#{prompt}]]);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function checkThree(obj) {
+        var $chk = $(obj);
+        $.ajax({
+            type: "post",
+            url: "setUserRoleOfDept.do",
+            data: {
+                roleCode: [[${role.code}]],
+                deptCode: $chk.attr('dept'),
+                userName: $chk.attr('user'),
+                roleOfDept: $chk.val()
+            },
+            dataType: "html",
+            beforeSend: function(XMLHttpRequest){
+                $('body').showLoading();
+            },
+            success: function(data, status){
+                data = $.parseJSON(data);
+                $.toaster({priority : 'info', message : data.msg });
+            },
+            complete: function(XMLHttpRequest, status){
+                $('body').hideLoading();
+            },
+            error: function(XMLHttpRequest, textStatus){
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    $(function() {
+        var options = {
+            check: checkThree
+        };
+        $.checkboxThree(options);
+    })
+</script>
+</html>

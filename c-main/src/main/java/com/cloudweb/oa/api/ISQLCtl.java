@@ -1,6 +1,8 @@
 package com.cloudweb.oa.api;
 
+import cn.js.fan.db.ResultIterator;
 import cn.js.fan.util.ErrMsgException;
+import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.flow.FormField;
 import org.json.JSONObject;
 
@@ -11,6 +13,8 @@ public interface ISQLCtl {
 
     String[] getSqlByDesc(String defaultValue);
 
-    JSONObject getCtl(HttpServletRequest request, int flowId,
-                             FormField ff) throws ErrMsgException;
+    com.alibaba.fastjson.JSONObject getCtl(HttpServletRequest request, int flowId,
+                      FormField ff) throws ErrMsgException;
+
+    ResultIterator getResultByDAO(IFormDAO fdao, FormField ff);
 }

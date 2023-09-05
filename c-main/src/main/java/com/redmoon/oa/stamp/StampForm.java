@@ -10,6 +10,7 @@ import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 
 public class StampForm extends AbstractForm {
@@ -32,7 +33,7 @@ public class StampForm extends AbstractForm {
                 throw new ErrMsgException("ret=" + ret + " " + fileUpload.getErrMessage(request));
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
         }
         return fileUpload;
     }

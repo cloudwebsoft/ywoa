@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServletRequest;
 
 public interface ILicense {
 
+    boolean isStandard();
+
     boolean isPlatform();
 
     boolean isPlatformSrc();
@@ -46,4 +48,14 @@ public interface ILicense {
     boolean isVip();
 
     boolean checkSolution(String formCode) throws ErrMsgException;
+
+    String getCategory();
+
+    boolean isPlatformGroup();
+
+    boolean canExportSolution();
+
+    boolean canImportSolution();
+
+    boolean isCloud();
 }

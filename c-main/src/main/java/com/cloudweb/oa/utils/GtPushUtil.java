@@ -4,6 +4,8 @@ import cn.js.fan.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.entity.UserSetup;
 import com.cloudweb.oa.service.IUserSetupService;
+import com.cloudwebsoft.framework.util.HttpFileUpTool;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.getui.push.v2.sdk.ApiHelper;
 import com.getui.push.v2.sdk.GtApiConfiguration;
 import com.getui.push.v2.sdk.api.PushApi;
@@ -84,7 +86,7 @@ public class GtPushUtil {
             return apiHelper.creatApi(PushApi.class);
         }
         else {
-            System.out.println("个推未启用");
+            LogUtil.getLog(getClass()).info("个推未启用");
             return null;
         }
     }
@@ -310,15 +312,20 @@ public class GtPushUtil {
         pushDTO.setAudience(audience);
         audience.addCid(cid);
 
-        // 进行cid单推
-        ApiResult<Map<String, Map<String, String>>> apiResult = pushApi.pushToSingleByCid(pushDTO);
-        if (apiResult.isSuccess()) {
-            // success
-            DebugUtil.i(getClass(), "push success", "code:" + apiResult.getCode() + ", msg: " + apiResult.getMsg());
-        } else {
-            // failed
-            DebugUtil.i(getClass(), "push failed", "code:" + apiResult.getCode() + ", msg: " + apiResult.getMsg());
-            // System.out.println("code:" + apiResult.getCode() + ", msg: " + apiResult.getMsg());
+        // 进行cid单推，个推偶尔会报NullPointerException，故需try catch
+        try {
+            ApiResult<Map<String, Map<String, String>>> apiResult = pushApi.pushToSingleByCid(pushDTO);
+            if (apiResult.isSuccess()) {
+                // success
+                DebugUtil.i(getClass(), "push success", "cid:" + cid + " userName:" + md.getReceiver() + "code:" + apiResult.getCode() + ", msg: " + apiResult.getMsg());
+            } else {
+                // failed
+                DebugUtil.i(getClass(), "push failed", "cid:" + cid + " userName:" + md.getReceiver() + " code:" + apiResult.getCode() + ", msg: " + apiResult.getMsg());
+            }
+        }
+        catch (Exception e) {
+            DebugUtil.e(getClass(), "gt push error", e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 

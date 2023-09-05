@@ -6,6 +6,7 @@ import java.util.regex.*;
 
 import cn.js.fan.util.*;
 import com.cloudwebsoft.framework.template.plugin.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 /**
  * <p>Title: 模板解析器</p>
@@ -156,21 +157,12 @@ public class Parser {
                 "\\$(\\S+)\\.(\\S+)\\((\\S+)\\)\\.([^\\(]+)?(\\((.*?)\\))?",
                 Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
         Matcher m = varNamePat.matcher(nameStr);
-        /*
-        boolean result = m.find();
-        while (result) {
-            // 有四个子串name title size value
-            for (int i = 1; i <= m.groupCount(); i++) {
-                System.out.println("第" + i + "组的子串内容为： " + m.group(i));
-            }
-            result = m.find();
-        }
-        */
         if (m.find()) {
-            if (m.groupCount() < 5)
+            if (m.groupCount() < 5) {
                 throw new IllegalArgumentException(nameStr +
                         " is invalid! Regexp match group count is " +
                         m.groupCount());
+            }
             String name = m.group(1);
             String keyName = m.group(2);
             String keyValue = m.group(3);
@@ -193,7 +185,6 @@ public class Parser {
             vp.setName(name);
             vp.setKeyName(keyName);
             vp.setKeyValue(keyValue);
-            // System.out.println(getClass() + " name=" + name + " keyName=" + keyName + " keyValue=" + keyValue);
             vp.setField(field);
             if (props != null && !props.equals(""))
                 vp.parseProps(props);
@@ -535,7 +526,7 @@ public class Parser {
                html = "$doc.id(1).content";
 
                if (varPat.matcher(html).find()) {
-                   System.out.println("matched");
+                   LogUtil.getLog(getClass()).info("matched");
                }
                Matcher m = varPat.matcher(html);
 
@@ -559,7 +550,7 @@ public class Parser {
         while (result) {
             // 有四个子串name title size value
             for (int i = 1; i <= m.groupCount(); i++) {
-                System.out.println("第" + i + "组的子串内容为： " + m.group(i));
+                LogUtil.getLog(Parser.class).info("第" + i + "组的子串内容为： " + m.group(i));
             }
             result = m.find();
         }
@@ -575,7 +566,7 @@ public class Parser {
         while (result) {
             // 有四个子串name title size value
             for (int i = 1; i <= m.groupCount(); i++) {
-                System.out.println("第" + i + "组的子串内容为： " + m.group(i));
+                LogUtil.getLog(Parser.class).info("第" + i + "组的子串内容为： " + m.group(i));
             }
             result = m.find();
         }

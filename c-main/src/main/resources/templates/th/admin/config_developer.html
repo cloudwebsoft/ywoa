@@ -1,0 +1,144 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>开发者帐户管理</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container" style="margin-top: 10px">
+    <div class="row">
+        <div class="col-lg-10 col-lg-offset-1">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                    <tr align="center" class="active">
+                        <td width="20%" height="24">用户</td>
+                        <td width="20%" height="24">密钥</td>
+                        <td width="23%">操作</td>
+                    </tr>
+                    </thead>
+                    <th:block th:each="user, stat : ${developers}">
+                        <form th:id="'form' + ${stat.index}" method="post">
+                            <tr th:id="'tr' + ${stat.index}" align="center">
+                                <td height="24" class="form-inline form-group">
+                                    <input name="userName" class="form-control" readonly th:value="${user[userName]}">
+                                </td>
+                                <td height="24" class="form-inline form-group">
+                                    <input name="userSecret" class="form-control" th:value="${user[userSecret]}">
+                                </td>
+                                <td height="24" align="center">
+                                    <button class="btn btn-warning btn-edit" th:attr="formId='form' + ${stat.index}">修改</button>
+                                    &nbsp;&nbsp;
+                                    <button class="btn btn-danger btn-del" th:id="${stat.index}" th:attr="userName=${user[userName]}">删除</button>
+                                </td>
+                            </tr>
+                        </form>
+                    </th:block>
+                    <tr align="center">
+                        <form id="formAdd" method="post">
+                            <td height="24" class="form-inline form-group"><input name="userName" class="form-control" type="text" id="level"></td>
+                            <td height="24" class="form-inline form-group"><input name="userSecret" class="form-control" type="text" id="desc"></td>
+                            <td height="24" align="center">
+                                <button class="btn btn-success" id="btnAdd">添加</button>
+                            </td>
+                        </form>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    $(function () {
+        $('.btn-edit').click(function (e) {
+            e.preventDefault();
+
+            var formId = $(this).attr('formId');
+            $.ajax({
+                type: "post",
+                url: "modifyDeveloper.do",
+                data: $('#' + formId).serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    jAlert(data.msg, "提示");
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+
+        $('.btn-del').click(function (e) {
+            e.preventDefault();
+            var trId = 'tr' + $(this).attr('id');
+            var userName = $(this).attr('userName');
+            jConfirm('您确定要删除么？', '提示', function (r) {
+                if (!r) {
+                    return;
+                }
+
+                $.ajax({
+                    type: "post",
+                    url: "delDeveloper.do",
+                    data: {
+                        userName: userName
+                    },
+                    dataType: "json",
+                    beforeSend: function (XMLHttpRequest) {
+                        $('body').showLoading();
+                    },
+                    success: function (data, status) {
+                        jAlert(data.msg, "提示");
+                        if (data.ret==1) {
+                            $('#' + trId).remove();
+                        }
+                    },
+                    complete: function (XMLHttpRequest, status) {
+                        $('body').hideLoading();
+                    },
+                    error: function () {
+                        alert(XMLHttpRequest.responseText);
+                    }
+                });
+            });
+        });
+
+        $('#btnAdd').click(function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: "post",
+                url: "addDeveloper.do",
+                data: $('#formAdd').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    jAlert(data.msg, "提示", function () {
+                        window.location.reload();
+                    });
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    });
+</script>
+</html>                            
+  

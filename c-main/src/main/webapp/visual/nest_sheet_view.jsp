@@ -1,9 +1,5 @@
 <%@ page contentType="text/html; charset=utf-8"%>
 <%@ page import="cn.js.fan.db.ListResult" %>
-<%@ page import="cn.js.fan.util.ErrMsgException" %>
-<%@ page import="cn.js.fan.util.NumberUtil" %>
-<%@ page import="cn.js.fan.util.ParamUtil" %>
-<%@ page import="cn.js.fan.util.StrUtil" %>
 <%@ page import="cn.js.fan.web.SkinUtil" %>
 <%@ page import="com.cloudweb.oa.api.ISQLBuilderService" %>
 <%@ page import="com.cloudweb.oa.cond.CondUnit" %>
@@ -23,6 +19,8 @@
 <%@ page import="java.util.*" %>
 <%@ page import="com.redmoon.oa.visual.*" %>
 <%@ page import="com.redmoon.oa.visual.FormDAO" %>
+<%@ page import="com.redmoon.oa.security.SecurityUtil" %>
+<%@ page import="cn.js.fan.util.*" %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%--
 - 功能描述：嵌套表格2
@@ -37,8 +35,12 @@
 - 修改原因：使支持从模块中选择记录
 - 修改点：原控件的默认值为嵌套表单的编码，现改为json格式的描述
 --%>
-
 <%
+	response.setHeader("Cache-Control","no-cache"); //Forces caches to obtain a new copy of the page from the origin server
+	response.setHeader("Cache-Control","no-store"); //Directs caches not to store the page under any circumstance
+	response.setDateHeader("Expires", 0); //Causes the proxy cache to see the page as "stale"
+	response.setHeader("Pragma","no-cache"); //HTTP 1.0 backward compatibility
+
 // 因为内外网访问的问题而注释
 /*
 if (!privilege.isUserPrivValid(request, "read")) {
@@ -149,22 +151,36 @@ while (reqParamNames.hasMoreElements()) {
 		margin: 5px 0;
 	}
 
+	.search-box input,select {
+		vertical-align:middle;
+	}
+	.search-box input:not([type="radio"]):not([type="button"]):not([type="checkbox"]):not([type="submit"]) {
+		width: 80px;
+		line-height: 20px; /*否则输入框的文字会偏下*/
+	}
+	.search-box {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+	}
 	.cond-span {
-		display: inline-block;
+		display: flex;
 		float: left;
-		min-height: 32px;
-	}
-	.cond-span select {
-		margin-left: 5px;
-	}
-	.cond-span input {
-		margin-left: 5px;
+		align-items: center;
+		text-align: left;
+		width: 25%;
+		height: 32px;
+		margin: 3px 0;
 	}
 	.cond-title {
-		margin: 0 5px;
+		margin: 0;
+		padding-right: 3px;
+		width: 35%;
+		text-align: right;
 	}
+
 	.tSearch {
-		background: url(<%=request.getContextPath()%>/images/search.png) no-repeat left;
+		background: url('src/assets/images/search.png') no-repeat left;
 		border: 0;
 		padding-left:12px;
 		vertical-align: middle;
@@ -186,7 +202,7 @@ function refreshSerialNo_<%=formCode%>() {
 	var trList = $("#cwsNestTable_<%=formCode%>").find("tr");
     for (var i=1;i<trList.length;i++) {
         var tdArr = trList.eq(i).children("td");
-        tdArr.eq(0).html(i);
+        tdArr.eq(1).html(i);
     }
 }
 </script>
@@ -236,13 +252,16 @@ JSONArray mapAry = new JSONArray();
 int queryId = -1;
 boolean canAdd = true, canEdit = true, canImport = true, canExport=true, canDel = true, canSel = true;
 boolean isAutoSel = false;
-int isPage = 0, isSearchable = 0, isAddHighlight = 0;
+int isPage = 0, isSearchable = 0, isAddHighlight = 0, isShowFlow = 0, isNoShow = 1;
 int pageSize = ParamUtil.getInt(request, "pageSize", -1);
+String selWinUrl = "";
 FormField nestField = null;
 boolean isPropStat = false;
-String propStat = "";
 JSONObject jsonPropStat = null;
+String nestFilter = "";
+FormDb sourceFd = new FormDb();
 FormDb parentFd = new FormDb();
+String sourceMoudleCode = "";
 if (!"".equals(nestFieldName)) {
 	parentFd = parentFd.getFormDb(parentFormCode);
 	nestField = parentFd.getFormField(nestFieldName);
@@ -257,6 +276,13 @@ if (!"".equals(nestFieldName)) {
 		String defaultVal = StrUtil.decodeJSON(nestField.getDescription());		
 		json = new JSONObject(defaultVal);
 
+		sourceMoudleCode = json.getString("sourceForm");
+		if (!"".equals(sourceMoudleCode)) {
+			sourceFd = sourceFd.getFormDb(sourceMoudleCode);
+		}
+
+		nestFilter = json.getString("filter");
+
 		canAdd = "true".equals(json.getString("canAdd"));
 		canEdit = "true".equals(json.getString("canEdit"));
 		canImport = "true".equals(json.getString("canImport"));
@@ -269,8 +295,8 @@ if (!"".equals(nestFieldName)) {
 			isAutoSel = "1".equals(json.getString("isAutoSel"));
 		}
 		if (json.has("propStat")) {
-			propStat = json.getString("propStat");
-			if (StringUtils.isNotEmpty(propStat)) {
+			jsonPropStat = json.getJSONObject("propStat");
+			/*if (StringUtils.isNotEmpty(propStat)) {
 				if ("".equals(propStat)) {
 					propStat = "{}";
 				}
@@ -278,6 +304,9 @@ if (!"".equals(nestFieldName)) {
 				if (jsonPropStat.length()>0) {
 					isPropStat = true;
 				}
+			}*/
+			if (jsonPropStat.length()>0) {
+				isPropStat = true;
 			}
 		}
 		if (json.has("isPage")) {
@@ -298,6 +327,18 @@ if (!"".equals(nestFieldName)) {
 		if (!json.isNull("queryId")) {
 			queryId = StrUtil.toInt((String)json.get("queryId"));
 		}
+		if (!json.isNull("selWinUrl")) {
+			selWinUrl = json.getString("selWinUrl");
+		}
+		/*if (!json.isNull("isUseModuleFilter")) {
+			isUseFilter = json.getBoolean("isUseModuleFilter");
+		}*/
+		if (!json.isNull("isShowFlow")) {
+			isShowFlow = json.getInt("isShowFlow");
+		}
+		if (!json.isNull("isNoShow")) {
+			isNoShow = json.getInt("isNoShow");
+		}
 	} catch (JSONException e) {
 		e.printStackTrace();
 	}
@@ -316,28 +357,95 @@ ListResult lr = null;
 
 String cwsId = "";
 
-String url = request.getRequestURI() + "?" + request.getQueryString();
+// String url = request.getRequestURI() + "?" + request.getQueryString();
+String url = "/visual/nest_sheet_view.jsp?" + request.getQueryString();
+boolean isShowChk = ("edit".equals(op) || "add".equals(op)) && canDel;
+String formName = ParamUtil.get(request, "cwsFormName");
+%>
+<script>
+	function selBatchInNestSheet(formCode, fieldName, obj) {
+		if (obj.checked) {
+			$('#cwsNestTable_' + formCode).find('.row-chk').prop('checked', true);
+		} else {
+			$('#cwsNestTable_' + formCode).find('.row-chk').prop('checked', false);
+		}
+	}
 
+	function delBatch<%=formCode%>() {
+		var ids = '';
+		$('#cwsNestTable_<%=formCode%>').find('input[id=rowId]:checked').each(function (k) {
+			if (ids == '') {
+				ids = $(this).val();
+			} else {
+				ids += ',' + $(this).val();
+			}
+		});
+		console.log('delBatch ids', ids);
+		if (ids == '') {
+			myMsg('请选择记录', 'warn');
+			return;
+		}
+
+		myConfirm('提示', '您确定要删除么', delBatchCallBack_<%=formCode%>, ids);
+	}
+
+	function delBatchCallBack_<%=formCode%>(ids) {
+		var url = "/flow/delNestSheetRelated.do?ids=" + ids + "&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>&moduleCode=<%=moduleCode%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>";
+		var params = {};
+		ajaxPost(url, params).then((data) => {
+			console.log('data', data);
+			myMsg(data.msg);
+			if (data.ret == "1") {
+				// 如果是编辑状态，则刷新嵌套表
+				<%if ("edit".equals(op)) {%>
+				refreshNestSheetCtl<%=formCode%>();
+				<%}else{%>
+				var ary = ids.split(',');
+				for (var i in ary) {
+					console.log('delBatchCallBack ary[' + i + ']=', ary[i]);
+					$("#<%=formCode%>_" + ary[i]).remove();
+					// 移除可能在智能模块添加页插入的tempCwsId_中的id值
+					$("input[name='tempCwsId_<%=formCode%>'][value=" + ary[i] + "]").remove();
+				}
+				<%
+				}%>
+
+				refreshSerialNo_<%=formCode%>();
+
+				callCalculateOnload();
+
+				eventTarget.fireEvent({
+					type: EVENT_TYPE.NEST_DEL,
+					moduleCode: "<%=moduleCode%>"
+				});
+
+				try {
+					onNestAfterDelRow('<%=formCode%>', ids, "<%=StrUtil.UrlEncode(cwsId)%>");
+				}
+				catch(e) {}
+				// 用于form_js_***.jsp调用
+				try {
+					onNestSheetChange("<%=moduleCode%>", "del", id);
+				} catch (e) {};
+			}
+		});
+	}
+
+	// 将单元格的paddin置为0，以使得嵌套表格2占满全部单元格
+	$('#nestsheet_<%=nestFieldName%>').closest('td').css('padding', '0px');
+</script>
+<%
 // 流程中或者智能模块编辑时，或者查看时
 if ("edit".equals(op) || "view".equals(op)) {
 	// cwsId为fdao的id
 	cwsId = ParamUtil.get(request, "cwsId");
-	try {
-		com.redmoon.oa.security.SecurityUtil.antiXSS(request, privilege, "cwsId", cwsId, getClass().getName());
-	}
-	catch (ErrMsgException e) {
-		out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, e.getMessage()));
-		return;	
-	}
-		
 	if ("".equals(parentFormCode)) {
 		out.print("嵌套表参数：父模块编码为空！");
 		return;
 	}
 	
 	com.redmoon.oa.visual.FormDAOMgr fdm = new com.redmoon.oa.visual.FormDAOMgr(parentFormCode);
-	// System.out.println(getClass() + " parentFormCode=" + parentFormCode);
-	String relateFieldValue = fdm.getRelateFieldValue(StrUtil.toInt(cwsId), moduleCode);
+	String relateFieldValue = fdm.getRelateFieldValue(StrUtil.toLong(cwsId), moduleCode);
 	if (relateFieldValue==null) {
 		out.print(SkinUtil.makeErrMsg(request, "请检查模块" + fd.getName() + "（编码：" + formCode + "）是否相关联"));
 		return;
@@ -348,7 +456,9 @@ if ("edit".equals(op) || "view".equals(op)) {
 	String sql = "select id from " + fd.getTableNameByForm() + " t1 where cws_id=" + StrUtil.sqlstr(relateFieldValue);
 	boolean isUseFilter = true;
 	flowId = ParamUtil.getInt(request, "flowId", com.redmoon.oa.visual.FormDAO.NONEFLOWID);
-	
+
+	String mainPageType = ParamUtil.get(request, "mainPageType");
+
 	if (!"".equals(newIds)) {
 		String[] idsAry = StrUtil.split(newIds, ",");
 		StringBuffer sb = new StringBuffer();
@@ -358,8 +468,9 @@ if ("edit".equals(op) || "view".equals(op)) {
 		sql = "select id from " + fd.getTableNameByForm() + " t1 where id in (" + sb.toString() + ")";
 	}
 	else {
-		// 流程中指定节点上才可以使用filter
-		if (flowId!=com.redmoon.oa.visual.FormDAO.NONEFLOWID) {
+		// 流程中使用filter
+		// if (flowId != com.redmoon.oa.visual.FormDAO.NONEFLOWID && mainPageType.contains("flow")) {
+		if (flowId != com.redmoon.oa.visual.FormDAO.NONEFLOWID) {
 			// 以防止出现嵌套表被多个主表调用时，因为cws_id的重复，出现拉取了重复数据的情况
 			sql += " and flowId=" + flowId;
 			
@@ -369,14 +480,10 @@ if ("edit".equals(op) || "view".equals(op)) {
 				out.print(SkinUtil.makeErrMsg(request, "流程：" + flowId + "不存在"));
 				return;
 			}
-
-			WorkflowActionDb wa = new WorkflowActionDb();
-			wa = wa.getWorkflowActionDb((int)actionId);
 			
 			WorkflowPredefineDb wpd = new WorkflowPredefineDb();
 			wpd = wpd.getDefaultPredefineFlow(wf.getTypeCode());	
-			String isModuleFilter = WorkflowActionDb.getActionProperty(wpd, wa.getInternalName(), "isModuleFilter");
-			if (!"1".equals(isModuleFilter)) {
+			if (!wpd.isModuleFilter()) {
 				isUseFilter = false;
 			}
 		}
@@ -401,16 +508,22 @@ if ("edit".equals(op) || "view".equals(op)) {
 		
 		// 当运用于智能模块中时，始终启用嵌套表对应主模块中的过滤条件
 		if (isUseFilter) {
-			String[] ary = ModuleUtil.parseFilter(request, msd.getString("form_code"), StrUtil.getNullStr(msd.getString("filter")));
+			String userName = privilege.getUser(request);
+			String[] ary = ModuleUtil.parseFilter(request, msd.getString("form_code"), StrUtil.getNullStr(msd.getFilter(userName)));
 			if (ary!=null) {
 				String filter = ary[0];
 				if (filter!=null && !"".equals(filter)) {
-					sql += " and " + filter;
+					if (filter.toLowerCase().startsWith("select ")) {
+						sql = filter;
+					}
+					else {
+						sql += " and " + filter;
+					}
 				}
 			}
 
 			// 20200701 使可根据模块配置中的排序方式进行排序
-			String filter = StrUtil.getNullStr(msd.getString("filter")).trim();
+			String filter = StrUtil.getNullStr(msd.getFilter(userName)).trim();
 			boolean isComb = filter.startsWith("<items>") || "".equals(filter);
 			// 如果是组合条件，则赋予后台设置的排序字段
 			if (isComb) {
@@ -436,7 +549,13 @@ if ("edit".equals(op) || "view".equals(op)) {
 
 	Vector fdaoV;
 	if (isPage == 1) {
-		lr = fdao.listResult(formCode, sql, curPage, pageSize);
+		try {
+			lr = fdao.listResult(formCode, sql, curPage, pageSize);
+		} catch (ErrMsgException e) {
+			e.printStackTrace();
+			out.print(e.getMessage());
+			return;
+		}
 		fdaoV = lr.getResult();
 	}
 	else {
@@ -447,91 +566,130 @@ if ("edit".equals(op) || "view".equals(op)) {
 	com.alibaba.fastjson.JSONObject jsonSums = com.alibaba.fastjson.JSONObject.parseObject(FormUtil.getSums(fd, parentFd, cwsId).toString());
 	%>
 	<script>
-	$(function() {
+	// 计算控件回调
+	function callByNestSheet(nestSheetSums, formCode) {
+		console.log('macro_js_nestsheet callByNestSheet nestSheetSums', JSON.stringify(nestSheetSums));
+		if (nestSheetSums != null) {
+			if (typeof (nestSheetSums) == 'object') {
+				var keys = '';
+				// 20220730 将o由原来的sum(nest.je)中的je改为计算控件的字段名
+				for (var o in nestSheetSums) {
+					if (keys.indexOf(',' + o + ',') != -1) {
+						// 跳过已正常取得的字段，因为可能在sum时两个嵌套表中都含有同名的字段，而其中一个是有formCode属性的
+						continue;
+					}
+					console.log('keys', keys);
+					var $ctl = $("input[name='" + o + "'][formCode='" + formCode + "']");
+					if (!$ctl[0]) {
+						// 向下兼容会带来问题，如果在sum时两个嵌套表中都含有同名的字段，会导致出现问题，故需带有formCode属性的计算控件字段记住
+						// 向下兼容，旧版的sum型计算控件中没有formCode
+						$ctl = $("input[name='" + o + "']");
+					} else {
+						if (keys == '') {
+							keys = ',' + o + ',';
+						} else {
+							keys += o + ',';
+						}
+					}
+					$ctl.val(nestSheetSums[o]);
+				}
+			}
+		}
+	}
+
+	// $(function() {
+		// console.log('<%=jsonSums.toString()%>');
+	<%
+	// 注意仅可编辑时才调用，否则例如：当事务所内资审核时，查看项目详情，切换选项卡，看以往审核记录，查看记录的详情，
+	// 再回到审核流程处理界面时，callByNestSheet会将以往审核记录的值赋予给流程表单中的同名字段，
+	// 即认定栏投资方上方的那些字段（均为计算控件，但实际上已无法计算，因为投资方嵌套表中没有对应的列）
+	if ("edit".equals(op)) {
+	%>
 		callByNestSheet(<%=jsonSums.toString()%>, '<%=formCode%>');
-	})
+	<%
+	}
+	%>
+	// })
+
+	function fireEventSelect_<%=moduleCode%>() {
+		eventTarget.fireEvent({
+			type: EVENT_TYPE.NEST_SELECT,
+			moduleCode: "<%=moduleCode%>"
+		});
+	}
 
 	function add_row_<%=formCode%>() {
 		var url = "<%=request.getContextPath()%>/visual/nest_sheet_add_relate.jsp?isShowNav=0&parentId=<%=StrUtil.UrlEncode(cwsId)%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&formCode=<%=parentFormCode%>&flowId=<%=flowId%>&actionId=<%=actionId%>";
-		openWin(url,"1000","800");
+		// openWin(url,"1000","800");
+
+		openSmartModuleRelateTableDrawer(1, {parentId: <%=cwsId%>, moduleCode: '<%=parentFormCode%>', moduleCodeRelated: '<%=moduleCode%>', flowId: <%=flowId%>, pageType: 'add_relate'});
 	}
 
 	function edit_row_<%=formCode%>(id) {
 	    // console.log("id=" + id);
 		<%
-		if (!"edit".equals(op)) {
+		/*if (!"edit".equals(op)) {
 			%>
-			return;
+			// return;
 			<%
-		}
+		}*/
 		%>
 		var url = "<%=request.getContextPath()%>/visual/nest_sheet_edit_relate.jsp?parentId=<%=StrUtil.UrlEncode(cwsId)%>&id=" + id + "&menuItem=&formCodeRelated=<%=formCode%>&moduleCode=<%=moduleCode%>&formCode=<%=parentFormCode%>&isShowNav=0&actionId=<%=actionId%>";
-		openWin(url,"1000","800");		
+		// openWin(url,"1000","800");
+		openSmartModuleRelateTableDrawer(2, {parentId: <%=cwsId%>, id: id, moduleCode: '<%=parentFormCode%>', moduleCodeRelated: '<%=moduleCode%>', flowId: <%=flowId%>, pageType: 'edit_relate'});
 	}
-	
-	function del_row_<%=formCode%>(id) {
-		<%
-		if (!"edit".equals(op)) {
-			%>
-			return;
-			<%
-		}
-		%>
-		
-		jConfirm("您确定要删除吗?","提示",function(r){
-			if(!r){
-				return;
-			}
-			else{
+
+	function delCallBack_<%=formCode%>(id) {
+		var url = "/flow/delNestSheetRelated.do?ids=" + id + "&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>&moduleCode=<%=moduleCode%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>";
+		var params = {};
+		ajaxPost(url, params).then((data) => {
+			console.log('data', data);
+			myMsg(data.msg);
+			if (data.ret == "1") {
+				$("#<%=formCode%>_" + id).remove();
+				refreshSerialNo_<%=formCode%>();
+
+				loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', <%=curPage%>, <%=pageSize%>, getConds(), '<%=formName%>');
+
+				eventTarget.fireEvent({
+					type: EVENT_TYPE.NEST_DEL,
+					moduleCode: "<%=moduleCode%>"
+				});
+
+				// 移除可能在智能模块添加页插入的tempCwsId_中的id值
+				$("input[name='tempCwsId_<%=formCode%>'][value=" + id + "]").remove();
+
+				// callCalculateOnload();
 				try {
-					onNestDelRow('<%=formCode%>', id);
+					onNestAfterDelRow('<%=formCode%>', id, "<%=StrUtil.UrlEncode(cwsId)%>");
 				}
-				catch(e) {}				
-				$.ajax({
-					type: "post",
-					url: "<%=request.getContextPath()%>/flow/delNestSheetRelated.do?id=" + id + "&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>&moduleCode=<%=moduleCode%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>",
-					dataType: "html",
-					beforeSend: function(XMLHttpRequest){
-						$(document.body).showLoading();
-					},
-					success: function(data, status){
-						data = $.parseJSON(data);
-						if (data.ret=="0") {
-							jAlert(data.msg, "提示");
-						}
-						else {
-				            $("#<%=formCode%>_" + id).remove();		
-							refreshSerialNo_<%=formCode%>();
-
-                           	// refreshNestSheetCtl<%=moduleCode%>();
-							loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', <%=curPage%>, <%=pageSize%>, getConds());
-
-							// callCalculateOnload();
-							try {
-								onNestAfterDelRow('<%=formCode%>', id, "<%=StrUtil.UrlEncode(cwsId)%>");
-							}
-							catch(e) {}
-							try {
-								onNestSheetChange("<%=moduleCode%>", "del", id);
-							} catch (e) {};
-							// jAlert(data.msg, "提示");
-							// 用于form_js_***.jsp调用						
-						}
-					},
-					complete: function(XMLHttpRequest, status){
-						$(document.body).hideLoading();
-					},
-					error: function(XMLHttpRequest, textStatus){
-						$(document.body).hideLoading();
-						alert(XMLHttpRequest.responseText);
-					}
-				});	  				
-            }
+				catch(e) {}
+				// 用于form_js_***.jsp调用
+				try {
+					onNestSheetChange("<%=moduleCode%>", "del", id);
+				} catch (e) {};
+			}
 		});
 	}
 	
+	function del_row_<%=formCode%>(id) {
+		myConfirm('提示', '您确定要删除么', delCallBack_<%=formCode%>, id);
+	}
+	
 	function importForSheet_<%=formCode%>(parentId) {
-		openWin("<%=request.getContextPath()%>/visual/nest_sheet_import_excel.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>&moduleCode=<%=moduleCode%>&flowId=<%=flowId%>&parentId=" + parentId + "&<%=requestParamBuf.toString()%>", 480, 80);
+		openImportExcelModal(parentId, "<%=moduleCode%>", "<%=parentFormCode%>", <%=flowId%>, "<%=nestFieldName%>", "nest_sheet");
+		// openWin("<%=request.getContextPath()%>/visual/nest_sheet_import_excel.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>&moduleCode=<%=moduleCode%>&flowId=<%=flowId%>&parentId=" + parentId + "&<%=requestParamBuf.toString()%>", 480, 80);
+	}
+
+	function doExportExcelRelate() {
+		// nestType=<%=MacroCtlUnit.NEST_TYPE_NORMAIL%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>
+		exportExcelRelate(
+				'<%=MacroCtlUnit.NEST_TYPE_NORMAIL%>',
+				'<%=cwsId%>',
+				'<%=parentFormCode%>',
+				'<%=formCode%>',
+				'<%=fd.getName()%>',
+		)
 	}
 	
 	function sel_<%=formCode%>(parentId, isQuery) {
@@ -553,7 +711,19 @@ if ("edit".equals(op) || "view".equals(op)) {
 			openWin("<%=request.getContextPath()%>/flow/form_query_script_list_do.jsp?op=query&flowId=<%=flowId%>&id=<%=queryId%>&mode=sel&parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + fieldParams, 800, 600);
 		}
 		else {
-			openWin("<%=request.getContextPath()%>/visual/module_list_nest_sel.jsp?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + "&mainId=<%=mainId%>", 800, 600);
+			<%
+			if ("".equals(selWinUrl)) {
+				String condFields = String.join("|", ModuleUtil.getModuleListNestSelCondFields(nestFilter));
+			%>
+			// openWin("<%=request.getContextPath()%>/visual/moduleListNestSel.do?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + "&mainId=<%=mainId%>", 800, 600);
+			openWinModuleListNest("<%=parentFormCode%>", "<%=formCode%>", "<%=nestFieldName%>", "nest_sheet", parentId, <%=mainId%>, "<%=condFields%>");
+			<%
+			} else {
+			%>
+			openWin("<%=request.getContextPath()%>/<%=selWinUrl%>?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + "&mainId=<%=mainId%>", 800, 600);
+			<%
+			}
+			%>
 		}
 	}
 	
@@ -563,12 +733,28 @@ if ("edit".equals(op) || "view".equals(op)) {
 	}
 	catch (e) {}
 	
-	function showModule_<%=formCode%>(visitKey, id) {
-		addTab('<%=fd.getName()%>', '<%=request.getContextPath()%>/visual/module_show.jsp?visitKey=' + visitKey + '&parentId=' + id + '&id=' + id + '&code=<%=moduleCode%>');
+	function showModule_<%=formCode%>(visitKey, id, quoteFlowId, quoteId, quoteModuleCode) {
+		var isShowFlow = <%=isShowFlow%>;
+		if (isShowFlow ==1 && quoteFlowId != -1) {
+			// addTab('<%=fd.getName()%>', '<%=request.getContextPath()%>/flowShowPage.do?flowId=' + quoteFlowId + '&isNav=false&visitKey=' + visitKey);
+			openWinFlowShow(quoteFlowId, visitKey);
+		}
+		else if (quoteId != -1) {
+			// addTab('<%=fd.getName()%>', '<%=request.getContextPath()%>/visual/moduleShowPage.do?moduleCode=' + quoteModuleCode + '&id=' + quoteId + '&visitKey=' + visitKey);
+			openWinModuleShow(quoteModuleCode, quoteId, visitKey);
+		}
+		else {
+			// 需用moduleShowRelatePage，否则当用moduleShowPage查看时点击编辑按钮，可能就有问题，比如：预算阶段需取父表单中的记录，这样就取不到了
+			// addTab('<%=fd.getName()%>', '<%=request.getContextPath()%>/visual/moduleShowRelatePage.do?visitKey=' + visitKey + '&isNav=false&parentId=<%=cwsId%>&id=' + id + '&code=<%=parentFormCode%>&moduleCodeRelated=<%=moduleCode%>');
+
+			// 暂时先用openWinModuleShow替代实现
+			// openWinModuleRelateShow('<%=parentFormCode%>', <%=moduleCode%>, <%=cwsId%>, id, visitKey);
+			openWinModuleShow('<%=moduleCode%>', id, visitKey);
+		}
 	}
 	</script>
 
-	<%
+<%
 		if (isSearchable == 1) {
 	%>
 	<div class="search-box">
@@ -586,7 +772,7 @@ if ("edit".equals(op) || "view".equals(op)) {
 						request.setAttribute("isNestSheetQuery", "y");
 						Map<String, String> checkboxGroupMap = new HashMap<>();
 						JSONObject queryJson = new JSONObject(btnScripts[i]);
-						if (((String) queryJson.get("btnType")).equals("queryFields")) {
+						if (queryJson.get("btnType").equals("queryFields")) {
 							String condFields = (String) queryJson.get("fields");
 							String condTitles = "";
 							if (queryJson.has("titles")) {
@@ -608,7 +794,7 @@ if ("edit".equals(op) || "view".equals(op)) {
 								}
 
 								String condType = (String) queryJson.get(fieldName);
-								CondUnit condUnit = CondUtil.getCondUnit(request, fd, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
+								CondUnit condUnit = CondUtil.getCondUnit(request, msd, fd, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
 								out.print("<span class=\"cond-span\">");
 								out.print("<span class=\"cond-title\">");
 								out.print(condUnit.getFieldTitle());
@@ -634,7 +820,7 @@ if ("edit".equals(op) || "view".equals(op)) {
 									e.preventDefault();
 
 									var conds = getConds();
-									loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', 1, <%=pageSize%>, conds);
+									loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', 1, <%=pageSize%>, conds, '<%=formName%>');
 								})
 							});
 						</script>
@@ -650,15 +836,24 @@ if ("edit".equals(op) || "view".equals(op)) {
     <table id="cwsNestTable_<%=formCode%>" formCode="<%=formCode%>" class="tabStyle_1" style="width:100%;margin:0px" border="0" align="center" cellpadding="2" cellspacing="0">
       <thead>
       <tr ondblclick="<%=ondblclickScript%>" title="<%=ondblclickTitle%>" align="center" class="cwsThead">
-        <td style="width:50px;">
+		  <td class="td-chk" align="center" style="width: 35px; display: <%=isShowChk?"":"none"%>">
+			  <input type="checkbox" onclick="selBatchInNestSheet('<%=formCode%>', '<%=nestFieldName%>', this)" />
+		  </td>
+        <td style="width:50px;display:<%=isNoShow==1?"":"none"%>">
 		<!--ID-->
-		序号</td>
+		序号
+		</td>
     <%
 	boolean isArchive = "archive".equals(action);
 	for (int i=0; i<len; i++) {
 		String fieldName = fields[i];
 		String title = "创建者";
-		
+
+		// 跳过列表中添加的操作列
+		if ("colOperate".equals(fieldName)) {
+			continue;
+		}
+
 		if (!"cws_creator".equals(fieldName)) {
 			if (fieldName.startsWith("main")) {
 				String[] ary = StrUtil.split(fieldName, ":");
@@ -675,6 +870,34 @@ if ("edit".equals(op) || "view".equals(op)) {
 					FormDb otherFormDb = fm.getFormDb(ary[2]);
 					title = otherFormDb.getFieldTitle(ary[4]);
 				}				
+			}
+			else if ("cws_creator".equals(fieldName)) {
+				title = "创建者";
+			} else if ("ID".equalsIgnoreCase(fieldName) || "CWS_MID".equalsIgnoreCase(fieldName)) {
+				title = "ID";
+			} else if ("cws_status".equals(fieldName)) {
+				title = "状态";
+			} else if ("cws_flag".equals(fieldName)) {
+				title = "冲抵状态";
+			} else if ("flowId".equalsIgnoreCase(fieldName)) {
+				title = "流程号";
+			} else if ("flow_begin_date".equalsIgnoreCase(fieldName)) {
+				title = "流程开始时间";
+			} else if ("flow_end_date".equalsIgnoreCase(fieldName)) {
+				title = "流程结束时间";
+			} else if ("cws_id".equals(fieldName)) {
+				title = "关联ID";
+			}
+			else if ("cws_visited".equals(fieldName)) {
+				title = "是否已读";
+			}
+			else if ("colPrompt".equals(fieldName)) {
+				title = "colPrompt"; //
+			}
+			else if ("cws_create_date".equals(fieldName)) {
+				title = "创建时间";
+			} else if ("cws_modify_date".equals(fieldName)) {
+				title = "修改时间";
 			}
 			else {
 				title = fd.getFieldTitle(fieldName);
@@ -702,22 +925,29 @@ if ("edit".equals(op) || "view".equals(op)) {
 		%>
         <td class="tdOperate" style="width:<%=isOpShow?"150":"50"%>px">
         <%if ("edit".equals(op) && canAdd) {%>
-        <img class="imgBtn" title="增加" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/add.png" style="cursor:pointer" onclick="add_row_<%=formCode%>('<%=formCode%>')" />
-        <%}%>
+			<a class="link-btn" title="增加" style="cursor:pointer" onclick="add_row_<%=formCode%>('<%=formCode%>')">
+				<i class="fa fa-plus-circle link-icon link-icon-add"></i>
+			</a>
+		<%}%>
         <%if ("edit".equals(op) && canImport) {%>
-        <img class="imgBtn" title="导入" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/import.png" style="cursor:pointer" onclick="importForSheet_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)" />        
+			<a class="link-btn" title="导入" style="cursor:pointer" onclick="importForSheet_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)"><i class="fa fa-arrow-circle-o-down link-icon link-icon-edit"></i></a>
         <%}%>
         <%if ("edit".equals(op) && canExport) {%>
-        <img class="imgBtn" title="导出" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/export.png" style="cursor:pointer" onclick="openWin('<%=request.getContextPath()%>/visual/exportExcelRelate.do?parentId=<%=StrUtil.UrlEncode(cwsId)%>&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>');" />
-        <%}%>        
+<%--
+			<a class="link-btn" title="导出" style="cursor:pointer" onclick="openWin('<%=request.getContextPath()%>/visual/exportExcelRelate.do?nestType=<%=MacroCtlUnit.NEST_TYPE_NORMAIL%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>');"><i class="fa fa-arrow-circle-o-up link-icon link-icon-edit"></i></a>
+--%>
+			<a class="link-btn" title="导出" style="cursor:pointer" onclick="doExportExcelRelate()"><i class="fa fa-arrow-circle-o-up link-icon link-icon-edit"></i></a>
+        <%}%>
         <%
-		String pageType = ParamUtil.get(request, "pageType");		
 		if ("edit".equals(op) && canSel && queryId!=-1) {%>
-        <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>, true)" />        
-        <%}%>      
+			<a class="link-btn" title="选择" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>, true)"><i class="fa fa-check-square-o link-icon link-icon-show"></i></a>
+        <%}%>
         <%if ("edit".equals(op) && canSel/* && mapAry.length()>0*/) {%>
-        <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)" />        
-        <%}%>           
+			<a class="link-btn" title="选择" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)"><i class="fa fa-check-square-o link-icon link-icon-show"></i></a>
+        <%}%>
+		<%if ("edit".equals(op) && canDel) {%>
+		<a class="link-btn" title="批量删除" style="cursor:pointer" onclick="delBatch<%=formCode%>()"><i class="fa fa-trash-o link-icon link-icon-del"></i></a>
+		<%}%>
         </td>
         <%}%>
       </tr>
@@ -729,13 +959,13 @@ if ("edit".equals(op) || "view".equals(op)) {
 		
 		int k = 0;
 		UserMgr um = new UserMgr();
-
+		WorkflowDb wf = new WorkflowDb();
 		ondblclickTitle = "";
 		ondblclickScript = "";
 		if ("edit".equals(op)) {
 			// ondblclickTitle = "双击本行可以编辑数据";
 		}
-		
+
 		while (ir!=null && ir.hasNext()) {
 			fdao = (FormDAO)ir.next();
 			RequestUtil.setFormDAO(request, fdao);
@@ -749,14 +979,29 @@ if ("edit".equals(op) || "view".equals(op)) {
 					cls = "row-pull";
 				}
 			}
+			int quoteFlowId = -1;
+			long quoteId = -1;
+			if (isShowFlow == 1) {
+				quoteId = fdao.getCwsQuoteId();
+				FormDAO daoQuote = new FormDAO();
+				daoQuote = daoQuote.getFormDAO(quoteId, sourceFd);
+				quoteFlowId = daoQuote.getFlowId();
+			}
 	  %>
       <tr title="<%=ondblclickTitle%>" align="center" id="<%=formCode%>_<%=fdao.getId()%>" class="<%=cls%>">
-        <td editable=0 title="ID：<%=fdao.getId()%>">
+		  <td class="td-chk" align="center" style="display: <%=isShowChk?"":"none"%>">
+			<input id="rowId" value="<%=fdao.getId()%>" class="row-chk" type="checkbox"/>
+		  </td>
+        <td editable="0" style="display: <%=isNoShow==1?"":"none"%>" title="ID：<%=fdao.getId()%>">
 		<%=k%>
         </td>
         <%
 		for (int i=0; i<len; i++) {
 			String fieldName = fields[i];
+			// 跳过列表中添加的操作列
+			if ("colOperate".equals(fieldName)) {
+				continue;
+			}
 		%>
         <td align="<%=fieldsAlign[i]%>">
 		<%if (!"cws_creator".equals(fieldName)) {
@@ -776,19 +1021,45 @@ if ("edit".equals(op) || "view".equals(op)) {
 				}
 			}
 			else if (fieldName.startsWith("other:")) {
-				// System.out.println(getClass() + " fieldName=" + fieldName);
-				// String[] ary = StrUtil.split(fieldName, ":");
-				
-				// FormDb otherFormDb = fm.getFormDb(ary[2]);
-				// com.redmoon.oa.visual.FormDAOMgr fdmOther = new com.redmoon.oa.visual.FormDAOMgr(otherFormDb);
-				// out.print(fdmOther.getFieldValueOfOther(fdao.getFieldValue(ary[1]), ary[3], ary[4]));
 				out.print(com.redmoon.oa.visual.FormDAOMgr.getFieldValueOfOther(request, fdao, fieldName));
+			}
+			else if ("ID".equalsIgnoreCase(fieldName) || "CWS_MID".equalsIgnoreCase(fieldName)) {
+				out.print(String.valueOf(fdao.getId()));
+			} else if ("cws_flag".equals(fieldName)) {
+				out.print(String.valueOf(fdao.getCwsFlag()));
+			} else if ("cws_creator".equals(fieldName)) {
+				out.print(StrUtil.getNullStr(um.getUserDb(fdao.getCreator()).getRealName()));
+			} else if ("cws_status".equals(fieldName)) {
+				out.print(com.redmoon.oa.flow.FormDAO.getStatusDesc(fdao.getCwsStatus()));
+			} else if ("flowId".equalsIgnoreCase(fieldName)) {
+				out.print(String.valueOf(fdao.getFlowId()));
+			} else if ("flow_begin_date".equalsIgnoreCase(fieldName)) {
+				if (fdao.getFlowId() != -1) {
+					wf = wf.getWorkflowDb(fdao.getFlowId());
+					out.print(DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			} else if ("flow_end_date".equalsIgnoreCase(fieldName)) {
+				if (fdao.getFlowId() != -1) {
+					wf = wf.getWorkflowDb(fdao.getFlowId());
+					out.print(DateUtil.format(wf.getEndDate(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			} else if ("cws_id".equals(fieldName)) {
+				out.print(String.valueOf(fdao.getCwsId()));
+			}
+			else if ("cws_visited".equals(fieldName)) {
+				out.print(fdao.isCwsVisited()?"是":"否");
+			}
+			else if ("colPrompt".equals(fieldName)) {
+				continue;
+			} else if ("cws_create_date".equals(fieldName)) {
+				out.print(DateUtil.format(fdao.getCwsCreateDate(), "yyyy-MM-dd HH:mm:ss"));
+			} else if ("cws_modify_date".equals(fieldName)) {
+				out.print(DateUtil.format(fdao.getCwsModifyDate(), "yyyy-MM-dd HH:mm:ss"));
 			}
 			else{
 				FormField ff = fd.getFormField(fieldName);
 				if (ff != null && ff.getType().equals(FormField.TYPE_MACRO)) {
 					MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-					// System.out.println(getClass() + " fieldName22=" + fieldName + " ff.getType()=" + ff.getType() + " mu=" + mu);
 					if (mu != null) {
 						out.print(mu.getIFormMacroCtl().converToHtml(request, ff, fdao.getFieldValue(fieldName)));
 					}
@@ -802,20 +1073,24 @@ if ("edit".equals(op) || "view".equals(op)) {
         <%}%>
         </td>
         <%}
-		// 以flowId作为值加密
-		String visitKey = cn.js.fan.security.ThreeDesUtil.encrypt2hex(desKey, String.valueOf(id));	
+		// 以id作为值加密
+		// String visitKey = cn.js.fan.security.ThreeDesUtil.encrypt2hex(desKey, String.valueOf(id));
+		String visitKey = SecurityUtil.makeVisitKey(String.valueOf(id));
+		if (isShowFlow == 1 && quoteFlowId != -1) {
+			visitKey = cn.js.fan.security.ThreeDesUtil.encrypt2hex(desKey, String.valueOf(quoteFlowId));
+		}
 		%>
     	<%if (true || isOpShow) {%>
         <td class="tdOperate">
         <%if ("edit".equals(op) && canEdit) {%>
-        	<img class="imgBtn" title="修改" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/edit.png" style="cursor:pointer" onclick="edit_row_<%=formCode%>(<%=id%>)" />        
+			<a class="link-btn" title="修改" style="cursor:pointer" onclick="edit_row_<%=formCode%>(<%=id%>)"><i class="fa fa-edit link-icon link-icon-edit"></i></a>
         <%}
 		else {%>
-        	<img class="imgBtn" title="查看" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/info.png" style="cursor:pointer;" onclick="showModule_<%=formCode%>('<%=visitKey%>', <%=id%>)" />        
+			<a class="link-btn" title="查看" style="cursor:pointer" onclick="showModule_<%=formCode%>('<%=visitKey%>', <%=id%>, <%=quoteFlowId%>, <%=quoteId%>, '<%=sourceMoudleCode%>')"><i class="fa fa-file-text-o link-icon link-icon-show"></i></a>
         <%}
 		%>
         <%if ("edit".equals(op) && canDel) {%>
-        <img class="imgBtn" title="删除" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/del.png" style="cursor:pointer" onclick="del_row_<%=formCode%>(<%=id%>)" />        
+			<a class="link-btn" title="删除" style="cursor:pointer" onclick="del_row_<%=formCode%>(<%=id%>)"><i class="fa fa-trash-o link-icon link-icon-del"></i></a>
         <%}%>
         </td>
         <%}%>
@@ -851,9 +1126,8 @@ if ("edit".equals(op) || "view".equals(op)) {
 
 					  double sumVal = 0;
 					  if (k > 0) {
-						  // 通过FormUtil.getSums(fd, pForm, cwsId)也可以获取到合计值
-						  // sumVal = FormSQLBuilder.getSUMOfSQL(sql, fieldName);
-						  sumVal = jsonSums.getDouble(fieldName);
+						  // 通过FormUtil.getSums(fd, pForm, cwsId)也可以获取到合计值，但只能取到字段为计算控件的值
+						  sumVal = FormSQLBuilder.getSUMOfSQL(sql, fieldName);
 					  }
 					  if ("0".equals(modeStat)) {
 						  if (fieldType == FormField.FIELD_TYPE_INT
@@ -896,87 +1170,81 @@ if ("edit".equals(op) || "view".equals(op)) {
 	%>
 <script>
 	function updateRow(formCode, fdaoId, tds, token) {
+		console.log('updateRow tds', tds, 'token', token);
 		var ary = tds.split(token);
-		$('#' + formCode + '_' + fdaoId).children().each(function(k) {
-            if (k>ary.length)
+		$('#' + formCode + '_' + fdaoId).children().each(function (k) {
+			if (k > ary.length)
 				return;
-            // 跳过第一列（序号）
-			if (k==0) {
-			    return;
+			// 跳过 复选框、序号
+			if (k == 0 || k == 1) {
+				return;
 			}
-			$(this).html(ary[k-1]);
+
+			$(this).html(ary[k - 2]);
 		});
 		callCalculateOnload();
+
+		eventTarget.fireEvent({
+			type: EVENT_TYPE.NEST_EDIT,
+			moduleCode: "<%=moduleCode%>"
+		});
+
 		try {
 			onNestSheetChange("<%=moduleCode%>", "update", fdaoId);
 		} catch (e) {}
 	}
 
 	function add_row_<%=formCode%>() {
-		var url = "<%=request.getContextPath()%>/visual/nest_sheet_add_relate.jsp?isShowNav=0&parentId=<%=StrUtil.UrlEncode(cwsId)%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&formCode=<%=parentFormCode%>";
-		openWin(url,"800","600");						
+		// var url = "<%=request.getContextPath()%>/visual/nest_sheet_add_relate.jsp?isShowNav=0&parentId=<%=StrUtil.UrlEncode(cwsId)%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&formCode=<%=parentFormCode%>";
+		// openWin(url,"800","600");
+		openSmartModuleRelateTableDrawer(1, {parentId: <%=cwsId%>, moduleCode: '<%=parentFormCode%>', moduleCodeRelated: '<%=moduleCode%>', flowId: -1, pageType: 'add_relate'});
 	}
 	
 	function edit_row_<%=formCode%>(id) {
-		var url = "<%=request.getContextPath()%>/visual/nest_sheet_edit_relate.jsp?parentId=<%=StrUtil.UrlEncode(cwsId)%>&id=" + id + "&menuItem=&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&formCode=<%=parentFormCode%>&isShowNav=0&actionId=<%=actionId%>";
-		openWin(url,"800","600");
+		// var url = "<%=request.getContextPath()%>/visual/nest_sheet_edit_relate.jsp?parentId=<%=StrUtil.UrlEncode(cwsId)%>&id=" + id + "&menuItem=&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&formCode=<%=parentFormCode%>&isShowNav=0&actionId=<%=actionId%>";
+		// openWin(url,"800","600");
+		openSmartModuleRelateTableDrawer(2, {parentId: <%=cwsId%>, id: id, moduleCode: '<%=parentFormCode%>', moduleCodeRelated: '<%=moduleCode%>', flowId: <%=flowId%>, pageType: 'edit_relate'});
 	}
 	
 	function del_row_<%=formCode%>(id) {
-		jConfirm("您确定要删除吗?", "提示", function (r) {
-			if(r) {
+		myConfirm('提示', '您确定要删除么', delCallBack_<%=formCode%>, id);
+	}
+
+	function delCallBack_<%=formCode%>(id) {
+		var url = "/flow/delNestSheetRelated.do?ids=" + id + "&formCode=<%=parentFormCode%>&formCodeRelated=<%=formCode%>&moduleCode=<%=moduleCode%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>";
+		var params = {};
+		ajaxPost(url, params).then((data) => {
+			console.log('data', data);
+			myMsg(data.msg);
+			if (data.ret == "1") {
+				$("#<%=formCode%>_" + id).remove();
+				refreshSerialNo_<%=formCode%>();
+
+				callCalculateOnload();
+
+				// 移除可能在智能模块添加页插入的tempCwsId_中的id值
+				$("input[name='tempCwsId_<%=formCode%>'][value=" + id + "]").remove();
+
+				eventTarget.fireEvent({
+					type: EVENT_TYPE.NEST_DEL,
+					moduleCode: "<%=moduleCode%>"
+				});
+
 				try {
-					onNestDelRow('<%=formCode%>', id);
+					onNestAfterDelRow('<%=formCode%>', id, "<%=StrUtil.UrlEncode(cwsId)%>");
 				}
-				catch(e) {}									
-				$.ajax({
-					type: "post",
-					url: "<%=request.getContextPath()%>/flow/delNestSheetRelated.do?id=" + id + "&mode=delForTmpAdd&formCode=<%=parentFormCode%>&moduleCode=<%=moduleCode%>&formCodeRelated=<%=formCode%>&parentId=<%=StrUtil.UrlEncode(cwsId)%>",
-					dataType: "html",
-					beforeSend: function(XMLHttpRequest){
-						$(document.body).showLoading();
-					},
-					success: function(data, status){
-						data = $.parseJSON(data);
-						if (data.ret=="0") {
-							jAlert(data.msg, "提示");
-						}
-						else {
-				            $("#<%=formCode%>_" + id).remove();
-                            refreshSerialNo_<%=formCode%>();
-							// 模块添加的时候不能刷新，否则因页面reload，表单中的数据会全部丢失
-							//if("<%=newIds%>" !== ""){
-                                //refreshNestSheetCtl<%=moduleCode%>("<%=newIds%>");
-                            //}
-							callCalculateOnload();
-							
-                            //移除tempCwsId_中的id值
-                            $("input[name='tempCwsId_<%=formCode%>'][value=" + id + "]").remove();
-							// jAlert(data.msg, "提示");
-							// 用于form_js_***.jsp调用			
-							try {
-								onNestAfterDelRow('<%=formCode%>', id, <%=cwsId%>);
-							}
-							catch(e) {}
-							try {
-								onNestSheetChange("<%=moduleCode%>", "del", id);
-							} catch (e) {};
-						}
-					},
-					complete: function(XMLHttpRequest, status){
-						$(document.body).hideLoading();
-					},
-					error: function(XMLHttpRequest, textStatus){
-						$(document.body).hideLoading();
-						alert(XMLHttpRequest.responseText);
-					}
-				});					
-            }
+				catch(e) {}
+				// 用于form_js_***.jsp调用
+				try {
+					onNestSheetChange("<%=moduleCode%>", "del", id);
+				} catch (e) {};
+			}
 		});
 	}
 	
 	function importForSheet_<%=formCode%>(parentId) {
-		openWin("<%=request.getContextPath()%>/visual/nest_sheet_import_excel.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>&moduleCode=<%=moduleCode%>&parentId=" + parentId + "&<%=requestParamBuf.toString()%>", 480, 80);
+		// openWin("<%=request.getContextPath()%>/visual/nest_sheet_import_excel.jsp?formCode=<%=StrUtil.UrlEncode(formCode)%>&moduleCode=<%=moduleCode%>&parentId=" + parentId + "&<%=requestParamBuf.toString()%>", 480, 80);
+		openImportExcelModal(parentId, "<%=moduleCode%>", "<%=parentFormCode%>", <%=flowId%>, "<%=nestFieldName%>", "nest_sheet");
 	}
 	
 	function sel_<%=formCode%>(parentId, isQuery) {
@@ -994,26 +1262,38 @@ if ("edit".equals(op) || "view".equals(op)) {
 					<%
 				}
 			}
-			%>		
+			%>
 			openWin("<%=request.getContextPath()%>/flow/form_query_script_list_do.jsp?op=query&id=<%=queryId%>&mode=sel&parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + fieldParams, 800, 600);
 		}
 		else {
-			openWin("<%=request.getContextPath()%>/visual/module_list_nest_sel.jsp?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + "&mainId=<%=mainId%>", 800, 600);
+			<%
+				String condFields = String.join("|", ModuleUtil.getModuleListNestSelCondFields(nestFilter));
+			%>
+			// openWin("<%=request.getContextPath()%>/visual/moduleListNestSel.do?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_sheet&parentId=" + parentId + "&mainId=<%=mainId%>", 800, 600);
+			openWinModuleListNest("<%=parentFormCode%>", "<%=formCode%>", "<%=nestFieldName%>", "nest_sheet", parentId, <%=mainId%>, "<%=condFields%>");
 		}
 	}
-	
+
 	function showModule_<%=formCode%>(visitKey, id) {
-		addTab('<%=fd.getName()%>', '<%=request.getContextPath()%>/visual/module_show.jsp?visitKey=' + visitKey + '&parentId=' + id + '&id=' + id + '&code=<%=moduleCode%>');
+		// addTab('<%=fd.getName()%>', '<%=request.getContextPath()%>/visual/moduleShowPage.do?visitKey=' + visitKey + '&parentId=' + id + '&id=' + id + '&code=<%=moduleCode%>');
+		openWinModuleShow('<%=moduleCode%>', id, visitKey);
 	}
-	
 </script>    
     <table id="cwsNestTable_<%=formCode%>" formCode="<%=formCode%>" class="tabStyle_1" style="width:100%;margin:0px" border="0" align="center" cellpadding="2" cellspacing="0">
       <thead>
       <tr ondblclick="<%=ondblclickScript%>" title="<%=ondblclickTitle%>" align="center" class="cwsThead">
-        <td style="width:50px;">序号</td>
+		  <td class="td-chk" align="center" style="width: 35px; display: <%=isShowChk?"":"none"%>">
+			  <input type="checkbox" onclick="selBatchInNestSheet('<%=formCode%>', '<%=nestFieldName%>', this)" />
+		  </td>
+        <td style="width:50px;display: <%=isNoShow==1?"":"none"%>">序号</td>
         <%
 	for (int i=0; i<len; i++) {
 		String fieldName = fields[i];
+		// 跳过列表中添加的操作列
+		if ("colOperate".equals(fieldName)) {
+			continue;
+		}
+
 		String title = "创建者";
 		
 		if (!fieldName.equals("cws_creator")) {
@@ -1032,6 +1312,34 @@ if ("edit".equals(op) || "view".equals(op)) {
 					FormDb otherFormDb = fm.getFormDb(ary[2]);
 					title = otherFormDb.getFieldTitle(ary[4]);
 				}				
+			}
+			else if ("cws_creator".equals(fieldName)) {
+				title = "创建者";
+			} else if ("ID".equalsIgnoreCase(fieldName) || "CWS_MID".equalsIgnoreCase(fieldName)) {
+				title = "ID";
+			} else if ("cws_status".equals(fieldName)) {
+				title = "状态";
+			} else if ("cws_flag".equals(fieldName)) {
+				title = "冲抵状态";
+			} else if ("flowId".equalsIgnoreCase(fieldName)) {
+				title = "流程号";
+			} else if ("flow_begin_date".equalsIgnoreCase(fieldName)) {
+				title = "流程开始时间";
+			} else if ("flow_end_date".equalsIgnoreCase(fieldName)) {
+				title = "流程结束时间";
+			} else if ("cws_id".equals(fieldName)) {
+				title = "关联ID";
+			}
+			else if ("cws_visited".equals(fieldName)) {
+				title = "是否已读";
+			}
+			else if ("colPrompt".equals(fieldName)) {
+				title = "colPrompt"; //
+			}
+			else if ("cws_create_date".equals(fieldName)) {
+				title = "创建时间";
+			} else if ("cws_modify_date".equals(fieldName)) {
+				title = "修改时间";
 			}
 			else {
 				title = fd.getFieldTitle(fieldName);
@@ -1054,19 +1362,22 @@ if ("edit".equals(op) || "view".equals(op)) {
 		  }
 		  if (isOpShow) {
 		%>
-        <td style="width:150px">
+        <td class="tdOperate" style="width:150px">
         <%if (canAdd) {%>
-        <img class="imgBtn" title="增加" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/add.png" style="cursor:pointer" onclick="add_row_<%=formCode%>('<%=formCode%>')" />
-        <%}%>
+			<a class="link-btn" title="增加" style="cursor:pointer" onclick="add_row_<%=formCode%>('<%=formCode%>')"><i class="fa fa-plus-circle link-icon link-icon-add"></i></a>
+		<%}%>
         <%if (canImport) {%>
-        <input class="imgBtn" style="display:none" type="button" onclick="importForSheet_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)" value="导入" />
+			<a class="link-btn" title="导入" style="cursor:pointer" onclick="importForSheet_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)"><i class="fa fa-arrow-circle-o-down link-icon link-icon-edit"></i></a>
         <%}%>
 		<%if (canSel && queryId!=-1) {%>
-        <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>, true)" />        
+			<a class="link-btn" title="选择" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>, true)"><i class="fa fa-check-square-o link-icon link-icon-show"></i></a>
         <%}%>
         <%if (canSel/* && mapAry.length()>0*/) {%>
-        <img class="imgBtn" title="选择" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/sel.png" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)" />        
-        <%}%>        
+			<a class="link-btn" title="选择" style="cursor:pointer" onclick="sel_<%=formCode%>(<%=StrUtil.toHtml(cwsId)%>)"><i class="fa fa-check-square-o link-icon link-icon-show"></i></a>
+        <%}%>
+		<%if (canDel) {%>
+			<a class="link-btn" title="批量删除" style="cursor:pointer" onclick="delBatch<%=formCode%>()"><i class="fa fa-trash-o link-icon link-icon-del"></i></a>
+		<%}%>
         </td>
 		  <%}%>
       </tr>
@@ -1086,7 +1397,7 @@ if ("edit".equals(op) || "view".equals(op)) {
 
 			  int k = 0;
 			  UserMgr um = new UserMgr();
-
+			  WorkflowDb wf = new WorkflowDb();
 			  ondblclickTitle = "";
 			  ondblclickScript = "";
 			  if (op.equals("edit")) {
@@ -1100,12 +1411,19 @@ if ("edit".equals(op) || "view".equals(op)) {
 				  long id = fdao.getId();
 		  %>
 		  <tr title="<%=ondblclickTitle%>" align="center" id="<%=formCode%>_<%=fdao.getId()%>">
-			  <td editable=0 title="ID：<%=fdao.getId()%>">
+			  <td class="td-chk" align="center" style="display: <%=isShowChk?"":"none"%>">
+				  <input id="rowId" value="<%=fdao.getId()%>" class="row-chk" type="checkbox"/>
+			  </td>
+			  <td editable=0 title="ID：<%=fdao.getId()%>" style="display: <%=isNoShow==1?"":"none"%>">
 				  <%=k%>
 			  </td>
 			  <%
 				  for (int i=0; i<len; i++) {
 					  String fieldName = fields[i];
+					  // 跳过列表中添加的操作列
+					  if ("colOperate".equals(fieldName)) {
+						  continue;
+					  }
 			  %>
 			  <td align="<%=fieldsAlign[i]%>">
 				  <%if (!fieldName.equals("cws_creator")) {
@@ -1133,6 +1451,39 @@ if ("edit".equals(op) || "view".equals(op)) {
 						  // out.print(fdmOther.getFieldValueOfOther(fdao.getFieldValue(ary[1]), ary[3], ary[4]));
 						  out.print(com.redmoon.oa.visual.FormDAOMgr.getFieldValueOfOther(request, fdao, fieldName));
 					  }
+					  else if ("ID".equalsIgnoreCase(fieldName) || "CWS_MID".equalsIgnoreCase(fieldName)) {
+						  out.print(String.valueOf(fdao.getId()));
+					  } else if ("cws_flag".equals(fieldName)) {
+						  out.print(String.valueOf(fdao.getCwsFlag()));
+					  } else if ("cws_creator".equals(fieldName)) {
+						  out.print(StrUtil.getNullStr(um.getUserDb(fdao.getCreator()).getRealName()));
+					  } else if ("cws_status".equals(fieldName)) {
+						  out.print(com.redmoon.oa.flow.FormDAO.getStatusDesc(fdao.getCwsStatus()));
+					  } else if ("flowId".equalsIgnoreCase(fieldName)) {
+						  out.print(String.valueOf(fdao.getFlowId()));
+					  } else if ("flow_begin_date".equalsIgnoreCase(fieldName)) {
+						  if (fdao.getFlowId() != -1) {
+							  wf = wf.getWorkflowDb(fdao.getFlowId());
+							  out.print(DateUtil.format(wf.getBeginDate(), "yyyy-MM-dd HH:mm:ss"));
+						  }
+					  } else if ("flow_end_date".equalsIgnoreCase(fieldName)) {
+						  if (fdao.getFlowId() != -1) {
+							  wf = wf.getWorkflowDb(fdao.getFlowId());
+							  out.print(DateUtil.format(wf.getEndDate(), "yyyy-MM-dd HH:mm:ss"));
+						  }
+					  } else if ("cws_id".equals(fieldName)) {
+						  out.print(String.valueOf(fdao.getCwsId()));
+					  }
+					  else if ("cws_visited".equals(fieldName)) {
+						  out.print(fdao.isCwsVisited()?"是":"否");
+					  }
+					  else if ("colPrompt".equals(fieldName)) {
+						  continue;
+					  } else if ("cws_create_date".equals(fieldName)) {
+						  out.print(DateUtil.format(fdao.getCwsCreateDate(), "yyyy-MM-dd HH:mm:ss"));
+					  } else if ("cws_modify_date".equals(fieldName)) {
+						  out.print(DateUtil.format(fdao.getCwsModifyDate(), "yyyy-MM-dd HH:mm:ss"));
+					  }
 					  else{
 						  FormField ff = fd.getFormField(fieldName);
 						  if (ff != null && ff.getType().equals(FormField.TYPE_MACRO)) {
@@ -1156,20 +1507,17 @@ if ("edit".equals(op) || "view".equals(op)) {
 				  <%
 					  if (canEdit) {
 				  %>
-				  <img class="imgBtn" title="修改" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/edit.png" style="cursor:pointer"
-					   onclick="edit_row_<%=formCode%>(<%=id%>)"/>
+				  <a class="link-btn" title="修改" style="cursor:pointer" onclick="edit_row_<%=formCode%>(<%=id%>)"><i class="fa fa-edit link-icon link-icon-edit"></i></a>
 				  <%
 				  } else {
 				  %>
-				  <img class="imgBtn" title="查看" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/info.png" style="cursor:pointer;"
-					   onclick="showModule_<%=formCode%>('', <%=id%>)"/>
+				  <a class="link-btn" title="查看" style="cursor:pointer" onclick="showModule_<%=formCode%>('', <%=id%>)"><i class="fa fa-file-text-o link-icon link-icon-show"></i></a>
 				  <%
 					  }
 					
 					  if (canDel) {
 				  %>
-				  <img class="imgBtn" title="删除" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/del.png" style="cursor:pointer"
-					   onclick="del_row_<%=formCode%>(<%=id%>)"/>
+				  <a class="link-btn" title="删除" style="cursor:pointer" onclick="del_row_<%=formCode%>(<%=id%>)"><i class="fa fa-trash-o link-icon link-icon-del"></i></a>
 				  <%
 					  }
 				  %>
@@ -1202,10 +1550,29 @@ if (isPage == 1 && ("edit".equals(op) || "view".equals(op))) {
 		k++;
 	}
 	%>
-// 从nest_sheet_add_relate.jsp中调用，嵌套表格2提交后
+
+	// 记录添加的嵌套表格2记录的ID
+	function addTempCwsId(formCode, cwsId) {
+		console.log('addTempCwsId formCode', formCode);
+		console.log('addTempCwsId cwsId', cwsId);
+		var name = "<%=com.redmoon.oa.visual.FormDAO.NAME_TEMP_CWS_IDS%>_" + formCode;
+		var inp;
+		try {
+			inp = document.createElement('<input type="hidden" name="' + name + '" />');
+		} catch(e) {
+			inp = document.createElement("input");
+			inp.type = "hidden";
+			inp.name = name;
+		}
+		inp.value = cwsId;
+
+		spanTempCwsIds.appendChild(inp);
+	}
+
+// 新增后插入数据
 // 或从module_list_nest_sel.jsp选择数据后调用
 var idNum = 1000;
-function insertRow_<%=moduleCode%>(formCode, fdaoId, tds, token, isPull) {
+function insertRow_<%=moduleCode%>(formCode, fdaoId, tds, token, isPull, flowId) {
 	var ary = tds.split(token);
 	var cls = '';
 	<%
@@ -1223,10 +1590,13 @@ function insertRow_<%=moduleCode%>(formCode, fdaoId, tds, token, isPull) {
 	%>
 	var trHTML = "<tr id='" + formCode + "_" + fdaoId + "' class='" + cls + "'>";
 
+	// 插入复选框
+	trHTML += "<td align='center' class='td-chk' style=\"display: <%=isShowChk?"":"none"%>\"><input id='rowId' type='checkbox' value='" + fdaoId + "' class='row-chk'></td>";
+
 	// 插入序号列
 	var trList = $("#cwsNestTable_" + formCode).find("tr");
-    var trLen = trList.length;	
-	trHTML += "<td title='ID：" + fdaoId + "' align='center'>" + trLen + "</td>";
+    var trLen = trList.length;
+	trHTML += "<td title='ID：" + fdaoId + "' align='center' style=\"display: <%=isNoShow==1?"":"none"%>\">" + trLen + "</td>";
 	
 	for (var i=0; i<ary.length; i++) {
 		trHTML += "<td align='" + aryAlign[i] + "'>" + ary[i] + "</td>";
@@ -1235,16 +1605,15 @@ function insertRow_<%=moduleCode%>(formCode, fdaoId, tds, token, isPull) {
 	trHTML += "<td align='center'>";
 	idNum++;
 	<%if (canEdit) {%>
-    	trHTML += '<img id="imgBtnEdit' + idNum + '" class="imgBtn" title="修改" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/edit.png" onclick="edit_row_' + formCode + '(' + fdaoId + ')" />';
+	trHTML += '<a class="link-btn" title="修改" style="cursor:pointer" onclick="edit_row_' + formCode + '(' + fdaoId + ')"><i class="fa fa-edit link-icon link-icon-edit"></i></a>';
 	<%}
 	else {
 		%>
-		trHTML += '<img class="imgBtn" title="查看" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/info.png" style="cursor:pointer;" onclick="showModule_<%=formCode%>(\'\', ' + fdaoId + ')"/>';
+		trHTML += '<a class="link-btn" title="查看" style="cursor:pointer" onclick="showModule_<%=formCode%>(\'\', ' + fdaoId + ',' + flowId + ')"><i class="fa fa-file-text-o link-icon link-icon-show"></i></a>';
 		<%
 	}%>
 	<%if (canDel) {%>
-	trHTML += "&nbsp;";
-    trHTML += '<img id="imgBtnDel' + idNum + '"class="imgBtn" title="删除" align="absmiddle" src="<%=request.getContextPath()%>/images/buttons/del.png" onclick="del_row_' + formCode + '(' + fdaoId + ')" />';
+	trHTML += '<a class="link-btn" title="删除" style="cursor:pointer" onclick="del_row_' + formCode + '(' + fdaoId + ')"><i class="fa fa-trash-o link-icon link-icon-del"></i></a>';
 	<%}%>
 	trHTML += "</td>";
 	trHTML += "</tr>";
@@ -1275,6 +1644,11 @@ function insertRow_<%=moduleCode%>(formCode, fdaoId, tds, token, isPull) {
 		// 20210521 注释掉，因为插入后似乎没必要reload，虽然刷新后，可以重新分页、排序
 		// reloadNestSheetCtl<%=moduleCode%>();
 	<%}%>
+
+	eventTarget.fireEvent({
+		type: EVENT_TYPE.NEST_ADD,
+		moduleCode: "<%=moduleCode%>"
+	});
 	
 	// 用于form_js_***.jsp调用
 	try {
@@ -1298,12 +1672,22 @@ function initImgBtn() {
 	);
 }
 
+<%
+// 防止内资审核点开项目，在选项卡中看内资审核以往记录，查看详情时覆盖了流程处理页面上的投资方明细表中的同名方法
+if ("edit".equals(op)) {
+%>
 // 带分页重新加载
 function reloadNestSheetCtl<%=moduleCode%>() {
-	loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', <%=curPage%>, <%=pageSize%>, getConds());
+	loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', <%=curPage%>, <%=pageSize%>, getConds(), '<%=formName%>').then(() => {
+		console.log('reloadNestSheetCtl fireEvent');
+		eventTarget.fireEvent({
+			type: EVENT_TYPE.NEST_EDIT,
+			moduleCode: "<%=moduleCode%>"
+		});
+	});
 }
-
 <%
+}
 if (isPage == 1 && ("edit".equals(op) || "view".equals(op))) {
 %>
 // 初始化分页
@@ -1321,7 +1705,7 @@ var paging<%=nestFieldName%> = new MyPaging('#paginator<%=nestFieldName%>', {
 		// 如果当前分页不等于点击的页码，才可以loadNestCtl，否则会陷入循环
 		if (_this.current != <%=curPage%> || _this.size != <%=pageSize%>) {
 			var conds = getConds();
-			loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', _this.current, _this.size, conds);
+			loadNestCtl('<%=url%>', 'nestsheet_<%=nestFieldName%>', _this.current, _this.size, conds, '<%=formName%>');
 		}
 	}
 });
@@ -1332,22 +1716,22 @@ $('.jumpBtn').on('click', function() {
 <%
 }
 %>
-function getConds() {
-	var conds = "";
-	var fields = $('.search-box').find('input,select,textarea');
-	$.each(fields, function(i, field) {
-		if ('' == conds) {
-			conds = field.name + '=' + encodeURI(field.value);
+
+	function getConds() {
+		var conds = "";
+		var fields = $('.search-box').find('input,select,textarea');
+		$.each(fields, function (i, field) {
+			if ('' == conds) {
+				conds = field.name + '=' + encodeURI(field.value);
+			} else {
+				conds += "&" + field.name + '=' + encodeURI(field.value);
+			}
+		});
+		if ('' != conds) {
+			conds += "&action=search";
 		}
-		else {
-			conds += "&" + field.name + '=' + encodeURI(field.value);
-		}
-	});
-	if ('' != conds) {
-		conds += "&action=search";
+		return conds;
 	}
-	return conds;
-}
 
 	function bindNestTableMouseEvent() {
 		$("table[id^='cwsNestTable_'] td").mouseout(function () {
@@ -1366,4 +1750,16 @@ function getConds() {
 	}
 
 	bindNestTableMouseEvent();
+
+	// 注意如果在此初始化event，则主表单中有N个嵌套表格2，就会被初始化N个对应的事件
+	// 所以应放在form_js中
+	/*function onNestChange(event) {
+		console.log(event);
+	}
+
+	$(function() {
+		eventTarget.addEvent(EVENT_TYPE.NEST_ADD, onNestChange);
+		eventTarget.addEvent(EVENT_TYPE.NEST_EDIT, onNestChange);
+		eventTarget.addEvent(EVENT_TYPE.NEST_DEL, onNestChange);
+	});*/
 </script>

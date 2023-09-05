@@ -129,6 +129,8 @@
         fdao.create();
     }
 
+    request.setAttribute("moduleCode", code);
+
     // 置嵌套表及关联查询选项卡生成链接需要用到的cwsId
     request.setAttribute("cwsId", "" + id);
     // 置嵌套表需要用到的页面类型
@@ -193,6 +195,11 @@
     <script type="text/javascript" src="../util/jscalendar/calendar.js"></script>
     <script type="text/javascript" src="../util/jscalendar/lang/calendar-zh.js"></script>
     <script type="text/javascript" src="../util/jscalendar/calendar-setup.js"></script>
+
+    <script src="../js/BootstrapMenu.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../js/MyPaging/MyPaging.css">
+    <script src="../js/MyPaging/MyPaging.js"></script>
     <style>
         #loading {
             position: fixed;
@@ -275,7 +282,7 @@
                                         <td width="51%" align="left">
                                             &nbsp;
                                             <span id="spanAttLink${att.id}">
-                                <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+                                <a href="preview.do?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
                                     <span id="spanAttName${att.id}">${att.name}</span>
                                 </a>
                                 </span>
@@ -287,7 +294,7 @@
                                         <td width="11%" align="center">${att.fileSizeMb}M
                                         </td>
                                         <td width="11%" align="center">
-                                            <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+                                            <a href="download.do?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
                                                 <lt:Label res="res.flow.Flow" key="download"/>
                                             </a>
                                             <c:if test="${canUserLog}">

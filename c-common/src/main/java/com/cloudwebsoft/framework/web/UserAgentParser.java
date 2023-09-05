@@ -21,6 +21,9 @@ public class UserAgentParser {
     }
 
     public static String getBrowserName(String agent) {
+        if (agent == null) {
+            return "unknown null";
+        }
         agent = agent.toLowerCase();
         if (agent.indexOf("msie 7") > 0) {
             return "ie7";

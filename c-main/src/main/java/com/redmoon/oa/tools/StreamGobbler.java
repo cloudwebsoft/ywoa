@@ -1,6 +1,8 @@
 package com.redmoon.oa.tools;
 
-import java.io.BufferedReader;  
+import com.cloudwebsoft.framework.util.LogUtil;
+
+import java.io.BufferedReader;
 import java.io.IOException;  
 import java.io.InputStream;  
 import java.io.InputStreamReader;  
@@ -40,12 +42,11 @@ public class StreamGobbler extends Thread {
             while ( (line = br.readLine()) != null) {  
                 if (pw != null)  
                     pw.println(line);  
-                System.out.println(type + ">" + line);      
-            }  
+            }
             if (pw != null)  
                 pw.flush();  
-        } catch (IOException ioe) {  
-            ioe.printStackTrace();    
+        } catch (IOException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally{  
             try {  
                 if(pw!=null)  
@@ -54,8 +55,8 @@ public class StreamGobbler extends Thread {
                     br.close();  
                 if(isr!=null)  
                     isr.close();  
-            } catch (IOException e) {  
-                e.printStackTrace();  
+            } catch (IOException e) {
+                LogUtil.getLog(getClass()).error(e);
             }  
         }  
     }  

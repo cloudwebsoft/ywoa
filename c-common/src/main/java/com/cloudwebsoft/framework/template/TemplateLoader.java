@@ -133,7 +133,6 @@ public class TemplateLoader {
             lastModifiedTime = lmt.longValue();
 
         boolean re = lastModifiedTime != theFiletime;
-        // System.out.println(getClass() + " re=" + re + " fileName=" + fileName + " " + theFiletime + " " + lastModifiedTime);
         return re;
     }
 

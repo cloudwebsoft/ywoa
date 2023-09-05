@@ -27,12 +27,16 @@ public class FormForm extends AbstractForm {
     public String chkCode(HttpServletRequest request) {
     	// 20170526 fgf 转为小写，以免linux上表名出现大小写问题
         String code = ParamUtil.get(request, "code").trim().toLowerCase();
-        if (code.equals("")) {
+        if ("".equals(code)) {
             log("编码必须填写！");
         }
         
-        if (!StrUtil.isNotCN(code)) {
+        /*if (!StrUtil.isNotCN(code)) {
             log("编码中不能含有中文字符！");
+        }*/
+
+        if (!StrUtil.isSimpleCode(code)) {
+            log("编码只能为字母、数字及符号：-_");
         }
         
         if (code.indexOf("@")!=-1) {
@@ -259,7 +263,7 @@ public class FormForm extends AbstractForm {
         init();
         // chkCode(request); // 其中可能含有@流程
         String code = ParamUtil.get(request, "code").trim();
-        if (code.equals("")) {
+        if ("".equals(code)) {
             log("编码必须填写！");
         }
 
@@ -273,7 +277,7 @@ public class FormForm extends AbstractForm {
 
     public String chkDirection(HttpServletRequest request) {
         direction = ParamUtil.get(request, "direction");
-        if (direction.equals("")) {
+        if ("".equals(direction)) {
             log("方向必须填写！");
         }
         return direction;

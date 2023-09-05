@@ -5,8 +5,9 @@ import cn.js.fan.web.Global;
 import com.cloudweb.oa.dcs.DistributedLock;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
@@ -63,7 +64,7 @@ public abstract class ObjCache {
         String indentifier = "";
         // 双重检测锁可能会导致排队，性能有所损失，防止高并发时因缓存并发而导致穿透，但不适用于集群环境，集群时需使用分布式锁
         try {
-            if (Global.isCluster() && Global.getInstance().isUseRedis()) {
+            if (Global.getInstance().isUseRedis()) {
                 indentifier = distributedLock.lock(getClass().getName(), 5000, 1000);
                 obj = RMCache.getInstance().getFromGroup(key, group);
                 if (null == obj) {
@@ -112,11 +113,11 @@ public abstract class ObjCache {
                 }
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (CacheException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (Global.isCluster() && Global.getInstance().isUseRedis()) {
+            if (Global.getInstance().isUseRedis()) {
                 distributedLock.unlock(getClass().getName(), indentifier);
             }
             else {

@@ -1,12 +1,12 @@
 package com.redmoon.oa.flow;
 
 import java.sql.*;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.utils.SpringUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,8 +25,6 @@ import com.redmoon.oa.person.UserDesktopSetupDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.ui.*;
 import com.redmoon.oa.person.PlanDb;
-import java.util.Collections;
-import java.util.Comparator;
 
 public class MyActionDb extends ObjectDb implements IDesktopUnit {
     /**
@@ -44,7 +42,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
     public static final int CHECK_STATUS_SUSPEND = 2;
 
     /**
-     * 指派
+     * 转办
      */
     public static final int CHECK_STATUS_TRANSFER = 3;
 
@@ -60,7 +58,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
 
     /**
      * 当节点处理策略为仅需某一人处理，节点已有某人处理后，其它待办记录将被忽略
-     * 或者因放弃而被忽略
+     * 或者因放弃而被忽略，或者因回滚而忽略
      */
     public static final int CHECK_STATUS_PASS = 6;
 
@@ -116,7 +114,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
         objectCache = new MyActionCache(this);
         isInitFromConfigDB = false;
         QUERY_CREATE = "insert into " + tableName + " (action_id, receive_date, user_name, action_status,id, proxy, flow_id, expire_date,dept_codes, priv_myaction_id, sub_my_action_id, is_checked, is_readed) values (?,?,?,?,?,?,?,?,?,?,?,?,0)";
-        QUERY_SAVE = "update " + tableName + " set check_date=?,is_checked=?,proxy=?,expire_date=?,performance=?,checker=?,action_status=?,result=?,result_value=?,sub_my_action_id=?,performance_reason=?,performance_modifier=?, is_readed=?, read_date=?, part_dept=?,ip=?,os=?,browser=?,is_alter=?,alter_time=?,cluster_no=? where id=?";
+        QUERY_SAVE = "update " + tableName + " set check_date=?,is_checked=?,proxy=?,expire_date=?,performance=?,checker=?,action_status=?,result=?,result_value=?,sub_my_action_id=?,performance_reason=?,performance_modifier=?, is_readed=?, read_date=?, part_dept=?,ip=?,os=?,browser=?,is_alter=?,alter_time=?,cluster_no=?,priv_myaction_id=? where id=?";
         QUERY_LOAD =
                 "select receive_date,check_date,user_name,is_checked,action_status,action_id,proxy,flow_id,expire_date,dept_codes,priv_myaction_id,performance,checker,result,result_value,sub_my_action_id,performance_reason,performance_modifier,is_readed,read_date,part_dept,ip,os,browser,is_alter,alter_time,cluster_no from " + tableName + " where id=?";
         QUERY_DEL = "delete from " + tableName + " where id=?";
@@ -212,8 +210,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getFirstMyActionDbOfFlow:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getFirstMyActionDbOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -238,7 +236,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getActionDoingByUser:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getActionDoingByUser:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -251,7 +249,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
      * @return MyActionDb
      */
     public MyActionDb getLastMyActionDbDoneOfFlow(int flowId) {
-        String sql = "select id from flow_my_action where flow_id=? and is_checked<>" + MyActionDb.CHECK_STATUS_NOT + " order by receive_date desc";
+        // 只需其中一人办理checker is not null and checker<>''，而这种情况下的被忽略的人员，流程步骤中显示的还是“已处理”
+        String sql = "select id from flow_my_action where flow_id=? and is_checked<>" + MyActionDb.CHECK_STATUS_NOT + " and is_checked<>" + CHECK_STATUS_PASS + " and checker is not null and checker<>'' order by receive_date desc";
         Conn conn = new Conn(connname);
         ResultSet rs;
         try {
@@ -263,7 +262,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getLastMyActionDbDoneOfFlow:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getLastMyActionDbDoneOfFlow:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -302,8 +301,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("onDiscard:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("onDiscard:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -315,6 +314,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
     public void returnMyAction() {
         setCheckStatus(MyActionDb.CHECK_STATUS_RETURN);
         setResultValue(WorkflowActionDb.RESULT_VALUE_RETURN);
+        setCheckDate(new java.util.Date());
+        setChecker(SpringUtil.getUserName());
         save();
 
         WorkflowActionDb wa = new WorkflowActionDb();
@@ -324,8 +325,11 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             // 置其它当前正在办理的节点的状态为因返回而忽略，除去节点action状态为被返回的节点
             // String sql = "select id from " + tableName + " where flow_id=? and id<>? and is_checked=0 and action_status<>" + WorkflowActionDb.STATE_RETURN;
             // 20200419改，以免当前节点为被退回状态时，该节点上有两个人处理，节点状态为已退回，其中一个人操作退回了，而另一个人没有被自动忽略
-            // 如部门提供信息中，当街道退回给区，区再退回给部门时，因没有对被返回的节点作自动忽略，而使得区帐户1退回后，区帐户2仍处于待办状态
-            String sql = "select id from " + tableName + " where flow_id=? and id<>? and ((is_checked=0 and action_status<>" + WorkflowActionDb.STATE_RETURN + ") or action_id=" + actionId + ")";
+            // 如部门提供信息中，当街道退回给区，区再退回给部门时（区节点也是被退回状态），因没有对执行返回操作的节点作自动忽略，而使得区帐户1退回后，区帐户2仍处于待办状态
+            // String sql = "select id from " + tableName + " where flow_id=? and id<>? and ((is_checked=0 and action_status<>" + WorkflowActionDb.STATE_RETURN + ") or action_id=" + actionId + ")";
+            // 上句中如果当前节点actionId多次退回，需过滤掉之前已办理的待办记录，否则之前的这些记录也会被置为自动忽略
+            String sql = "select id from " + tableName + " where flow_id=? and id<>? and ((is_checked=0 and action_status<>" + WorkflowActionDb.STATE_RETURN + ") or (is_checked=0 and action_id=" + actionId + "))";
+
             Conn conn = new Conn(connname);
             ResultSet rs = null;
             try {
@@ -333,17 +337,15 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 pstmt.setLong(1, flowId);
                 pstmt.setLong(2, id);
                 rs = conn.executePreQuery();
-                if (rs != null) {
-                    while (rs.next()) {
-                        int aId = rs.getInt(1);
-                        MyActionDb mad = getMyActionDb(aId);
-                        mad.setCheckStatus(MyActionDb.CHECK_STATUS_PASS_BY_RETURN);
-                        mad.save();
-                    }
+                while (rs.next()) {
+                    long aId = rs.getLong(1);
+                    MyActionDb mad = getMyActionDb(aId);
+                    mad.setCheckStatus(MyActionDb.CHECK_STATUS_PASS_BY_RETURN);
+                    mad.save();
                 }
             } catch (SQLException e) {
-                logger.error("returnMyAction:" + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error("returnMyAction:" + e.getMessage());
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 conn.close();
             }
@@ -366,8 +368,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("getFlowDoingWithoutAction:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getFlowDoingWithoutAction:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -390,8 +392,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("getActionDoing:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getActionDoing:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -426,8 +428,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             }
     	}
     	catch (SQLException e) {
-    		e.printStackTrace();
-            logger.error("getMyActionDbOfToActionDoing:" + e.getMessage());    		
+    		LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("getMyActionDbOfToActionDoing:" + e.getMessage());    		
     	}
     	finally {
     		jt.close();
@@ -456,8 +458,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("getMyActionDbOfActionDoing:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getMyActionDbOfActionDoing:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -481,8 +483,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
 				return rs.getInt(1);
 			}
 		} catch (SQLException e) {
-			logger.error("getMyActionDbOfActionDoing:" + e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error("getMyActionDbOfActionDoing:" + e.getMessage());
+			LogUtil.getLog(getClass()).error(e);
 		} finally {
 		    conn.close();
 		}
@@ -508,8 +510,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
 				v.add(new MyActionDb(rs.getInt(1)));
 			}
 		} catch (SQLException e) {
-			logger.error("getMyActionDbOfActionDoing:" + e.getMessage());
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error("getMyActionDbOfActionDoing:" + e.getMessage());
+			LogUtil.getLog(getClass()).error(e);
 		} finally {
 		    conn.close();
 		}
@@ -535,6 +537,11 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
         if ((getUserName().equals(myUserName) || getProxyUserName().equals(myUserName)) && isChecked() && getSubMyActionId()==MyActionDb.SUB_MYACTION_ID_NONE && getCheckStatus()!=MyActionDb.CHECK_STATUS_SUSPEND_OVER && getCheckStatus()!=MyActionDb.CHECK_STATUS_PASS_BY_RETURN) {
             ;
         } else {
+            return false;
+        }
+
+        // 检查当前节点的状态，如果是退回，则不能撤回
+        if (getCheckStatus() == CHECK_STATUS_RETURN) {
             return false;
         }
         
@@ -589,8 +596,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getActionDoingByUser:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getActionDoingByUser:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -616,14 +623,90 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getMyActionDbOfActionChecked:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getMyActionDbOfActionChecked:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
         return null;
     }
-    
+
+    /**
+     * 取出节点下的所有办理记录
+     * @param actionId
+     * @return
+     */
+    public List<MyActionDb> listByAction(int actionId) {
+        List<MyActionDb> list = new ArrayList<>();
+        String sql = "select id from " + tableName + " where action_id=?";
+        ResultSet rs;
+        Conn conn = new Conn(connname);
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, actionId);
+            rs = conn.executePreQuery();
+            if (rs.next()) {
+                list.add(getMyActionDb(rs.getInt(1)));
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("listMyActionDbOfAction:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            conn.close();
+        }
+        return list;
+    }
+
+    /**
+     * 取出节点下的所有状态为已处理的待办记录，用于退回处理
+     * @param actionId
+     * @return
+     */
+    public List<MyActionDb> listByActionRealyChecked(int actionId) {
+        List<MyActionDb> list = new ArrayList<>();
+        String sql;
+        if (Global.db.equalsIgnoreCase(Global.DB_ORACLE)) {
+            sql = "select id,user_name,proxy from " + tableName + " where action_id=? and is_checked=? and checker is not null";
+        } else {
+            sql = "select id,user_name,proxy from " + tableName + " where action_id=? and is_checked=? and checker<>'' and checker is not null";
+        }
+        // action节点被退回后，再次提交后，再被退回，在其上的一个人会有多个待办记录，所以需过滤掉重复的记录
+        Map<String, String> map = new HashMap<>();
+        ResultSet rs;
+        Conn conn = new Conn(connname);
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, actionId);
+            pstmt.setInt(2, CHECK_STATUS_CHECKED);
+            rs = conn.executePreQuery();
+            while (rs.next()) {
+                String uName = rs.getString(2);
+                String proxy = rs.getString(3);
+                String thatName = "";
+                if (!StrUtil.isEmpty(proxy)) {
+                    if (!map.containsKey(proxy)) {
+                        thatName = proxy;
+                    }
+                }
+                else {
+                    if (!map.containsKey(uName)) {
+                        thatName = uName;
+                    }
+                }
+                if (!"".equals(thatName)) {
+                    list.add(getMyActionDb(rs.getInt(1)));
+                    map.put(thatName, uName);
+                }
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("listByActionChecked:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            conn.close();
+        }
+        return list;
+    }
+	
     /**
      * 取得用户第一个已处理的记录，用于从模块列表上变更流程记录
      * @param flowId long
@@ -645,8 +728,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getMyActionDbFirstChecked:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -674,8 +756,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getActionDoingByUser:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -703,8 +784,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return getMyActionDb(aId);
             }
         } catch (SQLException e) {
-            logger.error("getMyActionDbOfFlow:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -748,8 +828,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 k++;
             }
         } catch (SQLException | ErrMsgException e) {
-            logger.error("recallMyActionsByPrivMyAction:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -797,8 +876,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException | ErrMsgException e) {
-            logger.error("recallMyActionsByPrivMyActionFree:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -819,8 +897,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 count = rs.getLong(1);
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -840,12 +918,11 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             pstmt.setLong(1, actionId);
             rs = conn.executePreQuery();
             if (rs.next()) {
-                logger.info("isAllUserOfActionChecked:" + rs.getString(1) + " action_id=" + actionId);
+                LogUtil.getLog(getClass()).info("isAllUserOfActionChecked:" + rs.getString(1) + " action_id=" + actionId);
                 return false;
             }
         } catch (SQLException e) {
-            logger.error("isAllUserOfActionChecked:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -870,12 +947,11 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             rs = conn.executePreQuery();
             if (rs.next()) {
                 // "select receive_date,check_date from " + tableName + " where action_id=?";
-                logger.info("isUserAttendedFlow:" + rs.getString(1) + " action_id=" + actionId);
+                LogUtil.getLog(getClass()).info("isUserAttendedFlow:" + rs.getString(1) + " action_id=" + actionId);
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("isUserAttended:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             return false;
         } finally {
             conn.close();
@@ -940,11 +1016,11 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                         	 url = "flow_dispose_light.jsp?myActionId=";                    	 
                          }
                          else {
-                        	 url = "flow_dispose_free.jsp?myActionId=";
+                        	 url = "flowDisposeFree.do?myActionId=";
                          }
                      }
                      else {
-                    	 url = "flow_dispose.jsp?myActionId=";
+                    	 url = "flowDispose.do?myActionId=";
                      }
 
 					String t = wpd.isLight() ? MyActionMgr.renderTitle(request,
@@ -966,8 +1042,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             	 str = "<div class='no_content'><img title='暂无待办流程' src='images/desktop/no_content.jpg'></div>";
              }
          } catch (ErrMsgException e) {
-             logger.error("display:" + e.getMessage());
-             e.printStackTrace();
+             LogUtil.getLog(getClass()).error(e);
          }
          return str;
     }
@@ -1169,7 +1244,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             }
         }
         catch (SQLException e) {
-            logger.error("listWillExpire:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }
@@ -1178,7 +1253,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
      * 取得将要超期的待办记录
      * @return Vector
      */
-    public Vector listWillExpire() {
+    public Vector<MyActionDb> listWillExpire() {
         Config cfg = new Config();
         // 在多少天内的未处理的流程动作快到期时发出提醒
         int flowActionExpireDay = StrUtil.toInt(cfg.get("flowActionExpireDay"), 30); // 30天
@@ -1191,7 +1266,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
         java.util.Date d1 = DateUtil.addMinuteDate(new java.util.Date(), flowActionExpireRemindBeforeMinute);
         java.util.Date d2 = DateUtil.addDate(new java.util.Date(), -flowActionExpireDay);
 
-        Vector v = new Vector();
+        Vector<MyActionDb> v = new Vector<>();
         try {
             JdbcTemplate jt = new JdbcTemplate();
             ResultIterator ri = jt.executeQuery(sql, new Object[] {d1, new java.util.Date(), d2});
@@ -1201,7 +1276,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
             }
         }
         catch (SQLException e) {
-            logger.error("listWillExpire:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         }
         return v;
     }
@@ -1278,8 +1353,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
 
             } catch (SQLException e) {
-                logger.error("resumeFromMyAction:" + e.getMessage());
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 conn.close();
             }
@@ -1316,8 +1390,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 rc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1370,7 +1443,8 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 pstmt.setTimestamp(20, new Timestamp(alterTime.getTime()));
             }
             pstmt.setString(21, Global.getInstance().getClusterNo());
-            pstmt.setLong(22, id);
+            pstmt.setLong(22, privMyActionId);
+            pstmt.setLong(23, id);
             re = conn.executePreUpdate() == 1;
             if (re) {
                 MyActionCache rc = new MyActionCache(this);
@@ -1378,8 +1452,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1430,8 +1503,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1471,7 +1543,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 // 流程到期时间
                 double d2 = oad.getWorkHourCount(getReceiveDate(), getExpireDate());
 
-                logger.info("onFlowManualFinished:" + "d=" + d + "d2=" + d2);
+                LogUtil.getLog(getClass()).info("onFlowManualFinished:" + "d=" + d + "d2=" + d2);
 
                 double performance = 0;
                 if (d2!=0) {
@@ -1525,7 +1597,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (Exception e) {
-            logger.error("onFlowManualFinished:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1548,8 +1620,31 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 mad.del();
             }
         } catch (SQLException e) {
-            logger.error("delMyActionOfFlow:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            conn.close();
+        }
+    }
+
+    /**
+     * 删除加签
+     * @param actionId
+     */
+    public void delByPlus(int actionId) {
+        String sql = "select id from " + tableName + " where action_id=? and action_status=" + WorkflowActionDb.STATE_PLUS;
+        Conn conn = new Conn(connname);
+        ResultSet rs;
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setLong(1, flowId);
+            rs = conn.executePreQuery();
+            while (rs.next()) {
+                MyActionDb mad = getMyActionDb(rs.getLong(1));
+                mad.del();
+            }
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("delByPlus:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1569,8 +1664,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1597,8 +1691,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 mad.save();
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1626,8 +1719,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 }
             }
         } catch (SQLException e) {
-            logger.error("putProxyOfUser:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -1648,25 +1740,33 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return true;
             }
         } catch (SQLException ex) {
-            LogUtil.getLog(MyActionDb.class).error(StrUtil.trace(ex));
-            ex.printStackTrace();
+            LogUtil.getLog(MyActionDb.class).error(ex);
         }
         return false;
     }
 
-    public synchronized static boolean isNotifyExistOnAction(long flowId, String userName, long actionId) {
+    /**
+     * 取得节点上用户的待办记录
+     * @param flowId
+     * @param userName
+     * @param actionId
+     * @return
+     */
+    public synchronized static MyActionDb getMyActionDbByAction(long flowId, String userName, long actionId) {
         String sql = "select id from flow_my_action where flow_id=? and user_name=? and action_id=?";
         try {
             JdbcTemplate jt = new JdbcTemplate();
             ResultIterator ri = jt.executeQuery(sql, new Object[]{flowId, userName, actionId});
             if (ri.hasNext()) {
-                return true;
+                ResultRecord rr = ri.next();
+                long myActionId = rr.getLong(1);
+                MyActionDb mad = new MyActionDb();
+                return mad.getMyActionDb(myActionId);
             }
         } catch (SQLException ex) {
-            LogUtil.getLog(MyActionDb.class).error(StrUtil.trace(ex));
-            ex.printStackTrace();
+            LogUtil.getLog(MyActionDb.class).error(ex);
         }
-        return false;
+        return null;
     }
 
     public synchronized static boolean isNotifyNotCheckedExistOnAction(long flowId, String userName, long actionId) {
@@ -1678,8 +1778,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return true;
             }
         } catch (SQLException ex) {
-            LogUtil.getLog(MyActionDb.class).error(StrUtil.trace(ex));
-            ex.printStackTrace();
+            LogUtil.getLog(MyActionDb.class).error(ex);
         }
         return false;
     }
@@ -1697,8 +1796,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 return rr.getInt(1);
             }
         } catch (SQLException ex) {
-            LogUtil.getLog(MyActionDb.class).error(StrUtil.trace(ex));
-            ex.printStackTrace();
+            LogUtil.getLog(MyActionDb.class).error(ex);
         }
         return 0;
     }
@@ -1784,7 +1882,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 pd.save();
             }
         } catch (ErrMsgException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
     }
@@ -1808,7 +1906,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 p = rr.getDouble(1);
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
         int c = 0;
@@ -1820,7 +1918,7 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
                 c = rr.getInt(1);
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
         if (c!=0) {
@@ -1976,10 +2074,19 @@ public class MyActionDb extends ObjectDb implements IDesktopUnit {
 	}
 
 	private long actionId;
+    /**
+     * 办理记录创建时间
+     */
     private java.util.Date receiveDate;
+    /**
+     * 处理时间
+     */
     private java.util.Date checkDate;
     private String userName;
     private boolean checked = false;
+    /**
+     * 未处理状态
+     */
     private int checkStatus = CHECK_STATUS_NOT;
 
     /**

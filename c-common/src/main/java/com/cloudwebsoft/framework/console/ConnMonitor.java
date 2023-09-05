@@ -38,8 +38,6 @@ public class ConnMonitor {
     }
 
     public static void onGetConnection(IConnection connObj) {
-        if (!ConsoleConfig.isDebug())
-            return;
         activeConnections.put(connObj.getId(), new ConnInfo());
         // LogUtil.getLog(ConnMonitor.class).info("Get conn " + connObj);
     }

@@ -82,7 +82,7 @@ public class ConnStrFuncImpl implements IFuncImpl {
         catch (ScriptException ex) {
         	LogUtil.getLog(ConnStrFuncImpl.class.getName()).info("doConn: error formula=" + formula);
         	LogUtil.getLog(ConnStrFuncImpl.class.getName()).info(StrUtil.trace(ex));
-        	ex.printStackTrace();
+        	LogUtil.getLog(ConnStrFuncImpl.class).error(ex);
         	return formula;
         }
 	}

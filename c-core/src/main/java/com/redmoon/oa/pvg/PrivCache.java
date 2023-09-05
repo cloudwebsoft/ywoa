@@ -1,6 +1,7 @@
 package com.redmoon.oa.pvg;
 
 import cn.js.fan.base.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 import java.util.Iterator;
 import java.util.Vector;
@@ -33,7 +34,7 @@ public class PrivCache extends ObjectCache {
         try {
             p = (PrivDb[]) rmCache.getFromGroup(ALLPRIVS, group);
         } catch (Exception e) {
-            logger.error("getPrivs:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getPrivs:" + e.getMessage());
         }
         if (p != null)
             return p;
@@ -56,7 +57,7 @@ public class PrivCache extends ObjectCache {
             try {
                 rmCache.putInGroup(ALLPRIVS, group, p);
             } catch (Exception e) {
-                logger.error("getPrivs:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getPrivs:" + e.getMessage());
             }
         }
         return p;
@@ -66,7 +67,7 @@ public class PrivCache extends ObjectCache {
         try {
             rmCache.remove(ALLPRIVS, group);
         } catch (Exception e) {
-            logger.error("refreshAllPrivs:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("refreshAllPrivs:" + e.getMessage());
         }
     }
 

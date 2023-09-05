@@ -11,7 +11,6 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -105,7 +104,7 @@ public class OpinionExCtl extends AbstractMacroCtl {
 
 		if (sd != null) {
 			sb.append("<span class='opinionUser'><img src='"
-					+ request.getContextPath()+ "/img_show.jsp?path=" + sd.getImageUrl(request)
+					+ request.getContextPath()+ "/showImg.do?path=" + sd.getImageUrl()
 					+ "' /></span><span class='opinionTime'>"
 					+ DateUtil.format(new java.util.Date(), "yyyy-MM-dd HH:mm")
 					+ "</span>");
@@ -305,12 +304,11 @@ public class OpinionExCtl extends AbstractMacroCtl {
 				}
 			}
 		} catch (IOException ex) {
-			// ex.printStackTrace();
+			// LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			// ex.printStackTrace();
+			// LogUtil.getLog(getClass()).error(ex);
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return sb.toString();
 	}
@@ -366,8 +364,7 @@ public class OpinionExCtl extends AbstractMacroCtl {
 				opinion.put("existStamp", false);
 			}
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			Logger.getLogger(OpinionExCtl.class).error(
+			LogUtil.getLog(getClass()).error(
 					"JSONeException==" + e.getMessage());
 		}
 		return opinion.toString();
@@ -481,13 +478,13 @@ public class OpinionExCtl extends AbstractMacroCtl {
 					xmlOut.output(doc, byteRsp);
 					content = byteRsp.toString("utf-8");
 				} catch (Exception ex) {
-					ex.printStackTrace();
+					LogUtil.getLog(getClass()).error(ex);
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 
 		return content;
@@ -550,18 +547,16 @@ public class OpinionExCtl extends AbstractMacroCtl {
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			// ex.printStackTrace();
+			// LogUtil.getLog(getClass()).error(ex);
 		}
 		return sb.toString();
 	}
 
 	/**
 	 * 取得节点上的属性
-	 * 
-	 * @param wpd
-	 * @param internalName
+	 *
 	 * @param property
 	 * @return
 	 */
@@ -592,9 +587,9 @@ public class OpinionExCtl extends AbstractMacroCtl {
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		} catch (JDOMException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(getClass()).error(ex);
 		}
 
 		return null;
@@ -637,7 +632,7 @@ public class OpinionExCtl extends AbstractMacroCtl {
 			if (sd != null) {
 				sb
 						.append("<div class='opinionUT'><span class='opinionUser'><img src='"
-								+ request.getContextPath()+ "/img_show.jsp?path=" + sd.getImageUrl(request)
+								+ request.getContextPath()+ "/showImg.do?path=" + sd.getImageUrl()
 								+ "' /></span><span class='opinionTime'>"
 								+ DateUtil.format(DateUtil.parse(e
 										.getChildText("time"),

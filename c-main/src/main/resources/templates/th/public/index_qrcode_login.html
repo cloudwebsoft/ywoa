@@ -1,0 +1,80 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>扫码登录</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        #qrCodeBox img {
+            width: 150px;
+            height: 150px;
+        }
+    </style>
+</head>
+<body>
+<div class="container" style="margin-top:20px">
+    <div style="text-align: center;">
+        请扫码登录
+    </div>
+    <div id="qrCodeBox" style="text-align: center"></div>
+    <div id="errMsg" style="text-align: center; color: red"></div>
+</div>
+<script th:inline="javascript">
+    var contextPath= [[@{/}]];
+
+    $(function () {
+        $.ajax({
+            async: false,
+            type: "post",
+            url: contextPath + "public/getQrCodeForLogin.do",
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data, status) {
+                if (data.code == 200) {
+                    $('#qrCodeBox').html('<img src="' + data.data.QRCodeImg + '"/>');
+                    var uuid = data.data.uuid;
+                    check(uuid);
+                }
+                else {
+                    layer.msg(data.data.msg);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    })
+
+    function check(uuid) {
+        console.log(contextPath + "public/qrCodeLoginCheck.do");
+        $.ajax({
+            type: "post",
+            url: contextPath + "public/qrCodeLoginCheck.do",
+            data: {
+                uuid: uuid
+            },
+            dataType: "json",
+            beforeSend: function (XMLHttpRequest) {
+            },
+            success: function (data, status) {
+                if (data.code == 200) {
+                    window.location.href = data.data.url;
+                }
+                else {
+                    $('#errMsg').html(data.data.msg);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+            },
+            error: function () {
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -30,16 +30,17 @@ int showyear;
 Calendar cal = Calendar.getInstance();
 int curyear = cal.get(Calendar.YEAR);
 String strshowyear = request.getParameter("showyear");
-if (strshowyear!=null)
-	showyear = Integer.parseInt(strshowyear);
-else
-	showyear = cal.get(Calendar.YEAR);
+if (strshowyear!=null) {
+    showyear = Integer.parseInt(strshowyear);
+} else {
+    showyear = cal.get(Calendar.YEAR);
+}
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>工作记事统计</title>
+<title>流程效率分析</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <%@ include file="../inc/nocache.jsp"%>
 <SCRIPT LANGUAGE= "Javascript" SRC= "../inc/common.js"></SCRIPT>
@@ -52,9 +53,9 @@ else
 <body>
 <%@ include file="../admin/flow_inc_menu_top.jsp"%>
 <script>
-o("menu10").className="current";
+o("menu11").className="current";
 </script>
-<br />
+<div class="spacerH"></div>
 <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
   <tr>
     <td height="30" align="center">
@@ -81,7 +82,7 @@ for (int i=0; i<12; i++) {%>
 <textarea id="preXml<%=i%>" style="display:none">
 <chart caption='<%=lf.getName()%> <%=i+1%>月份' xAxisName='动作节点' yAxisName='平均绩效' numberPrefix='' showValues='0'>
 <%
-Iterator ir = wad.getActionsPerformance(typeCode, showyear, i, isCom).iterator();
+Iterator ir = WorkflowActionDb.getActionsPerformance(typeCode, showyear, i, isCom).iterator();
 ArrayList arrayObj = new ArrayList();
 ArrayList arrayObj2 = new ArrayList();
 while (ir.hasNext()) {

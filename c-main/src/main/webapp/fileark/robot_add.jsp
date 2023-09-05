@@ -4,9 +4,9 @@
 <%@ page import="cn.js.fan.web.*"%>
 <%@ page import="com.redmoon.oa.fileark.*"%>
 <%@ page import="com.redmoon.oa.fileark.robot.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <%@ page import="com.redmoon.oa.ui.*"%>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
+<html>
 <HEAD><TITLE>Fileark add robot</TITLE>
 <META http-equiv=Content-Type content="text/html; charset=utf-8">
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -290,8 +290,8 @@ showUrlType("1");
     <TD align="left">存入时审核状态</TD>
     <TD align="left">
 	<select name="examine">
-	  <option value="0"><lt:Label res="res.label.webedit" key="has_not_checked"/></option>
-	  <option value="2"><lt:Label res="res.label.webedit" key="has_passed"/></option>
+	  <option value="0">未审核</option>
+	  <option value="2">已通过</option>
 	</select>	</TD>
   </TR>	  
   <TR id=tr_picurllinkpre>

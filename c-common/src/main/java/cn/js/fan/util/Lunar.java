@@ -12,6 +12,7 @@ package cn.js.fan.util;
  * @author not attributable
  * @version 1.0
  */
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -419,20 +420,16 @@ public class Lunar {
      * @param args
      */
     public static void main(String[] args) {
-        System.out.println(today());
-
         String s = "this is ', that is \" here. ' \"'";
 
         s = StrUtil.encodeJSON(s);
-        System.out.println(s);
 
-        System.out.println(StrUtil.decodeJSON(s));
 
         s = "{'formCode':'aaa', 'sourceFormCode':'sales_linkman', 'idField':id', 'showField':'msn', 'filter':'msn = {$bmjc}', 'isParentSaveAndReload':'true', 'isMine':'1', 'maps':[{'sourceField': 'msn', 'destField':bmjc'},{'sourceField': 'dept', 'destField':'client'}]}";
         try {
             JSONObject json = new JSONObject(s);
         } catch (JSONException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(Lunar.class).error(ex);
         }
 
     }

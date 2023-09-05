@@ -4,6 +4,8 @@ import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.*;
 
@@ -11,7 +13,16 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.util.file.*;
 import cn.js.fan.web.*;
+import com.cloudweb.oa.api.IObsService;
+import com.cloudweb.oa.cache.FlowFormDaoCache;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.FileUtil;
+import com.cloudweb.oa.utils.PreviewUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysProperties;
+import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.sys.DebugUtil;
+import com.redmoon.oa.util.Pdf2Html;
 import com.redmoon.oa.visual.FormDAOLog;
 import nl.bitwalker.useragentutils.DeviceType;
 import nl.bitwalker.useragentutils.OperatingSystem;
@@ -25,17 +36,23 @@ import com.redmoon.oa.base.*;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.flow.macroctl.*;
 import com.redmoon.oa.pvg.*;
-import com.redmoon.oa.tools.Pdf2htmlEXUtil;
 import com.redmoon.oa.visual.ModuleRelateDb;
 import com.redmoon.oa.visual.ModuleSetupDb;
 
-import org.apache.log4j.*;
+import org.apache.commons.lang3.StringUtils;
+import org.htmlparser.Parser;
+import org.htmlparser.filters.TagNameFilter;
+import org.htmlparser.tags.ImageTag;
+import org.htmlparser.util.NodeList;
+import org.htmlparser.util.ParserException;
+import org.json.JSONException;
+import org.json.JSONObject;
+import sun.misc.BASE64Decoder;
 
 /**
  * <p>Title: </p>
  *
  * <p>Description:  对表单中的数据进行存储
- * @task:需将getFieldValue优化为从map中存取
  *
  * <p>Copyright: Copyright (c) 2005</p>
  *
@@ -48,12 +65,16 @@ public class FormDAO implements IFormDAO, Serializable {
     Vector<FormField> fields;
     String tableName;
     int flowId;
-    Logger logger = Logger.getLogger(FormDAO.class.getName());
 
     String connname = Global.getDefaultDB();
 
     FormDb fd;
-    
+
+    /**
+     * 存放字段的值
+     */
+    Map<String, FormField> fieldsMap;
+
     /**
      * 临时记录
      */
@@ -65,7 +86,7 @@ public class FormDAO implements IFormDAO, Serializable {
     public static final int STATUS_DRAFT = -5;
     
     /**
-     * 流程尚未走完
+     * 流程处理中，流程尚未走完
      */
     public static final int STATUS_NOT = 0;
     /**
@@ -108,15 +129,18 @@ public class FormDAO implements IFormDAO, Serializable {
         wd = wd.getWorkflowDb(flowId);
         flowTypeCode = wd.getTypeCode();
         tableName = fd.getTableNameByForm();
-        fields = fd.getFields();
+        setFields(fd.getFields());
         this.fd = fd;
         load();
     }
 
     public FormDAO getFormDAO(int flowId, FormDb fd) {
-        FormDAO fdao = new FormDAO(flowId, fd);
-        fdao.load();
-        return fdao;
+        return new FormDAO(flowId, fd);
+    }
+
+    public FormDAO getFormDAOByCache(int flowId, FormDb fd) {
+        FlowFormDaoCache flowFormDaoCache = SpringUtil.getBean(FlowFormDaoCache.class);
+        return (FormDAO)flowFormDaoCache.getFormDao(flowId, fd.getCode());
     }
     
     @Override
@@ -126,6 +150,10 @@ public class FormDAO implements IFormDAO, Serializable {
 
     public void setFields(Vector<FormField> fields) {
         this.fields = fields;
+        fieldsMap = new HashMap<>();
+        for (FormField ff : fields) {
+            fieldsMap.put(ff.getName(), ff);
+        }
     }
 
     @Override
@@ -134,13 +162,38 @@ public class FormDAO implements IFormDAO, Serializable {
     }
 
     @Override
-    public FormField getFormField(String name) {
-        for (FormField ff : fields) {
+    public FormField getFormField(String fieldName) {
+        if (fieldsMap == null) {
+            for (FormField ff : fields) {
+                if (ff.getName().equals(fieldName)) {
+                    return ff;
+                }
+            }
+            return null;
+        } else {
+            FormField ff = fieldsMap.get(fieldName);
+            if (ff != null) {
+                return ff;
+            } else {
+                for (FormField field : fields) {
+                    if (field.getName().equals(fieldName)) {
+                        return field;
+                    }
+                }
+                return null;
+            }
+        }
+
+       /* for (FormField ff : fields) {
             if (ff.getName().equals(name)) {
                 return ff;
             }
         }
-        return null;
+        return null;*/
+    }
+
+    public Map<String, FormField> getFieldsMap() {
+        return fieldsMap;
     }
 
     public void setLoaded(boolean loaded) {
@@ -179,8 +232,7 @@ public class FormDAO implements IFormDAO, Serializable {
             }
         }
         catch (SQLException e) {
-            logger.error("isRecordExist:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -197,7 +249,7 @@ public class FormDAO implements IFormDAO, Serializable {
                 fds.append(",").append(ff.getName());
             }
         }
-        // logger.info("load:" + fds);
+        // LogUtil.getLog(getClass()).info("load:" + fds);
         Conn conn = new Conn(connname);
         String sql;
         // 有的表单中可能不存在字段
@@ -229,27 +281,24 @@ public class FormDAO implements IFormDAO, Serializable {
                                             getTime()), FormField.FORMAT_DATE_TIME);
                                 }
                                 ff.setValue(d);
-                            } else if (ff.getFieldType() == FormField.FIELD_TYPE_DOUBLE) {
-                                double r = rs.getDouble(k);
-                                if (r == 0 && rs.wasNull()) {
-                                    ff.setValue("");
-                                } else {
-                                    ff.setValue("" + rs.getDouble(k));
+                            } else if (ff.getFieldType()== FormField.FIELD_TYPE_DOUBLE || ff.getFieldType()==FormField.FIELD_TYPE_FLOAT
+                                    || ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
+                                // 防止显示为科学计数法
+                                ff.setValue(NumberUtil.toString(rs.getDouble(k)));
+                                // 使用wasNull()方法来判断最新一次get数据是否为空
+                                if (rs.wasNull()) {
+                                    ff.setValue(null);
                                 }
-
-                                // LogUtil.getLog(getClass()).info(ff.getName() + " flowId=" + flowId + " rs.wasNull()=" + rs.wasNull() + " rs.getDouble(" + k + ")=" + rs.getDouble(k));
-                            } else if (ff.getFieldType() == FormField.FIELD_TYPE_FLOAT) {
-                                ff.setValue("" + rs.getFloat(k));
-                            } else if (ff.getFieldType() == FormField.FIELD_TYPE_PRICE) {
-                                ff.setValue(NumberUtil.round(rs.getDouble(k), 2));
-                            } else {
-                                ff.setValue(rs.getString(k));
-                                // System.out.println(getClass() + " " + ff.getName() + " " + ff.getTitle() + " " + ff.getValue());
                             }
+                            else {
+                                ff.setValue(rs.getString(k));
+                            }
+
+                            fieldsMap.put(ff.getName(), ff);
                         } catch (SQLException e) {
                             // 以免出现如下问题：load:Value '0000-00-00' can not be represented as java.sql.Timestamp
-                            logger.error("load1:" + e.getMessage());
-                            e.printStackTrace();
+                            LogUtil.getLog(getClass()).error("load1:" + e.getMessage());
+                            LogUtil.getLog(getClass()).error(e);
                         }
                         k++;
                     }
@@ -260,7 +309,7 @@ public class FormDAO implements IFormDAO, Serializable {
                     // 20140406 fgf add
                     id = rs.getLong(k+4);
                     cwsQuoteId = rs.getLong(k+5);
-                    cwsId = rs.getString(k+6);
+                    cwsId = StrUtil.getNullStr(rs.getString(k+6));
                     cwsProgress = rs.getInt(k+7);
                     cwsFlag = rs.getInt(k+8);
                     cwsCreateDate = rs.getTimestamp(k+9);
@@ -272,10 +321,8 @@ public class FormDAO implements IFormDAO, Serializable {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("load:" + e.getMessage());
-            logger.error(StrUtil.trace(e));
-            DebugUtil.e(getClass(), "load", e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -314,7 +361,7 @@ public class FormDAO implements IFormDAO, Serializable {
             int k = 2;
             for (FormField ff : fields) {
                 ff.createDAO(flowId, ps, k, fields);
-                // logger.info(ff.getName() + " getDefaultValue=" + ff.getDefaultValue());
+                // LogUtil.getLog(getClass()).info(ff.getName() + " getDefaultValue=" + ff.getDefaultValue());
                 k++;
             }
             
@@ -329,8 +376,8 @@ public class FormDAO implements IFormDAO, Serializable {
             re = conn.executePreUpdate()==1;
         }
         catch (SQLException e) {
-            logger.error("create:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("create:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -350,12 +397,46 @@ public class FormDAO implements IFormDAO, Serializable {
 
     @Override
     public void setFieldValue(String fieldName, String value) {
+        FormField ff = getFormField(fieldName);
+        if (ff == null) {
+            LogUtil.getLog(getClass()).error(fieldName + " 不存在");
+            throw new IllegalArgumentException(fieldName + " 不存在");
+        }
+        ff.setValue(value);
+        /*
+        boolean isFound = false;
         for (FormField ff : fields) {
             if (ff.getName().equals(fieldName)) {
-                LogUtil.getLog(getClass()).info(" ff.getName()=" + ff.getName() + " fieldName=" + fieldName + " value=" + value);
+                // LogUtil.getLog(getClass()).info(" ff.getName()=" + ff.getName() + " fieldName=" + fieldName + " value=" + value);
                 ff.setValue(value);
+                isFound = true;
                 break;
             }
+        }
+        if (!isFound) {
+            LogUtil.getLog(getClass()).error("字段: " + fieldName + " 不存在");
+            throw new IllegalArgumentException("字段: " + fieldName + " 不存在");
+        }*/
+    }
+
+    public void setFieldValue(String fieldName, Object value) {
+        FormField ff = getFormField(fieldName);
+        if (ff == null) {
+            LogUtil.getLog(getClass()).error(fieldName + " 字段不存在");
+            throw new IllegalArgumentException(fieldName + " 字段不存在");
+        }
+        if (value instanceof String) {
+            ff.setValue((String)value);
+        }
+        else if (value instanceof Date) {
+            if (ff.getType().equals(FormField.TYPE_DATE)) {
+                ff.setValue(DateUtil.format((Date)value, "yyyy-MM-dd"));
+            } else {
+                ff.setValue(DateUtil.format((Date)value, "yyyy-MM-dd HH:mm:ss"));
+            }
+        }
+        else {
+            ff.setValue(String.valueOf(value));
         }
     }
 
@@ -409,9 +490,14 @@ public class FormDAO implements IFormDAO, Serializable {
             ps.setInt(k+8, flowId);
 
             re = conn.executePreUpdate() == 1;
+            if (re) {
+                // 刷新缓存
+                FlowFormDaoCache flowFormDaoCache = SpringUtil.getBean(FlowFormDaoCache.class);
+                flowFormDaoCache.refreshSave(this);
+            }
         }
         catch (SQLException e) {
-            logger.error("save:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -419,15 +505,127 @@ public class FormDAO implements IFormDAO, Serializable {
         return re;
     }
 
+    public static boolean generateImage(String imgStr, String path) {
+        if (imgStr == null) {
+            return false;
+        }
+        BASE64Decoder decoder = new BASE64Decoder();
+        try {
+            // 解密
+            byte[] b = decoder.decodeBuffer(imgStr);
+            // 处理数据
+            for (int i = 0; i < b.length; ++i) {
+                if (b[i] < 0) {
+                    b[i] += 256;
+                }
+            }
+            OutputStream out = new FileOutputStream(path);
+            out.write(b);
+            out.flush();
+            out.close();
+            return true;
+        } catch (Exception e) {
+            LogUtil.getLog(FormDAO.class).error(e);
+            return false;
+        }
+    }
+
+    public String convertBase64ToImgFile(String content, String filePath, int docId) {
+        String contentTmp = content;
+        Parser parser;
+        try {
+            parser = new Parser(content);
+            parser.setEncoding("utf-8");//
+            TagNameFilter filter = new TagNameFilter("img");
+            NodeList nodes = parser.parse(filter);
+            if (nodes == null || nodes.size() == 0) {
+                return content;
+            }
+            else {
+                StringBuilder sb = new StringBuilder();
+                int lastNodeEnd = 0;
+                for (int k=0; k<nodes.size(); k++) {
+                    ImageTag node = (ImageTag) nodes.elementAt(k);
+
+                    // image/png;base64,
+                    String imgUrl = node.getImageURL();
+                    int p = imgUrl.indexOf(",");
+                    if (p != -1) {
+                        String base64img = imgUrl.substring(p + 1);
+                        int a = imgUrl.indexOf("/");
+                        int b = imgUrl.indexOf(";");
+                        String ext = imgUrl.substring(a + 1, b);
+
+                        String diskName = FileUpload.getRandName() + "." + ext;
+                        boolean re = generateImage(base64img, Global.getRealPath() + filePath + "/" + diskName);
+                        if (re) {
+                            node.setImageURL(Global.getFullRootPath(SpringUtil.getRequest()) + filePath + "/" + diskName);
+                            int s = node.getStartPosition();
+                            int e = node.getEndPosition();
+                            String c = contentTmp.substring(lastNodeEnd, s);
+                            c += node.toHtml();
+                            sb.append(c);
+                            lastNodeEnd = e;
+
+                            IFileService fileService = SpringUtil.getBean(IFileService.class);
+                            fileService.upload(Global.getRealPath() + filePath + "/" + diskName, filePath, diskName);
+
+                            Document doc = new Document();
+                            doc = doc.getDocument(docId);
+
+                            File f = new File(Global.getRealPath() + filePath + "/" + diskName);
+                            long size = f.length();
+                            Attachment att = new Attachment();
+                            att.setDocId(docId);
+                            att.setName(diskName);
+                            att.setDiskName(diskName);
+                            att.setVisualPath(filePath);
+                            att.setSize(size);
+                            att.setPageNum(1);
+                            att.setOrders(0);
+                            att.setCreateDate(new java.util.Date());
+                            att.setFlowId((int)doc.getFlowId());
+                            att.create();
+                        }
+                    }
+                    else {
+                        int e = node.getEndPosition();
+                        String c = contentTmp.substring(lastNodeEnd, e);
+                        sb.append(c);
+                        lastNodeEnd = e;
+                    }
+                }
+                sb.append(StringUtils.substring(contentTmp, lastNodeEnd));
+                content = sb.toString();
+            }
+
+        } catch (ParserException e) {
+            LogUtil.getLog(getClass()).error(e);
+        }
+        return content;
+    }
+
     public boolean save(HttpServletRequest request, FileUpload fu) throws ErrMsgException {
+        WorkflowDb wd = new WorkflowDb();
+        wd = wd.getWorkflowDb(flowId);
         StringBuilder fds = new StringBuilder();
         Iterator<FormField> ir = fields.iterator();
         while (ir.hasNext()) {
-            FormField ff = (FormField)ir.next();
+            FormField ff = ir.next();
             // 辅助字段在此不保存，跳过
             if (ff.isHelper()) {
                 continue;
             }
+
+            // 用不到了，因为ueditor支持拷贝或截图后自动上传
+            /*if (ff.getType().equals(FormField.TYPE_MACRO)) {
+                if ("macro_ueditor".equals(ff.getMacroType())) {
+                    // 如果是富文本宏控件，则转换
+                    String content = StrUtil.getNullStr(ff.getValue());
+                    content = convertBase64ToImgFile(content, getVisualPath(), wd.getDocId());
+                }
+            }*/
+
             if ("".equals(fds.toString())) {
                 fds = new StringBuilder(ff.getName() + "=?");
             }
@@ -449,32 +647,16 @@ public class FormDAO implements IFormDAO, Serializable {
         // String sql = "update " + tableName + " set " + fds + "flowTypeCode=?,cws_status=? where flowId=? and (cws_id is null or cws_id='')";
         String sql = "update " + tableName + " set " + fds + "flowTypeCode=?,cws_status=?,cws_modify_date=? where flowId=?";
         
-        logger.info("save: sql=" + sql);
+        // LogUtil.getLog(getClass()).info("save: sql=" + sql);
 
-        // 验证宏控件的值，如文号控件中需检查是否有重复
         MacroCtlMgr mm = new MacroCtlMgr();
         ir = fields.iterator();
         while (ir.hasNext()) {
-            FormField macroField = (FormField) ir.next();
+            FormField macroField = ir.next();
             if (macroField.getType().equals(FormField.TYPE_MACRO)) {
                 MacroCtlUnit mu = mm.getMacroCtlUnit(macroField.
                                                      getMacroType());
-                if (mu!=null) {
-                    mu.getIFormMacroCtl().validate(request, this, macroField, fu);
-                }
-                else {
-                    LogUtil.getLog(getClass()).error("MacroCtl is not exist, macroType=" + macroField.getMacroType());
-                }
-            }
-        }
-        
-        ir = fields.iterator();
-        while (ir.hasNext()) {
-            FormField macroField = (FormField) ir.next();
-            if (macroField.getType().equals(FormField.TYPE_MACRO)) {
-                MacroCtlUnit mu = mm.getMacroCtlUnit(macroField.
-                                                     getMacroType());
-                logger.info("save: mu.getNestType()=" + macroField.
+                LogUtil.getLog(getClass()).info("save: mu.getNestType()=" + macroField.
                         getMacroType() + " mu=" + mu);
 
                 if (mu!=null && mu.getNestType() != MacroCtlUnit.NEST_TYPE_NONE) {
@@ -495,18 +677,16 @@ public class FormDAO implements IFormDAO, Serializable {
         try {
             int pageNum = 1;
             Vector<FileInfo> v = fu.getFiles();
-            // logger.info("save: v.size=" + v.size() + " re=" + re);
+            LogUtil.getLog(getClass()).info("save: v.size=" + v.size() + " re=" + re + " flowId=" + flowId);
             // 先处理附件，以便于宏控件getValueForSave时从FileUpload中获取diskname
+            int docId = wd.getDocId();
             if (fu.getRet() == FileUpload.RET_SUCCESS && v.size()>0) {
-                WorkflowDb wd = new WorkflowDb();
-                wd = wd.getWorkflowDb(flowId);
-                int docId = wd.getDocId();
                 Document doc = new Document();
                 doc = doc.getDocument(docId);
                 DocContent dc = doc.getDocContent(1);
                 
                 Map<String, String> attMap = new HashMap<String, String>();
-            	java.util.Vector<Attachment> attachments = doc.getAttachments(1);
+            	java.util.Vector<IAttachment> attachments = doc.getAttachments(1);
                 for (Object attachment : attachments) {
                     Attachment att = (Attachment) attachment;
                     attMap.put(att.getName(), att.getName());
@@ -520,120 +700,74 @@ public class FormDAO implements IFormDAO, Serializable {
                     os = ua.getOperatingSystem();
                 }
                 catch (Exception e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                 }
                 if(os==null || DeviceType.MOBILE.equals(os.getDeviceType())) {
                     isMobile = true;
                 }
 
                 String vpath = getVisualPath();
-                String filepath = Global.getRealPath() + vpath + "/";
-                fu.setSavePath(filepath);
-                // 使用随机名称写入磁盘
-                fu.writeFile(true);
+                com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+                boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
+                boolean canPdfFilePreview = cfg.getBooleanProperty("canPdfFilePreview");
+
+                SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
                 FileInfo fi;
+                Pattern pat1 = Pattern.compile("^att([0-9]+)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
                 int orders = dc.getAttachmentMaxOrders() + 1;
                 Privilege privilege = new Privilege();
-                Iterator<FileInfo> irFile = v.iterator();
-                while (irFile.hasNext()) {
-                    fi = irFile.next();
+                for (FileInfo fileInfo : v) {
+                    fi = fileInfo;
+
+                    File f = fileService.write(fi, vpath, true, false);
                     // 检查是否已存在同名文件，因为如果是手机端操作，则有可能是在提交后条件判断时先保存了一下，然后选择人员后再次提交，所以文件会保存两次
                     // 而在PC端，如果表单中有Office在线编辑宏控件，保存时附件表中也会出现同名文件，此时不应跳过而应保存附件，因在getValueForSave中会删除旧的附件，保存新的附件
                     if (isMobile) {
-	                    if (attMap.containsKey(fi.getName())) {
-	                    	continue;
-	                    }
+                        if (attMap.containsKey(fi.getName())) {
+                            continue;
+                        }
                     }
-                    
+
                     Attachment att = new Attachment();
-                    att.setFullPath(filepath + fi.getDiskName());
                     att.setDocId(docId);
                     att.setName(fi.getName());
                     att.setDiskName(fi.getDiskName());
                     att.setVisualPath(vpath);
                     att.setPageNum(pageNum);
                     att.setOrders(orders);
-                    att.setFieldName(fi.fieldName);
-                    att.setCreator(privilege.getUser(request));
-                    att.setSize(fi.getSize());
 
-                    // System.out.println(getClass() + " " + fi.getSize());
-
-                    re = att.create();
-                    
-                    String previewfile=filepath + fi.getDiskName();
-                	String ext = StrUtil.getFileExt(att.getDiskName());
-                	if ("doc".equals(ext) || "docx".equals(ext) || "xls".equals(ext) || "xlsx".equals(ext)) {
-                		com.redmoon.oa.fileark.Document.createOfficeFilePreviewHTML(previewfile);
-                	}
-                	else if ("pdf".equals(ext)) {
-                		Pdf2htmlEXUtil.createPreviewHTML(previewfile);
-                	}
-                    
-                    orders ++;
-                }
-
-                // 更新缓存
-                DocContentCacheMgr dcm = new DocContentCacheMgr();
-                dcm.refreshUpdate(docId, pageNum);
-            }
-
-            WorkflowDb wf = new WorkflowDb();
-            wf = wf.getWorkflowDb(flowId);
-            
-            // 处理网络硬盘文件
-            String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-            // LogUtil.getLog(getClass()).info("netdiskFiles=" + netdiskFiles);
-            if (netdiskFiles != null) {
-                int docId = wf.getDocId();
-                Document doc = new Document();
-                doc = doc.getDocument(docId);
-                DocContent dc = doc.getDocContent(1);
-                int orders = dc.getAttachmentMaxOrders() + 1;
-                String vpath = getVisualPath();
-                String filepath = Global.getRealPath() + vpath + "/";
-
-                com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-                Privilege privilege = new Privilege();
-
-                com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-
-                LogUtil.getLog(getClass()).info("netdiskFiles.length=" +
-                                                netdiskFiles.length);
-
-                for (String netdiskFile : netdiskFiles) {
-                    att = att.getAttachment(StrUtil.toInt(netdiskFile));
-
-                    String file_netdisk = cfg.get("file_netdisk");
-                    String fullPath = Global.getRealPath() + file_netdisk +
-                            "/" + att.getVisualPath() + "/" +
-                            att.getDiskName();
-
-                    String newName = RandomSecquenceCreator.getId() + "." +
-                            StrUtil.getFileExt(att.getDiskName());
-                    String newFullPath = filepath + "/" + newName;
-
-                    File f = new File(filepath);
-                    if (!f.isDirectory()) {
-                        f.mkdirs();
+                    // 过滤掉默认生成的name值，如：att1、att2、...
+                    Matcher m1 = pat1.matcher(fi.fieldName);
+                    if (!m1.find()) {
+                        att.setFieldName(fi.fieldName);
                     }
 
-                    // System.out.println(getClass() + " " + fullPath);
-                    // System.out.println(getClass() + " " + newFullPath);
+                    att.setCreator(privilege.getUser(request));
+                    att.setSize(fi.getSize());
+                    att.setFlowId(flowId);
+                    re = att.create();
 
-                    FileUtil.CopyFile(fullPath, newFullPath);
-                    Attachment att2 = new Attachment();
-                    att2.setFullPath(filepath + att.getName());
-                    att2.setDocId(docId);
-                    att2.setName(att.getName());
-                    att2.setDiskName(newName);
-                    att2.setVisualPath(vpath);
-                    att2.setPageNum(pageNum);
-                    att2.setOrders(orders);
-                    att2.setFieldName("");
-                    att2.setCreator(privilege.getUser(request));
-                    att2.setSize(att.getSize());
-                    re = att2.create();
+                    String previewfile = Global.getRealPath() + vpath + "/" + fi.getDiskName();
+                    String ext = StrUtil.getFileExt(att.getDiskName());
+                    if (canOfficeFilePreview) {
+                        if (FileUtil.isOfficeFile(att.getDiskName())) {
+                            PreviewUtil.createOfficeFilePreviewHTML(previewfile);
+                        }
+                    }
+                    if (canPdfFilePreview) {
+                        if ("pdf".equals(ext)) {
+                            Pdf2Html.createPreviewHTML(previewfile);
+                        }
+                    }
+
+                    if (sysProperties.isObjStoreEnabled()) {
+                        // 删除本地文件
+                        if (!sysProperties.isObjStoreReserveLocalFile()) {
+                            f.delete();
+                        }
+                    }
+
                     orders++;
                 }
 
@@ -642,19 +776,45 @@ public class FormDAO implements IFormDAO, Serializable {
                 dcm.refreshUpdate(docId, pageNum);
             }
 
-            logger.info("save: fields=" + fields + " flowId=" + flowId);
+            // 对可视化宏控件的图片排序
+            String imgOrders = fu.getFieldValue("uploaderImgOrders");
+            String[] orderArr = StrUtil.split(imgOrders, ",");
+            if (orderArr!=null) {
+                for (int i = 0; i< orderArr.length; i++) {
+                    String imgOrder = orderArr[i];
+                    if (NumberUtil.isNumeric(imgOrder)) {
+                        int imgId = StrUtil.toInt(imgOrder);
+                        Attachment att = new Attachment(imgId);
+                        att.setOrders(i);
+                        att.save();
+                    }
+                    else {
+                        Attachment att = new Attachment();
+                        att = att.getAttachmentByName(docId, imgOrder);
+                        if (att!=null) {
+                            att.setOrders(i);
+                            att.save();
+                        }
+                    }
+                }
+            }
+
+            WorkflowDb wf = new WorkflowDb();
+            wf = wf.getWorkflowDb(flowId);
+
+            // LogUtil.getLog(getClass()).info("save: fields=" + fields + " flowId=" + flowId);
 
             PreparedStatement ps = conn.prepareStatement(sql);
             ir = fields.iterator();
             int k = 1;
             while (ir.hasNext()) {
-                FormField ff = (FormField)ir.next();
+                FormField ff = ir.next();
                 // 辅助字段在此不保存，跳过
                 if (ff.isHelper()) {
                     continue;
                 }
                 ff.saveDAO(this, ps, k, flowId, fd, fu);
-                logger.info("save: field name=" + ff.getName() + " value=" + ff.getValue() + " flowId=" + flowId);
+                // LogUtil.getLog(getClass()).info("save: field name=" + ff.getName() + " value=" + ff.getValue() + " flowId=" + flowId);
                 k++;
             }
             ps.setString(k, flowTypeCode);
@@ -688,9 +848,13 @@ public class FormDAO implements IFormDAO, Serializable {
             re = conn.executePreUpdate()==1;
 
             if (re) {
+                // 刷新缓存
+                FlowFormDaoCache flowFormDaoCache = SpringUtil.getBean(FlowFormDaoCache.class);
+                flowFormDaoCache.refreshSave(this);
+
                 ir = fields.iterator();
                 while (ir.hasNext()) {
-                    FormField macroField = (FormField) ir.next();
+                    FormField macroField = ir.next();
                     if (macroField.getType().equals(FormField.TYPE_MACRO)) {
                         MacroCtlUnit mu = mm.getMacroCtlUnit(macroField.getMacroType());
                         if (mu!=null) {
@@ -701,8 +865,8 @@ public class FormDAO implements IFormDAO, Serializable {
             }
         }
         catch (SQLException e) {
-            logger.error("save:" + StrUtil.trace(e));
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("save:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -726,13 +890,19 @@ public class FormDAO implements IFormDAO, Serializable {
      */
     @Override
     public String getFieldValue(String fieldName) {
-        for (FormField ff : fields) {
+        FormField ff = getFormField(fieldName);
+        if (ff!=null) {
+            return StrUtil.getNullStr(ff.getValue());
+        } else {
+            return null;
+        }
+
+        /*for (FormField ff : fields) {
             if (fieldName.equals(ff.getName())) {
-                // System.out.println(getClass() + " " + ff.getName() + " " + ff.getTitle() + " " + ff.getValue());
                 return StrUtil.getNullStr(ff.getValue());
             }
         }
-        return null;
+        return null;*/
     }
 
     public boolean del() {
@@ -745,6 +915,10 @@ public class FormDAO implements IFormDAO, Serializable {
             re = conn.executePreUpdate() == 1;
 
             if (re) {
+                // 刷新缓存
+                FlowFormDaoCache flowFormDaoCache = SpringUtil.getBean(FlowFormDaoCache.class);
+                flowFormDaoCache.refreshDel(this);
+
                 // 删除嵌套表格
                 Iterator<FormField> ir = fields.iterator();
                 MacroCtlMgr mm = new MacroCtlMgr();
@@ -756,16 +930,15 @@ public class FormDAO implements IFormDAO, Serializable {
                         	// 20161124 fgf 将flowId改为id
                             // mu.getIFormMacroCtl().onDelNestCtlParent(macroField,
                             //         "" + flowId);
-                            mu.getIFormMacroCtl().onDelNestCtlParent(macroField,
-                                    String.valueOf(id));
+                            mu.getIFormMacroCtl().onDelNestCtlParent(macroField, String.valueOf(id));
                         }
                     }
                 }
             }
         }
         catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             conn.close();
@@ -797,7 +970,7 @@ public class FormDAO implements IFormDAO, Serializable {
         try {
             // 取得总记录条数
             String countsql = SQLFilter.getCountSql(listsql);
-            // logger.info("countsql=" + countsql);
+            // LogUtil.getLog(getClass()).info("countsql=" + countsql);
             rs = conn.executeQuery(countsql);
             if (rs != null && rs.next()) {
                 total = rs.getInt(1);
@@ -823,14 +996,14 @@ public class FormDAO implements IFormDAO, Serializable {
                 FormMgr fm = new FormMgr();
                 FormDb fd = fm.getFormDb(formCode);
                 do {
-                    // logger.info("listResult: id=" + rs.getInt(1));
-                    FormDAO fdao = getFormDAO(rs.getInt(1), fd);
+                    // LogUtil.getLog(getClass()).info("listResult: id=" + rs.getInt(1));
+                    FormDAO fdao = getFormDAOByCache(rs.getInt(1), fd);
                     result.addElement(fdao);
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("listResult:" + StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
+            LogUtil.getLog(getClass()).error("listResult:" + StrUtil.trace(e));
             throw new ErrMsgException("数据库出错！");
         } finally {
             conn.close();
@@ -840,6 +1013,50 @@ public class FormDAO implements IFormDAO, Serializable {
         return lr;
     }
 
+    /**
+     * 根据SQL语句列出表单编码为formCode的分页记录
+     * @param formCode String 表单编码
+     * @param listSql String SQL语句
+     * @param objectParams Object[] 参数
+     * @param curPage int 当前页码
+     * @param pageSize int 每页记录数
+     * @return ListResult
+     * @throws ErrMsgException
+     */
+    public ListResult listResult(String formCode, String listSql, Object[] objectParams, int curPage, int pageSize) throws
+            ErrMsgException {
+        Vector<FormDAO> result = new Vector<>();
+        ListResult lr = new ListResult();
+        lr.setResult(result);
+
+        License lic = License.getInstance();
+        // if (formCode.equals("sales_customer") && lic.isSolutionVer() && !lic.canUseSolution(License.SOLUTION_CRM)) {
+        // 平台版才可以用CRM模块
+        if ("sales_customer".equals(formCode) && !lic.isPlatformSrc()) {
+            LogUtil.getLog(getClass()).error("listResult:平台版才能使用CRM模块！");
+            return lr;
+        }
+        FormMgr fm = new FormMgr();
+        FormDb formDb = fm.getFormDb(formCode);
+
+        try {
+            // 取得总记录条数
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = jt.executeQuery(listSql, objectParams, curPage, pageSize);
+            lr.setTotal(ri.getTotal());
+            while (ri.hasNext()) {
+                ResultRecord rr = ri.next();
+                result.addElement(getFormDAOByCache(rr.getInt(1), formDb));
+            }
+        } catch (SQLException e) {
+            DebugUtil.e(getClass(), "listResult", listSql);
+            LogUtil.getLog(getClass()).error("listResult:" + StrUtil.trace(e));
+            throw new ErrMsgException("数据库出错！");
+        }
+
+        lr.setResult(result);
+        return lr;
+    }
 
     /**
      * 全部的记录列表，当记录不多时，可以使用本方法，如列出友情链接，而当记录很多时，则不宜使用
@@ -879,17 +1096,17 @@ public class FormDAO implements IFormDAO, Serializable {
                     return result;
                 }
 
-                FormMgr fm = new FormMgr();
-                FormDb fd = fm.getFormDb(formCode);
+                FormDb fd = new FormDb();
+                fd = fd.getFormDb(formCode);
 
                 do {
-                    FormDAO fdao = getFormDAO(rs.getInt(1), fd);
+                    FormDAO fdao = getFormDAOByCache(rs.getInt(1), fd);
                     result.addElement(fdao);
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (rs != null) {
                 try {
@@ -899,6 +1116,34 @@ public class FormDAO implements IFormDAO, Serializable {
             conn.close();
         }
         return result;
+    }
+
+    /**
+     * 更新表单选择宏控件需冲抵的记录
+     * @param jsonDesc
+     * @param ff
+     * @return
+     * @throws ErrMsgException
+     */
+    public static int updateFlagForModuleFieldSelectCtl(com.alibaba.fastjson.JSONObject jsonDesc, FormField ff) throws ErrMsgException {
+        try {
+            String sourceFormCode = jsonDesc.getString("sourceFormCode");
+            String idField = jsonDesc.getString("idField");
+            String sql = "select id,cws_flag from ft_" + sourceFormCode + " where " + idField + "=?";
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = jt.executeQuery(sql, new Object[]{ff.getValue()});
+            while (ri.hasNext()) {
+                ResultRecord rr = ri.next();
+                if (rr.getInt(2) == 1) {
+                    throw new ErrMsgException("表单：" + sourceFormCode + "中的记录" + idField + "=" + ff.getValue() + "已被冲抵");
+                }
+            }
+            sql = "update ft_" + sourceFormCode + " set cws_flag=1 where " + idField + "=?";
+            return jt.executeUpdate(sql, new Object[]{ff.getValue()});
+        } catch (SQLException e) {
+            LogUtil.getLog(FormDAO.class).error(e);
+        }
+        return 0;
     }
 
     /**
@@ -918,33 +1163,36 @@ public class FormDAO implements IFormDAO, Serializable {
     	}
     	
     	int ret = 0;
-		String sql = "select cws_quote_id from " + FormDb.getTableName(destFormCode) + " where cws_id=" + StrUtil.sqlstr(String.valueOf(mainFormFdaoId));
+		String sql = "select cws_quote_id from " + FormDb.getTableName(destFormCode) + " where cws_id='" + mainFormFdaoId + "'";
 		String sqlUpdate = "update " + FormDb.getTableName(sourceFormCode) + " set cws_flag=" + flagVal + " where id=?";
 		
-		String sqlGetCwsId = "select cws_id from " + FormDb.getTableName(sourceFormCode) + " where id=?";
-		String cwsId = "";
-		boolean isCwsIdEqual = true;
+		String sqlGetCwsId = "select cws_id,cws_parent_form from " + FormDb.getTableName(sourceFormCode) + " where id=?";
+		String parentForm = "";
+		boolean isCwsParentFormEqual = true;
+		List<String> listCwsId = new ArrayList<>();
 		try {
 			JdbcTemplate jt = new JdbcTemplate();
 			ResultIterator ri = jt.executeQuery(sql);
 			while (ri.hasNext()) {
-				ResultRecord rr = (ResultRecord)ri.next();
+				ResultRecord rr = ri.next();
 				int quoteId = rr.getInt(1);
 				ret = jt.executeUpdate(sqlUpdate, new Object[]{(long) quoteId});
 				
 				// 20171105 fgf 判断被冲抵的记录的cws_id是否都一样，如果是，则说明是冲抵了某个主表中的嵌套表记录
-				if (isCwsIdEqual) {
-					ResultIterator riCwsId = jt.executeQuery(sqlGetCwsId, new Object[]{new Long(quoteId)});
+                // 20220107 有可能从多个主表记录中去拉单，但这些记录来源是同一个表单，所以需加上对于cws_parent_form的判断，而不是针对cws_id去判断
+				if (isCwsParentFormEqual) {
+					ResultIterator riCwsId = jt.executeQuery(sqlGetCwsId, new Object[]{(long) quoteId});
 					if (riCwsId.hasNext()) {
-						ResultRecord rrCwsId = (ResultRecord)riCwsId.next();
-						// 判断 cws_id是否都一样
-						String myCwsId = StrUtil.getNullStr(rrCwsId.getString("cws_id"));
-						if ("".equals(cwsId)) {
-							cwsId = myCwsId;
+						ResultRecord rrCwsId = riCwsId.next();
+						String myCwsId = StrUtil.getNullStr(rrCwsId.getString(1));
+                        listCwsId.add(myCwsId);
+						String myParentForm = StrUtil.getNullStr(rrCwsId.getString(2));
+						if ("".equals(parentForm)) {
+                            parentForm = myParentForm;
 						}
 						else {
-							if (!myCwsId.equals(cwsId)) {
-								isCwsIdEqual = false;
+							if (!parentForm.equals(myParentForm)) {
+                                isCwsParentFormEqual = false;
 							}
 						}
 					}
@@ -952,28 +1200,29 @@ public class FormDAO implements IFormDAO, Serializable {
 			}
 						
 			// 20171105 fgf 如果源表单是个子表，且其主表所对应的所有记录均已被冲抵，则自动冲抵源表单的主表单
-			if (isCwsIdEqual) {
+			if (isCwsParentFormEqual) {
 				// 查询源表单是否从属于某个主表
 				ModuleRelateDb mrd = new ModuleRelateDb();
 				Vector v = mrd.getModuleReverseRelated(sourceFormCode);
-				String sqlIsAllAgainst = "select id from " + FormDb.getTableName(sourceFormCode) + " where cws_flag=" + FLAG_AGAINST_NO + " and cws_id=" + StrUtil.sqlstr(cwsId);
-                for (Object o : v) {
-                    mrd = (ModuleRelateDb) o;
-                    String formCode = mrd.getString("code");
-                    String relateField = mrd.getString("relate_field");
+				for (String myCwsId : listCwsId) {
+                    String sqlIsAllAgainst = "select id from " + FormDb.getTableName(sourceFormCode) + " where cws_flag=" + FLAG_AGAINST_NO + " and cws_id='" + myCwsId + "'";
+                    for (Object o : v) {
+                        mrd = (ModuleRelateDb) o;
+                        String formCode = mrd.getString("code");
+                        String relateField = mrd.getString("relate_field");
 
-                    // 检查对应的主表中的所有嵌套表记录是否均已被冲抵
-                    ResultIterator riIsAllAgainst = jt.executeQuery(sqlIsAllAgainst);
-                    if (riIsAllAgainst.size() == 0) {
-                        // 如果均已被冲抵，则自动冲抵对应的主表中的记录
-                        String sqlUpdateAgainst = "update " + FormDb.getTableName(formCode) + " set cws_flag=" + FLAG_AGAINST_YES + " where " + relateField + "=" + cwsId;
-                        jt.executeUpdate(sqlUpdateAgainst);
+                        // 检查对应的主表中的所有嵌套表记录是否均已被冲抵
+                        ResultIterator riIsAllAgainst = jt.executeQuery(sqlIsAllAgainst);
+                        if (riIsAllAgainst.size() == 0) {
+                            // 如果均已被冲抵，则自动冲抵对应的主表中的记录
+                            String sqlUpdateAgainst = "update " + FormDb.getTableName(formCode) + " set cws_flag=" + FLAG_AGAINST_YES + " where " + relateField + "=" + myCwsId;
+                            jt.executeUpdate(sqlUpdateAgainst);
+                        }
                     }
                 }
 			}
-			
 		} catch (SQLException e) {
-			e.printStackTrace();
+            LogUtil.getLog(FormDAO.class).error(e);
 		}
 		return ret;
     }    
@@ -993,12 +1242,12 @@ public class FormDAO implements IFormDAO, Serializable {
     	}
     	
     	int ret = 0;
-		String sql = "update " + FormDb.getTableName(formCode) + " set cws_status=" + status + " where cws_id=" + StrUtil.sqlstr(String.valueOf(cwsId));
+		String sql = "update " + FormDb.getTableName(formCode) + " set cws_status=" + status + " where cws_id='" + cwsId + "'";
 		JdbcTemplate jt = new JdbcTemplate();
 		try {
 			ret = jt.executeUpdate(sql);
 		} catch (SQLException e) {
-			e.printStackTrace();
+            LogUtil.getLog(FormDAO.class).error(e);
 		}
 		return ret;
     }
@@ -1040,7 +1289,7 @@ public class FormDAO implements IFormDAO, Serializable {
 
     private boolean loaded;
     private String flowTypeCode;
-    private String cwsId;
+    private String cwsId = com.redmoon.oa.visual.FormDAO.CWS_ID_NONE;
     private String creator;
     
     public int getStatus() {
@@ -1122,16 +1371,8 @@ public class FormDAO implements IFormDAO, Serializable {
 
             ps.close();
 
-            long logId = -1;
-            sql = "select id from " + logTable + " where cws_creator=? and flowTypeCode=? and cws_log_type=?";
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, fdao.getCreator());
-            ps.setString(2, curTime);
-            ps.setInt(3, logType);
-            ResultSet rs = conn.executePreQuery();
-            if (rs.next()) {
-                logId = rs.getLong(1);
-            }
+            // 取得刚插入的记录的ID
+            long logId = SQLFilter.getLastId(conn, logTable);
 
             com.redmoon.oa.Config oaCfg = new com.redmoon.oa.Config();
             String strVersion = StrUtil.getNullStr(oaCfg.get("version"));
@@ -1169,7 +1410,8 @@ public class FormDAO implements IFormDAO, Serializable {
 
                             if (!isEquals) {
                                 String logFormCode = "module_log";
-                                FormDb fd = new FormDb(logFormCode);
+                                FormDb fd = new FormDb();
+                                fd = fd.getFormDb(logFormCode);
                                 com.redmoon.oa.visual.FormDAO fdaoLog = new com.redmoon.oa.visual.FormDAO(fd);
                                 fdaoLog.setFieldValue("log_type", String.valueOf(logType));
                                 fdaoLog.setFieldValue("log_date", DateUtil.format(ts, "yyyy-MM-dd HH:mm:ss"));
@@ -1191,13 +1433,67 @@ public class FormDAO implements IFormDAO, Serializable {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
-            LogUtil.getLog(FormDAO.class).error("log:" + e.getMessage());
+            LogUtil.getLog(FormDAO.class).error(e);
         }
         finally {
             conn.close();
         }
         return re;
+    }
+
+    /**
+     * 取出结果存于List，与list方法一样，只是结果由Vector改为了List
+     * @param formCode
+     * @param sql
+     * @return
+     * @throws ErrMsgException
+     */
+    public List<FormDAO> selectList(String formCode, String sql) throws ErrMsgException {
+        ResultSet rs;
+        List<FormDAO> result = new ArrayList<>();
+        Conn conn = new Conn(connname);
+        try {
+            rs = conn.executeQuery(sql);
+            if (rs == null) {
+                return result;
+            } else {
+                FormDb fd = new FormDb();
+                fd = fd.getFormDb(formCode);
+                while (rs.next()) {
+                    result.add(getFormDAOByCache(rs.getInt(1), fd));
+                }
+            }
+        } catch (SQLException e) {
+            DebugUtil.e(getClass(), "listResult", e.getMessage());
+            throw new ErrMsgException("数据库出错！");
+        } finally {
+            conn.close();
+        }
+
+        return result;
+    }
+
+    public List<FormDAO> selectList(String formCode, String sql, Object[] arr) throws ErrMsgException {
+        List<FormDAO> result = new ArrayList<>();
+        try {
+            FormDb fd = new FormDb();
+            fd = fd.getFormDb(formCode);
+            JdbcTemplate jt = new JdbcTemplate();
+            ResultIterator ri = jt.executeQuery(sql, arr);
+            while (ri.hasNext()) {
+                ResultRecord rr = ri.next();
+                result.add(getFormDAOByCache(rr.getInt(1), fd));
+            }
+        } catch (SQLException e) {
+            DebugUtil.e(getClass(), "listResult", e.getMessage());
+            throw new ErrMsgException("数据库出错！");
+        }
+        return result;
+    }
+
+    public List<com.redmoon.oa.visual.FormDAO> listNest(String nestFormCode) throws ErrMsgException {
+        com.redmoon.oa.visual.FormDAO dao = new com.redmoon.oa.visual.FormDAO();
+        return dao.selectList(nestFormCode, "select id from ft_" + nestFormCode + " where cws_id='" + id + "' and cws_parent_form=" + StrUtil.sqlstr(fd.getCode()));
     }
 
     public void setStatus(int status) {
@@ -1301,5 +1597,56 @@ public class FormDAO implements IFormDAO, Serializable {
 
     public void setCwsFinishDate(Date cwsFinishDate) {
         this.cwsFinishDate = cwsFinishDate;
+    }
+
+    @Override
+    public String getFormCode() {
+        if (fd != null) {
+            return fd.getCode();
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    public Vector<IAttachment> getAttachments() {
+        WorkflowDb wf = new WorkflowDb();
+        wf = wf.getWorkflowDb(flowId);
+        Document doc = new Document();
+        doc = doc.getDocument(wf.getDocId());
+        return doc.getAttachments(1);
+    }
+
+    public double getDoubleValue(String fieldName) {
+        return Double.parseDouble(getFieldValue(fieldName));
+    }
+
+    public double getDoubleValue(String fieldName, double defaultVal) {
+        return StrUtil.toDouble(getFieldValue(fieldName), defaultVal);
+    }
+
+    public int getIntValue(String fieldName) {
+        return Integer.parseInt(getFieldValue(fieldName));
+    }
+
+    public int getIntValue(String fieldName, int defaultVal) {
+        return StrUtil.toInt(getFieldValue(fieldName), defaultVal);
+    }
+
+    public long getLongValue(String fieldName) {
+        return Long.parseLong(getFieldValue(fieldName));
+    }
+
+    public long getLongValue(String fieldName, long defaultVal) {
+        return StrUtil.toLong(getFieldValue(fieldName), defaultVal);
+    }
+
+    public float getFloatValue(String fieldName) {
+        return Float.parseFloat(getFieldValue(fieldName));
+    }
+
+    public float getFloatValue(String fieldName, int defaultVal) {
+        return StrUtil.toFloat(getFieldValue(fieldName), defaultVal);
     }
 }

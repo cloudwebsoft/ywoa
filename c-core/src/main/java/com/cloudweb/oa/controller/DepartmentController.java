@@ -1,14 +1,17 @@
 package com.cloudweb.oa.controller;
 
 
+import cn.js.fan.util.RandomSecquenceCreator;
 import cn.js.fan.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.entity.Department;
+import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.vo.Result;
+import io.swagger.annotations.ApiOperation;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,7 +22,6 @@ import org.springframework.validation.ObjectError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -56,17 +58,26 @@ public class DepartmentController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "add", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String add(String currNodeCode) {
+    public Result<Object> add(String currNodeCode) {
         JSONObject json = departmentService.getAddDepartmentData(currNodeCode);
-        return json.toString();
+        return new Result<>(json);
+    }
+
+    @ApiOperation(value = "获取编码", notes = "获取编码", httpMethod = "GET")
+    @RequestMapping(value = "/getNewCode", produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    @ResponseBody
+    public Result<Object> getNewCode(String parentCode) throws ValidateException {
+        return new Result<>(departmentService.getAddDepartmentData(parentCode));
     }
 
     private boolean checkNameChar(String name) {
-        int len = name.length();
-        for (int i = 0; i < len; i++) {
-            char ch = name.charAt(i);
-            if (ch == 34) {
-                return false;
+        if (name != null) {
+            int len = name.length();
+            for (int i = 0; i < len; i++) {
+                char ch = name.charAt(i);
+                if (ch == 34) {
+                    return false;
+                }
             }
         }
         return true;
@@ -75,31 +86,31 @@ public class DepartmentController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "edit", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String edit(@NotEmpty(message = "{dept.code.null}") String code) {
+    public Result<Object> edit(@NotEmpty(message = "{dept.code.null}") String code) {
 
         Department department = departmentService.getDepartment(code);
-        Department deptParent = departmentService.getDepartment(department.getParentCode());
+        String parentNodeName = "";
+        if (!ConstUtil.DEPT_ROOT.equals(code)) {
+            Department deptParent = departmentService.getDepartment(department.getParentCode());
+            parentNodeName = deptParent.getName();
+        }
 
         JSONObject jsonObject = (JSONObject) JSONObject.toJSON(departmentService.getDepartment(code));
-        jsonObject.put("parentNodeName", deptParent.getName());
-        return jsonObject.toString();
+        jsonObject.put("parentNodeName", parentNodeName);
+        return new Result<>(jsonObject);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "create", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String create(@NotEmpty(message = "{dept.code.null}") String code,
+    public Result<Object> create(@NotEmpty(message = "{dept.code.null}") String code,
                          @NotEmpty(message = "{dept.name.null}") String name,
-                         String description,
-                         int deptType,
-                         int show,
-                         int isGroup, int isHide,
+                         String description, Integer deptType, Integer show,
+                         Integer isGroup, Integer isHide,
                          @Length(min = 0, max = 45, message = "{dept.shortName.tooLong}") String shortName,
                          @NotEmpty(message = "{dept.parentCode.null}") String parentCode
     ) throws ValidateException {
         if (!checkNameChar(name)) {
-            System.out.println(validMessageSource.getMessage("dept.name.invalid", null, null));
-            System.out.println(messageSource.getMessage("test.name.invalid", null, null));
             throw new ValidateException("#dept.name.invalid");
         }
 
@@ -108,14 +119,20 @@ public class DepartmentController {
         }
 
         if (!StrUtil.isSimpleCode(code)) {
-            throw new ValidateException("#");
+            throw new ValidateException("#dept.code.invalid");
         }
 
         if (!checkNameChar(shortName)) {
             throw new ValidateException("#dept.deptName.invalid");
         }
 
-        Department department = new Department();
+        // 检查编码是否有重复
+        Department department = departmentService.getDepartment(code);
+        if (department != null) {
+            throw new ValidateException("#dept.code.dupl");
+        }
+
+        department = new Department();
         department.setCode(code);
         department.setName(name);
         department.setIsGroup(isGroup);
@@ -126,22 +143,15 @@ public class DepartmentController {
         department.setDeptType(deptType);
         department.setDescription(description);
 
-        JSONObject json = new JSONObject();
         boolean re = departmentService.createAnySyn(department);
-        if (re) {
-            json.put("ret", 1);
-            json.put("msg", i18nUtil.get("info_op_success"));
-        } else {
-            json.put("ret", 0);
-            json.put("msg", i18nUtil.get("info_op_fail"));
-        }
-        return json.toString();
+
+        return new Result<>(re);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "save", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String save(@Valid @RequestBody Department department, BindingResult result) throws ValidateException {
+    public Result<Object> save(@Valid @RequestBody Department department, BindingResult result) throws ValidateException {
         // 注意此处result实际上因被GlobalExceptionHandler拦截，其中没有error
         if (!checkNameChar(department.getShortName())) {
             result.rejectValue("shortName", "dept.shortName.invalid", "名称中不能含有\"字符");
@@ -159,49 +169,44 @@ public class DepartmentController {
         }
 
         boolean re = departmentService.update(department);
-        JSONObject json = new JSONObject();
-        if (re) {
-            json.put("ret", 1);
-            json.put("msg", i18nUtil.get("info_op_success"));
-        } else {
-            json.put("ret", 0);
-            json.put("msg", i18nUtil.get("info_op_fail"));
-        }
-        return json.toString();
+
+        return new Result<>(re);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "del", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String del(@NotEmpty(message = "{dept.code.null}") String code) throws ValidateException {
-        JSONObject json = new JSONObject();
+    public Result<Object> del(@NotEmpty(message = "{dept.code.null}") String code) throws ValidateException {
         boolean re = departmentService.del(code, SpringUtil.getUserName());
-        if (re) {
-            json.put("ret", 1);
-            json.put("msg", i18nUtil.get("info_op_success"));
-        } else {
-            json.put("ret", 0);
-            json.put("msg", i18nUtil.get("info_op_fail"));
-        }
-        return json.toString();
+
+        return new Result<>(re);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "move", produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String move(@NotEmpty(message = "{dept.code.null}") String code, String parentCode, int position) throws ValidateException {
-        JSONObject json = new JSONObject();
+    public Result<Object> move(@NotEmpty(message = "{dept.code.null}") String code, String parentCode, int position) throws ValidateException {
         if (ConstUtil.DEPT_ROOT.equals(code)) {
             throw new ValidateException("根节点不能移动");
         }
         if ("#".equals(parentCode)) {
             throw new ValidateException("不能与根节点平级");
         }
-
         departmentService.move(code, parentCode, position);
-        json.put("ret", 1);
-        json.put("msg", i18nUtil.get("info_op_success"));
+        return new Result<>();
+    }
 
-        return json.toString();
+    @ResponseBody
+    @RequestMapping(value = "getDepartments", produces = {"text/html;", "application/json;charset=UTF-8;"})
+    public Result<Object> getDepartments(String parentCode) {
+        List<Department> list = departmentService.getDepartments(parentCode);
+        return new Result<>(list);
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "getUnitTree", produces = {"text/html;", "application/json;charset=UTF-8;"})
+    public Result<Object> getUnitTree() {
+        List<Department> list = departmentService.getUnitTree();
+        return new Result<>(list);
     }
 }

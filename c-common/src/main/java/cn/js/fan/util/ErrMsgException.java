@@ -8,7 +8,7 @@ package cn.js.fan.util;
  * @author 		 风青云
  * @version 1.0
  */
-public class ErrMsgException extends Exception {
+public class ErrMsgException extends RuntimeException {
     public ErrMsgException(String msg) {
         super(msg);
     }

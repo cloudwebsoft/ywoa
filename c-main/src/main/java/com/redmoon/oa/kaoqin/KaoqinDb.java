@@ -83,7 +83,6 @@ public class KaoqinDb extends ObjectDb {
 		int d = cal.get(Calendar.DAY_OF_MONTH);
 		String str = SQLFilter.year("mydate") + "=" + y + " and " + SQLFilter.month("mydate") + "=" + m + " and " + SQLFilter.day("mydate") + "=" + d;
 		String sql = "select id from kaoqin where name=" + StrUtil.sqlstr(userName) + " and " + str + " and kind=" + kind;
-		// System.out.println(getClass() + " sql=" + sql);
 		try {
 			JdbcTemplate jt = new JdbcTemplate();
 			ResultIterator ri = jt.executeQuery(sql);
@@ -137,7 +136,7 @@ public class KaoqinDb extends ObjectDb {
 
 		String sql = "select id from kaoqin where name=? and direction=? and type=?";
 		sql += " and myDate>=" + SQLFilter.getDateStr(DateUtil.format(d1, "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss") + " and myDate<" + SQLFilter.getDateStr(DateUtil.format(d2, "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss");
-		logger.info("sql:" + sql);
+		LogUtil.getLog(getClass()).info("sql:" + sql);
 
 		Conn conn = new Conn(connname);
 		try {
@@ -147,11 +146,11 @@ public class KaoqinDb extends ObjectDb {
 			ps.setString(3, type);
 			ResultSet rs = conn.executePreQuery();
 			if (rs != null && rs.next()) {
-				// logger.info("isKaoqinDone:" + " is done.");
+				// LogUtil.getLog(getClass()).info("isKaoqinDone:" + " is done.");
 				re = true;
 			}
 		} catch (SQLException e) {
-			logger.error("isKaoqinDone:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("isKaoqinDone:" + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -183,7 +182,7 @@ public class KaoqinDb extends ObjectDb {
 				rc.refreshCreate();
 			}
 		} catch (SQLException e) {
-			logger.error("create:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("create:" + e.getMessage());
 			throw new ErrMsgException("数据库操作失败！");
 		} finally {
 			if (conn != null) {
@@ -215,7 +214,7 @@ public class KaoqinDb extends ObjectDb {
 				rc.refreshDel(primaryKey);
 			}
 		} catch (SQLException e) {
-			logger.error("del: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("del: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -263,7 +262,7 @@ public class KaoqinDb extends ObjectDb {
 				primaryKey.setValue(new Integer(id));
 			}
 		} catch (SQLException e) {
-			logger.error("load: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("load: " + e.getMessage());
 		} finally {
 			if (rs != null) {
 				try {
@@ -311,7 +310,7 @@ public class KaoqinDb extends ObjectDb {
 				rc.refreshSave(primaryKey);
 			}
 		} catch (SQLException e) {
-			logger.error("save: " + e.getMessage());
+			LogUtil.getLog(getClass()).error("save: " + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -338,7 +337,7 @@ public class KaoqinDb extends ObjectDb {
 				}
 			}
 		} catch (SQLException e) {
-			logger.error("list:" + e.getMessage());
+			LogUtil.getLog(getClass()).error("list:" + e.getMessage());
 		} finally {
 			if (conn != null) {
 				conn.close();
@@ -348,7 +347,8 @@ public class KaoqinDb extends ObjectDb {
 		return result;
 	}
 
-	public ListResult listResult(String listsql, int curPage, int pageSize) throws ErrMsgException {
+	@Override
+    public ListResult listResult(String listsql, int curPage, int pageSize) throws ErrMsgException {
 		int total = 0;
 		ResultSet rs = null;
 		Vector result = new Vector();
@@ -388,7 +388,7 @@ public class KaoqinDb extends ObjectDb {
 				} while (rs.next());
 			}
 		} catch (SQLException e) {
-			logger.error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 			throw new ErrMsgException("数据库出错！");
 		} finally {
 			if (rs != null) {

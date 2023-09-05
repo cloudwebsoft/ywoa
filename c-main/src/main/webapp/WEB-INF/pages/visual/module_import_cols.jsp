@@ -14,6 +14,9 @@
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="com.redmoon.oa.visual.*"%>
 <%@ page import="org.json.*"%>
+<%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
+<%@ page import="com.cloudweb.oa.api.IBasicSelectCtl" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
@@ -23,21 +26,20 @@ String code = (String)request.getAttribute("code");
 String formCode = (String)request.getAttribute("formCode");
 FormDb fd = new FormDb(formCode);
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <title>智能模块设计 - 导入设置</title>
-<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
+<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
 <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
 <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
 <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen" />
-
 <script src="../inc/livevalidation_standalone.js"></script>
-
 <%
 if (!fd.isLoaded()) {
 	out.print(StrUtil.jAlert_Back("该表单不存在！","提示"));
@@ -132,12 +134,18 @@ o("menu6").className="current";
 SelectMgr sm = new SelectMgr();
 MacroCtlMgr mm = new MacroCtlMgr();
 ir = fd.getFields().iterator();
+MacroCtlService macroCtlService = SpringUtil.getBean(MacroCtlService.class);
+IBasicSelectCtl basicSelectCtl = macroCtlService.getBasicSelectCtl();
 while (ir.hasNext()) {
 	FormField ff = (FormField)ir.next();
 	if (ff.getType().equals(FormField.TYPE_MACRO)) {
 		MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
 		if (mu!=null && mu.getCode().equals("macro_flow_select")) {
-			SelectDb sd = sm.getSelect(ff.getDefaultValueRaw());
+			String basicCode = basicSelectCtl.getCode(ff);
+			SelectDb sd = sm.getSelect(basicCode);
+			if (sd.getType() == SelectDb.TYPE_TREE) {
+				continue;
+			}
 %>
     <table class="percent98" cellSpacing="0" cellPadding="3" width="95%" align="center">
     <tr>
@@ -175,12 +183,13 @@ while (ir.hasNext()) {
 	}
 }
 %>
-<div style="text-align:center">
-	<input type="button" value="确定" onclick="submitForm()" />
-</div>
-<input id="code" name="code" type="hidden" value="${code}" />
-<input id="formCode" name="formCode" type="hidden" value="${formCode}" />
-<input id="colCount" name="colCount" type="hidden" value="${fn:length(cols)}" />
+	<div style="text-align:center; margin-top: 10px">
+		<input type="button" class="btn btn-default" value="确定" onclick="submitForm()" />
+	</div>
+	<input id="code" name="code" type="hidden" value="${code}" />
+	<input id="formCode" name="formCode" type="hidden" value="${formCode}" />
+	<input id="colCount" name="colCount" type="hidden" value="${fn:length(cols)}" />
+	<input id="xlsTmpPath" name="xlsTmpPath" type="hidden" value="${xlsTmpPath}" />
 </form>
 <br />
 </body>
@@ -221,5 +230,19 @@ while (ir.hasNext()) {
 			}
 		});
 	}
+
+	$(function() {
+		$('input, select, textarea').each(function() {
+			if (!$('body').hasClass('form-inline')) {
+				$('body').addClass('form-inline');
+			}
+			// ffb-input 为flexbox的样式
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') &&
+					$(this).attr('type') != 'hidden' && $(this).attr('type') != 'file' && !$(this).hasClass('ffb-input')) {
+				$(this).addClass('form-control');
+				$(this).attr('autocomplete', 'off');
+			}
+		});
+	})
 </script>
 </html>

@@ -5,6 +5,7 @@ import java.sql.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 
 public class WorkflowSequenceDb extends ObjectDb {
@@ -112,7 +113,7 @@ public class WorkflowSequenceDb extends ObjectDb {
                 rc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -138,7 +139,7 @@ public class WorkflowSequenceDb extends ObjectDb {
             pstmt.setInt(8, yearDigit);
             pstmt.setInt(9, id);
             re = conn.executePreUpdate()==1?true:false;
-            logger.info("save curIndex=" + curIndex);
+            LogUtil.getLog(getClass()).info("save curIndex=" + curIndex);
             if (re) {
                 WorkflowSequenceCache rc = new WorkflowSequenceCache(this);
                 primaryKey.setValue(new Integer(id));
@@ -146,8 +147,8 @@ public class WorkflowSequenceDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (conn != null) {
                 conn.close();
@@ -172,7 +173,7 @@ public class WorkflowSequenceDb extends ObjectDb {
                 }
             }
         } catch (Exception e) {
-            logger.error("getNextId:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getNextId:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -188,7 +189,7 @@ public class WorkflowSequenceDb extends ObjectDb {
         try {
             PreparedStatement pstmt = conn.prepareStatement(QUERY_LOAD);
             pstmt.setInt(1, id);
-            logger.info("load: id=" + id + " " + QUERY_LOAD);
+            LogUtil.getLog(getClass()).info("load: id=" + id + " " + QUERY_LOAD);
             rs = conn.executePreQuery();
             if (rs != null) {
                 if (rs.next()) {
@@ -200,14 +201,14 @@ public class WorkflowSequenceDb extends ObjectDb {
                     type = rs.getInt(5);
                     template = StrUtil.getNullStr(rs.getString(6));
                     curValue = StrUtil.getNullStr(rs.getString(7));
-                    itemSeparator = rs.getString(8);
+                    itemSeparator = StrUtil.getNullStr(rs.getString(8));
                     yearDigit = rs.getInt(9);
                     loaded = true;
                     primaryKey.setValue(new Integer(id));
                 }
             }
         } catch (Exception e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -231,7 +232,7 @@ public class WorkflowSequenceDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("del:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();

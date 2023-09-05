@@ -2,36 +2,18 @@ package com.redmoon.oa.ui.menu;
 
 import cn.js.fan.base.ITagSupport;
 import cn.js.fan.cache.jcs.RMCache;
-import cn.js.fan.db.Conn;
-import cn.js.fan.db.RMConn;
-import cn.js.fan.db.ResultIterator;
-import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.StrUtil;
-import cn.js.fan.web.Global;
 import com.cloudweb.oa.entity.Menu;
 import com.cloudweb.oa.permission.MenuPermission;
 import com.cloudweb.oa.service.IMenuService;
-import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.SpringUtil;
-import com.redmoon.oa.basic.SelectKindPriv;
 import com.redmoon.oa.flow.WorkflowDb;
-import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.message.MessageDb;
-import com.redmoon.oa.person.UserSetupDb;
-import com.redmoon.oa.pvg.Privilege;
-import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.LocalUtil;
-import com.redmoon.oa.visual.ModulePrivDb;
-import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +24,6 @@ public class Leaf implements Serializable, ITagSupport {
     public static String CODE_BOTTOM = "bottom";
 
     transient RMCache rmCache = RMCache.getInstance();
-    transient Logger logger = Logger.getLogger(Leaf.class.getName());
 
     public static final int TYPE_PRESET = 1;
     public static final int TYPE_LINK = 0;
@@ -125,9 +106,6 @@ public class Leaf implements Serializable, ITagSupport {
     }
     
     public void renew() {
-        if (logger == null) {
-            logger = Logger.getLogger(Leaf.class.getName());
-        }
         if (rmCache == null) {
             rmCache = RMCache.getInstance();
         }

@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
@@ -64,14 +65,13 @@ public class FormPretend {
 
             root = doc.getRootElement();
 
-            // System.out.println("License userCount=" + root.getChild("userCount").getText());
             // 4.0后增加该项
             if (root.getChild("key")!=null) {
                 key = root.getChild("key").getText();
             }
 
         } catch (JDOMException | IOException e) {
-            System.out.println("init:" + e.getMessage());
+            LogUtil.getLog(getClass()).info("init:" + e.getMessage());
         }
     }
 
@@ -111,10 +111,10 @@ public class FormPretend {
                 valid = true;
             } else {
                 valid = false;
-                // System.out.println("Cloud Web license is invalid.");
+                // LogUtil.getLog(getClass()).info("Cloud Web license is invalid.");
             }
         } catch (java.lang.Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         // 置为试用版
         if (!valid) {

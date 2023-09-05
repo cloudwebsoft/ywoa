@@ -11,9 +11,10 @@ import cn.js.fan.util.DateUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import cn.js.fan.util.*;
 import java.util.*;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.Job;
+import java.util.Calendar;
+
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
 import com.redmoon.oa.person.*;
 import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.sms.SMSFactory;
@@ -22,17 +23,24 @@ import com.cloudwebsoft.framework.aop.base.Advisor;
 import com.cloudwebsoft.framework.aop.Pointcut.MethodNamePointcut;
 import com.redmoon.oa.message.IMessage;
 import com.redmoon.oa.message.MobileAfterAdvice;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
-public class PlanJob implements Job {
+//持久化
+@PersistJobDataAfterExecution
+//禁止并发执行(Quartz不要并发地执行同一个job定义（这里指一个job类的多个实例）)
+@DisallowConcurrentExecution
+@Slf4j
+public class PlanJob extends QuartzJobBean {
     public PlanJob() {
         try {
             jbInit();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
     }
 
-    public void execute(JobExecutionContext jobExecutionContext) throws
+    @Override
+    public void executeInternal(JobExecutionContext jobExecutionContext) throws
             JobExecutionException {
         Date d = new Date();
         String currentTime = DateUtil.format(d, "HH:mm");
@@ -41,7 +49,7 @@ public class PlanJob implements Job {
         String month = (c.get(Calendar.MONTH) + 1) + "";
         String day = c.get(Calendar.DATE) + "";
         String weekDate = (c.get(Calendar.DAY_OF_WEEK) - 1) + "";
-        if (weekDate.equals("0")) {
+        if ("0".equals(weekDate)) {
             weekDate = "7";
         }
         // PlanPeriodicityDb
@@ -105,8 +113,7 @@ public class PlanJob implements Job {
                 LogUtil.getLog(getClass()).error(ex.getMessage());
             }
             try {
-                ppd.set("remind_count",
-                        new Integer(ppd.getInt("remind_count") + 1));
+                ppd.set("remind_count", ppd.getInt("remind_count") + 1);
                 ppd.save();
             } catch (ResKeyException e) {
                 LogUtil.getLog(getClass()).error(StrUtil.trace(e));

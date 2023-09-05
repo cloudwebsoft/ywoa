@@ -1,10 +1,18 @@
 package com.cloudweb.oa.security;
 
+import cn.js.fan.util.ErrMsgException;
 import com.cloudweb.oa.cache.UserAuthorityCache;
 import com.cloudweb.oa.cache.UserCache;
+import com.cloudweb.oa.entity.Account;
 import com.cloudweb.oa.entity.UserOfRole;
 import com.cloudweb.oa.mapper.UserMapper;
+import com.cloudweb.oa.service.IAccountService;
+import com.cloudweb.oa.service.IUserService;
+import com.redmoon.oa.Config;
+import com.redmoon.oa.account.AccountDb;
+import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
+import com.redmoon.oa.sys.DebugUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -19,62 +27,43 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 暂无用
+ */
 @Service("userDetailServiceImpl")
 public class UserDetailServiceImpl implements UserDetailsService {
 
     @Autowired
-    private UserMapper userMapper;
-
-    @Autowired
-    private UserAuthorityCache userAuthorityCache;
-
-    @Autowired
     private UserCache userCache;
+
+    @Autowired
+    IAccountService accountService;
 
     @Override
     public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
-/*        QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("name", userName);
-        User users = userMapper.selectOne(queryWrapper);*/
-
         com.cloudweb.oa.entity.User user = userCache.getUser(userName);
-        // com.cloudweb.oa.entity.User user = userMapper.getUserByNameWithRole(userName);
+        // DebugUtil.i(getClass(), "loadUserByUsername userName: ", userName);
         if (user == null) {
-            throw new UsernameNotFoundException("auth_fail"); // "用户不存在");
-        }
-        /*String pwd = passwordEncoder.encode(sysUser.getPassword());
-        System.out.println(pwd);*/
-
-        return new User(user.getName(), user.getPwd(), getRolesAndAuthorities(user.getName(), user.getUserRoleList()));
-    }
-
-    private Collection<GrantedAuthority> getRolesAndAuthorities(String userName, List<UserOfRole> roles) {
-        if (Privilege.ADMIN.equals(userName)) {
-            // 给admin加入ROLE_ADMIN角色
-            return AuthorityUtils.commaSeparatedStringToAuthorityList("admin,ROLE_ADMIN");
-        }
-
-        List<GrantedAuthority> list = new ArrayList<>();
-
-        // 加入ROLE_LOGIN，表示已登录
-        SimpleGrantedAuthority grantedAuthority = new SimpleGrantedAuthority("ROLE_LOGIN");
-        list.add(grantedAuthority);
-
-        // 1. 放入角色时需要加前缀ROLE_，而在controller使用时不需要加ROLE_前缀
-        // 2. 放入的是权限时，不能加ROLE_前缀，hasAuthority与放入的权限名称对应即可
-        if (roles!=null) {
-            for (UserOfRole userOfRole : roles) {
-                grantedAuthority = new SimpleGrantedAuthority("ROLE_" + userOfRole.getRoleCode());
-                list.add(grantedAuthority);
+            com.redmoon.oa.Config cfg = Config.getInstance();
+            // 检查是否使用了工号登录
+            boolean isUseAccount = cfg.getBooleanProperty("isUseAccount");
+            if (isUseAccount) {
+                Account account = accountService.getAccount(userName);
+                if (account != null) {
+                    user = userCache.getUser(account.getUserName());
+                    if (user == null) {
+                        throw new UsernameNotFoundException("auth_fail");
+                    }
+                }
+                else {
+                    throw new UsernameNotFoundException("auth_fail");
+                }
+            }
+            else {
+                throw new UsernameNotFoundException("auth_fail");
             }
         }
 
-        List<String> listAuthority = userAuthorityCache.getUserAuthorities(userName);
-        for (String authority : listAuthority) {
-            grantedAuthority = new SimpleGrantedAuthority(authority);
-            list.add(grantedAuthority);
-        }
-
-        return list;
+        return new User(user.getName(), user.getPwd(), Privilege.getRolesAndAuthorities(user.getName(), user.getUserRoleList()));
     }
 }

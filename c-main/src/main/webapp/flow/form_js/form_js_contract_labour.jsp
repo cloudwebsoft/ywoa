@@ -23,9 +23,9 @@
         if ("".equals(parentId)){
             String id = ParamUtil.get(request,"id");
             parentId = id;
-            sql = "select * from form_table_contract_labour where id = ? order by id desc";
+            sql = "select * from ft_contract_labour where id = ? order by id desc";
         }else{
-            sql = "select * from form_table_contract_labour where cws_id = ? order by id desc";
+            sql = "select * from ft_contract_labour where cws_id = ? order by id desc";
         }
         JdbcTemplate jt = new JdbcTemplate();
         try {
@@ -65,7 +65,7 @@ function xq(){
         success:function(data, status){
             if(data.ret === "1"){
                 var str = data.sxq;
-                window.location.href = "<%=request.getContextPath()%>/visual/module_add_relate.jsp?parentId=<%=parentId%>&code=personbasic&formCode=personbasic&formCodeRelated=contract_labour&isShowNav=1&menuItem=<%=menuItem%>&sxq=" + str;
+                window.location.href = "<%=request.getContextPath()%>/visual/moduleAddRelatePage.do?parentId=<%=parentId%>&code=personbasic&formCode=personbasic&formCodeRelated=contract_labour&isShowNav=1&menuItem=<%=menuItem%>&sxq=" + str;
             }
          },
         error:function(XMLHttpRequest, textStatus){
@@ -105,7 +105,7 @@ function xqId(id){
         success:function(data, status){
             if(data.ret === "1"){
                 var str = data.sxq;
-                window.location.href = "<%=request.getContextPath()%>/visual/module_add.jsp?code=15324301182242111172&sxq=" + str;
+                window.location.href = "<%=request.getContextPath()%>/visual/moduleAddPage.do?code=15324301182242111172&sxq=" + str;
             }
         },
         error:function(XMLHttpRequest, textStatus){

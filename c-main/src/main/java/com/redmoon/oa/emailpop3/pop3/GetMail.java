@@ -6,7 +6,7 @@ import java.security.Security;
 import java.util.*;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
-import org.apache.log4j.Logger;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.sun.mail.pop3.POP3Folder;
 import com.redmoon.oa.emailpop3.MailMsgDb;
 import javax.mail.internet.MimeMessage;
@@ -25,8 +25,6 @@ public class GetMail {
 
     Store store = null;
     POP3Folder folder = null;
-
-    Logger logger = Logger.getLogger(GetMail.class.getName());
 
     public GetMail(String server, String user, String pwd) {
         this.server = server;
@@ -69,7 +67,7 @@ public class GetMail {
                 }
             }
 
-            // System.out.println(getClass() + " " + emailAddress + " begin receive");
+            // LogUtil.getLog(getClass()).info(getClass() + " " + emailAddress + " begin receive");
 
 			
             Properties props = System.getProperties();
@@ -156,7 +154,7 @@ public class GetMail {
                 err =  StrUtil.Unicode2GB(e.getMessage());
             }
             catch (Exception ex){}
-            logger.error("receive:" + err);
+            LogUtil.getLog(getClass()).error("receive:" + err);
             throw new ErrMsgException(err);
 //            if (e instanceof AuthenticationFailedException) {
 //            	throw new ErrMsgException("用户名或密码不正确！");
@@ -178,13 +176,13 @@ public class GetMail {
         try {
             if (folder != null) folder.close(expunge);
         } catch (Exception ex2) {
-            logger.error("receive:" + ex2.getMessage());
+            LogUtil.getLog(getClass()).error("receive:" + ex2.getMessage());
             //ex2.printStackTrace();
         }
         try {
             if (store != null) store.close();
         } catch (Exception ex2) {
-            logger.error("receive:" + ex2.getMessage());
+            LogUtil.getLog(getClass()).error("receive:" + ex2.getMessage());
             ex2.printStackTrace();
         }
     }
@@ -216,7 +214,7 @@ public class GetMail {
             Message msg = folder.getMessage(i);
             mailmsg = new MailMsg(msg, true); //用true来取得全部信息，包括邮件正文
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         } finally {
             try {
                 if (folder != null) folder.close(false);
@@ -257,12 +255,12 @@ public class GetMail {
                 if (!StrUtil.isNumeric(mailids[i]))
                     return false;
 
-                logger.info("msg deled num:" + mailids[i]);
+                LogUtil.getLog(getClass()).info("msg deled num:" + mailids[i]);
                 Message msg = folder.getMessage(Integer.parseInt(mailids[i]));
                 msg.setFlag(Flags.Flag.DELETED, true);
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
             return false;
         } finally {
             try {
@@ -288,7 +286,7 @@ public class GetMail {
             Properties props = System.getProperties();
             Session session = Session.getDefaultInstance(props, null);
             store = session.getStore("pop3");
-            // System.out.println(getClass() + " server=" + server + " port=" + port + " user=" +
+            // LogUtil.getLog(getClass()).info(getClass() + " server=" + server + " port=" + port + " user=" +
             //                   user + " pwd=" + pwd);
             store.connect(server, port, user, pwd);
             folder = store.getDefaultFolder();
@@ -301,7 +299,7 @@ public class GetMail {
             mailmsg = new MailMsg(msg); // 用true来取得全部信息，包括邮件正文
             a = mailmsg.getAttachment(attachnum);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         } finally {
             try {
                 if (folder != null) folder.close(false);
@@ -355,7 +353,7 @@ public class GetMail {
                         }
              */
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
         return msg;
     }

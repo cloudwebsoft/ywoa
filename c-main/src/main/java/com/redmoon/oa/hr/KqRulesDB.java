@@ -7,6 +7,7 @@ import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.StrUtil;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 
@@ -69,7 +70,7 @@ public class KqRulesDB {
 			kd.setIsAttendFirst(isAttendFirst);
 			
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return kd;
 	}
@@ -176,7 +177,7 @@ public class KqRulesDB {
 				parentCode = code;
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return parentCode; 
 	}
@@ -184,7 +185,6 @@ public class KqRulesDB {
 	//判断是否为数字
 	public static boolean isNumeric(String str){
 	  for (int i = 0; i < str.length(); i++){
-		   //System.out.println(str.charAt(i));
 		   if (!Character.isDigit(str.charAt(i))){
 			   return false;
 		   }

@@ -1,5 +1,8 @@
 package cn.js.fan.util.file.image;
 
+import cn.js.fan.util.file.FileUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.*;
@@ -65,7 +68,6 @@ public class ImageUtil {
         if (fromFileStr.toLowerCase().endsWith(".png")) {
             imgType = "PNG";
         }
-        // System.out.println(ex);
         File saveFile = new File(saveToFileStr);
         File fromFile = new File(fromFileStr);
         srcImage = ImageIO.read(fromFile);
@@ -125,8 +127,6 @@ public class ImageUtil {
        }
        */
 
-        // System.out.println("w=" + targetW + " h=" + targetH);
-
         if (type == BufferedImage.TYPE_CUSTOM) { // handmade
             ColorModel cm = source.getColorModel();
             WritableRaster raster = cm.createCompatibleWritableRaster(oriTargetW,
@@ -160,7 +160,6 @@ public class ImageUtil {
         if (fromFileStr.toLowerCase().endsWith(".png")) {
             imgType = "PNG";
         }
-        // System.out.println(ex);
         try {
             File saveFile = new File(saveToFileStr);
             File fromFile = new File(fromFileStr);
@@ -171,7 +170,7 @@ public class ImageUtil {
             ImageIO.write(srcImage, imgType, saveFile);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(ImageUtil.class).error(e);
         }
     }
 
@@ -187,7 +186,7 @@ public class ImageUtil {
                                 75);
             // Thumbnail.createThumbnail("c:/1.gif", "c:/2.jpg", 76);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
     */

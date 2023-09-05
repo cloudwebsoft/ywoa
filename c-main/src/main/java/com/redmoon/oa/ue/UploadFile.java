@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.flow.DocumentMgr;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -87,12 +89,13 @@ public class UploadFile extends HttpServlet {
 	 * @throws ServletException if an error occurred
 	 * @throws IOException if an error occurred
 	 */
+	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
 		String op = ParamUtil.get(request, "op");
 		JSONObject json = new JSONObject();
-		response.setContentType("text/html");		
+		response.setContentType("text/html;charset=utf-8");
 		PrintWriter out = response.getWriter();
 
 		// 用于富文本编辑器宏控件
@@ -102,25 +105,28 @@ public class UploadFile extends HttpServlet {
 			String [] r = null;
 			try {
 				r = dm.uploadMedia(application, request);
-
 				try {
 					json.put("state", "SUCCESS"); // UEDITOR的规则:不为SUCCESS则显示state的内容
 					json.put("url", r[1]); // "http://localhost:8080/oa/images/man.png");         //能访问到你现在图片的路径
 					json.put("title", "");
 					json.put("original", r[3]);
 				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 					try {
 						json.put("state", "上传失败");
 						json.put("url", "");         //能访问到你现在图片的路径
 						json.put("title", "");
 						json.put("original", "");
 					} catch (JSONException e1) {
+						e1.printStackTrace();
 					}
 				}
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				try {
+					json.put("state", e.getMessage());
+				} catch (JSONException jsonException) {
+					jsonException.printStackTrace();
+				}
 			}
 
 			out.print(json);
@@ -139,7 +145,7 @@ public class UploadFile extends HttpServlet {
                 // throw new ErrMsgException(fileUpload.getErrMessage());
     			try {
     				json.put("state", "上传失败");
-    			    json.put("url", "");         //能访问到你现在图片的路径
+    			    json.put("url", "");
     			    json.put("title", "");
     			    json.put("original", ""); 					
     			} catch (JSONException e1) {
@@ -147,7 +153,7 @@ public class UploadFile extends HttpServlet {
     			}  			
             }
             else {
-            	Vector v = fileUpload.getFiles();
+            	Vector<FileInfo> v = fileUpload.getFiles();
                 FileInfo fi = null;
                 if (v.size() > 0) {
 					fi = (FileInfo) v.get(0);
@@ -158,44 +164,30 @@ public class UploadFile extends HttpServlet {
                     Calendar cal = Calendar.getInstance();
                     String year = "" + (cal.get(Calendar.YEAR));
                     String month = "" + (cal.get(Calendar.MONTH) + 1);
-                    // vpath = "upfile/" +
-                    //        fi.getExt() + "/" + year + "/" + month + "/";
-                    vpath = "upfile/form/"; // 用于表单上传
+                    vpath = "upfile/form"; // 用于表单上传
                     if ("".equals(op) || "formDesigner".equals(op)) {
-                        String filepath = Global.getRealPath() + vpath;
-                        fileUpload.setSavePath(filepath);
-                        // 使用随机名称写入磁盘
-                        fileUpload.writeFile(true);
+						IFileService fileService = SpringUtil.getBean(IFileService.class);
+						fileService.write(fi, vpath);
                     }
                     else if ("robot".equals(op)) {
-                    	vpath = "upfile/robot/"; // 社群配置
-                        String filepath = Global.getRealPath() + vpath;
-                        fileUpload.setSavePath(filepath);
-                        // 使用随机名称写入磁盘
-                        fileUpload.writeFile(true);
+                    	vpath = "upfile/robot"; // 社群配置
+						IFileService fileService = SpringUtil.getBean(IFileService.class);
+						fileService.write(fi, vpath);
                     }                    
                     else if ("notice".equals(op)) {
-                    	vpath = "upfile/notice/" + year + "/" + month + "/";
-                        String filepath = Global.getRealPath() + vpath;
-                        fileUpload.setSavePath(filepath);
-                        // 使用随机名称写入磁盘
-                        fileUpload.writeFile(true);
+                    	vpath = "upfile/notice/" + year + "/" + month;
+						IFileService fileService = SpringUtil.getBean(IFileService.class);
+						fileService.write(fi, vpath);
                     }
                     else if ("fileark".equals(op)) {
                 		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
                 		String attPath = cfg.get("file_folder");
-                		
-                		String virtualpath = year + "/" + month;
-                        String filepath = Global.getRealPath() + attPath + "/" + virtualpath + "/";
-                        
-                        vpath = attPath + "/" + virtualpath + "/";
-                        
-                        fileUpload.setSavePath(filepath);
-                        // 使用随机名称写入磁盘
-                        fileUpload.writeFile(true);
-                        
-                        int orders = 0;
+                        vpath = attPath + "/" + year + "/" + month;
 
+						IFileService fileService = SpringUtil.getBean(IFileService.class);
+						fileService.write(fi, vpath);
+
+						int orders = 0;
                     	// 记录于数据库
                         com.redmoon.oa.fileark.Attachment att = new Attachment();
                         att.setDiskName(fi.getDiskName());
@@ -205,44 +197,35 @@ public class UploadFile extends HttpServlet {
                         att.setName(fi.getName());
                         att.setDiskName(fi.getDiskName());
                         att.setOrders(orders);
-                        att.setVisualPath(attPath + "/" + virtualpath);
+                        att.setVisualPath(vpath);
                         att.setUploadDate(new java.util.Date());
                         att.setSize(fi.getSize());
                         att.setExt(StrUtil.getFileExt(fi.getName()));
                         att.setEmbedded(true);
                         att.create();
-
-/*                      String module = ParamUtil.get(request, "module");
-                        if (module.equals("notice")) {
-                        	att.setPageNum(1);
-                        }   */                	
                     }
-                    
-                    //File f = new File(vpath + fi.getDiskName());
-                    //f.delete();
-                    //System.out.println("FleUpMgr " + fi.getName() + " " + fi.getFieldName() + " " + fi.getDiskName());
                 }            	
             	
 	    	    /*你的处理图片的代码*/
 	    	    try {
 	    			json.put("state", "SUCCESS"); // UEDITOR的规则:不为SUCCESS则显示state的内容
 	    		    if ("formDesigner".equals(op) || "robot".equals(op) || "notice".equals(op)) {
-		    		    json.put("url", request.getContextPath() + "/" + vpath + fi.getDiskName()); // "http://localhost:8080/oa/images/man.png");         //能访问到你现在图片的路径	    		    	
+		    		    json.put("url", request.getContextPath() + "/showImg.do?path=" + vpath + "/" + fi.getDiskName());
 	    		    }
 	    		    else {
-	    		    	json.put("url", vpath + fi.getDiskName()); // "http://localhost:8080/oa/images/man.png");         //能访问到你现在图片的路径
+	    		    	json.put("url", "showImg.do?path=" + vpath + "/" + fi.getDiskName());
 	    		    }
 	    			json.put("title", "");
-	    		    json.put("original", fi.getDiskName()); 
+	    		    json.put("original", fi.getDiskName());
 	    		} catch (JSONException e) {
-	    			// TODO Auto-generated catch block
-	    			e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 	    			try {
 	    				json.put("state", "上传失败");
-	    			    json.put("url", "");         //能访问到你现在图片的路径
+	    			    json.put("url", "");
 	    			    json.put("title", "");
 	    			    json.put("original", ""); 					
 	    			} catch (JSONException e1) {
+	    				e1.printStackTrace();
 	    			}
 	    		} 
             }
@@ -267,6 +250,7 @@ public class UploadFile extends HttpServlet {
 	 *
 	 * @throws ServletException if an error occurs
 	 */
+	@Override
 	public void init() throws ServletException {
 		// Put your code here
 	}

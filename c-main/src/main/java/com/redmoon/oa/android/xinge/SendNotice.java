@@ -264,7 +264,7 @@ public class SendNotice {
 					DebugUtil.e(getClass(), "PushNoticeSingleByToken", (client==1?"android":"ios") + ", receiver:" + receiver + ", title:" + title +", " + jReturn.toString());
 				}
 			} catch (JSONException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
 		DebugUtil.i(getClass(), "PushNoticeSingleByToken", (client==1?"android":"ios") + ", receiver:" + receiver + ", title:" + title +", " + jReturn);
@@ -297,10 +297,6 @@ public class SendNotice {
 		
 		LogUtil.getLog(getClass()).info("PushNoticeToAdmin:" + receiver);
 		LogUtil.getLog(getClass()).info("PushNoticeToAdmin_title:" + title +", " +jReturn);
-		
-		//System.out.println("PushNoticeToAdmin:" + receiver);
-		//System.out.println("PushNoticeToAdmin_title:" + title +", " +jReturn);
-
 		return jReturn;
 	}
 	
@@ -399,10 +395,7 @@ public class SendNotice {
 
 				jReturn = xinge.pushSingleDevice(token, messageIOS,	0);
 			}
-			
-			System.out.println("PushNoticeManyByToken_jReturn:" + jReturn);
 		}
-
 		return jReturn;
 	}*/
 }

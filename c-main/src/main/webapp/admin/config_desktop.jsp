@@ -1,5 +1,4 @@
 <%@ page contentType="text/html;charset=utf-8" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <%@ page import="java.io.*,
 				 cn.js.fan.db.*,
 				 cn.js.fan.util.*,
@@ -96,7 +95,6 @@ function openWinUsers() {
 	selUserNames = form_users.users.value;
 	selUserRealNames = form_users.userRealNames.value;
 	openWin('../user_multi_sel.jsp',600,480);
-	// showModalDialog('../user_multi_sel.jsp',window.self,'dialogWidth:600px;dialogHeight:480px;status:no;help:no;')
 }
 
 function setUsers(users, userRealNames) {
@@ -306,10 +304,10 @@ while (ir.hasNext()) {
       </tr>
       <tr>
         <td colspan="4"><div align="center">
-          <INPUT class="btn" TYPE=submit name='edit' value='<lt:Label key="op_modify"/>'>
+          <INPUT class="btn" TYPE=submit name='edit' value='修改'>
           <!--
           &nbsp;
-          <INPUT class="btn" TYPE="button" value='<lt:Label key="op_del"/>' onClick="if (confirm('您确定要删除吗？')) window.location.href='config_desktop.jsp?op=del&code=<%=pu.getCode()%>'">
+          <INPUT class="btn" TYPE="button" value='删除' onClick="if (confirm('您确定要删除吗？')) window.location.href='config_desktop.jsp?op=del&code=<%=pu.getCode()%>'">
           -->
           </div></td>
         </tr>

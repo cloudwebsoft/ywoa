@@ -13,9 +13,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>智能模块设计 - 添加权限</title>
     <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
     <script src="../inc/common.js"></script>
     <script src="../js/jquery-1.9.1.min.js"></script>
     <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/bootstrap/js/bootstrap.min.js"></script>
     <script>
         function setPerson(deptCode, deptName, user, userRealName) {
             form1.name.value = user;
@@ -79,7 +81,6 @@
             <td width="88%" align="left" nowrap class="tabStyle_1_title">角色</td>
         </tr>
         <%
-            RoleMgr roleMgr = new RoleMgr();
             ModulePrivDb lp = new ModulePrivDb();
             Vector vrole = lp.getRolesOfModule(code);
 
@@ -90,30 +91,34 @@
             while (irrole.hasNext()) {
                 RoleDb rd = (RoleDb) irrole.next();
                 roleCode = rd.getCode();
-                if (roleCodes.equals(""))
+                if (roleCodes.equals("")) {
                     roleCodes += roleCode;
-                else
+                } else {
                     roleCodes += "," + roleCode;
-                if (descs.equals(""))
+                }
+                if (descs.equals("")) {
                     descs += rd.getDesc();
-                else
+                } else {
                     descs += "," + rd.getDesc();
+                }
             }
         %>
-        <tr class="row">
-            <td align="center"><textarea name=roleDescs cols="60" rows="3" style="width:100%"><%=descs%></textarea>
+        <tr>
+            <td align="center">
+                <textarea name=roleDescs cols="60" rows="3" style="width:100%"><%=descs%></textarea>
                 <input name="roleCodes" value="<%=roleCodes%>" type="hidden"/>
                 <input name="code" value="<%=code%>" type="hidden"/>
-                <input name="formCode" value="<%=formCode%>" type="hidden"/></td>
+                <input name="formCode" value="<%=formCode%>" type="hidden"/>
+            </td>
         </tr>
-        <tr align="center" class="row">
+        <tr align="center">
             <td style="PADDING-LEFT: 10px">
-                <input type="button" class="btn" onclick="openWin('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600)" value="选择"/>
+                <input type="button" class="btn btn-default" onclick="openWin('../role_multi_sel.jsp?roleCodes=<%=roleCodes%>&unitCode=<%=privilege.getUserUnitCode(request)%>', 800, 600)" value="选择"/>
                 &nbsp;&nbsp;
-                <input type="submit" class="btn" value="确定"/>
+                <input type="submit" class="btn btn-default" value="确定"/>
                 <input name="tabIdOpener" value="<%=tabIdOpener%>" type="hidden"/>
                 &nbsp;&nbsp;
-                <input type="button" class="btn" value="返回" onclick="window.history.back()"/>
+                <input type="button" class="btn btn-default" value="返回" onclick="window.history.back()"/>
             </td>
         </tr>
         </tbody>
@@ -163,16 +168,29 @@
                 <input type="hidden" name="type" value="1"/>
                 <input type="hidden" name="code" value="<%=code%>"/>
                 <input type="hidden" name="formCode" value="<%=formCode%>"/>
-                <input class="btn" onclick="openWinUsers()" value="选择" type="button"/>
+                <input class="btn btn-default" onclick="openWinUsers()" value="选择" type="button"/>
                 &nbsp;&nbsp;
-                <input class="btn" type="submit" align="middle" value="确定"/>
+                <input class="btn btn-default" type="submit" align="middle" value="确定"/>
                 &nbsp;&nbsp;
-                <input type="button" class="btn" value="返回" onclick="window.history.back()"/>
+                <input type="button" class="btn btn-default" value="返回" onclick="window.history.back()"/>
                 <input name="tabIdOpener" value="<%=tabIdOpener%>" type="hidden"/>
             </td>
         </tr>
     </table>
 </form>
 <br>
+<script>
+    $(function() {
+        $('input, select, textarea').each(function() {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+                $(this).attr('autocomplete', 'off');
+            }
+        });
+    })
+</script>
 </body>
 </html>

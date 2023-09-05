@@ -3,7 +3,6 @@
                  cn.js.fan.db.*,
                  cn.js.fan.util.*,
                  cn.js.fan.web.*,
-                 com.redmoon.forum.*,
                  org.jdom.*,
                  java.util.*"
 %>
@@ -30,7 +29,7 @@
             </b></div>
             <hr size="0">
             <%
-                cfg = new XMLConfig(application.getRealPath("/") + "WEB-INF" + java.io.File.separator + "proxool.xml", true, "iso-8859-1");
+                cfg = new XMLConfig("proxool.xml", true, "iso-8859-1");
                 Element root = cfg.getRootElement();
                 Element driverProp = root.getChild("proxool").getChild("driver-properties");
                 List list = driverProp.getChildren();

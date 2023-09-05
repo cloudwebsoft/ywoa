@@ -164,6 +164,10 @@ function DisableCtl(name, ctlType, ctlValue, ctlValueRaw) {
 					obj.outerHTML = "<span id='" + name + "_show'>" + "<img src='<%=rootpath%>/images/checkbox_n.gif' align='absMiddle'></span>";
 				}
 			}
+			else if (ctlType == "select") {
+				var text = $("[name='" + name + "'] option[value='" + ctlValue + "']").text();
+				obj.outerHTML = "<span id='" + name + "_show'>" + text + "</span><textarea style='display:none' name='" + name + "'>" + ctlValueRaw + "</textarea>";
+			}
 			else if (ctlType=="radio") {
 				 var radioboxs = document.getElementsByName(name);
 				 if (radioboxs!=null) {
@@ -427,7 +431,7 @@ function SelectDate(ObjName, FormatDate) {
         PostAtt[0]= FormatDate;
         PostAtt[1]= findObj(ObjName);
     
-        GetDate = showModalDialog("<%=rootpath%>/util/calendar/calendar.htm", PostAtt ,"dialogWidth:286px;dialogHeight:221px;status:no;help:no;");
+        GetDate = openWin("<%=rootpath%>/util/calendar/calendar.htm", 286, 221);
     }
 }
 
@@ -507,7 +511,7 @@ var timeObjName;
 function SelectDateTime(objName) {
 	timeObjName = objName;
 	if (isIE()) {
-        var dt = showModalDialog("<%=rootpath%>/util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:185px;status:no;help:no;");
+        var dt = openWin("<%=rootpath%>/util/calendar/time.jsp", 266, 185);
         if (dt!=null)
             findObj(objName + "_time").value = dt;
     }
@@ -547,7 +551,7 @@ function SetNewDate() {
 			}
 		}
 		try {
-			$('#' + $(this).attr("id")).datetimepicker({
+			var dtOption = {
 				lang:'ch',
 				datepicker:true,
 				timepicker:false,
@@ -558,22 +562,49 @@ function SetNewDate() {
 						// 这样处理有问题，如果cwsWorkflowResult的位置距离较远的话，会滚动屏幕
         				// $('#cwsWorkflowResult').focus();
         			}
-    			},	
+    			},
 			    onClose: function(dateText, inst) {
 			    	if (isIE8) {
 			    		// 使livevalidation再次验证
 			       		$(dateObj).blur();
 			       	}
-			    },    					
+			    },
 				format:'Y-m-d'
-			});
+			}
+
+			if ($(this).attr('minv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('mint') == 'd') {
+					date.setDate(date.getDate()+1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.minDate = year+'-'+month+'-'+dates;
+			}
+
+			if ($(this).attr('maxv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('maxt') == 'x') {
+					date.setDate(date.getDate()-1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.maxDate = year+'-'+month+'-'+dates;
+			}
+			$('#' + $(this).attr("id")).datetimepicker(dtOption);
 		} catch (e) {}
 	});
 	$("input[kind='DATE_TIME']").each(function() {
-    	if($(this).attr("readonly")) {
-            return true;
+    	if($(this).attr("readonly")==true || $(this).attr("readonly")=="readonly") {
+			return true;
         }
-            
+
         var dateObj = this;
             
 		var isNew = $(this).attr("isnewdatetimectl");
@@ -604,20 +635,47 @@ function SetNewDate() {
 			}
 		}
 		try {
-			$('#' + $(this).attr("id")).datetimepicker({
+			var dtOption = {
 				lang:'ch',
 				datepicker:true,
 				timepicker:true,
 				format:'Y-m-d H:i:00',
-				validateOnBlur:false, // 解决IE8下需点击两次才能选到时间，且选择后livevalidation仍显示不能为空的问题	
+				validateOnBlur:false, // 解决IE8下需点击两次才能选到时间，且选择后livevalidation仍显示不能为空的问题
 			    onClose: function(dateText, inst) {
 			    	if (isIE8) {
 			    		// 使livevalidation再次验证
 			       		$(dateObj).blur();
 			       	}
-			    }, 				
+			    },
 				step:10
-			});
+			}
+
+			if ($(this).attr('minv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('mint') == 'd') {
+					date.setDate(date.getDate()+1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.minDate = year+'-'+month+'-'+dates;
+			}
+
+			if ($(this).attr('maxv') == 'curDate') {
+				var date = new Date();
+				if ($(this).attr('maxt') == 'x') {
+					date.setDate(date.getDate()-1);
+				}
+				var year = date.getFullYear();
+				var month = date.getMonth() + 1;
+				month = month < 10 ? '0' + month : month;
+				var dates = date.getDate();
+				dates = dates < 10 ? '0' + dates : dates;
+				dtOption.maxDate = year+'-'+month+'-'+dates;
+			}
+			$('#' + $(this).attr("id")).datetimepicker(dtOption);
 		} catch (e) {}
 	});
 	if (noName) {

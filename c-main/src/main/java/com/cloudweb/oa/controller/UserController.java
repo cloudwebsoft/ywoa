@@ -3,6 +3,10 @@ package com.cloudweb.oa.controller;
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.web.Global;
+import com.cloudweb.oa.cache.DepartmentCache;
+import com.cloudweb.oa.cache.UserCache;
+import com.cloudweb.oa.mapper.UserMapper;
+import com.cloudweb.oa.security.AuthUtil;
 import com.cloudweb.oa.utils.PasswordUtil;
 import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.util.*;
@@ -16,8 +20,11 @@ import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.ResponseUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.visual.PersonBasicService;
+import com.cloudweb.oa.vo.Result;
 import com.cloudweb.oa.vo.UserVO;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.redmoon.dingding.service.client.DingDingClient;
@@ -31,13 +38,13 @@ import com.redmoon.oa.netdisk.UtilTools;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.person.UserSet;
 import com.redmoon.oa.person.UserSetupDb;
-import com.redmoon.oa.post.PostDb;
-import com.redmoon.oa.post.PostUserDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.pvg.RoleDb;
 import com.redmoon.oa.sso.SyncUtil;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.ui.SkinMgr;
 import com.redmoon.weixin.mgr.WeixinDo;
+import io.netty.util.internal.StringUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -47,11 +54,13 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -118,6 +127,15 @@ public class UserController {
     private I18nUtil i18nUtil;
 
     @Autowired
+    private IUserOfGroupService userOfGroupService;
+
+    @Autowired
+    private IGroupOfRoleService userGroupOfRoleService;
+
+    @Autowired
+    private UserCache userCache;
+
+    @Autowired
     @Qualifier(value = "validMessageSource")
     private MessageSource validMessageSource;
 
@@ -139,10 +157,28 @@ public class UserController {
     @Autowired
     private LoginService loginService;
 
+    @Autowired
+    private PersonBasicService personBasicService;
+
+    @Autowired
+    private IPostService postService;
+
+    @Autowired
+    private IPostUserService postUserService;
+
+    @Autowired
+    private AuthUtil authUtil;
+
+    @Autowired
+    private DepartmentCache departmentCache;
+
+    @ApiOperation(value = "弹出框用户列表", notes = "弹出框用户列表")
+    @ResponseBody
     @RequestMapping(value = "/userMultiSel")
-    public String userMultiSel(Model model) {
-        String skinPath = SkinMgr.getSkinPath(request, false);
-        model.addAttribute("skinPath", skinPath);
+    public Result<Object> userMultiSel() {
+//        String skinPath = SkinMgr.getSkinPath(request, false);
+//        model.addAttribute("skinPath", skinPath);
+        JSONObject object = new JSONObject();
 
         Privilege privilege = new Privilege();
 
@@ -158,12 +194,12 @@ public class UserController {
         // 选择时是否包含子节点，启用checkbox;
         boolean isIncludeChildren = ParamUtil.getBoolean(request, "isIncludeChildren", false);
 
-        model.addAttribute("mode", mode);
-        model.addAttribute("isIncludeChildren", isIncludeChildren);
-        model.addAttribute("isForm", isForm);
-        model.addAttribute("parameterNum", parameterNum);
-        model.addAttribute("from", from);
-        model.addAttribute("windowSize", windowSize);
+        object.put("mode", mode);
+        object.put("isIncludeChildren", isIncludeChildren);
+        object.put("isForm", isForm);
+        object.put("parameterNum", parameterNum);
+        object.put("from", from);
+        object.put("windowSize", windowSize);
 
         if ("".equals(unitCode)) {
             unitCode = ConstUtil.DEPT_ROOT;
@@ -178,29 +214,29 @@ public class UserController {
         if (recentSelectedList == null) {
             recentSelectedList = new ArrayList<>();
         }
-        model.addAttribute("recentSelectedList", recentSelectedList);
+        object.put("recentSelectedList", recentSelectedList);
 
         List<Role> roleList = roleService.getAll();
-        model.addAttribute("roleList", roleList);
+        object.put("roleList", roleList);
 
         QueryWrapper<Group> qw = new QueryWrapper<>();
         qw.orderByDesc("isSystem").orderByAsc("code");
         List<Group> groupList = userGroupService.list(qw);
-        model.addAttribute("groupList", groupList);
+        object.put("groupList", groupList);
 
-        boolean isOpenAll = true; // 展开所有节点
-        String treeJsonData = departmentService.getJsonString(isOpenAll, false);
-        model.addAttribute("treeJsonData", treeJsonData);
+        String parentCode = ParamUtil.get(request, "parentCode");
+        List<Department> list = departmentService.getDepartments(parentCode);
+        object.put("departmentList", list);
 
-        model.addAttribute("unitList", departmentService.getAllUnit());
+        object.put("unitList", departmentService.getAllUnit());
 
         boolean canSaveUserGroupShow = false;
         if (!privilege.isUserPrivValid(request, "admin.user")) {
             canSaveUserGroupShow = true;
         }
-        model.addAttribute("canSaveUserGroupShow", canSaveUserGroupShow);
+        object.put("canSaveUserGroupShow", canSaveUserGroupShow);
 
-        return "th/user_multi_sel";
+        return new Result<>(object);
     }
 
     @ApiOperation(value = "为userMultiSel初始化用户", notes = "根据传入的用户，初始化用户选择框")
@@ -209,43 +245,30 @@ public class UserController {
     })
     @ResponseBody
     @RequestMapping(value = "/user/initUsers", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String initUsers(String userNames) {
-        String result = "<select name='websites' id='websites' style='width:300px;' size='24' multiple='true' ondblclick='hasSelected();'>";
+    public Result<Object> initUsers(String userNames) {
         String[] userNameArr = StrUtil.split(userNames, ",");
+        JSONArray array = new JSONArray();
         // 取出用户信息，拼select
-        int i = 0;
         for (String userName : userNameArr) {
             QueryWrapper<User> qw = new QueryWrapper<>();
             qw.eq("name", userName);
             User user = userService.getOne(qw, false);
-            if (i == 0) {
-                if (!user.getGender()) {
-                    result += "<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/man.png' selected='selected'>" + user.getRealName() + "</option>";
-                } else {
-                    result += "<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/woman.png' selected='selected'>" + user.getRealName() + "</option>";
-                }
-            } else {
-                if (!user.getGender()) {
-                    result += "<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/man.png' >" + user.getRealName() + "</option>";
-                } else {
-                    result += "<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/woman.png' >" + user.getRealName() + "</option>";
-                }
-            }
-            i++;
+            array.add(user);
         }
-        result += "</select>";
-        JSONObject json = new JSONObject();
-        json.put("ret", "1");
-        json.put("result", result);
-        return json.toString();
+
+        return new Result<>(array);
     }
 
+    @ApiOperation(value = "获取部门用户", notes = "根据传入的用户，初始化用户选择框")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "deptCode", value = "部门编码", dataType = "String"),
+            @ApiImplicitParam(name = "isIncludeChildren", value = "是否包含子集", dataType = "boolean"),
+            @ApiImplicitParam(name = "limitDepts", value = "最少部门", dataType = "String")
+    })
     @ResponseBody
     @RequestMapping(value = "/user/getDeptUsers", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String getDeptUsers(String deptCode, boolean isIncludeChildren, String limitDepts) {
+    public Result<Object> getDeptUsers(String deptCode, boolean isIncludeChildren, String limitDepts) {
         JSONObject json = new JSONObject();
-        StringBuffer result = new StringBuffer();
-
         Privilege privilege = new Privilege();
         String unitCode = privilege.getUserUnitCode(request);
 
@@ -270,38 +293,21 @@ public class UserController {
 
         List<User> list = userService.getDeptUsers(deptCode, isIncludeChildren, limitDeptArr, unitCode, includeRootDept);
 
-        if (list == null) {
-            result.append("<select name='webmenu' id='webmenu' style='width:298px;' size='11' multiple='true' ondblclick='notSelected(this);'></select>");
-            json.put("ret", "1");
-            json.put("result", result);
-            return json.toString();
+        if (authUtil.getUserName().equals(ConstUtil.USER_ADMIN)) {
+            list.add(userCache.getUser(authUtil.getUserName()));
         }
-
-        long total = 0;
-        int maxCount = 200;
-
-        String deptName = "";
-
-        if (deptCode != null && deptCode.indexOf(",") == -1) {
-            deptName = departmentService.getDepartment(deptCode).getName();
-        }
-
-        result.append("<select name='webmenu' id='webmenu' style='width:298px;' size='11' multiple='true' ondblclick='notSelected(this);'>");
-        result.append(getOptions(list, deptName, !includeRootDept));
-        result.append("</select>");
-        String tip = "";
-        if (total > maxCount) {
-            tip = "人数超出" + maxCount + "，未全部显示";
-        }
-        json.put("ret", "1");
-        json.put("tip", tip);
-        json.put("result", result);
-        return json.toString();
+        json.put("list", list);
+        return new Result<>(json);
     }
 
+    @ApiOperation(value = "搜索用户", notes = "根据传入的用户，初始化用户选择框")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userName", value = "用户名称", dataType = "String"),
+            @ApiImplicitParam(name = "limitDepts", value = "最少部门", dataType = "String")
+    })
     @ResponseBody
     @RequestMapping(value = "/user/searchUsers", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String searchUsers(String userName, String limitDepts) {
+    public Result<Object> searchUsers(String userName, String limitDepts) {
         String result = "";
 
         boolean includeRootDept = false;
@@ -317,48 +323,40 @@ public class UserController {
 
         List<User> list = userService.searchUser(userName, limitDeptArr, includeRootDept);
 
-        result = "<select name='webmenu5' id='webmenu5' style='width:300px;' size='24' multiple='true' ondblclick='notSelected(this);'>";
         result += getOptions(list, "", false);
-        result += "</select>";
 
-        JSONObject json = new JSONObject();
-        json.put("ret", "1");
-        json.put("result", result);
-        return json.toString();
+        return new Result<>(result);
     }
 
+    @ApiOperation(value = "获取角色用户", notes = "获取权限用户")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "roleCode", value = "角色编码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/user/getRoleUsers", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String getRoleUsers(String roleCode) {
+    public Result<Object> getRoleUsers(String roleCode) {
         String result = "";
         Privilege privilege = new Privilege();
         String unitCode = privilege.getUserUnitCode(request);
 
         List<User> list = userService.getUserOfRole(roleCode, unitCode);
-        result = "<select name='webmenu3' id='webmenu3' style='width:298px;' size='11' multiple='true' ondblclick='notSelected(this);'>";
-        result += getOptions(list, "", false);
-        result += "</select>";
-        JSONObject json = new JSONObject();
-        json.put("ret", "1");
-        json.put("result", result);
-        return json.toString();
+        return new Result<>(list);
     }
 
+    @ApiOperation(value = "获取组用户", notes = "获取组用户")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupCode", value = "组编码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/user/getGroupUsers", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String getGroupUsers(String groupCode) {
+    public Result<Object> getGroupUsers(String groupCode) {
         String result = "";
         Privilege privilege = new Privilege();
         String unitCode = privilege.getUserUnitCode(request);
 
         List<User> list = userService.getGroupUsers(groupCode, unitCode);
-        result = "<select name='webmenu4' id='webmenu4' style='width:298px;' size='11' multiple='true' ondblclick='notSelected(this);'>";
-        result += getOptions(list, "", false);
-        result += "</select>";
-        JSONObject json = new JSONObject();
-        json.put("ret", "1");
-        json.put("result", result);
-        return json.toString();
+
+        return new Result<>(list);
     }
 
     /**
@@ -369,12 +367,16 @@ public class UserController {
      * @param isSingleDept 是否仅显示deptName中的用户
      * @return
      */
-    public String getOptions(List<User> list, String deptName, boolean isSingleDept) {
-        StringBuffer sb = new StringBuffer();
+    @ApiOperation(value = "取得options", notes = "取得options")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "list", value = "用户列表", dataType = "List"),
+            @ApiImplicitParam(name = "deptName", value = "部门名称", dataType = "String"),
+            @ApiImplicitParam(name = "isSingleDept", value = "是否仅显示deptName中的用户", dataType = "boolean"),
+    })
+    public Result<Object> getOptions(List<User> list, String deptName, boolean isSingleDept) {
         boolean isFirst = true;
+        JSONObject object = new JSONObject();
         for (User user : list) {
-            String spaceSize = "";
-
             if (!isSingleDept) {
                 StringBuffer sbDept = new StringBuffer();
                 List<Department> deptList = departmentService.getDeptsOfUser(user.getName());
@@ -383,43 +385,25 @@ public class UserController {
                 }
                 deptName = sbDept.toString();
             }
-
-            String userRealName = user.getRealName();
-
-            if (userRealName.length() >= 24) {
-                userRealName = userRealName.substring(0, 10) + "...";
-            }
-            for (int i = 0; i < 24 - user.getRealName().length(); i++) {
-                spaceSize += "&nbsp;";
-            }
-            userRealName = userRealName + spaceSize + deptName;
-            if (isFirst) {
-                if (!user.getGender()) {
-                    sb.append("<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/man.png' myattr='" + user.getRealName() + "' selected='selected'>" + userRealName + "</option>");
-                } else {
-                    sb.append("<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/woman.png' myattr='" + user.getRealName() + "' selected='selected'>" + userRealName + "</option>");
-                }
-            } else {
-                if (!user.getGender()) {
-                    sb.append("<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/man.png' myattr='" + user.getRealName() + "'>" + userRealName + "</option>");
-                } else {
-                    sb.append("<option value='" + user.getName() + "' title='" + request.getContextPath() + "/images/woman.png' myattr='" + user.getRealName() + "'>" + userRealName + "</option>");
-                }
-            }
-            isFirst = false;
+            object.put("isFirst", isFirst);
+            object.put("deptName", deptName);
         }
-        return sb.toString();
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "批量离开用户", notes = "批量离开用户")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userNames", value = "用户名称们", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/leaveOffBatch", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String leaveOffBatch(@NotEmpty(message = "{user.select.none}") String userNames) throws ValidateException {
+    public Result<Object> leaveOffBatch(@NotEmpty(message = "{user.select.none}") String userNames) throws ValidateException {
         boolean re = false;
 
         String[] ary = StrUtil.split(userNames, ",");
         if (ary == null) {
-            return responseUtil.getFailJson("请选择用户").toString();
+            return new Result<>("请选择用户");
         }
 
         String opUser = SpringUtil.getUserName();
@@ -431,26 +415,26 @@ public class UserController {
             re = userService.leaveOffice(StrUtil.toInt(ary[i], -1), opUser);
         }
 
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
+    @ApiOperation(value = "检查用户名称", notes = "检查用户名称")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userName", value = "用户名称", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/checkUserName", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String checkUserName(@NotEmpty(message = "{user.name.notempty}") @Length(max = 20, message = "{user.name.length}") String userName) {
+    public Result<Object> checkUserName(@NotEmpty(message = "{user.name.notempty}") @Length(max = 20, message = "{user.name.length}") String userName, @RequestParam(defaultValue="-1")Integer uId) {
         try {
-            chkUserName(userName);
+            chkUserName(userName, uId);
         } catch (ValidateException e) {
-            JSONObject json = responseUtil.getResultJson(false);
-            json.put("msg", e.getMessage());
-            return json.toString();
+            return new Result<>(false, e.getMessage());
         }
-
-        JSONObject json = responseUtil.getResultJson(true, "");
-        return json.toString();
+        return new Result<>(0);
     }
 
-    public void chkUserName(String userName) throws ValidateException {
+    public void chkUserName(String userName, int uId) throws ValidateException {
         String[] chars = {";", "'", ",", "\""};
         int chlen = chars.length;
         for (int k = 0; k < chlen; k++) {
@@ -460,35 +444,40 @@ public class UserController {
         }
         User user = userService.getUser(userName);
         if (user != null) {
-            throw new ValidateException("#user.name.exist");
+            if (user.getId() != uId) {
+                throw new ValidateException("#user.name.exist");
+            }
         }
     }
 
+    @ApiOperation(value = "检查手机号码", notes = "检查手机号码")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "mobile", value = "手机号码", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/checkMobile", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String checkMobile(String mobile) {
+    public Result<Object> checkMobile(String mobile) {
         if (mobile == null || "".equals(mobile)) {
-            return responseUtil.getResultJson(true).toString();
+            return new Result<>(true);
         }
 
         QueryWrapper<User> qw = new QueryWrapper<>();
         qw.eq("mobile", mobile);
         User user = userService.getOne(qw, false);
 
-        if (user != null) {
-            JSONObject json = responseUtil.getResultJson(false);
-            json.put("msg", validMessageSource.getMessage("user.mobile.exist", null, null));
-            return json.toString();
-        }
-        return responseUtil.getResultJson(true).toString();
+        return new Result<>(user);
     }
 
+    @ApiOperation(value = "检查角色", notes = "检查角色")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "account", value = "号码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/user/checkAccount", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String checkAccount(String account) {
+    public Result<Object> checkAccount(String account) {
         if (account == null || "".equals(account)) {
-            return responseUtil.getResultJson(true).toString();
+            return new Result<>(true);
         }
 
         QueryWrapper<Account> qw = new QueryWrapper<>();
@@ -497,28 +486,28 @@ public class UserController {
         if (acc != null) {
             JSONObject json = responseUtil.getResultJson(false);
             json.put("msg", validMessageSource.getMessage("user.account.used", null, null));
-            return json.toString();
+            return new Result<>(json);
         }
 
-        return responseUtil.getResultJson(true).toString();
+        return new Result<>(true);
     }
 
+    @ApiOperation(value = "检查密码", notes = "检查密码")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pwd", value = "密码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/user/checkPwd", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String checkPwd(String pwd) {
+    public Result<Object> checkPwd(String pwd) throws ErrMsgException {
         if (pwd == null || "".equals(pwd)) {
-            return responseUtil.getResultJson(true, "").toString();
+            throw new ErrMsgException("请输入密码");
         }
 
-        boolean re = false;
-        String msg = "";
-        try {
-            re = chkPwd(pwd);
-        } catch (ErrMsgException e) {
-            msg = e.getMessage();
+        if (chkPwd(pwd)) {
+            return new Result<>(0);
+        } else {
+            return new Result<>(1);
         }
-
-        return responseUtil.getResultJson(re, msg).toString();
     }
 
     public boolean chkPwd(String pwd) throws ErrMsgException {
@@ -535,20 +524,25 @@ public class UserController {
         }
     }
 
+    @ApiOperation(value = "检查人员编码", notes = "检查人员编码")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "personNo", value = "人员编码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/user/checkPersonNo", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String checkPersonNo(String personNo) {
+    public Result<Object> checkPersonNo(String personNo) {
         if (userService.isPersonNoExist(personNo)) {
-            return responseUtil.getResultJson(true, i18nUtil.getValid("user.personNo.exist")).toString();
+            return new Result<>(1);
         } else {
-            return responseUtil.getResultJson(true, "").toString();
+            return new Result<>(0);
         }
     }
 
+    @ApiOperation(value = "创建用户", notes = "创建用户")
     @ResponseBody
-    @RequestMapping(value = "/user/create", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String create(UserVO userVO, @RequestParam(value = "photo", required = false) MultipartFile file) throws ErrMsgException, IOException, ValidateException {
-        chkUserName(userVO.getName());
+    @RequestMapping(value = "/user/create", produces = {"application/json;charset=UTF-8;"})
+    public Result<Object> create(UserVO userVO, @RequestParam(value = "photo", required = false) MultipartFile file) throws ErrMsgException, IOException, ValidateException {
+        chkUserName(userVO.getName(), -1);
 
         // 许可证验证
         License.getInstance().validate(request);
@@ -579,16 +573,17 @@ public class UserController {
             qw.eq("name", account);
             Account acc = accountService.getOne(qw, false);
             if (acc != null) {
-                return responseUtil.getResultJson(false, validMessageSource.getMessage("user.account.used", null, null)).toString();
+                return new Result<>(false);
             }
         }
 
-        return responseUtil.getResultJson(userService.create(userVO)).toString();
+        return new Result<>(userService.create(userVO));
     }
 
+    @ApiOperation(value = "修改用户", notes = "修改用户")
     @ResponseBody
     @RequestMapping(value = "/user/update", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String update(UserVO userVO, @RequestParam(value = "photo", required = false) MultipartFile file) throws ErrMsgException, IOException, ValidateException {
+    public Result<Object> update(UserVO userVO, @RequestParam(value = "photo", required = false) MultipartFile file) throws ErrMsgException, IOException, ValidateException {
         // 许可证验证
         License.getInstance().validate(request);
 
@@ -613,17 +608,19 @@ public class UserController {
             log.error(e.getMessage());
         }
 
-        return responseUtil.getResultJson(userService.update(userVO)).toString();
+        return new Result<>(userService.update(userVO));
     }
 
+    @ApiOperation(value = "人员资料编辑 -- 权限保存", notes = "人员资料编辑 -- 权限保存")
     @ResponseBody
     @RequestMapping(value = "/user/setPrivs", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String setPrivs(String userName, String[] priv) throws ErrMsgException, IOException, ValidateException {
+    public Result<Object> setPrivs(String userName, String privs) throws ErrMsgException, IOException, ValidateException {
         // 许可证验证
         License.getInstance().validate(request);
+        String[] priv = privs.split(",");
 
         boolean re = userPrivService.setPrivs(userName, priv);
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     @ApiOperation(value = "选择用户", notes = "可选择部门、角色中的用户，以及最近使用的用户", httpMethod = "POST")
@@ -632,7 +629,27 @@ public class UserController {
             @ApiImplicitParam(name = "unitCode", value = "单位编码", required = true, dataType = "String")
     })
     @RequestMapping(value = "/roleMultilSel")
-    public String roleMultilSel(@RequestParam(required = false) String roleCodes, @RequestParam(required = false) String unitCode, Model model) {
+    @ResponseBody
+    public Result<Object> roleMultilSel(@RequestParam(required = false) String unitCode) {
+        JSONObject object = new JSONObject();
+        Privilege pvg = new Privilege();
+        List<Role> list;
+        if (unitCode == null || ("".equals(unitCode)) || pvg.isUserPrivValid(request, "admin")) {
+            list = roleService.getAll();
+        } else {
+            list = roleService.getRolesOfUnit(unitCode, true);
+        }
+
+        return new Result<>(list);
+    }
+
+    @ApiOperation(value = "选择用户", notes = "可选择部门、角色中的用户，以及最近使用的用户", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "roleCodes", value = "角色编码，如果有多个的话，以逗号分隔", required = true, dataType = "String"),
+            @ApiImplicitParam(name = "unitCode", value = "单位编码", required = true, dataType = "String")
+    })
+    @RequestMapping(value = "/roleMultilSelBack")
+    public String roleMultilSelBack(@RequestParam(required = false) String roleCodes, @RequestParam(required = false) String unitCode, Model model) {
         String skinPath = SkinMgr.getSkinPath(request, false);
         model.addAttribute("skinPath", skinPath);
 
@@ -686,13 +703,13 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @PostMapping(value = "/user/setRoleOfUser", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String setRoleOfUser(@RequestParam(required = true) String userName, String roleCodes) throws ErrMsgException, IOException, ValidateException {
+    public Result<Object> setRoleOfUser(@RequestParam(required = true) String userName, String roleCodes) throws ErrMsgException, IOException, ValidateException {
         // 许可证验证
         License.getInstance().validate(request);
 
         String[] roles = StrUtil.split(roleCodes, ",");
 
-        return responseUtil.getResultJson(userOfRoleService.setRoleOfUser(userName, roles)).toString();
+        return new Result<>(userOfRoleService.setRoleOfUser(userName, roles));
     }
 
     @ApiOperation(value = "删除用户", notes = "删除用户", httpMethod = "POST")
@@ -702,9 +719,9 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @PostMapping(value = "/user/delUsers", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String delUsers(@RequestParam(value = "ids", required = true) String ids) throws ResKeyException, ErrMsgException {
+    public Result<Object> delUsers(@RequestParam(value = "ids", required = true) String ids) throws ResKeyException, ErrMsgException {
         String[] ary = StrUtil.split(ids, ",");
-        return responseUtil.getResultJson(userService.delUsers(ary)).toString();
+        return new Result<>(userService.delUsers(ary));
     }
 
     @ApiOperation(value = "用户列表", notes = "用户列表", httpMethod = "POST")
@@ -716,10 +733,10 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/list", method = RequestMethod.POST, produces = {"text/html;", "application/json;charset=UTF-8;"})
-    public String list(String searchType, @RequestParam(defaultValue = "") String op, String condition, @RequestParam(defaultValue = "1") int isValid,
-                       @RequestParam(defaultValue = "regDate") String orderBy,
-                       @RequestParam(defaultValue = "desc") String sort, String deptCode,
-                       @RequestParam(value = "rp", defaultValue = "20") int pageSize, @RequestParam(value = "page", defaultValue = "1") int curPage) {
+    public Result<Object> list(String searchType, @RequestParam(defaultValue = "") String op, @RequestParam(defaultValue = "") String condition, @RequestParam(defaultValue = "isValid") String isValid,
+                               @RequestParam(defaultValue = "regDate") String orderBy,
+                               @RequestParam(defaultValue = "desc") String sort, String deptCode,
+                               @RequestParam(value = "pageSize", defaultValue = "20") int pageSize, @RequestParam(value = "page", defaultValue = "1") int curPage) {
         Privilege privilege = new Privilege();
         JSONObject jobject = new JSONObject();
         String unitCode = privilege.getUserUnitCode();
@@ -729,65 +746,101 @@ public class UserController {
         }
 
         com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-        boolean is_bind_mobile = cfg.getBooleanProperty("is_bind_mobile");
         boolean showByDeptSort = cfg.getBooleanProperty("show_dept_user_sort");
 
         deptCode = StrUtil.getNullStr(deptCode);
 
-        String sql = "";
+        String sql;
         if (ConstUtil.DEPT_ROOT.equals(deptCode)) {
-            sql = "select name from users where name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM) + " and name<>" + StrUtil.sqlstr(ConstUtil.USER_ADMIN);
-            if (op.equals("search")) {
+            if ("orders".equals(orderBy)) {
+                sql = "select name,orders from users u where name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM) + " and name<>" + StrUtil.sqlstr(ConstUtil.USER_ADMIN);
+            }
+            else {
+                sql = "select name,orders," + orderBy + " from users u where name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM) + " and name<>" + StrUtil.sqlstr(ConstUtil.USER_ADMIN);
+            }
+            if ("search".equals(op)) {
                 if ("".equals(condition)) {
                     sql += " and isValid = " + isValid;
                 } else {
                     sql += " and isValid = " + isValid;
-
-                    if ("realName".equals(searchType)) {
-                        sql += " and realName like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("userName".equals(searchType)) {
-                        sql += " and name like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("mobile".equals(searchType)) {
-                        sql += " and mobile like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("account".equals(searchType)) {
-                        sql = "select DISTINCT u.name from users u, account a where u.name=a.username and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
-                        sql += " and isValid = " + isValid + " and a.name like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("email".equals(searchType)) {
-                        sql += " and email like " + StrUtil.sqlstr("%" + condition + "%");
+                    switch (searchType) {
+                        case "realName":
+                            sql += " and realName like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "userName":
+                            sql += " and login_name like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "mobile":
+                            sql += " and mobile like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "account":
+                            sql = "select DISTINCT u.name from users u, account a where u.name=a.username and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
+                            sql += " and isValid = " + isValid + " and a.name like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "email":
+                            sql += " and email like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
                     }
                 }
             } else {
                 sql += " and isValid=" + isValid;
             }
-            if (!unitCode.equals(ConstUtil.DEPT_ROOT)) {
-                sql += " and unit_code=" + StrUtil.sqlstr(unitCode);
+            if (License.getInstance().isPlatformGroup()) {
+                if (!unitCode.equals(ConstUtil.DEPT_ROOT)) {
+                    sql += " and unit_code=" + StrUtil.sqlstr(unitCode);
+                }
             }
             sql += " order by orders desc," + orderBy + " " + sort;
         } else {
+            // 范围为属于某个部门
+            boolean isBelongToDept = !"".equals(deptCode);
             if ("search".equals(op)) {
-                sql = "select DISTINCT u.name from users u,department d,dept_user du where u.name = du.user_name and d.code = du.dept_code and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
+                // 其实当search时，deptCode始终为空，无论是否选择了部门
+                /*if (isBelongToDept) {
+                    // 该SQL查不到未安排部门的人
+                    sql = "select DISTINCT u.name from users u,department d,dept_user du where u.name = du.user_name and d.code = du.dept_code and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
+                }
+                else {*/
+                if (isBelongToDept) {
+                    sql = "select DISTINCT u.name,u.orders from users u,department d,dept_user du where u.name = du.user_name and d.code = du.dept_code and isValid = 1 and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
+                }
+                else {
+                    sql = "select u.name,u.orders from users u where name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM) + " and name<>" + StrUtil.sqlstr(ConstUtil.USER_ADMIN);
+                }
+                // }
+
                 if ("".equals(condition)) {
                     sql += " and u.isValid = " + isValid;
                 } else {
                     sql += " and u.isValid = " + isValid;
-                    if ("realName".equals(searchType)) {
-                        sql += " and realName like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("userName".equals(searchType)) {
-                        sql += " and u.name like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("mobile".equals(searchType)) {
-                        sql += " and mobile like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("account".equals(searchType)) {
-                        sql = "select DISTINCT u.name from users u, account a where u.name=a.username and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
-                        sql += " and isValid = " + isValid + " and a.name like " + StrUtil.sqlstr("%" + condition + "%");
-                    } else if ("email".equals(searchType)) {
-                        sql += " and email like " + StrUtil.sqlstr("%" + condition + "%");
+                    switch (searchType) {
+                        case "realName":
+                            sql += " and realName like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "userName":
+                            sql += " and u.name like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "mobile":
+                            sql += " and mobile like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "account":
+                            sql = "select DISTINCT u.name from users u, account a where u.name=a.username and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
+                            sql += " and isValid = " + isValid + " and a.name like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
+                        case "email":
+                            sql += " and email like " + StrUtil.sqlstr("%" + condition + "%");
+                            break;
                     }
                 }
             } else {
-                sql = "select DISTINCT u.name from users u,department d,dept_user du  where u.name = du.user_name and d.code = du.dept_code and isValid = 1 and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
+                sql = "select DISTINCT u.name,u.orders from users u,department d,dept_user du where u.name = du.user_name and d.code = du.dept_code and isValid = 1 and u.name<>" + StrUtil.sqlstr(ConstUtil.USER_SYSTEM);
             }
+
             String cond = "";
-            if (!ConstUtil.DEPT_ROOT.equals(deptCode) && !"".equals(deptCode)) {
+            if (isBelongToDept) {
+                sql += " and du.dept_code=" + StrUtil.sqlstr(deptCode);
+                // 20220218 注释，不再取下级部门中的人员，因为会导致混淆，另外排序号在设置时，子部门的人员将会无效
+                /*
                 List<String> list = new ArrayList<String>();
                 list = departmentService.getBranchDeptCode(deptCode, list);
                 cond = " and ( ";
@@ -802,11 +855,14 @@ public class UserController {
                         cond += " ) ";
                     }
                 }
+                */
             }
-            if (!unitCode.equals(ConstUtil.DEPT_ROOT)) {
-                sql += " and u.unit_code=" + unitCode;
+            if (License.getInstance().isPlatformGroup()) {
+                if (!unitCode.equals(ConstUtil.DEPT_ROOT)) {
+                    sql += " and u.unit_code=" + StrUtil.sqlstr(unitCode);
+                }
             }
-            if (showByDeptSort) {
+            if (isBelongToDept && showByDeptSort) {
                 orderBy = "du.orders";
                 sort = "desc";
                 sql += cond + " order by " + orderBy + " " + sort;
@@ -815,7 +871,7 @@ public class UserController {
             }
         }
 
-        // System.out.println(getClass() + " " + sql);
+        DebugUtil.i(getClass(), "list", sql);
 
         PageHelper.startPage(curPage, pageSize); // 分页查询
 
@@ -824,17 +880,15 @@ public class UserController {
         List<String> list = userService.listNameBySql(sql);
         PageInfo<String> pageInfo = new PageInfo<>(list);
 
-        jobject.put("rows", rows);
-        jobject.put("page", curPage);
-        jobject.put("total", pageInfo.getTotal());
-
         for (String userName : list) {
             User user = userService.getUser(userName);
             Account acc = accountService.getAccountByUserName(user.getName());
             UserSetup userSetup = userSetupService.getUserSetup(user.getName());
             JSONObject jo = new JSONObject();
 
-            jo.put("id", String.valueOf(user.getId()));
+            jo.put("user", user);
+            jo.put("id", user.getId());
+            jo.put("userSetup", userSetup);
 
             if (showByDeptSort && !"".equals(deptCode)) {
                 DeptUser du = deptUserService.getDeptUser(user.getName(), deptCode);
@@ -844,38 +898,43 @@ public class UserController {
                     jo.put("deptOrder", "");
                 }
             }
-            jo.put("name", "<a href='javascript:;' onclick=\"addTab('" + user.getRealName() + "', '" + request.getContextPath() + "/admin/organize/editUser.do?userName=" + StrUtil.UrlEncode(user.getName()) + "')\">" + user.getName() + "</a>");
             jo.put("realName", user.getRealName());
             if (acc != null) {
                 jo.put("account", acc.getName());
             } else {
                 jo.put("account", "");
             }
-            jo.put("sex", user.getGender() != null ? (!user.getGender() ? "男" : "女") : "");
+            // jo.put("sex", user.getGender() != null ? (!user.getGender() ? "男" : "女") : "");
+            jo.put("gender", user.getGender() != null ? user.getGender() : true);
             jo.put("mobile", user.getMobile());
 
             StringBuffer deptNames = new StringBuffer();
             List<DeptUser> duList = deptUserService.listByUserName(user.getName());
             for (DeptUser du : duList) {
-                Department dept = departmentService.getDepartment(du.getDeptCode());
-                String deptName = "不存在";
-                if (dept!=null) {
+                Department dept = departmentCache.getDepartment(du.getDeptCode());
+                String deptName;
+                if (dept != null) {
                     if (!ConstUtil.DEPT_ROOT.equals(dept.getParentCode()) && !ConstUtil.DEPT_ROOT.equals(dept.getCode())) {
-                        Department parentDept = departmentService.getDepartment(dept.getParentCode());
-                        if (parentDept!=null) {
-                            deptName = parentDept.getName() + "<span style='font-family:宋体'>&nbsp;->&nbsp;</span>" + dept.getName();
+                        Department parentDept = departmentCache.getDepartment(dept.getParentCode());
+                        if (parentDept != null) {
+                            deptName = parentDept.getName() + dept.getName();
+                        } else {
+                            deptName = dept.getName();
                         }
                     } else {
                         deptName = dept.getName();
                     }
+                    StrUtil.concat(deptNames, "，", deptName);
+                } else {
+                    // deptName = du.getDeptCode() + " 不存在";
+                    deptUserService.del(du);
                 }
-
-                StrUtil.concat(deptNames, "，", deptName);
             }
             jo.put("deptNames", deptNames.toString());
 
             List<UserOfRole> uorList = userOfRoleService.listByUserName(user.getName());
             String roleDescs = "";
+            List<String> roleList = new ArrayList<>();
             for (UserOfRole uor : uorList) {
                 Role role = roleService.getRole(uor.getRoleCode());
                 if (role == null) {
@@ -884,42 +943,51 @@ public class UserController {
                 if (role.getCode().equals(ConstUtil.ROLE_MEMBER)) {
                     continue;
                 }
-
-                if (roleDescs.equals("")) {
-                    roleDescs = "<a href=\"javascript:;\" onclick=\"addTab('" + role.getDescription() + "', '" + request.getContextPath() + "/admin/user_role_priv.jsp?roleCode=" + role.getCode() + "')\">" + StrUtil.getNullStr(role.getDescription()) + "</a>";
+                roleList.add(role.getCode());
+                if ("".equals(roleDescs)) {
+                    roleDescs = role.getDescription();
                 } else {
-                    roleDescs += "，" + "<a href=\"javascript:;\" onclick=\"addTab('" + role.getDescription() + "', '" + request.getContextPath() + "/admin/user_role_priv.jsp?roleCode=" + role.getCode() + "')\">" + StrUtil.getNullStr(role.getDescription()) + "</a>";
+                    roleDescs += "," + role.getDescription();
                 }
             }
-            jo.put("roleName", roleDescs);
+            jo.put("roleCodes", roleList.toArray());
+            jo.put("roleNames", roleDescs);
 
-            if (user.getIsValid() == 1) {
-                //out.print("已启用");
-                jo.put("status", "<img title='已启用' width=16 src='" + request.getContextPath() + "/skin/images/organize/icon-finish.png'/>");
-            } else {
-                //out.print("未启用");
-                jo.put("status", "<img title='未启用' width=16 src='" + request.getContextPath() + "/skin/images/organize/stop.png'/>");
-            }
-
-            if (is_bind_mobile) {
-                if (userSetup.getIsBindMobile() == 1) {
-                    jo.put("isBindMobile", "已绑定");
-                } else {
-                    jo.put("isBindMobile", "未绑定");
+            /*StringBuffer sbGroupRoleDesc = new StringBuffer();
+            // 取得用户所有的组
+            List<UserOfGroup> ugList = userOfGroupService.listByUserName(userName);
+            for (UserOfGroup userOfGroup : ugList) {
+                // 取得组信息
+                Group group = userGroupService.getGroup(userOfGroup.getGroupCode());
+                if (group == null) {
+                    DebugUtil.w(getClass(), "list", "用户: " + userName + " 所属的组 " + userOfGroup.getGroupCode() + " 已不存在");
+                }
+                else {
+                    List<GroupOfRole> grList = userGroupOfRoleService.listByGroupCode(group.getCode());
+                    for (GroupOfRole groupOfRole : grList) {
+                        // 取得组所属的角色
+                        Role role = roleService.getRole(groupOfRole.getRoleCode());
+                        StrUtil.concat(sbGroupRoleDesc, ",", group.getDescription() + ":" + role.getDescription());
+                    }
                 }
             }
-            jo.put("op", "<a href=\"javascript:;\" onclick=\"addTab('" + user.getRealName() + "', '" + request.getContextPath() + "/admin/organize/editUser.do?userName=" + StrUtil.UrlEncode(user.getName()) + "')\">编辑</a>");
+            jo.put("groupRoleDesc", sbGroupRoleDesc);*/
+
             rows.add(jo);
         }
-        return jobject.toString();
+
+        jobject.put("list", rows);
+        jobject.put("page", curPage);
+        jobject.put("total", pageInfo.getTotal());
+        return new Result<>(jobject);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/changeOrder", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String changeOrder(@RequestParam(value = "id", required = true) int id, String colName, String original_value, String update_value, String deptCode) {
+    public Result<Object> changeOrder(@RequestParam(value = "id", required = true) int id, String colName, String original_value, String update_value, String deptCode) {
         if (update_value.equals(original_value)) {
-            return responseUtil.getResultJson(false, "值未更改").toString();
+            return new Result<>(false);
         }
         boolean re = false;
 
@@ -930,19 +998,19 @@ public class UserController {
             re = deptUser.updateById();
         }
 
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/enableBatch", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String enableBatch(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids) {
+    public Result<Object> enableBatch(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids) {
         boolean re = true;
         String[] ary = StrUtil.split(ids, ",");
         for (String id : ary) {
             re = userService.reEmploryment(StrUtil.toInt(id), SpringUtil.getUserName());
         }
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     /**
@@ -955,7 +1023,7 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/changeDepts", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String changeDepts(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids, String deptCodes) throws ErrMsgException {
+    public Result<Object> changeDepts(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids, String deptCodes) throws ErrMsgException {
         boolean re = false;
         String[] ary = StrUtil.split(ids, ",");
         String curUserName = SpringUtil.getUserName();
@@ -963,7 +1031,7 @@ public class UserController {
             User user = userService.getById(StrUtil.toInt(ary[i]));
             re = deptUserService.changeDeptOfUser(user.getName(), deptCodes, curUserName);
         }
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     /**
@@ -974,7 +1042,7 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/transferUsers", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String transferUsers(String userNames, String deptCode) throws ErrMsgException, ValidateException {
+    public Result<Object> transferUsers(String userNames, String deptCode) throws ErrMsgException, ValidateException {
         boolean re = false;
 
         String[] ary = StrUtil.split(userNames, ",");
@@ -995,7 +1063,7 @@ public class UserController {
             re = deptUserService.changeDeptOfUser(ary[i], deptCode, new Privilege().getUser(request));
         }
 
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     @ApiOperation(value = "完善用户的邮件信息", notes = "完善用户的邮件信息", httpMethod = "POST")
@@ -1004,13 +1072,13 @@ public class UserController {
     })
     @ResponseBody
     @RequestMapping(value = "/user/setUserInfo", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String setUserInfo(@RequestParam(value = "email", required = true) String email) {
+    public Result<Object> setUserInfo(@RequestParam(value = "email", required = true) String email) {
         boolean re = true;
         String userName = SpringUtil.getUserName();
         User user = userService.getUser(userName);
         user.setEmail(email);
         re = user.updateById();
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     /**
@@ -1022,7 +1090,7 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/bindBatch", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String bindBatch(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids) {
+    public Result<Object> bindBatch(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids) {
         boolean re = true;
         String[] ary = StrUtil.split(ids, ",");
         for (int i = 0; i < ary.length; i++) {
@@ -1032,7 +1100,7 @@ public class UserController {
             re = userSetupService.updateByUserName(userSetup);
         }
 
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     /**
@@ -1044,7 +1112,7 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/unbindBatch", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String unbindBatch(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids) {
+    public Result<Object> unbindBatch(@NotEmpty(message = "{user.id.empty}") @RequestParam(value = "ids", required = true) String ids) {
         boolean re = true;
         String[] ary = StrUtil.split(ids, ",");
         for (int i = 0; i < ary.length; i++) {
@@ -1054,7 +1122,7 @@ public class UserController {
             re = userSetupService.updateByUserName(userSetup);
             userMobileService.delByUserName(user.getName());
         }
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     /**
@@ -1066,24 +1134,24 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/synAll", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String synAll(String op) {
+    public Result<Object> synAll(String op) {
         String userName = SpringUtil.getUserName();
-        if (op.equals("syncWeixin")) { // 一键同步OA部门人员至微信端
+        if ("syncWeixin".equals(op)) { // 一键同步OA部门人员至微信端
             WeixinDo weixinDo = new WeixinDo();
             weixinDo.syncDeptUsers();
-        } else if (op.equals("syncWeixinToOA")) {
+        } else if ("syncWeixinToOA".equals(op)) {
             WeixinDo weixinDo = new WeixinDo();
             weixinDo.syncWxDeptUserToOA();
-        } else if (op.equals("syncOAToDingding")) {
+        } else if ("syncOAToDingding".equals(op)) {
             DingDingClient client = new DingDingClient();
             client.syncOAtoDingDing();
-        } else if (op.equals("syncDingdingToOA")) {
+        } else if ("syncDingdingToOA".equals(op)) {
             DingDingClient client = new DingDingClient();
             client.syncDingDingToOA();
-        } else if (op.equals("syncDing")) {
+        } else if ("syncDing".equals(op)) {
             //同步钉钉账户所有人员信息至user表中dingding字段
             DingDingClient.batchUserAddDingDing();
-        } else if (op.equals("sync")) {
+        } else if ("sync".equals(op)) {
             SyncUtil su = new SyncUtil();
             // 先删除
             su.allDelete();
@@ -1105,7 +1173,7 @@ public class UserController {
             }
         }
 
-        return responseUtil.getResultJson(true, "同步完成").toString();
+        return new Result<>(true);
     }
 
     /**
@@ -1131,7 +1199,7 @@ public class UserController {
         boolean isOpenAll = true; // 展开所有节点
         String treeJsonData = departmentService.getJsonString(isOpenAll, true);
 
-        if (deptCodes.equals("")) {
+        if ("".equals(deptCodes)) {
             deptCodes = privilege.getUserUnitCode(request);
         }
         model.addAttribute("deptCode", deptCodes);
@@ -1150,48 +1218,35 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/user/setUserAdminDept", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String setUserAdminDept(@NotEmpty(message = "{user.name.notempty}") String userName, String deptCodes) {
-        return responseUtil.getResultJson(userAdminDeptService.setUserAdminDept(userName, deptCodes)).toString();
+    public Result<Object> setUserAdminDept(@NotEmpty(message = "{user.name.notempty}") String userName, String deptCodes) {
+        return new Result<>(userAdminDeptService.setUserAdminDept(userName, deptCodes));
     }
 
     @RequestMapping(value = "/user/controlPanel")
-    public String controlPanel(Model model) {
-        String skinPath = SkinMgr.getSkinPath(request, false);
-        model.addAttribute("skinPath", skinPath);
+    @ResponseBody
+    public Result<Object> controlPanel() {
+        JSONObject object = new JSONObject();
 
         com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
-        boolean isNetdiskUsed = cfg.getBooleanProperty("isNetdiskUsed");
         boolean isLarkUsed = cfg.getBooleanProperty("isLarkUsed");
-        boolean isForumOpen = cfg.getBooleanProperty("isForumOpen");
         boolean isIntegrateEmail = cfg.getBooleanProperty("isIntegrateEmail");
-        model.addAttribute("isNetdiskUsed", isNetdiskUsed);
-        model.addAttribute("isLarkUsed", isLarkUsed);
-        model.addAttribute("isForumOpen", isForumOpen);
-        model.addAttribute("isIntegrateEmail", isIntegrateEmail);
+        object.put("isLarkUsed", isLarkUsed);
+        object.put("isIntegrateEmail", isIntegrateEmail);
 
         String oldSkinCode = UserSet.getSkin(request);
-        model.addAttribute("oldSkinCode", oldSkinCode);
+        object.put("oldSkinCode", oldSkinCode);
 
         StringBuilder skinOpts = new StringBuilder();
         com.redmoon.oa.ui.SkinMgr sm = new com.redmoon.oa.ui.SkinMgr();
         Iterator irskin = sm.getAllSkin().iterator();
-        String defaultSkinCode = "";
-        while (irskin.hasNext()) {
-            com.redmoon.oa.ui.Skin sk = (com.redmoon.oa.ui.Skin) irskin.next();
-            String d = "";
-            if (sk.isDefaultSkin()) {
-                d = "selected";
-                defaultSkinCode = sk.getCode();
-            }
-            skinOpts.append("<option value=" + sk.getCode() + " " + d + ">" + sk.getName() + "</option>");
-        }
-        model.addAttribute("skinOpts", skinOpts.toString());
+
+        object.put("skinOpts", irskin);
 
         String userName = SpringUtil.getUserName();
         User user = userService.getUser(userName);
         UserSetup userSetup = userSetupService.getUserSetup(userName);
-        model.addAttribute("user", user);
-        model.addAttribute("userSetup", userSetup);
+        object.put("user", user);
+        object.put("userSetup", userSetup);
 
         boolean isSpecified = "specified".equals(cfg.get("styleMode")) || "2".equals(cfg.get("styleMode"));
         int uiMode = 0;
@@ -1200,48 +1255,59 @@ public class UserController {
         } else {
             uiMode = userSetup.getUiMode();
         }
-        model.addAttribute("isSpecified", isSpecified);
-        model.addAttribute("uiMode", uiMode);
-        model.addAttribute("menuMode", userSetup.getMenuMode());
+        object.put("isSpecified", isSpecified);
+        object.put("uiMode", uiMode);
+        object.put("menuMode", userSetup.getMenuMode());
 
         String skinCode = userSetup.getSkinCode();
-        if ("".equals(skinCode)) {
-            skinCode = defaultSkinCode;
-        }
-        model.addAttribute("skinCode", skinCode);
+        object.put("skinCode", skinCode);
 
         boolean isDisplaySlideMenu = true;
         if (uiMode == ConstUtil.UI_MODE_LTE || uiMode == ConstUtil.UI_MODE_PROFESSION || uiMode == ConstUtil.UI_MODE_NONE) {
             isDisplaySlideMenu = false;
         }
-        model.addAttribute("isDisplaySlideMenu", isDisplaySlideMenu);
+        object.put("isDisplaySlideMenu", isDisplaySlideMenu);
 
         String diskSpaceUsed = UtilTools.getFileSize(user.getDiskSpaceUsed());
         String diskSpaceAllowed = UtilTools.getFileSize(user.getDiskSpaceAllowed());
-        model.addAttribute("diskSpaceUsed", diskSpaceUsed);
-        model.addAttribute("diskSpaceAllowed", diskSpaceAllowed);
+        object.put("diskSpaceUsed", diskSpaceUsed);
+        object.put("diskSpaceAllowed", diskSpaceAllowed);
         String msgSpaceAllowed = UtilTools.getFileSize(userSetup.getMsgSpaceAllowed());
-        model.addAttribute("msgSpaceAllowed", msgSpaceAllowed);
+        object.put("msgSpaceAllowed", msgSpaceAllowed);
         String msgSpaceUsed = UtilTools.getFileSize(userSetup.getMsgSpaceUsed());
-        model.addAttribute("msgSpaceUsed", msgSpaceUsed);
+        object.put("msgSpaceUsed", msgSpaceUsed);
 
-        model.addAttribute("UI_MODE_NONE", ConstUtil.UI_MODE_NONE);
-        model.addAttribute("UI_MODE_PROFESSION", ConstUtil.UI_MODE_PROFESSION);
-        model.addAttribute("UI_MODE_FASHION", ConstUtil.UI_MODE_FASHION);
-        model.addAttribute("UI_MODE_FLOWERINESS", ConstUtil.UI_MODE_FLOWERINESS);
-        model.addAttribute("UI_MODE_PROFESSION_NORMAL", ConstUtil.UI_MODE_PROFESSION_NORMAL);
-        model.addAttribute("UI_MODE_LTE", ConstUtil.UI_MODE_LTE);
+        object.put("UI_MODE_NONE", ConstUtil.UI_MODE_NONE);
+        object.put("UI_MODE_PROFESSION", ConstUtil.UI_MODE_PROFESSION);
+        object.put("UI_MODE_FASHION", ConstUtil.UI_MODE_FASHION);
+        object.put("UI_MODE_FLOWERINESS", ConstUtil.UI_MODE_FLOWERINESS);
+        object.put("UI_MODE_PROFESSION_NORMAL", ConstUtil.UI_MODE_PROFESSION_NORMAL);
+        object.put("UI_MODE_LTE", ConstUtil.UI_MODE_LTE);
 
-        model.addAttribute("MENU_MODE_NEW", ConstUtil.MENU_MODE_NEW);
-        model.addAttribute("MENU_MODE_NORMAL", ConstUtil.MENU_MODE_NORMAL);
+        object.put("MENU_MODE_NEW", ConstUtil.MENU_MODE_NEW);
+        object.put("MENU_MODE_NORMAL", ConstUtil.MENU_MODE_NORMAL);
 
-        return "th/user/control_panel";
+        boolean isArchiveShowAsUserInfo = cfg.getBooleanProperty("isArchiveShowAsUserInfo");
+        if (isArchiveShowAsUserInfo) {
+            long personId = personBasicService.getIdByUserName(SpringUtil.getUserName());
+            if (personId == -1) {
+                isArchiveShowAsUserInfo = false;
+                DebugUtil.d(getClass(), "", SpringUtil.getUserName() + "'s personbasic info is not exist.");
+            } else {
+                object.put("personId", personId);
+                String visitKey = com.redmoon.oa.security.SecurityUtil.makeVisitKey(personId);
+                object.put("userInfoUrl", request.getContextPath() + "/visual/moduleShowPage.do?moduleCode=personbasic&id=" + personId + "&visitKey=" + visitKey);
+            }
+        }
+        if (!isArchiveShowAsUserInfo) {
+            object.put("userInfoUrl", request.getContextPath() + "/user/editUser.do");
+        }
+        return new Result<>(object);
     }
 
     /**
      * 更改密码
      *
-     * @param userName
      * @param pwd
      * @param pwd2
      * @param pwd3
@@ -1250,15 +1316,15 @@ public class UserController {
      */
     @ResponseBody
     @RequestMapping(value = "/user/changePwd", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public String changePwd(String userName, @RequestParam(required = true) String pwd, @RequestParam(required = true) String pwd2, @RequestParam(required = true) String pwd3) throws ValidateException {
-        User user = userService.getUser(userName);
+    public Result<Object> changePwd(@RequestParam(required = true) String pwd, @RequestParam(required = true) String pwd2, @RequestParam(required = true) String pwd3) throws ValidateException {
+        User user = userService.getUser(authUtil.getUserName());
         String pwdMd5Old = user.getPwd();
 
         String pwdMD5 = "";
         try {
             pwdMD5 = SecurityUtil.MD5(pwd3);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         if (!pwdMd5Old.equals(pwdMD5)) {
@@ -1277,7 +1343,7 @@ public class UserController {
             throw new ValidateException(e.getMessage());
         }
 
-        return responseUtil.getResultJson(userService.modifyPwd(userName, pwd)).toString();
+        return new Result<>(userService.modifyPwd(authUtil.getUserName(), pwd));
     }
 
     /**
@@ -1288,12 +1354,12 @@ public class UserController {
      */
     @ResponseBody
     @RequestMapping(value = "/user/changeLang", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String changeLang(@RequestParam(required = true) String local) {
+    public Result<Object> changeLang(@RequestParam(required = true) String local) {
 
         UserSetup userSetup = userSetupService.getUserSetup(SpringUtil.getUserName());
         userSetup.setLocal(local);
 
-        return responseUtil.getResultJson(userSetupService.updateByUserName(userSetup)).toString();
+        return new Result<>(userSetupService.updateByUserName(userSetup));
     }
 
     /**
@@ -1305,13 +1371,13 @@ public class UserController {
      */
     @ResponseBody
     @RequestMapping(value = "/user/setEmail", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String setEmail(String emailName, String emailPwd) {
+    public Result<Object> setEmail(String emailName, String emailPwd) {
 
         UserSetup userSetup = userSetupService.getUserSetup(SpringUtil.getUserName());
         userSetup.setEmailName(emailName);
         userSetup.setEmailPwd(emailPwd);
 
-        return responseUtil.getResultJson(userSetupService.updateByUserName(userSetup)).toString();
+        return new Result<>(userSetupService.updateByUserName(userSetup));
     }
 
     /**
@@ -1327,7 +1393,7 @@ public class UserController {
      */
     @ResponseBody
     @RequestMapping(value = "/user/setIndividuality", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String setIndividuality(Integer isMsgWinPopup, Integer isMessageSoundPlay, Integer isChatIconShow, Integer isChatSoundPlay, Integer isWebedit, Integer isShowSidebar) {
+    public Result<Object> setIndividuality(Integer isMsgWinPopup, Integer isMessageSoundPlay, Integer isChatIconShow, Integer isChatSoundPlay, Integer isWebedit, Integer isShowSidebar) {
 
         UserSetup userSetup = userSetupService.getUserSetup(SpringUtil.getUserName());
         userSetup.setIsMsgWinPopup(isMsgWinPopup == 1);
@@ -1337,7 +1403,7 @@ public class UserController {
         userSetup.setIsWebedit(isWebedit);
         userSetup.setIsShowSidebar(isShowSidebar);
 
-        return responseUtil.getResultJson(userSetupService.updateByUserName(userSetup)).toString();
+        return new Result<>(userSetupService.updateByUserName(userSetup));
     }
 
     /**
@@ -1350,7 +1416,7 @@ public class UserController {
      */
     @ResponseBody
     @RequestMapping(value = "/user/setStyleMode", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public JSONObject setStyleMode(HttpServletResponse response, String skinCode, Integer uiMode, Integer menuMode) {
+    public Result<Object> setStyleMode(HttpServletResponse response, String skinCode, Integer uiMode, Integer menuMode) {
 
         UserSetup userSetup = userSetupService.getUserSetup(SpringUtil.getUserName());
         userSetup.setSkinCode(skinCode);
@@ -1359,46 +1425,47 @@ public class UserController {
 
         JSONObject json = responseUtil.getResultJson(userSetupService.updateByUserName(userSetup));
 
-        if (uiMode== UserSetupDb.UI_MODE_LTE) {
+        if (uiMode == UserSetupDb.UI_MODE_LTE) {
             UserSet.setSkin(request, response, SkinMgr.SKIN_CODE_LTE);
-        }
-        else {
+        } else {
             UserSet.setSkin(request, response, skinCode);
         }
 
         String page = loginService.getUIModePage("");
         json.put("page", page);
 
-        return json;
+        return new Result<>(json);
     }
 
+    @ApiOperation(value = "修改用户", notes = "修改用户", httpMethod = "POST")
+    @ResponseBody
     @RequestMapping(value = "/user/editUser")
-    public String editUser(Model model) {
-        String userName = SpringUtil.getUserName();
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+    public Result<Object> editUser() {
+        JSONObject object = new JSONObject();
+        String userName = authUtil.getUserName();
 
-        User user = userService.getUser(userName);
-        model.addAttribute("user", user);
+        User user = userCache.getUser(userName);
+        object.put("user", user);
 
         String selectDeptCode = ParamUtil.get(request, "selectDeptCode");
-        model.addAttribute("selectDeptCode", selectDeptCode);
+        object.put("selectDeptCode", selectDeptCode);
 
         StringBuffer sbDeptName = new StringBuffer();
         List<Department> list = departmentService.getDeptsOfUser(userName);
         for (Department department : list) {
             StrUtil.concat(sbDeptName, ",", department.getName());
         }
-        model.addAttribute("deptName", sbDeptName.toString());
+        object.put("deptName", sbDeptName.toString());
 
-        List<Role> roleList = roleService.getRolesOfUser(user.getName(), true);
+        List<Role> roleList = roleService.getAllRolesOfUser(user.getName(), false);
         StringBuffer roleDescs = new StringBuffer();
         for (Role role : roleList) {
             StrUtil.concat(roleDescs, "，", role.getDescription());
         }
-        model.addAttribute("roleName", roleDescs.toString());
+        object.put("roleName", roleDescs.toString());
 
-        model.addAttribute("isPlatformSrc", com.redmoon.oa.kernel.License.getInstance().isPlatformSrc());
-        model.addAttribute("isGov", License.getInstance().isGov());
+        object.put("isPlatformSrc", com.redmoon.oa.kernel.License.getInstance().isPlatformSrc());
+        object.put("isGov", License.getInstance().isGov());
 
         com.redmoon.oa.Config cfg = Config.getInstance();
         boolean isUseAccount = cfg.getBooleanProperty("isUseAccount");
@@ -1409,8 +1476,8 @@ public class UserController {
                 accountName = account.getName();
             }
         }
-        model.addAttribute("isUseAccount", isUseAccount);
-        model.addAttribute("account", accountName);
+        object.put("isUseAccount", isUseAccount);
+        object.put("account", accountName);
 
         boolean isMobileNotEmpty = false;
         com.redmoon.weixin.Config weixinCfg = com.redmoon.weixin.Config.getInstance();
@@ -1418,26 +1485,24 @@ public class UserController {
         if (weixinCfg.getBooleanProperty("isUse") || dingdingCfg.isUseDingDing()) {
             isMobileNotEmpty = true;
         }
-        model.addAttribute("isMobileNotEmpty", isMobileNotEmpty);
+        object.put("isMobileNotEmpty", isMobileNotEmpty);
 
         StringBuffer typeOpts = new StringBuffer();
         SelectMgr sm = new SelectMgr();
         SelectDb sd = sm.getSelect("user_type");
-        Vector vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
-        Iterator irType = vType.iterator();
-        while (irType.hasNext()) {
-            SelectOptionDb sod = (SelectOptionDb) irType.next();
+        Vector<SelectOptionDb> vType = sd.getOptions(new com.cloudwebsoft.framework.db.JdbcTemplate());
+        for (SelectOptionDb sod : vType) {
             String selected = "";
             if (sod.isDefault()) {
                 selected = "selected";
             }
             String clr = "";
-            if (!sod.getColor().equals("")) {
+            if (!"".equals(sod.getColor())) {
                 clr = " style='color:" + sod.getColor() + "' ";
             }
             typeOpts.append("<option value='" + sod.getValue() + "'" + selected + clr + ">" + sod.getName() + "</option>");
         }
-        model.addAttribute("userTypeOpts", typeOpts);
+        object.put("userTypeOpts", typeOpts);
 
         String leaders = "";
         String leaderNames = "";
@@ -1455,16 +1520,17 @@ public class UserController {
                 }
             }
         }
-        model.addAttribute("leaders", leaders);
-        model.addAttribute("leaderNames", leaderNames);
+        object.put("leaders", leaders);
+        object.put("leaderNames", leaderNames);
 
-        model.addAttribute("isMyLeaderUsed", cfg.getBooleanProperty("isMyLeaderUsed"));
+        object.put("isMyLeaderUsed", cfg.getBooleanProperty("isMyLeaderUsed"));
 
-        return "th/user/user_edit";
+        return new Result<>(object);
     }
 
     /**
      * 更新用户的信息
+     *
      * @param userVO
      * @param file
      * @return
@@ -1472,39 +1538,26 @@ public class UserController {
      * @throws IOException
      * @throws ValidateException
      */
+    @ApiOperation(value = "修改用户的信息", notes = "修改用户的信息", httpMethod = "POST")
     @ResponseBody
     @RequestMapping(value = "/user/updateMyInfo", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String updateMyInfo(UserVO userVO, @RequestParam(value = "photo", required = false) MultipartFile file) throws ErrMsgException, IOException, ValidateException {
+    public Result<Object> updateMyInfo(UserVO userVO, @RequestParam(value = "photo", required = false) MultipartFile file) throws ErrMsgException, IOException, ValidateException {
         // 许可证验证
         License.getInstance().validate(request);
 
-        if (!userVO.getPassword().equals(userVO.getPassword2())) {
-            throw new ValidateException("#user.pwd.confirm");
-        }
+        // 防止垂直越权漏洞，用户只能改自己的
+        userVO.setName(authUtil.getUserName());
 
-        // 检查密码是否合法
-        if (!"".equals(userVO.getPassword())) {
-            try {
-                chkPwd(userVO.getPassword());
-            } catch (ErrMsgException e) {
-                throw new ValidateException(e.getMessage());
-            }
-        }
-
-        try {
-            String pwdM55 = SecurityUtil.MD5(userVO.getPassword());
-            userVO.setPwd(pwdM55);
-            userVO.setPwdRaw((userVO.getPassword()));
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
-
-        return responseUtil.getResultJson(userService.updateMyInfo(userVO)).toString();
+        return new Result<>(userService.updateMyInfo(userVO));
     }
 
+    @ApiOperation(value = "重置头像", notes = "重置头像", httpMethod = "POST")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userName", value = "用户名称", dataType = "String")
+    })
     @ResponseBody
-    @RequestMapping(value = "/user/restoreIcon", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public JSONObject restoreIcon(String userName) throws ValidateException {
+    @RequestMapping(value = "/user/resetPortrait", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
+    public Result<Object> resetPortrait(String userName) throws ValidateException {
         if (!SpringUtil.getUserName().equals(userName)) {
             Privilege pvg = new Privilege();
             if (!pvg.isUserPrivValid(SpringUtil.getUserName(), "admin.user")) {
@@ -1513,47 +1566,17 @@ public class UserController {
         }
         User user = userService.getUser(userName);
         user.setPhoto("");
-        return responseUtil.getResultJson(userService.updateByUserName(user));
+        return new Result<>(userService.updateByUserName(user));
     }
 
-    /**
-     * 进入更改初始密码页面
-     * @param model
-     * @return
-     */
-    @RequestMapping(value = "/user/changeInitPwd")
-    public String changeInitPwd(Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-        LoginService loginService = SpringUtil.getBean(LoginService.class);
-        String url = loginService.getUIModePage("");
-        model.addAttribute("url", url);
-        model.addAttribute("isDebug", Global.getInstance().isDebug());
-
-        return "th/user/change_initpwd";
-    }
-
-    /**
-     * 进入更改初始密码页面
-     * @param model
-     * @return
-     */
-    @RequestMapping(value = "/user/changeMyPwd")
-    public String changeMyPwd(Model model) {
-        String userName = SpringUtil.getUserName();
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-
-        LoginService loginService = SpringUtil.getBean(LoginService.class);
-        String url = loginService.getUIModePage("");
-        model.addAttribute("userName", userName);
-        model.addAttribute("url", url);
-        model.addAttribute("isDebug", Global.getInstance().isDebug());
-
-        return "th/user/change_pwd";
-    }
-
+    @ApiOperation(value = "修改初始密码", notes = "修改初始密码")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pwd", value = "密码", dataType = "String"),
+            @ApiImplicitParam(name = "confirmPwd", value = "确认密码", dataType = "String"),
+    })
     @ResponseBody
     @RequestMapping(value = "/user/updateInitPwd", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public JSONObject updateInitPwd(String pwd, String confirmPwd) throws ValidateException {
+    public Result<Object> updateInitPwd(String pwd, String confirmPwd) throws ValidateException {
         String userName = SpringUtil.getUserName();
         if (!pwd.equals(confirmPwd)) {
             throw new ValidateException("密码与确认密码不一致！");
@@ -1569,42 +1592,42 @@ public class UserController {
             throw new ValidateException(e.getMessage());
         }
 
-        return responseUtil.getResultJson(userService.modifyPwd(userName, pwd));
+        return new Result<>(userService.modifyPwd(userName, pwd));
     }
 
-    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
-    @RequestMapping(value = "/admin/organize/userImport")
-    public String userImport(Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-
-        return "th/admin/organize/user_import";
-    }
+//    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+//    @RequestMapping(value = "/admin/organize/userImport")
+//    public String userImport(Model model) {
+//        object.put("skinPath", SkinMgr.getSkinPath(request, false));
+//
+//        return "th/admin/organize/user_import";
+//    }
 
     // 设置错误信息
-    public String setPrompt(String prompt,String msg){
+    public String setPrompt(String prompt, String msg) {
         if (prompt.contains(msg)) {
             return prompt;
         }
         if ("".equals(prompt)) {
             prompt = msg;
         } else {
-            prompt += ","+msg;
+            prompt += "," + msg;
         }
         return prompt;
     }
 
     @RequestMapping(value = "/admin/organize/userImportConfirm", method = RequestMethod.POST)
-    public String userImportConfirm(@RequestParam(value = "att1", required = false) MultipartFile file, Model model) throws ValidateException {
-        if (file==null) {
+    @ResponseBody
+    public Result<Object> userImportConfirm(@RequestParam(value = "att1", required = false) MultipartFile file, Model model) throws ValidateException {
+        if (file == null) {
             throw new ValidateException("请上传excel文件");
         }
 
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
         JSONObject json = new JSONObject();
-        if (file.getSize()==0) {
-            model.addAttribute("isShowBack", true);
-            model.addAttribute("msg", "请上传文件");
-            return "th/error/error";
+        if (file.getSize() == 0) {
+            json.put("isShowBack", true);
+            json.put("msg", "请上传文件");
+            return new Result<>(json);
         }
 
         json.put("ret", 1);
@@ -1615,7 +1638,7 @@ public class UserController {
         } catch (IOException e) {
             json.put("ret", 0);
             json.put("msg", "读取文件异常");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         String[][] info = null;
         int cols = 19;
@@ -1636,7 +1659,7 @@ public class UserController {
                                 if (cell == null) {
                                     info[k - 1][i] = "";
                                 } else {
-                                    cell.setCellType(HSSFCell.CELL_TYPE_STRING);
+                                    cell.setCellType(CellType.STRING);
                                     info[k - 1][i] = StrUtil.getNullStr(cell.getStringCellValue()).trim();
                                 }
                             }
@@ -1657,23 +1680,18 @@ public class UserController {
                                 if (cell == null) {
                                     info[k - 1][i] = "";
                                 } else {
-                                    cell.setCellType(XSSFCell.CELL_TYPE_STRING);
+                                    cell.setCellType(CellType.STRING);
                                     info[k - 1][i] = StrUtil.getNullStr(cell.getStringCellValue()).trim();
                                 }
                             }
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 json.put("ret", 0);
                 json.put("msg", "文件格式错误");
             }
         } catch (IOException e) {
-            json.put("ret", 0);
-            json.put("msg", "导入文件出现异常");
-            log.error("导入文件出现异常");
-        } catch (InvalidFormatException e) {
             json.put("ret", 0);
             json.put("msg", "导入文件出现异常");
             log.error("导入文件出现异常");
@@ -1687,9 +1705,9 @@ public class UserController {
             }
         }
 
-        if (json.getIntValue("ret")==0) {
-            model.addAttribute("msg", json.getString("msg"));
-            return "th/error/error";
+        if (json.getIntValue("ret") == 0) {
+            json.put("msg", json.getString("msg"));
+            return new Result<>(json);
         }
 
         String name = "";
@@ -1726,14 +1744,14 @@ public class UserController {
         Config cf = new Config();
         boolean isUseAccount = cf.getBooleanProperty("isUseAccount");
 
-        for(int i=0;i<info.length;i++) {
+        StringBuilder errMsg = new StringBuilder();
+        for (int i = 0; i < info.length; i++) {
             name = info[i][0];
             realName = info[i][1];
             accountName = info[i][2];
 
-            // System.out.println("name=" + name + " realName=" + realName + " len=" + info.length);
             // excel中可能会出现行为null或空，用格式刷后有可能出现这种情况
-            if ((name==null && realName==null) || ("".equals(name) && "".equals(realName))) {
+            if ((name == null && realName == null) || ("".equals(name) && "".equals(realName))) {
                 continue;
             }
 
@@ -1758,16 +1776,16 @@ public class UserController {
             String nameCol = "";
             String realNameCol = "";
             String mobileCol = "";
-            String personNOCol="";
+            String personNOCol = "";
             String deptCol = "";
             String accountNameCol = "";
             //帐号校验
-            String sql = "select name from users where name="+StrUtil.sqlstr(name);
-            if ("".equals(name)){
-                prompt = setPrompt(prompt, "必填项内容为空");
+            String sql = "select name from users where name=" + StrUtil.sqlstr(name);
+            if ("".equals(name)) {
+                prompt = setPrompt(prompt, "帐户不能为空");
                 nameCol = "1";
             } else {
-                if (name.length()>20){
+                if (name.length() > 20) {
                     prompt = setPrompt(prompt, "帐号不能大于20个字符");
                     nameCol = "1";
                 }
@@ -1785,7 +1803,10 @@ public class UserController {
             }
             //判断工号是否启用，如果启用进入判断，如果不启用不判断
             if (isUseAccount) {
-                if (!accountNameCol.equals("1")) {
+                if (StrUtil.isEmpty(accountName)) {
+                    prompt = setPrompt(prompt, "工号为空");
+                    accountNameCol = "1";
+                } else {
                     if (accountNameMap.containsKey(accountName)) {
                         // 判断是否为同一个人
                         if (!accountNameMap.get(accountName).equals(name)) {
@@ -1796,27 +1817,28 @@ public class UserController {
                         accountNameMap.put(accountName, name);
                     }
                 }
+
             }
 
             //姓名校验
-            if ("".equals(realName)){
-                prompt = setPrompt(prompt,"必填项内容为空");
+            if ("".equals(realName)) {
+                prompt = setPrompt(prompt, "姓名不能为空");
                 realNameCol = "1";
             } else {
-                if (realName.length()>20){
-                    prompt = setPrompt(prompt,"姓名不能大于20个字符");
+                if (realName.length() > 20) {
+                    prompt = setPrompt(prompt, "姓名不能大于20个字符");
                     realNameCol = "1";
                 }
             }
             //手机校验
-            if (!"".equals(mobile)){
+            if (!"".equals(mobile)) {
                 java.util.regex.Pattern p = java.util.regex.Pattern.compile("^\\d{11}$");
                 java.util.regex.Matcher m = p.matcher(mobile);
-                if (!m.matches()){
-                    prompt = setPrompt(prompt,"手机号非法");
+                if (!m.matches()) {
+                    prompt = setPrompt(prompt, "手机号非法");
                     mobileCol = "1";
                 }
-                if (!mobileCol.equals("1")) {
+                if (!"1".equals(mobileCol)) {
                     if (cellMap.containsKey(mobile)) {
                         // 判断是否为同一个人
                         if (!cellMap.get(mobile).equals(name)) {
@@ -1830,13 +1852,13 @@ public class UserController {
             }
 
             // 员工编号校验
-            if (!"".equals(personNO)){
-                if (personNO.length()>20){
-                    prompt = setPrompt(prompt,"员工编号不能大于20个字符");
+            if (!"".equals(personNO)) {
+                if (personNO.length() > 20) {
+                    prompt = setPrompt(prompt, "员工编号不能大于20个字符");
                     personNOCol = "1";
                 } else {
                     if (userService.isPersonNoUsedByOther(name, personNO)) {
-                        prompt = setPrompt(prompt,"员工编号已存在");
+                        prompt = setPrompt(prompt, "员工编号已存在");
                         personNOCol = "1";
                     }
                 }
@@ -1854,8 +1876,8 @@ public class UserController {
             }
 
             //部门校验
-            if("".equals(dept)){
-                prompt = setPrompt(prompt,"必填项内容为空");
+            if ("".equals(dept)) {
+                prompt = setPrompt(prompt, "部门不能为空");
                 deptCol = "1";
             }
 
@@ -1880,7 +1902,9 @@ public class UserController {
             jsonObj.put("hobbies", hobbies);
             jsonObj.put("address", address);
             jsonObj.put("prompt", prompt);
-            if (!"".equals(prompt)){
+            if (!"".equals(prompt)) {
+                StrUtil.concat(errMsg, "\n", realName + ": " + prompt);
+
                 jsonObj.put("name_err", "1".equals(nameCol));
                 jsonObj.put("realName_err", "1".equals(realNameCol));
                 jsonObj.put("accountName_err", "1".equals(accountNameCol));
@@ -1895,40 +1919,38 @@ public class UserController {
             prompt = "";
         }
 
-        model.addAttribute("infoLen", info.length);
-        model.addAttribute("successArr", successArr);
-        model.addAttribute("failArr", failArr);
+        json.put("infoLen", info.length);
+        json.put("successArr", successArr);
+        json.put("failArr", failArr);
+        if (errMsg.length() > 0) {
+            json.put("res", 1);
+        } else {
+            json.put("res", 0);
+        }
+        json.put("msg", errMsg.toString());
 
-        return "th/admin/organize/user_import_confirm";
+        return new Result<>(json);
     }
 
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/admin/organize/userImportFinish", produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public JSONObject userImportFinish(String info, Model model) {
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
-
+    public Result<Object> userImportFinish(String info) {
         String errMsg = "";
         JSONArray arr = JSONArray.parseArray(info);
         boolean re = false;
         try {
             re = userService.importUser(arr);
-        } catch (ValidateException e) {
+        } catch (ValidateException | ErrMsgException | IOException e) {
             errMsg = e.getMessage();
-            e.printStackTrace();
-        } catch (IOException e) {
-            errMsg = e.getMessage();
-            e.printStackTrace();
-        } catch (ErrMsgException e) {
-            errMsg = e.getMessage();
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         JSONObject json = responseUtil.getResultJson(re);
         if (!"".equals(errMsg)) {
             json.put("msg", errMsg);
         }
-        return json;
+        return new Result<>(json);
     }
 
     @RequestMapping("/admin/exportUser")
@@ -1945,9 +1967,9 @@ public class UserController {
 
         int isValid = ParamUtil.getInt(request, "isValid", 1);
         try {
-            String[] preinfo = {"帐号", "姓名","工号","手机","性别","员工编号"};
+            String[] preinfo = {"帐号", "姓名", "工号", "手机", "性别", "员工编号"};
             String[] depts = {"部门一级", "部门二级", "部门三级", "部门四级", "部门五级", "部门六级", "部门七级", "部门八级", "部门九级", "部门十级", "部门十一级", "部门十二级"};
-            String[] sufinfo = {"角色", "岗位", "身份证", "婚否", "出生日期", "邮箱", "QQ", "电话", "入职日期", "短号", "兴趣爱好", "地址"};
+            String[] sufinfo = {"角色", "职位", "身份证", "婚否", "出生日期", "邮箱", "QQ", "电话", "入职日期", "短号", "兴趣爱好", "地址"};
 
             // 创建excel
             wwb = jxl.Workbook.createWorkbook(os);
@@ -1971,23 +1993,23 @@ public class UserController {
                 ws.addCell(a);
             }
             // 部门
-            if (deptLevels==0) {
+            if (deptLevels == 0) {
                 depts[0] = "部门";
             }
-            for (int i = 0; i < (deptLevels==0?1:deptLevels); i++) {
+            for (int i = 0; i < (deptLevels == 0 ? 1 : deptLevels); i++) {
                 a = new Label(preinfo.length + i, 0, depts[i]);
                 ws.addCell(a);
             }
             // 部门后面的信息
             for (int i = 0; i < sufinfo.length; i++) {
-                a = new Label(preinfo.length + (deptLevels==0?1:deptLevels) + i, 0, sufinfo[i]);
+                a = new Label(preinfo.length + (deptLevels == 0 ? 1 : deptLevels) + i, 0, sufinfo[i]);
                 ws.addCell(a);
             }
 
-            String account = "", realName = "", mobile = "", gender = "", personNo = "", idCard="", married = "", email="", QQ="", phone="", entryDate="", shortMobile="", hobbies="", address="";
+            String account = "", realName = "", mobile = "", gender = "", personNo = "", idCard = "", married = "", email = "", QQ = "", phone = "", entryDate = "", shortMobile = "", hobbies = "", address = "";
             String postName = "";
             // 内容
-            String sql = "select users.id,name,dept_code,realname,case gender when 0 then '男' when 1 then'女' end g,date_format(birthday,'%Y-%m-%d') d,'' s,mobile,idcard,ISMARRIAGED,person_no,phone,'' fax,address,mobile,email,qq,msn,hobbies,address,entryDate from users,dept_user where name=dept_user.user_name and isvalid=" + isValid + " order by dept_code asc,dept_user.orders asc";
+            String sql = "select users.id,login_name,dept_code,realname,case gender when 0 then '男' when 1 then'女' end g,date_format(birthday,'%Y-%m-%d') d,'' s,mobile,idcard,ISMARRIAGED,person_no,phone,'' fax,address,mobile,email,qq,msn,hobbies,address,entryDate,name from users,dept_user where name=dept_user.user_name and isvalid=" + isValid + " order by dept_code asc,dept_user.orders asc";
             JdbcTemplate jt = new JdbcTemplate();
             ResultIterator ri = null;
             ri = jt.executeQuery(sql);
@@ -1995,22 +2017,23 @@ public class UserController {
             HashMap<String, java.lang.Boolean> map = new HashMap<String, java.lang.Boolean>();
             while (ri.hasNext()) {
                 int col = 0;
-                ResultRecord rr = (ResultRecord)ri.next();
-                String name = rr.getString(2);
-                if (map.containsKey(name)) {
+                ResultRecord rr = ri.next();
+                String userName = rr.getString("name");
+                String loginName = rr.getString(2);
+                if (map.containsKey(loginName)) {
                     continue;
                 } else {
-                    map.put(name, true);
+                    map.put(loginName, true);
                 }
 
-                a = new Label(col++, row, rr.getString("name"));
+                a = new Label(col++, row, rr.getString("login_name"));
                 ws.addCell(a);
 
                 a = new Label(col++, row, rr.getString("realname"));
                 ws.addCell(a);
 
-                Account acc = accountService.getAccountByUserName(name);
-                if (acc!=null) {
+                Account acc = accountService.getAccountByUserName(userName);
+                if (acc != null) {
                     account = acc.getName();
                 }
 
@@ -2026,15 +2049,15 @@ public class UserController {
                 a = new Label(col++, row, StrUtil.getNullStr(rr.getString("person_no")));
                 ws.addCell(a);
 
-                //String deptCode = rr.getString(3);
+                // String deptCode = rr.getString(3);
                 // 获取各级部门名称
-                //增加多部门导出
+                // 增加多部门导出
                 String[] deptNames = new String[maxLevel];
                 String depts_ = "";
                 String sqlDepts = "select * from dept_user where user_name = ?";
-                ResultIterator resultIterator = jt.executeQuery(sqlDepts,new Object[]{rr.getString(2)});
-                while (resultIterator.hasNext()){
-                    ResultRecord resultRecord = (ResultRecord)resultIterator.next();
+                ResultIterator resultIterator = jt.executeQuery(sqlDepts, new Object[]{userName});
+                while (resultIterator.hasNext()) {
+                    ResultRecord resultRecord = resultIterator.next();
                     String deptCode = resultRecord.getString("dept_code");
                     DeptDb dd = new DeptDb(deptCode);
                     deptNames[0] = dd.getName();
@@ -2043,27 +2066,25 @@ public class UserController {
                             && !dd.getParentCode().equals(DeptDb.ROOTCODE)
                             && j < maxLevel - 1) {
                         dd = new DeptDb(dd.getParentCode());
-                        // System.out.println(getClass() + " dd.getParentCode()=" + dd.getParentCode());
-                        if (dd != null && !dd.getParentCode().equals("")) {
+                        if (!dd.getParentCode().equals("")) {
                             deptNames[++j] = dd.getName();
                         } else {
                             break;
                         }
                     }
-                    if (deptLevels==0) {
+                    LogUtil.getLog(getClass()).info("deptNames=" + StringUtils.join(deptNames, ","));
+                    if (deptLevels == 0) {
                         String dps = "";
-                        // System.out.println(getClass() + " j=" + j);
                         for (int i = j; i >= 0; i--) {
                             if (dps.equals("")) {
                                 dps = deptNames[i];
-                            }
-                            else {
+                            } else {
                                 dps += "\\" + deptNames[i];
                             }
                         }
-                        if ("".equals(depts_)){
+                        if ("".equals(depts_)) {
                             depts_ = dps;
-                        }else {
+                        } else {
                             depts_ += "," + dps;
                         }
 
@@ -2072,9 +2093,8 @@ public class UserController {
                 a = new Label(col++, row, depts_);
                 ws.addCell(a);
 
-
                 // 用户角色
-                UserDb ud = new UserDb(name);
+                UserDb ud = new UserDb(userName);
                 RoleDb[] roleary = ud.getRoles();
                 String roles = "";
                 if (roleary != null) {
@@ -2088,13 +2108,11 @@ public class UserController {
                 a = new Label(col++, row, roles);
                 ws.addCell(a);
 
-                PostUserDb pud = new PostUserDb();
-                pud = pud.getPostUserDb(name);
-                if (pud!=null) {
-                    PostDb pd = new PostDb();
-                    pd = pd.getPostDb(pud.getInt("post_id"));
-                    if (pd!=null) {
-                        postName = pd.getString("name");
+                PostUser postUser = postUserService.getPostUserByUserName(userName);
+                if (postUser != null) {
+                    Post post = postService.getById(postUser.getPostId());
+                    if (post != null) {
+                        postName = post.getName();
                     }
                 }
                 a = new Label(col++, row, postName);
@@ -2103,7 +2121,7 @@ public class UserController {
                 a = new Label(col++, row, rr.getString("idCard"));
                 ws.addCell(a);
 
-                married = rr.getInt("ISMARRIAGED")==1?"已婚":"未婚";
+                married = rr.getInt("ISMARRIAGED") == 1 ? "已婚" : "未婚";
                 a = new Label(col++, row, married);
                 ws.addCell(a);
 
@@ -2132,22 +2150,22 @@ public class UserController {
 
             wwb.write();
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             try {
                 if (wwb != null) {
                     try {
                         wwb.close();
                     } catch (WriteException e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
             os.close();
         }
@@ -2161,14 +2179,14 @@ public class UserController {
     @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
     @ResponseBody
     @RequestMapping(value = "/admin/organize/syncUnit", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public String syncUnit() {
+    public Result<Object> syncUnit() {
         deptUserService.syncUnit();
-        return responseUtil.getResultJson(true).toString();
+        return new Result<>(true);
     }
 
     @ResponseBody
     @RequestMapping(value = "/user/changeSkin", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;charset=UTF-8;"})
-    public String changeSkin(String skinCode, HttpServletResponse response) {
+    public Result<Object> changeSkin(String skinCode, HttpServletResponse response) {
         IUserSetupService userSetupService = SpringUtil.getBean(IUserSetupService.class);
         UserSetup userSetup = userSetupService.getUserSetup(SpringUtil.getUserName());
         userSetup.setSkinCode(skinCode);
@@ -2176,11 +2194,112 @@ public class UserController {
         if (re) {
             UserSet.setSkin(request, response, skinCode);
         }
-        return responseUtil.getResultJson(re).toString();
+        return new Result<>(re);
     }
 
     @RequestMapping(value = "/session/invalid")
     public String sessionValid(Model model) {
         return "logout";
+    }
+
+    /**
+     * 较验手机号
+     * 0:校验通过 1：不通过
+     */
+    @ApiOperation(value = "较验手机号", notes = "较验手机号")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "name", value = "名称", dataType = "String"),
+            @ApiImplicitParam(name = "mobile", value = "手机号码", dataType = "String"),
+    })
+    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+    @ResponseBody
+    @RequestMapping(value = "/user/checkMobileRepeat", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> checkMobileRepeat(String mobile, String name) {
+        int re = 0;
+        if (cn.hutool.core.util.StrUtil.isEmpty(name)) {
+            if (cn.hutool.core.util.StrUtil.isNotEmpty(mobile)) {
+                QueryWrapper<User> qw = new QueryWrapper<>();
+                qw.eq("mobile", mobile);
+                List<User> userList = userService.list(qw);
+                if (userList.size()>0) {
+                    re = 1;
+                }
+            }
+        } else {
+            QueryWrapper<User> qw = new QueryWrapper<>();
+            qw.eq("mobile", mobile);
+            List<User> userList = userService.list(qw);
+            if (userList.size()>0 ) {
+                if(!userList.get(0).getName().equals(name)){
+                    re = 1;
+                }
+            }
+        }
+        return new Result<>(re);
+    }
+
+    /**
+     * 较验人员编号
+     * 0:校验通过 1：不通过
+     */
+    @ApiOperation(value = "较验人员编号", notes = "较验人员编号")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "name", value = "名称", dataType = "String"),
+            @ApiImplicitParam(name = "personNo", value = "人员编码", dataType = "String"),
+    })
+    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+    @ResponseBody
+    @RequestMapping(value = "/user/checkPersonNoRepeat", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> checkPersonNoRepeat(String personNo, String name) {
+        int re = 0;
+        if (cn.hutool.core.util.StrUtil.isEmpty(name)) {
+            QueryWrapper<User> qw = new QueryWrapper<>();
+            qw.eq("person_no", personNo);
+            List<User> userList = userService.list(qw);
+            if (userList.size()>0) {
+                re = 1;
+            }
+        } else {
+            QueryWrapper<User> qw = new QueryWrapper<>();
+            qw.eq("person_no", personNo);
+            List<User> userList = userService.list(qw);
+            if (userList.size()>0 ) {
+                if(!userList.get(0).getName().equals(name)){
+                    re = 1;
+                }
+            }
+        }
+        return new Result<>(re);
+    }
+
+    /**
+     * 启用停用
+     */
+    @ApiOperation(value = "启用停用", notes = "启用停用")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "isValid", value = "是否允许", dataType = "String"),
+            @ApiImplicitParam(name = "name", value = "名称", dataType = "String"),
+    })
+    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+    @ResponseBody
+    @RequestMapping(value = "/user/stopStartIsValid", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> stopStartIsValid(String name, String isValid) {
+        User user = userCache.getUser(name);
+        user.setIsValid(Integer.parseInt(isValid));
+        userService.updateByUserName(user);
+        return new Result<>();
+    }
+
+    @ApiOperation(value = "取得经Aes加密的密码", notes = "启用停用")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "userName", value = "用户名", dataType = "String"),
+    })
+    @PreAuthorize("hasAnyAuthority('admin.user', 'admin')")
+    @ResponseBody
+    @RequestMapping(value = "/user/getMmaRaw", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
+    public Result<Object> getMmRaw(String userName) {
+        User user = userCache.getUser(userName);
+        String pwdRaw = user.getPwdRaw();
+        return new Result<>(userService.aesEncryptPwdRaw(pwdRaw));
     }
 }

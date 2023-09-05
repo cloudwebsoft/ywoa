@@ -8,9 +8,10 @@
 <%@ page import="com.redmoon.oa.stamp.StampMgr" %>
 <%@ page import="com.redmoon.oa.stamp.StampDb" %>
 <%@ page import="com.redmoon.oa.stamp.StampPriv" %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>图片签名框</title>
     <meta http-equiv="pragma" content="no-cache">
     <meta http-equiv="cache-control" content="no-cache">
@@ -61,7 +62,7 @@
                         }
                         map.put(String.valueOf(ld.getId()), "");
             %>
-            <option value="<%=ld.getId()%>" link="<%=ld.getImageUrl(request)%>"><%=ld.getTitle()%></option>
+            <option value="<%=ld.getId()%>" link="<%=ld.getImageUrl()%>"><%=ld.getTitle()%></option>
             <%
                     }
                 }

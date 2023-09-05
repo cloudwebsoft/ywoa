@@ -1,23 +1,15 @@
-<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
-<%@page import="nl.bitwalker.useragentutils.UserAgent"%>
+<%@ page language="java" import="com.redmoon.oa.util.MobileScanDownload" pageEncoding="utf-8"%>
 <%@page import="nl.bitwalker.useragentutils.OperatingSystem"%>
-<%@page import="nl.bitwalker.useragentutils.DeviceType"%>
-<%@page import="cn.js.fan.util.StrUtil"%>
-<%@page import="cn.js.fan.web.Global"%>
-<%@page import="com.redmoon.oa.util.MobileScanDownload"%>
-<%@page import="org.apache.http.HttpResponse"%>
+<%@page import="nl.bitwalker.useragentutils.UserAgent"%>
 <%
 String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
 %>
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
   <head>
     <base href="<%=basePath%>">
-    
-    <title>My JSP 'mobile_client_download.jsp' starting page</title>
-    
+    <title>下载App</title>
 	<meta http-equiv="pragma" content="no-cache">
 	<meta http-equiv="cache-control" content="no-cache">
 	<meta http-equiv="expires" content="0">    
@@ -26,12 +18,8 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 	<!--
 	<link rel="stylesheet" type="text/css" href="styles.css">
 	-->
-	
   </head>
-  
   <body >
-  
-
   <%
 	UserAgent ua = new UserAgent(request.getHeader("User-Agent"));
 	OperatingSystem os = ua.getOperatingSystem();
@@ -47,6 +35,5 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 		}
 	}
 	%>
-   
   </body>
 </html>

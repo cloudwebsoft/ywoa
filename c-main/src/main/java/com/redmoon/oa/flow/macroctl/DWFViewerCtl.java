@@ -79,7 +79,7 @@ public class DWFViewerCtl extends AbstractMacroCtl {
     public Object getValueForSave(FormField ff, int flowId, FormDb fd,
                                   FileUpload fu) {
         // ff参数来自于FormDAO中的doUpload，并不是来自于数据库，所以需从数据库中提取，20130406 fgf 已改为取自于数据库
-        // System.out.println(getClass() + " flowId=" + flowId + " ff.getName()=" + ff.getName());
+        // LogUtil.getLog(getClass()).info(getClass() + " flowId=" + flowId + " ff.getName()=" + ff.getName());
         FormDAO fdao = new FormDAO(flowId, fd);
         fdao.load();
         Vector vts = fdao.getFields();
@@ -129,7 +129,7 @@ public class DWFViewerCtl extends AbstractMacroCtl {
             ir = vt.iterator();
             // 取得ID为最小的attach，并将其删除
             int count = 0;
-            int minId = Integer.MAX_VALUE;
+            long minId = Integer.MAX_VALUE;
             Attachment lastAtt = null;
             while (ir.hasNext()) {
                 Attachment att = (Attachment) ir.next();

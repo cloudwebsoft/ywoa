@@ -4,8 +4,8 @@ import javax.servlet.http.*;
 
 import cn.js.fan.util.*;
 import cn.js.fan.web.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
-import org.apache.log4j.*;
 import java.util.Vector;
 import java.util.Iterator;
 
@@ -24,17 +24,16 @@ import java.util.Iterator;
 
 public class TreeSelectMgr {
     String connname = "";
-    Logger logger = Logger.getLogger(TreeSelectMgr.class.getName());
     private String code = "";
 
     public TreeSelectMgr() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Directory:默认数据库名不能为空");
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名不能为空");
         }
     }
 
-    public boolean AddChild(HttpServletRequest request) throws
+    public boolean addChild(HttpServletRequest request) throws
             ErrMsgException {
         String name = "", parent_code = "";
 
@@ -44,7 +43,7 @@ public class TreeSelectMgr {
         }
         // 指定编码
         code = ParamUtil.get(request, "code").trim();
-        if (code.equals("")) {
+        if ("".equals(code)) {
             // 编码自动生成
             code = FileUpload.getRandName();
             // throw new ErrMsgException("编码不能为空！");
@@ -54,8 +53,8 @@ public class TreeSelectMgr {
             throw new ErrMsgException("编码请使用字母、数字、-或_！");
         }
 
-        parent_code = ParamUtil.get(request, "parent_code").trim();
-        if (parent_code.equals("")) {
+        parent_code = ParamUtil.get(request, "parentCode").trim();
+        if ("".equals(parent_code)) {
             throw new ErrMsgException("父结点不能为空！");
         }
         
@@ -65,23 +64,23 @@ public class TreeSelectMgr {
         String link = ParamUtil.get(request, "link");
         String preCode = ParamUtil.get(request, "preCode");
         String formCode = ParamUtil.get(request, "formCode");
-        if (preCode.equals("flow")) {
+        if ("flow".equals(preCode)) {
         	formCode = ParamUtil.get(request, "flowTypeCode");
         }
         boolean isOpen = ParamUtil.getInt(request, "isOpen", 1) == 1;
         boolean isContextMenu = ParamUtil.getInt(request, "isContextMenu", 1) == 1;
+        String metaData = ParamUtil.get(request, "metaData");
+
         TreeSelectDb plf = getTreeSelectDb(parent_code);
         if (!plf.isLoaded()) {
             throw new ErrMsgException("父节点不存在!");
         }
         
         TreeSelectDb lf = new TreeSelectDb();
-
         lf = lf.getTreeSelectDb(code);
         if (lf.isLoaded()) {
         	throw new ErrMsgException("相同编码的节点已存在!");
-        }
-        else {
+        } else {
             lf = new TreeSelectDb();
         }
 
@@ -96,6 +95,7 @@ public class TreeSelectMgr {
         lf.setFormCode(formCode);
         lf.setOpen(isOpen);
         lf.setContextMenu(isContextMenu);
+        lf.setMetaData(metaData);
         
         return plf.AddChild(lf);
     }
@@ -113,10 +113,10 @@ public class TreeSelectMgr {
         String code = ParamUtil.get(request, "code", false);
         String name = ParamUtil.get(request, "name", false);
         String description = ParamUtil.get(request, "description");
-        boolean isHome = ParamUtil.get(request, "isHome").equals("true") ? true : false;
+        boolean isHome = "true".equals(ParamUtil.get(request, "isHome"));
         int type = ParamUtil.getInt(request, "type",0);
         if (code == null || name == null) {
-            throw new ErrMsgException("code与name项必填！");
+            throw new ErrMsgException("code与name项必填");
         }
         String parentCode = ParamUtil.get(request, "parentCode");
         if ("#".equals(parentCode)){
@@ -126,11 +126,12 @@ public class TreeSelectMgr {
         String link = ParamUtil.get(request, "link");
         String preCode = ParamUtil.get(request, "preCode");
         String formCode = ParamUtil.get(request, "formCode");
-        if (preCode.equals("flow")) {
+        if ("flow".equals(preCode)) {
         	formCode = ParamUtil.get(request, "flowTypeCode");
         }
         boolean isOpen = ParamUtil.getInt(request, "isOpen", 1)==1;
         boolean isContextMenu = ParamUtil.getInt(request, "isContextMenu", 1) == 1;
+        String metaData = ParamUtil.get(request, "metaData");
 
         TreeSelectDb leaf = getTreeSelectDb(code);
         if (code.equals(parentCode)) {
@@ -159,10 +160,11 @@ public class TreeSelectMgr {
         leaf.setFormCode(formCode);
         leaf.setOpen(isOpen);
         leaf.setContextMenu(isContextMenu);
+        leaf.setMetaData(metaData);
         
         boolean re = false;
         if (parentCode.equals(leaf.getParentCode())) {
-            logger.info("update:name=" + name);
+            LogUtil.getLog(getClass()).info("update:name=" + name);
             re = leaf.save();
         }
         else {
@@ -194,7 +196,7 @@ public class TreeSelectMgr {
         return dd.getBrother(direction);
     }
 
-    public Vector getChildren(String code) throws ErrMsgException {
+    public Vector<TreeSelectDb> getChildren(String code) throws ErrMsgException {
         TreeSelectDb dd = getTreeSelectDb(code);
         return dd.getChildren();
     }
@@ -213,7 +215,6 @@ public class TreeSelectMgr {
             TreeSelectDb lfch = (TreeSelectDb)ir.next();
             // 重置孩子节点的排列顺序
             lfch.setOrders(orders);
-            // System.out.println(getClass() + " leaf name=" + lfch.getName() + " orders=" + orders);
 
             lfch.save();
             orders ++;
@@ -229,7 +230,6 @@ public class TreeSelectMgr {
                 layer = 2;
             } else {
                 while (!parentCode.equals(lf.getRootCode())) {
-                    // System.out.println(getClass() + "leaf parentCode=" + parentCode);
                     TreeSelectDb parentLeaf = getTreeSelectDb(parentCode);
                     if (parentLeaf == null || !parentLeaf.isLoaded()) {
                         break;

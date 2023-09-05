@@ -171,14 +171,14 @@ while (ir.hasNext()) {
 		userRealName = user.getRealName();	
 	%>
     <tr>
-      <td align="center"><a href="javascript:;" onclick="addTab('<%=wfd.getTitle()%>', '<%=request.getContextPath()%>/flow_modify.jsp?flowId=<%=wfd.getId()%>')" title="查看流程过程">查看</a>&nbsp;&nbsp;<a href="javascript:void(0);" onclick="modifyScore('<%=mad.getId()%>', '<%=NumberUtil.round(mad.getPerformance(), 2)%>', '<%=mad.getPerformanceReason()%>')">修改绩效</a></td>
+      <td align="center"><a href="javascript:;" onclick="addTab('<%=wfd.getTitle()%>', '<%=request.getContextPath()%>/flowShowPage.do?flowId=<%=wfd.getId()%>')" title="查看流程过程">查看</a>&nbsp;&nbsp;<a href="javascript:void(0);" onclick="modifyScore('<%=mad.getId()%>', '<%=NumberUtil.round(mad.getPerformance(), 2)%>', '<%=mad.getPerformanceReason()%>')">修改绩效</a></td>
       <td align="center"><%=wfd.getId()%></td>
       <td align="center"><%=WorkflowMgr.getLevelImg(request, wfd)%></td>
       <td><%=mad.getChecker()%></td>
       <td align="center"><%=NumberUtil.round(mad.getPerformance(), 2)%></td>
       <td align="center"><%=mad.getPerformanceReason()%></td>
       <td align="center"><%=mad.getPerformanceModifier()%></td>
-      <td><a href="flow_modify.jsp?flowId=<%=wfd.getId()%>" title="<%=wfd.getTitle()%>">
+      <td><a href="flowShowPage.do?flowId=<%=wfd.getId()%>" title="<%=wfd.getTitle()%>">
         <%=StrUtil.getLeft(wfd.getTitle(), 40)%>
       </a></td>
       <td><%=userRealName%></td>
@@ -192,7 +192,7 @@ while (ir.hasNext()) {
       <td>
 		<%
         if (mad.getChecker().equals(UserDb.SYSTEM)) {
-            out.print("超时跳过");
+            out.print("跳过");
         }else{						
         %>
         <%=mad.getCheckStatusName()%>

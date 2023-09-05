@@ -7,7 +7,6 @@
 	$.ajaxSettings.complete = function(xhr, status) {
 		jQuery.myloading("hide");
 	}
-	var win = window;
 	var doc = document;
 	var PAGE_NUM = 1;
 	var TOTAL = 0;
@@ -29,8 +28,10 @@
 					 this.bindEvent();
 			 },
 		loadListDate:function(){
+			TOTAL = 0;
 			self = this;
 			var pullRefreshSelector = self.options.pullRefreshContainer;
+			/*
 			mui.init({
 				pullRefresh: {
 					container:pullRefreshSelector ,
@@ -55,9 +56,24 @@
 				mui.ready(function() {
 					mui(pullRefreshSelector).pullRefresh().pullupLoading();
 				});
+			}*/
+
+			var options = {
+				container:pullRefreshSelector ,
+				down: {
+					callback: this.pulldownRefresh
+				},
+				up: {
+					height:20,//可选,默认50.触发下拉刷新拖动距离,
+					contentrefresh: '正在加载...',
+					auto:true,
+					callback: this.pullupRefresh
+				}
 			}
+			mui(pullRefreshSelector).pullToRefresh(options);
 		},
 		pulldownRefresh:function(){
+			myScrollClass = this;
 			var params = self.options.ajax_params;
 			var searchContainer = self.options.searchContainer;
 	    	jQuery(searchContainer).val("");
@@ -67,6 +83,7 @@
 			self.ajax_get(self.options.url,0,ajax_param);
 		},
 		pullupRefresh:function(){
+			myScrollClass = this;
 			var params = self.options.ajax_params;
 			if(TOTAL == 0){
 				PAGE_NUM = 1;
@@ -89,7 +106,8 @@
 				var showValue= data.showValue;
 				var parentFieldMaps ='';
 				parentFieldMaps = JSON.stringify(data.parentFieldMaps); //可以将json对象转换成json对符串 	
-				li += '<li class="mui-table-view-cell mui-checkbox mui-left" byValue="'+byValue+'" showValue="'+showValue+'" parentFieldMaps='+parentFieldMaps+' >';
+				li += '<li class="mui-table-view-cell mui-checkbox mui-left" byValue="' + byValue + '" showValue="' + showValue + '"';
+				li += " parentFieldMaps='" + parentFieldMaps + "' >";
 				li += '<input name="checkbox1" class="ck" value="0" type="checkbox">';
 				mui.each(data_arrs,function(index,data){
 					li+='<div class="mui-media-body">';
@@ -243,9 +261,9 @@
 			switch (data_types) {
 				// 来自nest_sheet_choose_select.jsp中
 				case LIST_TYPE.NEST_SHEET_CHOOSE_SELECT:
-					var done = win.getElementById("done");
+					var done = doc.getElementById("done");
 					done.addEventListener('tap', function () {
-						var ul_list = win.getElementById("ul_nest_sheet_choose_select");
+						var ul_list = doc.getElementById("ul_nest_sheet_choose_select");
 						var count = ul_list.querySelectorAll('input[type="checkbox"]:checked').length;
 						if (count > 0) {
 							var checkboxArray = [].slice.call(ul_list.querySelectorAll('input[type="checkbox"]'));
@@ -262,7 +280,7 @@
 								params.nestType = "nest_sheet";
 								params.op = "selBatch";
 								var urlParams = self.options.urlParams;
-								mui.get(self.options.url, params, function (data) {
+								mui.post(self.options.url, params, function (data) {
 									var res = data.res;
 									if (res == 0) {
 										$.toast("选择成功!");
@@ -299,7 +317,7 @@
 
 					mui('#ul_nest_sheet_choose_select').on('change', 'input', function () {
 
-						var ul_list = win.getElementById("ul_nest_sheet_choose_select");
+						var ul_list = doc.getElementById("ul_nest_sheet_choose_select");
 						var count = ul_list.querySelectorAll('input[type="checkbox"]:checked').length;
 						var value = count ? "完成(" + count + ")" : "完成";
 
@@ -307,9 +325,9 @@
 					});
 			 		break;
 			 	case LIST_TYPE.FORM_FIELD:
-				 var done = win.getElementById("done");
+				 var done = doc.getElementById("done");
 					done.addEventListener('tap', function() {
-						var ul_list = win.getElementById("form_field_ul");
+						var ul_list = doc.getElementById("form_field_ul");
 						var count = ul_list.querySelectorAll('input[type="checkbox"]:checked').length;
 						if(count>0){
 							var ck = ul_list.querySelectorAll('input[type="checkbox"]:checked')[0];
@@ -344,7 +362,7 @@
 					}, false);
 					
 				 mui('#form_field_ul').on('change','input',function(){
-					 var ul_list = win.getElementById("form_field_ul");
+					 var ul_list = doc.getElementById("form_field_ul");
 					 var checks = ul_list.querySelectorAll('input[type="checkbox"]');
 						var obj = this;
 						if(obj.checked)
@@ -484,66 +502,62 @@
 					}
 				}else{
 					var parentCode = self.options.ajax_params.parentCode;
-					var datas = {"formCodeRelated":formCodeRelated,"id":id,"formCode":parentCode};		
+					var datas = {"formCodeRelated":formCodeRelated,"id":id,"formCode":parentCode,"skey":self.options.ajax_params.skey};
 					mui.confirm('确认删除该条记录？', '提示', btnArray, function(e) {
-						if(e.index == 0){
-						
-						mui.get(AJAX_REQUEST_URL.NEST_SHEET_DELETE,datas,function(data){	
+						if (e.index == 0) {
+							mui.get(AJAX_REQUEST_URL.NEST_SHEET_DELETE, datas, function (data) {
 								var res = data.res;
 								var msg = data.msg;
-							
-								if(res == "0"){
+
+								if (res == "0") {
 									$.toast("删除成功!");
-									jQuery.myloading("hide");									
+									jQuery.myloading("hide");
 									if (e.index == 0) {
 										li.parentNode.removeChild(li);
-										if(self.options.isWx == 1){
-											if(typeof(data.sums) == 'object'){
-												calNestSheet(data.sums);
-											}		
-										}else{
-											if(typeof(data.sums) == 'object'){
+										if (self.options.isWx == 1) {
+											if (typeof (data.sums) == 'object') {
+												window.parent.calByNestSheet(data.sums, formCodeRelated);
+											}
+										} else {
+											if (typeof (data.sums) == 'object') {
 												var str = JSON.stringify(data.sums);
 												if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-													window.location.href="url?"+str;	
+													window.location.href = "url?" + str;
 												} else if (/(Android)/i.test(navigator.userAgent)) {
 													javascript:nestSheetInterface.calculateNestSheet(str);
-												} else {		   
+												} else {
 												}
-										    }
-										}							
+											}
+										}
 									} else {
-										setTimeout(function() {
+										setTimeout(function () {
 											$.swipeoutClose(li);
 										}, 0);
 									}
-									
-								}else{
+
+								} else {
 									$.toast(msg);
-									setTimeout(function() {
+									setTimeout(function () {
 										$.swipeoutClose(li);
 									}, 0);
 								}
-							},"json");
-							
-						}else{
-							setTimeout(function() {
-								$.swipeoutClose(li);
-							}, 0);	
-						}
+							}, "json");
 
+						} else {
+							setTimeout(function () {
+								$.swipeoutClose(li);
+							}, 0);
+						}
 					});
 				}
 			});
 		},
 		ajax_get:function(url,type,datas){
-			
 			var refreshSelector = self.options.pullRefreshContainer;
 			var ulSelector =  self.options.ulContainer;
 			var liSelector = self.options.liContainer;
 			var data_types = self.options.ajaxDatasType;
 			mui.get(url,datas,function(data){
-
 				var res = data.res;
 				var data_arrs = [];
 				if(res == '0'){
@@ -581,14 +595,16 @@
 						var op = {"canDel":canDel,"canEdit":canEdit,"isEditable":isEditable};
 						liTypeJson.op = op;
 
-						win.getElementById("op_con").innerHTML = opContent;
+						doc.getElementById("op_con").innerHTML = opContent;
 					}
 					if(TOTAL == 0){
 						if(type == 1){
-							mui(refreshSelector).pullRefresh().endPullupToRefresh(true);
+							// mui(refreshSelector).pullRefresh().endPullupToRefresh(true);
+							myScrollClass.endPullUpToRefresh(true);
 						}else{
 							jQuery(liSelector).remove();
-							mui(refreshSelector).pullRefresh().endPulldownToRefresh(); //refresh completed
+							// mui(refreshSelector).pullRefresh().endPulldownToRefresh(); //refresh completed
+							myScrollClass.endPullDownToRefresh(); // refresh
 						}
 					}else{
 						if(type == 0 || type == -1){
@@ -609,26 +625,33 @@
 						mui.each(data_arrs,function(index,data){
 							var li = self.liContentByType(liTypeJson,data);
 							if(type == 1){
-								mui(refreshSelector).pullRefresh().endPullupToRefresh(PAGE_NUM*PAGE_SIZE >=TOTAL); //参数为true代表没有更多数据了。
+								// mui(refreshSelector).pullRefresh().endPullupToRefresh(PAGE_NUM*PAGE_SIZE >=TOTAL); //参数为true代表没有更多数据了。
 								jQuery(ulSelector).append(li);
+								myScrollClass.endPullUpToRefresh(PAGE_NUM * PAGE_SIZE >= TOTAL); // 参数为true代表没有更多数据了。
 							}else if(type == 0){
 								jQuery(ulSelector).append(li);
-								mui(refreshSelector).pullRefresh().endPulldownToRefresh(); //refresh completed
-								if(PAGE_NUM*PAGE_SIZE <TOTAL){
-									mui(refreshSelector).pullRefresh().enablePullupToRefresh();
+								// mui(refreshSelector).pullRefresh().endPulldownToRefresh(); //refresh completed
+								myScrollClass.endPullDownToRefresh(); // refresh
+								if(PAGE_NUM*PAGE_SIZE <TOTAL) {
+									// mui(refreshSelector).pullRefresh().enablePullupToRefresh();
+									myScrollClass.endPullUpToRefresh();
 								}
 							}else if(type == -1){
 								jQuery(ulSelector).append(li);
-								mui(refreshSelector).pullRefresh().endPullupToRefresh(PAGE_NUM*PAGE_SIZE >=TOTAL); //参数为true代表没有更多数据了。
+								// mui(refreshSelector).pullRefresh().endPullupToRefresh(PAGE_NUM*PAGE_SIZE >=TOTAL); //参数为true代表没有更多数据了。
+								myScrollClass.endPullUpToRefresh(PAGE_NUM * PAGE_SIZE >= TOTAL); // 参数为true代表没有更多数据了。
 							}
 						})
 					}
 				}else{
-					mui(refreshSelector).pullRefresh().endPullupToRefresh(true);
-					var msg = data.msg;
-					$.toast(msg);
+					// 会报错：myScrollClass.endPullupToRefresh不是方法
+					// myScrollClass.endPullupToRefresh(true);
+					console.log(data.msg);
+					// popup窗口是iframe好像不被mui认为是在5+app 环境中，调用mui.alert的时候，报：plus is not defined，调用$.toast也不执行
+					// $.toast(data.msg);
+					alert(data.msg);
 				}
 			},"json");
 	    }
 	})
-})(mui,document,window)
+})(mui,window,document)

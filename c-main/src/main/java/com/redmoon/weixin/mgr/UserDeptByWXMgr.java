@@ -7,6 +7,7 @@ import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.organization.DeptTreeAction;
@@ -128,7 +129,7 @@ public  class UserDeptByWXMgr {
                 try {
                     _flag = departmentService.create(lf);
                 } catch (ValidateException e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(getClass()).error(e);
                     throw new ErrMsgException(e.getMessage());
                 }
             }

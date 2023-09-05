@@ -1,8 +1,8 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
-    <title>文本框</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>文本框</title>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
     <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
     <!--[if lte IE 6]>
@@ -73,10 +73,9 @@
                 <script>
                     function orgtypeOnChange() {
                         if (!oNode) {
-                            if ($G('orgtype').value >=2) {
+                            if ($G('orgtype').value >= 2) {
                                 $G('maxV').value = '';
-                            }
-                            else {
+                            } else {
                                 $G('maxV').value = '100';
                             }
                         }
@@ -106,7 +105,28 @@
         <tr>
             <th>
                 <span>
-                    长&nbsp;&nbsp;X&nbsp;&nbsp;宽
+                    格式
+                </span>
+            </th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="format">
+                    <option value=""></option>
+                    <option value="0">千分位</option>
+                    <option value="1">百分比</option>
+                </select>
+                <br/>
+                （需与价格型联用）
+            </td>
+            <td>
+            </td>
+        </tr>
+        <tr>
+            <th>
+                <span>
+                    长<!--&nbsp;&nbsp;X&nbsp;&nbsp;宽-->
                     <span style="display: none">&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;字体大小</span>
                 </span>
             </th>
@@ -115,8 +135,12 @@
         <tr>
             <td>
                 <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>
-                X
-                <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/>
+                <select id="unit" style="width:60px">
+                    <option value="px" selected>px</option>
+                    <option value="%">%</option>
+                </select>
+                <span style="display: none">X
+                    <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/></span>
                 <span style="display: none">
                 &
                 <input id="orgfontsize" type="text" value="" class="input-small span1" placeholder="auto"/> px
@@ -128,14 +152,31 @@
         </tr>
         <tr>
             <th><span>只读</span></th>
-            <th><span>提示</span></th>
+            <th><span>只读类型</span></th>
         </tr>
         <tr>
             <td>
                 <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1"/>
             </td>
             <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span>提示</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
                 <textarea id="tip" name="tip" style="width:250px; height:100px"></textarea>
+            </td>
+            <td>
             </td>
         </tr>
     </table>
@@ -155,6 +196,13 @@
             var gFontSize = oNode.getAttribute('orgfontsize');
             var gAlign = oNode.getAttribute('orgalign');
             var gWidth = oNode.getAttribute('orgwidth');
+            var gUnit = 'px';
+            if (gWidth.endsWith('%')) {
+                gUnit = '%';
+                gWidth = gWidth.substring(0, gWidth.length - 1);
+            } else if (gWidth.endsWith('px')) {
+                gWidth = gWidth.substring(0, gWidth.length - 2);
+            }
             var gHeight = oNode.getAttribute('orgheight');
 
             var gType = oNode.getAttribute('fieldType');
@@ -175,8 +223,17 @@
                 $G('isReadOnly').checked = false;
             }
 
+            var gReadOnlyType = oNode.getAttribute("readOnlyType");
+            if (gReadOnlyType == null) {
+                gReadOnlyType = '';
+            }
+            $G('readOnlyType').value = gReadOnlyType;
+
+            var gFormat = oNode.getAttribute("format");
+
             gValue = gValue == null ? '' : gValue;
             gTitle = gTitle == null ? '' : gTitle;
+            gFormat = gFormat == null ? '' : gFormat;
             $G('orgvalue').value = gValue;
             $G('orgname').value = gName;
             $G('orgtitle').value = gTitle;
@@ -185,6 +242,7 @@
             }
             $G('orgfontsize').value = gFontSize;
             $G('orgwidth').value = gWidth;
+            $G('unit').value = gUnit;
             $G('orgheight').value = gHeight;
             $G('orgalign').value = gAlign;
             $G('orgtype').value = gType;
@@ -204,6 +262,7 @@
                 $G('maxV').value = gMaxV;
             }
             $G('tip').value = gTip;
+            $G('format').value = gFormat;
         }
     }
     dialog.oncancel = function () {
@@ -231,6 +290,7 @@
         var gAlign = $G('orgalign').value;
         var gWidth = $G('orgwidth').value;
         var gHeight = $G('orgheight').value;
+        var gUnit = $G('unit').value;
 
         var gType = $G('orgtype').value;
         var gCanNull = $G('canNull').checked ? 0 : 1;
@@ -239,6 +299,8 @@
         var gMaxT = $G('maxT').value;
         var gMaxV = $G('maxV').value;
         var gTip = $G('tip').value;
+        var gReadOnlyType = $G('readOnlyType').value;
+        var gFormat = $G('format').value;
 
         // 字符串型字段的字数最大为21845，相当于：最大长度65532字节/3
         // 此处将边界值设为20000，是考虑到还有其它字段，如果一个表中的字段总长度超长会报错，表一行最多支持65535字符(不包括text等)
@@ -247,8 +309,8 @@
                 alert('最小长度不能超过20000');
                 return false;
             }
-            if (gMinV!='' && gMaxV!='') {
-                if (gMinV > gMaxV) {
+            if (gMinV != '' && gMaxV != '') {
+                if (parseInt(gMinV) > parseInt(gMaxV)) {
                     alert('最小长度不能大于最大长度');
                     return false;
                 }
@@ -257,8 +319,7 @@
             if (gMaxV == '') {
                 alert('请输入最大长度');
                 return false;
-            }
-            else if (gMaxV > 20000) {
+            } else if (gMaxV > 20000) {
                 alert('最大长度不能超过20000');
                 return false;
             }
@@ -288,9 +349,11 @@
                     oNode.setAttribute('orgalign', gAlign);
                 }
                 if (gWidth != '') {
-                    oNode.style.width = gWidth + 'px';
-                    // style += 'width:' + gWidth + 'px;';
-                    oNode.setAttribute('orgwidth', gWidth);
+                    oNode.style.width = gWidth + gUnit;
+                    oNode.setAttribute('orgwidth', gWidth + gUnit);
+                } else {
+                    oNode.style.width = '';
+                    oNode.setAttribute('orgwidth', '');
                 }
                 if (gHeight != '') {
                     oNode.style.height = gHeight + 'px';
@@ -314,7 +377,12 @@
                     oNode.removeAttribute("readonly");
                 }
 
+                // if (gFormat != '') {
+                    oNode.setAttribute('format', gFormat);
+                // }
+
                 oNode.setAttribute("tip", gTip);
+                oNode.setAttribute("readOnlyType", gReadOnlyType);
                 // oNode.setAttribute('style',style );
                 // oNode.style.cssText=style;//ie7
                 editor.execCommand('insertHtml', oNode.outerHTML);
@@ -348,15 +416,16 @@
             } else {
                 oNode.setAttribute('orgalign', '');
             }
+
             if (gWidth != '') {
-                oNode.style.width = gWidth+ 'px';
-                oNode.setAttribute('orgwidth', gWidth);
+                oNode.style.width = gWidth + gUnit;
+                oNode.setAttribute('orgwidth', gWidth + gUnit);
             } else {
                 oNode.style.width = '';
                 oNode.setAttribute('orgwidth', '');
             }
             if (gHeight != '') {
-                oNode.style.height = gHeight+ 'px';
+                oNode.style.height = gHeight + 'px';
                 oNode.setAttribute('orgheight', gHeight);
             } else {
                 oNode.style.height = '';
@@ -383,7 +452,12 @@
                 oNode.removeAttribute("readonly");
             }
 
+            // if (gFormat != '') {
+                oNode.setAttribute('format', gFormat);
+            // }
+
             oNode.setAttribute("tip", gTip);
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
 
             delete UE.plugins[thePlugins].editdom;
         }

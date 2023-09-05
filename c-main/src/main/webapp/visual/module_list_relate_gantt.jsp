@@ -128,7 +128,7 @@ while (ir.hasNext()) {
 			fdao = fdao.getFormDAOOfRelate(fd, relateFieldValue);
 			if (fdao!=null) {
 				long id = fdao.getId();			
-				response.sendRedirect("module_show_relate.jsp?id=" + id + "&parentId=" + parentId + "&moduleCodeRelated=" + formCodeRelated + "&code=" + formCode);
+				response.sendRedirect("moduleShowRelatePage.do?id=" + id + "&parentId=" + parentId + "&moduleCodeRelated=" + formCodeRelated + "&code=" + formCode);
 				return;
 			}
 		}
@@ -456,7 +456,7 @@ var config={
             maxScale: "<%=msd.getString("scale_max")%>",
             itemsPerPage: 10,
             onItemClick: function(data) {
-            	addTab("<%=fd.getName()%>", "<%=request.getContextPath()%>/flow_modify.jsp?flowId=" + data);
+            	addTab("<%=fd.getName()%>", "<%=request.getContextPath()%>/flowShowPage.do?flowId=" + data);
             },
             onAddClick: function(dt, rowId) {
             },

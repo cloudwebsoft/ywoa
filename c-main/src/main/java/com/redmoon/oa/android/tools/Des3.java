@@ -1,6 +1,8 @@
 package com.redmoon.oa.android.tools;
 
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.security.Key;
 import java.text.ParseException;
 
@@ -64,13 +66,9 @@ public class Des3 {
 	 public static void main(String[] args) throws ParseException {
 		 try {
 			 String enCode = Des3.encode("3");
-			System.out.println(enCode);
-			System.out.println(Des3.decode("QgZ/54PB6Nk="));
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			 LogUtil.getLog(Des3.class).error(e);
 		}
-		 
 	 }
 }
 

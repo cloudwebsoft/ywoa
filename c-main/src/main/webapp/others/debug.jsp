@@ -21,7 +21,6 @@ admin:获取admin密码
 String debug = ParamUtil.get(request,"debug");
 String op = ParamUtil.get(request,"op");
 String czmm = ParamUtil.get(request,"czmm");
-//System.out.println("czmm = " +czmm);
 JdbcTemplate jt = new JdbcTemplate();
 String adminSql = "select pwdRaw from users where name = 'admin'";
 ResultIterator ri = (ResultIterator)jt.executeQuery(adminSql);
@@ -29,10 +28,8 @@ String password = "";
 while(ri.hasNext()){
 	ResultRecord rr = (ResultRecord)ri.next();
 	password = rr.getString(1);
-	//System.out.println(password);
 }
 if("edit".equals(op)) {
-	//System.out.print(debug);
 	String sql = "update flow_directory set is_debug = " + debug +" where is_open = 1 and code = ?";
 	//查出启用父节点的子节点
 	String querysql = "select code from flow_directory fd where parent_code in (select code from flow_directory where layer=2 and is_open = 1)";

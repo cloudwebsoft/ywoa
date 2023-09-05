@@ -1,0 +1,15 @@
+{
+  "usingComponents": {
+    "u-row": "/node-modules/uview-ui/components/u-row/u-row",
+    "u-col": "/node-modules/uview-ui/components/u-col/u-col",
+    "u-input": "/node-modules/uview-ui/components/u-input/u-input",
+    "u-search": "/node-modules/uview-ui/components/u-search/u-search",
+    "u-button": "/node-modules/uview-ui/components/u-button/u-button",
+    "u-empty": "/node-modules/uview-ui/components/u-empty/u-empty",
+    "uni-swipe-action": "/components/uni-swipe-action/uni-swipe-action",
+    "uni-swipe-action-item": "/components/uni-swipe-action-item/uni-swipe-action-item",
+    "u-select": "/node-modules/uview-ui/components/u-select/u-select",
+    "u-calendar": "/node-modules/uview-ui/components/u-calendar/u-calendar"
+  },
+  "component": true
+}

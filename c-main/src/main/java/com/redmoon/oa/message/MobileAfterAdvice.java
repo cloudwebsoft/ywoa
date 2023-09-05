@@ -6,12 +6,9 @@ import com.cloudwebsoft.framework.aop.advice.*;
 import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.sms.IMsgUtil;
 import com.redmoon.oa.sys.DebugUtil;
-import org.apache.log4j.Logger;
 import com.redmoon.oa.person.UserMgr;
 import com.redmoon.oa.person.UserDb;
 import cn.js.fan.util.StrUtil;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * <p>Title: </p>
@@ -40,11 +37,8 @@ public class MobileAfterAdvice extends AfterAdvice {
     public void After(Object proxy, Method method, Object[] args) throws
             Throwable {
         if (method.getName().equals("AddMsg")) {
-            // System.out.println("proxy obj=" + proxy);
             IMessage imsg = (IMessage) proxy;
             String receiver = imsg.getFileUpload().getFieldValue("receiver");
-            // System.out.println(this.getClass().getName() + " receiver=" + imsg.getFileUpload().getFieldValue("receiver"));
-            // System.out.println(this.getClass().getName() + " toUser=" + imsg.getReceiver());
             IMsgUtil imu = SMSFactory.getMsgUtil();
             String isToMobile = StrUtil.getNullStr(imsg.getFileUpload().getFieldValue("isToMobile"));
             if (isToMobile.equals("true") && imu != null) {
@@ -76,8 +70,6 @@ public class MobileAfterAdvice extends AfterAdvice {
             String receiver = imsg.getReceiver();
             // String receiver = imsg.getFileUpload().getFieldValue("receiver");
 
-            // System.out.println(this.getClass().getName() + " receiver=" + imsg.getFileUpload().getFieldValue("receiver"));
-            // System.out.println(this.getClass().getName() + " toUser=" + imsg.getReceiver());
             IMsgUtil imu = SMSFactory.getMsgUtil();
             // String isToMobile = StrUtil.getNullStr(imsg.getFileUpload().getFieldValue("isToMobile"));
             

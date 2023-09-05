@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>关联模块编辑</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css"/>
+    <link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <style>
+        input[readonly]{
+            background-color: #ddd;
+        }
+        select[readonly]{
+            background-color: #ddd;
+        }
+        textarea[readonly]{
+            background-color: #ddd;
+        }
+        select {
+            line-height: 27px;
+            height: 29px !important;
+            border: 1px solid #d4d4d4;
+        }
+    </style>
+    <script src="../inc/common.js"></script>
+    <script src="../js/jquery-1.9.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <script src="../js/jquery.raty.min.js"></script>
+    <script src="../inc/livevalidation_standalone.js"></script>
+    <script src="../inc/upload.js"></script>
+    <script src="../inc/flow_dispose_js.jsp"></script>
+    <script th:src="@{'/inc/flow_js.jsp?parentFormCode=' + ${parentFormCode}}"></script>
+    <script src="../inc/ajax_getpage.jsp"></script>
+    <script th:src="@{'/flow/form_js/form_js_' + ${formCodeRelated} + '.jsp?pageType=edit&parentId=' + ${parentId} + '&id=' + ${id} + '&formCode=' + ${parentFormCode} + '&formCodeRelated=' + ${formCodeRelated} + '&moduleCodeRelated=' + ${moduleCodeRelated} + '&random=' + ${random}}"></script>
+    <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
+    <script src="../js/datepicker/jquery.datetimepicker.js"></script>
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <link href="../js/select2/select2.css" rel="stylesheet"/>
+    <script src="../js/select2/select2.js"></script>
+    <script src="../js/select2/i18n/zh-CN.js"></script>
+    <script src="../inc/map.js"></script>
+</head>
+<body>
+<div th:if="${isNav and hasTab}" class="tabs1Box">
+    <div id="tabs1">
+        <ul>
+            <li th:each="json : ${aryTab}" th:id="${json.id}" th:attr="tagName=${json.name}">
+                <th:block th:switch="${json.get('target')!=null and json.target eq 'newTab'}">
+                    <th:block th:case="true">
+                        <a href="javascript:;" th:title="${json.name}" th:onclick="addTab('[(${json.name})]', '[(${json.url})]')"><span>[(${json.name})]</span></a>
+                    </th:block>
+                    <th:block th:case="*">
+                        <a th:href="${json.url}" title="${json.name}"><span>[(${json.name})]</span></a>
+                    </th:block>
+                </th:block>
+            </li>
+        </ul>
+    </div>
+    <script th:inline="javascript">
+        $("#menu[(${menuItem})]").addClass("current");
+    </script>
+</div>
+<div class="spacerH"></div>
+<div id="visualDiv" style="margin-top: 20px">
+    <form method="post" enctype="multipart/form-data" name="visualForm" id="visualForm">
+        <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
+            <tr>
+                <td align="left">
+                    <table width="100%">
+                        <tr>
+                            <td align="center">
+                                [(${rend})]
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr th:if="${isHasAttachment}">
+                <td id="attBox" align="left" style="padding-left: 10px">
+                    <script>initUpload()</script>
+                </td>
+            </tr>
+            <tr>
+                <td height="30" align="center">
+                    <input name="id" th:value="${id}" type="hidden"/>
+                    <input id="cws_id" name="cws_id" th:value="${relateFieldValue}" type="hidden"/>
+                    <button id="btnOk" class="btn btn-default">确定</button>
+                    &nbsp;&nbsp;
+                    <button th:if="${!isTabStyleHor}" id="btnClose" class="btn btn-default">关闭</button>
+                    <input id="helper" value="1" type="hidden"/>
+                </td>
+            </tr>
+        </table>
+    </form>
+    <div id="attBox" style="margin-top: 10px">
+
+    </div>
+</div>
+<script src="../js/layui/layui.js" charset="utf-8"></script>
+<script th:inline="javascript">
+    var isPageStyleLight = [(${isPageStyleLight})];
+    if (isPageStyleLight) {
+        // 不能放在$(function中，原来的tabStyle_8风格会闪现
+        // $(function() {
+        var $table = $('#visualForm').find('.tabStyle_8');
+        $table.addClass('layui-table');
+        $table.removeClass('tabStyle_8');
+        // })
+    }
+
+    var layer;
+    layui.use('layer', function(){
+        layer = layui.layer;
+    });
+
+    $(function () {
+        SetNewDate();
+
+        refreshAttach();
+
+        $('#btnClose').click(function() {
+            closeDlg();
+        })
+    });
+
+    function refreshAttach() {
+        var isHasAttachment = [(${isHasAttachment})];
+        if (!isHasAttachment) {
+            return;
+        }
+
+        $.ajax({
+            type: "post",
+            url: "moduleAttListPage.do",
+            data: {
+                id: "[(${id})]",
+                moduleCode: "[(${moduleCodeRelated})]"
+            },
+            dataType: "html",
+            beforeSend: function(XMLHttpRequest){
+                $('#visualForm').showLoading();
+            },
+            success: function(data, status){
+                // 删除编辑时界面上添加的文件
+                delAllUploadFile();
+                $('#attBox').html(data);
+            },
+            complete: function(XMLHttpRequest, status){
+                $('#visualForm').hideLoading();
+            },
+            error: function(XMLHttpRequest, textStatus){
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    function delAtt(attId) {
+        layer.confirm('您确定要删除么？', {icon: 3, title: '提示'}, function (index) {
+            $.ajax({
+                url: "delAttachRelate.do",
+                type: "post",
+                data: {
+                    id: [(${id})],
+                    parentId: [(${parentId})],
+                    code: "[(${moduleCode})]",
+                    formCodeRelated: "[(${formCodeRelated})]",
+                    attachId: attId,
+                    mode: "[(${mode})]",
+                    moduleCodeRelated: "[(${moduleCodeRelated})]"
+                },
+                beforeSend: function(XMLHttpRequest){
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    var data = $.parseJSON($.trim(data));
+                    layer.msg(data.msg);
+                    if (data.ret=="1") {
+                        $('#trAtt' + attId).remove();
+                    }
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        })
+    }
+
+    // 控件完成上传后，调用Operate()
+    function Operate() {
+        // alert(redmoonoffice.ReturnMessage);
+    }
+
+    $(function () {
+        var f_helper = new LiveValidation('helper');
+
+        $('#btnOk').click(function (e) {
+            e.preventDefault();
+
+            if (!LiveValidation.massValidate(f_helper.formObj.fields)) {
+                jAlert("请检查表单中的内容填写是否正常！", "提示");
+                return;
+            }
+            $('#btnOk').attr("disabled", true);
+
+            var formData = new FormData($('#visualForm')[0]);
+
+            $.ajax({
+                url: 'updateRelate.do?id=[(${id})]&parentId=[(${parentId})]&code=[(${moduleCode})]&formCodeRelated=[(${formCodeRelated})]&isNav=[(${isNav})]&moduleCodeRelated=[(${moduleCodeRelated})]&tabIdOpener=[(${tabIdOpener})]' ,
+                type: 'post',
+                data: formData,
+                async: true,
+                // 下面三个参数要指定，如果不指定，会报一个JQuery的错误
+                cache: false,
+                contentType: false,
+                processData: false,
+                dataType: "html",
+                beforeSend: function(XMLHttpRequest){
+                    $('body').showLoading();
+                },
+                success: function (data) {
+                    var data = $.parseJSON($.trim(data));
+                    if (data.ret=="0") {
+                        layer.msg(data.msg);
+                        $('#btnOk').attr("disabled", false);
+                    }
+                    else {
+                        try {
+                            onModuleEdit[(${moduleCodeRelated})]([(${id})], '[(${tabIdOpener})]', [(${isTabStyleHor})]);
+                        }
+                        catch (e) {}
+
+                        reloadTab("[(${tabIdOpener})]");
+
+                        // 如果有父窗口，则自动刷新父窗口
+                        if (window.opener != null) {
+                            window.opener.location.reload();
+                            window.opener.focus();
+                            window.close();
+                        }
+                        else {
+                            var isTabStyleHor = [(${isTabStyleHor})];
+                            if (isTabStyleHor) {
+                                layer.confirm(data.msg, {icon: 3, title: '提示'}, function (index) {
+                                    window.location.reload();
+                                });
+                            }
+                            else {
+                                parent.layui.table.reload('table[(${moduleCodeRelated})]');
+                                layer.open({
+                                    type: 1
+                                    ,offset: 'auto'
+                                    ,id: 'dlg' //防止重复弹出
+                                    ,content: '<div style="padding: 20px 100px;">'+ data.msg +'</div>'
+                                    ,btn: '确定'
+                                    ,btnAlign: 'c' //按钮居中
+                                    ,shade: 0 //不显示遮罩
+                                    ,yes: function(){
+                                        closeDlg();
+                                    }
+                                });
+                            }
+                        }
+                    }
+                },
+                complete: function(XMLHttpRequest, status){
+                    $('body').hideLoading();
+                },
+                error: function (returndata) {
+                    $('body').hideLoading();
+                    $('#btnOk').attr("disabled", false);
+                    alert(returndata);
+                }
+            });
+        });
+    });
+
+    function closeDlg() {
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index)
+    }
+
+    $(function() {
+        $('input, select, textarea').each(function () {
+            if (!$('body').hasClass('form-inline')) {
+                $('body').addClass('form-inline');
+            }
+            if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type') != 'hidden' && $(this).attr('type') != 'file') {
+                $(this).addClass('form-control');
+            }
+        });
+    });
+</script>
+</body>
+</html>

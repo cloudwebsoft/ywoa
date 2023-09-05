@@ -5,10 +5,10 @@ import java.sql.ResultSet;
 import cn.js.fan.web.Global;
 import java.sql.SQLException;
 import cn.js.fan.db.Conn;
-import org.apache.log4j.Logger;
 import cn.js.fan.db.SQLFilter;
 import java.util.Vector;
 import cn.js.fan.cache.jcs.ICacheMgr;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.fileark.DocContent;
 import cn.js.fan.security.SecurityUtil;
 
@@ -23,15 +23,15 @@ public class DocContentCacheMgr implements ICacheMgr {
 
     static boolean isRegisted = false;
 
-    Logger logger = Logger.getLogger(DocContentCacheMgr.class.getName());
     RMCache rmCache = RMCache.getInstance();
 
     String connname = "";
 
     public DocContentCacheMgr() {
         connname = Global.getDefaultDB();
-        if (connname.equals(""))
-            logger.info("DocContentCacheMgr:默认数据库名为空！");
+        if (connname.equals("")) {
+            LogUtil.getLog(getClass()).info("DocContentCacheMgr:默认数据库名为空！");
+        }
 
         regist();
     }
@@ -39,12 +39,14 @@ public class DocContentCacheMgr implements ICacheMgr {
     /**
      * 定时刷新缓存
      */
+    @Override
     public void timer() {
     }
 
     /**
      * regist in RMCache
      */
+    @Override
     public void regist() {
         if (!isRegisted) {
             rmCache.regist(this);
@@ -58,7 +60,7 @@ public class DocContentCacheMgr implements ICacheMgr {
                 rmCache.invalidateGroup(DOCCONTENTBLOCKCACHEPRIX + doc_id);
                 rmCache.invalidateGroup(COUNT_GROUP_NAME);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -74,7 +76,7 @@ public class DocContentCacheMgr implements ICacheMgr {
             rmCache.invalidateGroup(DOCCONTENTBLOCKCACHEPRIX + doc_id);
             rmCache.invalidateGroup(COUNT_GROUP_NAME);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -82,7 +84,7 @@ public class DocContentCacheMgr implements ICacheMgr {
         try {
             rmCache.remove(cachePrix+ doc_id + ":" + page_num);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
     }
 
@@ -99,7 +101,7 @@ public class DocContentCacheMgr implements ICacheMgr {
             longArray = (long[]) rmCache.getFromGroup(key,
                     DOCCONTENTBLOCKCACHEPRIX + groupKey);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         //If already in cache, return the block.
         if (longArray != null) {
@@ -128,7 +130,7 @@ public class DocContentCacheMgr implements ICacheMgr {
                 // Set the maxium number of rows to end at the end of this block.
                 conn.setMaxRows(DOCCONTENT_BLOCK_SIZE * (blockID + 1));
                 rs = conn.executeQuery(query);
-                //logger.info("query=" + query);
+                //LogUtil.getLog(getClass()).info("query=" + query);
                 // Grab THREAD_BLOCK_ROWS rows at a time.
                 conn.setFetchSize(DOCCONTENT_BLOCK_SIZE);
                 // Many JDBC drivers don't implement scrollable cursors the real
@@ -144,30 +146,26 @@ public class DocContentCacheMgr implements ICacheMgr {
                     DocBlock.addElement(new Long(rs.getLong(1)));
                     count++;
                 }
-            } catch (SQLException sqle) {
-                sqle.printStackTrace();
+            } catch (SQLException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (rs != null) {
                     try {
                         rs.close();
-                    } catch (SQLException e) {e.printStackTrace();}
-                    rs = null;
+                    } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
                 }
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
             int len = DocBlock.size();
             long[] docs = new long[len];
             for (int i = 0; i < len; i++) {
-                docs[i] = ((Long) DocBlock.elementAt(i)).longValue();
+                docs[i] = (Long) DocBlock.elementAt(i);
             }
             // Add the thread block to cache
             try {
                 rmCache.putInGroup(key, DOCCONTENTBLOCKCACHEPRIX + groupKey, docs);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             /**
              * The actual block may be smaller than THREAD_BLOCK_SIZE. If that's
@@ -199,7 +197,7 @@ public class DocContentCacheMgr implements ICacheMgr {
         try {
             count = (Integer) rmCache.getFromGroup(query, COUNT_GROUP_NAME);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
 
         // If already in cache, return the count.
@@ -213,30 +211,26 @@ public class DocContentCacheMgr implements ICacheMgr {
             ResultSet rs = null;
             try {
                 rs = conn.executeQuery(query);
-                if (rs.next())
+                if (rs.next()) {
                     docCount = rs.getInt(1);
-            } catch (SQLException sqle) {
-                sqle.printStackTrace();
+                }
+            } catch (SQLException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (rs != null) {
                     try {
                         rs.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
-                    rs = null;
                 }
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
             // Add the thread count to cache
             try {
-                rmCache.putInGroup(query, COUNT_GROUP_NAME,
-                                   new Integer(docCount));
+                rmCache.putInGroup(query, COUNT_GROUP_NAME, docCount);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             return docCount;
         }
@@ -249,7 +243,7 @@ public class DocContentCacheMgr implements ICacheMgr {
             try {
                 rmCache.put(cachePrix + doc_id + ":" + page_num, dc);
             } catch (Exception e) {
-                logger.error("getDocContent:" + e.getMessage());
+                LogUtil.getLog(getClass()).error("getDocContent:" + e.getMessage());
             }
             return dc;
         } else {
@@ -260,7 +254,6 @@ public class DocContentCacheMgr implements ICacheMgr {
 
     /**
      *
-     * @param sql String
      * @return int -1 表示sql语句不合法
      */
     public int getContentCount(int docId) {
@@ -271,7 +264,7 @@ public class DocContentCacheMgr implements ICacheMgr {
         try {
             count = (Integer) rmCache.getFromGroup(query, COUNT_GROUP_NAME);
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
 
         // If already in cache, return the count.
@@ -285,30 +278,27 @@ public class DocContentCacheMgr implements ICacheMgr {
             ResultSet rs = null;
             try {
                 rs = conn.executeQuery(query);
-                if (rs.next())
+                if (rs.next()) {
                     docCount = rs.getInt(1);
-            } catch (SQLException sqle) {
-                sqle.printStackTrace();
+                }
+            } catch (SQLException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (rs != null) {
                     try {
                         rs.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.getLog(getClass()).error(e);
                     }
-                    rs = null;
                 }
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
+                conn.close();
             }
             // Add the thread count to cache
             try {
                 rmCache.putInGroup(query, COUNT_GROUP_NAME,
-                                   new Integer(docCount));
+                        docCount);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                LogUtil.getLog(getClass()).error(e.getMessage());
             }
             return docCount;
         }

@@ -35,164 +35,6 @@
 			<objCachable>true</objCachable>
 			<listCachable>true</listCachable>			  	        
 	    </table>
-	    <table name="sq_user_priv" objName="com.redmoon.forum.person.UserPrivDb">
-	        <primaryKey type="String">
-	           <unit>
-	        	<name>user_name</name>
-	        	<type>String</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_user_priv (user_name,priv,attach_day_count,attach_size,attach_upload,attach_download,add_topic,reply_topic,vote,search) values(?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_user_priv set priv=?,attach_day_count=?,attach_size=?,add_topic=?,reply_topic=?,vote=?,attach_upload=?,attach_download=?,attach_today=?,attach_today_upload_count=?,search=?,is_default=? where user_name=?</save>
-	        <load>select user_name,priv,attach_day_count,attach_size,add_topic,reply_topic,vote,attach_upload,attach_download,attach_today,attach_today_upload_count,search,is_default from sq_user_priv where user_name=?</load>
-	        <list>select user_name from sq_user_priv</list>
-	        <del>delete from sq_user_priv where user_name=?</del>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="sq_user_group_priv" objName="com.redmoon.forum.person.UserGroupPrivDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>group_code</name>
-	        	<type>String</type>
-	           </unit>
-	           <unit>
-	        	<name>board_code</name>
-	        	<type>String</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_user_group_priv (group_code,board_code,priv,attach_upload,attach_download,add_topic,reply_topic,vote,search,view_topic,view_userinfo,disk_space_allowed) values(?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_user_group_priv set priv=?,add_topic=?,reply_topic=?,vote=?,attach_upload=?,attach_download=?,money_code=?,money_sum=?,is_default=?,search=?,enter_board=?,view_topic=?,view_listmember=?,view_online=?,view_userinfo=?,disk_space_allowed=? where group_code=? and board_code=?</save>
-	        <load>select group_code,board_code,priv,add_topic,reply_topic,vote,attach_upload,attach_download,money_code,money_sum,is_default,search,enter_board,view_topic,view_listmember,view_online,view_userinfo,disk_space_allowed from sq_user_group_priv where group_code=? and board_code=?</load>
-	        <list>select group_code,board_code from sq_user_group_priv</list>
-	        <del>delete from sq_user_group_priv where group_code=? and board_code=?</del>
-	        <sqls></sqls>	        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="sq_poll" objName="com.redmoon.forum.MsgPollDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>msg_id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_poll (msg_id,expire_date,max_choice) values(?,?,?)</create>
-	        <save>update sq_poll set expire_date=?,max_choice=? where msg_id=?</save>
-	        <load>select msg_id,expire_date,max_choice from sq_poll where msg_id=?</load>
-	        <list>select msg_id from sq_poll</list>
-	        <del>delete from sq_poll where msg_id=?</del>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-					<objCachable>true</objCachable>
-					<listCachable>true</listCachable>
-	    </table>	
-	    <table name="sq_poll_option" objName="com.redmoon.forum.MsgPollOptionDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>msg_id</name>
-	        	<type>long</type>
-	           </unit>
-	           <unit>
-	        	<name>orders</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_poll_option (msg_id,orders,content) values(?,?,?)</create>
-	        <save>update sq_poll_option set content=?,vote_user=?,vote_count=? where msg_id=? and orders=?</save>
-	        <load>select msg_id,orders,content,vote_user,vote_count from sq_poll_option where msg_id=? and orders=?</load>
-	        <list>select msg_id,orders from sq_poll_option</list>
-	        <del>delete from sq_poll_option where msg_id=? and orders=?</del>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-					<objCachable>true</objCachable>
-					<listCachable>true</listCachable>
-	    </table>
-	    <table name="sq_user_prop" objName="com.redmoon.forum.person.UserPropDb">
-	        <primaryKey type="String">
-	           <unit>
-	        	<name>name</name>
-	        	<type>String</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_user_prop (name,flower_count,egg_count,faction) values(?,?,?,?)</create>
-	        <save>update sq_user_prop set flower_count=?,egg_count=?,faction=?,is_music_autostart=?,app_action_id=?,wiki_score=? where name=?</save>
-	        <load>select name,flower_count,egg_count,faction,is_music_autostart,app_action_id,wiki_score from sq_user_prop where name=?</load>
-	        <list>select name from sq_user_prop</list>
-	        <del>delete from sq_user_prop where name=?</del>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="sq_advertisement" objName="com.redmoon.forum.ad.AdDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_advertisement (id,title,begin_date,end_date,ad_type,content,width,height,url,boardcodes,font_size,image_alt,ad_kind) values(?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_advertisement set title=?,begin_date=?,end_date=?,ad_type=?,content=?,width=?,height=?,url=?,boardcodes=?,font_size=?,image_alt=?,ad_kind=? where id=?</save>
-	        <load>select id,title,begin_date,end_date,ad_type,content,width,height,url,boardcodes,font_size,image_alt,ad_kind from sq_advertisement where id=?</load>
-	        <list>select id from sq_advertisement order by ad_type</list>
-	        <del>delete from sq_advertisement where id=?</del>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>	 
-	    <table name="blog_group_user" objName="com.redmoon.blog.BlogGroupUserDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>blog_id</name>
-	        	<type>long</type>
-	           </unit>
-	           <unit>
-	        	<name>user_name</name>
-	        	<type>String</type>
-	           </unit>			   
-	        </primaryKey>
-	        <create>insert into blog_group_user (blog_id,user_name,add_date,priv_topic,priv_all,check_status,apply_reason,priv_dir) values(?,?,?,?,?,?,?,?)</create>
-	        <save>update blog_group_user set user_name=?,priv_topic=?,priv_all=?,check_status=?,priv_dir=? where blog_id=? and user_name=?</save>
-	        <load>select user_name,blog_id,add_date,priv_topic,priv_all,check_status,apply_reason,priv_dir from blog_group_user where blog_id=? and user_name=?</load>
-	        <list>select blog_id,user_name from blog_group_user order by add_date desc</list>
-	        <del>delete from blog_group_user where blog_id=? and user_name=?</del>
-	        <sqls></sqls>	        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="sq_forum_robot" objName="com.redmoon.forum.robot.RobotDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_forum_robot (id,name,gather_count,charset,list_url_type,list_url_link,list_page_begin,list_page_end,list_field_rule,list_doc_url_rule,list_doc_url_prefix,doc_title_rule,doc_content_rule,doc_title_filter,doc_title_replace_before,doc_title_replace_after,doc_title_key,doc_content_filter,doc_content_replace_before,doc_content_replace_after,doc_save_img,doc_save_flash,doc_img_flash_prefix,dir_code,examine,topic_user_name,expression,doc_title_repeat_allow) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_forum_robot set name=?,gather_count=?,charset=?,list_url_type=?,list_url_link=?,list_page_begin=?,list_page_end=?,list_field_rule=?,list_doc_url_rule=?,list_doc_url_prefix=?,doc_title_rule=?,doc_content_rule=?,doc_title_filter=?,doc_title_replace_before=?,doc_title_replace_after=?,doc_title_key=?,doc_content_filter=?,doc_content_replace_before=?,doc_content_replace_after=?,doc_save_img=?,doc_save_flash=?,doc_img_flash_prefix=?,dir_code=?,examine=?,topic_user_name=?,expression=?,doc_title_repeat_allow=? where id=?</save>
-	        <load>select id,name,gather_count,charset,list_url_type,list_url_link,list_page_begin,list_page_end,list_field_rule,list_doc_url_rule,list_doc_url_prefix,doc_title_rule,doc_content_rule,doc_title_filter,doc_title_replace_before,doc_title_replace_after,doc_title_key,doc_content_filter,doc_content_replace_before,doc_content_replace_after,doc_save_img,doc_save_flash,doc_img_flash_prefix,dir_code,examine,topic_user_name,expression,doc_title_repeat_allow from sq_forum_robot where id=?</load>
-	        <list>select id from sq_forum_robot order by id desc</list>
-	        <del>delete from sq_forum_robot where id=?</del>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>false</objCachable>
-			<listCachable>false</listCachable>
-	    </table>			
 	    <table name="sq_scheduler" objName="com.redmoon.oa.fileark.kernel.JobUnitDb">
 	        <primaryKey type="int">
 	           <unit>
@@ -209,467 +51,6 @@
 	        <blockSize>100</blockSize>
 	        <formValidatorFile></formValidatorFile>
 	    </table>	
-	    <table name="sq_message_op" objName="com.redmoon.forum.MsgOperateDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_message_op (id,msg_id,op_type,expire_date,user_name,op_date,msg_title,msg_user,msg_date,boardcode,ip) values(?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_message_op set msg_id,op_type,expire_date,user_name,op_date where id=?</save>
-	        <load>select id,msg_id,op_type,expire_date,user_name,op_date,msg_title,msg_user,msg_date,boardcode,ip from sq_message_op where id=?</load>
-	        <list>select id from sq_message_op</list>
-	        <del>delete from sq_message_op where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-	    </table>
-		
-	    <table name="blog_footprint" objName="com.redmoon.blog.FootprintDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>msg_id</name>
-	        	<type>long</type>
-	           </unit>
-	           <unit>
-	        	<name>user_name</name>
-	        	<type>String</type>
-	           </unit>			   
-	        </primaryKey>
-	        <create>insert into blog_footprint (msg_id,blog_id,user_name,add_date) values(?,?,?,?)</create>
-	        <save>update blog_footprint set msg_id=?,blog_id=? where id=?</save>
-	        <load>select msg_id,blog_id,user_name,add_date from blog_footprint where msg_id=? and user_name=?</load>
-	        <list>select msg_id,user_name from blog_footprint</list>
-	        <del>delete from blog_footprint where msg_id=? and user_name=?</del>
-	        <sqls></sqls>	        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>		
-
-	    <table name="sq_tag" objName="com.redmoon.forum.TagDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_tag (id,name,create_date,is_system,user_name) values(?,?,?,?,?)</create>
-	        <save>update sq_tag set name=?,count=?,is_system=?,orders=?,color=?,is_bold=?,font_size=? where id=?</save>
-	        <load>select id,name,create_date,count,is_system,user_name,orders,color,is_bold,font_size from sq_tag where id=?</load>
-	        <list>select id from sq_tag order by count desc</list>
-	        <del>delete from sq_tag where id=?</del>
-	        <sqls>
-				<sql name="listSystemTag">select id from sq_tag where is_system=1 order by orders desc, count desc</sql>
-				<sql name="listTag">select id from sq_tag order by orders desc, count desc</sql>
-			</sqls>	        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="sq_tag_message" objName="com.redmoon.forum.TagMsgDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>tag_id</name>
-	        	<type>long</type>
-	           </unit>
-			   <unit>
-	        	<name>msg_id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_tag_message (tag_id, msg_id, create_date, user_name) values(?,?,?,?)</create>
-	        <save>update sq_tag_message set tag_id=?,msg_id=? where tag_id=?</save>
-	        <load>select tag_id, msg_id, create_date from sq_tag_message where tag_id=? and msg_id=?</load>
-	        <list>select tag_id,msg_id from sq_tag_message order by create_date desc</list>
-	        <del>delete from sq_tag_message where tag_id=? and msg_id=?</del>
-	        <sqls></sqls>	        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-		<table name="sq_message_report" objName="com.redmoon.forum.MessageReportDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_message_report (id,msg_id,report_reason,user_name,submit_date) values(?,?,?,?,?)</create>
-	        <save>update sq_message_report set msg_id=?,report_reason=?,user_name=?,submit_date=? where id=?</save>
-	        <load>select id,msg_id,report_reason,user_name,submit_date from sq_message_report where id=?</load>
-	        <list>select id,msg_id,report_reason,user_name,submit_date from sq_message_report order by submit_date desc</list>
-	        <del>delete from sq_message_report where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	    <table name="plugin_group" objName="com.redmoon.forum.plugin.group.GroupDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into plugin_group (id,name,description,create_date,creator,catalog_code,color) values(?,?,?,?,?,?,?)</create>
-	        <save>update plugin_group set name=?,description=?,catalog_code=?,logo=?,notice=?,is_open=?,msg_count=?,photo_count=?,total_count=?,user_count=?,skin_code=?,banner=?,recommand_point=?,color=?,is_bold=?,is_public=? where id=?</save>
-	        <load>select id,name,create_date,creator,catalog_code,description,logo,notice,is_open,msg_count,photo_count,total_count,user_count,skin_code,banner,recommand_point,color,is_bold,is_public from plugin_group where id=?</load>
-	        <list>select id from plugin_group order by recommand_point desc, id desc</list>
-	        <del>delete from plugin_group where id=?</del>
-	        <sqls>
-	        	<sql name="listcatalog">select id from plugin_group where catalog_code=? order by recommand_point desc,id desc</sql>
-	        	<sql name="listmine">select id from plugin_group where creator=? order by recommand_point desc, id desc</sql>
-	        	<sql name="listattend">select group_id from plugin_group_user where user_name=? order by add_date desc</sql>
-	        </sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-					<objCachable>true</objCachable>
-					<listCachable>true</listCachable>
-	    </table>	  			   
-	    <table name="plugin_group_user" objName="com.redmoon.forum.plugin.group.GroupUserDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>group_id</name>
-	        	<type>long</type>
-	           </unit>
-	           <unit>
-	        	<name>user_name</name>
-	        	<type>String</type>
-	           </unit>			   
-	        </primaryKey>
-	        <create>insert into plugin_group_user (group_id,user_name,add_date,priv_all,check_status,apply_reason) values(?,?,?,?,?,?)</create>
-	        <save>update plugin_group_user set user_name=?,priv_all=?,check_status=?,msg_count=?,photo_count=?,total_count=? where group_id=? and user_name=?</save>
-	        <load>select user_name,group_id,add_date,priv_all,check_status,apply_reason,msg_count,photo_count,total_count from plugin_group_user where group_id=? and user_name=?</load>
-	        <list>select group_id,user_name from plugin_group_user order by add_date desc</list>
-	        <del>delete from plugin_group_user where group_id=? and user_name=?</del>
-	        <sqls>
-				<sql name="listUserOfGroup">select group_id,user_name from plugin_group_user where group_id=</sql>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="plugin_group_thread" objName="com.redmoon.forum.plugin.group.GroupThreadDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>group_id</name>
-	        	<type>long</type>
-	           </unit>			   
-	        </primaryKey>
-	        <create>insert into plugin_group_thread (id,msg_id,group_id,add_date,reply_date,user_name) values(?,?,?,?,?,?)</create>
-	        <save>update plugin_group_thread set reply_date=? where id=?</save>
-	        <load>select id,msg_id,group_id,add_date from plugin_group_thread where id=?</load>
-	        <list>select id from plugin_group_thread order by add_date desc</list>
-	        <del>delete from plugin_group_thread where id=?</del>
-	        <sqls>
-				<sql name="groupthreadofmsg">select id from plugin_group_thread where msg_id=?</sql>
-				<sql name="threadOfGroup">select id from plugin_group_thread where group_id=?</sql>
-				<sql name="threadOfUserInGroup">select id from plugin_group_thread where group_id=? and user_name=?</sql>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	    <table name="plugin_group_activity" objName="com.redmoon.forum.plugin.group.GroupActivityDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into plugin_group_activity (id,msg_id,group_id,user_name) values(?,?,?,?)</create>
-	        <save>update plugin_group_activity set check_status=? where id=?</save>
-	        <load>select id,msg_id,group_id from plugin_group_activity where id=?</load>
-	        <list>select id from plugin_group_activity order by id desc</list>
-	        <del>delete from plugin_group_activity where id=?</del>
-	        <sqls>
-				<sql name="groupActivityOfMsg">select id from plugin_group_activity where msg_id=?</sql>
-				<sql name="activityOfGroup">select id from plugin_group_activity where group_id=</sql>
-				<sql name="activityOfUserInGroup">select id from plugin_group_activity where group_id=? and user_name=?</sql>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	  <table name="sq_message_recommend" objName="com.redmoon.forum.MessageRecommendDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_message_recommend (id,msg_id,report_reason,user_name,submit_date) values(?,?,?,?,?)</create>
-	        <save>update sq_message_recommend set msg_id=?,report_reason=?,user_name=?,submit_date=? where id=?</save>
-	        <load>select id,msg_id,report_reason,user_name,submit_date from sq_message_recommend where id=?</load>
-	        <list>select id,msg_id,report_reason,user_name,submit_date from sq_message_recommend order by submit_date desc</list>
-	        <del>delete from sq_message_recommend where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>	
-	  <table name="plugin_dig" objName="com.redmoon.forum.plugin.dig.DigDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into plugin_dig (id,msg_id,score_code,pay,reward,user_name,dig_date) values(?,?,?,?,?,?,?)</create>
-	        <save></save>
-	        <load>select id,msg_id,score_code,pay,reward,user_name,dig_date from plugin_dig where id=?</load>
-	        <list>select id from plugin_dig order by dig_date desc</list>
-	        <del>delete from plugin_dig where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  <table name="blog_music" objName="com.redmoon.blog.MusicDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_music (id,blog_id,music,add_date,title,is_remote,sort,is_bk_music,link,dir_code,score,file_size,is_locked) values(?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update blog_music set music=?,title=?,sort=?,is_bk_music=?,link=?,dir_code=?,score=?,is_locked=? where id=?</save>
-	        <load>select id,blog_id,music,add_date,title,is_remote,sort,is_bk_music,link,dir_code,score,file_size,is_locked from blog_music where id=?</load>
-	        <list>select id from blog_music order by add_date desc</list>
-	        <del>delete from blog_music where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>    	
-	  <table name="blog_video" objName="com.redmoon.blog.VideoDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_video (id,blog_id,video,add_date,title,is_remote,sort,link,dir_code,score,file_size,is_locked) values(?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update blog_video set video=?,title=?,sort=?,link=?,dir_code=?,score=?,is_locked=? where id=?</save>
-	        <load>select id,blog_id,video,add_date,title,is_remote,sort,link,dir_code,score,file_size,is_locked from blog_video where id=?</load>
-	        <list>select id from blog_video order by add_date desc</list>
-	        <del>delete from blog_video where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  <table name="plugin_remark" objName="com.redmoon.forum.plugin.remark.RemarkDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>msg_id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into plugin_remark (msg_id,content,sign,remark_date,manager) values(?,?,?,?,?)</create>
-	        <save>update plugin_remark set content=?,sign=?,remark_date=?,manager=? where msg_id=?</save>
-	        <load>select msg_id,content,sign,remark_date,manager from plugin_remark where msg_id=?</load>
-	        <list>select msg_id from plugin_remark order by remark_date desc</list>
-	        <del>delete from plugin_remark where msg_id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  <table name="plugin_fetion_friend" objName="com.redmoon.fetion.FriendDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>sid</name>
-	        	<type>String</type>
-	           </unit>
-	           <unit>
-	        	<name>robot_code</name>
-	        	<type>String</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into plugin_fetion_friend (sid,robot_code,add_date,friend_p) values(?,?,?,?)</create>
-	        <save>update plugin_fetion_friend set friend_p=?,menu_code=?,robot_action=?,robot_action_time=? where sid=? and robot_code=?</save>
-	        <load>select sid,robot_code,add_date,friend_p,menu_code,robot_action,robot_action_time from plugin_fetion_friend where sid=? and robot_code=?</load>
-	        <list>select sid,robot_code from plugin_fetion_friend order by add_date desc</list>
-	        <del>delete from plugin_fetion_friend where sid=? and robot_code=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>	   	
-	  <table name="plugin_fetion_activity_member" objName="com.redmoon.fetion.activity.ActivityMemberDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into plugin_fetion_activity_member (id,activity_id,sid,user_name,add_date) values(?,?,?,?,?)</create>
-	        <save>update plugin_fetion_activity_member set sid=? where id=?</save>
-	        <load>select id,activity_id,sid,add_date,user_name from plugin_fetion_activity_member where id=?</load>
-	        <list>select sid from plugin_fetion_activity_member order by add_date desc</list>
-	        <del>delete from plugin_fetion_activity_member where id=? and robot_code=?</del>
-	        <sqls>
-						<sql name="isAttended">select id from plugin_fetion_activity_member where sid=?</sql>	        
-						<sql name="listAttend">select id from plugin_fetion_activity_member where activity_id=? order by add_date</sql>	        
-	        </sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  <table name="sq_ip_address" objName="com.redmoon.forum.util.IPStoreDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>ip1</name>
-	        	<type>long</type>
-	           </unit>
-	           <unit>
-	        	<name>ip2</name>
-	        	<type>long</type>
-	           </unit>			   
-	        </primaryKey>
-	        <create></create>
-	        <save></save>
-	        <load>select ip1, ip2, country, city from sq_ip_address where ip1=? and ip2=?</load>
-	        <list></list>
-	        <del></del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-	  <table name="sq_forum_music_user" objName="com.redmoon.forum.music.MusicUserDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_forum_music_user (id,music_id,user_name,order_user,order_date,listen_count) values(?,?,?,?,?,0)</create>
-	        <save>update sq_forum_music_user set listen_count=? where id=?</save>
-	        <load>select id,music_id,user_name,order_user,order_date,listen_count from sq_forum_music_user where id=?</load>
-	        <list>select id from sq_forum_music_user order by order_date desc</list>
-	        <del>delete from sq_forum_music_user where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>	
-	    <table name="sq_message_op" objName="com.redmoon.forum.MsgOperateDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_message_op (id,msg_id,op_type,expire_date,user_name,op_date,msg_title,msg_user,msg_date,boardcode,ip) values(?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_message_op set msg_id,op_type,expire_date,user_name,op_date where id=?</save>
-	        <load>select id,msg_id,op_type,expire_date,user_name,op_date,msg_title,msg_user,msg_date,boardcode,ip from sq_message_op where id=?</load>
-	        <list>select id from sq_message_op</list>
-	        <del>delete from sq_message_op where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-	    </table>	
-	  <table name="blog_template" objName="com.redmoon.blog.ui.TemplateDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_template (id,name,is_system,main_content,sub_content,is_checked,dir_code,modify_date,author,miniature,orders,code,common_content) values(?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update blog_template set main_content=?,sub_content=?,is_system=?,is_checked=?,dir_code=?,modify_date=?,author=?,miniature=?,orders=?,code=?,common_content=?,name=? where id=?</save>
-	        <load>select id,name,is_system,main_content,sub_content,is_checked,dir_code,author,miniature,modify_date,orders,code,common_content from blog_template where id=?</load>
-	        <list>select id from blog_template</list>
-	        <del>delete from blog_template where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  <table name="blog_user_template" objName="com.redmoon.blog.BlogUserTemplateDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>blog_id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_user_template (blog_id,main_content,sub_content,common_content) values(?,?,?,?)</create>
-	        <save>update blog_user_template set main_content=?,sub_content=?,common_content=? where blog_id=?</save>
-	        <load>select blog_id,main_content,sub_content,common_content from blog_user_template where blog_id=?</load>
-	        <list>select blog_id from blog_user_template</list>
-	        <del>delete from blog_user_template where blog_id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>	  
-	   	<table name="blog_footprint" objName="com.redmoon.blog.FootprintDb">
-	        <primaryKey type="compound">
-	           <unit>
-	        	<name>msg_id</name>
-	        	<type>long</type>
-	           </unit>
-	           <unit>
-	        	<name>user_name</name>
-	        	<type>String</type>
-	           </unit>			   
-	        </primaryKey>
-	        <create>insert into blog_footprint (msg_id,blog_id,user_name,add_date) values(?,?,?,?)</create>
-	        <save>update blog_footprint set msg_id=?,blog_id=? where id=?</save>
-	        <load>select msg_id,blog_id,user_name,add_date from blog_footprint where msg_id=? and user_name=?</load>
-	        <list>select msg_id,user_name from blog_footprint</list>
-	        <del>delete from blog_footprint where msg_id=? and user_name=?</del>
-	        <sqls></sqls>	        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>		
-
 	    <table name="flow_annex" objName="com.redmoon.oa.flow.WorkflowAnnexDb">
 	        <primaryKey type="long">
 	           <unit>
@@ -790,198 +171,6 @@
 			<objCachable>true</objCachable>
 			<listCachable>true</listCachable>
 	    </table>
-		
-	  <table name="blog_photo_comment" objName="com.redmoon.blog.photo.PhotoCommentDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_photo_comment (id,photo_id,user_name,content,add_date,blog_id) values(?,?,?,?,?,?)</create>
-	        <save>update blog_photo_comment set content=? where id=?</save>
-	        <load>select id,photo_id,user_name,content,add_date,blog_id from blog_photo_comment where id=?</load>
-	        <list>select id from blog_photo_comment where photo_id=? order by add_date asc</list>
-	        <del>delete from blog_photo_comment where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  
-	  <table name="blog_photo_catalog" objName="com.redmoon.blog.photo.PhotoCatalogDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_photo_catalog (id,blog_id,title,add_date,photo_count) values(?,?,?,?,?)</create>
-	        <save>update blog_photo_catalog set title=?,miniature=?,photo_count=? where id=?</save>
-	        <load>select id,blog_id,title,add_date,photo_count,miniature from blog_photo_catalog where id=?</load>
-	        <list>select id from blog_photo_catalog where blog_id=? order by add_date desc</list>
-	        <del>delete from blog_photo_catalog where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>		  
-
-	  <table name="sq_score_log" objName="com.redmoon.forum.plugin.ScoreLogDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_score_log (id,user_name,score_code,score_value,record_id,add_date) values(?,?,?,?,?,?)</create>
-	        <save>update sq_score_log set 1=1 where id=?</save>
-	        <load>select id,user_name,score_code,score_value,record_id,add_date from sq_score_log where id=?</load>
-	        <list>select id from sq_score_log where user_name=? order by add_date desc</list>
-	        <del>delete from sq_score_log where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>false</objCachable>
-			<listCachable>false</listCachable>
-	  </table>
-	  
-	  <table name="sq_visit_board_log" objName="com.redmoon.forum.util.BoardVisitLogDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_visit_board_log (id,user_name,boardcode,add_date,ip) values(?,?,?,?,?)</create>
-	        <save>update sq_visit_board_log set 1=1 where id=?</save>
-	        <load>select id,user_name,boardcode,add_date,ip from sq_visit_board_log where id=?</load>
-	        <list>select id from sq_visit_board_log where boardcode=? order by add_date desc</list>
-	        <del>delete from sq_visit_board_log where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>false</objCachable>
-			<listCachable>false</listCachable>
-	  </table>
-	  
-	  <table name="blog_music_comment" objName="com.redmoon.blog.MusicCommentDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_music_comment (id,music_id,user_name,content,add_date,blog_id) values(?,?,?,?,?,?)</create>
-	        <save>update blog_music_comment set content=? where id=?</save>
-	        <load>select id,music_id,user_name,content,add_date,blog_id from blog_music_comment where id=?</load>
-	        <list>select id from blog_music_comment where music_id=? order by add_date asc</list>
-	        <del>delete from blog_music_comment where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  
-	  <table name="blog_video_comment" objName="com.redmoon.blog.VideoCommentDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into blog_video_comment (id,video_id,user_name,content,add_date,blog_id) values(?,?,?,?,?,?)</create>
-	        <save>update blog_video_comment set content=? where id=?</save>
-	        <load>select id,video_id,user_name,content,add_date,blog_id from blog_video_comment where id=?</load>
-	        <list>select id from blog_video_comment where video_id=? order by add_date asc</list>
-	        <del>delete from blog_video_comment where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	  </table>
-	  
-	  <table name="sq_visit_topic_log" objName="com.redmoon.forum.util.VisitTopicLogDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_visit_topic_log (id,user_name,topic_id,add_date,ip,ip_address,is_blog) values(?,?,?,?,?,?,?)</create>
-	        <save>update sq_visit_topic_log set 1=1 where id=?</save>
-	        <load>select id,user_name,doc_id,add_date,ip,ip_address,is_blog from sq_visit_topic_log where id=?</load>
-	        <list>select id from sq_visit_topic_log where topic_id=? order by add_date desc</list>
-	        <del>delete from sq_visit_topic_log where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>false</objCachable>
-			<listCachable>false</listCachable>
-	  </table>	
-	  
-		<table name="sq_regist_quiz" objName="com.redmoon.forum.security.QuizDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_regist_quiz(id,question,answer) values(?,?,?)</create>
-	        <save>update sq_regist_quiz set question=?,answer=? where id = ?</save>
-	        <load>select id,question,answer from sq_regist_quiz where id = ?</load>
-	        <list>select id from sq_regist_quiz</list>
-	        <del>delete from sq_regist_quiz where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-		</table>
-		
-	    <table name="sq_china_region" objName="com.redmoon.forum.tools.ChinaRegionDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_china_region (region_id,region_name,parent_id,region_type) values(?,?,?,?)</create>
-	        <save>update sq_china_region set region_name=?,parent_id=?,region_type=? where region_id=?</save>
-	        <load>select region_id,region_name,parent_id,region_type from sq_china_region where region_id=?</load>
-	        <list>select region_id from sq_china_region</list>
-	        <del>delete from sq_china_region where region_id=?</del>
-	        <sqls>
-				<sql name="listProvince">select region_id from sq_china_region where region_type=1 order by region_id</sql>			
-				<sql name="listCity">select region_id from sq_china_region where region_type=2 and parent_id=? order by region_id</sql>			
-				<sql name="listCountry">select region_id from sq_china_region where region_type=3 and parent_id=? order by region_id</sql>			
-			</sqls>        
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>			  
-	  	  	  		
 	    <table name="visual_module_setup" objName="com.redmoon.oa.visual.ModuleSetupDb">
 	        <primaryKey type="String">
 	           <unit>
@@ -990,12 +179,13 @@
 	           </unit>
 	        </primaryKey>
 	        <create>insert into visual_module_setup (code,list_field,query_field,name,kind,form_code,list_field_width,list_field_order,list_field_link,msg_prop,validate_prop,validate_msg,view_list,field_begin_date,field_end_date,field_name,field_desc,field_label,scale_default,scale_min,scale_max) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-		    <save>update visual_module_setup set list_field=?,query_field=?,list_field_width=?,list_field_order=?,is_use=?,name=?,nav_tag_name=?,nav_tag_url=?,nav_tag_order=?,sub_nav_tag_name=?,sub_nav_tag_url=?,sub_nav_tag_order=?,btn_name=?,btn_script=?,btn_order=?,url_list=?,list_field_link=?,scripts=?,view_show=?,view_edit=?,filter=?,btn_bclass=?,is_workLog=?,msg_prop=?,validate_prop=?,validate_msg=?,view_list=?,field_begin_date=?,field_end_date=?,field_name=?,field_desc=?,field_label=?,scale_default=?,scale_min=?,scale_max=?,url_edit=?,orderby=?,sort=?,op_link_name=?,op_link_url=?,op_link_order=?,prompt_icon=?,prompt_field=?,prompt_cond=?,prompt_value=?,url_show=?,btn_edit_show=?,op_link_field=?,op_link_cond=?,op_link_value=?,op_link_event=?,btn_display_show=?,btn_add_show=?,description=?,btn_edit_display=?,btn_print_display=?,btn_role=?,btn_flow_show=?,btn_log_show=?,btn_del_show=?,op_link_role=?,cws_status=?,is_unit_show=?,unit_code=?,field_tree_show=?,field_tree_list=?,is_edit_inplace=?,module_code_log=?,add_to_url=?,list_field_show=?,is_auto_height=?,list_field_title=?,other_multi_ws=?,other_multi_order=?,prop_stat=?,export_word_view=?,module_tree_basic=?,module_tree_field_code=?,module_tree_field_name=?,page_setup=?,css=?,list_field_align=? where code=?</save>
-	        <load>select code,list_field,query_field,list_field_width,list_field_order,is_use,name,nav_tag_name,nav_tag_url,nav_tag_order,sub_nav_tag_name,sub_nav_tag_url,sub_nav_tag_order,btn_name,btn_script,btn_order,url_list,list_field_link,scripts,kind,form_code,view_show,view_edit,filter,btn_bclass,is_system,is_workLog,msg_prop,validate_prop,validate_msg,view_list,field_begin_date,field_end_date,field_name,field_desc,field_label,scale_default,scale_min,scale_max,url_edit,orderby,sort,op_link_name,op_link_url,op_link_order,prompt_icon,prompt_field,prompt_cond,prompt_value,url_show,btn_edit_show,op_link_field,op_link_cond,op_link_value,op_link_event,btn_display_show,btn_add_show,description,btn_edit_display,btn_print_display,btn_role,btn_flow_show,btn_log_show,btn_del_show,op_link_role,cws_status,is_unit_show,unit_code,field_tree_show,field_tree_list,is_edit_inplace,module_code_log,add_to_url,list_field_show,is_auto_height,list_field_title,other_multi_ws,other_multi_order,prop_stat,export_word_view,module_tree_basic,module_tree_field_code,module_tree_field_name,page_setup,css,list_field_align from visual_module_setup where code=?</load>
+		    <save>update visual_module_setup set list_field=?,query_field=?,list_field_width=?,list_field_order=?,is_use=?,name=?,nav_tag_name=?,nav_tag_url=?,nav_tag_order=?,sub_nav_tag_name=?,sub_nav_tag_url=?,sub_nav_tag_order=?,btn_name=?,btn_script=?,btn_order=?,url_list=?,list_field_link=?,scripts=?,view_show=?,view_edit=?,filter=?,btn_bclass=?,is_workLog=?,msg_prop=?,validate_prop=?,validate_msg=?,view_list=?,field_begin_date=?,field_end_date=?,field_name=?,field_desc=?,field_label=?,scale_default=?,scale_min=?,scale_max=?,url_edit=?,orderby=?,sort=?,op_link_name=?,op_link_url=?,op_link_order=?,prompt_icon=?,prompt_field=?,prompt_cond=?,prompt_value=?,url_show=?,btn_edit_show=?,op_link_field=?,op_link_cond=?,op_link_value=?,op_link_event=?,btn_display_show=?,btn_add_show=?,description=?,btn_edit_display=?,btn_print_display=?,btn_role=?,btn_flow_show=?,btn_log_show=?,btn_del_show=?,op_link_role=?,cws_status=?,is_unit_show=?,unit_code=?,field_tree_show=?,field_tree_list=?,is_edit_inplace=?,module_code_log=?,add_to_url=?,list_field_show=?,is_auto_height=?,list_field_title=?,other_multi_ws=?,other_multi_order=?,prop_stat=?,export_word_view=?,module_tree_basic=?,module_tree_field_code=?,module_tree_field_name=?,page_setup=?,css=?,list_field_align=?,page_mobile_list=?,props=?,op_link_color=?,op_link_icon=?,is_expand=?,export_col_props=?,front_col_props=? where code=?</save>
+	        <load>select code,list_field,query_field,list_field_width,list_field_order,is_use,name,nav_tag_name,nav_tag_url,nav_tag_order,sub_nav_tag_name,sub_nav_tag_url,sub_nav_tag_order,btn_name,btn_script,btn_order,url_list,list_field_link,scripts,kind,form_code,view_show,view_edit,filter,btn_bclass,is_system,is_workLog,msg_prop,validate_prop,validate_msg,view_list,field_begin_date,field_end_date,field_name,field_desc,field_label,scale_default,scale_min,scale_max,url_edit,orderby,sort,op_link_name,op_link_url,op_link_order,prompt_icon,prompt_field,prompt_cond,prompt_value,url_show,btn_edit_show,op_link_field,op_link_cond,op_link_value,op_link_event,btn_display_show,btn_add_show,description,btn_edit_display,btn_print_display,btn_role,btn_flow_show,btn_log_show,btn_del_show,op_link_role,cws_status,is_unit_show,unit_code,field_tree_show,field_tree_list,is_edit_inplace,module_code_log,add_to_url,list_field_show,is_auto_height,list_field_title,other_multi_ws,other_multi_order,prop_stat,export_word_view,module_tree_basic,module_tree_field_code,module_tree_field_name,page_setup,css,list_field_align,page_mobile_list,props,op_link_color,op_link_icon,is_expand,export_col_props,front_col_props from visual_module_setup where code=?</load>
         	<list>select code from visual_module_setup</list>
 	        <del>delete from visual_module_setup where code=?</del>
 	        <sqls>
 				<sql name="listForForm">select code from visual_module_setup where form_code=</sql>
+				<sql name="list">select code from visual_module_setup</sql>
 			</sqls>
 	        <connName></connName>
 	        <blockSize>100</blockSize>
@@ -1016,8 +206,8 @@
 	           </unit>			   
 	        </primaryKey>
 	        <create>insert into visual_module_relate (code,relate_code,relate_field,relate_type,relate_order,cws_status,conds) values(?,?,?,?,?,?,?)</create>
-	        <save>update visual_module_relate set relate_field=?,relate_type=?,relate_order=?,cws_status=?,is_on_tab=?,conds=? where code=? and relate_code=?</save>
-	        <load>select code,relate_code,relate_field,relate_type,relate_order,cws_status,is_on_tab,conds from visual_module_relate where code=? and relate_code=?</load>
+	        <save>update visual_module_relate set relate_field=?,relate_type=?,relate_order=?,cws_status=?,is_on_tab=?,conds=?,tab_name=? where code=? and relate_code=?</save>
+	        <load>select code,relate_code,relate_field,relate_type,relate_order,cws_status,is_on_tab,conds,tab_name from visual_module_relate where code=? and relate_code=?</load>
 	        <list>select code from visual_module_relate</list>
 	        <del>delete from visual_module_relate where code=? and relate_code=?</del>
 	        <sqls></sqls>
@@ -1086,28 +276,6 @@
 			<objCachable>false</objCachable>
 			<listCachable>false</listCachable>
 	    </table>
-		
-		
-		<table name="sq_chat_msg" objName="com.redmoon.chat.ChatMsgDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into sq_chat_msg (room,nick,to_nick,expression,img,color,msg,is_secret,add_date,action) values(?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update sq_chat_msg set  where id=?</save>
-	        <load>select id,room,nick,to_nick,expression,img,color,msg,is_secret,add_date,action from sq_chat_msg where id=?</load>
-	        <list>select id from sq_chat_msg order by add_date desc</list>
-	        <del>delete from sq_chat_msg where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-		
 		<table name="oa_stamp_log" objName="com.redmoon.oa.stamp.StampLogDb">
 	        <primaryKey type="long">
 	           <unit>
@@ -1126,131 +294,7 @@
 	        <formValidatorFile></formValidatorFile>
 			<objCachable>true</objCachable>
 			<listCachable>true</listCachable>
-	    </table>									       	    
-
-		<table name="ass_group" objName="com.redmoon.oa.assess.AssGroupDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_group (name,unit_code,creator,create_date,orders,depts,roles) values(?,?,?,?,?,?,?)</create>
-	        <save>update ass_group set name=?,orders=?,depts=?,unit_code=?,roles=? where id=?</save>
-	        <load>select id,name,unit_code,creator,create_date,orders,depts,roles from ass_group where id=?</load>
-	        <list>select id from ass_group</list>
-	        <del>delete from ass_group where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>	
-
-		<table name="ass_form" objName="com.redmoon.oa.assess.AssFormDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_form (id,name,description,group_id,begin_date,create_date,module_code,unit_code,is_main,is_use,end_date,eom_before,eom_after,is_auto_mark) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update ass_form set name=?,description=?,group_id=?,begin_date=?,is_start=?,is_main=?,is_use=?,end_date=?,eom_before=?,eom_after=?,is_auto_mark=?,auto_mark_date=? where id=?</save>
-	        <load>select id,name,description,group_id,begin_date,create_date,is_start,module_code,unit_code,is_main,is_use,end_date,eom_before,eom_after,is_auto_mark,auto_mark_date from ass_form where id=?</load>
-	        <list>select id from ass_form</list>
-	        <del>delete from ass_form where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
 	    </table>
-
-		<table name="ass_sheet" objName="com.redmoon.oa.assess.AssSheetDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_sheet (form_id,user_name,ass_date,dept_code,unit_code,rank_code,create_date) values(?,?,?,?,?,?,?)</create>
-	        <save>update ass_sheet set score=?,score_adjust=?,last_score=?,is_release=? where id=?</save>
-	        <load>select id,form_id,user_name,ass_date,dept_code,unit_code,rank_code,score,score_adjust,last_score,is_release,ass_month,create_date from ass_sheet where id=?</load>
-	        <list>select id from ass_sheet</list>
-	        <del>delete from ass_sheet where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-
-		<table name="ass_sheet_item" objName="com.redmoon.oa.assess.AssSheetItemDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_sheet_item (sheet_id,item_code,value,user_name,marker,unit_code,rank_value,remark,create_date) values(?,?,?,?,?,?,?,?,?)</create>
-	        <save>update ass_sheet_item set value=? where id=?</save>
-	        <load>select id,sheet_id,item_code,value,user_name,marker,unit_code,rank_value,remark,create_date from ass_sheet_item where id=?</load>
-	        <list>select id from ass_sheet_item</list>
-	        <del>delete from ass_sheet_item where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-
-		<table name="ass_sheet_item_detail" objName="com.redmoon.oa.assess.AssSheetItemDetailDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_sheet_item_detail (sheet_item_id,item_code,value,user_name,marker,remark,create_date) values(?,?,?,?,?,?,?)</create>
-	        <save>update ass_sheet_item_detail set value=?,remark=? where id=?</save>
-	        <load>select id,sheet_item_id,item_code,value,user_name,marker,remark,create_date from ass_sheet_item_detail where id=?</load>
-	        <list>select id from ass_sheet_item_detail</list>
-	        <del>delete from ass_sheet_item_detail where id=?</del>
-	        <sqls>
-				<sql name="listDetailsOfItem">select id from ass_sheet_item_detail where sheet_item_id=? order by create_date desc</sql>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>
-		
-		<table name="ass_oa_sheet_item" objName="com.redmoon.oa.assess.AssOASheetItemDb">
-	        <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_oa_sheet_item (user_name,ass_year,ass_month,item_code,value,sub_value,remark) values(?,?,?,?,?,?,?)</create>
-	        <save>update ass_oa_sheet_item set value=? where id=?</save>
-	        <load>select id,item_code,value,user_name,ass_year,ass_month,sub_value,remark from ass_oa_sheet_item where id=?</load>
-	        <list>select id from ass_oa_sheet_item</list>
-	        <del>delete from ass_oa_sheet_item where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>				
-
 		<table name="oa_menu_most_recently_used" objName="com.redmoon.oa.ui.menu.MostRecentlyUsedMenuDb">
 	        <primaryKey type="long">
 	           <unit>
@@ -1454,27 +498,6 @@
 			<objCachable>true</objCachable>
 			<listCachable>true</listCachable>
 		</table>
-		
-		<table name="ass_sheet_others" objName="com.redmoon.oa.assess.AssSheetOthersDb">
-	        <primaryKey type="int">
-	           <unit>
-	        	<name>id</name>
-	        	<type>int</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into ass_sheet_others (sheet_id, user_name, ass_date, score, score_type, reason, marker) values(?,?,?,?,?,?,?)</create>
-	        <save>update ass_sheet_others set ass_date=?, score=?, reason=?, marker=? where id=?</save>
-	        <load>select id, sheet_id, user_name, ass_date, score, score_type, reason, marker from ass_sheet_others where id=?</load>
-	        <list>select id from ass_sheet_others order by id desc</list>
-	        <del>delete from ass_sheet_others where id=?</del>
-	        <sqls></sqls>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-		</table>	
-		
 		<table name="oa_slide_menu_group" objName="com.redmoon.oa.ui.menu.SlideMenuGroupDb">
 	        <primaryKey type="long">
 	           <unit>
@@ -1522,9 +545,9 @@
 	        	<type>long</type>
 	           </unit>
 	        </primaryKey>
-	        <create>insert into oa_portal (user_name, name, orders, system_id,icon, is_fixed, depts, roles) values(?,?,?,?,?,?,?,?)</create>
-	        <save>update oa_portal set name=?, orders=?,icon=?,is_fixed=?,depts=?,roles=? where id=?</save>
-	        <load>select id, user_name, name, orders, system_id,icon,is_fixed,depts,roles from oa_portal where id=?</load>
+	        <create>insert into oa_portal (user_name, name, orders, system_id, icon, is_fixed, depts, roles, status, kind, setup) values(?,?,?,?,?,?,?,?,?,?,?)</create>
+	        <save>update oa_portal set name=?, orders=?,icon=?,is_fixed=?,depts=?,roles=?,setup=?,status=?,kind=? where id=?</save>
+	        <load>select id, user_name, name, orders, system_id,icon,is_fixed,depts,roles,setup,status,kind from oa_portal where id=?</load>
 	        <list>select id from oa_portal order by orders</list>
 	        <del>delete from oa_portal where id=?</del>
 	        <sqls></sqls>
@@ -1952,79 +975,7 @@
 			<objCachable>true</objCachable>
 			<listCachable>true</listCachable>
 	    </table>	
-	    <!--润乾报表映射结束 -->		
-	    <!-- 手机客户端换肤功能 lzm -->
-	    <table name="mobile_skins" objName="com.redmoon.oa.mobileskins.MobileSkinsDb">
-	        <primaryKey type="String">
-	           <unit>
-	        	<name>code</name>
-	        	<type>String</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into mobile_skins(code,version,name,is_used,visual_path,disk_name,modify_date,user_name) values(?,?,?,?,?,?,?,?)</create>
-	        <load>select code,version,name,is_used,visual_path,disk_name,modify_date,user_name from mobile_skins where code=?</load>
-	        <list>select code from mobile_skins</list>
-	        <del>delete from mobile_skins where code =? </del>
-	        <save>update mobile_skins set name=?,version=?,is_used=?,visual_path=?,disk_name=? where code=?</save>
-	        <connName></connName>
-	        <blockSize>100</blockSize>
-	        <formValidatorFile>form_checker_oa.xml</formValidatorFile>
-			<objCachable>true</objCachable>
-			<listCachable>true</listCachable>
-	    </table>	
-	    <!-- 手机客户端换肤功能 lzm -->
-	    <!-- 网盘haowei -->
-	    <table name="netdisk_role_template" objName="com.redmoon.oa.netdisk.RoleTemplateDb">
-			<primaryKey type="long">
-			   <unit>
-				<name>id</name>
-				<type>int</type>
-			   </unit>
-			</primaryKey>
-			<create>insert into netdisk_role_template (id,role_code,dir_code) values(?,?,?)</create>
-			<save>update netdisk_role_template set dir_code=? where id =?</save>
-			<load>select id,role_code,dir_code from netdisk_role_template where id=?</load>
-			<list>select id from netdisk_role_template order by id desc</list>
-			<del>delete from netdisk_role_template where id=?</del>
-			<connName></connName>
-			<blockSize>100</blockSize>
-			<formValidatorFile></formValidatorFile>
-		</table>
-				
-		<table name="netdisk_role_template_download" objName="com.redmoon.oa.netdisk.RoleTemplateDownloadDb">
-			<primaryKey type="long">
-			   <unit>
-				<name>id</name>
-				<type>int</type>
-			   </unit>
-			</primaryKey>
-			<create>insert into netdisk_role_template_download (user_name,rt_id) values(?,?)</create>
-			<save>update netdisk_role_template_download set user_name=?, rt_id=? where id=?</save>
-			<load>select id,user_name,rt_id from netdisk_role_template_download where id=?</load>
-			<list>select id from netdisk_role_template_download order by id desc</list>
-			<del>delete from netdisk_role_template_download where id=?</del>
-			<connName></connName>
-			<blockSize>100</blockSize>
-			<formValidatorFile></formValidatorFile>
-		</table>	
-		<table name="netdisk_sidebar_setup" objName="com.redmoon.oa.netdisk.SideBarDb">
-			<primaryKey type="long">
-			   <unit>
-				<name>id</name>
-				<type>long</type>
-			   </unit>
-			</primaryKey>
-			<create>insert into netdisk_sidebar_setup (user_name,is_show,position,title,picture,href,type,custom) values(?,?,?,?,?,?,?,?)</create>
-			<save></save>
-			<load>select user_name,is_show,position,title,picture,href,type,custom from netdisk_sidebar_setup where id=?</load>
-			<list>select id from netdisk_sidebar_setup order by id desc</list>
-			<del>delete from netdisk_sidebar_setup where id=?</del>
-			<connName></connName>
-			<blockSize>100</blockSize>
-			<formValidatorFile></formValidatorFile>
-		</table>
-		<!-- 网盘over -->
-		
+	    <!--润乾报表映射结束 -->
 		<table name="user_phrase" objName="com.redmoon.oa.person.UserPhraseDb">
 			<primaryKey type="long">
 			   <unit>
@@ -2102,7 +1053,7 @@
 			<objCachable>true</objCachable>
 			<listCachable>true</listCachable>
 	    </table>
-	    <!-- 项目单分配关联表  add by LYL 20160113 -->
+	    <!--&lt;!&ndash; 项目单分配关联表  add by LYL 20160113 &ndash;&gt;
 	    <table name="workLogFormModule" objName="com.redmoon.oa.worklog.WorkLogForModuleDb">
 	    	 <primaryKey type="long">
 	           <unit>
@@ -2121,68 +1072,7 @@
 	        <blockSize>100</blockSize>
 	        <formValidatorFile></formValidatorFile>
 			<objCachable>true</objCachable>
-	    </table>
-	    
-	    <!-- 岗位管理相关 add by hw 20160319 -->
-	    <table name="post" objName="com.redmoon.oa.post.PostDb">
-	    	 <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into post (name,unit_code,description,orders) values(?,?,?,?)</create>
-	        <save>update post set name=?,unit_code=?,description=?,orders=? where id=?</save> 
-	        <load>select id,name,unit_code,description,orders from post where id=?</load>
-	        <list>select id from post order by orders desc</list>
-	        <del>delete from post where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName> 
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-	    </table>
-	    <table name="post_user" objName="com.redmoon.oa.post.PostUserDb">
-	    	 <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into post_user (post_id,user_name,orders) values(?,?,?)</create>
-	        <save>update post_user set post_id=?,user_name=?,orders=? where id=?</save> 
-	        <load>select id,post_id,user_name,orders from post_user where id=?</load>
-	        <list>select id from post_user order by orders desc</list>
-	        <del>delete from post_user where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName> 
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-	    </table>
-	    <table name="post_flow" objName="com.redmoon.oa.post.PostFlowDb">
-	    	 <primaryKey type="long">
-	           <unit>
-	        	<name>id</name>
-	        	<type>long</type>
-	           </unit>
-	        </primaryKey>
-	        <create>insert into post_flow (post_id,flow_code,is_related) values(?,?,?)</create>
-	        <save>update post_flow set post_id=?,flow_code=?,is_related=? where id=?</save> 
-	        <load>select id,post_id,flow_code,is_related from post_flow where id=?</load>
-	        <list>select id from post_flow order by is_related desc</list>
-	        <del>delete from post_flow where id=?</del>
-	        <sqls>
-			</sqls>
-	        <connName></connName> 
-	        <blockSize>100</blockSize>
-	        <formValidatorFile></formValidatorFile>
-			<objCachable>true</objCachable>
-	    </table>
-	    <!-- 岗位管理相关end -->
-	    
+	    </table>-->
 	    <table name="visual_module_import_template" objName="com.redmoon.oa.visual.ModuleImportTemplateDb">
 	    	 <primaryKey type="long">
 	           <unit>
@@ -2190,13 +1080,14 @@
 	        	<type>long</type>
 	           </unit>
 	        </primaryKey>
-	        <create>insert into visual_module_import_template (name,form_code,rules,cleans) values(?,?,?,?)</create>
-	        <save>update visual_module_import_template set name=?,rules=?,cleans=? where id=?</save> 
-	        <load>select id,name,form_code,rules,cleans from visual_module_import_template where id=?</load>
+	        <create>insert into visual_module_import_template (name,form_code,rules,cleans,is_batch,cells,is_default,path) values(?,?,?,?,?,?,?,?)</create>
+	        <save>update visual_module_import_template set name=?,rules=?,cleans=?,is_batch=?,cells=?,is_default=?,path=? where id=?</save>
+	        <load>select id,name,form_code,rules,cleans,is_batch,cells,is_default,path from visual_module_import_template where id=?</load>
 	        <list>select id from visual_module_import_template order by id desc</list>
 	        <del>delete from visual_module_import_template where id=?</del>
 	        <sqls>
-				<sql name="listForForm">select id from visual_module_import_template where form_code=? order by id desc</sql>	        
+				<sql name="listForForm">select id from visual_module_import_template where form_code=? order by id desc</sql>
+				<sql name="getDefault">select id from visual_module_import_template where form_code=? and is_default=1 order by id desc</sql>
 			</sqls>
 	        <connName></connName> 
 	        <blockSize>100</blockSize>
@@ -2211,13 +1102,14 @@
 	        	<type>long</type>
 	           </unit>
 	        </primaryKey>
-	        <create>insert into visual_module_export_template (name,form_code,cols,font_family,font_size,is_bold,line_height,fore_color,back_color,roles,bar_font_family,bar_font_size,bar_is_bold,bar_line_height,bar_fore_color,bar_back_color,bar_name,is_serial_no) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
-	        <save>update visual_module_export_template set name=?,cols=?,font_family=?,font_size=?,is_bold=?,line_height=?,fore_color=?,back_color=?,roles=?,bar_font_family=?,bar_font_size=?,bar_is_bold=?,bar_line_height=?,bar_fore_color=?,bar_back_color=?,bar_name=?,is_serial_no=? where id=?</save>
-	        <load>select id,name,form_code,cols,font_family,font_size,is_bold,line_height,fore_color,back_color,roles,bar_font_family,bar_font_size,bar_is_bold,bar_line_height,bar_fore_color,bar_back_color,bar_name,is_serial_no from visual_module_export_template where id=?</load>
+	        <create>insert into visual_module_export_template (name,form_code,cols,font_family,font_size,is_bold,line_height,fore_color,back_color,roles,bar_font_family,bar_font_size,bar_is_bold,bar_line_height,bar_fore_color,bar_back_color,bar_name,is_serial_no,is_default) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)</create>
+	        <save>update visual_module_export_template set name=?,cols=?,font_family=?,font_size=?,is_bold=?,line_height=?,fore_color=?,back_color=?,roles=?,bar_font_family=?,bar_font_size=?,bar_is_bold=?,bar_line_height=?,bar_fore_color=?,bar_back_color=?,bar_name=?,is_serial_no=?,is_default=? where id=?</save>
+	        <load>select id,name,form_code,cols,font_family,font_size,is_bold,line_height,fore_color,back_color,roles,bar_font_family,bar_font_size,bar_is_bold,bar_line_height,bar_fore_color,bar_back_color,bar_name,is_serial_no,is_default from visual_module_export_template where id=?</load>
 	        <list>select id from visual_module_export_template order by id desc</list>
 	        <del>delete from visual_module_export_template where id=?</del>
 	        <sqls>
-				<sql name="listForForm">select id from visual_module_export_template where form_code=? order by id desc</sql>	        
+				<sql name="listForForm">select id from visual_module_export_template where form_code=? order by id desc</sql>
+				<sql name="getDefault">select id from visual_module_export_template where form_code=? and is_default=1 order by id desc</sql>
 			</sqls>
 	        <connName></connName> 
 	        <blockSize>100</blockSize>
@@ -2234,15 +1126,15 @@
 				</unit>
 			</primaryKey>
 			<create>insert into oa_sys_ver
-				(version,sp_version,dd_accesstoken,dd_accesstoken_time,weixin_accesstoken,weixin_accesstoken_time,dd_jspapi_ticket,dd_jspapi_ticket_time
-				) values(?,?,?,?,?,?,?,?)
+				(version,sp_version,dd_accesstoken,dd_accesstoken_time,weixin_accesstoken,weixin_accesstoken_time,dd_jspapi_ticket,dd_jspapi_ticket_time,ac
+				) values(?,?,?,?,?,?,?,?,?)
 			</create>
 			<save>update oa_sys_ver set version = ?,sp_version = ?,dd_accesstoken = ?,dd_accesstoken_time
 				=?,weixin_accesstoken =?,weixin_accesstoken_time =?,dd_jspapi_ticket_time =?,dd_jspapi_ticket =
-				?,wxservice_acctoken=?,wxservice_acctoken_time=?,birthday_remind_date=? where id=?
+				?,wxservice_acctoken=?,wxservice_acctoken_time=?,birthday_remind_date=?,ui_setup=?,ac=? where id=?
 			</save>
 			<load>select
-				id,version,sp_version,dd_accesstoken,dd_accesstoken_time,weixin_accesstoken,weixin_accesstoken_time,dd_jspapi_ticket,dd_jspapi_ticket_time,wxservice_acctoken,wxservice_acctoken_time,birthday_remind_date	from oa_sys_ver where id=?
+				id,version,sp_version,dd_accesstoken,dd_accesstoken_time,weixin_accesstoken,weixin_accesstoken_time,dd_jspapi_ticket,dd_jspapi_ticket_time,wxservice_acctoken,wxservice_acctoken_time,birthday_remind_date,ui_setup,ac from oa_sys_ver where id=?
 			</load>
 			<list>select id from oa_sys_ver order by id desc</list>
 			<del>delete from oa_sys_ver where id=?</del>

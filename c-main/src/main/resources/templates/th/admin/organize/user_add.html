@@ -1,0 +1,499 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>添加用户</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link rel="stylesheet" href="../../js/bootstrap/css/bootstrap.min.css"/>
+    <style>
+        #photoImg {
+            margin: 5px;
+        }
+
+        #photoImg img {
+            width: 130px;
+        }
+
+        .main-content {
+            width: 100%;
+            margin: 10px auto;
+        }
+    </style>
+    <script src="../../inc/common.js"></script>
+    <script src="../../js/jquery-1.9.1.min.js"></script>
+    <script src="../../js/jquery-migrate-1.2.1.min.js"></script>
+    <link href="../../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <script src="../../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <script src="../../inc/livevalidation_standalone.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../js/datepicker/jquery.datetimepicker.css"/>
+    <script src="../../js/datepicker/jquery.datetimepicker.js"></script>
+    <link href="../../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="../../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script src="../../js/jquery.form.js"></script>
+    <script th:inline="javascript">
+        function htmlEncode(s){
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(s));
+            return div.innerHTML;
+        }
+
+        function checkName(name) {
+            o("checkNameResult").innerHTML = "";
+            o("name").value = name;
+            if (name.indexOf('\'') !=-1 || name.indexOf(',') !=-1 || name.indexOf(';')!=-1 || name.indexOf('"')!=-1) {
+                o("checkNameResult").innerHTML = "<span style='color:red'>" + [[#{user.name.invalid}]] + "</span>";
+                return;
+            }
+
+            $.ajax({
+                type: "post",
+                url: "../../user/checkUserName.do",
+                contentType: "application/x-www-form-urlencoded; charset=utf-8",
+                data: {
+                    userName: name
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                },
+                success: function (data, status) {
+                    if (data.ret==0) {
+                        o("checkNameResult").innerHTML = "<span style='color:red'>" + data.msg + "</span>";
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    jAlert(XMLHttpRequest.responseText, "[(${prompt})]");
+                }
+            });
+        }
+
+        // 校验手机号唯一性
+        function checkMobile(mobile) {
+            $.ajax({
+                type: "post",
+                url: "../../user/checkMobile.do",
+                data: {
+                    mobile: mobile
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                },
+                success: function (data, status) {
+                    if (data.ret==0) {
+                        o("checkMobileResult").innerHTML = data.msg;
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    jAlert(XMLHttpRequest.responseText, "[(${prompt})]");
+                }
+            });
+        }
+
+        function chkAccount() {
+            $.ajax({
+                type: "post",
+                url: "../../user/checkAccount.do",
+                data: {
+                    account: o("account").value
+                },
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                },
+                success: function (data, status) {
+                    if (data.ret==0) {
+                        o("checkAccountResult").innerHTML = data.msg;
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                },
+                error: function (XMLHttpRequest, textStatus) {
+                    // 请求出错处理
+                    jAlert(XMLHttpRequest.responseText, "[(${prompt})]");
+                }
+            });
+        }
+
+        function selectNode(code, name) {
+            o("deptCode").value = code;
+            o("deptName").value = name;
+            // parent.deptFrame.positionNode(code);     //部门更改后，同步定位jstree节点
+        }
+
+        function selDept() {
+            var deptCode = o("deptCode").value;
+            // openWin("organize_dept_sel.jsp?deptCode=" + deptCode, 450, 400, "yes");
+            openWin("../../deptMultiSel.do?deptCode=" + deptCode, 800, 600, "yes");
+        }
+        
+        function setUsers(users, userRealNames) {
+            o("leaderCode").value = users;
+            o("leaderName").value = userRealNames;
+        }
+
+        function getSelUserNames() {
+            return o("leaderCode").value;
+        }
+
+        function getSelUserRealNames() {
+            return o("leaderName").value;
+        }
+    </script>
+</head>
+<body style="overflow-x:hidden;">
+<div class="main-content">
+    <div class="spacerH"></div>
+    <form id="memberForm" name="memberForm" method="post" enctype="multipart/form-data" onsubmit="return false">
+        <table width=100% border=0 cellpadding=0 cellspacing=0 class="tabStyle_1">
+            <tr>
+                <td colspan="4" align=left class="tabStyle_1_title">用户信息</td>
+            </tr>
+            <tr>
+                <td width="120" align=left>帐号</td>
+                <td align=left>
+                    <input type=text id="name" name="name" maxlength=20 size=20 onchange="checkName(this.value)"/>
+                    <script>
+                        var nameLive = new LiveValidation('name');
+                        nameLive.add(Validate.Presence);
+                    </script>
+                    <span id="checkNameResult"></span></td>
+                <td rowspan="3">头像</td>
+                <td colspan="1" rowspan="3" align=left>
+                    <div id="photoImg"></div>
+                    <input name="photo" type="file" id="photo" accept='image/gif,image/jpeg,image/jpg,image/png,image/bmp,image/svg'/>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>姓名</td>
+                <td align=left><input type=text maxlength=20 name=RealName size=20/>
+                    <script>
+                        var RealNameObj = new LiveValidation('RealName');
+                        RealNameObj.add(Validate.Presence);
+                    </script>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>手机号</td>
+                <td align=left><input type=text size=20 maxlength="16" name=mobile onchange="checkMobile(this.value)"/>
+                    <script th:inline="javascript">
+                        var mobile = new LiveValidation('mobile');
+                        mobile.add(Validate.Mobile);
+                        [# th:if="${isMobileRequired}"]
+                        mobile.add(Validate.Presence);
+                        [/]
+                    </script>
+                    <span id="checkMobileResult"></span>
+                </td>
+            </tr>
+            <tr>
+                <td align=left>密码</td>
+                <td align=left>
+                    <input type="password" name="Password" autocomplete="off" size=21 th:value="${defaultPwd}" onkeyup="checkPwd(this.value)"/>
+                    <span style="color: #FF0000" id="checkResult"></span>
+                    [[${defaultPwdDesc}]]
+                    <script>
+                        var Password = new LiveValidation('Password');
+                        Password.add(Validate.Presence);
+                    </script>
+                </td>
+                <td width=146 height="25">
+                    婚否
+                </td>
+                <td height="25" class=stable><select name=Marriage size=1>
+                    <option value="" selected>请选择</option>
+                    <option value="1">已婚</option>
+                    <option value="0">未婚</option>
+                </select></td>
+            </tr>
+            <tr>
+                <td align=left>确认密码</td>
+                <td align=left><input type="password" name="Password2" autocomplete="off" size=21 th:value="${defaultPwd}"/>
+                    <script>
+                        var Password2 = new LiveValidation('Password2');
+                        Password2.add(Validate.Presence);
+                    </script>
+                </td>
+                <td width=146 height="28">
+                    QQ
+                </td>
+                <td class=stable height="28"><input type=text name=QQ size=20 maxlength="15"></td>
+            </tr>
+            <tr>
+                <td align=left>部门</td>
+                <td align=left>
+                    <input id="deptName" name="deptName" type=text readonly th:value="${curDeptName}" size=20/>
+                    <input id="deptCode" name="deptCode" type="hidden" th:value="${curDeptCode}"/>
+                    <script>
+                        var DeptName = new LiveValidation('deptName');
+                        DeptName.add(Validate.Presence);
+                    </script>
+                    &nbsp;<a href="javascript:;" onclick="selDept()">选择</a></td>
+                <td>入职日期</td>
+                <td>
+                    <input type="text" id="entryDate" name="entryDate" size=20/>
+                </td>
+            </tr>
+            <tr>
+            <tr>
+                <td align=left>类型</td>
+                <td align=left>
+                    <select id="type" name="type">
+                        [[${userTypeOpts}]]
+                    </select>
+                </td>
+                <td>&nbsp;</td>
+                <td></td>
+            </tr>
+            <td width=120 height="28" align=left>
+                他的领导
+            </td>
+            <td height="28">
+                <input id="leaderName" name="leaderName" type=text readonly size=20/>
+                <input id="leaderCode" name="leaderCode" type="hidden"/>
+                &nbsp;<a href="javascript:;" onclick="openWin('../../userMultiSel.do', 800, 600)">&nbsp;&nbsp;&nbsp;选择</a>
+            </td>
+            <td width=120 height="28" align=left>
+                邮政编码
+            </td>
+            <td height="28">
+                <input type=text name=postCode size=20>
+            </td>
+            </tr>
+            <tr>
+            <td height="27" align=left>地址</td>
+            <td height="27" colspan="3"><input type="text" name="Address" style="width: 500px;"/></td>
+            </tr>
+            <tr>
+                <td width=120 height="25" align=left>
+                    性别
+                </td>
+                <td width="449" height="25"><input type=radio name=gender value="0" checked>
+                    男
+                    <input type=radio name=gender value="1">
+                    女
+                </td>
+                <td height="36" align=left> 出生日期</td>
+                <td height="36"><input type="text" name="birthday" id="birthday" size=20/>
+                </td>
+            </tr>
+            <tr>
+                <td width=120 height="25" align=left>
+                    E-mail
+                </td>
+                <td height="25"><input type=text id="Email" name="Email" size=20 maxlength="50">
+                    <script>
+                        var Email = new LiveValidation('Email');
+                        Email.add(Validate.Email);
+                    </script>
+                </td>
+                <td width=146 height="25">身份证号码</td>
+                <td height="25"><input type=text name=IDCard size=20/>
+                    <script>
+                        var IDCard = new LiveValidation('IDCard');
+                        IDCard.add(Validate.IdCardNo);
+                    </script>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" align=left>兴趣爱好</td>
+                <td height="25">
+                    <input name="Hobbies" type=text size="20"/></td>
+                <td width=120 height="25" align=left>
+                    电话
+                </td>
+                <td height="25"><input type=text name=Phone size=20 maxlength="20"></td>
+            </tr>
+            <tr>
+                <td align="left">员工编号</td>
+                <td>
+                    <input type="text" id="personNo" name="personNo" title="用于集成考勤机" size="20" th:value="${nextPersonNo}"/>
+                    <span id="checkPersonNoResult" style="color:red"></span>
+                </td>
+                <td align="left">短号</td>
+                <td>
+                    <input type=text name=MSN size=20/>
+                </td>
+            </tr>
+            <tr style="display:none;">
+                <td><input type="text" name="isPass" value="1"/></td>
+            </tr>
+            <tr>
+                <td colspan="4" align=center style="padding: 10px 0px">
+                    <button id="btnOk" class="btn btn-default">确定</button>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+</body>
+<script th:inline="javascript">
+    // 表单提交校验
+    function add() {
+        if (o("name").value.indexOf('\'') > -1) {
+            o("checkNameResult").innerHTML = "<font color='red'>名称中不能含有 \'</font>";
+            return;
+        }
+        var mobileCheck = $("#checkMobileResult").text();
+        var r = mobileCheck.match(/手机号已注册/i);
+        if (r != null) {
+            return;
+        }
+
+        // parent.parent.showLoading();
+
+        if (!LiveValidation.massValidate(RealNameObj.formObj.fields)) {
+            return;
+        }
+
+        $('#btnOk').prop("disabled", true);
+
+        var form = $('#memberForm')[0];
+        var data = new FormData(form);
+        $.ajax({
+            type: "POST",
+            enctype: 'multipart/form-data',
+            url: "../../user/create.do",
+            data: data,
+            processData: false,
+            contentType: false,
+            cache: false,
+            dataType: "json",
+            // timeout: 6000,
+            beforeSend: function (XMLHttpRequest) {
+                $('body').showLoading();
+            },
+            success: function (data) {
+                $('body').hideLoading();
+                if (data.ret != 1) {
+                    if (data.msg != null) {
+                        data.msg = data.msg.replace(/\\r/ig, "<BR>");
+                    }
+                    jAlert(data.msg, "提示");
+                    $('#btnOk').prop("disabled", false);
+                } else {
+                    var deptCodeAry = o("deptCode").value.split(",");
+                    jAlert_Redirect(data.msg, [[#{prompt}]], "listUser.do?deptCode=" + deptCodeAry[0]);
+                }
+            },
+            complete: function (XMLHttpRequest, status) {
+                $('body').hideLoading();
+            },
+            error: function (e) {
+                consoleLog(e);
+                $('body').hideLoading();
+                $('#btnOk').prop("disabled", false);
+                jAlert(e, "提示");
+            }
+        });
+    }
+
+    function checkPersonNo(pn) {
+        $.ajax({
+            type: "post",
+            url: "../../user/checkPersonNo.do",
+            data: {
+                personNo: pn
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                o("checkPersonNoResult").innerHTML = data.msg;
+            },
+            complete: function (XMLHttpRequest, status) {
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                jAlert(XMLHttpRequest.responseText, "提示");
+            }
+        });
+    }
+
+    var digitArray = new Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
+
+    function toHex(n) {
+        var result = ''
+        var start = true;
+        for (var i = 32; i > 0;) {
+            i -= 4;
+            var digit = (n >> i) & 0xf;
+            if (!start || digit != 0) {
+                start = false;
+                result += digitArray[digit];
+            }
+        }
+        return (result == '' ? '0' : result);
+    }
+
+    $(function () {
+        $('#personNo').bind('input propertychange', function () {
+            checkPersonNo(this.value);
+        });
+        $('#entryDate').datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d',
+            step: 1
+        });
+        $('#birthday').datetimepicker({
+            lang: 'ch',
+            timepicker: false,
+            format: 'Y-m-d',
+            step: 1
+        });
+
+        $('#btnOk').click(function () {
+            add();
+        });
+    });
+
+    // 设置部门name和code
+    function setDeptCodeAndName(selectDeptCode, selectDeptName) {
+        if ("root" == selectDeptCode || selectDeptCode == undefined) {
+            selectDeptCode = "";
+            selectDeptName = "";
+        }
+        $("#deptCode").val(selectDeptCode);
+        $("#deptName").val(selectDeptName);
+    }
+
+    function checkPwd(pwd) {
+        $.ajax({
+            type: "post",
+            url: "../../user/checkPwd.do",
+            data: {
+                op: "checkPwd",
+                pwd: pwd
+            },
+            dataType: "html",
+            beforeSend: function (XMLHttpRequest) {
+            },
+            success: function (data, status) {
+                data = $.parseJSON(data);
+                o("checkResult").innerHTML = data.msg;
+            },
+            complete: function (XMLHttpRequest, status) {
+            },
+            error: function (XMLHttpRequest, textStatus) {
+                // 请求出错处理
+                alert(XMLHttpRequest.responseText);
+            }
+        });
+    }
+
+    $("#photo").change(function(){
+        var curFile = this.files[0];
+        var reader = new FileReader();
+        reader.readAsDataURL(curFile);
+        reader.onload = function () {
+            $('#photoImg').html('<img src="'+ reader.result +'"/>');
+        }
+    });
+</script>
+</html>

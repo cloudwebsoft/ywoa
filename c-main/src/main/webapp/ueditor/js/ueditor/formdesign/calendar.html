@@ -64,8 +64,8 @@
             </td>
         </tr>
         <tr>
-            <th><span>类型：</span></th>
-            <th><span>长度/大小</span> </th>
+            <th><span>类型</span></th>
+            <th><span>格式</span> </th>
         </tr>
         <tr>
             <td>
@@ -73,33 +73,6 @@
                     <option value="yyyy-MM-dd" selected>年-月-日</option>
                     <option value="yyyy-MM-dd HH:mm:ss">年-月-日 时：分：秒</option>
                 </select>
-            </td>
-            <td>
-                <select id="minT" name="minT" style="width:60px">
-                    <option value="d=">>=</option>
-                    <option value="d">></option>
-                    <option value="=">=</option>
-                </select>
-                <input id="minV" name="minV" type="text" style="width:40px">
-                <select id="maxT" name="maxT" style="width:60px">
-                    <option value="x="><=</option>
-                    <option value="x"><</option>
-                </select>
-                <input id="maxV" name="maxV" type="text" style="width:40px">
-                <select id="orgalign" style="display:none">
-                    <option value="left" >左对齐</option>
-                    <option value="center">居中对齐</option>
-                    <option value="right">右对齐</option>
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <th><span>只读</span></th>
-            <th><span>格式</span></th>
-        </tr>
-        <tr>
-            <td>
-                <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1" />
             </td>
             <td>
                 <select id="description" name="description">
@@ -117,6 +90,62 @@
             </td>
         </tr>
         <tr>
+            <th><span>只读</span></th>
+            <th><span>只读类型</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="isReadOnly" name="isReadOnly" type="checkbox" value="1" />
+            </td>
+            <td>
+                <select id="readOnlyType">
+                    <option value="">不限</option>
+                    <option value="0">仅添加时</option>
+                    <option value="1">仅编辑时</option>
+                    <option value="2">仅编辑引用记录时</option>
+                </select>
+                <br/>仅编辑引用记录时适用于”嵌套表格2“宏控件选取的记录
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件样式宽</span></th>
+            <th><span>大小</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>&nbsp;
+                <select id="unit" style="width:60px">
+                    <option value="px" selected>px</option>
+                    <option value="%">%</option>
+                </select>
+            </td>
+            <td>
+                <span>
+                <select id="minT" name="minT" style="width:53px">
+                    <option value="d=">>=</option>
+                    <option value="d">></option>
+                </select>
+                <select id="minV" name="minV" style="width:80px">
+                    <option value=""></option>
+                    <option value="curDate">当前日期</option>
+                </select>
+                <select id="maxT" name="maxT" style="width:53px">
+                    <option value="x="><=</option>
+                    <option value="x"><</option>
+                </select>
+                <select id="maxV" name="maxV" style="width:80px">
+                    <option value=""></option>
+                    <option value="curDate">当前日期</option>
+                </select>
+                <select id="orgalign" style="display:none">
+                    <option value="left">左对齐</option>
+                    <option value="center">居中对齐</option>
+                    <option value="right">右对齐</option>
+                </select>
+                </span>
+            </td>
+        </tr>
+        <tr>
         <th><span>提示</span></th>
           <th>&nbsp;</th>
         </tr>
@@ -126,21 +155,21 @@
           </td>
           <td>&nbsp;</td>
         </tr>
-        <tr style="display:none">
-            <th><span>&nbsp;&nbsp;&nbsp;&nbsp;长&nbsp;&nbsp;X&nbsp;&nbsp;宽&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;字体大小</span> </th>
-            <th><span>可见性</span> </th>
+        <tr style="display: none">
+            <th></th>
+            <th><span style="display: none">可见性</span> </th>
         </tr>
-        <tr style="display:none">
+        <tr style="display: none">
             <td>
-                <input id="orgwidth" type="text" value="150" class="input-small span1" placeholder="auto"/>
+                <span style="display:none">
                 X
                 <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/>
                 &
                 <input id="orgfontsize" type="text"  value="" class="input-small span1" placeholder="auto"/> px
-
+                </span>
             </td>
             <td>
-                <label class="checkbox inline"><input id="orghide" type="checkbox"/> 隐藏 </label>
+                <label style="display: none" class="checkbox inline"><input id="orghide" type="checkbox"/> 隐藏 </label>
             </td>
         </tr>
 
@@ -161,6 +190,13 @@
             var gFontSize=oNode.getAttribute('orgfontsize');
             var gAlign=oNode.getAttribute('orgalign');
             var gWidth=oNode.getAttribute('orgwidth');
+            var gUnit = 'px';
+            if (gWidth.endsWith('%')) {
+                gUnit = '%';
+                gWidth = gWidth.substring(0, gWidth.length - 1);
+            } else if (gWidth.endsWith('px')) {
+                gWidth = gWidth.substring(0, gWidth.length - 2);
+            }
             var gHeight=oNode.getAttribute('orgheight');
 
             var gCanNull = oNode.getAttribute("canNull");
@@ -184,6 +220,10 @@
 	        if (gTip == null) {
 	            gTip = '';
 	        }
+	        var gReadOnlyType = oNode.getAttribute("readOnlyType");
+	        if (gReadOnlyType == null) {
+	            gReadOnlyType = '';
+            }
 
             gValue = gValue==null ? '' : gValue;
             gTitle = gTitle==null ? '' : gTitle;
@@ -194,6 +234,7 @@
             }
             $G('orgfontsize').value = gFontSize;
             $G('orgwidth').value = gWidth;
+            $G('unit').value = gUnit;
             $G('orgheight').value = gHeight;
             $G('orgalign').value = gAlign;
             $G('defaultValue').value = gValue;
@@ -225,6 +266,7 @@
                 $G('maxV').value = gMaxV;
             }
 	        $G('tip').value = gTip;
+            $G('readOnlyType').value = gReadOnlyType;
         }
     }
     dialog.oncancel = function () {
@@ -244,10 +286,18 @@
             return false;
         }
 
+        var maxVal = $G('maxV').value;
+        var minVal = $G('minV').value;
+        if (maxVal == minVal && maxVal!='') {
+            alert('不能同时填写最大最小值');
+            return false;
+        }
+
         var gFontSize=$G('orgfontsize').value;
         var gAlign=$G('orgalign').value;
         var gWidth=$G('orgwidth').value;
         var gHeight=$G('orgheight').value;
+        var gUnit = $G('unit').value;
 
         var gCanNull = $G('canNull').checked?0:1;
         var gMinT=$G('minT').value;
@@ -258,6 +308,7 @@
         var gFormatDate = $G('formatDate').value;
         var gDescription = $G('description').value;
 	    var gTip = $G('tip').value;
+	    var gReadOnlyType = $G('readOnlyType').value;
 		
         if( !oNode ) {
             try {
@@ -280,10 +331,12 @@
                     oNode.style.textAlign = gAlign;
                     oNode.setAttribute('orgalign',gAlign );
                 }
-                if( gWidth != '' ) {
-                    oNode.style.width = gWidth+ 'px';
-                    //style += 'width:' + gWidth + 'px;';
-                    oNode.setAttribute('orgwidth',gWidth );
+                if (gWidth != '') {
+                    oNode.style.width = gWidth + gUnit;
+                    oNode.setAttribute('orgwidth', gWidth + gUnit);
+                } else {
+                    oNode.style.width = '';
+                    oNode.setAttribute('orgwidth', '');
                 }
                 if( gHeight != '' ) {
                     oNode.style.height = gHeight+ 'px';
@@ -360,6 +413,7 @@
                 //oNode.setAttribute("onclick", "SelectNewDate('" + gName + "','" + gFormatDate + "')");
                 oNode.setAttribute("isNewDateTimeCtl", true);
 	            oNode.setAttribute("tip", gTip);
+                oNode.setAttribute("readOnlyType", gReadOnlyType);
 
                 editor.execCommand('insertHtml', oNode.outerHTML);
             } catch (e) {
@@ -384,10 +438,10 @@
             }else{
                 oNode.setAttribute('orgalign', '');
             }
-            if( gWidth != '' ) {
-                oNode.style.width = gWidth+ 'px';
-                oNode.setAttribute('orgwidth',gWidth );
-            }else{
+            if (gWidth != '') {
+                oNode.style.width = gWidth + gUnit;
+                oNode.setAttribute('orgwidth', gWidth + gUnit);
+            } else {
                 oNode.style.width = '';
                 oNode.setAttribute('orgwidth', '');
             }
@@ -409,6 +463,7 @@
                 oNode.removeAttribute("readonly");
             }
 	        oNode.setAttribute("tip", gTip);
+            oNode.setAttribute("readOnlyType", gReadOnlyType);
 
             delete UE.plugins[thePlugins].editdom;
         }

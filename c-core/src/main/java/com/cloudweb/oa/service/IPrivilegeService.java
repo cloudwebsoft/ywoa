@@ -27,4 +27,7 @@ public interface IPrivilegeService extends IService<Privilege> {
     boolean updateByPriv(Privilege privilege);
 
     boolean setPrivs(HttpServletRequest request, String rowOrder, String oldPrivs) throws ValidateException;
+
+    boolean setPrivsList(HttpServletRequest request, String newRowOrder, String oldPrivs) throws ValidateException;
+
 }

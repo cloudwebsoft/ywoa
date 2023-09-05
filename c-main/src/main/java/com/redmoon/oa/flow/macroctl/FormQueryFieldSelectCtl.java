@@ -101,7 +101,6 @@ public class FormQueryFieldSelectCtl extends AbstractMacroCtl {
 	                "&nbsp;<input id='" + ff.getName() + "_btn' type=button class=btn value='选择' onClick='openWinQueryFieldList(\"" +
 	                ff.getName() + "\", \"" + StrUtil.UrlEncode(openerFormCode) + "\", \"" + ff.getName() + "\", " + fqd.isScript() + ", " + fqd.getId() + ")'>";			
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
         	LogUtil.getLog(getClass()).error(StrUtil.trace(e));
 			str = "json 格式非法";
 		}
@@ -109,7 +108,8 @@ public class FormQueryFieldSelectCtl extends AbstractMacroCtl {
         return str;
     }
     
-	public String getDisableCtlScript(FormField ff, String formElementId) {
+	@Override
+    public String getDisableCtlScript(FormField ff, String formElementId) {
         if (ff.getValue() != null && !ff.getValue().equals("") && !ff.getValue().equals(ff.getDefaultValueRaw())) {
         	return super.getDisableCtlScript(ff, formElementId);
     	}
@@ -121,6 +121,7 @@ public class FormQueryFieldSelectCtl extends AbstractMacroCtl {
         }
 	}    
     
+    @Override
     public String getReplaceCtlWithValueScript(FormField ff) {
         if (ff.getValue() != null && !ff.getValue().equals("") && !ff.getValue().equals(ff.getDefaultValueRaw())) {
         	return super.getReplaceCtlWithValueScript(ff);

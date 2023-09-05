@@ -1,5 +1,6 @@
 package com.cloudweb.oa.service;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.exception.ValidateException;
 import com.cloudweb.oa.entity.Department;
@@ -31,17 +32,21 @@ public interface IDepartmentService extends IService<Department> {
 
     boolean update(Department department) throws ValidateException;
 
-    List getAllChild(List list, String code);
+    List<Department> getAllChild(List<Department> list, String code);
 
     Department getUnitOfDept(Department department);
 
-    boolean delWithChildren(String code) throws ValidateException;
+    boolean delWithChildren(String code, boolean canDelWhenHasUser) throws ValidateException;
 
     boolean del(String code, String userName) throws ValidateException;
 
     void move(String code, String parentCode, int position) throws ValidateException;
 
     String getJsonString(boolean isOpenAll, boolean isShowNodeHided);
+
+    List<Department> getDepartments(String parentCode);
+
+    List<Department> findChildren(List<Department> treeList);
 
     List<String> getAllUnit();
 
@@ -66,4 +71,12 @@ public interface IDepartmentService extends IService<Department> {
     Department getBrother(Department department, String direction);
 
     Map<String, String> getFulleNameMap();
+
+    String getFullNameOfDept(Department department);
+
+    List<JSONObject> getUnits(Department department, int rootLayer);
+
+    JSONArray getComboTree(Department department, JSONArray arr);
+
+    List<Department> getUnitTree();
 }

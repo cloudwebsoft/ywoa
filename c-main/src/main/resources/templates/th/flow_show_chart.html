@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>查看流程图</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <script src="inc/common.js"></script>
+    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="js/jquery.toaster.js"></script>
+    <link rel="stylesheet" type="text/css" href="js/flow/myflow.css">
+    <link type="text/css" href="js/flow/lib/jquery-ui-1.8.4.custom/css/smoothness/jquery-ui-1.8.4.custom.css" rel="stylesheet"/>
+    <script type="text/javascript" src="js/flow/lib/raphael-min.js"></script>
+    <script type="text/javascript" src="js/flow/lib/jquery-ui-1.8.4.custom/js/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="js/crypto-js.min.js"></script>
+    <script type="text/javascript" src="js/flow/myflow.min.js"></script>
+    <script type="text/javascript" src="js/flow/myflow.jpdl.js"></script>
+    <script type="text/javascript" src="js/flow/myflow.editors.js"></script>
+</head>
+<body>
+<th:block th:if="${isTab}">
+    <div th:replace="th/include/tab_flow_show :: nav(${myUserName}, ${flowId}, ${canManageFlow}, ${isFlowChartShow}, ${canModifyTitle}, ${visitKey}, 2)"></div>
+</th:block>
+<div class="spacerH"></div>
+<div th:if="${canUserSeeFlowChart}" style="text-align: center; margin: 10px">
+    <input class="btn" name="btnPlay" type="button" reserve="true" onclick="PlayDesigner()" th:value="#{playbackProcess}"/>
+</div>
+<div id="myflow"></div>
+<textarea id="flowJson" style="display:none;">[(${flowJson})]</textarea>
+</body>
+<script th:inline="javascript">
+    var $flow;
+    $(function () {
+        var flowData = $('#flowJson').val();
+        // console.log(flowData);
+        $flow = $('#myflow').myflow({
+            allowStateMultiLine: false,
+            editable: false,
+            expireUnit: "[(${flowExpireUnit})]",
+            licenseKey: "[(${licenseKey})]",
+            cloudUrl: "[(${cloudUrl})]",
+            restore: eval("(" + flowData + ")"),
+            activeRects: {"rects": [(${activeActions})]},
+            finishRects: {"rects": [(${finishActions})]},
+            ignoreRects: {"rects": [(${ignoreActions})]},
+            discardRects: {"rects": [(${discardActions})]},
+            returnRects: {"rects": [(${returnActions})]}
+        });
+    });
+
+    function PlayDesigner() {
+        $flow.resetAllRectStatus();
+        doPlayDesigner();
+    }
+
+    var playCount = 0;
+    function doPlayDesigner() {
+        var ary = new Array();
+        var kk = 0;
+        [# th:each="json,stat : ${aryMyAction}"]
+            var receiveTime = "[(${json.receiveTime})]";
+            ary[kk] = [receiveTime, "[(${json.internalName})]", "[(${json.actionStatus})]]"]; // 到达
+            kk++;
+            var checkTime = "[(${json.checkTime})]";
+            ary[kk] = [checkTime, "[(${json.internalName})]", "[(${json.checkStatus})]"]; // 处理
+            kk++;
+        [/]
+
+        if (playCount == 0) {
+            // 对ary中的元素按照时间排序
+            ary.sort(function (a, b) {
+                return parseInt(a[0]) - parseInt(b[0]);
+            })
+        }
+
+        var rectId = ary[playCount][1];
+        var status = ary[playCount][2];
+        if (status==[(${STATE_DOING})]) {
+            status = 'active';
+        }
+        else if (status==[(${STATE_FINISHED})]) {
+            status = 'finish';
+        }
+        else if (status==[(${STATE_RETURN})]) {
+            status = 'return';
+        }
+        else if (status==[(${STATE_IGNORED})]) {
+            status = 'ignore';
+        }
+        else if (status==[(${STATE_DISCARDED})]) {
+            status = 'discard';
+        }
+
+        $flow.setRectStatus(rectId, status);
+
+        playCount++;
+
+        if (playCount == ary.length) {
+            $.toaster({priority: 'info', message: '[(#{endPlayback})]'});
+            playCount = 0;
+            return;
+        }
+
+        timeoutid = window.setTimeout("doPlayDesigner()", "1000");
+    }
+</script>
+</html>

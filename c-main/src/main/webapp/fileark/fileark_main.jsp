@@ -4,8 +4,6 @@
 <%@ page import="com.redmoon.oa.person.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="com.redmoon.oa.fileark.plugin.*" %>
-<%@ page import="com.redmoon.oa.fileark.plugin.base.*" %>
-<%@ page import="cn.js.fan.module.cms.plugin.wiki.*" %>
 <%@ page import="cn.js.fan.web.SkinUtil" %>
 <%
     String skincode = UserSet.getSkin(request);
@@ -18,7 +16,7 @@
 %>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <jsp:useBean id="dir" scope="page" class="com.redmoon.oa.fileark.Directory"/>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -37,12 +35,12 @@
                     LeafPriv lp = new LeafPriv();
                     lp.setDirCode(dir_code);
                     if (privilege.isUserPrivValid(request, "admin") || lp.canUserSee(privilege.getUser(request))) {
-                        response.sendRedirect("document_list_m.jsp");
+                        response.sendRedirect("docListPage.do");
                         return;
                     }
                 }
 		else if (dir_code.equals(Leaf.CODE_DRAFT)) {
-			response.sendRedirect("document_list_m.jsp?op=search&dir_code=" + Leaf.CODE_DRAFT + "&examine1=" + Document.EXAMINE_DRAFT);
+			response.sendRedirect("docListPage.do?op=search&dirCode=" + Leaf.CODE_DRAFT + "&examine1=" + Document.EXAMINE_DRAFT);
 			return;
 		}
                 Leaf leaf = dir.getLeaf(dir_code);
@@ -57,7 +55,7 @@
                         lp.setDirCode(dir_code);
                     }
                     if (lp.canUserSee(privilege.getUser(request))) {
-                        response.sendRedirect("document_list_m.jsp?parentCode=" + dir_code);
+                        response.sendRedirect("docListPage.do?parentCode=" + dir_code);
                         return;
                     } else {
                         out.print(SkinUtil.makeInfo(request, "请选择目录！"));
@@ -66,19 +64,13 @@
                     if (leaf.getType() == Leaf.TYPE_DOCUMENT) {
                         response.sendRedirect("../doc_show.jsp?dir_code=" + StrUtil.UrlEncode(leaf.getCode()));
                     } else {
-                        PluginMgr pm = new PluginMgr();
-                        PluginUnit pu = pm.getPluginUnitOfDir(leaf.getCode());
-                        if (pu != null && pu.getCode().equals(WikiUnit.code)) {
-                            response.sendRedirect("wiki_list.jsp?dir_code=" + StrUtil.UrlEncode(leaf.getCode()));
-                            return;
-                        }
                         int projectId = ParamUtil.getInt(request, "projectId", 0);
                         if (projectId == 0) {
-                            response.sendRedirect("document_list_m.jsp?dir_code=" +
+                            response.sendRedirect("docListPage.do?dirCode=" +
                                     StrUtil.UrlEncode(leaf.getCode()) +
                                     "&dir_name=" + StrUtil.UrlEncode(leaf.getName()));
                         } else {
-                            response.sendRedirect("document_list_m.jsp?dir_code=" +
+                            response.sendRedirect("docListPage.do?dirCode=" +
                                     StrUtil.UrlEncode(leaf.getCode()) +
                                     "&dir_name=" + StrUtil.UrlEncode(leaf.getName()) + "&projectId=" + projectId + "&parentId=" + projectId + "&formCode=project");
                         }

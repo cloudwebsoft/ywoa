@@ -8,8 +8,9 @@ import com.cloudweb.oa.entity.RoleDept;
 import com.cloudweb.oa.service.IRoleDeptService;
 import com.cloudweb.oa.service.IRoleService;
 import com.cloudweb.oa.utils.ConstUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -122,9 +123,9 @@ public class RoleCache extends ObjCache {
                     }
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } catch (CacheException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                     distributedLock.unlock(getClass().getName(), indentifier);

@@ -3,11 +3,12 @@ package com.cloudweb.oa.controller;
 
 import cn.js.fan.db.ListResult;
 import cn.js.fan.util.*;
-import cn.js.fan.web.Global;
-import cn.js.fan.web.SkinUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.entity.OaNotice;
 import com.cloudweb.oa.entity.OaNoticeAttach;
 import com.cloudweb.oa.entity.OaNoticeReply;
+import com.cloudweb.oa.security.AuthUtil;
+import com.cloudweb.oa.service.IFileService;
 import com.cloudweb.oa.service.IOaNoticeAttachService;
 import com.cloudweb.oa.service.IOaNoticeReplyService;
 import com.cloudweb.oa.service.IOaNoticeService;
@@ -15,7 +16,9 @@ import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.I18nUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudweb.oa.vo.OaNoticeVO;
+import com.cloudweb.oa.vo.Result;
 import com.redmoon.kit.util.FileUpload;
+import com.redmoon.oa.Config;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.message.MessageDb;
@@ -24,24 +27,28 @@ import com.redmoon.oa.notice.NoticeDb;
 import com.redmoon.oa.notice.NoticeReplyDb;
 import com.redmoon.oa.person.UserDb;
 import com.redmoon.oa.pvg.Privilege;
-import com.redmoon.oa.ui.SkinMgr;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 import org.dozer.DozerBeanMapper;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
-import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -72,24 +79,34 @@ public class OaNoticeController {
     @Autowired
     I18nUtil i18nUtil;
 
-    @RequestMapping("/list")
-    public String list(Model model) {
-        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-        String priv = "read";
-        if (!pvg.isUserPrivValid(request, priv)) {
-            model.addAttribute("info", SkinUtil.LoadString(request, "pvg_invalid"));
-            return "error";
-        }
+    @Autowired
+    private IFileService fileService;
 
-        String userName = pvg.getUser(request);
+    @Autowired
+    AuthUtil authUtil;
 
-        boolean isNoticeAll = pvg.isUserPrivValid(request, "notice");
-        boolean isNoticeMgr = pvg.isUserPrivValid(request, "notice.dept");
-        boolean isNoticeAdd = pvg.isUserPrivValid(request, "notice.add");
-
+//    @RequestMapping("/listPage")
+//    public String listPage(Model model) {
+//        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+//        String userName = pvg.getUser(request);
+//        model.addAttribute("skinPath", SkinMgr.getSkinPath(request, false));
+//        boolean isNoticeAll = pvg.isUserPrivValid(request, "notice");
+//        boolean isNoticeMgr = pvg.isUserPrivValid(request, "notice.dept");
+//        boolean isNoticeAdd = pvg.isUserPrivValid(request, "notice.add");
+//        model.addAttribute("isNoticeAll", isNoticeAll);
+//        model.addAttribute("isNoticeMgr", isNoticeMgr);
+//        model.addAttribute("isNoticeAdd", isNoticeAdd);
+//        return "th/notice/notice_list";
+//    }
+    @ApiOperation(value = "列表", notes = "列表", httpMethod = "GET")
+    // @PreAuthorize("hasAnyAuthority('notice', 'notice.dept', 'admin', 'notice.add')")
+    @RequestMapping(value = "/list", produces={"text/html;charset=UTF-8;","application/json;charset=UTF-8;"})
+    @ResponseBody
+    public Result<Object> list() {
         int pageNum = ParamUtil.getInt(request, "pageNum", 1);
         int pageSize = ParamUtil.getInt(request, "pageSize", 20);
         String op = ParamUtil.get(request, "op");
+        boolean isSearch = "search".equals(op);
 
         String fromDate = ParamUtil.get(request, "fromDate");
         String toDate = ParamUtil.get(request, "toDate");
@@ -100,97 +117,64 @@ public class OaNoticeController {
             cond = "title";
         }
 
-        boolean isSearch = op.equals("search");
-
         String orderBy = ParamUtil.get(request, "orderBy");
-        if (orderBy.equals("")) {
+        if ("".equals(orderBy)) {
             orderBy = "id";
         }
         String sort = ParamUtil.get(request, "sort");
-        if (sort.equals("")) {
+        if ("".equals(sort)) {
             sort = "desc";
         }
-
-        String querystr = "op=" + op + "&what=" + StrUtil.UrlEncode(what) + "&fromDate=" + fromDate + "&toDate=" + toDate + "&cond=" + cond;
+        Privilege pvg = new Privilege();
+        boolean isNoticeAll = pvg.isUserPrivValid(request, "notice");
+        String userName = pvg.getUser(request);
 
         String sql = oaNoticeService.getSqlList(pvg, isNoticeAll, fromDate, toDate, isSearch, what, cond, orderBy, sort);
         ListResult lr = oaNoticeService.listResult(userName, sql, pageNum, pageSize);
-
-        model.addAttribute("result", lr.getResult());
-
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request));
-        model.addAttribute("fromDate", fromDate);
-        model.addAttribute("toDate", toDate);
-        model.addAttribute("what", what);
-        model.addAttribute("cond", cond);
-        model.addAttribute("op", op);
-        model.addAttribute("orderBy", orderBy);
-        model.addAttribute("total", lr.getTotal());
-        model.addAttribute("pageNum", pageNum);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("cond", cond);
-
-        model.addAttribute("isNoticeAll", isNoticeAll);
-        model.addAttribute("isNoticeMgr", isNoticeMgr);
-        model.addAttribute("isNoticeAdd", isNoticeAdd);
-        model.addAttribute("querystr", querystr);
-
-        return "notice/notice_list";
+        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+        json.put("list", lr.getResult());
+        json.put("total", lr.getTotal());
+        json.put("page", pageNum);
+        return new Result<>(json);
     }
 
+    @ApiOperation(value = "重要通知列表", notes = "重要通知列表", httpMethod = "POST")
+    @RequestMapping(value = "/listImportant", produces={"application/json;charset=UTF-8;"})
+    @ResponseBody
+    public Result<Object> listImportant() {
+        return new Result<>(oaNoticeService.listImportant(authUtil.getUserName()));
+    }
+
+    @ApiOperation(value = "新增", notes = "新增", httpMethod = "GET")
     @PreAuthorize("hasAnyAuthority('notice','notice.dept','admin', 'notice.add')")
     @RequestMapping("/add")
-    public String add(Model model) {
+    @ResponseBody
+    public Result<Object> add() {
+        com.alibaba.fastjson.JSONObject object = new com.alibaba.fastjson.JSONObject();
+
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
-
         String userName = SpringUtil.getUserName();
-
-        String depts = "";
         DeptUserDb du = new DeptUserDb();
-        java.util.Iterator ir = du.getDeptsOfUser(userName).iterator();
-        depts = "";
-        while (ir.hasNext()) {
-            DeptDb dd = (DeptDb) ir.next();
+        Vector<DeptDb> vector = du.getDeptsOfUser(userName);
 
-            if (depts.equals("")) {
-                depts = dd.getCode();
-            } else {
-                depts += "," + dd.getCode();
-            }
+        object.put("depts", vector);
+        object.put("userName", userName);
 
-            // 加入子部门
-            Vector v = new Vector();
-            try {
-                dd.getAllChild(v, dd);
-            } catch (ErrMsgException e) {
-                e.printStackTrace();
-            }
-            Iterator ir2 = v.iterator();
-            while (ir2.hasNext()) {
-                DeptDb dd2 = (DeptDb) ir2.next();
-                if (("," + depts + ",").indexOf("," + dd2.getCode() + ",") == -1) {
-                    depts += "," + dd2.getCode();
-                }
-            }
-        }
-
-        model.addAttribute("depts", depts);
-        model.addAttribute("userName", userName);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request));
-
-        model.addAttribute("isUseSMS", com.redmoon.oa.sms.SMSFactory.isUseSMS());
+        object.put("isUseSMS", com.redmoon.oa.sms.SMSFactory.isUseSMS());
         String myUnitCode = pvg.getUserUnitCode(request);
-        model.addAttribute("myUnitCode", myUnitCode);
+        object.put("myUnitCode", myUnitCode);
 
         boolean isNoticeAll = pvg.isUserPrivValid(request, "notice");
         boolean isNoticeMgr = pvg.isUserPrivValid(request, "notice.dept");
-        model.addAttribute("isNoticeAll", isNoticeAll);
-        model.addAttribute("isNoticeMgr", isNoticeMgr);
+        object.put("isNoticeAll", isNoticeAll);
+        object.put("isNoticeMgr", isNoticeMgr);
 
         boolean isAdmin = pvg.isUserPrivValid(request, "admin");
-        model.addAttribute("isAdmin", isAdmin);
+        object.put("isAdmin", isAdmin);
 
-        return "notice/notice_add";
+        object.put("curDate", DateUtil.format(new Date(), "yyyy-MM-dd"));
+
+        return new Result<>(object);
     }
 
     /**
@@ -198,18 +182,22 @@ public class OaNoticeController {
      *
      * @return
      */
+    @ApiOperation(value = "删除", notes = "删除", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "ids", value = "ids", dataType = "String"),
+    })
     @PreAuthorize("hasAnyAuthority('notice','notice.dept','admin', 'notice.add')")
     @ResponseBody
     @RequestMapping(value = "/del", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String del(String ids, Model model) {
+    public Result<Object> del(String ids) {
         com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
 
         String[] ary = StrUtil.split(ids, ",");
         if (ary != null) {
             String myUnitCode = pvg.getUserUnitCode(request);
-            for (int i = 0; i < ary.length; i++) {
-                long id = StrUtil.toLong(ary[i], -1);
+            for (String s : ary) {
+                long id = StrUtil.toLong(s, -1);
                 OaNotice oaNotice = oaNoticeService.getNoticeById(id);
                 boolean isUserPrivValid = false;
                 if (pvg.isUserPrivValid(request, "notice")) {
@@ -228,28 +216,13 @@ public class OaNoticeController {
                             isUserPrivValid = true;
                         }
                     }
-                    if (!isUserPrivValid) {
-                        json.put("ret", "0");
-                        json.put("msg", i18nUtil.get("pvg_invalid"));
-                        return json.toString();
-                    }
                 }
             }
-        } else {
-            json.put("ret", "0");
-            json.put("msg", "请选择记录！");
-            return json.toString();
         }
 
         boolean re = oaNoticeService.delBatch(ids) > 0;
-        if (re) {
-            json.put("ret", "1");
-            json.put("msg", "操作成功！");
-        } else {
-            json.put("ret", "0");
-            json.put("msg", "操作失败！");
-        }
-        return json.toString();
+
+        return new Result<>(re);
     }
 
     /**
@@ -257,11 +230,15 @@ public class OaNoticeController {
      *
      * @return
      */
+    @ApiOperation(value = "批量删除", notes = "批量删除", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "noticeId", value = "信息id", dataType = "long"),
+            @ApiImplicitParam(name = "attId", value = "文件id", dataType = "long"),
+    })
     @PreAuthorize("hasAnyAuthority('notice','notice.dept','admin','notice.add')")
     @ResponseBody
     @RequestMapping(value = "/delAtt", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String delAtt(long noticeId, long attId, Model model) {
-        JSONObject json = new JSONObject();
+    public Result<Object> delAtt(long noticeId, long attId) {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
 
         String myUnitCode = pvg.getUserUnitCode(request);
@@ -277,36 +254,45 @@ public class OaNoticeController {
             }
         }
         if (!isUserPrivValid) {
-            model.addAttribute("info", SkinUtil.LoadString(request, "pvg_invalid"));
-            return "error";
+            return new Result<>(false);
         }
 
-        boolean re = true;
-        try {
-            oaNoticeAttachService.del(attId);
-            if (re) {
-                json.put("ret", "1");
-                json.put("msg", "操作成功！");
-            } else {
-                json.put("ret", "0");
-                json.put("msg", "操作失败！");
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return json.toString();
+        oaNoticeAttachService.del(attId);
+        return new Result<>();
     }
 
-    @RequestMapping("/show")
-    public String show(long id, Model model) {
+    @ApiOperation(value = "列表页", notes = "列表页", httpMethod = "POST")
+    @RequestMapping(value="/listPage", method = RequestMethod.POST, produces = {"application/json;charset=UTF-8;"})
+    @ResponseBody
+    public Result<Object> listPage() {
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+        boolean canManageNotice = false;
+        if (pvg.isUserPrivValid(request, "notice")) {
+            canManageNotice = true;
+        } else if (pvg.isUserPrivValid(request, "notice.dept")) {
+            canManageNotice = true;
+        }
+        JSONObject json = new JSONObject();
+        json.put("canManage", canManageNotice);
+        return new Result<>(json);
+    }
+
+    @ApiOperation(value = "显示详情", notes = "显示详情", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", dataType = "long"),
+    })
+    @RequestMapping("/show")
+    @ResponseBody
+    public Result<Object> showPage(long id) {
+        com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
+        JSONObject jsonObject = new JSONObject();
         String priv = "read";
         if (!pvg.isUserPrivValid(request, priv)) {
-            model.addAttribute("info", SkinUtil.LoadString(request, "pvg_invalid"));
-            return "error";
+            return new Result<>(false);
         }
 
         String userName = pvg.getUser(request);
+        jsonObject.put("myUserName", userName);
 
         MessageDb messageDb = new MessageDb();
         messageDb.setCommonUserReaded(pvg.getUser(request), id, MessageDb.MESSAGE_SYSTEM_NOTICE_TYPE);
@@ -327,79 +313,62 @@ public class OaNoticeController {
 
         // 遍历附件，判断是否为图片
         List<OaNoticeAttach> attList = oaNoticeVO.getOaNoticeAttList();
-        Iterator<OaNoticeAttach> ir = attList.iterator();
-        while (ir.hasNext()) {
-            OaNoticeAttach att = ir.next();
-            String ext = StrUtil.getFileExt(att.getDiskname());
+        for (OaNoticeAttach att : attList) {
+            String ext = StrUtil.getFileExt(att.getDiskName());
             boolean isImage = ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") || ext.equalsIgnoreCase("gif") ||
                     ext.equalsIgnoreCase("png") || ext.equalsIgnoreCase("bmp");
             att.setImage(isImage);
         }
+        jsonObject.put("attList", attList);
 
         // 取得已查看的用户数
-        UserDb user = new UserDb();
-        List<OaNoticeReply> readedList = oaNoticeReplyService.getReplyReadOrNot(id, true);
-        List<OaNoticeReply> notReadedList = oaNoticeReplyService.getReplyReadOrNot(id, false);
-        List<OaNoticeReply> replyList = oaNoticeReplyService.getReplyHasContent(id);
-/*
-        // 遍历回复，置realName
-        Iterator<OaNoticeReply> irReply = readedList.iterator();
-        while (irReply.hasNext()) {
-            OaNoticeReply oaNoticeReply = irReply.next();
-            user = user.getUserDb(oaNoticeReply.getUserName());
-            oaNoticeReply.setRealName(user.getRealName());
-        }
+        List<OaNoticeReply> readedList = oaNoticeReplyService.getReplyReadOrNot(id, 1);
+        List<OaNoticeReply> notReadedList = oaNoticeReplyService.getReplyReadOrNot(id, 0);
 
-        irReply = notReadedList.iterator();
-        while (irReply.hasNext()) {
-            OaNoticeReply oaNoticeReply = irReply.next();
-            user = user.getUserDb(oaNoticeReply.getUserName());
-            oaNoticeReply.setRealName(user.getRealName());
-        }
+        jsonObject.put("readedList", readedList);
+        jsonObject.put("notReadedList", notReadedList);
 
-        irReply = replyList.iterator();
-        while (irReply.hasNext()) {
-            OaNoticeReply oaNoticeReply = irReply.next();
-            user = user.getUserDb(oaNoticeReply.getUserName());
-            oaNoticeReply.setRealName(user.getRealName());
-        }*/
-
-        model.addAttribute("readedList", readedList);
-        model.addAttribute("notReadedList", notReadedList);
-        model.addAttribute("replyList", replyList);
+        /*List<OaNoticeReply> replyList = oaNoticeReplyService.getReplyHasContent(id);
+        jsonObject.put("replyList", replyList);*/
 
         boolean isNoticeAll = pvg.isUserPrivValid(request, "notice");
         boolean isNoticeMgr = pvg.isUserPrivValid(request, "notice.dept");
 
-        model.addAttribute("notice", oaNoticeVO);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request));
-        model.addAttribute("myUserName", userName);
-        model.addAttribute("isNoticeAll", isNoticeAll);
-        model.addAttribute("isNoticeMgr", isNoticeMgr);
+        jsonObject.put("notice", oaNoticeVO);
+        jsonObject.put("myUserName", userName);
+        jsonObject.put("isNoticeAll", isNoticeAll);
+        jsonObject.put("isNoticeMgr", isNoticeMgr);
 
-        boolean canReplay = false;
+        boolean canReply = false;
         if (myOaNoticeReply != null) {
             /*user = user.getUserDb(myOaNoticeReply.getUserName());
             myOaNoticeReply.setRealName(user.getRealName());*/
 
             if ("0".equals(myOaNoticeReply.getIsReaded())) {
                 myOaNoticeReply.setIsReaded("1");
+                myOaNoticeReply.setReadTime(DateUtil.toLocalDateTime(new Date()));
                 myOaNoticeReply.updateById();
             }
 
             if (StringUtils.isEmpty(myOaNoticeReply.getContent())) {
-                canReplay = true;
+                canReply = true;
             }
-            model.addAttribute("myReply", myOaNoticeReply);
+            jsonObject.put("myReply", myOaNoticeReply);
         }
-        model.addAttribute("canReply", canReplay);
+        jsonObject.put("canReply", canReply);
 
-        return "notice/notice_show";
+        return new Result<>(jsonObject);
     }
 
+    @ApiOperation(value = "修改获取对象", notes = "修改获取对象", httpMethod = "GET")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", dataType = "long"),
+    })
     @PreAuthorize("hasAnyAuthority('notice','notice.dept','admin', 'notice.add')")
     @RequestMapping("/edit")
-    public String edit(long id, Model model) {
+    @ResponseBody
+    public Result<Object> edit(long id) {
+        JSONObject object = new JSONObject();
         com.redmoon.oa.pvg.Privilege pvg = new com.redmoon.oa.pvg.Privilege();
         String myUnitCode = pvg.getUserUnitCode(request);
         OaNotice oaNotice = oaNoticeService.getNoticeById(id);
@@ -422,8 +391,7 @@ public class OaNoticeController {
                 }
             }
             if (!isUserPrivValid) {
-                model.addAttribute("info", SkinUtil.LoadString(request, "pvg_invalid"));
-                return "error";
+                return new Result<>(false);
             }
         }
 
@@ -434,6 +402,12 @@ public class OaNoticeController {
 
         // 转换为VO
         OaNoticeVO oaNoticeVO = dozerBeanMapper.map(oaNotice, OaNoticeVO.class);
+        if(oaNoticeVO.getIsDeptNotice()){
+            oaNoticeVO.setKind("部门通知");
+        }else{
+            oaNoticeVO.setKind("公共通知");
+        }
+
         // 判断是否读过
         /*OaNoticeReply myOaNoticeReply = oaNoticeReplyService.getOaNoticeReply(oaNotice.getId(), userName);
         oaNoticeVO.setReaded("1".equals(myOaNoticeReply.getIsReaded()));
@@ -449,30 +423,31 @@ public class OaNoticeController {
         // 遍历回复，置realName
         if (oaNotice.getIsAll() == 0) {
             StringBuffer sbRealNames = new StringBuffer();
+            StringBuffer sbNames = new StringBuffer();
             List<OaNoticeReply> replyList = oaNoticeReplyService.getReplies(id);
-            Iterator<OaNoticeReply> irReaply = replyList.iterator();
-            while (irReaply.hasNext()) {
-                OaNoticeReply oaNoticeReply = irReaply.next();
+            for (OaNoticeReply oaNoticeReply : replyList) {
                 user = user.getUserDb(oaNoticeReply.getUserName());
                 StrUtil.concat(sbRealNames, "，", user.getRealName());
+                StrUtil.concat(sbNames, "，", user.getName());
             }
-            model.addAttribute("realNames", sbRealNames);
+            object.put("realNames", sbRealNames);
+            object.put("names", sbNames);
         }
 
-        model.addAttribute("notice", oaNoticeVO);
-        model.addAttribute("skinPath", SkinMgr.getSkinPath(request));
-        model.addAttribute("myUserName", userName);
-        model.addAttribute("isNoticeAll", isNoticeAll);
-        model.addAttribute("isNoticeMgr", isNoticeMgr);
-        model.addAttribute("myUnitCode", myUnitCode);
+        object.put("notice", oaNoticeVO);
+        object.put("myUserName", userName);
+        object.put("isNoticeAll", isNoticeAll);
+        object.put("isNoticeMgr", isNoticeMgr);
+        object.put("myUnitCode", myUnitCode);
 
-        return "notice/notice_edit";
+        return new Result<>(object);
     }
 
+    @ApiOperation(value = "创建", notes = "创建", httpMethod = "POST")
     @PreAuthorize("hasAnyAuthority('notice','notice.dept','admin', 'notice.add')")
     @ResponseBody
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String create(
+    public Result<Object> create(
             HttpServletRequest request
             /*@RequestParam String title,
                          @RequestParam String content,
@@ -485,17 +460,10 @@ public class OaNoticeController {
                          String receiver*/
             // @RequestParam(value = "att1", required = false) MultipartFile[] files
     ) {
-        JSONObject json = new JSONObject();
         // StandardServletMultipartResolver multipartResolver = new StandardServletMultipartResolver();
         CommonsMultipartResolver multipartResolver = new CommonsMultipartResolver(request.getSession().getServletContext());
         if (!multipartResolver.isMultipart(request)) {
-            try {
-                json.put("ret", "0");
-                json.put("msg", "上传格式非法！");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            return json.toString();
+            return new Result<>(false);
         }
 
         MultipartHttpServletRequest multiRequest = multipartResolver.resolveMultipart(request);
@@ -504,7 +472,9 @@ public class OaNoticeController {
         String content = ParamUtil.get(multiRequest, "content");
         int isReply = ParamUtil.getInt(multiRequest, "isReply", 0);
         int isForcedResponse = ParamUtil.getInt(multiRequest, "isForcedResponse", 0);
-        int isall = ParamUtil.getInt(multiRequest, "isall", 0);
+        int isall = ParamUtil.getInt(multiRequest, "isAll", ConstUtil.NOTICE_IS_SEL_USER);
+        String color = ParamUtil.get(multiRequest, "color");
+        int isBold = ParamUtil.getInt(multiRequest, "isBold", 0);
 
         LocalDate beginDate = DateUtil.parseLocalDate(ParamUtil.get(multiRequest, "beginDate"), "yyyy-MM-dd");
         LocalDate endDate = DateUtil.parseLocalDate(ParamUtil.get(multiRequest, "endDate"), "yyyy-MM-dd");
@@ -517,6 +487,24 @@ public class OaNoticeController {
         DeptUserDb dud = new DeptUserDb();
         String unitCode = dud.getUnitOfUser(userName).getCode();
         try {
+            String[] extAry = Config.getInstance().get("shortMsgFileExt").split(",");
+            List<String> exts = java.util.Arrays.asList(extAry);
+
+            int i = 0;
+            MultipartFile[] files = new MultipartFile[multiRequest.getFileMap().size()];
+            Iterator<String> names = multiRequest.getFileNames();
+            while (names.hasNext()) {
+                MultipartFile file = multiRequest.getFile(names.next().toString());
+                if (file != null) {
+                    files[i] = file;
+                    String ext = StrUtil.getFileExt(file.getOriginalFilename());
+                    if (!exts.contains(ext)) {
+                        return new Result<>(false,"文件格式: " + ext + " 非法");
+                    }
+                    i++;
+                }
+            }
+
             OaNotice oaNotice = new OaNotice();
             oaNotice.setUserName(userName);
             oaNotice.setUnitCode(unitCode);
@@ -529,6 +517,8 @@ public class OaNoticeController {
             oaNotice.setEndDate(endDate);
             oaNotice.setCreateDate(LocalDateTime.now());
             oaNotice.setNoticeLevel(level);
+            oaNotice.setColor(color);
+            oaNotice.setIsBold(isBold);
             boolean re = oaNoticeService.create(oaNotice);
 
             if (re) {
@@ -537,26 +527,13 @@ public class OaNoticeController {
                 Calendar cal = Calendar.getInstance();
                 String year = "" + (cal.get(Calendar.YEAR));
                 String month = "" + (cal.get(Calendar.MONTH) + 1);
-                String vpath = ConstUtil.NOTICE_ATT_BASE_PATH + "/" + year + "/" + month + "/";
+                String vpath = ConstUtil.NOTICE_ATT_BASE_PATH + "/" + year + "/" + month;
 
-                int i = 0;
-                MultipartFile[] files = null;
-                files = new MultipartFile[multiRequest.getFileMap().size()];
-                Iterator<String> names = multiRequest.getFileNames();
-                while (names.hasNext()) {
-                    MultipartFile file = multiRequest.getFile(names.next().toString());
-                    if (file != null) {
-                        files[i] = file;
-                        i++;
-                    }
-                }
-
-                if (files != null && files.length > 0) {
+                if (files.length > 0) {
                     // 循环获取file数组中得文件
                     for (i = 0; i < files.length; i++) {
                         MultipartFile file = files[i];
                         if (!file.isEmpty()) {
-                            byte[] bytes = file.getBytes();
                             String name = file.getOriginalFilename(); // 带有完整路径
                             int p = name.lastIndexOf(File.separator);
                             if (p != -1) {
@@ -565,21 +542,14 @@ public class OaNoticeController {
                             // name = file.getName(); // 取的是表单域的名称
                             String ext = StrUtil.getFileExt(name);
                             String diskName = FileUpload.getRandName() + "." + ext;
-                            String filePath = Global.getRealPath() + "/" + vpath + "/" + diskName;
 
-                            File f = new File(filePath);
-                            if (!f.getParentFile().exists()) {
-                                f.getParentFile().mkdirs();
-                            }
-                            BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(filePath));
-                            stream.write(bytes);
-                            stream.close();
+                            fileService.write(file, vpath, diskName);
 
                             OaNoticeAttach oaNoticeAttach = new OaNoticeAttach();
-                            oaNoticeAttach.setVisualpath(vpath);
+                            oaNoticeAttach.setVisualPath(vpath);
                             oaNoticeAttach.setNoticeId(oaNotice.getId());
                             oaNoticeAttach.setName(name);
-                            oaNoticeAttach.setDiskname(diskName);
+                            oaNoticeAttach.setDiskName(diskName);
                             oaNoticeAttach.setOrders(i);
                             oaNoticeAttach.setFileSize(file.getSize());
                             oaNoticeAttach.setUploadDate(LocalDateTime.now());
@@ -589,44 +559,34 @@ public class OaNoticeController {
                 }
             }
 
-            if (re) {
-                json.put("ret", "1");
-                json.put("msg", "操作成功！");
-            } else {
-                json.put("ret", "0");
-                json.put("msg", "操作失败！");
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            try {
-                json.put("ret", 0);
-                json.put("msg", e.getMessage());
-            } catch (JSONException e1) {
-                e1.printStackTrace();
-            }
+//            if (re) {
+//                json.put("ret", "1");
+//                json.put("msg", "操作成功！");
+//            } else {
+//                json.put("ret", "0");
+//                json.put("msg", "操作失败！");
+//            }
         } catch (IOException e) {
-            try {
-                json.put("ret", 0);
-                json.put("msg", e.getMessage());
-            } catch (JSONException e1) {
-                e1.printStackTrace();
-            }
+//            try {
+//                json.put("ret", 0);
+//                json.put("msg", e.getMessage());
+//            } catch (JSONException e1) {
+//                e1.printStackTrace();
+//            }
         }
-        return json.toString();
+        return new Result<>();
     }
 
+    @ApiOperation(value = "保存获取对象", notes = "保存获取对象", httpMethod = "POST")
     @PreAuthorize("hasAnyAuthority('notice','notice.dept','admin', 'notice.add')")
     @ResponseBody
     @RequestMapping(value = "/save", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String save() {
+    public Result<Object> save() {
         com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
 
         CommonsMultipartResolver multipartResolver = new CommonsMultipartResolver(request.getSession().getServletContext());
         if (!multipartResolver.isMultipart(request)) {
-            json.put("ret", "0");
-            json.put("msg", "上传格式非法！");
-            return json.toString();
+            return new Result<>(false);
         }
 
         MultipartHttpServletRequest multiRequest = multipartResolver.resolveMultipart(request);
@@ -655,9 +615,7 @@ public class OaNoticeController {
                 }
             }
             if (!isUserPrivValid) {
-                json.put("ret", "0");
-                json.put("msg", i18nUtil.get("pvg_invalid"));
-                return json.toString();
+                return new Result<>(false);
             }
         }
 
@@ -667,6 +625,9 @@ public class OaNoticeController {
         int isForcedResponse = ParamUtil.getInt(multiRequest, "isForcedResponse", 0);
         int isall = ParamUtil.getInt(multiRequest, "isall", 0);
         String color = ParamUtil.get(multiRequest, "color");
+        int isShow = ParamUtil.getInt(multiRequest, "isShow", 0);
+        int level = ParamUtil.getInt(multiRequest, "level", 0);
+        int isBold = ParamUtil.getInt(multiRequest, "isBold", 0);
 
         LocalDate beginDate = DateUtil.parseLocalDate(ParamUtil.get(multiRequest, "beginDate"), "yyyy-MM-dd");
         LocalDate endDate = DateUtil.parseLocalDate(ParamUtil.get(multiRequest, "endDate"), "yyyy-MM-dd");
@@ -675,6 +636,20 @@ public class OaNoticeController {
         DeptUserDb dud = new DeptUserDb();
         String unitCode = dud.getUnitOfUser(userName).getCode();
         try {
+            String[] extAry = Config.getInstance().get("shortMsgFileExt").split(",");
+            List<String> exts = java.util.Arrays.asList(extAry);
+
+            Iterator<String> names = multiRequest.getFileNames();
+            while (names.hasNext()) {
+                MultipartFile file = multiRequest.getFile(names.next());
+                if (file != null && !file.isEmpty()) {
+                    String ext = StrUtil.getFileExt(file.getOriginalFilename());
+                    if (!exts.contains(ext)) {
+                        return new Result<>(false,"文件格式: " + ext + " 非法");
+                    }
+                }
+            }
+
             oaNotice.setUserName(userName);
             oaNotice.setUnitCode(unitCode);
             oaNotice.setTitle(title);
@@ -685,145 +660,58 @@ public class OaNoticeController {
             oaNotice.setBeginDate(beginDate);
             oaNotice.setEndDate(endDate);
             oaNotice.setColor(color);
+            oaNotice.setIsShow(isShow==1);
+            oaNotice.setNoticeLevel(level);
+            oaNotice.setIsBold(isBold);
             boolean re = oaNoticeService.updateById(oaNotice);
 
             if (re) {
                 Calendar cal = Calendar.getInstance();
                 String year = "" + (cal.get(Calendar.YEAR));
                 String month = "" + (cal.get(Calendar.MONTH) + 1);
-                String vpath = ConstUtil.NOTICE_ATT_BASE_PATH + "/" + year + "/" + month + "/";
+                String vpath = ConstUtil.NOTICE_ATT_BASE_PATH + "/" + year + "/" + month;
 
-                Iterator<String> names = multiRequest.getFileNames();
+                names = multiRequest.getFileNames();
                 int i = 0;
                 while (names.hasNext()) {
-                    MultipartFile file = multiRequest.getFile(names.next().toString());
+                    MultipartFile file = multiRequest.getFile(names.next());
                     if (file != null && !file.isEmpty()) {
                         String name = file.getOriginalFilename();
                         String ext = StrUtil.getFileExt(name);
                         String diskName = FileUpload.getRandName() + "." + ext;
-                        String filePath = Global.getRealPath() + "/" + vpath + "/" + diskName;
+
+                        fileService.write(file, vpath, diskName);
 
                         OaNoticeAttach oaNoticeAttach = new OaNoticeAttach();
-                        oaNoticeAttach.setVisualpath(vpath);
+                        oaNoticeAttach.setVisualPath(vpath);
                         oaNoticeAttach.setNoticeId(oaNotice.getId());
                         oaNoticeAttach.setName(name);
-                        oaNoticeAttach.setDiskname(diskName);
+                        oaNoticeAttach.setDiskName(diskName);
                         oaNoticeAttach.setOrders(i);
                         oaNoticeAttach.setFileSize(file.getSize());
                         oaNoticeAttach.setUploadDate(LocalDateTime.now());
                         oaNoticeAttachService.create(oaNoticeAttach);
-
-                        File f = new File(filePath);
-                        if (!f.getParentFile().exists()) {
-                            f.getParentFile().mkdirs();
-                        }
-                        file.transferTo(f);
                     }
                 }
             }
 
-            if (re) {
-                json.put("ret", "1");
-                json.put("msg", "操作成功！");
-            } else {
-                json.put("ret", "0");
-                json.put("msg", "操作失败！");
+            if (!re) {
+                return new Result<>(false);
             }
-        } catch (FileNotFoundException e) {
-            json.put("ret", 0);
-            json.put("msg", e.getMessage());
         } catch (IOException e) {
             json.put("ret", 0);
             json.put("msg", e.getMessage());
         }
-        return json.toString();
+        return new Result<>(json);
     }
 
-    @ResponseBody
-    @RequestMapping(value = "/addReply", method = RequestMethod.POST, produces = {"text/html;charset=UTF-8;", "application/json;"})
-    public String addReply() {
-        Privilege privilege = new Privilege();
-        String userName = privilege.getUser(request);
-        String content = ParamUtil.get(request,"content");
-        long noticeId = ParamUtil.getLong(request,"noticeId",0);
-        NoticeReplyDb noticeReplyDb = new NoticeReplyDb();
-        noticeReplyDb.setUsername(userName);
-        noticeReplyDb.setNoticeid(noticeId);
-        noticeReplyDb.setContent(content);
-        boolean flag = false;
-        com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
-        try {
-            flag = noticeReplyDb.save();
-        } catch (ErrMsgException e) {
-            e.printStackTrace();
-            json.put("msg", e.getMessage());
-        } catch (ResKeyException e) {
-            e.printStackTrace();
-            json.put("msg", e.getMessage());
-        }
-
-        if(flag){
-            java.util.Date rDate = new java.util.Date();
-            NoticeDb noticeDb = new NoticeDb();
-            noticeDb = noticeDb.getNoticeDb(noticeId);
-            if(noticeDb.getIs_forced_response() == 1){
-                NoticeReplyDb nrdb = new NoticeReplyDb();
-                nrdb.setIsReaded("1");
-                nrdb.setReadTime(rDate);
-                nrdb.setNoticeid(noticeId);
-                nrdb.setUsername(userName);
-                nrdb.saveStatus();
-            }
-            json.put("res",0);
-        }else{
-            json.put("res",1);
-        }
-        return json.toString();
-    }
-
-    @RequestMapping("/getfile")
-    public void getfile(HttpServletResponse response) throws IOException, ErrMsgException, JSONException {
-        Privilege privilege = new Privilege();
-        if (!privilege.isUserPrivValid(request, "read")) {
-            throw new ErrMsgException(cn.js.fan.web.SkinUtil.LoadString(request, "pvg_invalid"));
-        }
-
-        long noticeId = ParamUtil.getLong(request, "noticeId");
-        long attId = ParamUtil.getLong(request, "attachId");
-        NoticeAttachmentDb att = new NoticeAttachmentDb(attId);
-
+    @RequestMapping("/getFile")
+    public void getFile(HttpServletResponse response, @RequestParam(required = true) Long attachId) throws IOException, ErrMsgException {
+        NoticeAttachmentDb att = new NoticeAttachmentDb(attachId);
         if (!att.isLoaded()) {
             throw new ErrMsgException("文件不存在");
         }
 
-        // 用下句会使IE在本窗口中打开文件
-        // response.setContentType(MIMEMap.get(StrUtil.getFileExt(att.getDiskName())));
-        // 使客户端直接下载，上句会使IE在本窗口中打开文件，下句也一样
-        response.setContentType("application/octet-stream");
-        response.setHeader("Content-disposition","attachment; filename="+StrUtil.GBToUnicode(att.getName()));
-
-        BufferedInputStream bis = null;
-        BufferedOutputStream bos = null;
-
-        try {
-            bis = new BufferedInputStream(new FileInputStream(Global.realPath+att.getVisualPath()+"/"+att.getDiskName()));
-            bos = new BufferedOutputStream(response.getOutputStream());
-
-            byte[] buff = new byte[2048];
-            int bytesRead;
-
-            while(-1 != (bytesRead = bis.read(buff, 0, buff.length))) {
-                bos.write(buff,0,bytesRead);
-            }
-        } catch(final IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (bis != null) {
-                bis.close();
-            }
-            if (bos != null) {
-                bos.close();
-            }
-        }
+        fileService.download(response, att.getName(), att.getVisualPath(), att.getDiskName());
     }
 }

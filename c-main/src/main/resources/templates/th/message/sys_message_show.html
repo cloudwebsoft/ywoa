@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>查看消息</title>
+    <link th:href="@{${skinPath} + '/css.css'}" type="text/css" rel="stylesheet"/>
+    <script src="../inc/common.js"></script>
+    <script src="../js/jquery-1.9.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+    <script src="../js/jquery.bgiframe.js"></script>
+</head>
+<body>
+<table cellSpacing="0" cellPadding="0" width="100%">
+    <tbody>
+    <tr>
+        <td class="tdStyle_1">查看消息</td>
+    </tr>
+    </tbody>
+</table>
+<table class="tabStyle_1 percent98" align="center" style="margin-top:10px">
+    <tr>
+        <td class="tabStyle_1_title">
+            [(${title})]&nbsp;&nbsp;&nbsp;&nbsp;[(${senderName})]&nbsp;&nbsp;&nbsp;&nbsp;[(${rq})]
+            <input name="receiver" th:value="${sender}" type="hidden">
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class="msgContent">
+                [(${content})]
+                <br>
+                <span th:if="${hasLink}" style="font-family:宋体;">>>[(${actionLink})]</span>
+                <div style="margin-top:10px">
+                    <div th:each="att : ${attachments}">
+                        <img src="../images/attach2.gif" align="absmiddle"/>
+                        <a th:href="'download.do?attachId=' + ${att.id} + '&msgId=' + ${id}" target="_blank">[(${att.name})]</a>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

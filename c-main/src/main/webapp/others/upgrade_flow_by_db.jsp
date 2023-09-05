@@ -14,6 +14,7 @@
 <%@ page import="com.cloudwebsoft.framework.db.Connection" %>
 <%@ page import="com.alibaba.fastjson.JSONObject" %>
 <%@ page import="com.redmoon.oa.flow.*" %>
+<%@ page import="com.cloudwebsoft.framework.util.LogUtil" %>
 <%
 	/**
 	 * 流程同步工具，同步表单中的字段
@@ -28,10 +29,16 @@
 		JdbcTemplate jt = new JdbcTemplate(new Connection(dbSource));
 		ResultIterator ri = jt.executeQuery(sqlNew, new Object[]{typeCode});
 		if (ri.hasNext()) {
-			ResultRecord rr = (ResultRecord)ri.next();
+			ResultRecord rr = ri.next();
 
 			Leaf lf = new Leaf();
 			lf = lf.getLeaf(typeCode);
+			if (lf == null) {
+				json.put("ret", 0);
+				json.put("msg", "本系统中流程不存在，请在新系统的表单管理中导出，然后导入本系统，导入时会带有流程及基础数据");
+				out.print(json.toString());
+				return;
+			}
 
 			String sql = "update flow_directory set name=" + StrUtil.sqlstr(rr.getString("name")) +
 					",description=" + StrUtil.sqlstr(rr.getString("description")) +
@@ -63,7 +70,7 @@
 			sqlNew = "select * from flow_predefined where typeCode=?";
 			ri = jt.executeQuery(sqlNew, new Object[]{typeCode});
 			if (ri.hasNext()) {
-				rr = (ResultRecord) ri.next();
+				rr = ri.next();
 
 				sql = "update flow_predefined set flowString=?,typeCode=?,title=?,return_back=?,IS_DEFAULT_FLOW=?," +
 						"dir_code=?,examine=?,is_reactive=?,is_recall=?,return_mode=?,return_style=?,role_rank_mode=?," +
@@ -115,7 +122,7 @@
 						rc.refreshSave(primaryKey);
 					}
 				} catch (SQLException e) {
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				} finally {
 					if (conn != null) {
 						conn.close();
@@ -124,6 +131,124 @@
 				}
 			}
 		}
+		json.put("ret", 1);
+		json.put("msg", "操作成功");
+		out.print(json.toString());
+		return;
+	}
+	else if ("syncScripts".equals(op)) {
+		JSONObject json = new JSONObject();
+		String dbSource = ParamUtil.get(request, "dbSource");
+		String typeCode = ParamUtil.get(request, "typeCode");
+		String sqlNew = "select * from flow_directory where code=?";
+		JdbcTemplate jt = new JdbcTemplate(new Connection(dbSource));
+		ResultIterator ri = jt.executeQuery(sqlNew, new Object[]{typeCode});
+		if (ri.hasNext()) {
+			ResultRecord rr = ri.next();
+
+			Leaf lf = new Leaf();
+			lf = lf.getLeaf(typeCode);
+
+			boolean re = true;
+
+			LeafChildrenCacheMgr.removeAll();
+			lf.removeAllFromCache();
+
+			WorkflowPredefineDb workflowPredefineDb = new WorkflowPredefineDb();
+			workflowPredefineDb = workflowPredefineDb.getDefaultPredefineFlow(typeCode);
+
+			JdbcTemplate jdbcTemplate = new JdbcTemplate();
+			// 更新flow_predefined
+			sqlNew = "select * from flow_predefined where typeCode=?";
+			ri = jt.executeQuery(sqlNew, new Object[]{typeCode});
+			if (ri.hasNext()) {
+				rr = ri.next();
+
+				String sql = "update flow_predefined set scripts=? where id=?";
+				PrimaryKey primaryKey = new PrimaryKey("id", PrimaryKey.TYPE_INT);
+				PreparedStatement ps = null;
+				Conn conn = new Conn(Global.getDefaultDB());
+				try {
+					ps = conn.prepareStatement(sql);
+					ps.setString(1, rr.getString("scripts"));
+					ps.setInt(2, workflowPredefineDb.getId());
+					re = conn.executePreUpdate() == 1;
+					if (re) {
+						WorkflowPredefineCache rc = new WorkflowPredefineCache(workflowPredefineDb);
+						primaryKey.setValue(new Integer(workflowPredefineDb.getId()));
+						rc.refreshSave(primaryKey);
+					}
+				} catch (SQLException e) {
+					LogUtil.getLog(getClass()).error(e);
+				} finally {
+					conn.close();
+				}
+			}
+		}
+		json.put("ret", 1);
+		json.put("msg", "操作成功");
+		out.print(json.toString());
+		return;
+	}
+	else if ("syncScriptsBatch".equals(op)) {
+		JSONObject json = new JSONObject();
+		String typeCodes = ParamUtil.get(request, "typeCodes");
+		String[] arr = StrUtil.split(typeCodes, ",");
+		if (arr == null) {
+			json.put("ret", 0);
+			json.put("msg", "请选择流程");
+			out.print(json.toString());
+			return;
+		}
+		String dbSource = ParamUtil.get(request, "dbSource");
+		for (String typeCode : arr) {
+			String sqlNew = "select * from flow_directory where code=?";
+			JdbcTemplate jt = new JdbcTemplate(new Connection(dbSource));
+			ResultIterator ri = jt.executeQuery(sqlNew, new Object[]{typeCode});
+			if (ri.hasNext()) {
+				ResultRecord rr = ri.next();
+
+				Leaf lf = new Leaf();
+				lf = lf.getLeaf(typeCode);
+
+				boolean re = true;
+
+				LeafChildrenCacheMgr.removeAll();
+				lf.removeAllFromCache();
+
+				WorkflowPredefineDb workflowPredefineDb = new WorkflowPredefineDb();
+				workflowPredefineDb = workflowPredefineDb.getDefaultPredefineFlow(typeCode);
+
+				JdbcTemplate jdbcTemplate = new JdbcTemplate();
+				// 更新flow_predefined
+				sqlNew = "select * from flow_predefined where typeCode=?";
+				ri = jt.executeQuery(sqlNew, new Object[]{typeCode});
+				if (ri.hasNext()) {
+					rr = ri.next();
+
+					String sql = "update flow_predefined set scripts=? where id=?";
+					PrimaryKey primaryKey = new PrimaryKey("id", PrimaryKey.TYPE_INT);
+					PreparedStatement ps = null;
+					Conn conn = new Conn(Global.getDefaultDB());
+					try {
+						ps = conn.prepareStatement(sql);
+						ps.setString(1, rr.getString("scripts"));
+						ps.setInt(2, workflowPredefineDb.getId());
+						re = conn.executePreUpdate() == 1;
+						if (re) {
+							WorkflowPredefineCache rc = new WorkflowPredefineCache(workflowPredefineDb);
+							primaryKey.setValue(workflowPredefineDb.getId());
+							rc.refreshSave(primaryKey);
+						}
+					} catch (SQLException e) {
+						LogUtil.getLog(getClass()).error(e);
+					} finally {
+						conn.close();
+					}
+				}
+			}
+		}
+
 		json.put("ret", 1);
 		json.put("msg", "操作成功");
 		out.print(json.toString());
@@ -170,7 +295,7 @@
 		%>
 	</select>
 	&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:;" onclick="if ('oa'==$('#dbSource').val()) {alert('不能修改默认的数据源oa'); return;} openWin('../admin/db_conn_edit.jsp?dbSource=' + $('#dbSource').val(), 640, 480)">修改数据源</a>
-	&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" value="确定" onclick="window.location.href='upgrade_form_by_db.jsp?dbSource=' + o('dbSource').value;"/>
+	&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" value="确定" onclick="window.location.href='upgrade_flow_by_db.jsp?dbSource=' + o('dbSource').value;"/>
 	（注意本应用为旧版数据库，其它数据源为新版数据库）
 </div>
 <%
@@ -184,11 +309,17 @@
 		return;
 	}
 %>
+<div style="width: 95%; margin: 10px auto">
+	<input type="button" class="btn btn-default" onclick="syncScriptsBatch()" value="批量同步脚本"/>
+</div>
 <table cellSpacing="0" cellPadding="3" width="95%" align="center" class="tabStyle_1">
 	<tr>
+		<td class="tabStyle_1_title" width="30">
+			<input type="checkbox" id="all"/>
+		</td>
 		<td class="tabStyle_1_title" width="20%">编码</td>
-		<td class="tabStyle_1_title" width="30%">新版</td>
-		<td class="tabStyle_1_title" width="30%">本版</td>
+		<td class="tabStyle_1_title" width="25%">新版</td>
+		<td class="tabStyle_1_title" width="25%">本版</td>
 		<td class="tabStyle_1_title" width="20%">操作</td>
 	</tr>
 	<%
@@ -202,9 +333,9 @@
 		lf.getAllChild(v, lf);
 
 		while (ri.hasNext()) {
-			ResultRecord rr = (ResultRecord)ri.next();
+			ResultRecord rr = ri.next();
 			String codeNew = "", nameNew = "", name="";
-			boolean isFound = true;
+			boolean isFound = false;
 			codeNew = rr.getString(1);
 			nameNew = rr.getString(2);
 			ir = v.iterator();
@@ -218,6 +349,15 @@
 			}
 	%>
 	<tr>
+		<td align="center">
+			<%
+				if (isFound) {
+			%>
+			<input class="chk" type="checkbox" value="<%=codeNew%>"/>
+			<%
+				}
+			%>
+		</td>
 		<td><%=codeNew%></td>
 		<td><%=nameNew%></td>
 		<td>
@@ -231,7 +371,9 @@
 			<%
 				if (isFound) {
 			%>
-			<button class="btn btn-default" onclick="sync('<%=codeNew%>', '<%=nameNew%>')">同步</button>
+			<button class="btn btn-default" onclick="sync('<%=codeNew%>', '<%=nameNew%>')">同步流程</button>
+			&nbsp;&nbsp;
+			<button class="btn btn-default" onclick="syncScripts('<%=codeNew%>', '<%=nameNew%>')">同步脚本</button>
 			<%
 				}
 			%>
@@ -265,6 +407,97 @@
 					data = $.parseJSON(data);
 					jAlert(data.msg, "提示", function() {
 						window.location.reload();
+					});
+				},
+				complete: function (XMLHttpRequest, status) {
+					$("body").hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		});
+	}
+
+	function syncScripts(typeCode, name) {
+		jConfirm('您确定要同步"' + name + '"么？', '提示', function (r) {
+			if (!r) {
+				return;
+			}
+
+			$.ajax({
+				type: "post",
+				url: "upgrade_flow_by_db.jsp",
+				data: {
+					op: "syncScripts",
+					typeCode: typeCode,
+					dbSource: "<%=dbSource%>"
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$("body").showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					jAlert(data.msg, "提示", function() {
+						window.location.reload();
+					});
+				},
+				complete: function (XMLHttpRequest, status) {
+					$("body").hideLoading();
+				},
+				error: function (XMLHttpRequest, textStatus) {
+					// 请求出错处理
+					alert(XMLHttpRequest.responseText);
+				}
+			});
+		});
+	}
+
+	$(function() {
+		$('#all').click(function() {
+			$('.chk').prop('checked', $(this).prop('checked'));
+		})
+	})
+
+	function syncScriptsBatch() {
+		var codes = '';
+		$('.chk').each(function() {
+			if ($(this).prop('checked')) {
+				if (codes == '') {
+					codes = $(this).val();
+				}
+				else {
+					codes += ',' + $(this).val();
+				}
+			}
+		});
+		if (codes == '') {
+			jAlert('请选择流程', '提示');
+			return;
+		}
+		jConfirm('您确定要批量同步脚本么？', '提示', function (r) {
+			if (!r) {
+				return;
+			}
+
+			$.ajax({
+				type: "post",
+				url: "upgrade_flow_by_db.jsp",
+				data: {
+					op: "syncScriptsBatch",
+					typeCodes: codes,
+					dbSource: "<%=dbSource%>"
+				},
+				dataType: "html",
+				beforeSend: function (XMLHttpRequest) {
+					$("body").showLoading();
+				},
+				success: function (data, status) {
+					data = $.parseJSON(data);
+					jAlert(data.msg, "提示", function() {
+						// window.location.reload();
 					});
 				},
 				complete: function (XMLHttpRequest, status) {

@@ -30,7 +30,7 @@ com.redmoon.oa.flow.LeafPriv lpTop = new com.redmoon.oa.flow.LeafPriv(flowTypeCo
     <%}%>
     <li id="menu3"><a href="flow_predefine_dir.jsp?parent_code=<%=StrUtil.UrlEncode(flowTypeCodeTop)%>&op=AddChild"><span>添加</span></a></li>
 <%}%>
-<%if (flowTypeCodeTop.equals("") && (com.redmoon.oa.kernel.License.getInstance().isPlatform() || com.redmoon.oa.kernel.License.getInstance().isPlatformSrc())) {%>
+<%if ("".equals(flowTypeCodeTop)) {%>
     <li id="menu3"><a href="javascript:switchList(0)"><span>模块表单</span></a></li>
 <%}%>
 <%if (flowTypeCodeTop.equals(com.redmoon.oa.flow.Leaf.CODE_ROOT) && pvgTop.isUserPrivValid(request, "admin")) {%>

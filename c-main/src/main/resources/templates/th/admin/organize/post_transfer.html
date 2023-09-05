@@ -1,0 +1,53 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>选择职位</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .layui-form-checkbox {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<div class="spacerH"></div>
+<div class="container" style="text-align: center">
+    <div id="tranBox"></div>
+    <div>
+        <button id="btnOk" style="margin-top: 10px" class="btn btn-default">确定</button>
+    </div>
+</div>
+<script th:inline="javascript">
+    var ary = [[${ary}]];
+    var arr = [];
+    for (var i in ary) {
+        var json = {};
+        json.value = ary[i].id;
+        json.title = ary[i].name + "&nbsp;(" + ary[i].fullDeptName + ")";
+        json.name = ary[i].name;
+        json.fullDeptName = ary[i].fullDeptName;
+        arr.push(json);
+    }
+    layui.use('transfer', function () {
+        var transfer = layui.transfer;
+        transfer.render({
+            elem: '#tranBox'
+            , title: ['候选职位', '已选职位']
+            , showSearch: true // 显示搜索框
+            , width: 400
+            , height: 680
+            , data: arr
+            , id: 'tran'
+            ,value: [
+                [(${postsSelected})]
+            ] // 初始化右侧数据
+        });
+
+        $("#btnOk").click(function () {
+            window.opener.setPosts(transfer.getData('tran'));
+            window.close();
+        })
+    });
+</script>
+</body>
+</html>

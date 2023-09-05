@@ -10,39 +10,48 @@ package cn.js.fan.sso;
  */
 
 import cn.js.fan.util.StrUtil;
+import cn.js.fan.util.XMLProperties;
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.xml.sax.InputSource;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Iterator;
 
 public class Config {
-    // public: constructor to load driver and connect db
-    boolean debug = true;
-    final String configxml = "ssoconfig.xml";
-    String xmlpath = "";
+    String CONFIG_FILENAME = "config_sso.xml";
     Document doc = null;
     Element root = null;
-    String deskey = "bluewind"; //DES密钥长度为64bit，1个字母为八位，需8个字母，不能超过8个，否则会出错
 
     public Config() {
-        URL confURL = getClass().getResource("/" + configxml);
-        xmlpath = confURL.getFile();
-        xmlpath = URLDecoder.decode(xmlpath);
-
-        SAXBuilder sb = new SAXBuilder();
+        InputStream inputStream = null;
         try {
-            FileInputStream fin = new FileInputStream(xmlpath);
-            doc = sb.build(fin);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            SAXBuilder sb = new SAXBuilder();
+            doc = sb.build(inputStream);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {} catch (java.io.IOException e) {
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -57,12 +66,13 @@ public class Config {
         Iterator ir = webapplist.iterator();
         String attr = "";
         while (ir.hasNext()) {
-            Element a = (Element) ir.next(); //得到第i个field元素
+            Element a = (Element) ir.next();
             attr = a.getAttribute("kind").getValue();
             if (attr != null && attr.equals(kind)) {
                 Element loginurl = a.getChild("loginurl");
-                if (loginurl != null)
+                if (loginurl != null) {
                     return loginurl.getText();
+                }
                 break;
             }
         }
@@ -79,8 +89,9 @@ public class Config {
             attr = a.getAttribute("kind").getValue();
             if (attr != null && attr.equals(kind)) {
                 Element loginurl = a.getChild("defaulturl");
-                if (loginurl != null)
+                if (loginurl != null) {
                     return loginurl.getText();
+                }
                 break;
             }
         }
@@ -89,66 +100,18 @@ public class Config {
 
     public String getKey() {
         Element which = root.getChild("key");
-        if (which == null)
+        if (which == null) {
             return null;
-        String s = StrUtil.getNullStr(which.getText());
-        /*
-            byte[] key = deskey.getBytes(); //DES密钥长度为64bit
-            String re = "";
-            try {
-              byte[] dstr = SecurityUtil.decodehexstr(pwd, key);
-              if (dstr != null)
-                re = new String(dstr);
-            }
-            catch (java.lang.Exception e) {
-                System.out.println("DES decode error:" + e.getMessage());
-            }
-            return re;
-         */
-        return s;
-    }
-
-
-    public String getDoorUrl() {
-        Element which = root.getChild("doorurl");
-        if (which == null)
-            return null;
-        String url = StrUtil.getNullStr(which.getText());
-        return url;
+        }
+        return StrUtil.getNullStr(which.getText());
     }
 
     public boolean setKey(String pwd) {
         Element which = root.getChild("site").getChild("key");
-        if (which == null)
+        if (which == null) {
             return false;
-        /*
-            byte[] key = deskey.getBytes();//DES密钥长度为64bit
-            try {
-              pwd = SecurityUtil.encode2hex(pwd.getBytes(), key);
-            }
-            catch (Exception e) {
-                System.out.println("DES encode error:" + e.getMessage());
-            }
-              }
-         */
+        }
         which.setText(pwd);
-        writemodify();
         return true;
-    }
-
-    public void writemodify() {
-        String indent = "    ";
-        boolean newLines = true;
-        // XMLOutputter outp = new XMLOutputter(indent, newLines, "gb2312");
-        Format format = Format.getPrettyFormat();
-        format.setIndent(indent);
-        format.setEncoding("gb2312");
-        XMLOutputter outp = new XMLOutputter(format);
-
-        try {
-            FileOutputStream fout = new FileOutputStream(xmlpath);
-            outp.output(doc, fout);
-            fout.close();
-        } catch (java.io.IOException e) {}
     }
 }

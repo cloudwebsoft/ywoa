@@ -33,61 +33,9 @@
 <%@ page import="com.cloudweb.oa.api.INestTableCtl" %>
 <%@ page import="com.cloudweb.oa.service.MacroCtlService" %>
 <%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
-<style>
-    .nest-table {
-        width: 100%;
-    }
-
-    .nest-table tr:first-child {
-        background-color: #f5f5f5;
-        text-align: center;
-        font-weight: bold;
-    }
-
-    .nest-table td {
-        border: 1px solid #ccc;
-        height: 36px;
-    }
-
-    .nest-table input:not([name$="_realshow"]):not([type="radio"]):not([type="button"]):not([type="checkbox"]) {
-        width: 99%;
-    }
-
-    .nest-table select {
-        width: 99%;
-    }
-
-    .nest-toolbar {
-        height: 35px;
-        padding: 3px;
-        background-color: #eee;
-    }
-
-    .nest-btn {
-        float: left;
-        cursor: pointer;
-        padding: 5px;
-    }
-
-    .nest-btn-hover {
-        background-color: #ffffff;
-    }
-
-    .nest-btn img {
-        margin-right: 5px;
-        vertical-align: center;
-    }
-
-    .td-no {
-        text-align: center;
-    }
-
-    .row-add {
-        background-color: #FAF0E6;
-    }
-    .row-pull {
-    }
-</style>
+<%@ page import="cn.js.fan.web.Global" %>
+<%@ page import="com.cloudweb.oa.utils.SysUtil" %>
+<%@ page import="cn.js.fan.util.ErrMsgException" %>
 <script>
     // 初始化鼠标浮过行时高亮显示
     function bindNestTableMouseEvent() {
@@ -148,6 +96,8 @@
     int formViewId = -1, isAddHighlight = 0;
     boolean canAdd = true, canEdit = true, canImport = true, canExport = true, canDel = true, canSel = true;
     boolean isAutoSel = false;
+    int isNoShow = 1;
+    String nestFilter = "";
     FormField nestField = null;
     String nestFormCode = "";
     boolean isPropStat = false;
@@ -171,6 +121,7 @@
                 canImport = "true".equals(json.getString("canImport"));
                 canDel = "true".equals(json.getString("canDel"));
                 canSel = "true".equals(json.getString("canSel"));
+                nestFilter = json.getString("filter");
                 if (json.has("canExport")) {
                     canExport = "true".equals(json.getString("canExport"));
                 }
@@ -181,8 +132,14 @@
                     queryId = StrUtil.toInt((String)json.get("queryId"));
                 }
                 nestFormCode = json.getString("destForm");
+                if (json.has("isAddHighlight")) {
+                    isAddHighlight = json.getInt("isAddHighlight");
+                }
+                if (json.has("isNoShow")) {
+                    isNoShow = json.getInt("isNoShow");
+                }
                 if (json.has("propStat")) {
-                    propStat = json.getString("propStat");
+                    propStat = json.get("propStat").toString(); // get("propStat")可能为{}，即json对象，而不是字符串，此时用json.getString("propStat")会报错
                     if (StringUtils.isNotEmpty(propStat)) {
                         if ("".equals(propStat)) {
                             propStat = "{}";
@@ -192,9 +149,6 @@
                             isPropStat = true;
                         }
                     }
-                }
-                if (json.has("isAddHighlight")) {
-                    isAddHighlight = json.getInt("isAddHighlight");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -232,7 +186,13 @@
         viewContent = formViewDb.getString("content");
     }
     else {
-        viewContent = FormViewMgr.makeViewContent(msdNest);
+        try {
+            viewContent = FormViewMgr.makeViewContent(msdNest);
+        }
+        catch (ErrMsgException e) {
+            out.print(e.getMessage());
+            return;
+        }
         viewForm = FormViewMgr.makeViewForm(nestFormCode, viewContent);
     }
 
@@ -242,7 +202,7 @@
     int headerRows = 0; // 表格头部所占的行数
     int rowId = 0; // 行的标识
     int flowId = -1;
-    String tableHtml = "";
+    String tableHtml = ""; // 生成辅助用的表格，里面的行tr为模板
     String cwsId = ParamUtil.get(request, "cwsId");
     StringBuffer scriptsForDisableAndHideForAdd = new StringBuffer();
     StringBuilder sbTmpHtml = new StringBuilder();
@@ -296,7 +256,7 @@
                     }
                 }
 
-                trsTmp.append("<tr class='").append(cls).append("'><td class='td-no'>").append(k).append("</td>"); // 序号列
+                trsTmp.append("<tr class='").append(cls).append("'><td class='td-no' style=\"display: " + (isNoShow==1?"":"none") + "\">").append(k).append("</td>"); // 序号列
                 int col = 0;
                 for (FormField ff : fields) {
                     ff = fdao.getFormField(ff.getName());
@@ -326,41 +286,45 @@
 
             FormDb parentFd = new FormDb();
             parentFd = parentFd.getFormDb(parentFormCode);
-            com.alibaba.fastjson.JSONObject jsonSums = com.alibaba.fastjson.JSONObject.parseObject(FormUtil.getSums(fd, parentFd, cwsId).toString());
-
+            String strSums = FormUtil.getSums(fd, parentFd, cwsId).toString();
+            com.alibaba.fastjson.JSONObject jsonSums = com.alibaba.fastjson.JSONObject.parseObject(strSums);
             if (isPropStat) {
                 for (FormField formField : fields) {
                     Iterator<String> ir3 = jsonPropStat.keys();
+                    boolean isFound = false;
                     while (ir3.hasNext()) {
                         String fieldName = ir3.next();
 
-                        if (!formField.getName().equals(fieldName)) {
-                            trStatHtml.append("<td></td>");
-                            continue;
-                        }
+                        if (formField.getName().equals(fieldName)) {
+                            isFound = true;
 
-                        String modeStat = jsonPropStat.getString(fieldName);
+                            String modeStat = jsonPropStat.getString(fieldName);
 
-                        FormField ff = fd.getFormField(fieldName);
-                        if (ff == null) {
-                            DebugUtil.e(getClass(), "合计字段", "field " + fieldName + " is not exist");
-                        }
-                        int fieldType = ff.getFieldType();
-
-                        double sumVal = 0;
-                        if (vt.size() > 0) {
-                            // sumVal = FormSQLBuilder.getSUMOfSQL(sql, fieldName);
-                            sumVal = jsonSums.getDouble(fieldName);
-                        }
-                        if ("0".equals(modeStat)) {
-                            if (fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG) {
-                                trStatHtml.append("<td><span id='cws_stat_" + fieldName + "' title='合计'>" + (long) sumVal + "</span></td>");
-                            } else {
-                                trStatHtml.append("<td><span id='cws_stat_" + fieldName + "' title='合计'>" + NumberUtil.round(sumVal, 2) + "</span></td>");
+                            FormField ff = fd.getFormField(fieldName);
+                            if (ff == null) {
+                                DebugUtil.e(getClass(), "合计字段", "field " + fieldName + " is not exist");
                             }
-                        } else if (modeStat.equals("1")) {
-                            trStatHtml.append("<td><span id='cws_stat_" + fieldName + "' title='平均'>" + NumberUtil.round(sumVal / rowId, 2) + "</span></td>");
+                            int fieldType = ff.getFieldType();
+
+                            double sumVal = 0;
+                            if (vt.size() > 0) {
+                                sumVal = FormSQLBuilder.getSUMOfSQL(sql, fieldName);
+                            }
+
+                            if ("0".equals(modeStat)) {
+                                if (fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG) {
+                                    trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><span id='cws_stat_" + fieldName + "' title='合计'>" + (long) sumVal + "</span></td>");
+                                } else {
+                                    trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><span id='cws_stat_" + fieldName + "' title='合计'>" + NumberUtil.round(sumVal, 2) + "</span></td>");
+                                }
+                            } else if (modeStat.equals("1")) {
+                                trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><span id='cws_stat_" + fieldName + "' title='平均'>" + NumberUtil.round(sumVal / rowId, 2) + "</span></td>");
+                            }
                         }
+                    }
+
+                    if (!isFound) {
+                        trStatHtml.append("<td></td>");
                     }
                 }
 
@@ -392,14 +356,15 @@
         <script>
         $(function() {
             // 增加序号列
-            var tdHeaderCheckbox = "<td width=\"45\" rowspan=\"<%=headerRows%>\" align=\"center\" valign=\"middle\">序号</td>";
+            var tdHeaderCheckbox = "<td width=\"45\" rowspan=\"<%=headerRows%>\" style=\"display: <%=isNoShow==1?"":"none"%>\" align=\"center\" valign=\"middle\">序号</td>";
             $("#nestTable_<%=nestFieldName%> tr").first().prepend(tdHeaderCheckbox);
             <%
             if (isPageShow) {
             %>
             // 置主表中计算控件的值
             var nestSheetSums = <%=jsonSums.toString()%>;
-            for (var o in nestSheetSums) {
+            console.log('nest_table_view.jsp nestSheetSums', nestSheetSums, 'formCode', '<%=formCode%>');
+            /*for (var o in nestSheetSums) {
                 var elId = o;
                 var $ctl = $("span[id='" + elId + "'][formCode='<%=formCode%>']");
                 if (!$ctl[0]) {
@@ -407,7 +372,29 @@
                     $ctl = $("span[id='" + elId + "']");
                 }
                 $ctl.html(nestSheetSums[o]);
+            }*/
+            var keys = '';
+            for (var o in nestSheetSums) {
+                if (keys.indexOf(',' + o + ',') != -1) {
+                    // 跳过已正常取得的字段，因为可能在sum时两个嵌套表中都含有同名的字段，而其中一个是有formCode属性的
+                    continue;
+                }
+                console.log('keys', keys);
+                var $ctl = $("span[id='" + o + "'][formCode='<%=formCode%>']");
+                if (!$ctl[0]) {
+                    // 向下兼容会带来问题，如果在sum时两个嵌套表中都含有同名的字段，会导致出现问题，故需带有formCode属性的计算控件字段记住
+                    // 向下兼容，旧版的sum型计算控件中没有formCode
+                    $ctl = $("span[id='" + o + "']");
+                } else {
+                    if (keys == '') {
+                        keys = ',' + o + ',';
+                    } else {
+                        keys += o + ',';
+                    }
+                }
+                $ctl.html(nestSheetSums[o]);
             }
+
             <%
             }
             %>
@@ -440,10 +427,10 @@
             int p = trHtml.indexOf("<td");
             String tmpL = trHtml.substring(0, p);
             String tmpR = trHtml.substring(p);
-            trHtml = tmpL + "<td align=\"center\" valign=\"middle\"><input name=\"chk" + nestFieldName + "\" type='checkbox'/><input name='rowId" + nestFieldName + "' type='hidden'/><input name='dataId" + nestFieldName + "' type='hidden' value=''/></td><td class='td-no'></td>" + tmpR;
+            trHtml = tmpL + "<td align=\"center\" valign=\"middle\"><input name=\"chk" + nestFieldName + "\" type='checkbox'/><input name='rowId" + nestFieldName + "' type='hidden'/><input name='dataId" + nestFieldName + "' type='hidden' value=''/></td><td class='td-no' style=\"display: " + (isNoShow==1?"":"none") + "\"></td>" + tmpR;
 
             // 加入已有的记录，列出记录，通过rendForNestTable，将结果加至nestTable，再initDateCtlInLastTrOfTable
-            String sql = "select id from " + fd.getTableNameByForm() + " where cws_id=" + StrUtil.sqlstr(cwsId) + "and cws_parent_form=" + StrUtil.sqlstr(parentFormCode) + " order by id"; // cws_order";
+            String sql = "select id from " + fd.getTableNameByForm() + " where cws_id=" + StrUtil.sqlstr(cwsId) + " and cws_parent_form=" + StrUtil.sqlstr(parentFormCode) + " order by id"; // cws_order";
             FormDAO fdao = new FormDAO();
             Vector<FormDAO> vt = fdao.list(formCode, sql);
             Iterator<FormDAO> ir = vt.iterator();
@@ -458,7 +445,7 @@
                     fieldsCloned.add(ffCloned);
                 }
 
-                String curTrHtml = tmpL + "<td align=\"center\" valign=\"middle\"><input name=\"chk" + nestFieldName + "\" type='checkbox' value='" + rowId + "'/><input name='rowId" + nestFieldName + "' type='hidden' value='" + rowId + "'/><input name='dataId" + nestFieldName + "' type='hidden' value='" + fdao.getId() + "'/></td><td class='td-no'></td>" + tmpR;
+                String curTrHtml = tmpL + "<td align=\"center\" valign=\"middle\"><input name=\"chk" + nestFieldName + "\" type='checkbox' value='" + rowId + "'/><input name='rowId" + nestFieldName + "' type='hidden' value='" + rowId + "'/><input name='dataId" + nestFieldName + "' type='hidden' value='" + fdao.getId() + "'/></td><td class='td-no' style=\"display:" + (isNoShow==1?"":"none") + "\"></td>" + tmpR;
                 // 改变其中控件的name值为nest_field_***_rowId
                 NodeList nodeList = Parser.createParser(curTrHtml, "utf-8").parse(new TagNameFilter("tr"));
                 Node trObj = nodeList.elementAt(0);
@@ -484,7 +471,13 @@
                 curTrHtml = trObj.toHtml();
 
                 // 展开宏控件
+                // curTrHtml = render.getContentMacroReplaced(fdao, curTrHtml, fieldsCloned);
+                curTrHtml = "<table><tbody>" + curTrHtml + "</tbody></table>";
                 curTrHtml = render.getContentMacroReplaced(fdao, curTrHtml, fieldsCloned);
+                int pCur = curTrHtml.indexOf("<tbody>");
+                int qCur = curTrHtml.indexOf("</tbody>");
+                curTrHtml = curTrHtml.substring(pCur + "<tbody>".length(), qCur);
+
                 // 调整对齐样式
                 nodeList = Parser.createParser(curTrHtml, "utf-8").parse(new TagNameFilter("tr"));
                 trObj = nodeList.elementAt(0);
@@ -574,43 +567,47 @@
 
             // 生成合计字段行
             if (isPropStat) {
-                int n = 0;
                 Iterator irFields = fields.iterator();
                 while (irFields.hasNext()) {
                     FormField formField = (FormField) irFields.next();
+                    boolean isFound = false;
 
                     Iterator ir3 = jsonPropStat.keys();
                     while (ir3.hasNext()) {
                         String fieldName = (String) ir3.next();
 
-                        if (!formField.getName().equals(fieldName)) {
-                            trStatHtml.append("<td></td>");
-                            continue;
-                        }
+                        if (formField.getName().equals(fieldName)) {
+                            isFound = true;
+                            String modeStat = jsonPropStat.getString(fieldName);
 
-                        String modeStat = jsonPropStat.getString(fieldName);
-
-                        FormField ff = fd.getFormField(fieldName);
-                        if (ff == null) {
-                            DebugUtil.e(getClass(), "合计字段", "field " + fieldName + " is not exist");
-                        }
-                        int fieldType = ff.getFieldType();
-
-                        double sumVal = 0;
-                        if (rowId > 0) {
-                            sumVal = FormSQLBuilder.getSUMOfSQL(sql, fieldName);
-                        }
-                        if ("0".equals(modeStat)) {
-                            if (fieldType == FormField.FIELD_TYPE_INT
-                                    || fieldType == FormField.FIELD_TYPE_LONG) {
-                                trStatHtml.append("<td><input id='cws_stat_" + fieldName + "' title='合计' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='" + (long) sumVal + "'/></td>");
-                            } else {
-                                trStatHtml.append("<td><input id='cws_stat_" + fieldName + "' title='合计' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='" + NumberUtil.round(sumVal, 2) + "'/></td>");
+                            FormField ff = fd.getFormField(fieldName);
+                            if (ff == null) {
+                                DebugUtil.e(getClass(), "合计字段", "field " + fieldName + " is not exist");
                             }
-                        } else if (modeStat.equals("1")) {
-                            trStatHtml.append("<td><input id='cws_stat_" + fieldName + "' title='平均' readonly class='input-stat' value='" + NumberUtil.round(sumVal / rowId, 2) + "'/></td>");
+                            int fieldType = ff.getFieldType();
+                            String align = mapAlign.get(fieldName);
+                            if ("center".equals(align)) {
+                                align = "";
+                            }
+                            double sumVal = 0;
+                            if (rowId > 0) {
+                                sumVal = FormSQLBuilder.getSUMOfSQL(sql, fieldName);
+                            }
+                            if ("0".equals(modeStat)) {
+                                if (fieldType == FormField.FIELD_TYPE_INT
+                                        || fieldType == FormField.FIELD_TYPE_LONG) {
+                                    trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><input id='cws_stat_" + fieldName + "' title='合计' style='text-align:" + align + "' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='" + (long) sumVal + "'/></td>");
+                                } else {
+                                    trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><input id='cws_stat_" + fieldName + "' title='合计' style='text-align:" + align + "' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='" + NumberUtil.round(sumVal, 2) + "'/></td>");
+                                }
+                            } else if (modeStat.equals("1")) {
+                                trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><input id='cws_stat_" + fieldName + "' title='平均' style='text-align:" + align + "' readonly class='input-stat' value='" + NumberUtil.round(sumVal / rowId, 2) + "'/></td>");
+                            }
                         }
-                        n++;
+                    }
+
+                    if (!isFound) {
+                        trStatHtml.append("<td></td>");
                     }
                 }
 
@@ -639,43 +636,48 @@
             int p = trHtml.indexOf("<td");
             String tmpL = trHtml.substring(0, p);
             String tmpR = trHtml.substring(p);
-            trHtml = tmpL + "<td align=\"center\" valign=\"middle\"><input name=\"chk" + nestFieldName + "\" type='checkbox'/><input name='rowId" + nestFieldName + "' type='hidden'/><input name='dataId" + nestFieldName + "' type='hidden' value=''/></td><td class='td-no'></td>" + tmpR;
+            trHtml = tmpL + "<td align=\"center\" valign=\"middle\"><input name=\"chk" + nestFieldName + "\" type='checkbox'/><input name='rowId" + nestFieldName + "' type='hidden'/><input name='dataId" + nestFieldName + "' type='hidden' value=''/></td><td class='td-no' style=\"display:" + (isNoShow==1?"":"none") + "\"></td>" + tmpR;
 
             if (isPropStat) {
-                int n = 0;
-                Iterator irFields = fields.iterator();
-                while (irFields.hasNext()) {
-                    FormField formField = (FormField) irFields.next();
+                for (FormField formField : fields) {
+                    boolean isFound = false;
 
                     Iterator ir3 = jsonPropStat.keys();
                     while (ir3.hasNext()) {
                         String fieldName = (String) ir3.next();
 
-                        if (!formField.getName().equals(fieldName)) {
-                            trStatHtml.append("<td></td>");
-                            continue;
-                        }
+                        if (formField.getName().equals(fieldName)) {
+                            isFound = true;
 
-                        String modeStat = jsonPropStat.getString(fieldName);
-                        FormField ff = fd.getFormField(fieldName);
-                        if (ff == null) {
-                            DebugUtil.e(getClass(), "合计字段", "field " + fieldName + " is not exist");
-                        }
-                        int fieldType = ff.getFieldType();
-                        if ("0".equals(modeStat)) {
-                            if (fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG) {
-                                trStatHtml.append("<td><input id='cws_stat_" + fieldName + "' title='合计' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='0.00'/></td>");
-                            } else {
-                                trStatHtml.append("<td><input id='cws_stat_" + fieldName + "' title='合计' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='0.00'/></td>");
+                            String modeStat = jsonPropStat.getString(fieldName);
+                            FormField ff = fd.getFormField(fieldName);
+                            if (ff == null) {
+                                DebugUtil.e(getClass(), "合计字段", "field " + fieldName + " is not exist");
                             }
-                        } else if ("1".equals(modeStat)) {
-                            trStatHtml.append("<td><input id='cws_stat_" + fieldName + "' title='平均' readonly class='input-stat' value='0.00'/></td>");
+                            String align = mapAlign.get(fieldName);
+                            if ("center".equals(align)) {
+                                align = "";
+                            }
+                            int fieldType = ff.getFieldType();
+                            if ("0".equals(modeStat)) {
+                                if (fieldType == FormField.FIELD_TYPE_INT || fieldType == FormField.FIELD_TYPE_LONG) {
+                                    trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><input id='cws_stat_" + fieldName + "' title='合计' style='text-align:" + align + "' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='0.00'/></td>");
+                                } else {
+                                    trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><input id='cws_stat_" + fieldName + "' title='合计' style='text-align:" + align + "' readonly kind='CALCULATOR' formula='sum(nest." + fieldName + ")' isroundto5='1' digit='2' class='input-stat' value='0.00'/></td>");
+                                }
+                            } else if ("1".equals(modeStat)) {
+                                trStatHtml.append("<td align='" + mapAlign.get(fieldName) + "'><input id='cws_stat_" + fieldName + "' title='平均' style='text-align:" + align + "' readonly class='input-stat' value='0.00'/></td>");
+                            }
+                            break;
                         }
-                        n++;
+                    }
+
+                    if (!isFound) {
+                        trStatHtml.append("<td></td>");
                     }
                 }
 
-                trStatHtml.insert(0, "<tr id='trStat'><td></td><td></td>"); // 复选框列及序号列
+                trStatHtml.insert(0, "<tr id='trStat'><td></td><td style=\"display: " + (isNoShow==1?"":"none") + "\"></td>"); // 复选框列及序号列
                 trStatHtml.append("</tr>");
             }
         }
@@ -686,7 +688,12 @@
         out.print("<script>$(function() {" + scriptsForDisableAndHide.toString() + "});</script>");
 
         // 创建辅助表格，其tr将用于添加新行
+        // 补齐table、tbody，否则trHtml的格式为：<tr><td>...</tr>，jsoup会去掉tr、td
+        trHtml = "<table><tbody>" + trHtml + "</tbody></table>";
         trHtml = render.getContentMacroReplaced(null, trHtml, fields);
+        int p = trHtml.indexOf("<tbody>");
+        int q = trHtml.indexOf("</tbody>");
+        trHtml = trHtml.substring(p + "<tbody>".length(), q);
 
         // 调整对齐样式，不能对tableHtml作accept处理，HtmlParser解析会混乱
         NodeList nodeList = Parser.createParser(trHtml, "utf-8").parse(new TagNameFilter("tr"));
@@ -700,6 +707,7 @@
         trObj.accept(new NestTableNodeAlignVisitor(nestFieldName, mapAlign));
         trHtml = trObj.toHtml();
 
+        // 组装辅助表格
         String[] r = render.rendForNestTable("<table id='tableHelper'>" + trHtml + "</table>", fields, formId, true, null);
         tableHtml = r[0] + r[1] + r[2];
 
@@ -742,6 +750,8 @@
         e.printStackTrace();
     }
 
+    SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+
     // 必须要escape，因为其中有脚本，可能会带来影响
 %>
 <code id="tmpTableHtml<%=nestFieldName%>" style="display: none"><%=StrUtil.escape(sbTmpHtml.toString())%></code>
@@ -768,8 +778,12 @@
 
     // 如果没有则创建，因为当配置了自动拉单时，会在拉单时再次调用nest_table_view.jsp
     if (!$('#iframe<%=nestFieldName%>')[0]) {
-        // 在iframe中获取辅助表格的tr，以免当存在与主表同名的字段时，scriptsForDisableAndHideForAdd中的脚本在disable时会带来影响
-        $('body').append('<iframe id="iframe<%=nestFieldName%>" style="display:none" src="<%=request.getContextPath()%>/visual/nest_table_iframe.jsp?nestFieldName=<%=nestFieldName%>"></iframe>');
+        // 在containerDiv获取辅助表格的tr，以免当存在与主表同名的字段时，scriptsForDisableAndHideForAdd中的脚本在disable时会带来影响
+        var html = getIframeContent<%=nestFieldName%>();
+        var containerDiv = document.createElement("DIV");
+        containerDiv.innerHTML = '<div id="container<%=nestFieldName%>">' + html + '</div>';
+        var $nestTr = $(containerDiv).find("#tableHelper tr");
+        setNestTr<%=nestFieldName%>($nestTr.prop('outerHTML'));
     }
 
     // 初始化日期控件
@@ -780,38 +794,38 @@
         <%
         if (("edit".equals(op) || "add".equals(op)) && canAdd) {
         %>
-        toolbar += "<span class='nest-btn' onclick='addNestTr<%=nestFieldName%>()'><img src='<%=request.getContextPath()%>/images/add.png' title='添加'/>添加</span>";
+        toolbar += "<span class='nest-btn' onclick='addNestTr<%=nestFieldName%>()'><i class=\"fa fa-plus-circle link-icon link-icon-add\"></i>添加</span>";
         <%
         }
 
         if (("edit".equals(op) || "add".equals(op)) && canDel) {
         %>
-        toolbar += "<span class='nest-btn' onclick='delNestTr<%=nestFieldName%>()'><img src='<%=request.getContextPath()%>/images/delete.png' title='删除'/>删除</span>";
+        toolbar += "<span class='nest-btn' onclick='delNestTr<%=nestFieldName%>()'><i class=\"fa fa-trash-o link-icon link-icon-del\"></i>删除</span>";
         <%
         }
 
         if ("edit".equals(op) && canImport) {
         %>
-        toolbar += "<span class='nest-btn' onclick='importExcel<%=nestFieldName%>()'><img src='<%=request.getContextPath()%>/images/import.png' title='导入'/>导入</span>";
+        toolbar += "<span class='nest-btn' onclick='importExcel<%=nestFieldName%>()'><i class=\"fa fa-arrow-circle-o-down link-icon link-icon-edit\"></i>导入</span>";
         <%
         }
 
         if ("edit".equals(op) && canExport) {
         %>
-        toolbar += "<span class='nest-btn' onclick='exportExcel<%=nestFieldName%>()'><img src='<%=request.getContextPath()%>/images/export.png' title='导出'/>导出</span>";
+        toolbar += "<span class='nest-btn' onclick='exportExcel<%=nestFieldName%>()'><i class=\"fa fa-arrow-circle-o-up link-icon link-icon-edit\"></i>导出</span>";
         <%
         }
 
-	// 模块添加页面不支持拉单，因为拉单后会刷新嵌套表格，而此时parentId为-1，无法关联记录
+	    // 模块添加页面不支持拉单，因为拉单后会刷新嵌套表格，而此时parentId为-1，无法关联记录
         if ("edit".equals(op) && canSel) {
             if (queryId!=-1) {
         %>
-            toolbar += "<span class='nest-btn' onclick='sel<%=nestFieldName%>(<%=cwsId%>, true)'><img src='<%=request.getContextPath()%>/images/pass.png' title='选择'/>选择</span>";
+            toolbar += "<span class='nest-btn' onclick='sel<%=nestFieldName%>(<%=cwsId%>, true)'><i class=\"fa fa-check-square-o link-icon link-icon-show\"></i>选择</span>";
         <%
             }
             else {
         %>
-            toolbar += "<span class='nest-btn' onclick='sel<%=nestFieldName%>(<%=cwsId%>)'><img src='<%=request.getContextPath()%>/images/pass.png' title='选择'/>选择</span>";
+            toolbar += "<span class='nest-btn' onclick='sel<%=nestFieldName%>(<%=cwsId%>)'><i class=\"fa fa-check-square-o link-icon link-icon-show\"></i>选择</span>";
             <%
             }
         }
@@ -820,7 +834,7 @@
         $("#nestTable_<%=nestFieldName%>").before(toolbar);
 
         // 增加checkbox列
-        var tdHeaderCheckbox = "<td width=\"30\" rowspan=\"<%=headerRows%>\" align=\"center\" valign=\"middle\"><input id='chk<%=nestFieldName%>' type='checkbox'/></td><td rowspan=\"<%=headerRows%>\" width='45' align='center'>序号</td>";
+        var tdHeaderCheckbox = "<td width=\"30\" rowspan=\"<%=headerRows%>\" align=\"center\" valign=\"middle\"><input id='chk<%=nestFieldName%>' type='checkbox'/></td><td rowspan=\"<%=headerRows%>\" style=\"display: <%=isNoShow==1?"":"none"%>\" width='45' align='center'>序号</td>";
         $("#nestTable_<%=nestFieldName%> tr").first().prepend(tdHeaderCheckbox);
         $('#chk<%=nestFieldName%>').click(function() {
             if ($(this).prop("checked")) {
@@ -868,15 +882,23 @@
     function addNestTr<%=nestFieldName%>() {
         if (<%=isPropStat%>) {
             // 在统计行之前插入
-            $('#nestTable_<%=nestFieldName%> tr').last().prev().after($nestTr<%=nestFieldName%>.clone());
+            var $curLastTr = $('#nestTable_<%=nestFieldName%> tr').last();
+            // 在发起流程时表格一开始为空，没有统计行，即只有表头那一行，其prev()为undefined
+            if (!$curLastTr.prev()[0]) {
+                $curLastTr.after($nestTr<%=nestFieldName%>.clone());
+                $lastTr = $("#nestTable_<%=nestFieldName%> tr").last();
+            }
+            else {
+                $('#nestTable_<%=nestFieldName%> tr').last().prev().after($nestTr<%=nestFieldName%>.clone());
+                $lastTr = $("#nestTable_<%=nestFieldName%> tr").last().prev();
+            }
             // clone后得到的tr需要再次初始化日期控件
-            $lastTr = $("#nestTable_<%=nestFieldName%> tr").last().prev();
             initTr('<%=nestFieldName%>', $lastTr, rowId<%=nestFieldName%>, true);
         }
         else {
             $('#nestTable_<%=nestFieldName%>').append($nestTr<%=nestFieldName%>.clone());
-            // clone后得到的tr需要再次初始化日期控件
             $lastTr = $("#nestTable_<%=nestFieldName%> tr").last();
+            // clone后得到的tr需要再次初始化日期控件
             initTr('<%=nestFieldName%>', $lastTr, rowId<%=nestFieldName%>, true);
         }
 
@@ -894,74 +916,78 @@
         rowId<%=nestFieldName%> ++;
         // 初始化序号
         initTdNo();
+
+        bindNestTableMouseEvent();
     }
 
-    // 删除行
-    function delNestTr<%=nestFieldName%>() {
+    function delTr($trs) {
+        var ids = '';
         var nestFieldName = "<%=nestFieldName%>";
-        var $trs = $("input[type=checkbox][name='chk<%=nestFieldName%>']:checked");
-        if ($trs.length == 0) {
-            jAlert('请选择记录', '提示');
+        $trs.each(function () {
+            var id = $('#nest_field_dataId' + nestFieldName + '_' + $(this).val()).val();
+            if (id == undefined) {
+                // 如果为空，则为新增的记录，而非选择的记录，直接删除
+                $(this).parent().parent().remove();
+                initTdNo();
+                callCalculateOnloadNestTable('nestTable_<%=nestFieldName%>');
+                return;
+            }
+            if (ids == '') {
+                ids = id;
+            }
+            else {
+                ids += ',' + id;
+            }
+        });
+        if (ids == '') {
             return;
         }
-        jConfirm("您确定要删除吗？", "提示", function (r) {
-            if (!r) {
-                return;
-            } else {
-                var ids = '';
+        var ajaxData = {
+            ids: ids,
+            formCode: "<%=nestFormCode%>"
+        };
+        let path = '/flow/macro/delNestTableRows';
+        ajaxPost(path, ajaxData).then((data) => {
+            // console.log('data', data);
+            if (data.ret=="1") {
+                // 删除原在数据库中已存在的行
                 $trs.each(function () {
-                    var id = $('#nest_field_dataId' + nestFieldName + '_' + $(this).val()).val();
-                    if (ids == '') {
-                        ids = id;
-                    }
-                    else {
-                        ids += ',' + id;
-                    }
+                    $(this).parents("tr:eq(0)").remove();
                 });
 
-                $.ajax({
-                    type: "post",
-                    url: "<%=request.getContextPath()%>/flow/macro/delNestTableRows.do",
-                    data: {
-                        ids: ids,
-                        formCode: "<%=nestFormCode%>"
-                    },
-                    dataType: "html",
-                    beforeSend: function(XMLHttpRequest){
-                        $("body").showLoading();
-                    },
-                    success: function(data, status){
-                        data = $.parseJSON(data);
-                        if (data.ret=="1") {
-                            $trs.each(function () {
-                                $(this).parents("tr:eq(0)").remove();
-                            });
-
-                            initTdNo();
-                            callCalculateOnloadNestTable('nestTable_<%=nestFieldName%>');
-                        }
-                        else {
-                            jAlert(data.msg, '提示');
-                        }
-                    },
-                    complete: function(XMLHttpRequest, status){
-                        $("body").hideLoading();
-                    },
-                    error: function(XMLHttpRequest, textStatus){
-                        // 请求出错处理
-                        alert(XMLHttpRequest.responseText);
-                    }
-                });
+                initTdNo();
+                callCalculateOnloadNestTable('nestTable_<%=nestFieldName%>');
+            }
+            else {
+                myMsg(data.msg);
             }
         });
     }
 
+    // 删除行
+    function delNestTr<%=nestFieldName%>() {
+        var $trs = $("input[type=checkbox][name='chk<%=nestFieldName%>']:checked");
+        if ($trs.length == 0) {
+            myMsg('请选择记录', 'warning');
+            return;
+        }
+        myConfirm('提示', '您确定要删除么', function() { delTr($trs) });
+    }
+
     function importExcel<%=nestFieldName%>() {
-        openWin("<%=request.getContextPath()%>/visual/nest_table_import_excel.jsp?flowId=<%=flowId%>&parentId=<%=cwsId%>&parentFormCode=<%=parentFormCode%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=nestFieldName%>", 480, 110);
+        // openWin("<%=request.getContextPath()%>/visual/nest_table_import_excel.jsp?flowId=<%=flowId%>&parentId=<%=cwsId%>&parentFormCode=<%=parentFormCode%>&formCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=nestFieldName%>", 480, 110);
+        openImportExcelModal("<%=cwsId%>", "<%=formCode%>", "<%=parentFormCode%>", <%=flowId%>, "<%=nestFieldName%>", "nest_table");
     }
 
     function exportExcel<%=nestFieldName%>() {
-        openWin('<%=request.getContextPath()%>/visual/exportExcelRelate.do?parentId=<%=cwsId%>&formCode=<%=ParamUtil.get(request, "parentFormCode")%>&formCodeRelated=<%=formCode%>&nestType=<%=MacroCtlUnit.NEST_TYPE_TABLE%>&nestFieldName=<%=nestFieldName%>', 480, 320);
+        // openWin('<%=request.getContextPath()%>/visual/exportExcelRelate.do?parentId=<%=cwsId%>&formCode=<%=ParamUtil.get(request, "parentFormCode")%>&formCodeRelated=<%=formCode%>&nestType=<%=MacroCtlUnit.NEST_TYPE_TABLE%>&nestFieldName=<%=nestFieldName%>', 480, 320);
+        exportExcelRelate(
+            '<%=MacroCtlUnit.NEST_TYPE_NORMAIL%>',
+            '<%=cwsId%>',
+            '<%=parentFormCode%>',
+            '<%=formCode%>',
+            '<%=fd.getName()%>',
+        )
     }
 
     function sel<%=nestFieldName%>(parentId, isQuery) {
@@ -981,7 +1007,11 @@
             openWin("<%=request.getContextPath()%>/flow/form_query_script_list_do.jsp?op=query&flowId=<%=flowId%>&id=<%=queryId%>&mode=sel&parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_table&parentId=" + parentId + fieldParams, 800, 600);
         }
         else {
-            openWin("<%=request.getContextPath()%>/visual/module_list_nest_sel.jsp?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_table&parentId=" + parentId + "&mainId=" + parentId, 800, 600);
+            // openWin("<%=request.getContextPath()%>/visual/moduleListNestSel.do?parentFormCode=<%=StrUtil.UrlEncode(parentFormCode)%>&nestFormCode=<%=StrUtil.UrlEncode(formCode)%>&nestFieldName=<%=StrUtil.UrlEncode(nestFieldName)%>&nestType=nest_table&parentId=" + parentId + "&mainId=" + parentId, 800, 600);
+            <%
+                String condFields = String.join("|", ModuleUtil.getModuleListNestSelCondFields(nestFilter));
+            %>
+            openWinModuleListNest("<%=parentFormCode%>", "<%=formCode%>", "<%=nestFieldName%>", "nest_table", parentId, parentId, "<%=condFields%>");
         }
     }
 
@@ -997,9 +1027,13 @@
         });
     }
 
-    $(function() {
+    // $(function() {
         initNestTableCalculate('nestTable_<%=nestFieldName%>');
 
         bindNestTableMouseEvent();
-    })
+    // })
+
+    $('input, select, textarea').each(function() {
+        $(this).attr('autocomplete', 'off');
+    });
 </script>

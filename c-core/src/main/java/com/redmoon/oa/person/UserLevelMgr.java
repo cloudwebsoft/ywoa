@@ -3,7 +3,6 @@ package com.redmoon.oa.person;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
 
 import com.redmoon.oa.pvg.Privilege;
 
@@ -12,12 +11,11 @@ import cn.js.fan.web.SkinUtil;
 
 public class UserLevelMgr {
     String connname;
-    Logger logger = Logger.getLogger(UserLevelMgr.class.getName());
 
     public UserLevelMgr() {
         connname = Global.getDefaultDB();
         if (connname.equals("")) {
-            logger.info("Priv:connname is empty.");
+            com.cloudwebsoft.framework.util.LogUtil.getLog(getClass()).info("Priv:connname is empty.");
         }
     }
 

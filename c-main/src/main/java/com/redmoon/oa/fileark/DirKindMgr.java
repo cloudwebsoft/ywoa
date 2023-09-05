@@ -1,14 +1,10 @@
 package com.redmoon.oa.fileark;
 
-import java.util.Calendar;
-import cn.js.fan.db.Conn;
-import cn.js.fan.util.*;
-import java.sql.*;
-import com.redmoon.oa.pvg.Privilege;
 import cn.js.fan.util.ErrMsgException;
-import javax.servlet.http.*;
-import org.apache.log4j.Logger;
-import cn.js.fan.web.Global;
+import cn.js.fan.util.ParamUtil;
+import com.redmoon.oa.pvg.Privilege;
+
+import javax.servlet.http.HttpServletRequest;
 /**
  * <p>Title: </p>
  * <p>Description: </p>
@@ -18,7 +14,6 @@ import cn.js.fan.web.Global;
  * @version 1.0
  */
 public class DirKindMgr {
-  Logger logger = Logger.getLogger( DirKindMgr.class.getName() );
 
   public DirKindMgr() {
 

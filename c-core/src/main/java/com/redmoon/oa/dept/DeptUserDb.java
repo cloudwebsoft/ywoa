@@ -7,11 +7,13 @@ import cn.js.fan.db.PrimaryKey;
 import cn.js.fan.db.SQLFilter;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
+import com.cloudweb.oa.cache.DeptUserCache;
 import com.cloudweb.oa.entity.Department;
 import com.cloudweb.oa.entity.DeptUser;
 import com.cloudweb.oa.service.IDepartmentService;
 import com.cloudweb.oa.service.IDeptUserService;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.person.UserDb;
 
 import java.io.Serializable;
@@ -240,23 +242,16 @@ public class DeptUserDb extends ObjectDb implements Serializable {
      * @return Vector
      */
     public Vector<DeptDb> getDeptsOfUser(String userName) {
-        IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
-        List<DeptUser> list = deptUserService.listByUserName(userName);
+        /*IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
+        List<DeptUser> list = deptUserService.listByUserName(userName);*/
+        DeptUserCache deptUserCache = SpringUtil.getBean(DeptUserCache.class);
+        List<DeptUser> list = deptUserCache.listByUserName(userName);
         Vector<DeptDb> v = new Vector<>();
         DeptDb dd = new DeptDb();
         for (DeptUser deptUser : list) {
             v.addElement(dd.getDeptDb(deptUser.getDeptCode()));
         }
         return v;
-    }
-
-    /**
-     * 因为DWR不推荐重载，所以增加此方法，用于列出部门下的职位
-     * @param deptCode String
-     * @return Vector
-     */
-    public Vector list2DWR(String deptCode) {
-        return list(deptCode);
     }
     
     public Vector listBySQL(String sql) {
@@ -292,13 +287,23 @@ public class DeptUserDb extends ObjectDb implements Serializable {
 	 */
     @Override
     public Vector<DeptUserDb> list(String deptCode) {
-        Vector result = new Vector();
+        Vector<DeptUserDb> result = new Vector<>();
         IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
         List<DeptUser> list = deptUserService.listByDeptCode(deptCode);
         for (DeptUser deptUser : list) {
             result.addElement(getFromDeptUser(deptUser, new DeptUserDb()));
         }
 
+        return result;
+    }
+
+    public Vector<DeptUserDb> listAll(String deptCode) {
+        Vector<DeptUserDb> result = new Vector<>();
+        IDeptUserService deptUserService = SpringUtil.getBean(IDeptUserService.class);
+        List<DeptUser> list = deptUserService.listAllByDeptCode(deptCode);
+        for (DeptUser deptUser : list) {
+            result.addElement(getFromDeptUser(deptUser, new DeptUserDb()));
+        }
         return result;
     }
 
@@ -355,7 +360,7 @@ public class DeptUserDb extends ObjectDb implements Serializable {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error("listResult:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("listResult:" + e.getMessage());
             throw new ErrMsgException("Db error.");
         } finally {
             conn.close();
@@ -366,7 +371,7 @@ public class DeptUserDb extends ObjectDb implements Serializable {
         return lr;
     }
     
-    public Vector getAllUsersOfUnit(String unitCode) {
+    public Vector<UserDb> getAllUsersOfUnit(String unitCode) {
         IDepartmentService departmentService = SpringUtil.getBean(IDepartmentService.class);
         List<Department> deptList = new ArrayList<>();
         departmentService.getAllChild(deptList, unitCode);

@@ -1,19 +1,19 @@
 package cn.js.fan.util.net;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import javax.servlet.http.HttpServletRequest;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import org.apache.log4j.Logger;
 
 public class TrackBack {
     String title = "";
-    Logger logger;
     String referer = "";
 
     public TrackBack() {
-        logger = Logger.getLogger(TrackBack.class.getName());
+        
     }
 
     public String getReferer(HttpServletRequest request) {
@@ -33,7 +33,7 @@ public class TrackBack {
         try {
             URL url = new URL(referUrl);
             HttpURLConnection huc = (HttpURLConnection) url.openConnection();
-            logger.error("encode:"+huc.getContentEncoding()+" type:"+huc.getContentType());
+            LogUtil.getLog(getClass()).error("encode:"+huc.getContentEncoding()+" type:"+huc.getContentType());
             String type = huc.getContentType();
             String charset = "utf-8";
             int index = type.indexOf("charset=");
@@ -68,7 +68,7 @@ public class TrackBack {
             huc.disconnect();
         }
         catch (Exception e) {
-            logger.error("Track: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("Track: " + e.getMessage());
         }
         return true;
     }

@@ -7,6 +7,7 @@ import javax.mail.internet.AddressException;
 
 import cn.js.fan.web.Global;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.mail.sender.MailSender;
 import com.redmoon.mail.sender.SSLMailSender;
 
@@ -42,13 +43,8 @@ public class TestSSLSender {
 		try {// 发送两次，一次以html格式（此时附件会被发送），一次文本
 			// sender.sendTextMail(mailInfo);
 			sender.sendHtmlMail(mailInfo);
-			System.out.println("邮件已发送");
-		} catch (AddressException e) {
-			System.err.println("发送失败");
-			e.printStackTrace();
 		} catch (MessagingException e) {
-			System.err.println("发送失败");
-			e.printStackTrace();
+			LogUtil.getLog(TestSSLSender.class).error(e);
 		}
 	}
 
@@ -72,13 +68,8 @@ public class TestSSLSender {
 			// 发送两次，一次以html格式（此时附件会被发送），一次文本
 			// sender.sendTextMail(mailInfo);
 			sender.sendHtmlMail(mailInfo);
-			System.out.println("qq邮件已发送");
-		} catch (AddressException e) {
-			System.err.println("qq发送失败");
-			e.printStackTrace();
 		} catch (MessagingException e) {
-			System.err.println("qq发送失败");
-			e.printStackTrace();
+			LogUtil.getLog(TestSSLSender.class).error(e);
 		}
 	}
 

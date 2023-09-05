@@ -1,0 +1,162 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="th/include/common_head :: head(~{::title}, ~{::link}, ~{::style})">
+    <title>用户组 - 添加</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <style>
+        .table th, .table td {
+            vertical-align: middle !important;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="th/include/tab_group :: nav(${group.code}, ${group.description}, 1)"></div>
+<div class="spacerH"></div>
+<div class="container" style="margin-top: 20px">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <div class="table-responsive">
+                <form method="post" name="form1" id="form1">
+                    <table class="table table-bordered table-hover" align="center">
+                        <tr class="active">
+                            <td colspan="2" align="center">
+                                修改用户组
+                            </td>
+                        </tr>
+                        <tr style="display:none">
+                            <td width="105" height="31" align="center">编码</td>
+                            <td align="left">
+                                <input type="hidden" id="code" name="code" th:value="${group.code}"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="32" align="center">名称</td>
+                            <td align="left">
+                                <div class="col-lg-10 form-inline form-group">
+                                    <input id="desc" name="desc" class="form-control" th:value="${group.description}" />
+                                </div>
+                            </td>
+                        </tr>
+                        <tr style="display: none">
+                            <td height="31" align="center">部门</td>
+                            <td align="left">
+                                <div class="col-lg-10 form-inline form-group">
+                                    <select id="deptCode" name="deptCode" class="form-control" th:onchange="o('isDept').value='1'; if (this.value=='root') {o('isIncludeSubDept').checked=true;}">
+                                        [(${deptOpts})]
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr style="display: none">
+                            <td height="32" align="center">是否为部门组</td>
+                            <td align="left">
+                                <div class="col-lg-10 form-inline form-group">
+                                    <select id="isDept" name="isDept" class="form-control" onchange="if (this.value=='0') {o('isIncludeSubDept').checked=false;o('deptCode').disabled=true;} else {o('isIncludeSubDept').disabled=false;o('deptCode').disabled=false;}">
+                                        <option value="1">是</option>
+                                        <option value="0" selected="selected">否</option>
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr style="display: none">
+                            <td height="32" align="center">含子部门</td>
+                            <td align="left">
+                                <div class="col-lg-10 form-inline form-group">
+                                    <input type="checkbox" id="isIncludeSubDept" name="isIncludeSubDept" value="1" th:checked="${group.isIncludeSubDept==1}" />
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center">
+                                类别
+                            </td>
+                            <td>
+                                <div class="col-lg-10 form-inline form-group">
+                                    <select id="kind" name="kind" class="form-control">
+                                        <option value="">无</option>
+                                        [(${kindOpts})]
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="32" align="center">单位</td>
+                            <td align="left">
+                                <div class="col-lg-10 form-inline form-group">
+                                    <select id="unitCode" name="unitCode" class="form-control">
+                                        [(${unitOpts})]
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="text-center">
+                        <button id="btnOk" class="btn btn-default">确定</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript">
+    $(function() {
+        $('#deptCode').val([[${group.deptCode}]]);
+        $('#unitCode').val([[${group.unitCode}]]);
+        $('#isDept').val([[${group.isDept}]] ? "1" : "0");
+        $('#kind').val([[${group.kind}]]);
+
+        $('#form1').bootstrapValidator({
+            message: 'This value is not valid',
+            excluded: [':disabled', ':hidden', ':not(:visible)'],
+            // 配置校验图标
+            feedbackIcons: {
+                valid: 'glyphicon glyphicon-ok',    // 校验成功
+                invalid: 'glyphicon glyphicon-remove',   // 校验失败
+                validating: 'glyphicon glyphicon-refresh'  // 校验中
+            },
+            // 配置校验字段
+            fields: {
+                desc: {
+                    message: '名称验证失败',
+                    validators: {
+                        notEmpty: {
+                            message: '名称不能为空'
+                        }
+                    }
+                }
+            }
+        }).on('success.form.bv', function (e) {
+            // 阻止默认的提交
+            e.preventDefault();
+
+            $.ajax({
+                type: "post",
+                url: "updateGroup.do",
+                data: $('#form1').serialize(),
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $('body').showLoading();
+                },
+                success: function (data, status) {
+                    if (data.ret==1) {
+                        jAlert(data.msg, "提示", function() {
+                            reloadTab([[${tabIdOpener}]]);
+                        })
+                    }
+                    else {
+                        jAlert(data.msg, "提示");
+                    }
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $('body').hideLoading();
+                },
+                error: function () {
+                    //请求出错处理
+                    alert(XMLHttpRequest.responseText);
+                }
+            });
+        });
+    });
+</script>
+</html>

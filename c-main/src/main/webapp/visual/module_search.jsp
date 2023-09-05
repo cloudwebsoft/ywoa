@@ -35,7 +35,7 @@ if (formCode.equals("")) {
 
 String modUrlList = StrUtil.getNullStr(msd.getString("url_list"));
 if (modUrlList.equals("")) {
-	modUrlList = request.getContextPath() + "/" + "visual/module_list.jsp?formCode=" + StrUtil.UrlEncode(formCode);
+	modUrlList = request.getContextPath() + "/" + "visual/moduleListPage.do?formCode=" + StrUtil.UrlEncode(formCode);
 }
 else {
 	modUrlList = request.getContextPath() + "/" + modUrlList;
@@ -46,25 +46,19 @@ FormDb fd = fm.getFormDb(formCode);
 
 MacroCtlMgr mm = new MacroCtlMgr();
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <title>智能模块设计-查询</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
-    <script src="../js/jquery-1.9.1.min.js"></script>
-    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
 <link rel="stylesheet" type="text/css" href="../js/datepicker/jquery.datetimepicker.css"/>
 <script src="../js/datepicker/jquery.datetimepicker.js"></script>
 <script src="../inc/flow_dispose_js.jsp"></script>
 <script src="../inc/flow_js.jsp"></script>
-
-
-
 <script src="<%=request.getContextPath()%>/inc/flow_dispose_js.jsp"></script>
-
 <script>
 function setradio(myitem,v)
 {

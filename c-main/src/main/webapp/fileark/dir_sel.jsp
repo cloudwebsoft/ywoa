@@ -2,7 +2,6 @@
 <%@ page import="com.redmoon.oa.fileark.*" %>
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="cn.js.fan.util.*" %>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <!DOCTYPE html>
 <html>
 <head>

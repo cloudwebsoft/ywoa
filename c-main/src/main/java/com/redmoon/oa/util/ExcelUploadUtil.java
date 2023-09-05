@@ -6,13 +6,12 @@ import cn.js.fan.util.ErrMsgException;
 
 import javax.servlet.ServletContext;
 
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 
 import java.io.IOException;
 
 import cn.js.fan.web.Global;
-import org.apache.log4j.Logger;
-
 import java.util.*;
 
 import com.redmoon.kit.util.FileInfo;
@@ -31,7 +30,6 @@ import com.redmoon.kit.util.FileInfo;
  */
 public class ExcelUploadUtil {
     FileUpload fileUpload = null;
-    Logger logger = Logger.getLogger(ExcelUploadUtil.class.getName());
 
     public ExcelUploadUtil() {
     }
@@ -74,7 +72,7 @@ public class ExcelUploadUtil {
                 throw new ErrMsgException(fileUpload.getErrMessage());
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
         }
         return fileUpload;
     }

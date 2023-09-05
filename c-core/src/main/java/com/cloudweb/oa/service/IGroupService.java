@@ -35,4 +35,6 @@ public interface IGroupService extends IService<Group> {
 
     List<Group> list(String searchUnitCode, String op, String what, String kind);
 
+    List<Group> getAllGroupsOfUser(String userName);
+
 }

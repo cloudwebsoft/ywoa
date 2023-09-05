@@ -47,8 +47,6 @@ String formCode = aqd.getTableCode();
 FormSQLBuilder fsb = new FormSQLBuilder();
 String sql = fsb.getSmartQueryOnFlowChangCondValue(request, aqd, lf);
 
-// System.out.println(getClass() + " sql=" + sql);
-			
 com.redmoon.oa.visual.FormDAO fdao = new com.redmoon.oa.visual.FormDAO();
 com.redmoon.oa.flow.FormDAO flowDao = new com.redmoon.oa.flow.FormDAO();
 
@@ -160,9 +158,9 @@ while(ir!=null && ir.hasNext()){
 		flowStatus = wf.getStatusDesc();
 	}
 	
-	jo.put("flowId", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + flowId + "')\">" + flowId + "</a>");
+	jo.put("flowId", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + flowId + "')\">" + flowId + "</a>");
 	jo.put("flowBeginDate", flowCreateDate);
-	jo.put("flowTitle", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flow_modify.jsp?flowId=" + flowId + "')\">" + flowTitle + "</a>");
+	jo.put("flowTitle", "<a href='javascript:;' onclick=\"addTab('" + flowTitle + "', '" + request.getContextPath() + "/flowShowPage.do?flowId=" + flowId + "')\">" + flowTitle + "</a>");
 	jo.put("flowStarter", flowStarter);
 	jo.put("flowStatus", flowStatus);
 	%>

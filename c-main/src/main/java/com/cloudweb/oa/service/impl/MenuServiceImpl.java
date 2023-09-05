@@ -18,10 +18,12 @@ import com.cloudweb.oa.service.IRolePrivService;
 import com.cloudweb.oa.service.IUserSetupService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.basic.SelectKindDb;
 import com.redmoon.oa.kernel.License;
 import com.redmoon.oa.ui.LocalUtil;
 import com.redmoon.oa.visual.ModuleSetupDb;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ import java.util.List;
  * @author fgf
  * @since 2020-02-15
  */
+@Slf4j
 @Service
 public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IMenuService {
     @Autowired
@@ -83,25 +86,74 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
     @Override
     public String getRealLink(Menu menu) {
         if (menu.getType() == ConstUtil.MENU_TYPE_MODULE) {
-            return "visual/module_list.jsp?code=" + StrUtil.UrlEncode(menu.getFormCode());
+            return menu.getLink();
+        } else if (menu.getType() == ConstUtil.MENU_TYPE_FLOW) {
+            return menu.getLink();
+        } else if (menu.getType() == ConstUtil.MENU_TYPE_BASICDATA) {
+            return menu.getLink();
+        } else if (menu.getType() == ConstUtil.MENU_TYPE_LINK || menu.getType() == ConstUtil.MENU_TYPE_PRESET || menu.getType() == ConstUtil.MENU_TYPE_IFRAME) {
+            if (StrUtil.getNullStr(menu.getLink()).contains("$")) {
+                String userName = SpringUtil.getUserName();
+                UserSetup userSetup = userSetupService.getUserSetup(userName);
+                String lk = StrUtil.getNullStr(menu.getLink());
+                if (!StrUtil.isEmpty(lk)) {
+                    lk = lk.replaceFirst("\\$emailName", StrUtil.UrlEncode(userSetup.getEmailName()));
+                    lk = lk.replaceFirst("\\$emailPwd", StrUtil.UrlEncode(userSetup.getEmailPwd()));
+                    // 替换为当前用户
+                    lk = lk.replaceFirst("\\$userName", userName);
+
+                    // 前后端分离后，不需要再转GB2312
+                    /*try {
+                        // 先转成gbk的编码，用于润乾报表，对应的在showReport.jsp中接收参数时要加下行
+                        // paramValue = new String(paramValue.getBytes("iso-8859-1"), "GB2312");
+                        lk = lk.replaceFirst("\\$userName", java.net.URLEncoder.encode(userName, "GBK"));
+                    } catch (UnsupportedEncodingException e) {
+                        LogUtil.getLog(getClass()).error(e);
+                    }*/
+                }
+                return lk;
+            }
+
+            // 链接需替换路径变量$u
+            if (menu.getIsHasPath() == 1) {
+                return menu.getLink().replaceFirst("\\$u", "/" + Global.getRootPath());
+            } else {
+                return menu.getLink();
+            }
+        } else {
+            String lk = getPresetLink(menu);
+            if ("".equals(lk)) {
+                return menu.getLink();
+            } else {
+                return lk;
+            }
+        }
+    }
+
+    @Override
+    public String getRealLinkBack(Menu menu) {
+        if (menu.getType() == ConstUtil.MENU_TYPE_MODULE) {
+            return "visual/moduleListPage.do?code=" + StrUtil.UrlEncode(menu.getFormCode());
         } else if (menu.getType() == ConstUtil.MENU_TYPE_FLOW) {
             return "flow_initiate1.jsp?op=" + StrUtil.UrlEncode(menu.getFormCode());
         } else if (menu.getType() == ConstUtil.MENU_TYPE_BASICDATA) {
             return "admin/basic_select_list.jsp?kind=" + menu.getFormCode();
         } else if (menu.getType() == ConstUtil.MENU_TYPE_LINK) {
-            if (menu.getLink().indexOf("$") != -1) {
+            if (StrUtil.getNullStr(menu.getLink()).contains("$")) {
                 String userName = SpringUtil.getUserName();
                 UserSetup userSetup = userSetupService.getUserSetup(userName);
-                String lk = menu.getLink();
-                lk = lk.replaceFirst("\\$emailName", StrUtil.UrlEncode(userSetup.getEmailName()));
-                lk = lk.replaceFirst("\\$emailPwd", StrUtil.UrlEncode(userSetup.getEmailPwd()));
-                // 替换为当前用户
-                try {
-                    // 先转成gbk的编码，用于润乾报表，对应的在showReport.jsp中接收参数时要加下行
-                    // paramValue = new String(paramValue.getBytes("iso-8859-1"), "GB2312");
-                    lk = lk.replaceFirst("\\$userName", java.net.URLEncoder.encode(userName, "GBK"));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
+                String lk = StrUtil.getNullStr(menu.getLink());
+                if (!StrUtil.isEmpty(lk) && userSetup!=null) {
+                    lk = lk.replaceFirst("\\$emailName", StrUtil.UrlEncode(userSetup.getEmailName()));
+                    lk = lk.replaceFirst("\\$emailPwd", StrUtil.UrlEncode(userSetup.getEmailPwd()));
+                    // 替换为当前用户
+                    try {
+                        // 先转成gbk的编码，用于润乾报表，对应的在showReport.jsp中接收参数时要加下行
+                        // paramValue = new String(paramValue.getBytes("iso-8859-1"), "GB2312");
+                        lk = lk.replaceFirst("\\$userName", java.net.URLEncoder.encode(userName, "GBK"));
+                    } catch (UnsupportedEncodingException e) {
+                        LogUtil.getLog(getClass()).error(e);
+                    }
                 }
                 return lk;
             }
@@ -148,7 +200,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
         return list;
     }
 
-
     /**
      * 递归获得jsTree的json字符串
      *
@@ -163,6 +214,9 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
             String desc = childlf.getDescription();
             if (desc!=null && !"".equals(desc)) {
                 desc = "(" + desc + ")";
+            }
+            else {
+                desc = "";
             }
 
             if ("-1".equals(parentCode)) {
@@ -181,10 +235,13 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
                 // 遍历它的子节点
                 for (Menu child : childs) {
                     desc = child.getDescription();
-                    if (!"".equals(desc)) {
+                    if (desc!=null && !"".equals(desc)) {
                         desc = "(" + desc + ")";
                     }
-                    // System.out.println("getJson: code=" + child.getCode() + " name=" + child.getName() + "  lic.isPlatformSrc()=" + lic.isPlatformSrc());
+                    else {
+                        desc = "";
+                    }
+                    // LogUtil.getLog(getClass()).info("getJson: code=" + child.getCode() + " name=" + child.getName() + "  lic.isPlatformSrc()=" + lic.isPlatformSrc());
 
                     if (child.getCode().equals(ConstUtil.MENU_ITEM_SALES)) {
                         if (!lic.isPlatformSrc()) {
@@ -263,7 +320,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
             String[] ary = StrUtil.split(priv, ",");
             if (ary != null) {
                 for (int k = 0; k < ary.length; k++) {
-                    if (ary[k].equals("!admin")) {
+                    if ("!admin".equals(ary[k])) {
                         if ("".equals(privName)) {
                             privName = "非管理员";
                         } else {
@@ -289,16 +346,24 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
             if (childlf.getType() == ConstUtil.MENU_TYPE_MODULE) {
                 ModuleSetupDb msd = new ModuleSetupDb();
                 moduleCode = childlf.getFormCode();
-                msd = msd.getModuleSetupDb(moduleCode);
-                if (msd != null) {
-                    moduleName = msd.getString("name");
-                    formCode = msd.getString("form_code");
-                    aliasName = moduleName;
-                    aliasCode = formCode;
-                    String desc = StrUtil.getNullStr(msd.getString("description"));
-                    if (!"".equals(desc)) {
-                        privName = "(" + desc + ")";
+                if (moduleCode != null) {
+                    msd = msd.getModuleSetupDb(moduleCode);
+                    if (msd != null) {
+                        moduleName = msd.getString("name");
+                        formCode = msd.getString("form_code");
+                        aliasName = moduleName;
+                        aliasCode = formCode;
+                        /*String desc = StrUtil.getNullStr(msd.getString("description"));
+                        if (!"".equals(desc)) {
+                            privName = "(" + desc + ")";
+                        }*/
                     }
+                    else {
+                        log.error(childlf.getName() + " module:" + moduleCode + " is not exist.");
+                    }
+                }
+                else {
+                    log.error(childlf.getName() + "'s moduleCode is null");
                 }
             } else if (childlf.getType() == ConstUtil.MENU_TYPE_FLOW) {
                 com.redmoon.oa.flow.Leaf lfFlow = new com.redmoon.oa.flow.Leaf();
@@ -317,7 +382,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
             }
 
             if ("-1".equals(parentCode)) {
-                if (str.indexOf("{id:\"" + childlf.getCode()) == -1) {
+                if (!str.contains("{id:\"" + childlf.getCode())) {
                     str += "{id:\"" + childlf.getCode() + "\", link:\"" + link + "\", aliasCode:\"" + aliasCode + "\", aliasName:\"" + aliasName + "\", type:\"" + childlf.getType() + "\", canSee:true, parent:\"#\",name:\""
                             + childlf.getName() + "\", formCode:\"" + formCode + "\", moduleCode:\"" + moduleCode + "\", moduleName:\"" + moduleName + "\", priv:\"" + priv + "\", privName:\"" + privName + "\", state:{opened:true}";
                 }
@@ -340,6 +405,12 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
                         continue;
                     }
 
+                    moduleCode = "";
+                    moduleName = "";
+                    formCode = "";
+                    aliasCode = "";
+                    aliasName = "";
+
                     link = getRealLink(child);
 
                     priv = child.getPvg();
@@ -347,7 +418,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
                     ary = StrUtil.split(priv, ",");
                     if (ary != null) {
                         for (int k = 0; k < ary.length; k++) {
-                            if (ary[k].equals("!admin")) {
+                            if ("!admin".equals(ary[k])) {
                                 if ("".equals(privName)) {
                                     privName = "非管理员";
                                 } else {
@@ -367,14 +438,22 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
                     }
 
                     if (child.getType() == ConstUtil.MENU_TYPE_MODULE) {
-                        ModuleSetupDb msd = new ModuleSetupDb();
                         moduleCode = child.getFormCode();
-                        msd = msd.getModuleSetupDb(moduleCode);
-                        if (msd != null) {
-                            moduleName = msd.getString("name");
-                            formCode = msd.getString("form_code");
-                            aliasName = moduleName;
-                            aliasCode = formCode;
+                        if (moduleCode != null) {
+                            ModuleSetupDb msd = new ModuleSetupDb();
+                            msd = msd.getModuleSetupDb(moduleCode);
+                            if (msd != null) {
+                                moduleName = msd.getString("name");
+                                formCode = msd.getString("form_code");
+                                aliasName = moduleName;
+                                aliasCode = formCode;
+                            }
+                            else {
+                                log.error(child.getName() + " module:" + moduleCode + " is not exist.");
+                            }
+                        }
+                        else {
+                            log.error(child.getName() + "'s moduleCode is null");
                         }
                     } else if (child.getType() == ConstUtil.MENU_TYPE_FLOW) {
                         com.redmoon.oa.flow.Leaf lfFlow = new com.redmoon.oa.flow.Leaf();
@@ -475,7 +554,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
 
     @Override
     public void repairTree(Menu menu) {
-        // System.out.println(getClass() + "leaf name=" + leaf.getName());
+        // LogUtil.getLog(getClass()).info(getClass() + "leaf name=" + leaf.getName());
         repairLeaf(menu);
         List<Menu> children = getChildren(menu.getCode());
         int size = children.size();
@@ -567,7 +646,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
     }
 
     public String getPresetLink(Menu menu) {
-        if (menu.getPreCode().equals("chat")) {
+        if ("chat".equals(menu.getPreCode())) {
             return "";
         } else {
             return "";
@@ -583,6 +662,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
         }
     }
 
+    @Override
     public boolean move(String code, String parentCode, int position) throws ErrMsgException {
         if (ConstUtil.MENU_ROOT.equals(code)) {
             throw new ErrMsgException("根节点不能移动！");

@@ -24,16 +24,16 @@
 	var self ;//lzm备注 坑，调用了下拉刷新控件后 this对象 已经改变为 下拉刷新的this所以要设置为全局变量
 	$.PullToRefrshList = $.Class.extend({
 		init: function(element, options) {
-					 this.element = element,
-					 this.default = {
-					 	"pullRefreshContainer":"#pullrefresh",
-					 	"ulContainer":".mui-table-view",
-					 	"liContainer":".mui-table-view-cell",
-					 	"searchContainer":".mui-input-clear"
-					 }
-					 this.options = $.extend(true,this.default,options);
-					 this.bindEvent();
-			 },
+			this.element = element,
+				this.default = {
+					"pullRefreshContainer":"#pullrefresh",
+					"ulContainer":".mui-table-view",
+					"liContainer":".mui-table-view-cell",
+					"searchContainer":".mui-input-clear"
+				}
+			this.options = $.extend(true,this.default,options);
+			this.bindEvent();
+		},
 		loadListDate:function(){
 			self = this;
 			var pullRefreshSelector = self.options.pullRefreshContainer;
@@ -42,6 +42,9 @@
 				downStyle = 'circle'; // 当plus启用时的下拉刷新样式，目前支持原生5+ ‘circle’ 样式
 			}
 			mui.init({
+				keyEventBind: {
+					backbutton: !self.options.isUniWebview //关闭back按键监听
+				},
 				pullRefresh: {
 					container:pullRefreshSelector ,
 					down: {
@@ -171,7 +174,7 @@
 				li += ' <span>'+data.title+'</span><span class="mui-pull-right createdate">'+data.createdate+'</span><p class="mui-ellipsis">'+data.sender+'</p>'
 				li += '</div>';
 				li += '</div>';
-				li += '</li>';				
+				li += '</li>';
 				return li;
 			}else if(type == MESSAGES){
 				var li = '<li class="mui-table-view-cell mui-media" id="'+data.id+'">';
@@ -196,7 +199,7 @@
 					li+= '<img class="mui-media-object mui-pull-left" src="../../images/task_complete.png" style="width:24px; height:24px">';
 				}
 				else {
-					li+= '<img class="mui-media-object mui-pull-left" src="../../images/task_ongoing.png" style="width:24px; height:24px">';					
+					li+= '<img class="mui-media-object mui-pull-left" src="../../images/task_ongoing.png" style="width:24px; height:24px">';
 				}
 				li+='<div class="mui-media-body">';
 				li += '<span>'+data.title+'</span><span class="mui-pull-right createdate">'+data.startTime+'</span>'
@@ -263,7 +266,7 @@
 		bindTapItemEvent:function(){
 			var self = this;
 			var params = self.options.ajax_params;
-			
+
 			var ulSelector =  self.options.ulContainer;
 			var liSelector = self.options.liContainer;
 			var data_types = self.options.ajaxDatasType;
@@ -273,43 +276,62 @@
 					var myActionId = this.getAttribute("myActionId");
 					var flowId = this.getAttribute("flowId");
 					var skey = params.skey;
-					url = "../flow/flow_dispose.jsp?skey="+skey+"&flowId="+flowId+"&myActionId="+myActionId;
+					url = "../flow/flow_dispose.jsp?skey="+skey+"&flowId="+flowId+"&myActionId="+myActionId + "&isUniWebview=" + self.options.isUniWebview;
 				}else if(data_types == MYFLOWS){
 					var flowId = this.getAttribute("flowId");
 					var skey = params.skey;
-					url = "../flow/flow_attend_detail.jsp?skey="+skey+"&flowId="+flowId;
+					url = "../flow/flow_attend_detail.jsp?skey="+skey+"&flowId="+flowId + "&isUniWebview=" + self.options.isUniWebview;
 				}else if(data_types == NOTICES){
 					var id = this.getAttribute("id");
-					url = "../notice/notice_detail.jsp?id="+id;
+					var skey = params.skey;
+					url = "../notice/notice_detail.jsp?skey="+skey+"&id="+id + "&isUniWebview=" + self.options.isUniWebview;
 				}else if(data_types == MESSAGES){
 					var skey = params.skey;
 					var id = this.getAttribute("id");
-					url = "../message/message_detail.jsp?id="+id+"&skey="+skey	
+					url = "../message/message_detail.jsp?id="+id+"&skey="+skey + "&isUniWebview=" + self.options.isUniWebview;
 				}
 				else if(data_types == NOTEPAPERS){
 					var skey = params.skey;
 					var id = this.getAttribute("id");
-					url = "../calendar/calendar_show.jsp?id="+id+"&skey="+skey	
+					url = "../calendar/calendar_show.jsp?id="+id+"&skey="+skey + "&isUniWebview=" + self.options.isUniWebview
 				}
 				else if (data_types==DOCUMENTS) {
 					var skey = params.skey;
 					var id = this.getAttribute("id");
-					url = "../fileark/doc_show.jsp?id="+id+"&skey="+skey
+					url = "../fileark/doc_show.jsp?id="+id+"&skey="+skey + "&isUniWebview=" + self.options.isUniWebview
 				}
 				else if (data_types==WORKPLANS) {
 					var skey = params.skey;
 					var id = this.getAttribute("id");
-					url = "../workplan/workplan_show.jsp?id="+id+"&skey="+skey
+					url = "../workplan/workplan_show.jsp?id="+id+"&skey="+skey + "&isUniWebview=" + self.options.isUniWebview
 				}
-				
-				mui.openWindow({
-				    "url":url
-				})
+
+				// 加入其它相关的参数
+				var arr = self.options.params;
+				for(var i in arr){
+					url += "&" + arr[i].name + "=" + encodeURI(arr[i].value);
+				}
+				// console.log(url);
+				if (self.options.isUniWebview) {
+					window.location.href = url;
+					// 会导致后退至九宫格
+					/*mui.openWindow({
+						"url":url,
+						"styles": {
+							top: '80px'
+						}
+					})*/
+				}
+				else {
+					mui.openWindow({
+						"url":url,
+					})
+				}
 			})
 		},
 		ajax_get:function(type, datas){
 			var refreshSelector = self.options.pullRefreshContainer;
-			var ulSelector =  self.options.ulContainer;
+			var ulSelector = self.options.ulContainer;
 			var liSelector = self.options.liContainer;
 			var data_types = self.options.ajaxDatasType;
 			mui.post(self.options.url, datas,function(data){
@@ -367,6 +389,6 @@
 					}
 				}
 			},"json");
-	    }
+		}
 	})
 })(mui,document,window)

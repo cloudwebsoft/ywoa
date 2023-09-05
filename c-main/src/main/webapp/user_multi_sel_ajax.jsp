@@ -43,8 +43,6 @@
 			}
 		}
 
-		// System.out.println(getClass() + " deptCode=" + deptCode + " limitDepts=" + limitDepts);
-
 		boolean includeRootDept = false;
 		String[] limitDeptArr = null;
 		StringBuilder deptForSql = new StringBuilder();
@@ -98,7 +96,6 @@
 			out.print(json);
 			return;
 		}
-		// System.out.println(getClass() + " includeRootDept=" + includeRootDept + " deptCode=" + deptCode + " sql=" + sql);
 
 		long total = 0;
 		int maxCount = 200;
@@ -176,7 +173,6 @@
 		json.put("tip", tip);
 		json.put("result", result);
 		out.print(json);
-		// System.out.println("\r\n" + getClass() + json.toString());
 		return;
 	} else if(op.equals("getRoleUsers")) {
 		String sql = "";
@@ -609,7 +605,6 @@
 			for(int i=0;i<users.length;i++){
 				for(int j=0;j<userList.size();j++){
 					if(users[i].equals(userList.get(j))){//相等就修改次数
-						//System.out.println(users[i] + "the same");
 						sql = "update user_recently_selected set times = times+1 where name="+StrUtil.sqlstr(logonUserName)+" and userName = "+StrUtil.sqlstr(users[i]);
 						equal = true;
 						break;
@@ -627,6 +622,8 @@
 			rmconn2.commit();
 		} catch (SQLException e) {
 			rmconn2.rollback();
+		} finally {
+			rmconn2.close();
 		}
 		JSONObject json = new JSONObject();
 		json.put("ret", "1");

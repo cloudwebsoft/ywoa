@@ -69,7 +69,7 @@ public class ConstUtil {
      */
     public static final int MENU_TYPE_LINK = 0;
     /**
-     * 预置型菜单项
+     * 框架型菜单项
      */
     public static final int MENU_TYPE_PRESET = 1;
     /**
@@ -84,6 +84,10 @@ public class ConstUtil {
      * 基础数据型菜单项
      */
     public static final int MENU_TYPE_BASICDATA = 4;
+
+    public static final int MENU_TYPE_IFRAME = 5;
+
+    public static final int MENU_TYPE_PORTALS = 6;
 
     public static final String MENU_ITEM_SALES = "sales";
 
@@ -188,6 +192,16 @@ public class ConstUtil {
     public static final String SESSION_UNITCODE = "oa.unitCode";
 
     /**
+     * 当前所切换的角色
+     */
+    public static final String SESSION_CUR_ROLE = "OA_CUR_ROLE";
+
+    /**
+     * 当前所切换的部门
+     */
+    public static final String SESSION_CUR_DEPT = "OA_CUR_DEPT";
+
+    /**
      * 消息队列中的消息类型，内部消息
      */
     public static final int MQ_MSG_TYPE_MSG = 0;
@@ -275,13 +289,63 @@ public class ConstUtil {
     public static final String FLOW_ARCHIVE = "flow_archive";
 
     public static final String PAGE_TYPE_WORD = "word";
+    /**
+     * 模块列表页
+     */
     public static final String PAGE_TYPE_LIST = "moduleList";
+    /**
+     * 关联模块页
+     */
     public static final String PAGE_TYPE_LIST_RELATE = "moduleListRelate";
+    /**
+     * 模块添加页
+     */
     public static final String PAGE_TYPE_ADD = "add";
+    /**
+     * 模块编辑页
+     */
     public static final String PAGE_TYPE_EDIT = "edit";
+    /**
+     * 模块查看页
+     */
     public static final String PAGE_TYPE_SHOW = "show";
+    /**
+     * 流程处理页
+     */
     public static final String PAGE_TYPE_FLOW = "flow";
+    /**
+     * 流程查看详情页
+     */
     public static final String PAGE_TYPE_FLOW_SHOW = "flowShow";
+    /**
+     * 模块甘特图视图（暂未实现）
+     */
+    public static final String PAGE_TYPE_GANTT = "gantt";
+    /**
+     * 模块日历视图
+     */
+    public static final String PAGE_TYPE_CALENDAR = "calendar";
+    public static final String PAGE_TYPE_CUSTOM = "custom";
+    /**
+     * 关联模块查看详情页
+     */
+    public static final String PAGE_TYPE_SHOW_RELATE = "show_relate";
+    /**
+     * 关联模块编辑详情页
+     */
+    public static final String PAGE_TYPE_EDIT_RELATE = "edit_relate";
+    /**
+     * 流程嵌套表添加页
+     */
+    public static final String PAGE_TYPE_ADD_RELATE = "add_relate";
+    /**
+     * 表单域选择记录列表页
+     */
+    public static final String PAGE_TYPE_MODULE_LIST_SEL = "moduleListSel";
+    /**
+     * 嵌套表选择记录列表页
+     */
+    public static final String PAGE_TYPE_MODULE_LIST_NEST_SEL = "moduleListNestSel";
 
     public static final int CLIENT_NONE = 0;     		//没有使用手机app
     public static final int CLIENT_ANDROID = 1;     		//安卓
@@ -324,6 +388,10 @@ public class ConstUtil {
      */
     public static final int PAGE_STYLE_LIGHT = 1;
 
+    public static final int PAGE_ADD_REDIRECT_TO_DEFAULT = 0;
+    public static final int PAGE_ADD_REDIRECT_TO_SHOW = 1;
+    public static final int PAGE_ADD_REDIRECT_TO_URL = 2;
+
     /**
      * 日志模块（记录增删改）的编码
      */
@@ -354,6 +422,14 @@ public class ConstUtil {
      * 编辑页确定按钮
      */
     public static final String BTN_OK = "btnOK";
+    /**
+     * 编辑页关闭按钮
+     */
+    public static final String BTN_CLOSE = "btnClose";
+    /**
+     * 添加页返回按钮
+     */
+    public static final String BTN_BACK = "btnBack";
 
     /**
      * 脚本场景
@@ -371,6 +447,16 @@ public class ConstUtil {
     public static final String SCENE_FLOW_VALIDATE = "flow.validate";
 
     /**
+     * 脚本场景：预处理事件
+     */
+    public static final String SCENE_FLOW_ACTION_PRE_DISPOSE = "flow.actionPreDispose";
+
+    /**
+     * 脚本场景：预处理事件
+     */
+    public static final String SCENE_FLOW_ACTION_ACTIVE = "flow.actionActive";
+
+    /**
      * 脚本场景：节点流转
      */
     public static final String SCENE_FLOW_ACTION_FINISH = "flow.actionFinish";
@@ -384,6 +470,30 @@ public class ConstUtil {
      * 脚本场景：放弃事件
      */
     public static final String SCENE_FLOW_DISCARD = "flow.discard";
+
+    /**
+     * 脚本场景：流程初始化事件
+     */
+    public static final String SCENE_FLOW_PRE_INIT = "flow.preInit";
+
+    /**
+     * 脚本场景：模块预处理事件
+     */
+    public static final String SCENE_MODULE_PRE_PROCESS = "module.preProcess";
+
+    /**
+     * 脚本场景：导入前验证事件
+     */
+    public static final String SCENE_MODULE_IMPORT_VALIDATE = "module.import_validate";
+    /**
+     * 脚本场景：导入后事件
+     */
+    public static final String SCENE_MODULE_IMPORT_CREATE = "module.import_create";
+
+    /**
+     * 修改事件
+     */
+    public static final String SCENE_MODULE_SAVE = "module.save";
 
     /**
      * 嵌套表格
@@ -419,4 +529,84 @@ public class ConstUtil {
     public static final int MODE_SELECT = 0;
 
     public static final int MODULE_FIELD_SELECT_CTL_MAX_COUNT = 500;
+
+    /**
+     * 嵌套表格中记录未引用，即不是选择获取的，而是手工添加的
+     */
+    public static final int QUOTE_NONE = 0;
+
+    public static final String USER_SECRET = "userSecret";
+
+    /**
+     * 本地版
+     */
+    public static final String CATEGORY_LOCAL = "local";
+    /**
+     * 云版
+     */
+    public static final String CATEGORY_CLOUD = "cloud";
+    /**
+     * 开发者版
+     */
+    public static final String CATEGORY_DEVELOPER = "developer";
+
+    /**
+     * 基础数据宏控件，request参数的前缀，以免如果用同名的参数带入后，到了添加或修改页面，因为页面传参的原因，致同名字段的值生成了两个，如：val,val
+     */
+    public static final String PREFIX_REQ_PARAM = "cws_req_";
+
+    /**
+     * 当对permitAll的路径进行访问时，SprintUtil.getUserName取得的用户名为 ANONYMOUS_USER
+     */
+    public static final String ANONYMOUS_USER = "anonymousUser";
+
+    public static final String SKEY = "skey";
+
+    public static final String RES = "res";
+
+    public static final String MSG = "msg";
+	
+    /**
+     * 权限类型，对应于DocPriv中的常量
+     */
+    public static final int PRIV_TYPE_USERGROUP = 0;
+    public static final int PRIV_TYPE_USER = 1;
+    public static final int PRIV_TYPE_ROLE = 2;
+    public static final int PRIV_TYPE_DEPT = 3;
+
+    public static final String CUR_ROLE_CODE = "curRoleCode";
+    public static final String CUR_DEPT_CODE = "curDeptCode";
+
+    /**
+     * 前后端菜单
+     */
+    public static final int MENU_BOTH = 0;
+    /**
+    后端菜单
+     */
+    public static final int MENU_BACK = 1;
+    /**
+     * 前端菜单
+     */
+    public static final int MENU_FRONT = 2;
+
+    public static final String MENU_APPLICATION_ALL = "all";
+
+    public static final String UPLOAD_BASE_DIR = "upfile";
+
+    public static final String FILEARK_DIR = "fileark_dir";
+    public static final String FILEARK_DOC = "document";
+
+    public static final int FILEARK_EXAMINE_NOT = 0; // 未审核
+    public static final int FILEARK_EXAMINE_NOTPASS = 1; // 未通过
+    public static final int FILEARK_EXAMINE_PASS = 2; //　审核通过
+
+    public static final String SCAN_ACTION_TYPE_SHOW = "show";
+    public static final String SCAN_ACTION_TYPE_FLOW = "flow";
+    public static final String SCAN_ACTION_TYPE_CREATE = "create";
+
+    public static final int OP_STYLE_DRAWER = 0;
+    public static final int OP_STYLE_TAB = 1;
+
+    public static final String FORM_EXPORT_EXCEL = "cws_export_excel";
 }

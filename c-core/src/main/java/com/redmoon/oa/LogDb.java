@@ -8,6 +8,7 @@ import cn.js.fan.util.*;
 
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class LogDb extends ObjectDb {
     public static final int TYPE_LOGIN = 0;
@@ -130,8 +131,7 @@ public class LogDb extends ObjectDb {
                 rc.refreshCreate();
             }
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -159,8 +159,7 @@ public class LogDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -190,7 +189,7 @@ public class LogDb extends ObjectDb {
                 }
             }
         } catch (Exception e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -211,8 +210,7 @@ public class LogDb extends ObjectDb {
                 return true;
             }
         } catch (SQLException e) {
-            logger.error("del:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             conn.close();
         }
@@ -237,7 +235,7 @@ public class LogDb extends ObjectDb {
 	        	return rr.getInt(1);
 	        }
 		} catch (SQLException e) {
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 
         return 0;
@@ -264,7 +262,7 @@ public class LogDb extends ObjectDb {
 				return rr.getInt(1);
 			}			
 		} catch (SQLException e) {
-			e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
 		}
 		return 0;    	
     }    

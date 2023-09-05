@@ -1,5 +1,7 @@
 package cn.js.fan.util;
 
+import com.cloudwebsoft.framework.util.LogUtil;
+
 import java.io.*;
 import javax.servlet.http.*;
 import javax.servlet.*;
@@ -8,10 +10,14 @@ import java.util.Set;
 
 public class PropertiesUtil {
     private String fileName;
-    private Properties p;
+    private SafeProperties p;
     private FileInputStream in;
     private FileOutputStream out;
-    String charset = "gb2312";
+    String charset = "utf-8";
+
+    public SafeProperties getSafeProperties() {
+        return p;
+    }
 
     /**
      * 根据传进的文件名载入文件
@@ -23,18 +29,39 @@ public class PropertiesUtil {
         File file = new File(fileName);
         try {
             in = new FileInputStream(file);
-            p = new Properties(charset);
+            p = new SafeProperties();
             // 载入文件
-            p.load(in, charset);
+            p.load(in);
             in.close();
         }
         catch (FileNotFoundException e) {
-            System.err.println("配置文件config.properties找不到！");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("配置文件" + fileName + "未找到！");
+            LogUtil.getLog(getClass()).error(e);
         }
         catch (Exception e) {
-            System.err.println("读取配置文件config.properties错误！");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("读取配置文件" + fileName + "错误！");
+            LogUtil.getLog(getClass()).error(e);
+        }
+    }
+
+    public PropertiesUtil(InputStream inputStream) {
+        try {
+            p = new SafeProperties();
+            // 载入文件
+            try {
+                p.load(inputStream);
+            } catch (IOException e) {
+                LogUtil.getLog(getClass()).error(e);
+            }
+        }
+        finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -43,18 +70,16 @@ public class PropertiesUtil {
         File file = new File(fileName);
         try {
             in = new FileInputStream(file);
-            p = new Properties(charset);
+            p = new SafeProperties();
             // 载入文件
             p.load(in);
             in.close();
         }
         catch (FileNotFoundException e) {
-            System.err.println("配置文件config.properties找不到！");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         catch (Exception e) {
-            System.err.println("读取配置文件config.properties错误！");
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
     }
 
@@ -83,22 +108,6 @@ public class PropertiesUtil {
         return configFile;
     }
 
-    /**
-     * jsp中用pageContext作参数
-     * @param hs PageContext
-     * @param configFileName String 配置文件名字
-     * @return String
-     */
-    public static String getConfigFile(PageContext hs, String configFileName) {
-        String configFile = "";
-        ServletContext sc = hs.getServletContext();
-        configFile = sc.getRealPath("/" + configFileName);
-        if (configFile == null || configFile.equals("")) {
-            configFile = "/" + configFileName;
-        }
-        return configFile;
-    }
-
     public Set getKeys() {
         return p.keySet();
     }
@@ -114,7 +123,8 @@ public class PropertiesUtil {
             str = new String(p.getProperty(itemName).getBytes("ISO8859_1"), charset);
         }
         catch (Exception e) {
-            System.out.println("PropertiesUtil: getValue " + e.getMessage());
+            LogUtil.getLog(getClass()).error("PropertiesUtil: getValue " + itemName);
+            LogUtil.getLog(getClass()).error(e);
         }
         return str;
     }
@@ -140,10 +150,9 @@ public class PropertiesUtil {
             value = new String(value.getBytes(charset), "ISO8859_1");
         }
         catch (Exception e) {
-            System.out.println("PropertiesUtil: setValue " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         }
         p.setProperty(itemName, value);
-        return;
     }
 
     /**
@@ -160,7 +169,7 @@ public class PropertiesUtil {
             out.close();
         }
         catch (IOException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
             throw new Exception("无法保存指定的配置文件:" + fileName);
         }
     }
@@ -170,8 +179,7 @@ public class PropertiesUtil {
      * @param fileName String
      * @throws Exception
      */
-    public void saveFile(String fileName)
-            throws Exception {
+    public void saveFile(String fileName) throws Exception {
         saveFile(fileName, "");
     }
 }

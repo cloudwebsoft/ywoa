@@ -46,6 +46,8 @@ import cn.js.fan.util.StrUtil;
 import cn.js.fan.util.file.FileUtil;
 import cn.js.fan.web.Global;
 
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.SpringUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
@@ -166,7 +168,6 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
             }
 
             storefile.createNewFile();
-
             bos = new BufferedOutputStream(new FileOutputStream(storefile));
             bis = new BufferedInputStream(in);
             int c;
@@ -174,6 +175,9 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                 bos.write(c);
                 bos.flush();
             }
+
+            IFileService fileService = SpringUtil.getBean(IFileService.class);
+            fileService.write(Global.getRealPath() + visualPath + File.separator + diskName, visualPath, diskName, true);
             
             Attachment att = new Attachment();
             att.setEmailId(id);
@@ -192,8 +196,9 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
             catch (Exception e) {}
             try {
                 bis.close();
+            } catch (Exception e) {
+                LogUtil.getLog(getClass()).error(e);
             }
-            catch (Exception e) {}
         }
     }
 
@@ -214,7 +219,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                             fileName = MimeUtility.decodeText(fileName);
                         }
 
-                        // System.out.println(getClass() + " saveMailAttachment fileName=" + fileName);
+                        // LogUtil.getLog(getClass()).info(getClass() + " saveMailAttachment fileName=" + fileName);
 
                         saveMailAttachment(filePath, fileName,
                                            mpart.getInputStream());
@@ -406,7 +411,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                 }
             }
         } catch (Exception e) {
-            logger.error("delMsg:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("delMsg:" + e.getMessage());
             throw new ErrMsgException("删除消息失败！");
         } finally {
             if (conn != null) {
@@ -523,47 +528,44 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
             ps.setInt(15, receiptState);
             ps.setInt(16, msgLevel);
 
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             MailMsgCache mc = new MailMsgCache(this);
             mc.refreshCreate();
 
             if (re) {
-                if (fu.getRet() == fu.RET_SUCCESS) {
+                if (fu.getRet() == FileUpload.RET_SUCCESS) {
                     // 置保存路径
                     Calendar cal = Calendar.getInstance();
-                    String year = "" + (cal.get(cal.YEAR));
-                    String month = "" + (cal.get(cal.MONTH) + 1);
+                    int year = cal.get(Calendar.YEAR);
+                    int month = cal.get(Calendar.MONTH) + 1;
 
                     com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-                    String vpath = cfg.get("file_email") + "/" + year + "/" + month + "/";
-                    String filepath = fu.getRealPath() + vpath;
-                    fu.setSavePath(filepath);
-                    // 使用随机名称写入磁盘
-                    fu.writeFile(true);
-                    Vector v = fu.getFiles();
-                    FileInfo fi = null;
-                    Iterator ir = v.iterator();
-                    while (ir.hasNext()) {
-                        fi = (FileInfo) ir.next();
-                        File f = new File(filepath + fi.getDiskName());
+                    String vpath = cfg.get("file_email") + "/" + year + "/" + month;
+
+                    IFileService fileService = SpringUtil.getBean(IFileService.class);
+
+                    Vector<FileInfo> v = fu.getFiles();
+                    FileInfo fi;
+                    for (FileInfo fileInfo : v) {
+                        fi = fileInfo;
+                        fileService.write(fi, vpath);
+
                         Attachment att = new Attachment();
-                        att.setFullPath(filepath + fi.getDiskName());
                         att.setEmailId(id);
                         att.setName(fi.getName());
                         att.setDiskName(fi.getDiskName());
                         att.setVisualPath(vpath);
-                        att.setFileSize(f.length());
+                        att.setFileSize(fi.getSize());
                         re = att.create();
                     }
                 }
 
                 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-                String file_netdisk = cfg.get("file_netdisk");
                 String file_email = cfg.get("file_email");
                 Calendar cal = Calendar.getInstance();
-                String year = "" + (cal.get(cal.YEAR));
-                String month = "" + (cal.get(cal.MONTH) + 1);
+                String year = "" + (cal.get(Calendar.YEAR));
+                String month = "" + (cal.get(Calendar.MONTH) + 1);
 
                 String vpath = file_email + "/" + year + "/" + month;
                 String filepath = Global.getRealPath() + vpath;
@@ -581,22 +583,13 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                         attMail = new Attachment(StrUtil.toInt(attachmentFiles[i]));
 
                         // 将转发邮件的附件同时也另存至草稿箱
-                        String fullPath = Global.getRealPath() +
-                                          "/" + attMail.getVisualPath() + "/" +
-                                          attMail.getDiskName();
-
                         String newDiskName = RandomSecquenceCreator.getId() + "." +
                                          StrUtil.getFileExt(attMail.getDiskName());
-                        String newFullPath = filepath + "/" + newDiskName;
 
-                        File f = new File(filepath);
-                        if (!f.isDirectory())
-                            f.mkdirs();
-                        // 拷贝文件
-                        FileUtil.CopyFile(fullPath, newFullPath);
+                        IFileService fileService = SpringUtil.getBean(IFileService.class);
+                        fileService.copy(attMail.getVisualPath(), attMail.getDiskName(), vpath, newDiskName);
 
                         Attachment att = new Attachment();
-                        att.setFullPath(newFullPath);
                         att.setEmailId(id);
                         att.setName(attMail.getName());
                         att.setDiskName(newDiskName);
@@ -604,42 +597,9 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                         re = att.create();
                     }
                 }
-
-                // 网盘文件
-                String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-                if (netdiskFiles!=null) {
-                    int len = netdiskFiles.length;
-                    com.redmoon.oa.netdisk.Attachment attNetdisk = new com.redmoon.oa.netdisk.Attachment();
-                    for (int i=0; i<len; i++) {
-                        attNetdisk = attNetdisk.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-
-                        String fullPath = Global.getRealPath() + file_netdisk +
-                                          "/" + attNetdisk.getVisualPath() + "/" +
-                                          attNetdisk.getDiskName();
-
-                        String newDiskName = RandomSecquenceCreator.getId() + "." +
-                                         StrUtil.getFileExt(attNetdisk.getDiskName());
-                        String newFullPath = filepath + "/" + newDiskName;
-
-                        File f = new File(filepath);
-                        if (!f.isDirectory())
-                            f.mkdirs();
-                        // 拷贝文件
-                        FileUtil.CopyFile(fullPath, newFullPath);
-
-                        Attachment att = new Attachment();
-                        att.setFullPath(newFullPath);
-                        att.setEmailId(id);
-                        att.setName(attNetdisk.getName());
-                        att.setDiskName(newDiskName);
-                        att.setVisualPath(vpath);
-                        re = att.create();
-                    }
-                }
             }
         } catch (Exception e) {
-            logger.error("create: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库操作错误！");
         } finally {
             if (conn != null) {
@@ -649,18 +609,15 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
         }
         return re;
     }
-    
-    
+
     public int createEmail(FileUpload fu) throws ErrMsgException {
     	Conn conn = null;
-    	boolean re = false;
+    	boolean re;
     	try {
     		conn = new Conn(connname);
-    		// "insert email (id,subject,content,receiver,sender,type,mydate) values (?,?,?,?,?,?,NOW())";
-    		
+
     		PreparedStatement ps = conn.prepareStatement(QUERY_CREATE);
     		id = (int) SequenceManager.nextID(SequenceManager.OA_EMAIL);
-    	
     		
     		copyReceiver = fu.getFieldValue("cc");
     		blindReceiver = fu.getFieldValue("bcc");
@@ -692,45 +649,38 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
     		mc.refreshCreate();
     		
     		if (re) {
-    			if (fu.getRet() == fu.RET_SUCCESS) {
+    			if (fu.getRet() == FileUpload.RET_SUCCESS) {
     				// 置保存路径
     				Calendar cal = Calendar.getInstance();
-    				String year = "" + (cal.get(cal.YEAR));
-    				String month = "" + (cal.get(cal.MONTH) + 1);
+    				int year = cal.get(Calendar.YEAR);
+    				int month = cal.get(Calendar.MONTH) + 1;
     				
     				com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-    				String vpath = cfg.get("file_email") + "/" + year + "/" + month + "/";
-    				String filepath = fu.getRealPath() + vpath;
-    				fu.setSavePath(filepath);
-    				// 使用随机名称写入磁盘
-    				fu.writeFile(true);
-    				Vector v = fu.getFiles();
-    				FileInfo fi = null;
-    				Iterator ir = v.iterator();
-    				while (ir.hasNext()) {
-    					fi = (FileInfo) ir.next();
-    					File f = new File(filepath + fi.getDiskName());
-    					Attachment att = new Attachment();
-    					att.setFullPath(filepath + fi.getDiskName());
-    					att.setEmailId(id);
-    					att.setName(fi.getName());
-    					att.setDiskName(fi.getDiskName());
-    					att.setVisualPath(vpath);
-    					att.setFileSize(f.length());
-    					re = att.create();
-    				}
+    				String vpath = cfg.get("file_email") + "/" + year + "/" + month;
+
+                    IFileService fileService = SpringUtil.getBean(IFileService.class);
+                    Vector<FileInfo> v = fu.getFiles();
+                    for (FileInfo fi : v) {
+                        fileService.write(fi, vpath);
+
+                        Attachment att = new Attachment();
+                        att.setEmailId(id);
+                        att.setName(fi.getName());
+                        att.setDiskName(fi.getDiskName());
+                        att.setVisualPath(vpath);
+                        att.setFileSize(fi.getSize());
+                        re = att.create();
+                    }
     			}
     			
     			com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-    			String file_netdisk = cfg.get("file_netdisk");
     			String file_email = cfg.get("file_email");
     			Calendar cal = Calendar.getInstance();
-    			String year = "" + (cal.get(cal.YEAR));
-    			String month = "" + (cal.get(cal.MONTH) + 1);
+    			String year = "" + (cal.get(Calendar.YEAR));
+    			String month = "" + (cal.get(Calendar.MONTH) + 1);
     			
     			String vpath = file_email + "/" + year + "/" + month;
-    			String filepath = Global.getRealPath() + vpath;
-    			
+
     			// 被转发邮件的附件
     			String[] attachmentFiles = fu.getFieldValues("attachmentFiles");
     			LogUtil.getLog(getClass()).info("create: attachmentFiles=" + attachmentFiles);
@@ -740,162 +690,72 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
     				LogUtil.getLog(getClass()).info("create: attachmentFiles.len" + attachmentFiles.length);
     				
     				Attachment attMail;
-    				for (int i=0; i<len; i++) {
-    					attMail = new Attachment(StrUtil.toInt(attachmentFiles[i]));
-    					
-    					// 将转发邮件的附件同时也另存至草稿箱
-    					String fullPath = Global.getRealPath() +
-    					"/" + attMail.getVisualPath() + "/" +
-    					attMail.getDiskName();
-    					
-    					String newDiskName = RandomSecquenceCreator.getId() + "." +
-    					StrUtil.getFileExt(attMail.getDiskName());
-    					String newFullPath = filepath + "/" + newDiskName;
-    					
-    					File f = new File(filepath);
-    					if (!f.isDirectory())
-    						f.mkdirs();
-    					// 拷贝文件
-    					FileUtil.CopyFile(fullPath, newFullPath);
-    					
-    					Attachment att = new Attachment();
-    					att.setFullPath(newFullPath);
-    					att.setEmailId(id);
-    					att.setName(attMail.getName());
-    					att.setDiskName(newDiskName);
-    					att.setVisualPath(vpath);
-    					re = att.create();
-    				}
-    			}
-    			
-    			// 网盘文件
-    			String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-    			if (netdiskFiles!=null) {
-    				int len = netdiskFiles.length;
-    				com.redmoon.oa.netdisk.Attachment attNetdisk = new com.redmoon.oa.netdisk.Attachment();
-    				for (int i=0; i<len; i++) {
-    					attNetdisk = attNetdisk.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-    					
-    					String fullPath = Global.getRealPath() + file_netdisk +
-    					"/" + attNetdisk.getVisualPath() + "/" +
-    					attNetdisk.getDiskName();
-    					
-    					String newDiskName = RandomSecquenceCreator.getId() + "." +
-    					StrUtil.getFileExt(attNetdisk.getDiskName());
-    					String newFullPath = filepath + "/" + newDiskName;
-    					
-    					File f = new File(filepath);
-    					if (!f.isDirectory())
-    						f.mkdirs();
-    					// 拷贝文件
-    					FileUtil.CopyFile(fullPath, newFullPath);
-    					
-    					Attachment att = new Attachment();
-    					att.setFullPath(newFullPath);
-    					att.setEmailId(id);
-    					att.setName(attNetdisk.getName());
-    					att.setDiskName(newDiskName);
-    					att.setVisualPath(vpath);
-    					re = att.create();
-    				}
+                    for (String attachmentFile : attachmentFiles) {
+                        attMail = new Attachment(StrUtil.toInt(attachmentFile));
+
+                        // 将转发邮件的附件同时也另存至草稿箱
+                        String newDiskName = RandomSecquenceCreator.getId() + "." +
+                                StrUtil.getFileExt(attMail.getDiskName());
+                        // 拷贝文件
+                        IFileService fileService = SpringUtil.getBean(IFileService.class);
+                        fileService.copy(attMail.getVisualPath(), attMail.getDiskName(), vpath, newDiskName);
+
+                        Attachment att = new Attachment();
+                        att.setEmailId(id);
+                        att.setName(attMail.getName());
+                        att.setDiskName(newDiskName);
+                        att.setVisualPath(vpath);
+                        re = att.create();
+                    }
     			}
     		}
-    	} catch (Exception e) {
-    		logger.error("create: " + e.getMessage());
-    		e.printStackTrace();
+    	} catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
     		throw new ErrMsgException("数据库操作错误！");
-    	} finally {
-    		if (conn != null) {
-    			conn.close();
-    			conn = null;
-    		}
+    	} catch (IOException e) {
+            LogUtil.getLog(getClass()).error(e);
+        } finally {
+    	    conn.close();
     	}
     	return id;
     }
 
     public boolean save(FileUpload fu) throws ErrMsgException {
         boolean re = save();
-
         if (re) {
-            if (fu.getRet() == fu.RET_SUCCESS) {
+            if (fu.getRet() == FileUpload.RET_SUCCESS) {
                 // 置保存路径
                 Calendar cal = Calendar.getInstance();
-                String year = "" + (cal.get(cal.YEAR));
-                String month = "" + (cal.get(cal.MONTH) + 1);
+                int year = cal.get(Calendar.YEAR);
+                int month = cal.get(Calendar.MONTH);
 
                 com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-                String vpath = cfg.get("file_email") + "/" + year + "/" + month +
-                               "/";
-                String filepath = fu.getRealPath() + vpath;
-                fu.setSavePath(filepath);
-                // 使用随机名称写入磁盘
-                fu.writeFile(true);
-                Vector v = fu.getFiles();
-                FileInfo fi = null;
-                Iterator ir = v.iterator();
-                while (ir.hasNext()) {
-                    fi = (FileInfo) ir.next();
+                String vpath = cfg.get("file_email") + "/" + year + "/" + month;
+
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
+                Vector<FileInfo> v = fu.getFiles();
+                for (FileInfo fi : v) {
+                    fileService.write(fi, vpath);
+
                     Attachment att = new Attachment();
-                    att.setFullPath(filepath + fi.getDiskName());
                     att.setEmailId(id);
                     att.setName(fi.getName());
                     att.setDiskName(fi.getDiskName());
                     att.setVisualPath(vpath);
+                    att.setFileSize(fi.getSize());
                     re = att.create();
                 }
             }
-            
-            com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-			String file_netdisk = cfg.get("file_netdisk");
-			String file_email = cfg.get("file_email");
-			Calendar cal = Calendar.getInstance();
-			String year = "" + (cal.get(cal.YEAR));
-			String month = "" + (cal.get(cal.MONTH) + 1);
-			
-			String vpath = file_email + "/" + year + "/" + month;
-			String filepath = Global.getRealPath() + vpath;
-            
-         // 网盘文件
-			String[] netdiskFiles = fu.getFieldValues("netdiskFiles");
-			if (netdiskFiles!=null) {
-				int len = netdiskFiles.length;
-				com.redmoon.oa.netdisk.Attachment attNetdisk = new com.redmoon.oa.netdisk.Attachment();
-				for (int i=0; i<len; i++) {
-					attNetdisk = attNetdisk.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-					
-					String fullPath = Global.getRealPath() + file_netdisk +
-					"/" + attNetdisk.getVisualPath() + "/" +
-					attNetdisk.getDiskName();
-					
-					String newDiskName = RandomSecquenceCreator.getId() + "." +
-					StrUtil.getFileExt(attNetdisk.getDiskName());
-					String newFullPath = filepath + "/" + newDiskName;
-					
-					File f = new File(filepath);
-					if (!f.isDirectory())
-						f.mkdirs();
-					// 拷贝文件
-					FileUtil.CopyFile(fullPath, newFullPath);
-					
-					Attachment att = new Attachment();
-					att.setFullPath(newFullPath);
-					att.setEmailId(id);
-					att.setName(attNetdisk.getName());
-					att.setDiskName(newDiskName);
-					att.setVisualPath(vpath);
-					re = att.create();
-				}
-			}
-            
         }
 
         return re;
     }
 
+    @Override
     public ObjectDb getObjectDb(Object primaryKeyValue) {
         MailMsgCache uc = new MailMsgCache(this);
         primaryKey.setValue(primaryKeyValue);
-        return (MailMsgDb) uc.getObjectDb(primaryKey);
+        return uc.getObjectDb(primaryKey);
     }
 
     /**
@@ -905,7 +765,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
      */
     public boolean delOfSender(String email) {
         boolean re = false;
-        ResultSet rs = null;
+        ResultSet rs;
         Conn conn = new Conn(connname);
         try {
             String sql = "select id from email where sender=?";
@@ -918,36 +778,30 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                     re = mmd.del();
                 }
             }
-        } catch (Exception e) {
-            logger.error("del:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
 
+    @Override
     public synchronized boolean del() {
         boolean re = false;
         Conn conn = new Conn(connname);
         try {
             PreparedStatement ps = conn.prepareStatement(QUERY_DEL);
             ps.setInt(1, id);
-            re = conn.executePreUpdate() == 1 ? true : false;
-
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 MailMsgCache mc = new MailMsgCache(this);
                 mc.refreshDel(primaryKey);
             }
-        } catch (Exception e) {
-            logger.error("del:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         if (re) {
             // 删除附件
@@ -1011,7 +865,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
             ps.setInt(13, id);
             re = conn.executePreUpdate() == 1 ? true : false;
         } catch (Exception e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1116,7 +970,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                 }
             }
         } catch (Exception e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1157,6 +1011,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
         this.emailAddr = emailAddr;
     }
 
+    @Override
     public ListResult listResult(String listsql, int curPage, int pageSize) throws
             ErrMsgException {
         int total = 0;
@@ -1198,7 +1053,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (conn != null) {
@@ -1212,7 +1067,7 @@ public class MailMsgDb extends ObjectDb implements IDesktopUnit{
         return lr;
     }
 
-    private Vector attachments;
+    private Vector<Attachment> attachments;
     private java.util.Date myDate;
     private boolean readed = false;
     /**

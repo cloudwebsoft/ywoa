@@ -5,9 +5,11 @@ import java.net.*;
 import java.util.*;
 
 import cn.js.fan.util.*;
-import org.apache.log4j.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import org.jdom.*;
 import org.jdom.input.*;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 /**
  * <p>Title: </p>
@@ -27,7 +29,6 @@ public class Config {
 
     private String cfgpath;
 
-    Logger logger;
     Document doc = null;
     Element root = null;
 
@@ -36,20 +37,31 @@ public class Config {
         cfgpath = cfgURL.getFile();
         cfgpath = URLDecoder.decode(cfgpath);
 
-        properties = new XMLProperties(cfgpath);
+        // properties = new XMLProperties(cfgpath);
 
-        logger = Logger.getLogger(Config.class.getName());
-
+        InputStream inputStream = null;
         SAXBuilder sb = new SAXBuilder();
         try {
-            FileInputStream fin = new FileInputStream(cfgpath);
+            Resource resource = new ClassPathResource(CONFIG_FILENAME);
+            inputStream = resource.getInputStream();
+            doc = sb.build(inputStream);
+            root = doc.getRootElement();
+            properties = new XMLProperties(CONFIG_FILENAME, doc);
+
+            /*FileInputStream fin = new FileInputStream(cfgpath);
             doc = sb.build(fin);
             root = doc.getRootElement();
-            fin.close();
-        } catch (org.jdom.JDOMException e) {
-            logger.error("Config:" + e.getMessage());
-        } catch (java.io.IOException e) {
-            logger.error("Config:" + e.getMessage());
+            fin.close();*/
+        } catch (JDOMException | IOException e) {
+            LogUtil.getLog(getClass()).error("Config:" + e.getMessage());
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LogUtil.getLog(getClass()).error(e);
+                }
+            }
         }
     }
 
@@ -112,7 +124,7 @@ public class Config {
                             "checker")).newInstance();
                     return ifv;
                 } catch (Exception exp) {
-                    logger.warn("getIModuleChecker:" + exp.getMessage());
+                    LogUtil.getLog(getClass()).warn("getIModuleChecker:" + exp.getMessage());
                 }
             }
         }

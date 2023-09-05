@@ -1,11 +1,13 @@
 <%@ page language="java" pageEncoding="utf-8" %>
 <%@ page import="com.redmoon.oa.android.Privilege" %>
+<%@ page import="cn.js.fan.util.ParamUtil" %>
 <%
     Privilege pvg = new Privilege();
     pvg.auth(request);
     String skey = pvg.getSkey();
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta charset="utf-8">
@@ -72,13 +74,26 @@
 <script type="text/javascript" src="../js/mui.indexedlist.js"></script>
 <script src="../js/jq_mydialog.js"></script>
 <script type="text/javascript" charset="utf-8">
-    if(!mui.os.plus) {
-        // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
-        $('.mui-bar').remove();
+    var isUniWebview = <%=isUniWebview%>;
+    // 注意只有这个页面不是用的if(!mui.os.plus || isUniWebview)，因为如果用了!，则在企业微信中，会被setTimeout将头部删掉
+    // 而底部navbar.jsp中生成的头部同样也会被删掉
+    if(mui.os.plus || isUniWebview) {
+        $(function() {
+            // 如果不延时，则画面只能显示一半高度
+            setTimeout(function () {
+                // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
+                $('.mui-bar').remove();
+            }, 200);
+        })
     }
 
     var skey = '<%=skey%>';
-    mui.init();
+    mui.init({
+        keyEventBind: {
+            backbutton: !isUniWebview //关闭back按键监听
+        }
+    });
+
     mui.ajaxSettings.beforeSend = function (xhr, setting) {
         jQuery.myloading();
         //beforeSend演示,也可在$.ajax({beforeSend:function(){}})中设置单个Ajax的beforeSend
@@ -113,7 +128,7 @@
                         jQuery(".mui-table-view").append($li_group);
                     } else {
                         var $li = '<li id="' + code + '" type="' + type + '"  data-tags="' + pyName + '" class="mui-table-view-cell mui-indexed-list-item">';
-                        $li += '<a href ="flow_dispose.jsp?type=' + type + '&flowTypeCode=' + code + '&' + encodeURI(params) + '&skey=' + skey + '">' + name + '</a></li>';
+                        $li += '<a href ="flow_dispose.jsp?type=' + type + '&flowTypeCode=' + code + '&' + encodeURI(params) + '&skey=' + skey + '&isUniWebview=' + isUniWebview + '">' + name + '</a></li>';
                         jQuery(".mui-table-view").append($li);
                     }
                     mui.ready(function () {

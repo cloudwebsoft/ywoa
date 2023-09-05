@@ -335,7 +335,7 @@ public class FormQueryReportRender {
                             sqlX = makeSQLWithYFieldValue(sqlX, sqlRelX, fqrcY.getFieldName(), sqlValY);
 
                             LogUtil.getLog(getClass()).info("smartSQL=" + smartSQL + "  sqlX=" + sqlX);
-                            // System.out.println(getClass() + " sqlX=" + sqlX);
+                            // LogUtil.getLog(getClass()).info(getClass() + " sqlX=" + sqlX);
                             // 取得X轴的值
                             ResultIterator riX = jt.executeQuery(sqlX);
                             String tdVal = "";
@@ -361,7 +361,7 @@ public class FormQueryReportRender {
                         content += "</tr>";
                     }
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
             } else {
                 throw new ErrMsgException("Y轴元素的SQL语句为空！");
@@ -679,7 +679,7 @@ public class FormQueryReportRender {
                                 sqlX = makeSQLWithYFieldValue(sqlX, sqlRelX, fqrcY.getFieldName(), sqlValY);
 
                                 LogUtil.getLog(getClass()).info("sqlX=" + sqlX);
-                                // System.out.println(getClass() + " sqlX=" + sqlX);
+                                // LogUtil.getLog(getClass()).info(getClass() + " sqlX=" + sqlX);
                                 // 取得X轴的值
                                 ResultIterator riX = jt.executeQuery(sqlX);
                                 String tdVal = "";
@@ -718,14 +718,14 @@ public class FormQueryReportRender {
 								mapColTitleVal.put(fqrcX.getValue(), (String)json.get(fqrcX.getFieldName()));
 							} catch (JSONException e) {
 								// TODO Auto-generated catch block
-								e.printStackTrace();
+								LogUtil.getLog(getClass()).error(e);
 							}
                         }
                         jsonAry.put(json);
                     }
                     ret[1] = jsonAry.toString();
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
             } else {
                 throw new ErrMsgException("Y轴元素的SQL语句为空！");
@@ -912,7 +912,7 @@ public class FormQueryReportRender {
 					ri = jt.executeQuery(sqlY);
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
 
                 LogUtil.getLog(getClass()).info("sqlY=" + sqlY);            	
@@ -1001,7 +1001,7 @@ public class FormQueryReportRender {
                                 sqlX = makeSQLWithYFieldValue(sqlX, sqlRelX, fieldNameY, sqlValY);
 
                                 LogUtil.getLog(getClass()).info("sqlX=" + sqlX);
-                                // System.out.println(getClass() + " sqlX=" + sqlX);
+                                // LogUtil.getLog(getClass()).info(getClass() + " sqlX=" + sqlX);
                                 // 取得X轴的值
                                 ResultIterator riX = jt.executeQuery(sqlX);
                                 String tdVal = "";
@@ -1039,18 +1039,16 @@ public class FormQueryReportRender {
                             try {
 								mapColTitleVal.put(fqrcX.getValue(), (String)json.get(fqrcX.getFieldName()));
 							} catch (JSONException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+								LogUtil.getLog(getClass()).error(e);
 							}
                         }
                         jsonAry.put(json);
                     }
                     ret[1] = jsonAry.toString();
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 } catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(getClass()).error(e);
 				}
             } else {
                 throw new ErrMsgException("Y轴元素的SQL语句为空！");
@@ -1229,7 +1227,7 @@ public class FormQueryReportRender {
                                 // X轴不应该允许用关联的主表的字段，这样会使得生成SQL语句时难以与smartSQL对应
                                 // if (fqrcX.getFieldName().startsWith("rel.")) {
                                 
-                                // 不能直接替换id，因为SQL可能为：select theForm.id from form_table_nest theForm, flow f where f.id=theForm.cws_id
+                                // 不能直接替换id，因为SQL可能为：select theForm.id from ft_nest theForm, flow f where f.id=theForm.cws_id
                                 // String sqlX = smartSQL.replaceFirst("id", func + "(" + fqrcX.getFieldName() + ")");
                                 /*
                                 smartSQL = smartSQL.toLowerCase();
@@ -1244,7 +1242,7 @@ public class FormQueryReportRender {
                                 sqlX = makeSQLWithYFieldValue(sqlX, sqlRelX, fqrcY.getFieldName(), sqlValY);
 
                                 LogUtil.getLog(getClass()).info("export: sqlX=" + sqlX);
-                                // System.out.println(getClass() + " sqlX=" + sqlX);
+                                // LogUtil.getLog(getClass()).info(getClass() + " sqlX=" + sqlX);
                                 // 取得X轴的值
                                 ResultIterator riX = jt.executeQuery(sqlX);
                                 String tdVal = "";
@@ -1284,7 +1282,7 @@ public class FormQueryReportRender {
                         vValue.addElement(aryV);
                     }
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    LogUtil.getLog(getClass()).error(ex);
                 }
 
                 ret = new Vector[2];
@@ -1387,7 +1385,7 @@ public class FormQueryReportRender {
 			// bsh.set("out", out);
 			bsh.eval(sb.toString());
 
-			// myscript = myscript.replaceAll("System.out.println\\(", "out.print\\(\"<BR>\" + ");
+			// myscript = myscript.replaceAll("LogUtil.getLog(getClass()).info\\(", "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ret");
 			if (obj != null) {
@@ -1395,7 +1393,7 @@ public class FormQueryReportRender {
 			}
 		} catch (EvalError e) {
 			// TODO Auto-generated catch block
-			// e.printStackTrace();
+			// LogUtil.getLog(getClass()).error(e);
 			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
 		}
 		return "None";
@@ -1413,7 +1411,7 @@ public class FormQueryReportRender {
 
 		Interpreter bsh = new Interpreter();
 		try {
-			// myscript = myscript.replaceAll("System.out.println\\(", "out.print\\(\"<BR>\" + ");
+			// myscript = myscript.replaceAll("LogUtil.getLog(getClass()).info\\(", "out.print\\(\"<BR>\" + ");
 			bsh.eval(myscript);
 			Object obj = bsh.get("ret");
 			if (obj != null) {
@@ -1421,7 +1419,7 @@ public class FormQueryReportRender {
 			}
 		} catch (EvalError e) {
 			// TODO Auto-generated catch block
-			// e.printStackTrace();
+			// LogUtil.getLog(getClass()).error(e);
 			LogUtil.getLog(getClass()).error(StrUtil.trace(e));
 		}
 		return null;

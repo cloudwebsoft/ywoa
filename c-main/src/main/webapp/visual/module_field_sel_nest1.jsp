@@ -51,7 +51,8 @@
     String oldRelateCode = ParamUtil.get(request, "oldRelateCode");
 
     int isTab = ParamUtil.getInt(request, "isTab", 0);
-    int isPage = 0, pageSize = 20, isSearchable = 0;
+    int isPage = 0, pageSize = 20, isSearchable = 0, isNoShow = 1;
+    String selWinUrl = "";
     String jsonStr = ParamUtil.get(request, "jsonStr");
     String canAdd = "", canEdit = "", canImport = "", canDel = "", canSel = "", canExport = "";
     int formViewId = -1;
@@ -81,6 +82,12 @@
             }
             if (jsonObject.has("isSearchable")) {
                 isSearchable = jsonObject.getInt("isSearchable");
+            }
+            if (jsonObject.has("selWinUrl")) {
+                selWinUrl = jsonObject.getString("selWinUrl");
+            }
+            if (jsonObject.has("isNoShow")) {
+                isNoShow = jsonObject.getInt("isNoShow");
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -188,7 +195,7 @@
         <td align="left">
             <input type="checkbox" id="isTab" name="isTab" value="1" <%=isTab == 1 ? "checked" : "" %> <%=!ConstUtil.NEST_TABLE.equals(nestType) ? "" : "style='display:none'"%> />
             <%
-                if (!ConstUtil.NEST_TABLE.equals(nestType)) {
+                if (false && !ConstUtil.NEST_TABLE.equals(nestType)) {
             %>
             显示为选项卡
             <%
@@ -197,10 +204,10 @@
         </td>
     </tr>
     <%
-        String dis = "";
-        if (ConstUtil.NEST_TABLE.equals(nestType)) {
+        String dis = "none";
+        /*if (ConstUtil.NEST_TABLE.equals(nestType)) {
             dis = "display:none";
-        }
+        }*/
     %>
     <tr style="<%=dis%>">
         <td height="42" align="center">分页</td>
@@ -216,6 +223,20 @@
         <td height="42" align="center">搜索</td>
         <td height="42" colspan="2" align="left">
             <input id="isSearchable" name="isSearchable" value="1" type="checkbox" <%=isSearchable==1?"checked":"" %> title="是否能搜索" />
+        </td>
+    </tr>
+    <tr style="<%=dis%>">
+        <td height="42" align="center">选择窗口页面</td>
+        <td height="42" colspan="2" align="left" title="自定义选择窗口页面">
+            <input id="selWinUrl" name="selWinUrl" value="<%=selWinUrl%>"/>
+        </td>
+    </tr>
+    <tr>
+        <td align="center">
+            显示序号
+        </td>
+        <td colspan="2">
+            <input id="isNoShow" name="isNoShow" value="1" type="checkbox" <%=isNoShow==1?"checked":"" %> title="是否显示序号" />
         </td>
     </tr>
     <tr>
@@ -238,7 +259,7 @@
                 &nbsp;&nbsp;
                 <input id="canDel" name="canDel" type="checkbox" value="true"/>
             &nbsp;删除
-              <span style="display: none">
+              <span title="选择时将打开所设置的自定义选择窗口页面">
                 &nbsp;&nbsp;
                 <input id="canSel" name="canSel" type="checkbox" value="true"/>
             &nbsp;选择
@@ -412,8 +433,7 @@
         setCheckboxChecked("canDel", "true");
         <%
         }
-        %>
-        <%
+
         if ("true".equals(canSel)) {
         %>
         setCheckboxChecked("canSel", "true");
@@ -444,6 +464,14 @@
             var canExport = getCheckboxValue("canExport");
             var canDel = getCheckboxValue("canDel");
             var canSel = getCheckboxValue("canSel");
+            var selWinUrl = $('#selWinUrl').val();
+            /*if (canSel == 'true') {
+                if (selWinUrl == '') {
+                    jAlert('选择窗口页面地址不能为空', '提示');
+                    return;
+                }
+            }*/
+
             var canStr = "\"canAdd\":\"" + canAdd + "\", \"canEdit\":\"" + canEdit + "\", \"canImport\":\"" + canImport + "\", \"canDel\":\"" + canDel + "\", \"canSel\":\"" + canSel + "\", \"canExport\":\"" + canExport + "\"";
 
             // 字段合计描述字符串处理
@@ -485,7 +513,12 @@
                 isSearchable = 1;
             }
 
-            str = "{\"sourceForm\":\"\", \"destForm\":\"" + $("#params").val() + "\", \"filter\":\"\", \"isTab\":" + isTab + ", \"isSearchable\":" + isSearchable + ", \"isPage\":" + isPage + ", \"pageSize\":" + pageSize + ", " + canStr + ", \"maps\":[], \"propStat\":" + calcCodesStr + ", \"formViewId\":\"" + $('#formView').val() + "\"}";
+            var isNoShow = 0;
+            if (o("isNoShow").checked) {
+                isNoShow = 1;
+            }
+            str = "{\"sourceForm\":\"\", \"destForm\":\"" + $("#params").val() + "\", \"filter\":\"\", \"isTab\":" + isTab + ", \"isSearchable\":" + isSearchable + ", \"isNoShow\":" + isNoShow + ", \"isPage\":" + isPage + ", \"pageSize\":" + pageSize + ", " + canStr + ", " +
+                "\"maps\":[], \"propStat\":" + calcCodesStr + ", \"formViewId\":\"" + $('#formView').val() + "\", \"selWinUrl\":\"" + selWinUrl + "\"}";
         }
 
         str = encodeJSON(str);

@@ -34,14 +34,13 @@ public class Cn2Spell {
         for (int i = 0; i < nameChar.length; i++) {
             if (nameChar[i] > 128) {
                 try {
-                	String[] ary = PinyinHelper.toHanyuPinyinStringArray(nameChar[i],
-                            defaultFormat);
+                	String[] ary = PinyinHelper.toHanyuPinyinStringArray(nameChar[i], defaultFormat);
                 	// 如果中文字符串中含有符号，ary会为null
-                	if (ary!=null) {
+                    if (ary != null && ary.length > 0) {
                 		pinyinName += ary[0].charAt(0);
                 	}
                 } catch (BadHanyuPinyinOutputFormatCombination e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(Cn2Spell.class).error(e);
                 }
             } else {
                 pinyinName += nameChar[i];
@@ -66,11 +65,11 @@ public class Cn2Spell {
                 try {
                     String[] ary = PinyinHelper.toHanyuPinyinStringArray(nameChar[i], defaultFormat);
                     // 如果中文字符串中含有符号，ary会为null
-                    if (ary!=null) {
+                    if (ary != null && ary.length > 0) {
                         pinyinName += ary[0];
                     }
                 } catch (BadHanyuPinyinOutputFormatCombination e) {
-                    e.printStackTrace();
+                    LogUtil.getLog(Cn2Spell.class).error(e);
                 }
             } else {
                 pinyinName += nameChar[i];
@@ -80,7 +79,6 @@ public class Cn2Spell {
     }
 
     public static void main(String[] args) {
-        System.out.println(converterToFirstSpell("欢迎来到最棒的Java中文社区"));
-        System.out.println(converterToSpell("欢迎来到最棒的Java中文社区"));
+
     }
 }

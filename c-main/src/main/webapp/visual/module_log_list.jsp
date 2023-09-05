@@ -80,7 +80,7 @@ String orderBy = ParamUtil.get(request, "orderBy");
 String sort = ParamUtil.get(request, "sort");
 
 if (orderBy.equals("")) {
-	String filter = StrUtil.getNullStr(msd.getString("filter")).trim();
+	String filter = StrUtil.getNullStr(msd.getFilter(userName)).trim();
 	boolean isComb = filter.startsWith("<items>") || filter.equals("");
 	// 如果是组合条件，则赋予后台设置的排序字段
 	if (isComb) {
@@ -1082,7 +1082,7 @@ function action(com, grid) {
 		openWin(url,360,50);		
 	}	
 	else if (com=="添加") {
-		window.location.href = "<%=request.getContextPath()%>/visual/module_add.jsp?code=<%=code%>&privurl=<%=privurl%><%=requestParams%>";
+		window.location.href = "<%=request.getContextPath()%>/visual/moduleAddPage.do?code=<%=code%>&privurl=<%=privurl%><%=requestParams%>";
 	}
 	else if (com=="修改") {
 		selectedCount = $(".cth input[type='checkbox'][value!='on']:checked", grid.bDiv).length;
@@ -1103,7 +1103,7 @@ function action(com, grid) {
 		<%if (msd.getInt("view_edit")==ModuleSetupDb.VIEW_EDIT_CUSTOM) {%>
     	addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/<%=msd.getString("url_edit")%>?parentId=" + id + "&id=" + id + "&code=<%=code%>&formCode=<%=formCode%>");
 		<%}else{%>
-    	addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/module_edit.jsp?parentId=" + id + "&id=" + id + "&code=<%=code%>&formCode=<%=formCode%>");
+    	addTab("<%=msd.getString("name")%>", "<%=request.getContextPath()%>/visual/moduleEditPage.do?parentId=" + id + "&id=" + id + "&code=<%=code%>&formCode=<%=formCode%>");
 		<%}%>
 	}
 	else if (com=='删除') {

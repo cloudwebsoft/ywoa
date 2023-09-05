@@ -3,10 +3,9 @@ package cn.js.fan.cache.jcs;
 import cn.js.fan.cache.CacheFactory;
 import cn.js.fan.web.Global;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysProperties;
 import com.cloudwebsoft.framework.base.IThreadContext;
-import org.apache.jcs.access.exception.CacheException;
-import org.apache.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
+import org.apache.commons.jcs3.access.exception.CacheException;
 
 import java.util.Iterator;
 import java.util.Vector;
@@ -37,17 +36,20 @@ public class RMCache implements ICache {
 
     private static Object initLock = new Object();
 
-    transient Logger logger;
     Vector cacheMgrs = new Vector();
 
     public RMCache() {
-        logger = Logger.getLogger(RMCache.class.getName());
         canCache = Global.useCache;
         // 判断是否启用redis缓存
         boolean isUserRedis = Global.getInstance().isUseRedis();
         if (canCache) {
             if (isUserRedis) {
-                iCache = CacheFactory.getInstance(CacheFactory.CACHE_REDIS);
+                SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+                if (sysProperties.isRedisCluster()) {
+                    iCache = CacheFactory.getInstance(CacheFactory.CACHE_REDIS_CLUSTER);
+                } else {
+                    iCache = CacheFactory.getInstance(CacheFactory.CACHE_REDIS);
+                }
             } else {
                 iCache = CacheFactory.getInstance(CacheFactory.CACHE_JCS);
             }

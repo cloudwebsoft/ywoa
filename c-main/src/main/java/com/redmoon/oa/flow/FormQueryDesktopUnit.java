@@ -20,7 +20,6 @@ import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.dept.DeptUserDb;
 import com.redmoon.oa.flow.query.QueryScriptUtil;
-import com.redmoon.oa.notice.NoticeDb;
 import com.redmoon.oa.person.UserDesktopSetupDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.ui.DesktopMgr;
@@ -76,7 +75,7 @@ public class FormQueryDesktopUnit implements IDesktopUnit {
 					sb.append("<div class='no_content'><img title='暂无自由查询项' src='images/desktop/no_content.jpg'></div>");
 				}
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}else{
 			sb.append("<div class='no_content'><img title='暂无自由查询项' src='images/desktop/no_content.jpg'></div>");

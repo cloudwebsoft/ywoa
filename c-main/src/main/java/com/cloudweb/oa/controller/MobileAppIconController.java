@@ -3,6 +3,7 @@ package com.cloudweb.oa.controller;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.ResKeyException;
 import com.alibaba.fastjson.JSONObject;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.android.system.MobileAppIconConfigMgr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -42,7 +43,7 @@ public class MobileAppIconController {
             json.put("ret", 0);
             json.put("msg", e.getMessage());
         } catch (ResKeyException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();
@@ -73,7 +74,7 @@ public class MobileAppIconController {
             json.put("ret", 0);
             json.put("msg", e.getMessage());
         } catch (ResKeyException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
 
         return json.toString();

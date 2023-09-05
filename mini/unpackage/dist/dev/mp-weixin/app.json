@@ -1,0 +1,94 @@
+{
+  "pages": [
+    "pages/index/indexPage",
+    "pages/login/login",
+    "pages/login/selectRole",
+    "pages/login/setAppBaseUrl",
+    "pages/index/index",
+    "pages/index/auth",
+    "pages/userCenter/index",
+    "pages/userCenter/myInfo",
+    "pages/userCenter/changeMyPassword",
+    "pages/applications/applications"
+  ],
+  "subPackages": [
+    {
+      "root": "application",
+      "pages": [
+        "news/newsShowPage",
+        "sysMessage",
+        "calendar",
+        "calendarShared",
+        "punch",
+        "address",
+        "noticeList",
+        "filearkDir",
+        "waitProcessListH5",
+        "initProcessListH5",
+        "hadProcessListH5",
+        "processInfo",
+        "moduleAddEdit",
+        "chilPage/chilPage/fileView",
+        "chilPage/rectificationNoticeDetails",
+        "moduleList",
+        "moduleShow",
+        "process"
+      ]
+    },
+    {
+      "root": "cmn",
+      "pages": [
+        "changePassword",
+        "forgetPassword"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "APP",
+    "navigationBarBackgroundColor": "#1c6ec4",
+    "backgroundColor": "#FFFFFF"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#999999",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "height": "70px",
+    "fontSize": "12px",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/tabBar/home.png",
+        "selectedIconPath": "static/tabBar/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/applications/applications",
+        "iconPath": "static/tabBar/application.png",
+        "selectedIconPath": "static/tabBar/application-active.png",
+        "text": "应用"
+      },
+      {
+        "pagePath": "pages/userCenter/index",
+        "iconPath": "static/tabBar/user.png",
+        "selectedIconPath": "static/tabBar/user-active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "preloadRule": {
+    "pages/index/index": {
+      "network": "all",
+      "packages": [
+        "application"
+      ]
+    }
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于小程序位置接口的效果展示"
+    }
+  },
+  "usingComponents": {}
+}

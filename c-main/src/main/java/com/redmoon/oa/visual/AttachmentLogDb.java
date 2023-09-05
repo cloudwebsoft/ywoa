@@ -17,6 +17,7 @@ import cn.js.fan.util.DateUtil;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.util.ResKeyException;
 import cn.js.fan.util.StrUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class AttachmentLogDb extends QObjectDb {
     public static final int TYPE_DOWNLOAD = 0;
@@ -36,8 +37,7 @@ public class AttachmentLogDb extends QObjectDb {
         try {
             re = create(new JdbcTemplate(), new Object[]{userName, moduleId, attId, logType, new Date()});
         } catch (ResKeyException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return re;
     }

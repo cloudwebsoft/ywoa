@@ -5,8 +5,6 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.DateUtil;
@@ -28,17 +26,13 @@ import com.redmoon.oa.pvg.Privilege;
 
 public class NoticeValidator implements IFormValidator {
 
-	Logger logger = Logger.getLogger(NoticeValidator.class.getName());
-
 	@Override
 	public String getExtraData() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public boolean isUsed() {
-		// TODO Auto-generated method stub
 		return true;
 	}
 
@@ -76,7 +70,7 @@ public class NoticeValidator implements IFormValidator {
 	public void onWorkflowFinished(WorkflowDb wf, WorkflowActionDb arg1)
 			throws ErrMsgException {
 		NoticeDb nDb = getNoticeDbByFlowId(wf);
-		NoticeAttachmentDb naDb = null;
+		NoticeAttachmentDb naDb;
 		long noticeId = 0;
 		try {
 			boolean res = nDb.createNoticeForFlow();
@@ -104,21 +98,17 @@ public class NoticeValidator implements IFormValidator {
 				naDb.create();
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 
 	}
 
 	@Override
 	public void setExtraData(String arg0) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void setIsUsed(boolean arg0) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -146,7 +136,7 @@ public class NoticeValidator implements IFormValidator {
 		JdbcTemplate jt = new JdbcTemplate();
 		ResultIterator ri = null;
 		ResultRecord rd = null;
-		String sql = "select * from form_table_tzgg where flowId = " + flowId;
+		String sql = "select * from ft_tzgg where flowId = " + flowId;
 
 		try {
 			ri = jt.executeQuery(sql);
@@ -189,7 +179,7 @@ public class NoticeValidator implements IFormValidator {
 				ndb.setFlowId(flowId);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return ndb;
 	}
@@ -208,7 +198,7 @@ public class NoticeValidator implements IFormValidator {
 				docId = rd.getInt(1);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
 		return docId;
 	}

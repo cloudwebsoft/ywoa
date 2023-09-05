@@ -45,11 +45,11 @@
 	}
 
     String op = ParamUtil.get(request, "op");
-    int parentId = ParamUtil.getInt(request, "parentId", -1);
-	int id = ParamUtil.getInt(request, "id", -1);
+    long parentId = ParamUtil.getLong(request, "parentId", -1);
+	long id = ParamUtil.getLong(request, "id", -1);
 	String formCode = msd.getString("form_code");
 	
-	String viewEdit = "module_edit.jsp";
+	String viewEdit = "moduleEditPage.do";
 	if (msd.getInt("view_edit")==ModuleSetupDb.VIEW_EDIT_CUSTOM) {
 		viewEdit = msd.getString("url_edit");
 		response.sendRedirect(request.getContextPath() + "/" + msd.getString("url_edit") + "?parentId=" + parentId + "&id=" + id + "&code=" + code + "&formCode=" + formCode);
@@ -74,13 +74,17 @@
 		return;
 	}
 
+	boolean canUserData = mpd.canUserData(privilege.getUser(request));
+
+	request.setAttribute("moduleCode", code);
+
 	// 置嵌套表需要用到的cwsId
 	request.setAttribute("cwsId", "" + id);
 	// 置嵌套表需要用到的页面类型
 	request.setAttribute("pageType", ConstUtil.PAGE_TYPE_EDIT);
 	// 置NestSheetCtl需要用到的formCode
 	request.setAttribute("formCode", formCode);
-	
+
 	FormMgr fm = new FormMgr();
 	FormDb fd = fm.getFormDb(formCode);
 	
@@ -109,12 +113,12 @@
 				<td align="center" class="tabStyle_1_title"><lt:Label res="res.flow.Flow" key="operate"/></td>
 			</tr>
 			<c:forEach items="${vAttach}" var="att" >
-			<tr id="trAtt${att.id}%>">
+			<tr id="trAtt${att.id}">
 				<td width="2%" height="31" align="center"><img src="../images/attach.gif"/></td>
 				<td width="51%" align="left">
 					&nbsp;
 					<span id="spanAttLink${att.id}">
-						<a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+						<a href="preview.do?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
 							<span id="spanAttName${att.id}">${att.name}</span>
 						</a>
 					</span>
@@ -128,7 +132,7 @@
 				<td width="11%" align="center">${att.fileSizeMb}M
 				</td>
 				<td width="11%" align="center">
-					<a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+					<a href="download.do?attachId=${att.id}&visitKey=${att.visitKey}" target="_blank">
 						<lt:Label res="res.flow.Flow" key="download"/>
 					</a>
 					&nbsp;&nbsp;
@@ -191,10 +195,8 @@
 	<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
 	<link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
 	<link href="../flowstyle.css" rel="stylesheet" type="text/css" />
+	<link href="../lte/css/font-awesome.min.css?v=4.4.0" rel="stylesheet"/>
 	<style>
-		.att_box {
-			margin-top:5px;
-		}
 		input,textarea,button {
 			outline:none;
 		}
@@ -213,10 +215,10 @@
 
 		select {
 			line-height: 27px;
-			height: 29px !important;
+			/*height: 29px !important;与bootstrap冲突*/
 			border: 1px solid #d4d4d4;
 		}
-		<%=msd.getCss(ConstUtil.PAGE_TYPE_EDIT)%>
+		<%=StrUtil.getNullStr(msd.getCss(ConstUtil.PAGE_TYPE_EDIT))%>
 	</style>
 	<script src="../inc/common.js"></script>
 	<script src="../inc/map.js"></script>
@@ -262,7 +264,7 @@
 <c:if test="${isShowNav==1}">
 	<%@ include file="module_inc_menu_top.jsp"%>
 	<script>
-		o("menu1").className="current";
+		$('#menu1').addClass('current');
 	</script>
 	<div class="spacerH"></div>
 </c:if>
@@ -356,7 +358,7 @@
 		$('#visualForm').showLoading();
 	}
 
-	function showResponse(responseText, statusText, xhr, $form)  {
+	function showResponse(responseText, statusText, xhr, $form) {
 		$('#visualForm').hideLoading();
 		var data = responseText;
 		if (!isJson(data)) {
@@ -392,7 +394,7 @@
 		<c:if test="${isHasAttachment}">
 		$.ajax({
 			type: "post",
-			url: "module_edit.jsp",
+			url: "moduleEditPage.do",
 			data: {
 				op: "refreshAttach",
 				id: "${id}",
@@ -459,7 +461,7 @@
 		});
 	}
 </script>
-<form action="update.do?id=${id}&code=${code}&isShowNav=${isShowNav}&parentId=${parentId}" method="post" enctype="multipart/form-data" id="visualForm" name="visualForm">
+<form action="update.do?id=${id}&code=${code}&isShowNav=${isShowNav}&parentId=${parentId}" class="form-inline" method="post" enctype="multipart/form-data" id="visualForm" name="visualForm">
 	<table style="margin-bottom:10px" width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
 		<tr>
 			<td align="center">
@@ -480,11 +482,11 @@
 			<td align="center" style="padding-top: 10px">
 				<input name="id" value="${id}" type="hidden" />
 				<c:if test="${fn:length(buttons)==0}">
-				<button id="btnOK" class="btn btn-default">确定</button>
+					<button id="btnOK" class="btn btn-default">确定</button>
+					&nbsp;&nbsp;
+					<button id="btnClose" class="btn btn-default">关闭</button>
+					&nbsp;&nbsp;
 				</c:if>
-                <%--&nbsp;&nbsp;
-                <button id="btnClose" class="btn btn-default">关闭</button>--%>
-
 				<c:forEach items="${buttons}" var="button">
 					<c:choose>
 						<c:when test="${button.event=='click'}">
@@ -520,6 +522,9 @@
 	// 不能放在$(function中，原来的tabStyle_8风格会闪现
 	// $(function() {
 	var $table = $('#visualForm').find('.tabStyle_8');
+	if ($table[0] == null) {
+		$table = $('#visualForm').find('.tabStyle_1');
+	}
 	$table.addClass('layui-table');
 	$table.removeClass('tabStyle_8');
 	// })
@@ -559,14 +564,25 @@
 		});
 
 		$('input').each(function() {
-			if ($(this).attr('kind')=='DATE') {
+			if ($(this).attr('kind')=='DATE' || $(this).attr('kind')=='DATE_TIME') {
 				$(this).attr('autocomplete', 'off');
 			}
 		});
 
-		// 初始化tip提示
+		var canUserData = <%=canUserData%>;
+
+		// 初始化tip提示及如果拥有数据权限，则去除只读
 		// 不能通过$("#visualForm").serialize()来获取所有的元素，因为radio或checkbox未被选中，则不会被包含
 		$('#visualForm input, #visualForm select, #visualForm textarea').each(function() {
+			if (canUserData) {
+				$(this).removeAttr('readonly');
+				$(this).attr('onchange', '');
+			}
+
+			if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && $(this).attr('type')!='hidden' && $(this).attr('type')!='file') {
+				$(this).addClass('form-control');
+			}
+
 			var tip = '';
 			if ($(this).attr('type') == 'radio') {
 				tip = $(this).parent().attr('tip');

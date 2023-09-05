@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=utf-8" %><%@page import="com.redmoon.oa.post.*"%><%@page import="com.redmoon.oa.stamp.*"%><%@page import="com.redmoon.oa.person.UserDb"%><%@page import="com.cloudwebsoft.framework.db.JdbcTemplate"%><%@page import="net.sf.json.*"%><%@page import="cn.js.fan.util.*"%><%@page import="com.redmoon.oa.pvg.Privilege"%><%@page import="com.redmoon.oa.person.UserDb"%><%@page import="com.redmoon.oa.dept.*"%><%@page import="java.util.*"%><%
+<%@ page contentType="text/html;charset=utf-8" %><%@page import="com.redmoon.oa.post.*"%><%@page import="com.redmoon.oa.stamp.*"%><%@page import="com.redmoon.oa.person.UserDb"%><%@page import="com.cloudwebsoft.framework.db.JdbcTemplate"%><%@page import="org.json.*"%><%@page import="cn.js.fan.util.*"%><%@page import="com.redmoon.oa.pvg.Privilege"%><%@page import="com.redmoon.oa.person.UserDb"%><%@page import="com.redmoon.oa.dept.*"%><%@page import="java.util.*"%><%
 String op = ParamUtil.get(request, "op");
 boolean re = false;
 JSONObject json = new JSONObject();
@@ -24,7 +24,7 @@ if (op.equals("getstamp")) {
 		StampLogDb sld = new StampLogDb();
 		sld.create(new com.cloudwebsoft.framework.db.JdbcTemplate(), new Object[]{new Long(com.redmoon.oa.db.SequenceManager.nextID(com.redmoon.oa.db.SequenceManager.OA_STAMP_LOG)),userDb.getName(),new Integer(stampId),new java.util.Date(),StrUtil.getIp(request)});
 		json.put("ret",0);
-		String link = sd.getImageUrl(request);
+		String link = sd.getImageUrl();
 		json.put("link",link);
 		out.print(json.toString());
 		return;

@@ -18,7 +18,7 @@ import java.util.Scanner;
 
 /**
  * <p>
- * 代码生成器演示
+ * 代码生成
  * </p>
  */
 public class MpGenerator {
@@ -26,7 +26,6 @@ public class MpGenerator {
         Scanner scanner = new Scanner(System.in);
         StringBuilder help = new StringBuilder();
         help.append("请输入" + tip + "：");
-        System.out.println(help.toString());
         if (scanner.hasNext()) {
             String ipt = scanner.next();
             if (StringUtils.isNotEmpty(ipt)) {
@@ -45,7 +44,7 @@ public class MpGenerator {
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
         gc.setAuthor("fgf");
-        gc.setOutputDir("D:/oa_git_local/src/main/java");
+        gc.setOutputDir("D:/mp_src/main/java");
         // gc.setOutputDir("D:/workspace/src/main/java");
         gc.setFileOverride(false);// 是否覆盖同名文件，默认是false
         gc.setActiveRecord(true);// 不需要ActiveRecord特性的请改为false
@@ -67,7 +66,6 @@ public class MpGenerator {
             // 自定义数据库表字段类型转换【可选】
             @Override
             public DbColumnType processTypeConvert(String fieldType) {
-                System.out.println("转换类型：" + fieldType);
                 // 注意！！processTypeConvert 存在默认类型转换，如果不是你要的效果请自定义返回、非如下直接返回。
                 return super.processTypeConvert(fieldType);
             }
@@ -75,7 +73,7 @@ public class MpGenerator {
         dsc.setDriverName("com.mysql.cj.jdbc.Driver");
         dsc.setUsername("root");
         dsc.setPassword("myoa888");
-        dsc.setUrl("jdbc:mysql://localhost:3311/redmoonoa?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=CONVERT_TO_NULL&useSSL=false&serverTimezone=Asia/Shanghai");
+        dsc.setUrl("jdbc:mysql://localhost:3311/redmoonoa8?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai");
         mpg.setDataSource(dsc);
 
         // 策略配置

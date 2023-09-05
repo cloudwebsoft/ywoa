@@ -73,7 +73,7 @@ function init(){
 	//创建新文档
 	//TANGER_OCX.CreateNew("Word.Document");
 	
-	var url = "../flow_getfile.jsp?attachId=<%=file_id%>&flowId=<%=flowId%>";
+	var url = "../flow/download.do?attachId=<%=file_id%>&flowId=<%=flowId%>";
 
 	if (<%=ext.equals("xls") || ext.equals("xlsx")%>) {
 		TANGER_OCX.OpenFromURL(url, false, "excel.sheet");
@@ -279,7 +279,7 @@ function AddSignFromURL(URL) {
 
 function AddPictureFromURL(URL) {
 	try {
-		URL = '<%=request.getContextPath()%>/img_show.jsp?path=' + URL;
+		URL = '<%=request.getContextPath()%>/showImg.do?path=' + URL;
 		TANGER_OCX.AddPicFromURL(
 				URL,//URL 注意；URL必须返回Word支持的图片类型。
 				true,//是否浮动图片

@@ -128,14 +128,10 @@ while (ri.hasNext()) {
 }
 groups += "</ul>";
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
-<meta http-equiv="pragma" content="no-cache" />
-<meta http-equiv="Cache-Control" content="no-cache,must-revalidate" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta http-equiv="X-UA-Compatible" content="IE=8" />
-<META HTTP-EQUIV="expires" CONTENT= "Wed, 26 Feb 1997 08:21:57 GMT" />
 <title><lt:Label res='res.flow.Flow' key='selectUser'/></title>
 <script type="text/javascript" src="<%=path %>/inc/common.js"></script>
 <script type="text/javascript" src="<%=path %>/js/jquery.my.js"></script>
@@ -149,10 +145,10 @@ groups += "</ul>";
 <link type="text/css" rel="stylesheet" href="<%=path %>/js/jstree/themes/default/style.css" />
 <link type="text/css" rel="stylesheet" href="<%=path %>/js/msdropdown/dd.css" />
 <style>
-html {
-	/*缩放，以使chrome不会错乱*/
+/*html {
+	!*缩放，以使chrome不会错乱*!
 	zoom: 90%
-}
+}*/
 .ui-widget-header {
 	color: #1c94c4;
 	border: 1px solid #d7d7d7;

@@ -5,16 +5,12 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
 
 import cn.js.fan.util.ErrMsgException;
-import cn.js.fan.util.StrUtil;
-
 import com.redmoon.kit.util.FileUpload;
 import com.redmoon.oa.flow.MyActionDb;
 import com.redmoon.oa.flow.WorkflowActionDb;
 import com.redmoon.oa.flow.WorkflowDb;
-import com.redmoon.oa.person.UserDb;
 
 public class OnlySelectOne implements IStrategy {
 	private int x;

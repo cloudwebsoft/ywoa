@@ -2,8 +2,9 @@ package com.cloudweb.oa.utils;
 
 import cn.js.fan.cache.jcs.RMCache;
 import com.cloudwebsoft.framework.base.IThreadContext;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -37,9 +38,10 @@ public class ThreadContext implements IThreadContext {
 
     public static final String IS_ABNORMAL = "isAbnormal";
 
-    private static ThreadLocal<Map> local = new ThreadLocal<Map>();
+    public static final String THREAD_CACHE_KEYS = "threadCacheKeys";
 
-    private List<CacheKey> cacheKeys = new ArrayList();
+    private static ThreadLocal<Map> local = new ThreadLocal<>();
+
 
     // 获取数据库连接
     public Map get() {
@@ -53,20 +55,15 @@ public class ThreadContext implements IThreadContext {
     @Override
     public void addCacheKey(Object key) {
         if (isSceneFlow()) {
-            cacheKeys.add(new CacheKey(key));
+            getCachedKeys().add(new CacheKey(key));
         }
     }
 
     @Override
     public void addCacheKey(Object key, Object groupName) {
         if (isSceneFlow()) {
-            cacheKeys.add(new CacheKey(key, groupName));
+            getCachedKeys().add(new CacheKey(key, groupName));
         }
-    }
-
-    @Override
-    public List<CacheKey> getCachedKeys() {
-        return cacheKeys;
     }
 
     public void setScene(String scene) {
@@ -159,10 +156,28 @@ public class ThreadContext implements IThreadContext {
     }
 
     @Override
+    public List<CacheKey> getCachedKeys() {
+        Map map = local.get();
+        if (map==null) {
+            return null;
+        }
+        List<CacheKey> list = (List<CacheKey>)map.get(THREAD_CACHE_KEYS);
+        if (list == null) {
+            List<CacheKey> cacheKeyList = new ArrayList<>();
+            map.put(THREAD_CACHE_KEYS, cacheKeyList);
+            return cacheKeyList;
+        }
+        else {
+            return list;
+        }
+    }
+
+    @Override
     public void remove() {
         // 如果中间有异常，则清缓存
         if (isAbnormal()) {
             try {
+                List<CacheKey> cacheKeys = getCachedKeys();
                 for (CacheKey cacheKey : cacheKeys) {
                     if (cacheKey.isGroup()) {
                         RMCache.getInstance().remove(cacheKey.getKey(), (String) cacheKey.getGroupName());
@@ -171,7 +186,7 @@ public class ThreadContext implements IThreadContext {
                     }
                 }
             } catch (CacheException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         local.remove();

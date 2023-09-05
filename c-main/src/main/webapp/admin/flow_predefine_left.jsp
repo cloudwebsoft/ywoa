@@ -5,6 +5,8 @@
 <%@ page import="com.redmoon.oa.ui.*" %>
 <%@ page import="org.json.JSONObject" %>
 <%@ page import="java.util.*" %>
+<%@ page import="com.cloudweb.oa.config.JwtProperties" %>
+<%@ page import="com.cloudweb.oa.utils.SpringUtil" %>
 <%
     Directory dir = new Directory();
     com.redmoon.oa.pvg.Privilege privilege = new com.redmoon.oa.pvg.Privilege();
@@ -13,6 +15,10 @@
 
     String toa = ParamUtil.get(request, "toa");
     String msg = ParamUtil.get(request, "msg");
+    // 用于前端集成
+    JwtProperties jwtProperties = SpringUtil.getBean(JwtProperties.class);
+    String header = jwtProperties.getHeader();
+    String headerVal = ParamUtil.get(request, header);
 %>
 <!DOCTYPE html>
 <html>
@@ -61,7 +67,7 @@
                     $("#flowType").on("select2:select", function(e){
                         var id = e.params.data.id;
                         // var text= e.params.data.text;
-                        window.open("flow_predefine_list.jsp?dirCode=" + id, "flowPredefineMainFrame");
+                        window.open("flow_predefine_list.jsp?<%=header%>=<%=headerVal%>&dirCode=" + id, "flowPredefineMainFrame");
 
                         myjsTree.jstree("deselect_all", true);
                         // id是选中的节点id，参数 true表示的是不触发默认select_node.change的事件
@@ -93,8 +99,8 @@
                         } else {
             %>
             <script>
-                window.parent.flowPredefineMainFrame.location.href = "flow_predefine_list.jsp?dirCode=<%=StrUtil.UrlEncode(dir.getDirCode())%>";
-                window.location.href = "flow_predefine_left.jsp?toa=ok";
+                window.parent.flowPredefineMainFrame.location.href = "flow_predefine_list.jsp?<%=header%>=<%=headerVal%>&dirCode=<%=StrUtil.UrlEncode(dir.getDirCode())%>";
+                window.location.href = "flow_predefine_left.jsp?<%=header%>=<%=headerVal%>&toa=ok";
                 $.toaster({priority: 'info', message: "操作成功！"});
             </script>
             <%
@@ -104,8 +110,8 @@
             } catch (ErrMsgException e) {
             %>
             <script>
-                window.parent.flowPredefineMainFrame.location.href = "flow_predefine_list.jsp?dirCode=<%=StrUtil.UrlEncode(dir.getDirCode())%>";
-                window.location.href = "flow_predefine_left.jsp?toa=ok&msg=<%=StrUtil.UrlEncode(e.getMessage())%>";
+                window.parent.flowPredefineMainFrame.location.href = "flow_predefine_list.jsp?<%=header%>=<%=headerVal%>&dirCode=<%=StrUtil.UrlEncode(dir.getDirCode())%>";
+                window.location.href = "flow_predefine_left.jsp?toa=ok&<%=header%>=<%=headerVal%>&msg=<%=StrUtil.UrlEncode(e.getMessage())%>";
             </script>
             <%
                     //out.print(StrUtil.jAlert_Back(e.getMessage(),"提示"));
@@ -121,6 +127,11 @@
 </table>
 </body>
 <script>
+    var isDraggable = true;
+    function setDraggable(draggable) {
+        isDraggable = draggable;
+    }
+
     $(document).ready(function () {
         var listCode = new Array();
         var i = 0;
@@ -142,18 +153,18 @@
                 },
                 "check_callback": true,
             },
-            "ui": {"initially_select": ["root"]},
-            <%
-            License lic = License.getInstance();
-            if (lic.isPlatformSrc()) {
-            %>
+            // "ui": {"initially_select": ["root"]},
             "plugins": ["wholerow", "dnd", "themes", "ui", "contextmenu", "types", "state"],
-            <%
-            }
-            else {
-            %>
-            "plugins": ["wholerow", "dnd", "themes", "ui", "types", "state"],
-            <%}%>
+            "dnd": {    // 拖放插件配置
+                drag_selection: false,
+                is_draggable : function () {
+                    var tmp = isDraggable; // return false后，chrome中点击右侧页面打开addTab，再回到本页有效了
+                    if (!isDraggable) {
+                        isDraggable = true;
+                    }
+                    return tmp;
+                }
+            },
             "contextmenu": {	//绑定右击事件
                 "items": {
                     "create": {
@@ -164,7 +175,7 @@
                             node = inst.get_node(data.reference);
                             selectNodeId = node.id;
                             selectNodeName = node.text;
-                            window.parent.flowPredefineMainFrame.location.href = "flow_predefine_dir.jsp?parent_code=" + selectNodeId + "&op=AddChild";
+                            window.parent.flowPredefineMainFrame.location.href = "flow_predefine_dir.jsp?parent_code=" + selectNodeId + "&<%=header%>=<%=headerVal%>&op=AddChild";
                         }
                     },
                     "modify": {
@@ -175,7 +186,7 @@
                             node = inst.get_node(data.reference);
                             selectNodeId = node.id;
                             selectNodeName = node.text;
-                            window.parent.flowPredefineMainFrame.location.href = "flow_predefine_dir.jsp?op=modify&code=" + selectNodeId;
+                            window.parent.flowPredefineMainFrame.location.href = "flow_predefine_dir.jsp?op=modify&<%=header%>=<%=headerVal%>&code=" + selectNodeId;
                         }
                     },
                     "remove": {
@@ -255,8 +266,9 @@
             for (var i = 0; i < listCode.length; i++) {
                 $("#" + listCode[i] + " a").first().css("color", "#999");
             }
-
-            window.open("flow_predefine_list.jsp?dirCode=" + data.node.id, "flowPredefineMainFrame");
+            // 如果允许”多窗口“，则在chrome下会在别的选项卡下的flowPredefineMainFrame中打开
+            // window.open("flow_predefine_list.jsp?dirCode=" + data.node.id, "flowPredefineMainFrame");
+            window.parent.flowPredefineMainFrame.location.href = "flow_predefine_list.jsp?<%=header%>=<%=headerVal%>&dirCode=" + data.node.id;
         })/*.bind('click.jstree', function (e, data) {    // 绑定选中事件，此段代码与select_node.jstree效果一样，也可用
             for (var i = 0; i < listCode.length; i++) {
                 $("#" + listCode[i] + " a").first().css("color", "#999");
@@ -305,7 +317,7 @@
                 }
             });
         }).bind('ready.jstree', function () {
-            myjsTree.jstree("deselect_all");
+            // myjsTree.jstree("deselect_all");
 
             <%
             String flowTypeCode = ParamUtil.get(request, "flowTypeCode");
@@ -316,7 +328,7 @@
             <%
             } else {
             %>
-            myjsTree.jstree("select_node", "<%=Leaf.CODE_ROOT%>");
+            // myjsTree.jstree("select_node", "<%=Leaf.CODE_ROOT%>");
             <%
             }
             %>

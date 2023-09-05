@@ -22,9 +22,9 @@ public class ExchangeRateCtl extends AbstractMacroCtl {
            super();
     }
 
+    @Override
     public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
        String defaultValue = ff.getDefaultValue();
-       // System.out.println(getClass()+defaultValue);
        String[] ary = StrUtil.split(defaultValue, ",");
        String str = "";
        String moneyTypeField = "",  moneyValueField= "";

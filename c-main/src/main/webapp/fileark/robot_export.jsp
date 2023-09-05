@@ -5,12 +5,11 @@
 <%@ page import="com.redmoon.oa.fileark.*"%>
 <%@ page import="com.redmoon.oa.fileark.robot.*"%>
 <%@ page import = "com.redmoon.oa.ui.*"%>
-<%@ taglib uri="/WEB-INF/tlds/LabelTag.tld" prefix="lt" %>
 <%
 int id = ParamUtil.getInt(request, "id");
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <TITLE>Robot export</TITLE>
 <META http-equiv=Content-Type content="text/html; charset=utf-8">
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
@@ -37,7 +36,7 @@ function findObj(theObj, theDoc)
 }
 
 function SelectDateTime(objName) {
-	var dt = showModalDialog("../util/calendar/time.jsp", "" ,"dialogWidth:266px;dialogHeight:125px;status:no;help:no;");
+	var dt = openWin("../util/calendar/time.jsp", 226, 125);
 	if (dt!=null)
 		findObj(objName).value = dt;
 }

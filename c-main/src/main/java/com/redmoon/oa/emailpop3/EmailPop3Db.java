@@ -6,6 +6,7 @@ import java.util.*;
 import cn.js.fan.base.*;
 import cn.js.fan.db.*;
 import cn.js.fan.util.*;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.db.SequenceManager;
 
 /**
@@ -54,7 +55,7 @@ public class EmailPop3Db extends ObjectDb {
                 return getEmailPop3Db(id);
             }
         } catch (SQLException e) {
-            logger.error("loadByUserEmail: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("loadByUserEmail: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -106,7 +107,7 @@ public class EmailPop3Db extends ObjectDb {
                 return (EmailPop3Db)ir.next();
             }
         } catch (ErrMsgException ex) {
-            ex.printStackTrace();
+            LogUtil.getLog(getClass()).error(ex);
         }
 
         return null;
@@ -137,7 +138,7 @@ public class EmailPop3Db extends ObjectDb {
             }
         }
         catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
             throw new ErrMsgException("数据库操作失败！");
         }
         finally {
@@ -174,7 +175,7 @@ public class EmailPop3Db extends ObjectDb {
                 mmd.delOfSender(email);
             }
         } catch (SQLException e) {
-            logger.error("del: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("del: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -228,7 +229,7 @@ public class EmailPop3Db extends ObjectDb {
                 primaryKey.setValue(new Integer(id));
             }
         } catch (SQLException e) {
-            logger.error("load: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("load: " + e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -276,7 +277,7 @@ public class EmailPop3Db extends ObjectDb {
                  rc.refreshSave(primaryKey);
              }
          } catch (SQLException e) {
-             logger.error("save: " + e.getMessage());
+             LogUtil.getLog(getClass()).error("save: " + e.getMessage());
          } finally {
              if (conn != null) {
                  conn.close();
@@ -303,7 +304,7 @@ public class EmailPop3Db extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -313,6 +314,7 @@ public class EmailPop3Db extends ObjectDb {
         return result;
     }
 
+    @Override
     public ListResult listResult(String listsql, int curPage, int pageSize) throws
             ErrMsgException {
         int total = 0;
@@ -354,7 +356,7 @@ public class EmailPop3Db extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("数据库出错！");
         } finally {
             if (rs != null) {

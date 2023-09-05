@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import cn.js.fan.db.ResultIterator;
 
 import com.cloudwebsoft.framework.db.JdbcTemplate;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class PaperMgr {
 
@@ -24,8 +25,7 @@ public class PaperMgr {
 			if (ri.hasNext())
 				return true;			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(PaperMgr.class).error(e);
 		}
 
 		return false;

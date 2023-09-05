@@ -2,6 +2,7 @@ package cn.js.fan.db;
 
 import java.io.Serializable;
 import cn.js.fan.util.DateUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 
 public class KeyUnit implements Serializable,Cloneable {
     /**
@@ -48,7 +49,7 @@ public class KeyUnit implements Serializable,Cloneable {
         try {
             o = (KeyUnit)super.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return o;
     }

@@ -7,8 +7,6 @@ import java.util.Date;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
-
 import cn.js.fan.db.ResultIterator;
 import cn.js.fan.db.ResultRecord;
 import cn.js.fan.util.ErrMsgException;
@@ -81,8 +79,7 @@ public class NoticeReplyMgr {
 				return true;
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     	return false;
     }
@@ -110,7 +107,7 @@ public class NoticeReplyMgr {
 			}
 		} catch (SQLException e) {
 			flag = false;
-			Logger.getLogger(NoticeReplyMgr.class).error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 		}
 		return flag;
     }
@@ -118,10 +115,9 @@ public class NoticeReplyMgr {
     	String sql = "delete from oa_notice_reply where notice_id=?";
     	JdbcTemplate jt = new JdbcTemplate();
     	try {
-			return jt.executeUpdate(sql, new Object[]{noticeId})>0?true:false;
+			return jt.executeUpdate(sql, new Object[]{noticeId}) > 0;
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     	return false;
     }
@@ -148,8 +144,7 @@ public class NoticeReplyMgr {
 				}
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
+			LogUtil.getLog(getClass()).error(e);
 		}
     	return userStr;
     }

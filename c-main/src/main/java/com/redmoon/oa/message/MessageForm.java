@@ -5,6 +5,8 @@ import cn.js.fan.util.ErrMsgException;
 import javax.servlet.http.HttpServletRequest;
 import cn.js.fan.util.ParamUtil;
 import cn.js.fan.db.SQLFilter;
+import com.cloudwebsoft.framework.util.IPUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileUpload;
 import java.io.IOException;
 import javax.servlet.ServletContext;
@@ -51,13 +53,13 @@ public class MessageForm extends AbstractForm {
                                           fileUpload.getErrMessage());
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
         }
         return fileUpload;
     }
 
     public String chkIp() {
-        md.ip = request.getRemoteAddr();
+        md.ip = IPUtil.getRemoteAddr(request);
         return md.ip;
     }
 
@@ -142,7 +144,7 @@ public class MessageForm extends AbstractForm {
     }
 
     public String checkIp() {
-        String ip = request.getRemoteAddr();
+        String ip = IPUtil.getRemoteAddr(request);
         md.ip = ip;
         return ip;
     }

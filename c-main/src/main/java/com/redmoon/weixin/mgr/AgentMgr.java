@@ -114,7 +114,7 @@ public class AgentMgr {
             } else {
                 String logo = cfg.getAgentAttr(agentId, "logo");
                 // 如果媒体文件未上传，则不能设置应用信息，因为logo_mediaid在获取应用时取不到
-                if (logo.equals("")) {
+                if ("".equals(logo)) {
                     json.put("ret", 0);
                     json.put("msg", "请上传应用LOGO");
                 } else {
@@ -142,7 +142,7 @@ public class AgentMgr {
                 }
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            LogUtil.getLog(AgentMgr.class).error(e);
         }
         cfg.reload();
         return json.toString();
@@ -167,10 +167,8 @@ public class AgentMgr {
             //此处参数类似 curl -F media=@test.jpg
             post.addParameter("media", file);
             return post.send();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.getLog(AgentMgr.class).error(e);
         }
 
         return "";

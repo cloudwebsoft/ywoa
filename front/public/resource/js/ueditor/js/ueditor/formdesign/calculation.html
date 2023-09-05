@@ -1,0 +1,316 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>计算控件</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" >
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="leipi.style.css">
+    <script type="text/javascript" src="../dialogs/internal.js"></script>
+    <script type="text/javascript">
+/* Thank you by  
+http://www.alt-tag.com/blog/2006/02/ie-dom-bugs/ */
+function createElement(type, name)
+{     
+    var element = null;     
+    try {        
+        element = document.createElement('<'+type+' name="'+name+'">');     
+    } catch (e) {}   
+    if(element==null) {     
+        element = document.createElement(type);     
+        element.name = name;     
+    } 
+    return element;     
+}
+function getContextPath(){ 
+ var pathName = document.location.pathname; 
+ var index = pathName.substr(1).indexOf("/"); 
+ var result = pathName.substr(0,index+1); 
+ return result; 
+ } 
+
+    </script>
+</head>
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+     <tr>
+       <th><span>控件字段&nbsp;<span class="label label-important">*</span></span></th>
+       <th><span>控件名称&nbsp;</span><span class="label label-important">*</span></th>
+     </tr>
+     <tr>
+       <th><input type="text" id="orgname" placeholder="必填项"></th>
+       <th><input type="text" id="orgtitle" placeholder="必填项"></th>
+     </tr>
+     <tr>
+        <th><span>算式&nbsp;<span class="label label-important">*</span></span></th>
+        <th><span>数据类型</span> </th>
+    </tr>
+    <tr>
+        <td>
+        	<input type="text" id="orgFormula" placeholder="必填项">
+        </td>
+        <td>
+        	双精度型
+        </td>
+    </tr>
+     <tr>
+        <th><span>小数点后位数</span></th>
+        <th><span>四舍五入</span> </th>
+    </tr>
+    <tr>
+        <td>
+        	<input type="text" id="orgDigit" value="2">
+        </td>
+        <td>
+        	<input id="isRoundTo5" name="isRoundTo5" type="checkbox" value="0"/>
+        </td>
+    </tr>
+    <tr style="display:none">
+         <th><span>必填项</span></th>
+        <th><span>长度/大小</span> </th>
+    </tr>
+    <tr style="display:none">
+        <td>
+            <input id="canNull" name="canNull" type="checkbox" value="0" checked />   
+        </td>
+        <td>
+    <select id="minT" name="minT" style="width:60px">
+        <option value="d=">>=</option>
+        <option value="d">></option>
+        <option value="=">=</option>
+        </select>
+        <input id="minV" name="minV" type="text" style="width:40px">
+        <select id="maxT" name="maxT" style="width:60px">
+          <option value="x="><=</option>
+          <option value="x"><</option>
+        </select>
+	<input id="maxV" name="maxV" type="text" style="width:40px">      
+      
+            <select id="orgalign" style="display:none">
+                <option value="left" >左对齐</option>
+                <option value="center">居中对齐</option>
+                <option value="right">右对齐</option>
+            </select>
+        </td>
+    </tr>
+    <tr style="display:none">
+        <th><span>&nbsp;&nbsp;&nbsp;&nbsp;长&nbsp;&nbsp;X&nbsp;&nbsp;宽&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;字体大小</span> </th>
+        <th><span>可见性</span> </th>
+    </tr>
+    <tr style="display:none">
+        <td>
+            <input id="orgwidth" type="text" value="90" class="input-small span1" placeholder="auto"/>
+            X
+            <input id="orgheight" type="text" value="" class="input-small span1" placeholder="auto"/>
+            &
+            <input id="orgfontsize" type="text"  value="" class="input-small span1" placeholder="auto"/> px
+
+        </td>
+        <td>
+            <label class="checkbox inline"><input id="orghide" type="checkbox"/> 隐藏 </label>
+        </td>
+    </tr>
+
+    </table>
+</div>
+<script type="text/javascript">
+var oNode = null,thePlugins = 'calculation';
+window.onload = function() {
+    if( UE.plugins[thePlugins].editdom ){
+        oNode = UE.plugins[thePlugins].editdom;
+		
+		var gValue=oNode.getAttribute('value');
+		var gFormula = oNode.getAttribute('formula');
+		if (gValue)
+			gValue = gValue.replace(/&quot;/g,"\"");
+		if (gFormula)
+			gFormula = gFormula.replace(/&quot;/g,"\"");
+		var gName=oNode.getAttribute('name').replace(/&quot;/g,"\"");
+		var gTitle=oNode.getAttribute('title').replace(/&quot;/g,"\"");
+		var gHidden=oNode.getAttribute('orghide');
+		var gFontSize=oNode.getAttribute('orgfontsize');
+		var gAlign=oNode.getAttribute('orgalign');
+		var gWidth=oNode.getAttribute('orgwidth');
+		var gHeight=oNode.getAttribute('orgheight');
+		
+		var gCanNull = oNode.getAttribute("canNull");
+		var gMinT = oNode.getAttribute("minT");
+		var gMinV = oNode.getAttribute("minV");
+		var gMaxT = oNode.getAttribute("maxT");
+		var gMaxV = oNode.getAttribute("maxV");
+		var gDigit = oNode.getAttribute("digit");
+		var gRoundTo5 = oNode.getAttribute("isRoundTo5");
+		
+		
+		gValue = gValue==null ? '' : gValue;
+        gTitle = gTitle==null ? '' : gTitle;
+        gFormula = gFormula==null ? '' : gFormula;
+        $G('orgname').value = gName;
+        $G('orgtitle').value = gTitle;
+        $G('orgFormula').value=gFormula;
+        if (gHidden == '1') {
+            $G('orghide').checked = true;
+        }
+        $G('orgname').setAttribute("readonly", true);
+        $G('orgfontsize').value = gFontSize;
+        $G('orgwidth').value = gWidth;
+        $G('orgheight').value = gHeight;
+        $G('orgalign').value = gAlign;
+        $G('orgDigit').value = gDigit;
+        if (gRoundTo5 == 1){
+        	$G('isRoundTo5').checked = true;
+        }
+        if (gCanNull == 0)
+        {
+        	 $G('canNull').checked = true;
+        }
+        else{
+        	 $G('canNull').checked = false;
+        }
+    }
+}
+dialog.oncancel = function () {
+    if( UE.plugins[thePlugins].editdom ) {
+        delete UE.plugins[thePlugins].editdom;
+    }
+};
+dialog.onok = function (){
+    var gName=$G('orgname').value.replace(/\"/g,"&quot;");
+    if(gName==''){
+        alert('请输入控件字段');
+        return false;
+    }
+	var gTitle=$G('orgtitle').value.replace(/\"/g,"&quot;");
+    if(gTitle==''){
+        alert('请输入控件名称');
+        return false;
+    }
+    var gFormula = $G('orgFormula').value.replace(/\"/g,"&quot;");
+	 if(gFormula==''){
+        alert('请输入控件算式');
+        return false;
+    }
+    
+	var gFontSize=$G('orgfontsize').value;
+	var gAlign=$G('orgalign').value;
+	var gWidth=$G('orgwidth').value;
+	var gHeight=$G('orgheight').value;
+
+	var gCanNull = $G('canNull').checked?0:1;
+	var gMinT=$G('minT').value;
+	var gMinV=$G('minV').value;
+	var gMaxT=$G('maxT').value;
+	var gMaxV=$G('maxV').value;
+	var gDigit = $G('orgDigit').value;
+	var gRoundTo5 = $G('isRoundTo5').checked?1:0;
+	
+    
+    if( !oNode ) {
+        try {
+        	debugger;
+            oNode = createElement('input', gName);
+            oNode.setAttribute('title',gTitle);
+            oNode.setAttribute('value',gFormula);
+            oNode.setAttribute('cwsPlugins',thePlugins);
+            if ( $G('orghide').checked ) {
+                oNode.setAttribute('orghide',1);
+            } else {
+                oNode.setAttribute('orghide',0);
+            }
+            if( gFontSize != '' ) {
+                //style += 'font-size:' + gFontSize + 'px;';
+                oNode.setAttribute('orgfontsize',gFontSize );
+            }
+            if( gAlign != '' ) {
+                //style += 'text-align:' + gAlign + ';';
+                oNode.setAttribute('orgalign',gAlign );
+            }
+            if( gWidth != '' ) {
+                oNode.style.width = gWidth+ 'px';
+                //style += 'width:' + gWidth + 'px;';
+                oNode.setAttribute('orgwidth',gWidth );
+            }
+            if( gHeight != '' ) {
+                oNode.style.height = gHeight+ 'px';
+                //style += 'height:' + gHeight + 'px;';
+                oNode.setAttribute('orgheight',gHeight );
+            }
+			
+			
+			oNode.setAttribute("canNull", gCanNull);
+			oNode.setAttribute("minT", gMinT);
+			oNode.setAttribute("minV", gMinV);
+			oNode.setAttribute("maxT", gMaxT);
+			oNode.setAttribute("maxV", gMaxV);
+			oNode.setAttribute("formula", gFormula);
+			oNode.setAttribute("kind", "CALCULATOR");
+			oNode.setAttribute("fieldtype", "6");
+			oNode.setAttribute("digit", gDigit);
+			oNode.setAttribute("isRoundTo5", gRoundTo5);
+				
+	        editor.execCommand('insertHtml',oNode.outerHTML);
+           
+        } catch (e) {
+            try {
+                editor.execCommand('error');
+            } catch ( e ) {
+                alert('控件异常！');
+            }
+            
+            return false;
+        }
+    } else {
+    	oNode.setAttribute('name', gName);
+        oNode.setAttribute('title', gTitle);
+        //oNode.setAttribute('value', $G('orgvalue').value);
+        if( $G('orghide').checked ) {
+            oNode.setAttribute('orghide', 1);
+        } else {
+            oNode.setAttribute('orghide', 0);
+        }
+        if( gFontSize != '' ) {
+            //oNode.style.fontSize = gFontSize+ 'px';
+            oNode.setAttribute('orgfontsize',gFontSize );
+        }else{
+            //oNode.style.fontSize = '';
+            oNode.setAttribute('orgfontsize', '');
+        }
+        if( gAlign != '' ) {
+            oNode.setAttribute('orgalign',gAlign );
+        }else{
+            oNode.setAttribute('orgalign', '');
+        }
+        if( gWidth != '' ) {
+            //oNode.style.width = gWidth+ 'px';
+            oNode.setAttribute('orgwidth',gWidth );
+        }else{
+            //oNode.style.width = '';
+            oNode.setAttribute('orgwidth', '');
+        }
+        if( gHeight != '' ) {
+            //oNode.style.height = gHeight+ 'px';
+            oNode.setAttribute('orgheight',gHeight );
+        }else{
+            //oNode.style.height = '';
+            oNode.setAttribute('orgheight', '');
+        }
+		
+        oNode.setAttribute("value", gFormula);
+		oNode.setAttribute("formula", gFormula);
+		oNode.setAttribute("digit", gDigit);
+		oNode.setAttribute("isRoundTo5", gRoundTo5);
+		
+        delete UE.plugins[thePlugins].editdom;
+    }
+};
+
+</script>
+</body>
+</html>

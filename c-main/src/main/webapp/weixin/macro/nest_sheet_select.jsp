@@ -21,13 +21,11 @@
 		<link rel="stylesheet" href="../css/mui.css">
 		<link rel="stylesheet" href="../css/my_dialog.css" />
 	</head>
-
 	<body>
 		<header class="mui-bar mui-bar-nav">
 		<h1 class="mui-title">
 			明细表
 		</h1>
-
 		</header>
 		<div class="mui-content" id="op_con">
 		</div>
@@ -46,8 +44,7 @@
 		<script src="../js/macro/open_window_macro.js"></script>
 		<script type="text/javascript" src="../js/mui.js"></script>
 		<script type="text/javascript" src="../js/mui.pullToRefresh.js"></script>
-		<script type="text/javascript"
-			src="../js/mui.pullToRefresh.material.js"></script>
+		<script type="text/javascript" src="../js/mui.pullToRefresh.material.js"></script>
 		<script type="text/javascript" src="../js/config.js"></script>
 		<script src="../js/mui.module_list_sel.js"></script>
 		<script src="../js/jq_mydialog.js"></script>
@@ -90,8 +87,7 @@
 
 			boolean isEditable = ParamUtil.getBoolean(request, "isEditable", false);
 			int isWx = ParamUtil.getInt(request, "isWx", 0);
-			if ("".equals(parentCode) && !"0".equals(flowId)
-					&& !"-1".equals(flowId)) {
+			if ("".equals(parentCode) && !"0".equals(flowId) && !"-1".equals(flowId)) {
 				WorkflowDb wf = new WorkflowDb();
 				int fId = StrUtil.toInt(flowId);
 				wf = wf.getWorkflowDb(fId);
@@ -113,9 +109,8 @@
 					+ parentModuleCode + "&cwsId=" + cwsId + "&skey=" + skey
 					+ "&code=" + fieldCode + "&flowId=" + flowId + "&actionId="
 					+ actionId + "&dFormCode=" + dFormCode + "&sFormCode="
-					+ sFormCode + "&parentCode=" + parentCode + "&isEditable="
-					+ isEditable + "&parentFields="
-					+ StrUtil.UrlEncode(parentFields)
+					+ sFormCode + "&parentCode=" + parentCode + "&isEditable=" + isEditable
+					// + "&parentFields=" + StrUtil.UrlEncode(parentFields)
 					+ "&parentId=" + cwsId
 					+ "&cwsId=" + cwsId;
 			// System.out.println(getClass() + " parentFields=" + parentFields);
@@ -131,14 +126,30 @@
 				"isEditable":<%=isEditable%>,
 				"parentModuleCode":"<%=parentModuleCode%>",
 				"cwsId":<%=cwsId%>,
-				"pageType":"<%=pageType%>"
-							
+				"pageType":"<%=pageType%>",
+				"parentFields":'<%=parentFields%>' // parentFields中含有双引号
 			 };
 			// console.log("urlParams=<%=urlParams%>");
-			var options = {"isWx":<%=isWx%>,"ulContainer":"#ul_nest_sheet_select","ajax_params":params,"url":"../../public/android/nest_sheet_view.jsp","ajaxDatasType":LIST_TYPE.NEST_SHEET_SELECT,"urlParams":'<%=urlParams%>'};
+			var options = {
+				"isWx":<%=isWx%>,
+				"ulContainer": "#ul_nest_sheet_select",
+				"ajax_params": params,
+				"url": AJAX_REQUEST_URL.NEST_SHEET_LIST,
+				"ajaxDatasType": LIST_TYPE.NEST_SHEET_SELECT,
+				"urlParams": '<%=urlParams%>'
+			};
 			// console.log(options);
 			var content = document.querySelector('.mui-content');
-			if(mui.os.plus) {
+
+			// 使mui-scroll-wrapper可以滚动
+			mui('.mui-scroll-wrapper').scroll({
+				bounce: true, // 是否启用回弹
+				indicators: true, //是否显示滚动条
+				deceleration: 0.0006 //阻尼系数,系数越小滑动越灵敏，默认0.0006
+			});
+
+			/*if(mui.os.plus) {
+				// 该事件在鸿蒙中无效
 				document.addEventListener('plusready', function() {
 					var PullToRefrshListApi = new mui.PullToRefrshList(content,options);
 					PullToRefrshListApi.loadListDate();
@@ -147,7 +158,10 @@
 			else {
 				var PullToRefrshListApi = new mui.PullToRefrshList(content,options);
 				PullToRefrshListApi.loadListDate();
-			}
+			}*/
+
+			var PullToRefrshListApi = new mui.PullToRefrshList(content, options);
+			PullToRefrshListApi.loadListDate();
 		</script>
 	</body>
 </html>

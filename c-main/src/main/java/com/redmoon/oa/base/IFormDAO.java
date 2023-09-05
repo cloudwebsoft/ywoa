@@ -1,8 +1,10 @@
 package com.redmoon.oa.base;
 
+import java.util.List;
 import java.util.Vector;
 
 import cn.js.fan.util.ErrMsgException;
+import com.redmoon.oa.flow.FormDAO;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.FormField;
 
@@ -59,4 +61,8 @@ public interface IFormDAO {
     long getCwsQuoteId();
 
     String getCwsQuoteForm();
+
+    String getFormCode();
+
+    Vector<IAttachment> getAttachments();
 }

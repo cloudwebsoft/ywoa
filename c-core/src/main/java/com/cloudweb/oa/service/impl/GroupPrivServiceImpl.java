@@ -62,7 +62,11 @@ public class GroupPrivServiceImpl extends ServiceImpl<GroupPrivMapper, GroupPriv
         QueryWrapper<GroupPriv> qw = new QueryWrapper<>();
         qw.eq("groupCode", groupCode);
         qw.eq("priv", priv);
-        return remove(qw);
+        boolean re = remove(qw);
+        if (re) {
+            refreshUserAuthority(groupCode);
+        }
+        return re;
     }
 
     @Override
@@ -78,6 +82,22 @@ public class GroupPrivServiceImpl extends ServiceImpl<GroupPrivMapper, GroupPriv
             groupPriv.insert();
         }
 
+        refreshUserAuthority(groupCode);
+        return true;
+    }
+
+    public boolean create(String groupCode, String priv) {
+        GroupPriv groupPriv = new GroupPriv();
+        groupPriv.setPriv(priv);
+        groupPriv.setGroupCode(groupCode);
+        boolean re = groupPriv.insert();
+        if (re) {
+            refreshUserAuthority(groupCode);
+        }
+        return re;
+    }
+
+    public void refreshUserAuthority(String groupCode) {
         if (ConstUtil.GROUP_EVERYONE.equals(groupCode)) {
             List<User> list = userService.listAll();
             for (User user : list) {
@@ -91,7 +111,5 @@ public class GroupPrivServiceImpl extends ServiceImpl<GroupPrivMapper, GroupPriv
                 userAuthorityService.refreshUserAuthority(userOfRole.getUserName());
             }
         }
-
-        return true;
     }
 }

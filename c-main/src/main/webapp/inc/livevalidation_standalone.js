@@ -703,6 +703,10 @@ var Validate = {
      */
     Numericality: function(value, paramsObj){
         var suppliedValue = value;
+
+        // 去掉千分位标志
+        value = ('' + value).replaceAll(',', '');
+
         var value = Number(value);
     	var paramsObj = paramsObj || {};
         var minimum = ((paramsObj.minimum) || (paramsObj.minimum == 0)) ? paramsObj.minimum : null;;

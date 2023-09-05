@@ -4,11 +4,17 @@ import cn.js.fan.db.*;
 import cn.js.fan.util.*;
 import cn.js.fan.util.file.FileUtil;
 import cn.js.fan.web.Global;
-import com.cloudweb.oa.api.IAttachmentCtl;
 import com.cloudweb.oa.api.IBasicSelectCtl;
+import com.cloudweb.oa.api.ICondUtil;
 import com.cloudweb.oa.api.IModuleUtil;
+import com.cloudweb.oa.bean.ExportExcelItem;
+import com.cloudweb.oa.cache.ExportExcelCache;
+import com.cloudweb.oa.cond.CondUnit;
+import com.cloudweb.oa.security.AuthUtil;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudweb.oa.utils.SysProperties;
+import com.cloudweb.oa.utils.SysUtil;
 import com.cloudwebsoft.framework.db.JdbcTemplate;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
@@ -73,11 +79,14 @@ public class ModuleUtil {
 	 * 用于在request属性中保存过滤条件，在module_list_nest_sel.jsp拉单页面中调用，生成SQL语句时将会调用此属性
 	 */
 	public static final String NEST_SHEET_FILTER = "NEST_SHEET_FILTER";
+
+	public static final String NEST_SHEET_FILTER_USE_MODULE = "isUseModuleFilter";
 	
 	public static final String FILTER_CUR_USER = "{$curUser}";
 	public static final String FILTER_CUR_USER_DEPT = "{$curUserDept}";
 	public static final String FILTER_CUR_USER_ROLE = "{$curUserRole}";
 	public static final String FILTER_ADMIN_DEPT = "{$admin.dept}";
+	public static final String FILTER_CUR_USER_DEPT_AND_CHILDREN = "{$curUserDeptAndChildren}";
 	/**
 	 * 主表ID
 	 */
@@ -91,8 +100,12 @@ public class ModuleUtil {
 	 * 当前日期
 	 */
 	public static final String FILTER_CUR_DATE = "{$curDate}";
-	
-    public ModuleUtil() {
+
+	public static final String FILTER_CUR_YEAR = "{$curYear}";
+
+	public static final String FILTER_CUR_MONTH = "{$curMonth}";
+
+	public ModuleUtil() {
         super();
     }
     
@@ -103,15 +116,24 @@ public class ModuleUtil {
     	else if (FILTER_CUR_USER_DEPT.equals(preStr)) {
     		return "当前用户所在的部门";
     	}
+    	else if (FILTER_CUR_USER_DEPT_AND_CHILDREN.equals(preStr)) {
+    		return "当前用户所在的部门及其子部门";
+		}
     	else if (FILTER_CUR_USER_ROLE.equals(preStr)) {
     		return "当前用户的角色";
     	}
     	else if (FILTER_ADMIN_DEPT.equals(preStr)) {
-    		return "当前用户管理的部门";
+    		return "当前用户分管的部门";
     	}    	
     	else if (FILTER_CUR_DATE.equals(preStr)) {
     		return "当前日期";
     	}
+		else if (FILTER_CUR_YEAR.equals(preStr)) {
+			return "当前年份";
+		}
+		else if (FILTER_CUR_MONTH.equals(preStr)) {
+			return "当前月份";
+		}
     	else if (FILTER_MAIN_ID.equals(preStr)) {
     		return "主表ID";
 		}
@@ -206,11 +228,10 @@ public class ModuleUtil {
 					String servletPath = request.getServletPath();
 					int pTop = servletPath.lastIndexOf("/");
 					servletPath = servletPath.substring(0, pTop);
-					tagUrl = request.getContextPath() + servletPath + "/module_list_relate.jsp?mode=subTagRelated&tagName=" + StrUtil.UrlEncode(tagName);
+					tagUrl = request.getContextPath() + servletPath + "/moduleListRelatePage.do?mode=subTagRelated&tagName=" + StrUtil.UrlEncode(tagName);
 				}
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(ModuleUtil.class).error(e);
 			}
     	}
     	else {
@@ -248,7 +269,9 @@ public class ModuleUtil {
      * @return
      */
     public static Map getFilterParams(HttpServletRequest request, ModuleSetupDb msd) {
-       	String filter = StrUtil.getNullStr(msd.getString("filter"));
+		Privilege pvg = new Privilege();
+		String userName = pvg.getUser(request);
+       	String filter = StrUtil.getNullStr(msd.getFilter(userName));
     	Pattern p = Pattern.compile(
                 "\\{\\$([A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
                 Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -387,7 +410,7 @@ public class ModuleUtil {
 							        	sb.append(re);
 							        }
 							        catch (ScriptException ex) {
-							        	ex.printStackTrace();
+							        	LogUtil.getLog(ModuleUtil.class).error(ex);
 							        }						    	
 							    }
 
@@ -433,6 +456,11 @@ public class ModuleUtil {
     	
     	return filter;
     }
+
+    public static String encodeFilter(String filter) {
+		filter = filter.replaceAll("#", "%sharp");
+		return filter;
+	}
     
     /**
      * 解码filter中的回车换行
@@ -467,6 +495,8 @@ public class ModuleUtil {
 		filter = filter.replaceAll(">></", ">&gt;</");
 		filter = filter.replaceAll("><></", ">&lt;&gt;</");
 
+		filter = filter.replaceAll("%sharp", "#");
+
 		return filter;
     }
     
@@ -491,14 +521,16 @@ public class ModuleUtil {
     	if (msd==null) {
 			return null;
 		}
-    	        
-    	String filter = StrUtil.getNullStr(msd.getString("filter"));
+
+		Privilege pvg = new Privilege();
+		String userName = pvg.getUser(request);
+    	String filter = StrUtil.getNullStr(msd.getFilter(userName));
 
 		return parseFilter(request, msd.getString("form_code"), filter);
     }    
 
     public static String getResultStr(String tableName, String sql, Map fieldsExcluded) {
-    	StringBuffer sb = new StringBuffer();
+    	StringBuilder sb = new StringBuilder();
     	sb.append("[table]\r\n");
     	sb.append("[name]" + tableName + "[/name]\r\n");
     	JdbcTemplate jt = new JdbcTemplate();
@@ -551,7 +583,7 @@ public class ModuleUtil {
 	    	}
 			sb.append("[/records]\r\n");			
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		}
     	sb.append("[/table]\r\n");
 		
@@ -619,7 +651,7 @@ public class ModuleUtil {
     				}
     			} catch (JSONException e) {
     				// TODO Auto-generated catch block
-    				e.printStackTrace();
+    				LogUtil.getLog(ModuleUtil.class).error(e);
     			}
         	}        	
     	}
@@ -653,9 +685,9 @@ public class ModuleUtil {
      * @return
      */
     public static String exportSolution(String formCodes) {
-    	// 判断许可证是否为src
+    	// 判断许可证是可以导出解决方案
     	License license = com.redmoon.oa.kernel.License.getInstance();
-        if (!license.isSrc()) {
+        if (!license.canExportSolution()) {
         	return license.getLicenseStr();
         }
     	
@@ -752,7 +784,7 @@ public class ModuleUtil {
             				}
             			} catch (JSONException e) {
             				// TODO Auto-generated catch block
-            				e.printStackTrace();
+            				LogUtil.getLog(ModuleUtil.class).error(e);
             			}
                 	}        	
             	}
@@ -785,32 +817,27 @@ public class ModuleUtil {
 			sb.append("[basic_select_ctls]\r\n");
 			FormDb fd = new FormDb();
 			fd = fd.getFormDb(formCode);
-			Iterator irField = fd.getFields().iterator();
-			while (irField.hasNext()) {
-				FormField ff = (FormField)irField.next();
+			for (FormField ff : fd.getFields()) {
 				if (ff.getType().equals(FormField.TYPE_MACRO)) {
-		            MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-		            IFormMacroCtl ictl = mu.getIFormMacroCtl();
-		            if (ictl instanceof IBasicSelectCtl) {
-		            	String ctlCode = ff.getDefaultValue();
-		            	if (StringUtils.isEmpty(ctlCode)) {
-		            		ctlCode = ff.getDescription();
-						}
-		            	
-		            	sb.append("[basic_ctl]\r\n");
-		            	sb.append("[code]" + ctlCode + "[/code]\r\n");
-		            	
-		            	sql = "select * from oa_select where code=" + StrUtil.sqlstr(ctlCode);
-		            	sb.append(getResultStr("oa_select", sql, null));
-		            	
-		            	// 下拉菜单型的基础数据		            	
-		            	sql = "select * from oa_select_option where code=" + StrUtil.sqlstr(ctlCode);
-		            	sb.append(getResultStr("oa_select_option", sql, null));
-		            	// 树型的基础数据		            	
-		            	// ......		  
-		            	
-		            	sb.append("[/basic_ctl]\r\n");		            	
-		            }
+					MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+					IFormMacroCtl ictl = mu.getIFormMacroCtl();
+					if (ictl instanceof IBasicSelectCtl) {
+						String ctlCode = ((IBasicSelectCtl) ictl).getCode(ff);
+
+						sb.append("[basic_ctl]\r\n");
+						sb.append("[code]" + ctlCode + "[/code]\r\n");
+
+						sql = "select * from oa_select where code=" + StrUtil.sqlstr(ctlCode);
+						sb.append(getResultStr("oa_select", sql, null));
+
+						// 下拉菜单型的基础数据
+						sql = "select * from oa_select_option where code=" + StrUtil.sqlstr(ctlCode);
+						sb.append(getResultStr("oa_select_option", sql, null));
+						// 树型的基础数据
+						// ......
+
+						sb.append("[/basic_ctl]\r\n");
+					}
 				}
 			}
 			sb.append("[/basic_select_ctls]\r\n");			
@@ -825,6 +852,12 @@ public class ModuleUtil {
      * @throws ErrMsgException
      */
     public static void importSolution(ServletContext application, HttpServletRequest request) throws ErrMsgException {
+		// 判断许可证是可以导入解决方案
+		License license = com.redmoon.oa.kernel.License.getInstance();
+		if (!license.canExportSolution()) {
+			throw new ErrMsgException(license.getLicenseStr());
+		}
+
        	try {
 			// String str = FileUtil.ReadFile("d:/export.txt");
 	        String[] extnames = {"txt"};
@@ -860,7 +893,7 @@ public class ModuleUtil {
 			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		}
     }   
     
@@ -904,11 +937,9 @@ public class ModuleUtil {
                     String formCode = fu.getFieldValue("formCode");
         			parse(formCode, content);
                 }
-	        }	        
-			
+	        }
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		}
     }
     
@@ -916,8 +947,7 @@ public class ModuleUtil {
 /*		try {
 			importModule();
 		} catch (ErrMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		}*/
 	}    
 	
@@ -941,6 +971,7 @@ public class ModuleUtil {
     	while (fb!=-1) {
         	String formCode = content.substring(fb + "[formCode]".length(), fe);
         	fd = fd.getFormDb(formCode);
+        	// 导入时删除原来的相同编码的表单
         	if (fd.isLoaded()) {
 				fd.del();
 			}
@@ -1011,7 +1042,7 @@ public class ModuleUtil {
 	    		}
 				    		
 				String sql = "select * from " + tableName;
-				// System.out.println("parseTables sql=" + sql);
+				// LogUtil.getLog(ModuleUtil.class).info("parseTables sql=" + sql);
 				ResultIterator ri;
 				Map mapType;
 				try {
@@ -1024,9 +1055,9 @@ public class ModuleUtil {
 					continue;
 				}
 
-	    		System.out.println("tableName=" + tableName);
-	    		
-	    		int colsB = tableCont.indexOf(tagColsBegin, nameE);
+				LogUtil.getLog(ModuleUtil.class).info("tableName=" + tableName);
+
+				int colsB = tableCont.indexOf(tagColsBegin, nameE);
 	    		int colsE = tableCont.indexOf(tagColsEnd, colsB);
 	    		
 	    		String cols = tableCont.substring(colsB + tagColsBegin.length(), colsE);
@@ -1040,7 +1071,7 @@ public class ModuleUtil {
 	    		String[] colAry = StrUtil.split(cols, "\\|");
 	    		// String formCode = FormDb.getCodeByTableName(tableName);
 	    		
-	    		System.out.println("cols=" + cols);
+				LogUtil.getLog(ModuleUtil.class).info("cols=" + cols);
 
 	    		int flowTypeCodeIndex = -1;
 	    		String colFields = "";
@@ -1058,7 +1089,6 @@ public class ModuleUtil {
 	    			if (isFlowDir) {
 	    				if ("code".equalsIgnoreCase(colAry[i])) {
 	    					flowTypeCodeIndex = i;
-	    		    		System.out.println("flowTypeCodeIndex=" + i);
 	    				}
 	    			}
 	    		}
@@ -1080,23 +1110,17 @@ public class ModuleUtil {
 					if (tableName.equalsIgnoreCase("visual_module_priv")) {
 						recordStr += "-|-0";
 					}
-	    			
-	    			// System.out.println(recordStr);
-	    			
+					
 	    			rb = records.indexOf(tagRecordBegin, re);
 	    			
 	    			String[] ary = StrUtil.split(recordStr, "-\\|-");
 	    			
 	    			for (int i=0; ary!=null && i<ary.length; i++) {
-	    				System.out.println("colAry[" + i + "]=" + colAry[i]);
+	    				LogUtil.getLog(ModuleUtil.class).info("colAry[" + i + "]=" + colAry[i]);
 		    			Integer iType = (Integer)mapType.get(colAry[i]);
 		    			if (iType == null) {
 							throw new ErrMsgException("字段 " + colAry[i] + " 在表 " + tableName + " 中不存在");
 						}
-		    			
-/*		    			if (isFlowDir) {
-		    				System.out.println(ModuleUtil.class + " i=" + i + " colAry[" + i + "]=" + colAry[i] + " flowTypeCodeIndex=" + flowTypeCodeIndex);
-		    			}*/
 		    			
 		    			int fieldType = QueryScriptUtil.getFieldTypeOfDBType(iType.intValue());
 		    				
@@ -1171,7 +1195,7 @@ public class ModuleUtil {
 		    				objs[i] = val;
 		    			}
 		    			
-		    			System.out.println(colAry[i] + "=" + objs[i]);		    			
+		    			LogUtil.getLog(ModuleUtil.class).info(colAry[i] + "=" + objs[i]);
 	    			}
 	    			
 		    		if (tableName.equalsIgnoreCase("flow_predefined")) {
@@ -1179,7 +1203,7 @@ public class ModuleUtil {
 		    			objs[objs.length-1] = fpid;
 		    		}	 
 
-					System.out.println(ModuleUtil.class + " sql=" + insertSql);	    			
+					LogUtil.getLog(ModuleUtil.class).info(ModuleUtil.class + " sql=" + insertSql);
 	    			jt.executeUpdate(insertSql, objs);
 	    		}
 	    		
@@ -1215,7 +1239,7 @@ public class ModuleUtil {
 			   	        				tagUrl = json.toString();
 		   	        				}
 		   	        				catch (JSONException ex) {
-		   	        					ex.printStackTrace();
+		   	        					LogUtil.getLog(ModuleUtil.class).error(ex);
 		   	        				}
 		    	    			}
 		    	    		}
@@ -1265,7 +1289,7 @@ public class ModuleUtil {
     	Vector vFlowTypeCode = new Vector();
     	parseTables(str, vFlowTypeCode, null);
 		
-        System.out.println("parseSingleForm: vFlowTypeCode.size()=" + vFlowTypeCode.size());
+        LogUtil.getLog(ModuleUtil.class).info("parseSingleForm: vFlowTypeCode.size()=" + vFlowTypeCode.size());
 
         if (vFlowTypeCode.size()!=0) {
 			String parentCode = "";
@@ -1320,8 +1344,7 @@ public class ModuleUtil {
 				try {
 					jt.executeUpdate(sql, new Object[]{newFlowTypeCode, oldFlowTypeCode});
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LogUtil.getLog(ModuleUtil.class).error(e);
 				}
 			}
 		}
@@ -1386,7 +1409,7 @@ public class ModuleUtil {
 		    		code = str.substring(mb + "[code]".length(), me);
 		    	}
 	
-		    	System.out.println("basic_ctl code=" + code);
+		    	LogUtil.getLog(ModuleUtil.class).info("basic_ctl code=" + code);
 		    	// 判断宏控件是否已存在，如存在，则不再导入
 		    	JdbcTemplate jt = new JdbcTemplate();
 	            String sql = "select * from oa_select where code=?";
@@ -1397,7 +1420,7 @@ public class ModuleUtil {
 	                }
 	            }
 	            catch (SQLException ex) {
-	            	ex.printStackTrace();
+	            	LogUtil.getLog(ModuleUtil.class).error(ex);
 	            }
 	            
 				b = ctlsStr.indexOf("[basic_ctl]", e);
@@ -1407,12 +1430,7 @@ public class ModuleUtil {
 		FormDb fd = new FormDb();
 		fd = fd.getFormDb(formCode);
         // 解析content，在表form_field中建立相应的域
-		FormParser fp = null;
-		try {
-			fp = new FormParser(fd.getContent());
-		} catch (Exception e) {
-			throw new ErrMsgException(e.getMessage());
-		}
+		FormParser fp = new FormParser(fd.getContent());
 		Vector v = fp.getFields();
 		Conn conn = new Conn(Global.getDefaultDB());
 		try {
@@ -1423,7 +1441,7 @@ public class ModuleUtil {
             Iterator ir = vt.iterator();
             while (ir.hasNext()) {
                 sql = (String)ir.next();
-                System.out.println("create2: sql=" + sql);
+                LogUtil.getLog(ModuleUtil.class).info("create2: sql=" + sql);
                 conn.executeUpdate(sql);
             }
             
@@ -1436,7 +1454,7 @@ public class ModuleUtil {
             
             conn.commit();
         } catch (SQLException e) {
-        	System.out.println("create:" + StrUtil.trace(e) +
+        	LogUtil.getLog(ModuleUtil.class).info("create:" + StrUtil.trace(e) +
                          ". Now transaction rollback");
             conn.rollback();
             throw new ErrMsgException("插入时出错！");
@@ -1488,7 +1506,7 @@ public class ModuleUtil {
 				jt.executeUpdate(sql);
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(ModuleUtil.class).error(e);
 			}
     	}
     	
@@ -1541,7 +1559,7 @@ public class ModuleUtil {
 					continue;
 				}
 
-	    		System.out.println("tableName=" + tableName);
+	    		LogUtil.getLog(ModuleUtil.class).info("tableName=" + tableName);
 	    		
 	    		int colsB = tableCont.indexOf(tagColsBegin, nameE);
 	    		int colsE = tableCont.indexOf(tagColsEnd, colsB);
@@ -1550,7 +1568,7 @@ public class ModuleUtil {
 	    		String[] colAry = StrUtil.split(cols, "\\|");
 	    		// String formCode = FormDb.getCodeByTableName(tableName);
 	    		
-	    		System.out.println("cols=" + cols);
+	    		LogUtil.getLog(ModuleUtil.class).info("cols=" + cols);
 
 	    		String colFields = "";
 	    		String colWh = "";
@@ -1572,7 +1590,7 @@ public class ModuleUtil {
 	    		
 	    		String records = tableCont.substring(recordsB + tagRecordsBegin.length(), recordsE);
 	    		
-				System.out.println(ModuleUtil.class + " sql=" + insertSql);
+				LogUtil.getLog(ModuleUtil.class).info(ModuleUtil.class + " sql=" + insertSql);
 
 	    		Object[] objs = new Object[colAry.length];
 	    		int rb = records.indexOf(tagRecordBegin);
@@ -1581,7 +1599,7 @@ public class ModuleUtil {
 	    			
 	    			String recordStr = records.substring(rb + tagRecordBegin.length(), re);
 	    			
-	    			// System.out.println(recordStr);
+	    			// LogUtil.getLog(ModuleUtil.class).info(recordStr);
 	    			
 	    			rb = records.indexOf(tagRecordBegin, re);
 	    			
@@ -1590,7 +1608,7 @@ public class ModuleUtil {
 	    			for (int i=0; ary!=null && i<ary.length; i++) {
 		    			Integer iType = (Integer)mapType.get(colAry[i]);	
 		    			
-		    			// System.out.println(ModuleUtil.class + " " + colAry[i]);
+		    			// LogUtil.getLog(ModuleUtil.class).info(ModuleUtil.class + " " + colAry[i]);
 		    			
 		    			int fieldType = QueryScriptUtil.getFieldTypeOfDBType(iType.intValue());
 		    				
@@ -1669,7 +1687,7 @@ public class ModuleUtil {
 			   	        				tagUrl = json.toString();
 		   	        				}
 		   	        				catch (JSONException ex) {
-		   	        					ex.printStackTrace();
+		   	        					LogUtil.getLog(ModuleUtil.class).error(ex);
 		   	        				}
 		    	    			}
 		    	    		}
@@ -1739,7 +1757,9 @@ public class ModuleUtil {
             	val = ParamUtil.get(request, key);
             }
             else if ("vPath".equalsIgnoreCase(str)) {
-            	val = Global.getRootPath();
+            	// val = Global.getRootPath();
+				SysUtil sysUtil = SpringUtil.getBean(SysUtil.class);
+				val = sysUtil.getRootPath();
             }
             m.appendReplacement(sb, val);
         }    	
@@ -1757,13 +1777,13 @@ public class ModuleUtil {
      * @throws JSONException
      * @throws ErrMsgException
      */
-    public static void doMapOnFlow(HttpServletRequest request, FormDAO fdaoSource, com.redmoon.oa.flow.FormDAO fdaoDest, String maps) throws JSONException, ErrMsgException, SQLException {
-        JSONObject json = new JSONObject(maps);
-        JSONObject jsonRaw = json;
+    public static void doMapOnFlow(HttpServletRequest request, FormDAO fdaoSource, com.redmoon.oa.flow.FormDAO fdaoDest, String maps) throws ErrMsgException, SQLException {
+        com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSONObject.parseObject(maps);
+		com.alibaba.fastjson.JSONObject jsonRaw = json;
 
-        JSONArray ary = (JSONArray)json.get("maps");
-        String sourceForm = (String)json.get("sourceForm");
-        String destForm = (String)json.get("destForm");
+		com.alibaba.fastjson.JSONArray ary = json.getJSONArray("maps");
+        String sourceForm = json.getString("sourceForm");
+        String destForm = json.getString("destForm");
 
         FormDb sourcefd = new FormDb();
         sourcefd = sourcefd.getFormDb(sourceForm);
@@ -1773,17 +1793,15 @@ public class ModuleUtil {
 
         // 取出相应的值，置于json字符串中返回
         String ret = "";
-        MacroCtlMgr mam = new MacroCtlMgr();
-        UserMgr um = new UserMgr();
         MacroCtlMgr mm = new MacroCtlMgr();
 
-        for (int i=0; i<ary.length(); i++) {
-            json = (JSONObject)ary.get(i);
+        for (int i=0; i<ary.size(); i++) {
+            json = (com.alibaba.fastjson.JSONObject)ary.get(i);
             String destF = (String)json.get("destField");
             String sourceF = (String)json.get("sourceField");
             FormField ffDest = destFd.getFormField(destF);
             if (ffDest==null) {
-                // System.out.println(getClass() + " destF=" + destF + " 不存在！");
+                // LogUtil.getLog(ModuleUtil.class).info(ModuleUtil.class + " destF=" + destF + " 不存在！");
                 LogUtil.getLog(ModuleUtil.class).error("destF=" + destF + " 不存在！");
                 continue;
             }
@@ -1800,22 +1818,22 @@ public class ModuleUtil {
             }
 
             if (!isNest) {
-                fdaoDest.setFieldValue(destF, fdaoSource.getFieldValue(sourceF));
+            	if (FormDAO.FormDAO_NEW_ID.equals(sourceF)) {
+					fdaoDest.setFieldValue(destF, String.valueOf(fdaoSource.getId()));
+				}
+            	else {
+					fdaoDest.setFieldValue(destF, fdaoSource.getFieldValue(sourceF));
+				}
             }
         }
 
         fdaoDest.save();
 
-        try {
-            ary = (JSONArray)jsonRaw.get("mapsNest");
-        }
-        catch (JSONException e) {
-            ary = null;
-            e.printStackTrace();
-        }
+        ary = jsonRaw.getJSONArray("mapsNest");
+
         String retNest = "";
 
-        if (ary!=null && ary.length() > 0) {
+        if (ary!=null && ary.size() > 0) {
             String sourceFormNest = (String)jsonRaw.get("sourceFormNest");
             FormDb sourcefdNest = new FormDb();
             sourcefdNest = sourcefdNest.getFormDb(sourceFormNest);
@@ -1825,7 +1843,7 @@ public class ModuleUtil {
             destfdNest = destfdNest.getFormDb(destFormNest);
 
             // 取出源嵌套表中的数据
-            String sql = "select id from " + FormDb.getTableName(sourceFormNest) + " where cws_id=" + StrUtil.sqlstr(String.valueOf(fdaoSource.getId())) + " order by cws_order";
+            String sql = "select id from " + FormDb.getTableName(sourceFormNest) + " where cws_id='" + fdaoSource.getId() + "' order by cws_order";
 
             com.redmoon.oa.visual.FormDAO sourcefdaoNest = new com.redmoon.oa.visual.FormDAO();
             Vector vt = sourcefdaoNest.list(sourceFormNest, sql);
@@ -1835,8 +1853,8 @@ public class ModuleUtil {
 
                 com.redmoon.oa.visual.FormDAO fdaoDestNest = new com.redmoon.oa.visual.FormDAO(destfdNest);
                 String nestjson = "";
-                for (int i=0; i<ary.length(); i++) {
-                    json = (JSONObject)ary.get(i);
+                for (int i=0; i<ary.size(); i++) {
+                    json = ary.getJSONObject(i);
                     String destF = (String)json.get("destField");
                     String sourceF = (String)json.get("sourceField");
 
@@ -1863,13 +1881,13 @@ public class ModuleUtil {
 	 * @param request
 	 * @param fdao
 	 * @param url
-	 * @param flag 0表示操作列 1表示按钮
+	 * @param flag 0表示操作列 1表示工具条按钮
 	 * @return
 	 */
     public static String renderLinkUrl(HttpServletRequest request, IFormDAO fdao, String url, String linkName, String moduleCode, int flag, String pageType) {
-		url = StrUtil.decodeJSON(url);
+    	url = StrUtil.decodeJSON(url);
     	if (url.startsWith("{") && url.endsWith("}")) {
-    		String urlStr = "";    		
+    		String urlStr = "";
     		JSONObject json;
 			try {
 				json = new JSONObject(url);
@@ -1877,10 +1895,20 @@ public class ModuleUtil {
 	    		String strParams = json.getString("params");
 
 	    		if (flag == 0) {
-					urlStr = "flow_initiate1_do.jsp?typeCode=" + flowTypeCode + "&op=opLinkFlow&moduleId=" + fdao.getId() + "&moduleCode=" + moduleCode + "&linkName=" + StrUtil.UrlEncode(linkName);
+	    			if (ParamUtil.isMobile(request)) {
+						urlStr = "weixin/flow/flow_dispose.jsp?typeCode=" + flowTypeCode + "&op=opLinkFlow&moduleId=" + fdao.getId() + "&moduleCode=" + moduleCode + "&linkName=" + StrUtil.UrlEncode(linkName);
+					}
+	    			else {
+						urlStr = "flow_initiate1_do.jsp?typeCode=" + flowTypeCode + "&op=opLinkFlow&moduleId=" + fdao.getId() + "&moduleCode=" + moduleCode + "&linkName=" + StrUtil.UrlEncode(linkName);
+					}
 				}
 	    		else {
-					urlStr = "flow_initiate1_do.jsp?typeCode=" + flowTypeCode + "&op=opBtnFlow&moduleId=" + fdao.getId() + "&moduleCode=" + moduleCode + "&btnId=" + StrUtil.UrlEncode(linkName) + "&pageType=" + pageType;
+					if (ParamUtil.isMobile(request)) {
+						urlStr = "weixin/flow/flow_dispose?typeCode=" + flowTypeCode + "&op=opBtnFlow&moduleId=" + fdao.getId() + "&moduleCode=" + moduleCode + "&btnId=" + StrUtil.UrlEncode(linkName) + "&pageType=" + pageType;
+					}
+					else {
+						urlStr = "flow_initiate1_do.jsp?typeCode=" + flowTypeCode + "&op=opBtnFlow&moduleId=" + fdao.getId() + "&moduleCode=" + moduleCode + "&btnId=" + StrUtil.UrlEncode(linkName) + "&pageType=" + pageType;
+					}
 				}
 
 	    		if (!"".equals(strParams)) {
@@ -1900,17 +1928,82 @@ public class ModuleUtil {
 					}
 				}
 			} catch (JSONException e) {
-				e.printStackTrace();
+				LogUtil.getLog(ModuleUtil.class).error(e);
 			}
 
     		return urlStr;
     	}
-    	
+
     	return parseUrl(request, url, fdao);
     }
 
+	public static com.alibaba.fastjson.JSONObject renderLinkUrlToJson(HttpServletRequest request, IFormDAO fdao, String url, String linkName, String moduleCode) {
+		return renderLinkUrlToJson(request, fdao, url, linkName, moduleCode, 0, "");
+	}
+
 	/**
-	 * 从request取得过滤条件中的参数值，组装为url字符串
+	 * 渲染操作列中的链接
+	 * @param request
+	 * @param fdao
+	 * @param url
+	 * @param flag 0表示操作列 1表示工具条按钮
+	 * @return
+	 */
+	public static com.alibaba.fastjson.JSONObject renderLinkUrlToJson(HttpServletRequest request, IFormDAO fdao, String url, String linkName, String moduleCode, int flag, String pageType) {
+		com.alibaba.fastjson.JSONObject resultJson = new com.alibaba.fastjson.JSONObject();
+		url = StrUtil.decodeJSON(url);
+		if (url.startsWith("{") && url.endsWith("}")) {
+			// String urlStr = "";
+			com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSONObject.parseObject(url);
+			if (json.containsKey("flowTypeCode")) {
+				resultJson.put("type", "FLOW");
+				resultJson.put("flowTypeCode", json.getString("flowTypeCode"));
+
+				resultJson.put("moduleId", fdao.getId());
+				resultJson.put("moduleCode", moduleCode);
+				resultJson.put("btnId", linkName);
+				resultJson.put("pageType", pageType);
+
+				/*
+				// 已改在WorkflowController.java的init方法中通过moduleCode、pageType获取映射字段
+				com.alibaba.fastjson.JSONObject paramsJson = new com.alibaba.fastjson.JSONObject();
+				resultJson.put("params", paramsJson);
+
+				String strParams = json.getString("params");
+				if (!"".equals(strParams)) {
+					com.alibaba.fastjson.JSONObject params = com.alibaba.fastjson.JSONObject.parseObject(strParams);
+					com.alibaba.fastjson.JSONArray maps = params.getJSONArray("maps");
+					for (int i = 0; i < maps.size(); i++) {
+						com.alibaba.fastjson.JSONObject jsobj = maps.getJSONObject(i);
+						String sourceField = jsobj.getString("sourceField");
+						*//*String sourceFieldVal = "";
+						if (sourceField.equals(FormDAO.FormDAO_NEW_ID)) {
+							sourceFieldVal = String.valueOf(fdao.getId());
+						} else {
+							sourceFieldVal = fdao.getFieldValue(sourceField);
+						}*//*
+						String destField = jsobj.getString("destField");
+						paramsJson.put(destField, sourceField);
+					}
+				}*/
+			} else {
+				resultJson.put("type", "MODULE");
+				resultJson.put("moduleCode", json.getString("moduleCode"));
+				resultJson.put("moduleId", fdao.getId());
+				resultJson.put("btnId", linkName);
+				resultJson.put("pageType", pageType);
+			}
+
+			return resultJson;
+		}
+
+		resultJson.put("type", "LINK");
+		resultJson.put("link", parseUrl(request, url, fdao));
+		return resultJson;
+	}
+
+	/**
+	 * 从request取得过滤条件中的参数值，组装为url字符串，用于操作列的链接
 	 * @param request
 	 * @param url
 	 * @param fdao
@@ -1931,9 +2024,10 @@ public class ModuleUtil {
 				String key = str.substring("request.".length());
 				val = ParamUtil.get(request, key);
 			}
-			else if ("vPath".equalsIgnoreCase(str)) {
+			/*else if ("vPath".equalsIgnoreCase(str)) {
+				// 操作列链接已改为路由，故取消vPath
 				val = Global.getRootPath();
-			}
+			}*/
 			else {
 				// 脚本型条件时，取主表单中的字段值
 				String fieldName = str;
@@ -1997,8 +2091,25 @@ public class ModuleUtil {
 		m.appendTail(sb);
 		return sb.toString();
 	}
-    
-    public static boolean isPrompt(HttpServletRequest request, ModuleSetupDb msd, IFormDAO fdao) {
+
+	public static boolean isPrompt(HttpServletRequest request, ModuleSetupDb msd, IFormDAO fdao) {
+		String promptCond = StrUtil.getNullStr(msd.getString("prompt_cond"));
+		if (promptCond.startsWith("<items>")) {
+			return isLinkShow(request, msd, fdao, promptCond, "", "");
+		} else {
+			return isPromptOld(request, msd, fdao);
+		}
+	}
+
+	/**
+	 * 8.0后改为组合条件
+	 * @param request
+	 * @param msd
+	 * @param fdao
+	 * @return
+	 */
+	@Deprecated
+	public static boolean isPromptOld(HttpServletRequest request, ModuleSetupDb msd, IFormDAO fdao) {
     	String promptField = StrUtil.getNullStr(msd.getString("prompt_field"));
     	String promptValue = StrUtil.getNullStr(msd.getString("prompt_value"));
     	String promptCond = StrUtil.getNullStr(msd.getString("prompt_cond"));
@@ -2040,7 +2151,7 @@ public class ModuleUtil {
 						break;
 				}
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				LogUtil.getLog(ModuleUtil.class).error(e);
 			}
     	}
     	else if (fieldType==FormField.FIELD_TYPE_DATE) {
@@ -2167,10 +2278,10 @@ public class ModuleUtil {
 			javax.script.ScriptEngine engine = manager.getEngineByName("javascript");
 			try {
 				Boolean ret = (Boolean)engine.eval(cond);
-				return ret.booleanValue();
+				return ret;
 			}
 			catch (javax.script.ScriptException ex) {
-				ex.printStackTrace();
+				LogUtil.getLog(ModuleUtil.class).error(ex);
 			}
 		}
 
@@ -2279,7 +2390,7 @@ public class ModuleUtil {
 	    	fieldVal = fdao.getFieldValue(fieldName);
         }
     	
-    	// System.out.println("ModuleUtil fieldValue=" + fieldValue);
+    	// LogUtil.getLog(ModuleUtil.class).info("ModuleUtil fieldValue=" + fieldValue);
 		boolean re = false;
     	
     	if (fieldType==FormField.FIELD_TYPE_INT || fieldType==FormField.FIELD_TYPE_FLOAT
@@ -2310,7 +2421,7 @@ public class ModuleUtil {
 						break;
 				}
 			} catch (ErrMsgException e) {
-				e.printStackTrace();
+				LogUtil.getLog(ModuleUtil.class).error(e);
 			}
     	}
     	else {
@@ -2340,366 +2451,46 @@ public class ModuleUtil {
     	return re;
     }
 
-    public static String makeViewJS(FormDb fd, String fieldName, String token, String val, boolean isField, JSONObject json) throws JSONException {
-    	// 如果val是表单中的字段
-    	if (isField) {
-    		val = "o('" + val + "').value";
-		}
-
-    	FormField ff = fd.getFormField(fieldName);
-		if (ff == null) {
-			DebugUtil.e(WorkflowUtil.class, "makeViewJS", "表单：" + fd.getName() + "（" + fd.getCode() + "）中的字段：" + fieldName + " 已不存在");
-			return "";
-		}
-
-		String str = "";
-		String rand = RandomSecquenceCreator.getId(10);
-		Iterator ir3 = json.keys();
-
-		str += "var tagName" + rand + "='input';\n";
-		str += "if (o('" + fieldName + "')) { tagName" + rand + "=o('" + fieldName + "').tagName; }\n";
-		str += "if ($(o('" + fieldName + "')).attr('type')=='radio' || $(o('" + fieldName + "')).attr('type')=='checkbox') {\n";
-		str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']:checked\").val()" + token + val + ") {\n";
-		while (ir3.hasNext()) {
-			String key = (String) ir3.next();
-			str += "  var obj=$('#" + key + "')[0];\n";
-			str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-			str += "  obj." + json.get(key) + "();\n";
-		}
-		str += "  }\n";
-		str += "}else{\n";
-		str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").val()" + token + val + ") {\n";
-		ir3 = json.keys();
-		while (ir3.hasNext()) {
-			String key = (String) ir3.next();
-			str += "  var obj=$('#" + key + "')[0];\n";
-			str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-			str += "  obj." + json.get(key) + "();\n";
-		}
-		str += "  }\n";
-		str += "}\n";
-
-		// 处理事件
-		// str += "var evt = 'propertychange';\n"; // 如果有多个条件，会出现多次重复定义
-		if (ff.getType().equals(FormField.TYPE_RADIO) || ff.getType().equals(FormField.TYPE_CHECKBOX)) {
-			str += "$(tagName" + rand + " + \"[name='" + fieldName + "']\").click(function(e) {\n";
-		}
-		else {
-			str += "$(tagName" + rand + " + \"[name='" + fieldName + "']\").change(function(e) {\n";
-		}
-
-		// 判断是否为radio
-		str += "if ($(o('" + fieldName + "')).attr('type')=='radio' || $(o('" + fieldName + "')).attr('type')=='checkbox') {\n";
-		str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']:checked\").val()" + token + val + ") {\n";
-		ir3 = json.keys();
-		while (ir3.hasNext()) {
-			String key = (String) ir3.next();
-			str += "  var obj=$('#" + key + "')[0];\n";
-			str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-			str += "  obj." + json.get(key) + "();\n";
-		}
-		str += "  }\n";
-		str += "}else{\n";
-		str += "  if ($(tagName" + rand + " + \"[name='" + fieldName + "']\").val()" + token + val + ") {\n";
-		ir3 = json.keys();
-		while (ir3.hasNext()) {
-			String key = (String) ir3.next();
-			str += "  var obj=$('#" + key + "')[0];\n";
-			str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-			str += "  obj." + json.get(key) + "();\n";
-		}
-		str += "  }\n";
-		str += "}\n";
-		str += "});\n";
-
-		return str;
-	}
-
 	/**
-	 * 取得用来控制是否显示的脚本
-	 * @param request HttpServletRequest
-	 * @param fd FormDb
-	 * @param fdao FormDAO
-	 * @param userName String
-	 * @param isForReport 是否用于查看时
-     * @return
-     */
-    public static String doGetViewJS(HttpServletRequest request, FormDb fd, IFormDAO fdao, String userName, boolean isForReport) {
-        if ("".equals(fd.getViewSetup())) {
-			return "";
-		}
-
-        // -----5.0版前格式---------
-        // <config><views><view><condition>#is_yxxxxm=="是"</condition><display>{"tr_yxxxqjsj":"show"}</display></view><view><condition>#is_yxxxxm=="否"</condition><display>{"tr_yxxxqjsj":"hide"}</display></view><view><condition>#is_yxxxxm==null</condition><display>{"tr_yxxxqjsj":"hide"}</display></view></views></config>
-		// -----5.0版后格式---------
-		// <config><views><view><condition /><fieldName>shudi</fieldName><operator>=</operator><value>境内</value><display>{"province":"show","city":"show","gb":"hide","jw_city":"hide"}</display></view><view><condition /><fieldName>shudi</fieldName><operator>=</operator><value>境外</value><display>{"province":"hide","city":"hide","gb":"show","jw_city":"show"}</display></view></views></config>
-
-		String scriptOnLoad = "";
-		String str = "<script>\n";
-		str += "function doViewJS() {\n";
-		try {
-			Privilege pvg = new Privilege();
-			List filedList = new ArrayList();
-			Iterator ir1 = fd.getFields().iterator();
-			while (ir1.hasNext()) {
-				FormField ff = (FormField) ir1.next();
-				filedList.add(ff.getName());
-			}
-
-			SAXBuilder parser = new SAXBuilder();
-            org.jdom.Document doc = parser.build(new InputSource(new StringReader(fd.getViewSetup())));
-            Element root = doc.getRootElement();
-            Iterator ir2 = root.getChild("views").getChildren().iterator();
-            while (ir2.hasNext()) {
-                Element el = (Element)ir2.next();
-                String condition = el.getChildText("condition").trim();
-                if (!"".equals(condition)) {
-					// 如果以#开头且不在流程查看时，对前台事件进行处理
-					if (condition.startsWith("#")) {
-						// 非流程查看时
-						if (!isForReport) {
-							String token = "==";
-							if (condition.indexOf(">=")!=-1) {
-								token = ">=";
-							} else if (condition.indexOf("<=")!=-1) {
-								token = "<=";
-							} else if (condition.indexOf("!=")!=-1) {
-								token = "!=";
-							} else if (condition.indexOf(">")!=-1) {
-								token = ">";
-							} else if (condition.indexOf("<")!=-1) {
-								token = "<";
-							}
-							String[] ary = StrUtil.split(condition, token);
-							if (ary.length==2) {
-								String fieldName = ary[0].substring(1); // 去掉#号
-								ary[1] = ary[1].replaceAll("\"", "'");
-								String val = ary[1];
-
-								String display = el.getChildText("display");
-								JSONObject json = new JSONObject(display);
-								str += makeViewJS(fd, fieldName, token, val, false, json);
-							}
-							else {
-								LogUtil.getLog(WorkflowUtil.class).error("condition=" + condition + ", 格式错误！");
-							}
-						}
-					}
-					else {
-						// 如果不以#开头，则通过BranchMatcher.match在服务器端判断条件是否成立，条件表达式同分支线上的脚本表达式
-						// 如果条件为空或者条件为真
-						// 當添加時，fdao爲null
-						if (condition.equals("") || (fdao!=null &&
-								BranchMatcher.match(condition, fd, fdao, userName))) {
-							String display = el.getChildText("display");
-							JSONObject json = new JSONObject(display);
-							Iterator ir3 = json.keys();
-							while (ir3.hasNext()) {
-								String key = (String) ir3.next();
-								// str += "$('#" + key + "')." + json.get(key) + "();\n";
-								str += "  var obj=$('#" + key + "')[0];\n";
-								str += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-								str += "  obj." + json.get(key) + "();\n";
-							}
-						}
-					}
-				} else {
-					// 5.0版后
-					boolean formFlag = true;
-
-					String fieldName = el.getChildText("fieldName");
-					if (fieldName==null) {
-					    // 可能为空的<view/>
-					    continue;
-                    }
-					String token = el.getChildText("operator");
-
-					token = token.replaceAll("&lt;", "<");
-					token = token.replaceAll("&gt;", ">");
-					if (token.equals("=")) {
-						token = "==";
-					}
-					else if (token.equals("<>")) {
-						token = "!=";
-					}
-
-					String val = el.getChildText("value");
-
-					formFlag = filedList.contains(fieldName);
-					if (!formFlag && !"cws_id".equals(fieldName) && !"cws_status".equals(fieldName) && "!cws_flag".equals(fieldName)) {
-						break;
-					}
-
-					boolean isField = false;
-					if (val.equals(FILTER_CUR_USER)) {
-						val = pvg.getUser(request);
-					} else if (val.equals(FILTER_CUR_DATE)) {
-						val = DateUtil.format(new java.util.Date(), "yyyy-MM-dd");
-					} else if (val.startsWith("{$")) {
-						Pattern p = Pattern.compile(
-								"\\{\\$([@A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
-								Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-						Matcher m = p.matcher(val);
-						while (m.find()) {
-							String fName = m.group(1);
-							if (fName.startsWith("request.")) {
-								String key = fName.substring("request.".length());
-								val = ParamUtil.get(request, key);
-							}
-							else {
-								// 判断fName是否为表单中的字段
-								if (fd.getFormField(fName)!=null) {
-									val = fName;
-									isField = true;
-								}
-							}
-						}
-					}
-
-					String display = el.getChildText("display");
-					JSONObject json = new JSONObject(display);
-					FormField ff = fd.getFormField(fieldName);
-					// 如果是字符串型，则需加上双引号
-					if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR || ff.getFieldType() == FormField.FIELD_TYPE_TEXT) {
-						// 如当radio默认未选择时，其值为null，故 JS 判别时无需加双引号
-						if (!"null".equals(val) && !isField) {
-							val = "\"" + val + "\"";
-						}
-					}
-
-					// ------------为前端生成 JS----------------
-					String pageType = (String)request.getAttribute("pageType");
-					// 如果不是在flow_modify.jsp页面，则生成 JS
-					if (!"show".equals(pageType)) {
-						str += makeViewJS(fd, fieldName, token, val, isField, json);
-					}
-
-					// 为加载页面时根据数据库中记录值生成JS，scriptOnLoad不能放在doViewJS中，否则当表单域选择宏控件重新选择后，调用doViewJS时，scriptOnLoad脚本会有冲突
-					if (isField) {
-						val = "{$" + val + "}";
-					}
-					String condStr = "{$" + fieldName + "}" + token + val;
-					// 判断是否为字符串型，如果是则需要变成equals
-					if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR || ff.getFieldType() == FormField.FIELD_TYPE_TEXT) {
-						if (!"null".equals(val)) {
-							if ("==".equals(token)) {
-								condStr = val + ".equals({$" + fieldName + "})";
-							} else if ("<>".equals(token)) {
-								condStr = "!" + val + ".equals({$" + fieldName + "})";
-							}
-						}
-						else {
-							if ("==".equals(token)) {
-								condStr = val + "=={$" + fieldName + "} || \"\".equals({$" + fieldName + "})";
-							} else if ("<>".equals(token)) {
-								// condStr = val + "!={$" + fieldName + "} || \"\".equals({$" + fieldName + "})";
-								condStr = val + "!={$" + fieldName + "} && !\"\".equals({$" + fieldName + "})";
-							}
-						}
-					}
-					else if (ff.getType().equals(FormField.TYPE_CHECKBOX)){
-						if ("<>".equals(token)) {
-							condStr = val + "!={$" + fieldName + "}";
-						}
-					}
-					else if (ff.getType().equals(FormField.TYPE_DATE)) {
-						Date d;
-						if ("current".equals(val.toLowerCase())) {
-							d = DateUtil.parse(DateUtil.format(new Date(), "yyyy-MM-dd"), "yyyy-MM-dd");
-						}
-						else {
-							d = DateUtil.parse(val, "yyyy-MM-dd");
-							if (d==null) {
-								throw new ErrMsgException(val + " 格式非法");
-							}
-						}
-						String t = String.valueOf(d.getTime());
-						condStr = "cn.js.fan.util.DateUtil.parse({$" + fieldName + "}, \"yyyy-MM-dd\")!=null ? cn.js.fan.util.DateUtil.parse({$" + fieldName + "}, \"yyyy-MM-dd\").getTime()" + token + t + "L : false";
-					}
-					else if (ff.getType().equals(FormField.TYPE_DATE_TIME)) {
-						Date d;
-						if ("current".equals(val.toLowerCase())) {
-							d = new Date();
-						}
-						else {
-							d = DateUtil.parse(val, "yyyy-MM-dd HH:mm:ss");
-							if (d==null) {
-								throw new ErrMsgException(val + " 格式非法");
-							}
-						}
-						String t = String.valueOf(d.getTime());
-						condStr = "cn.js.fan.util.DateUtil.parse({$" + fieldName + "}, \"yyyy-MM-dd HH:mm:ss\")!=null ? cn.js.fan.util.DateUtil.parse({$" + fieldName + "}, \"yyyy-MM-dd HH:mm:ss\").getTime()" + token + t + "L : false";
-					}
-
-					long t = System.currentTimeMillis();
-					if (fdao!=null && BranchMatcher.match(condStr, fd, fdao, userName)) {
-						// DebugUtil.i(ModuleUtil.class, "doGetViewJS", "condStr=" + condStr);
-						Iterator ir3 = json.keys();
-						while (ir3.hasNext()) {
-							String key = (String) ir3.next();
-							scriptOnLoad += "  var obj=$('#" + key + "')[0];\n";
-							scriptOnLoad += "  if (!obj) obj = o('" + key + "'); obj=$(obj);\n";
-							scriptOnLoad += "  obj." + json.get(key) + "();\n";
-						}
-					}
-					if (Global.getInstance().isDebug()) {
-						long t2 = System.currentTimeMillis();
-						// DebugUtil.i(ModuleUtil.class, condStr, " match " + (t2-t) + " ms isMatched=" + isMatched);
-					}
-				}
-            }
-        } catch (IOException | JDOMException | JSONException ex) {
-            ex.printStackTrace();
-        } catch (ErrMsgException ex) {
-			ex.printStackTrace();
-            LogUtil.getLog(WorkflowUtil.class).trace(ex);
-        }
-		str += "}\n";
-		str += "doViewJS();\n";
-		str += scriptOnLoad + "\n";
-		str += "</script>\n";
-        return str;
-    }
-
-	/**
-	 * 取得检验规则生成的脚本
+	 * 取得验证规则生成的脚本
 	 * @param request HttpServletRequest
 	 * @param fdao FormDAO
 	 * @param userName String
 	 * @return
 	 */
 	public static boolean doCheckSetup(HttpServletRequest request, String userName, IFormDAO fdao, FileUpload fu) throws ErrMsgException {
-		if ("".equals(fdao.getFormDb().getCheckSetup())) {
+		FormDb fd = new FormDb();
+		fd = fd.getFormDb(fdao.getFormCode());
+		if (StrUtil.isEmpty(fd.getCheckSetup())) {
 			return true;
 		}
 		// <config><rules><rule><if>[{"field":"rq", "operator":"&gt;=", "val":""}]</if><then>[{"field":"rq", "operator":"&lt;&gt;", "val":""}]</then></rule></rules></config>
 		try {
 			List<String> filedList = new ArrayList<>();
-			Iterator<FormField> ir1 = fdao.getFormDb().getFields().iterator();
+			Iterator<FormField> ir1 = fd.getFields().iterator();
 			while (ir1.hasNext()) {
 				FormField ff = ir1.next();
 				filedList.add(ff.getName());
 			}
 
 			StringBuffer sb = new StringBuffer();
+			IModuleUtil iModuleUtil = SpringUtil.getBean(IModuleUtil.class);
 
 			SAXBuilder parser = new SAXBuilder();
-			org.jdom.Document doc = parser.build(new InputSource(new StringReader(fdao.getFormDb().getCheckSetup())));
+			org.jdom.Document doc = parser.build(new InputSource(new StringReader(fd.getCheckSetup())));
 			Element root = doc.getRootElement();
 			Iterator ir2 = root.getChild("rules").getChildren().iterator();
 			while (ir2.hasNext()) {
 				Element el = (Element)ir2.next();
 
-				boolean re = true;
 				String desc = el.getChildText("desc");
 				String strIf = el.getChildText("if");
 				JSONArray aryIf = new JSONArray(strIf);
-				re = evalCheckSetupRule(request, userName, aryIf, fdao, filedList, fu);
-
+				boolean re = iModuleUtil.evalCheckSetupRule(request, userName, aryIf, fdao, filedList, fu);
 				if (re) {
 					String then = el.getChildText("then");
 					JSONArray aryThen = new JSONArray(then);
-					re = evalCheckSetupRule(request, userName, aryThen, fdao, filedList, fu);
+					re = iModuleUtil.evalCheckSetupRule(request, userName, aryThen, fdao, filedList, fu);
 
 					if (!re) {
 						StrUtil.concat(sb, "\r\n", desc);
@@ -2710,213 +2501,9 @@ public class ModuleUtil {
 				throw new ErrMsgException(sb.toString());
 			}
 		} catch (IOException | JDOMException | JSONException ex) {
-			ex.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(ex);
 		}
 		return true;
-	}
-
-	public static boolean evalCheckSetupRule(HttpServletRequest request, String userName, JSONArray ary, IFormDAO fdao, List filedList, FileUpload fu) throws JSONException, ErrMsgException {
-		boolean res = false;
-		for (int i=0; i<ary.length(); i++) {
-			JSONObject json = ary.getJSONObject(i);
-
-			boolean formFlag = true;
-			String condStrOrig = "";
-
-			String field = json.getString("field");
-			String operator = json.getString("operator");
-			operator = operator.replaceAll("&lt;", "<");
-			operator = operator.replaceAll("&gt;", ">");
-			String logical;
-			if (json.has("logical")) {
-				logical = json.getString("logical");
-			}
-			else {
-				logical = "and"; // 向下兼容
-			}
-
-			String val = json.getString("val");
-			formFlag = filedList.contains(field);
-			if (!formFlag && !"cws_id".equals(field) && !"cws_status".equals(field) && "!cws_flag".equals(field)) {
-				if (!field.startsWith(CHECKBOX_GROUP_PREFIX)) {
-					DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", "字段：" + field + "不存在");
-					break;
-				}
-			}
-
-			if (val.equals(FILTER_CUR_USER)) {
-				val = userName;
-			} else if (val.equals(FILTER_CUR_DATE)) {
-				val = DateUtil.format(new java.util.Date(), "yyyy-MM-dd");
-			} else if (val.startsWith("{$")) {
-				// 前为utf8中文范围，后为gb2312中文范围
-				Pattern p = Pattern.compile(
-						"\\{\\$([@A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}",
-						Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-				Matcher m = p.matcher(val);
-				while (m.find()) {
-					String fName = m.group(1);
-					if (fName.startsWith("request.")) {
-						String key = fName.substring("request.".length());
-						val = ParamUtil.get(request, key);
-					}
-				}
-			}
-
-			boolean isCheckboxGroup = false;
-			List<String> listChkVal = new ArrayList<String>();
-			if (field.startsWith(CHECKBOX_GROUP_PREFIX)) {
-				String groupName = field.substring(CHECKBOX_GROUP_PREFIX.length());
-				isCheckboxGroup = true;
-				boolean isFound = false;
-				// 从表单中找到对应的字段
-				Iterator ir = fdao.getFormDb().getFields().iterator();
-				while (ir.hasNext()) {
-					FormField ff = (FormField)ir.next();
-					if (ff.getType().equals(FormField.TYPE_CHECKBOX)) {
-						String desc = ff.getDescription();
-						if (desc == null) {
-							desc = "";
-							DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", fdao.getFormDb().getName() + " 中字段 " + ff.getName() + " 描述为null");
-						}
-						if (desc.equals(groupName)) {
-							isFound = true;
-							String valChk = fu.getFieldValue(ff.getName());
-							if (valChk!=null && !"".equals(valChk)) {
-								listChkVal.add(valChk);
-							}
-						}
-					}
-				}
-				if (!isFound) {
-					DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", "复选框组：" + groupName + "不存在");
-					continue;
-				}
-			}
-
-			String condStr = "";
-			if (isCheckboxGroup) {
-				val = "\"" + val + "\"";
-				String values;
-				if (listChkVal.size()>0) {
-					values = "\"" + StringUtils.join(listChkVal, ",") + "\"";
-				}
-				else {
-					values = "\"\"";
-				}
-				if ("=".equals(operator)) {
-					condStr = values + "==" + val;
-				} else if ("<>".equals(operator)) {
-					condStr = values + "!=" + val;
-				}
-				else {
-					condStr = values + operator + val;
-				}
-				condStrOrig = condStr;
-			}
-			else {
-				FormField ff = fdao.getFormDb().getFormField(field);
-				if (ff == null) {
-					DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", field + " 字段不存在");
-					continue;
-				}
-				// 如果是字符串型，则需加上双引号
-				if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR || ff.getFieldType() == FormField.FIELD_TYPE_TEXT || ff.getType().equals(FormField.TYPE_CHECKBOX)) {
-					val = "\"" + val + "\"";
-				}
-
-				// 服务器端验证
-				condStr = "{$" + field + "}" + operator + val;
-				condStrOrig = condStr;
-
-				// 判断是否为字符串型，如果是则需要变成equals
-				if (ff.getFieldType() == FormField.FIELD_TYPE_VARCHAR || ff.getFieldType() == FormField.FIELD_TYPE_TEXT || ff.getType().equals(FormField.TYPE_CHECKBOX)) {
-					// 加上双引号，否则javascript会认为其为变量
-					if ("=".equals(operator)) {
-						condStr = val + "==\"{$" + field + "}\"";
-					} else if ("<>".equals(operator)) {
-						condStr = val + "!=\"{$" + field + "}\"";
-					}
-				} else if (ff.getFieldType() == FormField.FIELD_TYPE_DATE || ff.getFieldType() == FormField.FIELD_TYPE_DATETIME) {
-					if ("<>".equals(operator)) {
-						// 判断是否不为空
-						// new Date("") 会报： invalid date（safari） 或为 null
-						condStr = "\"" + val + "\"!=\"{$" + field + "}\"";
-					}
-					else {
-						condStr = "(new Date(" + "\"{$" + field + "}\"" + ".replace(/-/g,'\\/')))" + operator + "(new Date(\"" + val + "\".replace(/-/g,'\\/')))";
-					}
-				}
-
-				MacroCtlMgr mm = new MacroCtlMgr();
-				Privilege pvg = new Privilege();
-				Pattern p = Pattern.compile(
-						"\\{\\$([@A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
-						Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-				Matcher m = p.matcher(condStr);
-				StringBuffer sb = new StringBuffer();
-				while (m.find()) {
-					String fieldName = m.group(1);
-
-					String value = "";
-					if (fieldName.startsWith("request.")) {
-						String key = fieldName.substring("request.".length());
-						value = ParamUtil.get(request, key);
-					} else if ("curUser".equalsIgnoreCase(fieldName)) {
-						value = StrUtil.sqlstr(pvg.getUser(request));
-					} else if ("curDate".equalsIgnoreCase(fieldName)) {
-						value = DateUtil.format(new java.util.Date(), "yyyy-MM-dd");
-					} else {
-						value = StrUtil.getNullStr(fu.getFieldValue(fieldName));
-						// 如果fu中获取的值为空，则从fdao中获取，以便于字段不可写时也能验证
-						if ("".equals(value)) {
-							// 如果是文件宏控件，则从数据库再取一次值，以便于判断是否为空
-							FormField ffCond = fdao.getFormField(fieldName);
-							if (ffCond!=null && FormField.TYPE_MACRO.equals(ffCond.getType())) {
-								MacroCtlUnit mu = mm.getMacroCtlUnit(ffCond.getMacroType());
-								IFormMacroCtl imc = mu.getIFormMacroCtl();
-								if (imc instanceof IAttachmentCtl) {
-									value = StrUtil.getNullStr(fdao.getFieldValue(fieldName));
-								}
-							}
-						}
-					}
-					m.appendReplacement(sb, value);
-				}
-				m.appendTail(sb);
-				condStr = sb.toString();
-			}
-
-			ScriptEngineManager manager = new ScriptEngineManager();
-			ScriptEngine engine = manager.getEngineByName("javascript");
-			try {
-				Boolean ret = (Boolean)engine.eval(condStr);
-				boolean re = ret;
-				DebugUtil.i(ModuleUtil.class, "evalCheckSetupRule", condStrOrig + " " +condStr + " re=" + re);
-
-				if (i > 0) {
-					if ("and".equals(logical)) {
-						if (!re) {
-							return false;
-						}
-						res = res && re;
-					}
-					else if ("or".equals(logical)){
-						res = res || re;
-					}
-				}
-				else {
-					res = re;
-				}
-			}
-			catch (ScriptException ex) {
-				// ex.printStackTrace();
-				DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", condStr);
-				DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", fdao.getFormDb().getName() + " " + fdao.getFormDb().getCode() + "ID:" + fdao.getId());
-				DebugUtil.e(ModuleUtil.class, "evalCheckSetupRule", StrUtil.trace(ex));
-			}
-		}
-		return res;
 	}
 
 	/**
@@ -2929,7 +2516,7 @@ public class ModuleUtil {
 	 * @param templateId
 	 * @throws JSONException
 	 */
-	public static void exportXml(HttpServletRequest request, OutputStream os, String[] fields, String[] fieldsTitle, FormDb fd, String sql, long templateId) throws JSONException {
+	public static void exportXml(HttpServletRequest request, OutputStream os, String[] fields, String[] fieldsTitle, FormDb fd, String sql, long templateId, boolean isExporBySelCol, List<String> nestFormList, String uid, ModuleSetupDb msd) {
 		if (templateId!=-1) {
 			ModuleExportTemplateDb metd = new ModuleExportTemplateDb();
 			metd = metd.getModuleExportTemplateDb(templateId);
@@ -2942,10 +2529,10 @@ public class ModuleUtil {
 				columns = "[{\"field\":\"serialNoForExp\",\"title\":\"序号\",\"link\":\"#\",\"width\":80,\"name\":\"serialNoForExp\"}," + columns;
 			}
 
-			JSONArray arr = new JSONArray(columns);
+			com.alibaba.fastjson.JSONArray arr = com.alibaba.fastjson.JSONArray.parseArray(columns);
 			StringBuffer colsSb = new StringBuffer();
-			for (int i = 0; i < arr.length(); i++) {
-				JSONObject json = arr.getJSONObject(i);
+			for (int i = 0; i < arr.size(); i++) {
+				com.alibaba.fastjson.JSONObject json = arr.getJSONObject(i);
 				StrUtil.concat(colsSb, ",", json.getString("field"));
 			}
 			fields = StrUtil.split(colsSb.toString(), ",");
@@ -2957,7 +2544,7 @@ public class ModuleUtil {
 		try {
 			ri = jt.executeQuery(SQLFilter.getCountSql(sql));
 		} catch (SQLException e) {
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		}
 		if (ri.hasNext()) {
 			ResultRecord rr = (ResultRecord)ri.next();
@@ -3007,64 +2594,60 @@ public class ModuleUtil {
 				String fieldName = fields[i];
 
 				String fieldTitle = fieldsTitle[i];
-
 				String title = "";
-				if (fieldName.equals("serialNoForExp")) {
-					title = "序号";
-				}
-				else if (fieldName.startsWith("main:")) {
-					String[] mainToSub = StrUtil.split(fieldName, ":");
-					if (mainToSub != null && mainToSub.length == 3) {
-						FormDb ntfd = new FormDb();
-						ntfd = ntfd.getFormDb(mainToSub[1]);
-						FormField ff = ntfd.getFormField(mainToSub[2]);
-						if (ff != null) {
-							title = ff.getTitle();
+
+				// 如果是选择列导出，则在modulecontroller中传入fieldTitle时已经赋予了值
+				if (!isExporBySelCol) {
+					if (fieldName.equals("serialNoForExp")) {
+						title = "序号";
+					} else if (fieldName.startsWith("main:")) {
+						String[] mainToSub = StrUtil.split(fieldName, ":");
+						if (mainToSub != null && mainToSub.length == 3) {
+							FormDb ntfd = new FormDb();
+							ntfd = ntfd.getFormDb(mainToSub[1]);
+							FormField ff = ntfd.getFormField(mainToSub[2]);
+							if (ff != null) {
+								title = ff.getTitle();
+							} else {
+								title = fieldName + "不存在";
+							}
+						} else {
+							title = fieldName;
 						}
-						else {
-							title = fieldName + "不存在";
+					} else if (fieldName.startsWith("other:")) {
+						String[] otherFields = StrUtil.split(fieldName, ":");
+						if (otherFields.length == 5) {
+							FormDb otherFormDb = new FormDb(otherFields[2]);
+							title = otherFormDb.getFieldTitle(otherFields[4]);
 						}
+					} else if ("cws_creator".equals(fieldName)) {
+						title = "创建者";
+					} else if ("ID".equalsIgnoreCase(fieldName) || "CWS_MID".equalsIgnoreCase(fieldName)) {
+						title = "ID";
+					} else if ("cws_status".equals(fieldName)) {
+						title = "状态";
+					} else if ("cws_flag".equals(fieldName)) {
+						title = "冲抵状态";
+					} else if ("flowId".equalsIgnoreCase(fieldName)) {
+						title = "流程号";
+					} else if ("flow_begin_date".equalsIgnoreCase(fieldName)) {
+						title = "流程开始时间";
+					} else if ("flow_end_date".equalsIgnoreCase(fieldName)) {
+						title = "流程结束时间";
+					} else if ("cws_id".equals(fieldName)) {
+						title = "关联ID";
 					} else {
-						title = fieldName;
+						title = fd.getFieldTitle(fieldName);
 					}
-				}
-				else if (fieldName.startsWith("other:")) {
-					String[] otherFields = StrUtil.split(fieldName, ":");
-					if (otherFields.length == 5) {
-						FormDb otherFormDb = new FormDb(otherFields[2]);
-						title = otherFormDb.getFieldTitle(otherFields[4]);
-					}
-				}
-				else if ("cws_creator".equals(fieldName)) {
-					title = "创建者";
-				}
-				else if ("ID".equalsIgnoreCase(fieldName) || "CWS_MID".equalsIgnoreCase(fieldName)) {
-					title = "ID";
-				}
-				else if ("cws_status".equals(fieldName)) {
-					title = "状态";
-				}
-				else if ("cws_flag".equals(fieldName)) {
-					title = "冲抵状态";
-				}
-				else if ("flowId".equalsIgnoreCase(fieldName)) {
-					title = "流程号";
-				}
-				else if ("flow_begin_date".equalsIgnoreCase(fieldName)) {
-					title = "流程开始时间";
-				}
-				else if ("flow_end_date".equalsIgnoreCase(fieldName)) {
-					title = "流程结束时间";
-				}
-				else if ("cws_id".equals(fieldName)) {
-					title = "关联ID";
-				}
-				else {
-					title = fd.getFieldTitle(fieldName);
 				}
 
 				if (!"#".equals(fieldTitle)) {
 					title = fieldTitle;
+				}
+
+				if (title == null) {
+					LogUtil.getLog(ModuleUtil.class).error("字段: " + fieldName + " 不存在");
+					title = "";
 				}
 
 				title = title.replaceAll("<", "&lt;").replaceAll(">", "&gt ;");
@@ -3088,6 +2671,10 @@ public class ModuleUtil {
 			request.setAttribute(ConstUtil.IS_FOR_EXPORT, "true");
 			int n = 0;
 
+			AuthUtil authUtil = SpringUtil.getBean(AuthUtil.class);
+			SysProperties sysProperties = SpringUtil.getBean(SysProperties.class);
+			ExportExcelCache exportExcelCache = SpringUtil.getBean(ExportExcelCache.class);
+
 			int curPage = 1;
 			int totalPages = 1;
 			int pageSize = 200;
@@ -3103,6 +2690,30 @@ public class ModuleUtil {
 						totalPages = (int)Math.ceil((double)lr.getTotal() / pageSize);
 					}
 
+					// 当异步导出Excel时
+					if (sysProperties.isExportExcelAsync() && Global.getInstance().isUseCache()) {
+						if (curPage == 1) {
+							FormDb fdItem = new FormDb();
+							fdItem = fdItem.getFormDb(ConstUtil.FORM_EXPORT_EXCEL);
+							FormDAO daoItem = new FormDAO(fdItem);
+							daoItem.setFieldValue("sql_text", sql);
+							daoItem.setFieldValue("operator", authUtil.getUserName());
+							daoItem.setFieldValue("rows", lr.getTotal());
+							daoItem.setFieldValue("module_code", msd.getCode());
+							daoItem.setFieldValue("ext", "xls");
+							daoItem.setCreator(authUtil.getUserName()); // 参数为用户名（创建记录者）
+							daoItem.setUnitCode(authUtil.getUserUnitCode()); // 置单位编码
+							daoItem.create();
+
+							ExportExcelItem exportExcelItem = new ExportExcelItem();
+							exportExcelItem.setUid(uid);
+							exportExcelItem.setRows((int)lr.getTotal());
+							exportExcelItem.setCurRow(0);
+							exportExcelItem.setId(daoItem.getId());
+							exportExcelCache.put(uid, exportExcelItem);
+						}
+					}
+
 					Iterator irFdao = lr.getResult().iterator();
 					while (irFdao.hasNext()) {
 						fdao = (com.redmoon.oa.visual.FormDAO) irFdao.next();
@@ -3116,6 +2727,14 @@ public class ModuleUtil {
 
 						// 置SQL宏控件中需要用到的fdao
 						RequestUtil.setFormDAO(request, fdao);
+
+						// 取出嵌套表的记录
+						Map<String, List<com.redmoon.oa.visual.FormDAO>> mapNest = new HashMap<>();
+						if (isExporBySelCol) {
+							for (String nestFormCode : nestFormList) {
+								mapNest.put(nestFormCode, fdao.listNest(nestFormCode));
+							}
+						}
 
 						for (int i = 0; i < len; i++) {
 							long tDebugCol = System.currentTimeMillis();
@@ -3136,7 +2755,7 @@ public class ModuleUtil {
 									try {
 										ResultIterator riSub = jt.executeQuery(subsql);
 										while (riSub.hasNext()) {
-											ResultRecord rr = (ResultRecord) riSub.next();
+											ResultRecord rr = riSub.next();
 											int subid = rr.getInt(1);
 											subfdao = new FormDAO(subid, subfd);
 											String subFieldValue = subfdao.getFieldValue(subFields[2]);
@@ -3152,7 +2771,7 @@ public class ModuleUtil {
 											sbSub.append(subFieldValue).append(ri.hasNext() ? "," : "");
 										}
 									} catch (Exception e) {
-										e.printStackTrace();
+										LogUtil.getLog(ModuleUtil.class).error(e);
 									}
 									fieldValue += sbSub.toString();
 								}
@@ -3204,22 +2823,49 @@ public class ModuleUtil {
 								}
 							}
 							else if ("cws_id".equals(fieldName)) {
-								fieldValue = StrUtil.getNullStr(fdao.getCwsId());
+								fieldValue = fdao.getCwsId();
 							}
 							else {
-								// FormField ff = fd.getFormField(fieldName);
-								FormField ff = fdao.getFormField(fieldName);
-
-								if (ff == null) {
-									fieldValue = "不存在！";
-								} else {
-									if (ff.getType().equals(FormField.TYPE_MACRO)) {
-										MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
-										if (mu != null) {
-											fieldValue = mu.getIFormMacroCtl().converToHtml(request, ff, fdao.getFieldValue(fieldName));
+								boolean isNestCol = false;
+								if (isExporBySelCol) {
+									// 嵌套表
+									if (fieldName.contains(":")) {
+										isNestCol = true;
+										String[] ary = fieldName.split(":");
+										List<com.redmoon.oa.visual.FormDAO> nestList = mapNest.get(ary[0]);
+										StringBuilder stringBuilder = new StringBuilder();
+										for (com.redmoon.oa.visual.FormDAO nestDao : nestList) {
+											FormField nestFf = nestDao.getFormField(ary[1]);
+											if (nestFf.getType().equals(FormField.TYPE_MACRO)) {
+												MacroCtlUnit mu = mm.getMacroCtlUnit(nestFf.getMacroType());
+												if (mu == null) {
+													DebugUtil.e(ModuleUtil.class, "exportXml", nestFf.getTitle() + " 嵌套表 宏控件: " + nestFf.getMacroType() + " 不存在");
+												} else if (!"macro_raty".equals(mu.getCode())) {
+													StrUtil.concat(stringBuilder, ",", StrUtil.getAbstract(request, mu.getIFormMacroCtl().converToHtml(request, nestFf, nestFf.getValue()), 1000, ""));
+												}
+											} else {
+												StrUtil.concat(stringBuilder, ",", nestFf.convertToHtml());
+											}
 										}
+										fieldValue = stringBuilder.toString();
+									}
+								}
+
+								if (!isNestCol) {
+									// FormField ff = fd.getFormField(fieldName);
+									FormField ff = fdao.getFormField(fieldName);
+
+									if (ff == null) {
+										fieldValue = "不存在！";
 									} else {
-										fieldValue = FuncUtil.renderFieldValue(fdao, ff);
+										if (ff.getType().equals(FormField.TYPE_MACRO)) {
+											MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+											if (mu != null) {
+												fieldValue = mu.getIFormMacroCtl().converToHtml(request, ff, fdao.getFieldValue(fieldName));
+											}
+										} else {
+											fieldValue = FuncUtil.renderFieldValue(fdao, ff);
+										}
 									}
 								}
 							}
@@ -3243,12 +2889,24 @@ public class ModuleUtil {
 							output.flush();
 							sb.setLength(0);
 						}
+
+						ExportExcelItem exportExcelItem = exportExcelCache.get(uid);
+						if (exportExcelItem == null) {
+							LogUtil.getLog(ModuleUtil.class).error("uid: " + uid + " is not found，it is may be expired.");
+						} else {
+							exportExcelItem.setUid(uid);
+							exportExcelItem.setCurRow(n);
+							exportExcelCache.put(uid, exportExcelItem);
+						}
+
 						if (Global.getInstance().isDebug()) {
 							DebugUtil.i(ModuleUtil.class, "export", "one record: " + (System.currentTimeMillis() - tDebugRow) + " ms");
 						}
 					}
 				} catch (ErrMsgException e) {
-					e.printStackTrace();
+					LogUtil.getLog(ModuleUtil.class).error(e);
+				} catch (SQLException e) {
+					LogUtil.getLog(ModuleUtil.class).error(e);
 				}
 			}
 
@@ -3270,12 +2928,31 @@ public class ModuleUtil {
 			output.flush();
 			output.close();
 
-			DebugUtil.i(ModuleUtil.class, "export", "共" + total + " 条 耗时：" + (System.currentTimeMillis()-tDebug) + " ms");
+			// 当异步导出Excel时
+			if (sysProperties.isExportExcelAsync() && Global.getInstance().isUseCache()) {
+				ExportExcelItem exportExcelItem = exportExcelCache.get(uid);
+				if (exportExcelItem == null) {
+					LogUtil.getLog(ModuleUtil.class).error("uid: " + uid + " is not found，it is may be expired.");
+				} else {
+					exportExcelItem.setUid(uid);
+					exportExcelItem.setCurRow(exportExcelItem.getRows());
+					exportExcelCache.put(uid, exportExcelItem);
+
+					FormDb fdItem = new FormDb();
+					fdItem = fdItem.getFormDb(ConstUtil.FORM_EXPORT_EXCEL);
+					FormDAO daoItem = new FormDAO();
+					daoItem = daoItem.getFormDAOByCache(exportExcelItem.getId(), fdItem);
+					daoItem.setFieldValue("finish_time", new Date());
+					daoItem.save();
+				}
+			}
+
+			DebugUtil.i(ModuleUtil.class, "export", "共 " + total + " 条 耗时：" + (System.currentTimeMillis()-tDebug) + " ms");
 
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LogUtil.getLog(ModuleUtil.class).error(e);
 		} finally {
 			 jt.close();
 		}
@@ -3293,8 +2970,1286 @@ public class ModuleUtil {
 			case ConstUtil.BTN_OK:
 				btnDefaultName = "确定";
 				break;
+			case ConstUtil.BTN_CLOSE:
+				btnDefaultName = "关闭";
+				break;
+			case ConstUtil.BTN_BACK:
+				btnDefaultName = "返回";
+				break;
 		}
 		return btnDefaultName;
+	}
+
+	public static com.alibaba.fastjson.JSONArray getColProps(ModuleSetupDb msd, boolean isModuleListSel) throws ErrMsgException {
+		return getColProps(msd, isModuleListSel, false);
+	}
+
+	public static com.alibaba.fastjson.JSONArray getColProps(ModuleSetupDb msd, boolean isModuleListSel, boolean isNested) throws ErrMsgException {
+		com.alibaba.fastjson.JSONArray ary = new com.alibaba.fastjson.JSONArray();
+		String[] fields = msd.getColAry(false, "list_field");
+		if (fields == null || fields.length == 0) {
+			throw new ErrMsgException("显示列未配置！");
+		}
+		String[] fieldsWidth = msd.getColAry(false, "list_field_width");
+		String[] fieldsShow = msd.getColAry(false, "list_field_show");
+		String[] fieldsTitle = msd.getColAry(false, "list_field_title");
+		String[] fieldsAlign = msd.getColAry(false, "list_field_align");
+
+		boolean isColCheckboxShow = true, isColOperateShow = true;
+		com.alibaba.fastjson.JSONObject props = com.alibaba.fastjson.JSONObject.parseObject(msd.getString("props"));
+		if (props != null) {
+			isColCheckboxShow = props.getBoolean("isColCheckboxShow");
+			isColOperateShow = props.getBoolean("isColOperateShow");
+		}
+
+		// 列表中的嵌套表格不显示操作列
+		if (isNested) {
+			isColOperateShow = false;
+		}
+
+		// 复选框列
+		/*if (isColCheckboxShow) {
+			if (!isModuleListSel) {
+				com.alibaba.fastjson.JSONObject jsonChk = new com.alibaba.fastjson.JSONObject();
+				jsonChk.put("type", "checkbox");
+				jsonChk.put("align", "center");
+				jsonChk.put("fixed", "left");
+				ary.add(jsonChk);
+			}
+		}*/
+
+		String promptField = StrUtil.getNullStr(msd.getString("prompt_field"));
+		String promptIcon = StrUtil.getNullStr(msd.getString("prompt_icon"));
+		boolean isPrompt = false;
+		if (!"".equals(promptField) && !"".equals(promptIcon)) {
+			isPrompt = true;
+		}
+		if (isPrompt) {
+			com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+			json.put("title", "图标");
+			json.put("field", "colPrompt");
+			json.put("width", 50);
+			json.put("sort", false);
+			ary.add(json);
+		}
+
+		FormDb fd = new FormDb();
+		fd = fd.getFormDb(msd.getString("form_code"));
+
+		// 合计列
+		com.alibaba.fastjson.JSONObject jsonStat = null;
+		String propStat = msd.getString("prop_stat");
+		if (StringUtils.isNotEmpty(propStat)) {
+			if ("".equals(propStat)) {
+				propStat = "{}";
+			}
+			jsonStat = com.alibaba.fastjson.JSONObject.parseObject(propStat);
+		}
+
+		boolean isColOperateToShow = true;
+
+		ICondUtil condUtil = SpringUtil.getBean(ICondUtil.class);
+		int len = fields.length;
+		for (int i = 0; i < len; i++) {
+			String fieldName = fields[i];
+			String fieldTitle = fieldsTitle[i];
+
+			Object[] aryTitle = condUtil.getFieldTitle(fd, fieldName, fieldTitle);
+			String title = (String) aryTitle[0];
+			boolean sortable;
+			if (isNested) {
+				sortable = false;
+			} else {
+				sortable = (Boolean) aryTitle[1];
+			}
+			String macroType = (String)aryTitle[3];
+
+			String w = fieldsWidth[i];
+			int wid = StrUtil.toInt(w, 100);
+			if (w.indexOf("%") == w.length() - 1) {
+				w = w.substring(0, w.length() - 1);
+				wid = 800 * StrUtil.toInt(w, 20) / 100;
+			}
+			wid += 30; // 因为layui table有排序符号
+
+			if ("0".equals(fieldsShow[i])) {
+				continue;
+			}
+
+			com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+			if ("colOperate".equals(fieldName) && isColOperateShow) {
+				isColOperateToShow = false;
+				if ("".equals(title)) {
+					json.put("title", "操作");
+				}
+				else {
+					json.put("title", title);
+				}
+				json.put("field", "colOperate");
+				if (isModuleListSel) {
+					json.put("width", 80);
+				}
+				else {
+					json.put("width", wid);
+				}
+				json.put("sort", false);
+				json.put("align", "center");
+				json.put("fixed", "right");
+			} else {
+				json.put("title", title);
+				json.put("field", fieldName);
+				json.put("width", wid);
+				json.put("sort", sortable);
+				json.put("align", fieldsAlign[i]);
+				json.put("hide", false);
+				json.put("event", "editColumn");
+				json.put("macroType", macroType);
+
+				// 如果是合计字段，则置flag为INDEX
+				/*if (jsonStat != null && jsonStat.containsKey(fieldName)) {
+					json.put("flag", "INDEX");
+				}*/
+			}
+			ary.add(json);
+		}
+
+		// 如果未定义colOperate，则将其加入，宽度默认为150
+		if (isColOperateShow && isColOperateToShow) {
+			com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+			json.put("title", "操作");
+			json.put("field", "colOperate");
+			json.put("width", 150);
+			json.put("sort", false);
+			json.put("fixed", "right");
+			if (isModuleListSel) {
+				json.put("align", "center");
+			}
+			ary.add(json);
+		}
+		return ary;
+	}
+
+	public static String getConditionHtml(HttpServletRequest request, ModuleSetupDb msd, ArrayList<String> dateFieldNamelist) {
+		FormDb fd = new FormDb();
+		fd = fd.getFormDb(msd.getString("form_code"));
+		ICondUtil condUtil = SpringUtil.getBean(ICondUtil.class);
+
+		String btnName = StrUtil.getNullStr(msd.getString("btn_name"));
+		String[] btnNames = StrUtil.split(btnName, ",");
+		String btnScript = StrUtil.getNullStr(msd.getString("btn_script"));
+		String[] btnScripts = StrUtil.split(btnScript, "#");
+		if (btnNames != null) {
+			int len = btnNames.length;
+			for (int i = 0; i < len; i++) {
+				if (btnScripts[i].startsWith("{")) {
+					Map<String, String> checkboxGroupMap = new HashMap<String, String>();
+					com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSONObject.parseObject(btnScripts[i]);
+					if ("queryFields".equals(json.getString("btnType"))) {
+						String condFields = (String) json.get("fields");
+						String condTitles = "";
+						if (json.containsKey("titles")) {
+							condTitles = (String) json.get("titles");
+						}
+						String[] fieldAry = StrUtil.split(condFields, ",");
+						String[] titleAry = StrUtil.split(condTitles, ",");
+						if (fieldAry.length == 0) {
+							return "";
+						}
+						StringBuilder sb = new StringBuilder();
+						for (int j = 0; j < fieldAry.length; j++) {
+							String fieldName = fieldAry[j];
+							String fieldTitle = "#";
+							if (titleAry != null) {
+								fieldTitle = titleAry[j];
+								if ("".equals(fieldTitle)) {
+									fieldTitle = "#";
+								}
+							}
+
+							String condType = (String) json.get(fieldName);
+							try {
+								CondUnit condUnit = condUtil.getConditonUnit(request, msd, fd, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
+								sb.append("<span class=\"cond-span\">");
+								sb.append("<span class=\"cond-title\">");
+								sb.append(condUnit.getFieldTitle());
+								sb.append("</span>");
+								sb.append("<span class=\"cond-ctl\">");
+								sb.append(condUnit.getHtml());
+								sb.append("</span>");
+								sb.append("</span>");
+								sb.append("<script>");
+								sb.append(condUnit.getScript());
+								sb.append("</script>");
+							} catch (ErrMsgException e) {
+								LogUtil.getLog(ModuleUtil.class).error(e);
+							}
+						}
+						return sb.toString();
+					}
+				}
+			}
+		}
+
+		return "";
+	}
+
+	public static String getModuleListSelCondScriptFromWinOpener(String conds) {
+		if (StrUtil.isEmpty(conds)) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append("var condStr = '';\n");
+		Pattern p = Pattern.compile(
+				"\\{\\$([A-Z0-9a-z-_@\\u4e00-\\u9fa5\\xa1-\\xff]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
+				Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(conds);
+		while (m.find()) {
+			String fieldName = m.group(1);
+			if ("cwsCurUser".equals(fieldName) || "curUser".equals(fieldName)
+					|| "curUserDept".equals(fieldName) || "curUserRole".equals(fieldName) || "admin.dept".equals(fieldName)) {
+				continue;
+			}
+			// 当条件为包含时，fieldName以@开头
+			if (fieldName.startsWith("@")) {
+				fieldName = fieldName.substring(1);
+			}
+
+			String fieldNameReal = fieldName;
+			if ("parentId".equals(fieldName) || "mainId".equals(fieldName)) {
+				fieldNameReal = "cws_id";
+			}
+
+			sb.append("if (window.opener.o('" + fieldNameReal + "') == null) {\n");
+			sb.append("	console.error(\"条件字段：" + fieldName + "在表单中不存在！\");\n");
+			sb.append("} else {\n");
+			sb.append("	if (condStr == \"\")\n");
+			sb.append("		condStr = \"" + fieldName + "=\" + encodeURI(window.opener.o(\"" + fieldNameReal + "\").value);\n");
+			sb.append("	else\n");
+			sb.append("		condStr += \"&" + fieldName + "=\" + encodeURI(window.opener.o(\"" + fieldNameReal + "\").value);\n");
+			sb.append("}\n");
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * 取得表单域选择宏控件的源模块条件中的字段
+	 * @param conds
+	 * @return
+	 */
+	public static String getModuleListNestSelCondScriptFromWinOpener(String conds) {
+		if (StrUtil.isEmpty(conds)) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append("var condStr = '';\n");
+		Pattern p = Pattern.compile(
+				"\\{\\$([A-Z0-9a-z-_@\\u4e00-\\u9fa5\\xa1-\\xff]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
+				Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(conds);
+		while (m.find()) {
+			String fieldName = m.group(1);
+			if ("cwsCurUser".equals(fieldName) || "curUser".equals(fieldName)
+					|| "curUserDept".equals(fieldName) || "curUserRole".equals(fieldName) || "admin.dept".equals(fieldName) || "mainId".equals(fieldName)) {
+				continue;
+			}
+			// 当条件为包含时，fieldName以@开头
+			if (fieldName.startsWith("@")) {
+				fieldName = fieldName.substring(1);
+			}
+
+			String fieldNameReal = fieldName;
+			/*if ("parentId".equals(fieldName) || "mainId".equals(fieldName)) {
+				fieldNameReal = "cws_id";
+			}*/
+
+			sb.append("	if (condStr == \"\")\n");
+			sb.append("		condStr = \"" + fieldName + "=\" + encodeURI(window.opener.o(\"" + fieldNameReal + "\").value);\n");
+			sb.append("	else\n");
+			sb.append("		condStr += \"&" + fieldName + "=\" + encodeURI(window.opener.o(\"" + fieldNameReal + "\").value);\n");
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * 取得表单域选择宏控件的源模块条件中的字段
+	 * @param conds
+	 * @return
+	 */
+	public static List<String> getModuleListNestSelCondFields(String conds) {
+		List<String> list = new ArrayList<>();
+		if (StrUtil.isEmpty(conds)) {
+			return list;
+		}
+		Pattern p = Pattern.compile(
+				"\\{\\$([A-Z0-9a-z-_@\\u4e00-\\u9fa5\\xa1-\\xff]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
+				Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(conds);
+		while (m.find()) {
+			String fieldName = m.group(1);
+			if ("cwsCurUser".equals(fieldName) || "curUser".equals(fieldName)
+					|| "curUserDept".equals(fieldName) || "curUserRole".equals(fieldName) || "admin.dept".equals(fieldName) || "mainId".equals(fieldName)) {
+				continue;
+			}
+			// 当条件为包含时，fieldName以@开头
+			if (fieldName.startsWith("@")) {
+				fieldName = fieldName.substring(1);
+			}
+
+			list.add(fieldName);
+		}
+		return list;
+	}
+
+	/**
+	 * 渲染选项卡
+	 * @param request
+	 * @return
+	 * @throws ErrMsgException
+	 */
+	public static com.alibaba.fastjson.JSONArray renderTabsBack(HttpServletRequest request) throws ErrMsgException {
+		String codeTop = ParamUtil.get(request, "moduleCode");
+		if ("".equals(codeTop)) {
+			codeTop = ParamUtil.get(request, "code");
+			if ("".equals(codeTop)) {
+				codeTop = ParamUtil.get(request, "formCode");
+			}
+		}
+
+		// 如果传了mainCode，则说明是从其它模块列表的头部选项卡链接过来
+		String mainCode = ParamUtil.get(request, "mainCode");
+		if (!"".equals(mainCode)) {
+			codeTop = mainCode;
+		}
+
+		// 主模块的页面类型
+		String pageTypeTop = (String) request.getAttribute("pageType");
+		if (pageTypeTop == null || ConstUtil.PAGE_TYPE_LIST_RELATE.equals(pageTypeTop) || ConstUtil.PAGE_TYPE_ADD.equals(pageTypeTop)) {
+			pageTypeTop = ParamUtil.get(request, "parentPageType"); // module_list_relate.jsp中
+		}
+
+		ModuleSetupDb msdTop = new ModuleSetupDb();
+		msdTop = msdTop.getModuleSetupDb(codeTop);
+		if (msdTop == null) {
+			throw new ErrMsgException(cn.js.fan.web.SkinUtil.makeErrMsg(request, "模块：" + codeTop + "不存在"));
+		}
+
+		String formCodeTop = msdTop.getString("form_code");
+
+		long parentIdTop = ParamUtil.getLong(request, "parentId", -1);
+		if (parentIdTop == -1) {
+			parentIdTop = ParamUtil.getLong(request, "id", -1);
+		}
+
+		com.redmoon.oa.visual.FormDAO fdaoTop = new com.redmoon.oa.visual.FormDAO();
+		FormDb fdTop = new FormDb();
+		fdTop = fdTop.getFormDb(formCodeTop);
+		if (parentIdTop != -1) {
+			fdaoTop = fdaoTop.getFormDAO(parentIdTop, fdTop);
+		}
+		String requestParamsTop;
+		StringBuffer requestParamsBuf = new StringBuffer();
+		Enumeration<String> paramNames = request.getParameterNames();
+		while (paramNames.hasMoreElements()) {
+			String paramName = paramNames.nextElement();
+			String[] paramValues = request.getParameterValues(paramName);
+			if (paramValues.length == 1) {
+				String paramValue = ParamUtil.getParam(request, paramName);
+				// 过滤掉formCode等
+				if ("code".equals(paramName)
+						|| "formCode".equals(paramName)
+						|| "moduleCode".equals(paramName)
+						|| "mainCode".equals(paramName)
+						|| "menuItem".equals(paramName)
+						|| "parentId".equals(paramName)
+						|| "moduleCodeRelated".equals(paramName)
+						|| "formCodeRelated".equals(paramName)
+						|| "mode".equals(paramName) // 去掉mode及tagName，否则当存在mode=subTagRelated，关联模块中就会有问题
+						|| "tagName".equals(paramName)
+						|| "id".equals(paramName)
+						|| "parentPageType".equals(paramName)
+						|| "vOrders".equals(paramName)
+				) {
+					;
+				} else {
+					StrUtil.concat(requestParamsBuf, "&", paramName + "=" + StrUtil.UrlEncode(paramValue));
+				}
+			}
+		}
+		requestParamsTop = requestParamsBuf.toString();
+		request.setAttribute("reqParams", requestParamsTop); // module_add.jsp中会调用到
+
+		String servletPathTop = request.getServletPath();
+		int pTop = servletPathTop.lastIndexOf("/");
+		servletPathTop = servletPathTop.substring(0, pTop);
+		if (!"".equals(mainCode)) {
+			servletPathTop = "/visual";
+		}
+
+		com.alibaba.fastjson.JSONArray aryTop = new com.alibaba.fastjson.JSONArray();
+
+		// 当页面为edit、show、list即module_edit.jsp module_show.jsp module_list.jsp时不需要处理关联模块时
+		if (parentIdTop == -1) {
+			String moduleUrlList;
+			if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT || msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT_LIST) {
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				moduleUrlList = request.getContextPath() + servletPathTop + "/module_list_gantt.jsp?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName() + "看板");
+				json.put("id", "menu100");
+			} else if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR || msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR_LIST) {
+				moduleUrlList = request.getContextPath() + servletPathTop + "/module_list_calendar.jsp?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&menuItem=101";
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName() + "日历看板");
+				json.put("id", "menu101");
+			} else {
+				moduleUrlList = StrUtil.getNullStr(msdTop.getString("url_list"));
+				if ("".equals(moduleUrlList)) {
+					moduleUrlList = request.getContextPath() + "/visual/moduleListPage.do?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&" + requestParamsTop;
+				} else {
+					moduleUrlList = request.getContextPath() + "/" + moduleUrlList;
+					if (!moduleUrlList.contains("&")) {
+						moduleUrlList += "?" + requestParamsTop;
+					} else {
+						moduleUrlList += "&" + requestParamsTop;
+					}
+				}
+
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+			}
+			if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT_LIST) {
+				moduleUrlList = request.getContextPath() + servletPathTop + "/moduleListPage.do?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&" + requestParamsTop;
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+			} else if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR_LIST) {
+				moduleUrlList = request.getContextPath() + servletPathTop + "/moduleListPage.do?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&" + requestParamsTop;
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+			}
+
+			com.redmoon.oa.pvg.Privilege pvgTop = new com.redmoon.oa.pvg.Privilege();
+			// 此处判断模块权限应该使用模块的code，formCodeTop此时为formCode
+			ModulePrivDb mpdTop = new ModulePrivDb(codeTop);
+			if (msdTop.getInt("btn_log_show") == 1) {
+				if (mpdTop.canUserLog(pvgTop.getUser(request)) || mpdTop.canUserManage(pvgTop.getUser(request))) {
+					if (fdTop.isLog()) {
+						long fdaoIdTop = ParamUtil.getLong(request, "id", -1);
+						String opLog = "search";
+						if (fdaoIdTop == -1) {
+							opLog = "";
+						}
+
+						moduleUrlList = request.getContextPath() + servletPathTop + "/module_log_list.jsp?op=" + opLog + "&code=" + codeTop + "&fdaoId=" + fdaoIdTop + "&moduleFormCode=" + formCodeTop + "&moduleCodeLog=" + msdTop.getString("module_code_log") + "&" + requestParamsTop;
+						com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+						aryTop.add(json);
+						json.put("url", moduleUrlList);
+						json.put("name", "修改日志");
+						json.put("id", "menu4");
+
+						com.redmoon.oa.Config cfgTop = com.redmoon.oa.Config.getInstance();
+						boolean isModuleLogRead = cfgTop.getBooleanProperty("isModuleLogRead");
+						if (isModuleLogRead) {
+							moduleUrlList = request.getContextPath() + "/visual/moduleListPage.do?op=search&code=module_log_read&read_type=" + FormDAOLog.READ_TYPE_MODULE + "&module_code=" + codeTop + "&form_code=" + formCodeTop;
+							json = new com.alibaba.fastjson.JSONObject();
+							aryTop.add(json);
+							json.put("url", moduleUrlList);
+							json.put("name", "浏览日志");
+							json.put("id", "menu5");
+							json.put("target", "newTab");
+						}
+					}
+				}
+			}
+
+			int menuItemTop = 6;
+
+			// 列表页上的选项卡设置
+			String[] tagsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("nav_tag_name")), ",");
+			String[] tagUrlsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("nav_tag_url")), ",");
+			int lenTop = 0;
+			if (tagsTop != null) {
+				lenTop = tagsTop.length;
+			}
+			for (int i = 0; i < lenTop; i++) {
+				String url = tagUrlsTop[i];
+				if (url.startsWith("{")) {
+					com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSONObject.parseObject(url);
+					String moduleCodeTop = json.getString("moduleCode");
+					if (!"".equals(mainCode)) {
+						url = request.getContextPath() + "/visual/moduleListPage.do?code=" + moduleCodeTop + "&mainCode=" + mainCode + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+					} else {
+						url = request.getContextPath() + "/visual/moduleListPage.do?code=" + moduleCodeTop + "&mainCode=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+					}
+				} else {
+					if (!url.startsWith("http")) {
+						url = request.getContextPath() + "/" + url;
+						if (url.contains("?")) {
+							if (!"".equals(mainCode)) {
+								url += "&mainCode=" + mainCode + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+							} else {
+								url += "&mainCode=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+							}
+						} else {
+							if (!"".equals(mainCode)) {
+								url += "?mainCode=" + mainCode + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+							} else {
+								url += "?mainCode=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+							}
+						}
+					}
+				}
+
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", url);
+				json.put("name", tagsTop[i]);
+				json.put("id", "menu" + menuItemTop);
+				menuItemTop++;
+			}
+		} else {
+			if (msdTop.getInt("view_show") == ModuleSetupDb.VIEW_SHOW_CUSTOM) {
+				String url = FormUtil.parseAndSetFieldValue(msdTop.getString("url_show"), fdaoTop);
+				if (!url.contains("?")) {
+					url += "?";
+				} else {
+					url += "&";
+				}
+
+				String moduleUrlList = request.getContextPath() + "/" + url + "id=" + parentIdTop + "&parentId=" + parentIdTop + "&code=" + codeTop + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+			} else {
+				if ("edit".equals(pageTypeTop)) {
+					String moduleUrlList = request.getContextPath() + servletPathTop + "/moduleEditPage.do?id=" + parentIdTop + "&parentId=" + parentIdTop + "&code=" + codeTop + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+					com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+					aryTop.add(json);
+					json.put("url", moduleUrlList);
+					json.put("name", msdTop.getName());
+					json.put("id", "menu1");
+				} else {
+					String moduleUrlList = request.getContextPath() + servletPathTop + "/moduleShowPage.do?id=" + parentIdTop + "&parentId=" + parentIdTop + "&code=" + codeTop + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+					com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+					aryTop.add(json);
+					json.put("url", moduleUrlList);
+					json.put("name", msdTop.getName());
+					json.put("id", "menu1");
+				}
+			}
+
+			int menuItemTop = 6;
+			// 关联模块选项卡
+			com.redmoon.oa.pvg.Privilege pvgTop = new com.redmoon.oa.pvg.Privilege();
+			String curUserTop = pvgTop.getUser(request);
+			ModuleRelateDb mrdTop = new ModuleRelateDb();
+			ModuleSetupDb msdRelate = new ModuleSetupDb();
+			com.alibaba.fastjson.JSONArray aryRelate = new com.alibaba.fastjson.JSONArray();
+			for (ModuleRelateDb moduleRelateDb : mrdTop.getModulesRelated(formCodeTop)) {
+				mrdTop = moduleRelateDb;
+				// 有查看权限才能看到从模块选项卡
+				ModulePrivDb mpdTop = new ModulePrivDb(mrdTop.getString("relate_code"));
+				if (mpdTop.canUserSee(curUserTop) && mrdTop.getInt("is_on_tab") == 1) {
+					// 条件检查
+					String conds = StrUtil.getNullStr(mrdTop.getString("conds"));
+					if (!"".equals(conds)) {
+						String cond = ModuleUtil.parseConds(request, fdaoTop, conds);
+						javax.script.ScriptEngineManager manager = new javax.script.ScriptEngineManager();
+						javax.script.ScriptEngine engine = manager.getEngineByName("javascript");
+						try {
+							Boolean ret = (Boolean) engine.eval(cond);
+							if (!ret) {
+								continue;
+							}
+						} catch (javax.script.ScriptException ex) {
+							LogUtil.getLog(ModuleUtil.class).error(ex);
+						}
+					}
+
+					msdRelate = msdRelate.getModuleSetupDb(mrdTop.getString("relate_code"));
+					String url = request.getContextPath() + "/visual/moduleListRelatePage.do?parentPageType=" + pageTypeTop + "&parentId=" + parentIdTop + "&menuItem=" + menuItemTop + "&code=" + codeTop + "&moduleCodeRelated=" + mrdTop.getString("relate_code") + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+					com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+					aryRelate.add(json);
+					json.put("url", url);
+					json.put("name", msdRelate.getName());
+					String tabName = moduleRelateDb.getString("tab_name");
+					if (StrUtil.isEmpty(tabName)) {
+						tabName = msdRelate.getName();
+					}
+					json.put("tabName", tabName);
+					json.put("id", "menu" + menuItemTop);
+					json.put("orders", moduleRelateDb.getInt("relate_order"));
+
+					menuItemTop++;
+				}
+			}
+
+			// 将orders一样的选项卡只保留第一个
+			double lastOrders = -100;
+			com.alibaba.fastjson.JSONObject lastJson = null;
+			Iterator irRelate = aryRelate.iterator();
+			while (irRelate.hasNext()) {
+				com.alibaba.fastjson.JSONObject json = (com.alibaba.fastjson.JSONObject)irRelate.next();
+				double orders = json.getDoubleValue("orders");
+				if (orders != lastOrders) {
+					lastOrders = orders;
+					lastJson = json;
+				}
+				else {
+					if (!lastJson.containsKey("isVertical")) {
+						lastJson.put("isVertical", true);
+						String url = lastJson.getString("url");
+						url = url.replace("moduleListRelatePage.do", "module_list_relate_v.jsp");
+						url += "&vOrders=" + lastOrders;
+						lastJson.put("url", url);
+					}
+					irRelate.remove();
+				}
+			}
+
+			aryTop.addAll(aryRelate);
+
+			// 查询关联选项卡
+			lastOrders = -100;
+			lastJson = null;
+			String[] subTagsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("sub_nav_tag_name")), "\\|");
+			String[] subTagOrders = StrUtil.split(StrUtil.getNullStr(msdTop.getString("sub_nav_tag_order")), "\\|");
+			int subLenTop = 0;
+			if (subTagsTop != null) {
+				subLenTop = subTagsTop.length;
+			}
+			for (int i = 0; i < subLenTop; i++) {
+				String uri = ModuleUtil.filterViewEditTagUrl(request, codeTop, subTagsTop[i]);
+				String url = "";
+				if (uri.contains("?")) {
+					url = uri + "&parentId=" + parentIdTop + "&code=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+				} else {
+					url = uri + "?parentId=" + parentIdTop + "&code=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+				}
+
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				json.put("url", url);
+				json.put("name", subTagsTop[i]);
+				json.put("id", "menu" + menuItemTop);
+				json.put("tagName", subTagsTop[i]);
+
+				// 通过order分组显示，只支持“模块链接选项卡”
+				boolean isSubTagRelatedTop = uri.contains("subTagRelated");
+				if (isSubTagRelatedTop) {
+					double order = StrUtil.toDouble(subTagOrders[i], 0);
+					if (lastOrders != order) {
+						lastOrders = order;
+						lastJson = json;
+					}
+					else {
+						if (!lastJson.containsKey("isVertical")) {
+							lastJson.put("isVertical", true);
+							url = lastJson.getString("url");
+							url = url.replace("moduleListRelatePage.do", "module_list_relate_v.jsp");
+							url += "&vOrders=" + lastOrders;
+							lastJson.put("url", url);
+						}
+						continue;
+					}
+				}
+
+				aryTop.add(json);
+				menuItemTop++;
+			}
+		}
+		return aryTop;
+	}
+
+	/**
+	 * 渲染选项卡
+	 * @param request
+	 * @return
+	 * @throws ErrMsgException
+	 */
+	public static com.alibaba.fastjson.JSONArray renderTabs(HttpServletRequest request) throws ErrMsgException {
+		String codeTop = ParamUtil.get(request, "moduleCode");
+		if ("".equals(codeTop)) {
+			codeTop = ParamUtil.get(request, "code");
+			if ("".equals(codeTop)) {
+				codeTop = ParamUtil.get(request, "formCode");
+			}
+		}
+
+		// 如果传了mainCode，则说明是从其它模块列表的头部选项卡链接过来
+		String mainCode = ParamUtil.get(request, "mainCode");
+		if (!"".equals(mainCode)) {
+			codeTop = mainCode;
+		}
+
+		// 主模块的页面类型
+		String pageTypeTop = (String) request.getAttribute("pageType");
+		if (pageTypeTop == null || ConstUtil.PAGE_TYPE_LIST_RELATE.equals(pageTypeTop) || ConstUtil.PAGE_TYPE_ADD.equals(pageTypeTop)) {
+			pageTypeTop = ParamUtil.get(request, "parentPageType"); // module_list_relate.jsp中
+		}
+
+		ModuleSetupDb msdTop = new ModuleSetupDb();
+		msdTop = msdTop.getModuleSetupDb(codeTop);
+		if (msdTop == null) {
+			throw new ErrMsgException(cn.js.fan.web.SkinUtil.makeErrMsg(request, "模块：" + codeTop + "不存在"));
+		}
+
+		String formCodeTop = msdTop.getString("form_code");
+
+		long parentIdTop = ParamUtil.getLong(request, "parentId", -1);
+		if (parentIdTop == -1) {
+			parentIdTop = ParamUtil.getLong(request, "id", -1);
+		}
+
+		com.redmoon.oa.visual.FormDAO fdaoTop = new com.redmoon.oa.visual.FormDAO();
+		FormDb fdTop = new FormDb();
+		fdTop = fdTop.getFormDb(formCodeTop);
+		if (parentIdTop != -1) {
+			fdaoTop = fdaoTop.getFormDAO(parentIdTop, fdTop);
+		}
+		com.alibaba.fastjson.JSONObject requestParams = new com.alibaba.fastjson.JSONObject();
+		String requestParamsTop;
+		StringBuffer requestParamsBuf = new StringBuffer();
+		Enumeration<String> paramNames = request.getParameterNames();
+		while (paramNames.hasMoreElements()) {
+			String paramName = paramNames.nextElement();
+			String[] paramValues = request.getParameterValues(paramName);
+			if (paramValues.length == 1) {
+				String paramValue = ParamUtil.getParam(request, paramName);
+				// 过滤掉formCode等
+				if ("code".equals(paramName)
+						|| "formCode".equals(paramName)
+						|| "moduleCode".equals(paramName)
+						|| "mainCode".equals(paramName)
+						|| "menuItem".equals(paramName)
+						|| "parentId".equals(paramName)
+						|| "moduleCodeRelated".equals(paramName)
+						|| "formCodeRelated".equals(paramName)
+						|| "mode".equals(paramName) // 去掉mode及tagName，否则当存在mode=subTagRelated，关联模块中就会有问题
+						|| "tagName".equals(paramName)
+						|| "id".equals(paramName)
+						|| "parentPageType".equals(paramName)
+						|| "vOrders".equals(paramName)
+				) {
+					;
+				} else {
+					requestParams.put(paramName, paramValue);
+					StrUtil.concat(requestParamsBuf, "&", paramName + "=" + StrUtil.UrlEncode(paramValue));
+				}
+			}
+		}
+		requestParamsTop = requestParamsBuf.toString();
+		request.setAttribute("reqParams", requestParamsTop); // module_add.jsp中会调用到
+
+		String servletPathTop = request.getServletPath();
+		int pTop = servletPathTop.lastIndexOf("/");
+		servletPathTop = servletPathTop.substring(0, pTop);
+		if (!"".equals(mainCode)) {
+			servletPathTop = "/visual";
+		}
+
+		com.alibaba.fastjson.JSONArray aryTop = new com.alibaba.fastjson.JSONArray();
+
+		// 当页面为edit、show、list即module_edit.jsp module_show.jsp module_list.jsp时不需要处理关联模块时
+		if (parentIdTop == -1) {
+			String moduleUrlList;
+			if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT || msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT_LIST) {
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				/*moduleUrlList = request.getContextPath() + servletPathTop + "/module_list_gantt.jsp?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop);
+				json.put("url", moduleUrlList);*/
+				json.put("name", msdTop.getName() + "看板");
+				json.put("id", "menu100");
+				json.put("type", ConstUtil.PAGE_TYPE_GANTT);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("moduleCode", codeTop);
+				params.put("formCode", formCodeTop);
+				json.put("params", params);
+			} else if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR || msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR_LIST) {
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				// json.put("name", msdTop.getName() + "日历视图");
+				json.put("name", "日历视图");
+				json.put("id", "menu101");
+				json.put("type", ConstUtil.PAGE_TYPE_CALENDAR);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("moduleCode", codeTop);
+				params.put("formCode", formCodeTop);
+				json.put("params", params);
+			} else {
+				/*moduleUrlList = StrUtil.getNullStr(msdTop.getString("url_list"));
+				if ("".equals(moduleUrlList)) {
+					moduleUrlList = request.getContextPath() + "/visual/moduleListPage.do?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&" + requestParamsTop;
+				} else {
+					moduleUrlList = request.getContextPath() + "/" + moduleUrlList;
+					if (!moduleUrlList.contains("&")) {
+						moduleUrlList += "?" + requestParamsTop;
+					} else {
+						moduleUrlList += "&" + requestParamsTop;
+					}
+				}*/
+
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				// json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+				json.put("type", ConstUtil.PAGE_TYPE_LIST_RELATE);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("moduleCode", codeTop);
+				params.put("formCode", formCodeTop);
+				params.putAll(requestParams);
+				json.put("params", params);
+			}
+			if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_GANTT_LIST) {
+				// moduleUrlList = request.getContextPath() + servletPathTop + "/moduleListPage.do?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&" + requestParamsTop;
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				// json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+
+				json.put("type", ConstUtil.PAGE_TYPE_LIST_RELATE);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("moduleCode", codeTop);
+				params.put("formCode", formCodeTop);
+				params.putAll(requestParams);
+				json.put("params", params);
+			} else if (msdTop.getInt("view_list") == ModuleSetupDb.VIEW_LIST_CALENDAR_LIST) {
+				// moduleUrlList = request.getContextPath() + servletPathTop + "/moduleListPage.do?code=" + codeTop + "&formCode=" + StrUtil.UrlEncode(formCodeTop) + "&" + requestParamsTop;
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				// json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+
+				json.put("type", ConstUtil.PAGE_TYPE_LIST_RELATE);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("moduleCode", codeTop);
+				params.put("formCode", formCodeTop);
+				params.putAll(requestParams);
+				json.put("params", params);
+			}
+
+			com.redmoon.oa.pvg.Privilege pvgTop = new com.redmoon.oa.pvg.Privilege();
+			// 此处判断模块权限应该使用模块的code，formCodeTop此时为formCode
+			ModulePrivDb mpdTop = new ModulePrivDb(codeTop);
+			if (msdTop.getInt("btn_log_show") == 1) {
+				if (mpdTop.canUserLog(pvgTop.getUser(request)) || mpdTop.canUserManage(pvgTop.getUser(request))) {
+					if (fdTop.isLog()) {
+						long fdaoIdTop = ParamUtil.getLong(request, "id", -1);
+						String opLog = "search";
+						if (fdaoIdTop == -1) {
+							opLog = "";
+						}
+
+						com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+						aryTop.add(json);
+						json.put("name", "修改日志");
+						json.put("id", "menu4");
+						json.put("type", "logList");
+						com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+						params.put("moduleCode", codeTop);
+						params.put("moduleFormCode", formCodeTop);
+						params.put("moduleCodeLog", msdTop.getString("module_code_log"));
+						params.putAll(requestParams);
+						json.put("params", params);
+
+						com.redmoon.oa.Config cfgTop = com.redmoon.oa.Config.getInstance();
+						boolean isModuleLogRead = cfgTop.getBooleanProperty("isModuleLogRead");
+						if (isModuleLogRead) {
+							// moduleUrlList = request.getContextPath() + "/visual/moduleListPage.do?op=search&code=module_log_read&read_type=" + FormDAOLog.READ_TYPE_MODULE + "&module_code=" + codeTop + "&form_code=" + formCodeTop;
+							json = new com.alibaba.fastjson.JSONObject();
+							aryTop.add(json);
+							// json.put("url", moduleUrlList);
+							json.put("name", "浏览日志");
+							json.put("id", "menu5");
+							json.put("type", "logListRead");
+							params = new com.alibaba.fastjson.JSONObject();
+							params.put("moduleCodeLog", "module_log_read");
+							params.put("read_type", FormDAOLog.READ_TYPE_MODULE);
+							params.put("moduleCode", codeTop);
+							params.put("moduleFormCode", formCodeTop);
+							json.put("params", params);
+						}
+					}
+				}
+			}
+
+			int menuItemTop = 6;
+
+			// 列表页上的选项卡设置
+			String[] tagsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("nav_tag_name")), ",");
+			String[] tagUrlsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("nav_tag_url")), ",");
+			int lenTop = 0;
+			if (tagsTop != null) {
+				lenTop = tagsTop.length;
+			}
+			for (int i = 0; i < lenTop; i++) {
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				String url = tagUrlsTop[i];
+				String type = "", moduleCode = "";
+				if (url.startsWith("{")) {
+					com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSONObject.parseObject(url);
+					moduleCode = json.getString("moduleCode");
+					params.put("moduleCode", moduleCode);
+					if (!"".equals(mainCode)) {
+						// url = request.getContextPath() + "/visual/moduleListPage.do?code=" + moduleCodeTop + "&mainCode=" + mainCode + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+						params.put("mainCode", mainCode);
+					} else {
+						// url = request.getContextPath() + "/visual/moduleListPage.do?code=" + moduleCodeTop + "&mainCode=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+						params.put("mainCode", codeTop);
+					}
+					type = ConstUtil.PAGE_TYPE_LIST_RELATE;
+					url = "";
+				} else {
+					if (!url.startsWith("http")) {
+						url = request.getContextPath() + "/" + url;
+						if (url.contains("?")) {
+							if (!"".equals(mainCode)) {
+								url += "&mainCode=" + mainCode + "&" + requestParamsTop;
+							} else {
+								url += "&mainCode=" + codeTop + "&" + requestParamsTop;
+							}
+						} else {
+							if (!"".equals(mainCode)) {
+								url += "?mainCode=" + mainCode + "&" + requestParamsTop;
+							} else {
+								url += "?mainCode=" + codeTop + "&" + requestParamsTop;
+							}
+						}
+					}
+					type = ConstUtil.PAGE_TYPE_CUSTOM;
+				}
+
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", url);
+				json.put("name", tagsTop[i]);
+				json.put("id", "menu" + menuItemTop);
+
+				json.put("type", type);
+				params.putAll(requestParams);
+				json.put("params", params);
+
+				menuItemTop++;
+			}
+		} else {
+			if (msdTop.getInt("view_show") == ModuleSetupDb.VIEW_SHOW_CUSTOM) {
+				String url = FormUtil.parseAndSetFieldValue(msdTop.getString("url_show"), fdaoTop);
+				if (!url.contains("?")) {
+					url += "?";
+				} else {
+					url += "&";
+				}
+
+				String moduleUrlList = request.getContextPath() + "/" + url + "id=" + parentIdTop + "&parentId=" + parentIdTop + "&moduleCode=" + codeTop + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				aryTop.add(json);
+				json.put("url", moduleUrlList);
+				json.put("name", msdTop.getName());
+				json.put("id", "menu1");
+
+				json.put("type", ConstUtil.PAGE_TYPE_CUSTOM);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("parentId", parentIdTop);
+				params.put("moduleCode", codeTop);
+				params.put("formCode", formCodeTop);
+				params.putAll(requestParams);
+				json.put("params", params);
+			} else {
+				if ("edit".equals(pageTypeTop)) {
+					// String moduleUrlList = request.getContextPath() + servletPathTop + "/moduleEditPage.do?id=" + parentIdTop + "&parentId=" + parentIdTop + "&code=" + codeTop + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+					com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+					aryTop.add(json);
+					// json.put("url", moduleUrlList);
+					json.put("name", msdTop.getName());
+					json.put("id", "menu1");
+
+					json.put("type", ConstUtil.PAGE_TYPE_EDIT);
+					com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+					params.put("id", parentIdTop);
+					params.put("moduleCode", codeTop);
+					params.put("formCode", formCodeTop);
+					params.putAll(requestParams);
+					json.put("params", params);
+				} else {
+					// String moduleUrlList = request.getContextPath() + servletPathTop + "/moduleShowPage.do?id=" + parentIdTop + "&parentId=" + parentIdTop + "&code=" + codeTop + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+					com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+					aryTop.add(json);
+					// json.put("url", moduleUrlList);
+					json.put("name", msdTop.getName());
+					json.put("id", "menu1");
+
+					json.put("type", ConstUtil.PAGE_TYPE_SHOW);
+					com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+					params.put("id", parentIdTop);
+					params.put("moduleCode", codeTop);
+					params.put("formCode", formCodeTop);
+					params.putAll(requestParams);
+					json.put("params", params);
+				}
+			}
+
+			int menuItemTop = 6;
+			// 关联模块选项卡
+			com.redmoon.oa.pvg.Privilege pvgTop = new com.redmoon.oa.pvg.Privilege();
+			String curUserTop = pvgTop.getUser(request);
+			ModuleRelateDb mrdTop = new ModuleRelateDb();
+			ModuleSetupDb msdRelate = new ModuleSetupDb();
+			com.alibaba.fastjson.JSONArray aryRelate = new com.alibaba.fastjson.JSONArray();
+			for (ModuleRelateDb moduleRelateDb : mrdTop.getModulesRelated(formCodeTop)) {
+				mrdTop = moduleRelateDb;
+				LogUtil.getLog(ModuleUtil.class).info("moduleRelateDb name=" + moduleRelateDb.getString("relate_code") + " is_on_tab=" + mrdTop.getInt("is_on_tab"));
+				// 有查看权限才能看到从模块选项卡
+				ModulePrivDb mpdTop = new ModulePrivDb(mrdTop.getString("relate_code"));
+				if (mpdTop.canUserSee(curUserTop) && mrdTop.getInt("is_on_tab") == 1) {
+					// 条件检查
+					String conds = StrUtil.getNullStr(mrdTop.getString("conds"));
+					LogUtil.getLog(ModuleUtil.class).info("moduleRelateDb conds=" + conds);
+					if (!"".equals(conds)) {
+						String cond = ModuleUtil.parseConds(request, fdaoTop, conds);
+						javax.script.ScriptEngineManager manager = new javax.script.ScriptEngineManager();
+						javax.script.ScriptEngine engine = manager.getEngineByName("javascript");
+						try {
+							Boolean ret = (Boolean) engine.eval(cond);
+							if (!ret) {
+								continue;
+							}
+						} catch (javax.script.ScriptException ex) {
+							LogUtil.getLog(ModuleUtil.class).error(ex);
+						}
+					}
+
+					msdRelate = msdRelate.getModuleSetupDb(mrdTop.getString("relate_code"));
+					if (msdRelate == null) {
+						DebugUtil.e(ModuleUtil.class, "renderTabs", "关联模块: " + mrdTop.getString("relate_code") + " 不存在");
+						msdRelate = new ModuleSetupDb();
+						continue;
+					}
+					// String url = request.getContextPath() + "/visual/moduleListRelatePage.do?parentPageType=" + pageTypeTop + "&parentId=" + parentIdTop + "&menuItem=" + menuItemTop + "&code=" + codeTop + "&moduleCodeRelated=" + mrdTop.getString("relate_code") + "&formCode=" + formCodeTop + "&" + requestParamsTop;
+					com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+					aryRelate.add(json);
+
+					// json.put("url", url);
+					json.put("name", msdRelate.getName());
+					String tabName = moduleRelateDb.getString("tab_name");
+					if (StrUtil.isEmpty(tabName)) {
+						tabName = msdRelate.getName();
+					}
+					json.put("tabName", tabName);
+					json.put("id", "menu" + menuItemTop);
+					json.put("orders", moduleRelateDb.getInt("relate_order"));
+
+					json.put("type", ConstUtil.PAGE_TYPE_LIST_RELATE);
+					com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+					params.put("parentPageType", pageTypeTop);
+					params.put("parentId", parentIdTop);
+					params.put("moduleCode", codeTop);
+					params.put("moduleCodeRelated", mrdTop.getString("relate_code"));
+					params.putAll(requestParams);
+					json.put("params", params);
+
+					menuItemTop++;
+				}
+			}
+
+			double lastOrders = -100;
+			com.alibaba.fastjson.JSONObject lastJson = null;
+			// 因暂不支持垂直排列，故先删除
+			// 将orders一样的选项卡只保留第一个
+			/*
+			Iterator irRelate = aryRelate.iterator();
+			while (irRelate.hasNext()) {
+				com.alibaba.fastjson.JSONObject json = (com.alibaba.fastjson.JSONObject)irRelate.next();
+				double orders = json.getDoubleValue("orders");
+				if (orders != lastOrders) {
+					lastOrders = orders;
+					lastJson = json;
+				}
+				else {
+					if (!lastJson.containsKey("isVertical")) {
+						lastJson.put("isVertical", true);
+						*//*String url = lastJson.getString("url");
+						url = url.replace("moduleListRelatePage.do", "module_list_relate_v.jsp");
+						url += "&vOrders=" + lastOrders;
+						lastJson.put("url", url);*//*
+					}
+					irRelate.remove();
+				}
+			}*/
+
+			aryTop.addAll(aryRelate);
+
+			// 查询关联选项卡
+			lastOrders = -100;
+			lastJson = null;
+			String[] subTagsTop = StrUtil.split(StrUtil.getNullStr(msdTop.getString("sub_nav_tag_name")), "\\|");
+			String[] subTagOrders = StrUtil.split(StrUtil.getNullStr(msdTop.getString("sub_nav_tag_order")), "\\|");
+			String[] subTagUrls = StrUtil.split(StrUtil.getNullStr(msdTop.getString("sub_nav_tag_url")), "\\|");
+
+			int subLenTop = 0;
+			if (subTagsTop != null) {
+				subLenTop = subTagsTop.length;
+			}
+			for (int i = 0; i < subLenTop; i++) {
+				String tagUrl = subTagUrls[i];
+				com.alibaba.fastjson.JSONObject jsonObject = (com.alibaba.fastjson.JSONObject)com.alibaba.fastjson.JSONObject.parse(tagUrl);
+				if (jsonObject != null && jsonObject.containsKey("conds")) {
+					// 条件检查
+					String conds = jsonObject.getString("conds");
+					if (!StrUtil.isEmpty(conds)) {
+						String cond = ModuleUtil.parseConds(request, fdaoTop, conds);
+						javax.script.ScriptEngineManager manager = new javax.script.ScriptEngineManager();
+						javax.script.ScriptEngine engine = manager.getEngineByName("javascript");
+						try {
+							Boolean ret = (Boolean) engine.eval(cond);
+							if (!ret) {
+								continue;
+							}
+						} catch (javax.script.ScriptException ex) {
+							ex.printStackTrace();
+						}
+					}
+				}
+
+				String uri = ModuleUtil.filterViewEditTagUrl(request, codeTop, subTagsTop[i]);
+				String url = "";
+				if (uri.contains("?")) {
+					url = uri + "&parentId=" + parentIdTop + "&moduleCode=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+				} else {
+					url = uri + "?parentId=" + parentIdTop + "&moduleCode=" + codeTop + "&menuItem=" + menuItemTop + "&" + requestParamsTop;
+				}
+
+				com.alibaba.fastjson.JSONObject json = new com.alibaba.fastjson.JSONObject();
+				json.put("url", url);
+				json.put("name", subTagsTop[i]);
+				json.put("id", "menu" + menuItemTop);
+				json.put("tagName", subTagsTop[i]);
+
+				json.put("type", ConstUtil.PAGE_TYPE_LIST_RELATE);
+				com.alibaba.fastjson.JSONObject params = new com.alibaba.fastjson.JSONObject();
+				params.put("parentPageType", pageTypeTop);
+				params.put("parentId", parentIdTop);
+				params.put("moduleCode", codeTop);
+				params.putAll(requestParams);
+				json.put("params", params);
+
+				// 通过order分组显示，只支持“模块链接选项卡”
+				boolean isSubTagRelatedTop = uri.contains("subTagRelated");
+				if (isSubTagRelatedTop) {
+					json.put("mode", "subTagRelated");
+
+					double order = StrUtil.toDouble(subTagOrders[i], 0);
+					if (lastOrders != order) {
+						lastOrders = order;
+						lastJson = json;
+					}
+					else {
+						if (!lastJson.containsKey("isVertical")) {
+							lastJson.put("isVertical", true);
+							url = lastJson.getString("url");
+							url = url.replace("moduleListRelatePage.do", "module_list_relate_v.jsp");
+							url += "&vOrders=" + lastOrders;
+							lastJson.put("url", url);
+						}
+						continue;
+					}
+				}
+
+				aryTop.add(json);
+				menuItemTop++;
+			}
+		}
+		return aryTop;
+	}
+
+	public static String parseScript(int flowId, long id, String formCode, String moduleCode, long parentId, String formCodeRelated, String moduleCodeRelated, String pageType, String content) {
+		if (content == null) {
+			return "";
+		}
+		Pattern p = Pattern.compile(
+				"\\{\\$([@A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
+				Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(content);
+		StringBuffer sb = new StringBuffer();
+		while (m.find()) {
+			String fieldName = m.group(1);
+
+			String val = "";
+			if ("id".equalsIgnoreCase(fieldName)) {
+				val = String.valueOf(id);
+			} else if ("flowId".equalsIgnoreCase(fieldName)) {
+				val = String.valueOf(flowId);
+			} else if ("formCode".equalsIgnoreCase(fieldName)) {
+				val = formCode;
+			} else if ("moduleCode".equalsIgnoreCase(fieldName)) {
+				val = moduleCode;
+			} else if ("formCodeRelated".equalsIgnoreCase(fieldName)) {
+				val = formCodeRelated;
+			} else if ("pageType".equalsIgnoreCase(fieldName)) {
+				val = pageType;
+			} else if ("moduleCodeRelated".equalsIgnoreCase(fieldName)) {
+				val = moduleCodeRelated;
+			} else if ("parentId".equalsIgnoreCase(fieldName)) {
+				val = String.valueOf(parentId);
+			}
+			m.appendReplacement(sb, StrUtil.getNullStr(val));
+		}
+		m.appendTail(sb);
+		return sb.toString();
+	}
+
+	public static String parseField(FormDAO fdao, String str) {
+		FormDb fd = fdao.getFormDb();
+		MacroCtlMgr mm = new MacroCtlMgr();
+		Pattern p = Pattern.compile(
+				"\\{\\$([@A-Z0-9a-z-_\\u4e00-\\u9fa5\\xa1-\\xff\\.]+)\\}", // 前为utf8中文范围，后为gb2312中文范围
+				Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		Matcher m = p.matcher(str);
+		StringBuffer sb = new StringBuffer();
+		while (m.find()) {
+			String fieldName = m.group(1);
+			String val = "";
+			if ("id".equalsIgnoreCase(fieldName)) {
+				val = String.valueOf(fdao.getId());
+			}
+			else if ("flowId".equalsIgnoreCase(fieldName)) {
+				val = String.valueOf(fdao.getFlowId());
+			}
+			else {
+				FormField ff = fdao.getFormField(fieldName);
+				if (ff != null) {
+					if (ff.getType().equals(FormField.TYPE_MACRO)) {
+						MacroCtlUnit mu = mm.getMacroCtlUnit(ff.getMacroType());
+						if (mu != null) {
+							val = mu.getIFormMacroCtl().converToHtml(SpringUtil.getRequest(), ff, ff.getValue());
+						} else {
+							val = ff.convertToHtml();
+						}
+					} else {
+						val = ff.convertToHtml();
+					}
+				} else {
+					val = "字段: " + fieldName + "不存在";
+				}
+			}
+			m.appendReplacement(sb, val);
+		}
+		m.appendTail(sb);
+		return sb.toString();
 	}
 }
 

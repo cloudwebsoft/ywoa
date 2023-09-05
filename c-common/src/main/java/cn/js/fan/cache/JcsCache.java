@@ -1,35 +1,57 @@
 package cn.js.fan.cache;
 
 import cn.js.fan.cache.jcs.ICache;
-import org.apache.jcs.JCS;
-import org.apache.jcs.access.exception.CacheException;
-import org.apache.log4j.Logger;
+import cn.js.fan.util.PropertiesUtil;
+import com.cloudweb.oa.base.IConfigUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.cloudwebsoft.framework.util.LogUtil;
+import org.apache.commons.jcs3.JCS;
+import org.apache.commons.jcs3.access.CacheAccess;
+import org.apache.commons.jcs3.access.GroupCacheAccess;
+import org.apache.commons.jcs3.access.exception.CacheException;
 
+import java.io.File;
 import java.util.Iterator;
+import java.util.Properties;
 
 /**
- * @Author: qcg
+ * @Author:
  * @Description:
  * @Date: 2019/1/9 15:15
  */
 public class JcsCache implements ICache {
 	private String cacheName = "RMCache";
-	private Logger logger = Logger.getLogger(JcsCache.class);
-	private static JCS cache;
+	private static CacheAccess<Object, Object> cache;
+	GroupCacheAccess<Object, Object> groupCache;
+
 	public JcsCache() {
 		try {
+			IConfigUtil configUtil = SpringUtil.getBean(IConfigUtil.class);
+			String cfgPath = configUtil.getFilePath();
+			File cfgFile = new File(cfgPath + "/cache.ccf");
+			LogUtil.getLog(getClass()).info("JcsCache " + cfgPath + "/cache.ccf");
+			// 如果文件存在，则置配置文件
+			if (cfgFile.exists()) {
+				LogUtil.getLog(getClass()).info("JcsCache cache.ccf is found.");
+				PropertiesUtil propertiesUtil = new PropertiesUtil(cfgPath + "/cache.ccf");
+				Properties props = propertiesUtil.getSafeProperties();
+				JCS.setConfigProperties(props);
+			}
+
 			if (cache == null) {
 				cache = JCS.getInstance(cacheName);
 			}
+			if (groupCache == null) {
+				groupCache = JCS.getGroupCacheInstance(cacheName);
+			}
 		} catch (CacheException e) {
-			logger.error(e.getMessage());
+			LogUtil.getLog(getClass()).error(e.getMessage());
 		}
 	}
 
 	@Override
 	public Object get(Object name) {
-		Object obj = cache.get(name);
-		return obj;
+		return cache.get(name);
 	}
 
 	@Override
@@ -49,36 +71,27 @@ public class JcsCache implements ICache {
 
 	@Override
 	public void putInGroup(Object name, String groupName, Object value) throws CacheException {
-		cache.putInGroup(name, groupName, value);
+		groupCache.putInGroup(name, groupName, value);
 	}
 
 	@Override
 	public void putInGroup(Object name, String groupName, Object value, int expireSeconds) throws CacheException {
-		cache.putInGroup(name, groupName, value);
+		groupCache.putInGroup(name, groupName, value);
 	}
 
 	@Override
 	public void remove(Object name, String groupName) throws CacheException {
-		cache.remove(name, groupName);
+		groupCache.removeFromGroup(name, groupName);
 	}
 
 	@Override
 	public void invalidateGroup(String groupName) throws CacheException {
-		cache.invalidateGroup(groupName);
-		// 20060414发现invalidateGroup有时不对清空所有的key，导致在listtopic.jsp时因缓存未刷新，新发的贴子出不来，因此在这里再检查一下，手工删除
-		java.util.Set set = cache.getGroupKeys(groupName);
-		Iterator ir = set.iterator();
-		Object obj = null;
-		while (ir.hasNext()) {
-			obj = ir.next();
-			remove(obj, groupName);
-		}
+		groupCache.invalidateGroup(groupName);
 	}
 
 	@Override
 	public Object getFromGroup(Object name, String group) throws CacheException {
-		Object obj = cache.getFromGroup(name, group);
-		return obj;
+		return groupCache.getFromGroup(name, group);
 	}
 
 	@Override

@@ -1,9 +1,6 @@
 <%@ page contentType="text/html; charset=utf-8"%>
 <%@ page import = "java.util.*"%>
-<%@ page import = "com.redmoon.oa.worklog.*"%>
-<%@ page import = "cn.js.fan.db.*"%>
 <%@ page import = "cn.js.fan.util.*"%>
-<%@ page import = "cn.js.fan.web.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <jsp:useBean id="privilege" scope="page" class="com.redmoon.oa.pvg.Privilege"/>
 <%
@@ -14,9 +11,10 @@ if (!privilege.isUserPrivValid(request,priv)) {
 }
 
 String typeCode = ParamUtil.get(request, "typeCode");
-if (typeCode.equals("")) {
-	if (!privilege.isUserPrivValid(request, "admin"))
-		return;
+if ("".equals(typeCode)) {
+	if (!privilege.isUserPrivValid(request, "admin")) {
+        return;
+    }
 }
 
 // 翻月
@@ -25,29 +23,24 @@ Calendar cal = Calendar.getInstance();
 int curyear = cal.get(Calendar.YEAR);
 String strshowyear = request.getParameter("showyear");
 String strshowmonth = request.getParameter("showmonth");
-if (strshowyear!=null)
-	showyear = Integer.parseInt(strshowyear);
-else
-	showyear = cal.get(cal.YEAR);
-if (strshowmonth!=null)
-	showmonth = Integer.parseInt(strshowmonth);
-else
-	showmonth = cal.get(cal.MONTH)+1;
+if (strshowyear!=null) {
+    showyear = Integer.parseInt(strshowyear);
+} else {
+    showyear = cal.get(Calendar.YEAR);
+}
+if (strshowmonth!=null) {
+    showmonth = Integer.parseInt(strshowmonth);
+} else {
+    showmonth = cal.get(Calendar.MONTH)+1;
+}
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>工作记事统计</title>
+<title>流程统计</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
 <%@ include file="../inc/nocache.jsp"%>
-<script language="JavaScript" type="text/JavaScript">
-<!--
-function openWin(url,width,height){
-  var newwin=window.open(url,"_blank","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,top=50,left=120,width="+width+",height="+height);
-}
-//-->
-</script>
 <script src="../inc/common.js"></script>
 <script src="../js/jquery-1.9.1.min.js"></script>
 <script src="../js/jquery-migrate-1.2.1.min.js"></script>
@@ -55,11 +48,6 @@ function openWin(url,width,height){
 <script type="text/javascript" src="../js/highcharts/highcharts-3d.js" ></script>
 <script type="text/javascript" src="../js/swfobject.js"></script>
 <script type="text/javascript">
-//swfobject.embedSWF(
-//  "../flash/open-flash-chart.swf", "lineChart",
-//  "750", "380", "9.0.0", "expressInstall.swf",
-//  {"data-file":"flow_performance_data_month.jsp<%=StrUtil.UrlEncode("?typeCode=" + typeCode + "&showyear=" + showyear + "&showmonth=" + showmonth)%>"} );
-  
 $(function () {
 var url = "flow_performance_data_month.jsp?typeCode=<%=StrUtil.UrlEncode(typeCode) %> &showyear=<%= showyear%>&showmonth=<%=showmonth%>";
 	$.ajax({
@@ -119,7 +107,7 @@ if (!privilege.isUserLogin(request)) {
 %>
 <%@ include file="flow_performance_stat_menu_top.jsp"%>
 <script>
-$("menu1").className="current";
+o("menu1").className = "current";
 </script>
 <br />
 <table width="98%" border="0" align="center" cellpadding="0" cellspacing="0">
@@ -131,15 +119,15 @@ $("menu1").className="current";
         <%}%>
       </select>
     <script>
-	showyear.value = "<%=showyear%>";
+	o("showyear").value = "<%=showyear%>";
 	</script>
       <%
 for (int i=1; i<=12; i++) {
-	if (showmonth==i)
+	if (showmonth==i) {
 		out.print("<a href='flow_stat_month.jsp?typeCode="+StrUtil.UrlEncode(typeCode)+"&showyear="+showyear+"&showmonth="+i+"'><font color=red>"+i+"月</font></a>&nbsp;");
-	else
+	} else {
 		out.print("<a href='flow_stat_month.jsp?typeCode="+StrUtil.UrlEncode(typeCode)+"&showyear="+showyear+"&showmonth="+i+"'>"+i+"月</a>&nbsp;");
-
+    }
 }
 %>
   </tr>

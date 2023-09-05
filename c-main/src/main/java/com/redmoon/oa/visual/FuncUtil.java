@@ -2,17 +2,22 @@ package com.redmoon.oa.visual;
 
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
+import cn.js.fan.web.Global;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.oa.base.IFormDAO;
 import com.redmoon.oa.base.IFuncImpl;
 import com.redmoon.oa.dept.DeptDb;
 import com.redmoon.oa.flow.FormDb;
 import com.redmoon.oa.flow.FormField;
+import com.redmoon.oa.sys.DebugUtil;
 import com.redmoon.oa.visual.func.CalculateFuncImpl;
 import com.redmoon.oa.visual.func.FuncMgr;
 import com.redmoon.oa.visual.func.FuncUnit;
+import org.json.JSONArray;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -96,7 +101,7 @@ public class FuncUtil {
 	            		val = StrUtil.getNullStr(ifil.func(fdao, myfunc));
 	            	}
 	            	catch (ErrMsgException e) {
-	            		e.printStackTrace();
+						LogUtil.getLog(FuncUtil.class).error(e);
 	            		return m.group() + " " + e.getMessage();
 	            		// val = e.getMessage();
 	            	}
@@ -147,6 +152,8 @@ public class FuncUtil {
 			return "";
 		}
 
+		// 20230515 fdao.getFormDb()需从缓存中获取，会影响效率
+		/*long t = System.currentTimeMillis();
 		if ("sales_customer".equals(fdao.getFormDb().getCode()) && "dept_code".equals(ff.getName())) {
 			DeptDb dd = new DeptDb();
 			dd = dd.getDeptDb(fdao.getFieldValue(ff.getName()));
@@ -155,8 +162,11 @@ public class FuncUtil {
 			} else {
 				return StrUtil.getNullStr(dd.getName());
 			}
-		}		
-		
+		}
+		if (Global.getInstance().isDebug()) {
+			DebugUtil.i(FuncUtil.class, "renderFieldValue", "" + (double) (System.currentTimeMillis() - t) / 1000);
+		}*/
+
 		if (!ff.isFunc()) {
 			return ff.convertToHtml();
 		}
@@ -164,16 +174,16 @@ public class FuncUtil {
 		String dv = ff.getDefaultValueRaw();
 		return render(ff, dv, fdao);
 	}
-	
+
 	/**
 	 * 取得算式的参数中关联的表单域，以逗号分隔
-	 * @Description: 
+	 * @Description:
 	 * @param ff
 	 * @return
 	 */
-	public static String getFieldsRelatedOnChangeJS(FormDb fd, FormField ff) {
+	public static String getFieldsRelatedOnChange(FormDb fd, FormField ff) {
 		String funcStr = ff.getDefaultValueRaw();
-		
+
 		ArrayList<String> aryAll = new ArrayList<String>();
 		boolean isMatched = false;
 
@@ -208,14 +218,14 @@ public class FuncUtil {
 				m.appendReplacement(sb, val);
 			}
 			m.appendTail(sb);
-			
+
 			funcStr = sb.toString();
-		} while (isMatched);     
-		
+		} while (isMatched);
+
 		// 如果没有匹配的，则说明是四则运算表达式
 		if (!isMatched) {
 			ArrayList<String> aryList = CalculateFuncImpl.getSymbolsWithBracket(funcStr);
-		    Object[] ary = aryList.toArray();
+			Object[] ary = aryList.toArray();
 			for (Object o : ary) {
 				String el = (String) o;
 				if (!CalculateFuncImpl.isOperator(el)) {
@@ -232,23 +242,40 @@ public class FuncUtil {
 		}
 
 		StringBuffer sb = new StringBuffer();
-		int len = aryAll.size();
 		for (String fieldName : aryAll) {
 			StrUtil.concat(sb, ",", fieldName);
 		}
-		
-		return "bindFuncFieldRelateChangeEvent(\"" + fd.getCode() + "\", \"" + ff.getName() + "\", \"" + sb.toString() + "\");\n";
+
+		return sb.toString();
 	}
-	
+
 	public static String doGetFieldsRelatedOnChangeJS(FormDb fd) {
 		StringBuilder str = new StringBuilder("<script>\n");
 		for (FormField ff : fd.getFields()) {
 			if (ff.isFunc()) {
-				str.append(getFieldsRelatedOnChangeJS(fd, ff));
+				str.append("bindFuncFieldRelateChangeEvent(\"" + fd.getCode() + "\", \"" + ff.getName() + "\", \"" + getFieldsRelatedOnChange(fd, ff) + "\");\n");
 			}
 		}
 		str.append("</script>\n");
 		return str.toString();
 	}
 
+	/**
+	 * 取得手机端需用到的算式相关的字段json数组
+	 * @param fd
+	 * @return
+	 */
+	public static com.alibaba.fastjson.JSONArray doGetFieldsRelatedOnChangeMobile(FormDb fd) {
+		com.alibaba.fastjson.JSONArray ary = new com.alibaba.fastjson.JSONArray();
+		for (FormField ff : fd.getFields()) {
+			if (ff.isFunc()) {
+				JSONObject json = new JSONObject();
+				json.put("formCode", fd.getCode());
+				json.put("field", ff.getName());
+				json.put("relateFields", getFieldsRelatedOnChange(fd, ff));
+				ary.add(json);
+			}
+		}
+		return ary;
+	}
 }

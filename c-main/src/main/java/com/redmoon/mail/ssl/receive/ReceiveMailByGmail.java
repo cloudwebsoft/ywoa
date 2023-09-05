@@ -42,18 +42,17 @@ public class ReceiveMailByGmail {
 		   profile.add(FetchProfile.Item.ENVELOPE);
 		   Message[] messages = inbox.getMessages();
 		   inbox.fetch(messages, profile);
-		   System.out.println("收件箱的邮件数：" + messages.length);
 		   for (int i = 0; i < messages.length; i++) {
 		    //邮件发送者
 		    String from = decodeText(messages[i].getFrom()[0].toString());
 		    InternetAddress ia = new InternetAddress(from);
-		    System.out.println("FROM:" + ia.getPersonal()+'('+ia.getAddress()+')');
+		    /*LogUtil.getLog(getClass()).info("FROM:" + ia.getPersonal()+'('+ia.getAddress()+')');
 		    //邮件标题
-		    System.out.println("TITLE:" + messages[i].getSubject());
+		    LogUtil.getLog(getClass()).info("TITLE:" + messages[i].getSubject());
 		    //邮件大小
-		    System.out.println("SIZE:" + messages[i].getSize());
+		    LogUtil.getLog(getClass()).info("SIZE:" + messages[i].getSize());
 		    //邮件发送时间
-		    System.out.println("DATE:" + messages[i].getSentDate());
+		    LogUtil.getLog(getClass()).info("DATE:" + messages[i].getSentDate());*/
 		   }
 		  } finally {
 		   try {

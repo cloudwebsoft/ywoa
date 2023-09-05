@@ -12,4 +12,6 @@ public interface IWorkflowHelper {
     boolean fromString(WorkflowActionDb wa, String str, boolean isCheck) throws ErrMsgException;
 
     boolean fromString(WorkflowLinkDb workflowLinkDb, String str) throws ErrMsgException;
+
+    String tran(String str);
 }

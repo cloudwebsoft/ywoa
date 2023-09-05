@@ -48,7 +48,7 @@
     int id = ParamUtil.getInt(request, "id");
     String formCode = msd.getString("form_code");
 
-    String viewEdit = "module_edit.jsp";
+    String viewEdit = "moduleEditPage.do";
     if (msd.getInt("view_edit") == ModuleSetupDb.VIEW_EDIT_CUSTOM) {
         viewEdit = msd.getString("url_edit");
         response.sendRedirect(request.getContextPath() + "/" + msd.getString("url_edit") + "?parentId=" + parentId + "&id=" + id + "&code=" + code + "&formCode=" + formCode);
@@ -72,6 +72,8 @@
         out.print(cn.js.fan.web.SkinUtil.makeErrMsg(request, i18nUtil.get("info_access_data_fail")));
         return;
     }
+
+    request.setAttribute("moduleCode", code);
 
     String userName = privilege.getUser(request);
     // 置嵌套表需要用到的cwsId
@@ -109,7 +111,7 @@
                 <td width="51%" align="left">
                     &nbsp;
                     <span id="spanAttLink${att.id}">
-						<a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+						<a href="preview.do?attachId=${att.id}&visitKey=${moduleCode}" target="_blank">
 							<span id="spanAttName${att.id}">${att.name}</span>
 						</a>
 					</span>
@@ -123,7 +125,7 @@
                 <td width="11%" align="center">${att.fileSizeMb}M
                 </td>
                 <td width="11%" align="center">
-                    <a href="../visual_getfile.jsp?attachId=${att.id}" target="_blank">
+                    <a href="download.do?attachId=${att.id}&visitKey=${moduleCode}" target="_blank">
                         <lt:Label res="res.flow.Flow" key="download"/>
                     </a>
                     &nbsp;&nbsp;
@@ -184,10 +186,6 @@
     <style>
         .page-main {
             margin: auto 15px;
-        }
-
-        .att_box {
-            margin-top: 5px;
         }
 
         input, textarea, button {
@@ -406,7 +404,7 @@
             <c:if test="${isHasAttachment}">
             $.ajax({
                 type: "post",
-                url: "module_edit.jsp",
+                url: "moduleEditPage.do",
                 data: {
                     op: "refreshAttach",
                     id: "${id}",
@@ -683,7 +681,7 @@
                                             }
 
                                             String condType = (String) json.get(fieldName);
-                                            CondUnit condUnit = CondUtil.getCondUnit(request, fdRelated, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
+                                            CondUnit condUnit = CondUtil.getCondUnit(request, msd, fdRelated, fieldName, fieldTitle, condType, checkboxGroupMap, dateFieldNamelist);
                                             out.print("<span class=\"cond-span\">");
                                             out.print("<span class=\"cond-title\">");
                                             out.print(condUnit.getFieldTitle());
@@ -932,7 +930,7 @@
                             shadeClose: true,
                             shade: 0.6,
                             area: ['90%', '90%'],
-                            content: 'module_add_relate.jsp?isTabStyleHor=false&code=<%=StrUtil.UrlEncode(code)%>&parentId=<%=parentId%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=0'
+                            content: 'moduleAddRelatePage.do?isTabStyleHor=false&code=<%=StrUtil.UrlEncode(code)%>&parentId=<%=parentId%>&formCode=<%=formCode%>&moduleCodeRelated=<%=moduleCodeRelated%>&isShowNav=0'
                         });
                         break;
                     case 'editRelate':

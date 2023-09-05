@@ -8,12 +8,13 @@
 <%@ page import="com.redmoon.oa.visual.*"%>
 <%@ page import="com.redmoon.oa.ui.*"%>
 <%@ page import="org.json.*"%>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>智能模块设计 - 导入设置</title>
 <link type="text/css" rel="stylesheet" href="<%=SkinMgr.getSkinPath(request)%>/css.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="../js/bootstrap/css/bootstrap.min.css" />
 <script src="../inc/common.js"></script>
 <script src="../inc/livevalidation_standalone.js"></script>
 
@@ -113,7 +114,7 @@ o("menu9").className="current";
 	  %>
       </select>
       	大小
-      <input id="bar_font_size" name="bar_font_size" size="5" value="16" />px    
+      <input id="bar_font_size" name="bar_font_size" size="5" value="12" />px
       	行高
       <input id="bar_line_height" name="bar_line_height" value="30" size=5 />px      
 		 &nbsp;&nbsp;&nbsp;&nbsp;
@@ -186,7 +187,7 @@ o("menu9").className="current";
 	  %>
       </select>
       	大小
-      <input id="font_size" name="font_size" value="16" size="5" />px
+      <input id="font_size" name="font_size" value="12" size="5" />px
       	行高
       <input id="line_height" name="line_height" value="30" size=5 />px
       <script>
@@ -256,7 +257,7 @@ o("menu9").className="current";
         <div id="customContainer" class="custom_container"></div>
         <div style="margin:0 auto; width:98%;">
         预览列表（拖动可以调整列宽和位置）
-        <input type="button" id="trigger" src="targetBox" name="selBtn" title="选择列" class="grey_btn_55" value="选择列" />
+        <input type="button" id="trigger" src="targetBox" name="selBtn" title="选择列" class="btn btn-default" value="选择列" />
         </div>    
         <div id="viewBox" class="" style="margin:0 auto; width:98%">
             <div class="view grid expGrid"></div>
@@ -266,8 +267,9 @@ o("menu9").className="current";
     <tr>
       <td colspan="3" align="center">
           <input type="button" class="btn btn-default btn-ok" value="确定"/>
-          <input name="code" value="<%=code%>" type="hidden"/>
-          <input name="formCode" value="<%=formCode%>" type="hidden"/>        
+		  <input name="code" value="<%=code%>" type="hidden"/>
+		  <input id="cols" name="cols" type="hidden"/>
+          <input name="formCode" value="<%=formCode%>" type="hidden"/>
       </td>
     </tr>
 </table>
@@ -384,7 +386,7 @@ if (len == 0){
 	}
 }
 %>
-	<span><input type="button" class="btn" value="关闭" onclick="cancel()" /></span>
+	<span><input type="button" class="btn btn-default" value="关闭" onclick="cancel()" /></span>
     </div>
 </div>
 <script type="text/javascript">
@@ -451,6 +453,9 @@ function checkField(obj) {
 JSONArray jsonAry = new JSONArray();
 for (i=0; i<len; i++) {
 	String fieldName = fields[i];
+	if (fieldName.equals("colOperate")) {
+		continue;
+	}
 	String fieldNameRaw = fieldName;
 	String title = "";
 	if (fieldName.equals("cws_creator")) {
@@ -533,6 +538,7 @@ for (i=0; i<len; i++) {
     jsonAry.put(json);
 }
 %>
+<br/>
 <link href="../js/mac/css/default.css" type="text/css" rel="stylesheet" />
 <script src="../js/mac/core.js"></script>
 <script src="../js/mac/mousewheel.js"></script>
@@ -574,24 +580,27 @@ $(function() {
 });
 
 function add() {
+	if (!LiveValidation.massValidate(tname.formObj.fields)) {
+		return;
+	}
+	$('#cols').val(JSON.stringify(gd.config.cols));
 	var data = $('#form1').serialize();
-	data += "&cols=" + encodeURI(JSON.stringify(gd.config.cols));
 	$.ajax({
 		type: "post",
 		url: "<%=request.getContextPath()%>/visual/addExport.do",
 		data: data,
-		contentType:"application/x-www-form-urlencoded; charset=iso8859-1",		
+		contentType:"application/x-www-form-urlencoded; charset=iso8859-1",
 		dataType: "html",
 		beforeSend: function(XMLHttpRequest) {
 			$('body').showLoading();
 		},
-		success: function(data, status){
+		success: function(data, status) {
 			var re = $.parseJSON(data);
-			if (re==null)
-				re = data;
 			if (re.ret=="1") {
-				window.location.href = "module_export_list.do?code=<%=code%>&formCode=<%=formCode%>";
-			}		
+				jAlert(re.msg, '提示', function() {
+					window.location.href = "module_export_list.do?code=<%=code%>&formCode=<%=formCode%>";
+				});
+			}
 			else {
 				jAlert(re.msg, "提示");
 			}
@@ -621,7 +630,20 @@ function setRoles(roles, descs) {
 	objCode.value = roles;
 	objDesc.value = descs;
 }
+
+$(function() {
+	$('input, select, textarea').each(function() {
+		if (!$('body').hasClass('form-inline')) {
+			$('body').addClass('form-inline');
+		}
+		// ffb-input 为flexbox的样式
+		if (!$(this).hasClass('ueditor') && !$(this).hasClass('btnSearch') && !$(this).hasClass('tSearch') &&
+				$(this).attr('type') != 'hidden' && $(this).attr('type') != 'file' && !$(this).hasClass('ffb-input')) {
+			$(this).addClass('form-control');
+			$(this).attr('autocomplete', 'off');
+		}
+	});
+})
 </script>
-<br/>
 </body>
 </html>

@@ -1,8 +1,11 @@
 package com.redmoon.oa.fileark;
 
 import cn.js.fan.util.*;
+import com.cloudweb.oa.service.IFileService;
+import com.cloudweb.oa.utils.FileUtil;
+import com.cloudweb.oa.utils.SpringUtil;
+import com.redmoon.oa.util.Pdf2Html;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import cn.js.fan.db.Conn;
 import cn.js.fan.db.SQLFilter;
 
@@ -16,8 +19,6 @@ import cn.js.fan.web.Global;
 import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
 import com.redmoon.kit.util.FileUpload;
-
-import cn.js.fan.util.file.FileUtil;
 
 import java.io.File;
 import java.util.Iterator;
@@ -38,7 +39,6 @@ public class DocContent implements java.io.Serializable {
     int pageNum = 1;
 
     String connname = "";
-    transient Logger logger = Logger.getLogger(DocContent.class.getName());
 
     private static final String INSERT =
             "INSERT into doc_content (doc_id, content, page_num) VALUES (?,?,?)";
@@ -57,8 +57,8 @@ public class DocContent implements java.io.Serializable {
 
     public DocContent() {
         connname = Global.getDefaultDB();
-        if (connname.equals("")) {
-            logger.info("DocContent:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("DocContent:默认数据库名为空！");
         }
     }
 
@@ -67,16 +67,13 @@ public class DocContent implements java.io.Serializable {
         this.pageNum = page_num;
 
         connname = Global.getDefaultDB();
-        if (connname.equals("")) {
-            logger.info("DocContent:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("DocContent:默认数据库名为空！");
         }
         loadFromDb(doc_id, page_num);
     }
 
     public void renew() {
-        if (logger==null) {
-            logger = Logger.getLogger(DocContent.class.getName());
-        }
     }
 
     /**
@@ -94,16 +91,6 @@ public class DocContent implements java.io.Serializable {
                                      String content, int pageNum) throws
             ErrMsgException {
         String filePath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
-        // 因为mysql JDBC的原因，使得使用下句后路径会变为d:oaupfile/...
-        // String tempAttachFilePath = application.getRealPath("/") + FilePath +
-        //                             "/";
-        String tempAttachFilePath = Global.getRealPath() + filePath + "/";
-
-        mfu.setSavePath(tempAttachFilePath); // 取得目录
-        File f = new File(tempAttachFilePath);
-        if (!f.isDirectory()) {
-            f.mkdirs();
-        }
 
         this.docId = doc_id;
         this.content = content;
@@ -114,151 +101,96 @@ public class DocContent implements java.io.Serializable {
         try {
             // 处理附件
             int ret = mfu.getRet();
-            String sisDdxc = StrUtil.getNullString(mfu.getFieldValue("isDdxc"));
-            // 断点续传
-            if (sisDdxc.equals("true")) {
-                String[] attachFileNames = mfu.getFieldValues("attachFileName");
-                String[] clientFilePaths = mfu.getFieldValues("clientFilePath");
+            if (ret == FileUpload.RET_SUCCESS) {
+                String path = (Global.getRealPath() + filePath + "/").replaceAll("\\\\","/");
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
 
-                int len = 0;
-                if (attachFileNames != null)
-                    len = attachFileNames.length;
-                String sql = "";
-                int orders = 1;
-                for (int i = 0; i < len; i++) {
-                	String path = mfu.getSavePath().replaceAll("\\\\","/");
-                    String filepath = path+ attachFileNames[i];
-                    String name = FileUpload.getUploadFileName(clientFilePaths[i]);
-                    long attachId = SequenceManager.nextID(SequenceManager.OA_DOCUMENT_ATTACH_CMS);
-                    sql =
-                            "insert into document_attach (id, fullpath,doc_id,name,diskname,visualpath,page_num,orders,upload_date,ext) values (" +
-                            attachId + "," +
-                            StrUtil.sqlstr(filepath) + "," + docId + "," +
-                            StrUtil.sqlstr(name) + "," +
-                            StrUtil.sqlstr(attachFileNames[i]) + "," +
-                            StrUtil.sqlstr(filePath) + "," + pageNum + "," + orders + "," + SQLFilter.getDateStr(DateUtil.format(new java.util.Date(), "yyyy-MM-dd HH:mm:ss"), "yyyy-MM-dd HH:mm:ss")
-                            + "," + StrUtil.sqlstr(StrUtil.getFileExt(name)) + ")";
-                    conn.executeUpdate(sql);
+                com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+                boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
+                boolean canPdfFilePreview = cfg.getBooleanProperty("canPdfFilePreview");
+
+                Vector attachs = mfu.getAttachments();
+                int orders = getAttachmentMaxOrders(false) + 1;
+                Attachment attachment = new Attachment();
+                Iterator ir = attachs.iterator();
+                while (ir.hasNext()) {
+                    FileInfo fi = (FileInfo) ir.next();
+                    fileService.write(fi, filePath);
+
+                    attachment.setDocId(docId);
+                    attachment.setName(fi.getName());
+                    attachment.setDiskName(fi.getDiskName());
+                    attachment.setVisualPath(filePath);
+                    attachment.setSize(fi.getSize());
+                    attachment.setPageNum(pageNum);
+                    attachment.setOrders(orders);
+                    attachment.setExt(StrUtil.getFileExt(fi.getName()));
+                    attachment.setUploadDate(new java.util.Date());
+                    attachment.create();
+
+                    orders ++;
+
+                    // 获取上传文件路径，生成预览文件
+                    if (canOfficeFilePreview) {
+                        if (FileUtil.isOfficeFile(fi.getDiskName())) {
+                            Document.createOfficeFilePreviewHTML(path + fi.getDiskName());
+                        }
+                    }
+                    if (canPdfFilePreview) {
+                        if (FileUtil.isPdfFile(fi.getDiskName())) {
+                            Pdf2Html.del(path + fi.getDiskName());
+                        }
+                    }
+                }
+
+                // 将标题图片写入磁盘
+                attachs = mfu.getTitleImages();
+                orders = getAttachmentMaxOrders(true) + 1;
+                ir = attachs.iterator();
+                while (ir.hasNext()) {
+                    FileInfo fi = (FileInfo) ir.next();
+                    fileService.write(fi, filePath);
+
+                    attachment.setDocId(docId);
+                    attachment.setName(fi.getName());
+                    attachment.setDiskName(fi.getDiskName());
+                    attachment.setVisualPath(filePath);
+                    attachment.setSize(fi.getSize());
+                    attachment.setPageNum(pageNum);
+                    attachment.setOrders(orders);
+                    attachment.setExt(StrUtil.getFileExt(fi.getName()));
+                    attachment.setUploadDate(new java.util.Date());
+                    attachment.setTitleImage(true);
+
+                    attachment.create();
+
                     orders ++;
                 }
-            } else {
-                if (ret == FileUpload.RET_SUCCESS) {
-                    String path = mfu.getSavePath().replaceAll("\\\\","/");
-                    mfu.writeAttachment(true);
-                    Vector attachs = mfu.getAttachments();
-                    int orders = getAttachmentMaxOrders(false) + 1;
-                    Attachment attachment = new Attachment();
-                    Iterator ir = attachs.iterator();
-                    while (ir.hasNext()) {
-                        FileInfo fi = (FileInfo) ir.next();
 
-                        attachment.setDocId(docId);
-                        attachment.setName(fi.getName());
-                        attachment.setDiskName(fi.getDiskName());
-                        attachment.setVisualPath(filePath);
-                        attachment.setSize(fi.getSize());
-                        attachment.setPageNum(pageNum);
-                        attachment.setOrders(orders);
-                        attachment.setExt(StrUtil.getFileExt(fi.getName()));
-                        attachment.setUploadDate(new java.util.Date());
-                        attachment.create();
-
-                        orders ++;
-
-                        // 获取上传文件路径，生成预览文件
-                        Document.createOfficeFilePreviewHTML(path + fi.getDiskName());
-                    }
-
-                    // 将标题图片写入磁盘
-                    mfu.writeTitleImages(true);
-                    attachs = mfu.getTitleImages();
-                    orders = getAttachmentMaxOrders(true) + 1;
-                    ir = attachs.iterator();
-                    while (ir.hasNext()) {
-                        FileInfo fi = (FileInfo) ir.next();
-
-                        attachment.setDocId(docId);
-                        attachment.setName(fi.getName());
-                        attachment.setDiskName(fi.getDiskName());
-                        attachment.setVisualPath(filePath);
-                        attachment.setSize(fi.getSize());
-                        attachment.setPageNum(pageNum);
-                        attachment.setOrders(orders);
-                        attachment.setExt(StrUtil.getFileExt(fi.getName()));
-                        attachment.setUploadDate(new java.util.Date());
-                        attachment.setTitleImage(true);
-
-                        attachment.create();
-
-                        orders ++;
-                    }
-
-                    // 对标题图片排序
-                    String imgOrders = mfu.getFieldValue("imgOrders");
-                    String[] orderArr = StrUtil.split(imgOrders, ",");
-                    if (orderArr!=null) {
-                        for (int i = 0; i< orderArr.length; i++) {
-                            String imgOrder = orderArr[i];
-                            if (NumberUtil.isNumeric(imgOrder)) {
-                                int imgId = StrUtil.toInt(imgOrder);
-                                Attachment att = new Attachment(imgId);
+                // 对标题图片排序
+                String imgOrders = mfu.getFieldValue("imgOrders");
+                String[] orderArr = StrUtil.split(imgOrders, ",");
+                if (orderArr!=null) {
+                    for (int i = 0; i< orderArr.length; i++) {
+                        String imgOrder = orderArr[i];
+                        if (NumberUtil.isNumeric(imgOrder)) {
+                            int imgId = StrUtil.toInt(imgOrder);
+                            Attachment att = new Attachment(imgId);
+                            att.setOrders(i);
+                            att.save();
+                        }
+                        else {
+                            Attachment att = new Attachment();
+                            att = att.getAttachmentByName(docId, imgOrder);
+                            if (att!=null) {
                                 att.setOrders(i);
                                 att.save();
                             }
-                            else {
-                                String imgName = imgOrder;
-                                Attachment att = new Attachment();
-                                att = att.getAttachmentByName(docId, imgName);
-                                if (att!=null) {
-                                    att.setOrders(i);
-                                    att.save();
-                                }
-                            }
                         }
                     }
-
-                	// 处理网络硬盘文件
-                    com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();                    
-                	String[] netdiskFiles = mfu.getFieldValues("netdiskFiles");
-                	String filepath = mfu.getSavePath();
-                	if (netdiskFiles!=null) {
-                		com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-                		for (int i=0; i<netdiskFiles.length; i++) {
-                			att = att.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-
-                            String file_netdisk = cfg.get("file_netdisk");
-                            String fullPath = Global.getRealPath() + file_netdisk + "/" + att.getVisualPath() + "/" + att.getDiskName();
-                           
-                            String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-                            String newFullPath = filepath + "/" + newName;
-
-                            // System.out.println(getClass() + " " + fullPath);
-                            // System.out.println(getClass() + " " + newFullPath);
-                            
-                            FileUtil.CopyFile(fullPath, newFullPath);
-                            Attachment att2 = new Attachment();
-                            //att.setFullPath(filepath + fi.getDiskName());
-                            att2.setDocId(docId);
-                            att2.setName(att.getName());
-                            att2.setDiskName(newName);
-                            att2.setVisualPath(filePath);
-                            att2.setSize(att.getSize());
-                            att2.setPageNum(pageNum);
-                            att2.setOrders(orders);
-                            att2.setExt(StrUtil.getFileExt(newName));                            
-                            att2.setUploadDate(new java.util.Date());
-                            re = att2.create();
-                            orders ++;
-                            
-                            //获取上传文件路径，生成预览文件
-                            String previewfile=filepath + newName;
-                            Document.createOfficeFilePreviewHTML(previewfile);                            
-                		}
-                	}                    
-                    
-                } else {
-                    throw new ErrMsgException("上传失败！ret=" + ret);
                 }
+            } else {
+                throw new ErrMsgException("上传失败！ret=" + ret);
             }
             // 如果页面是从中间某页后插入，而不是被加至末尾
             Document doc = new Document();
@@ -266,16 +198,14 @@ public class DocContent implements java.io.Serializable {
             PreparedStatement pstmt = null;
             // pageNum=1的时候，是插入新文章，而不是从中间某页后插入新页
             if (pageNum <= doc.getPageCount() && pageNum != 1) {
-                // logger.info("pageNum=" + pageNum);
+                // LogUtil.getLog(getClass()).info("pageNum=" + pageNum);
                 // 更新其后的页面的页码
-                String sql =
-                        "update doc_content set page_num=page_num+1 where doc_id=? and page_num>=?";
+                String sql = "update doc_content set page_num=page_num+1 where doc_id=? and page_num>=?";
                 pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, docId);
                 pstmt.setInt(2, pageNum);
                 conn.executePreUpdate();
                 pstmt.close();
-                pstmt = null;
 
                 sql = "update cms_images set subkey=subkey+1 where mainkey=? and subkey>=? and kind='document'";
                 pstmt = conn.prepareStatement(sql);
@@ -283,16 +213,13 @@ public class DocContent implements java.io.Serializable {
                 pstmt.setInt(2, pageNum);
                 conn.executePreUpdate();
                 pstmt.close();
-                pstmt = null;
 
-                sql =
-                        "update document_attach set page_num=page_num+1 where doc_id=? and page_num>=?";
+                sql = "update document_attach set page_num=page_num+1 where doc_id=? and page_num>=?";
                 pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, docId);
                 pstmt.setInt(2, pageNum);
                 conn.executePreUpdate();
                 pstmt.close();
-                pstmt = null;
             }
 
             // 更新缓存
@@ -308,7 +235,7 @@ public class DocContent implements java.io.Serializable {
             pstmt.setInt(1, doc_id);
             pstmt.setString(2, content);
             pstmt.setInt(3, pageNum);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             if (re) {
                 // 更新缓存
@@ -320,19 +247,16 @@ public class DocContent implements java.io.Serializable {
                 doc.UpdatePageCount(doc.getPageCount() + 1);
             }
         } catch (SQLException e) {
-            logger.error("createWithoutFile:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("createWithoutFile:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         return re;
     }
 
-    public boolean create(int doc_id,
-                          String content) {
+    public boolean create(int doc_id, String content) {
         this.docId = doc_id;
         this.content = content;
         this.pageNum = 1;
@@ -344,15 +268,15 @@ public class DocContent implements java.io.Serializable {
             pstmt.setInt(1, doc_id);
             pstmt.setString(2, content);
             pstmt.setInt(3, pageNum);
-            re = conn.executePreUpdate() == 1 ? true : false;
-
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 // 更新缓存
                 DocContentCacheMgr dcm = new DocContentCacheMgr();
                 dcm.refreshCreate(docId);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (conn != null) {
                 conn.close();
@@ -392,10 +316,7 @@ public class DocContent implements java.io.Serializable {
                     loaded = true;
                 }
             }
-            if (pstmt != null) {
-                pstmt.close();
-                pstmt = null;
-            }
+            pstmt.close();
 
             // 取得附件
             pstmt = conn.prepareStatement(LOAD_DOCUMENT_ATTACHMENTS);
@@ -421,21 +342,11 @@ public class DocContent implements java.io.Serializable {
                     titleImages.addElement(am);
                 }
             }
-        } catch (Exception e) {
-            logger.error("loadFromDb: " + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("loadFromDb: " + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            /*
-                         if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (Exception e) {}
-                pstmt = null;
-                         }
-             */
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
     }
 
@@ -468,21 +379,25 @@ public class DocContent implements java.io.Serializable {
             conn.executeUpdate(sql);
 
             // 删除附件
-            Iterator ir = attachments.iterator();
-            while (ir.hasNext()) {
-            	Attachment att = (Attachment)ir.next();
-            	att.del();
-            	
-            	// 获取上传文件路径，删除对应预览文件
-            	String filepath=Global.getRealPath() + att.visualPath + "/" + att.diskName;
-            	Document.jacobFileDelete(filepath);
+            com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+            boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
+            for (Attachment att : attachments) {
+                att.del();
+
+                // 获取上传文件路径，删除对应预览文件
+                String filepath = Global.getRealPath() + att.getVisualPath() + "/" + att.getDiskName();
+                if (!canOfficeFilePreview) {
+                    if (FileUtil.isOfficeFile(att.getDiskName())) {
+                        Document.jacobFileDelete(filepath);
+                    }
+                }
             }
 
             // 从数据库中删除
             PreparedStatement pstmt = conn.prepareStatement(DEL);
             pstmt.setInt(1, docId);
             pstmt.setInt(2, pageNum);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             pstmt.close();
             pstmt = null;
 
@@ -498,7 +413,6 @@ public class DocContent implements java.io.Serializable {
                 pstmt.setInt(2, pageNum);
                 conn.executePreUpdate();
                 pstmt.close();
-                pstmt = null;
 
                 sql = "update cms_images set subkey=subkey-1 where mainkey=? and subkey>? and kind='document'";
                 pstmt = conn.prepareStatement(sql);
@@ -506,7 +420,6 @@ public class DocContent implements java.io.Serializable {
                 pstmt.setInt(2, pageNum);
                 conn.executePreUpdate();
                 pstmt.close();
-                pstmt = null;
 
                 sql =
                         "update document_attach set page_num=page_num-1 where doc_id=? and page_num>?";
@@ -526,23 +439,20 @@ public class DocContent implements java.io.Serializable {
             DocContentCacheMgr dcm = new DocContentCacheMgr();
             dcm.refreshDel(docId, pageNum);
 
-            for (int i = pageNum + 1; i < doc.getPageCount(); i++)
+            for (int i = pageNum + 1; i < doc.getPageCount(); i++) {
                 dcm.refreshUpdate(docId, pageNum);
+            }
 
         } catch (SQLException e) {
             re = false;
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
-                rs = null;
+                } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
             }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -551,34 +461,24 @@ public class DocContent implements java.io.Serializable {
                                      CMSMultiFileUploadBean mfu) throws
             ErrMsgException {
         String isuploadfile = StrUtil.getNullString(mfu.getFieldValue("isuploadfile"));
-        if (isuploadfile.equals("false")) {
+        if ("false".equals(isuploadfile)) {
             return saveWithoutFile(application, mfu);
         }
-        String FilePath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
-        String tempAttachFilePath = Global.getRealPath() + FilePath + "/";
-        mfu.setSavePath(tempAttachFilePath); //取得目录
-        File f = new File(tempAttachFilePath);
-        if (!f.isDirectory()) {
-            f.mkdirs();
-        }
-
-        ResultSet rs = null;
+        String visualPath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
+        ResultSet rs;
         Conn conn = new Conn(connname);
         try {
             // 如果是高级发布方式编辑，则删除原有的图片
             String editFlag = StrUtil.getNullStr(mfu.getFieldValue("editFlag"));
-            if (editFlag.equals("redmoon")) {           	
-	            //删除图像文件
-	            String sql = "select path from cms_images where mainkey=" + docId +
-	                         " and kind='document' and subkey=" + pageNum + "";
-	
+            if ("redmoon".equals(editFlag)) {
+	            // 删除图像文件
+	            String sql = "select path from cms_images where mainkey=" + docId + " and kind='document' and subkey=" + pageNum + "";
 	            rs = conn.executeQuery(sql);
 	            if (rs != null) {
 	                String fpath = "";
 	                while (rs.next()) {
 	                    fpath = rs.getString(1);
 	                    if (fpath != null) {
-	                        // logger.info("save:" + Global.getRealPath() + fpath);
 	                        File virtualFile = new File(Global.getRealPath() + fpath);
 	                        virtualFile.delete();
 	                    }
@@ -587,43 +487,39 @@ public class DocContent implements java.io.Serializable {
 	
 	            if (rs != null) {
 	                rs.close();
-	                rs = null;
 	            }
                      
 	            // 从数据库中删除图像
-	            sql = "delete from cms_images where mainkey=" + docId +
-	                  " and kind='document' and subkey=" + pageNum + "";
+	            sql = "delete from cms_images where mainkey=" + docId + " and kind='document' and subkey=" + pageNum + "";
 	            conn.executeUpdate(sql);
             }
 
             // 处理图片
             int ret = mfu.getRet();
             if (ret == 1) {
-                mfu.writeFile(false);
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
+
                 Vector files = mfu.getFiles();
-                // logger.info("files size=" + files.size());
                 java.util.Enumeration e = files.elements();
-                String filepath = "";
-                String sql = "";
+                String sql;
                 while (e.hasMoreElements()) {
                     FileInfo fi = (FileInfo) e.nextElement();
-                    filepath = FilePath + "/" + fi.getName();
+                    fileService.write(fi, visualPath, false);
+
                     sql =
                             "insert into cms_images (id,path,mainkey,kind,subkey,ext) values (" +
-                            SequenceManager.nextID(SequenceManager.CMS_IMAGES) + "," + StrUtil.sqlstr(filepath) + "," + docId +
+                            SequenceManager.nextID(SequenceManager.CMS_IMAGES) + "," + StrUtil.sqlstr(visualPath + "/" + fi.getName()) + "," + docId +
                             ",'document'," + pageNum + "," + StrUtil.sqlstr(StrUtil.getFileExt(fi.getName())) + ")";
                     conn.executeUpdate(sql);
                 }
             } else {
                 throw new ErrMsgException("save:上传失败！ret=" + ret);
             }
-        } catch (Exception e) {
-            logger.error("save:" + e.getMessage());
+        } catch (SQLException e) {
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
 
         saveWithoutFile(application, mfu);
@@ -644,173 +540,105 @@ public class DocContent implements java.io.Serializable {
         Conn conn = new Conn(connname);
         boolean re = true;
         try {
-            String FilePath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
-            // 处理附件
-            // String tempAttachFilePath = application.getRealPath("/") +
-            //                            FilePath +
-            //                            "/";
-            String tempAttachFilePath = Global.getRealPath() + FilePath +
-                                    "/";
-            // logger.info("tempAttachFilePath=" + tempAttachFilePath);
-            mfu.setSavePath(tempAttachFilePath); // 取得目录
-            File f = new File(tempAttachFilePath);
-            if (!f.isDirectory()) {
-                f.mkdirs();
+            String filePath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
+
+            // 将附件写入磁盘
+            IFileService fileService = SpringUtil.getBean(IFileService.class);
+            com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
+            boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
+            boolean canPdfFilePreview = cfg.getBooleanProperty("canPdfFilePreview");
+
+            Vector attachs = mfu.getAttachments();
+            int orders = getAttachmentMaxOrders(false) + 1;
+            Attachment attachment = new Attachment();
+            Iterator ir = attachs.iterator();
+            while (ir.hasNext()) {
+                FileInfo fi = (FileInfo) ir.next();
+                fileService.write(fi, filePath);
+
+                attachment.setDocId(docId);
+                attachment.setName(fi.getName());
+                attachment.setDiskName(fi.getDiskName());
+                attachment.setVisualPath(filePath);
+                attachment.setSize(fi.getSize());
+                attachment.setPageNum(pageNum);
+                attachment.setOrders(orders);
+                attachment.setExt(StrUtil.getFileExt(fi.getName()));
+                attachment.setUploadDate(new java.util.Date());
+                attachment.create();
+
+                orders ++;
+
+                // 获取上传文件路径，生成预览文件
+                String fullPath = Global.getRealPath() + filePath + "/" + fi.getDiskName();
+                if (canOfficeFilePreview) {
+                    if (FileUtil.isOfficeFile(fi.getDiskName())) {
+                        com.redmoon.oa.fileark.Document.createOfficeFilePreviewHTML(fullPath);
+                    }
+                }
+                if (canPdfFilePreview) {
+                    if (FileUtil.isPdfFile(fi.getDiskName())) {
+                        Pdf2Html.createPreviewHTML(fullPath);
+                    }
+                }
             }
-            String sisDdxc = StrUtil.getNullString(mfu.getFieldValue("isDdxc"));
-            if (sisDdxc.equals("true")) {
-                String[] attachFileNames = mfu.getFieldValues("attachFileName");
-                String[] clientFilePaths = mfu.getFieldValues("clientFilePath");
 
-                int len = 0;
-                if (attachFileNames != null) {
-                    len = attachFileNames.length;
-                }
-                String sql = "";
-                int orders = getAttachmentMaxOrders(false) + 1;
-                Attachment att = new Attachment();
+            // 将标题图片写入磁盘
+            attachs = mfu.getTitleImages();
+            orders = getAttachmentMaxOrders(true) + 1;
+            ir = attachs.iterator();
+            while (ir.hasNext()) {
+                FileInfo fi = (FileInfo) ir.next();
+                fileService.write(fi, filePath);
 
-                for (int i = 0; i < len; i++) {
-                    String filepath = mfu.getSavePath() + attachFileNames[i];
-                    String name = FileUpload.getUploadFileName(clientFilePaths[i]);
+                attachment.setDocId(docId);
+                attachment.setName(fi.getName());
+                attachment.setDiskName(fi.getDiskName());
+                attachment.setVisualPath(filePath);
+                attachment.setSize(fi.getSize());
+                attachment.setPageNum(pageNum);
+                attachment.setOrders(orders);
+                attachment.setExt(StrUtil.getFileExt(fi.getName()));
+                attachment.setUploadDate(new java.util.Date());
+                attachment.setTitleImage(true);
 
-                    File file = new File(filepath);
-                    long size = file.length();
+                attachment.create();
 
-                    att.setDocId(docId);
-                    att.setName(name);
-                    att.setDiskName(attachFileNames[i]);
-                    att.setVisualPath(FilePath);
-                    att.setSize(size);
-                    att.setPageNum(pageNum);
-                    att.setOrders(orders);
-                    att.setExt(StrUtil.getFileExt(name));
-                    att.setUploadDate(new java.util.Date());
-                    att.create();
+                orders ++;
+            }
 
-                    orders ++;
-                }
-            } else {
-                // 将附件写入磁盘
-                mfu.writeAttachment(true);
-                Vector attachs = mfu.getAttachments();
-                int orders = getAttachmentMaxOrders(false) + 1;
-                Attachment attachment = new Attachment();
-                Iterator ir = attachs.iterator();
-                while (ir.hasNext()) {
-                    FileInfo fi = (FileInfo) ir.next();
-                    String filepath = mfu.getSavePath() + fi.getDiskName();
-
-                    attachment.setDocId(docId);
-                    attachment.setName(fi.getName());
-                    attachment.setDiskName(fi.getDiskName());
-                    attachment.setVisualPath(FilePath);
-                    attachment.setSize(fi.getSize());
-                    attachment.setPageNum(pageNum);
-                    attachment.setOrders(orders);
-                    attachment.setExt(StrUtil.getFileExt(fi.getName()));
-                    attachment.setUploadDate(new java.util.Date());
-                    attachment.create();
-
-                    orders ++;
-                    
-                    // 获取上传文件路径，生成预览文件
-                    String previewfile = filepath;
-                    Document.createOfficeFilePreviewHTML(previewfile);
-                }
-
-                // 将标题图片写入磁盘
-                mfu.writeTitleImages(true);
-                attachs = mfu.getTitleImages();
-                orders = getAttachmentMaxOrders(true) + 1;
-                ir = attachs.iterator();
-                while (ir.hasNext()) {
-                    FileInfo fi = (FileInfo) ir.next();
-
-                    attachment.setDocId(docId);
-                    attachment.setName(fi.getName());
-                    attachment.setDiskName(fi.getDiskName());
-                    attachment.setVisualPath(FilePath);
-                    attachment.setSize(fi.getSize());
-                    attachment.setPageNum(pageNum);
-                    attachment.setOrders(orders);
-                    attachment.setExt(StrUtil.getFileExt(fi.getName()));
-                    attachment.setUploadDate(new java.util.Date());
-                    attachment.setTitleImage(true);
-
-                    attachment.create();
-
-                    orders ++;
-                }
-
-                // 对标题图片排序
-                String imgOrders = mfu.getFieldValue("imgOrders");
-                String[] orderArr = StrUtil.split(imgOrders, ",");
-                if (orderArr!=null) {
-                    for (int i = 0; i< orderArr.length; i++) {
-                        String imgOrder = orderArr[i];
-                        if (NumberUtil.isNumeric(imgOrder)) {
-                            int imgId = StrUtil.toInt(imgOrder);
-                            Attachment att = new Attachment(imgId);
+            // 对标题图片排序
+            String imgOrders = mfu.getFieldValue("imgOrders");
+            String[] orderArr = StrUtil.split(imgOrders, ",");
+            if (orderArr!=null) {
+                for (int i = 0; i< orderArr.length; i++) {
+                    String imgOrder = orderArr[i];
+                    if (NumberUtil.isNumeric(imgOrder)) {
+                        int imgId = StrUtil.toInt(imgOrder);
+                        Attachment att = new Attachment(imgId);
+                        att.setOrders(i);
+                        att.save();
+                    }
+                    else {
+                        String imgName = imgOrder;
+                        Attachment att = new Attachment();
+                        att = att.getAttachmentByName(docId, imgName);
+                        if (att!=null) {
                             att.setOrders(i);
                             att.save();
                         }
-                        else {
-                            String imgName = imgOrder;
-                            Attachment att = new Attachment();
-                            att = att.getAttachmentByName(docId, imgName);
-                            if (att!=null) {
-                                att.setOrders(i);
-                                att.save();
-                            }
-                        }
                     }
                 }
-
-            	// 处理网络硬盘文件
-                com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();       
-            	String[] netdiskFiles = mfu.getFieldValues("netdiskFiles");
-            	String filepath = mfu.getSavePath();
-            	if (netdiskFiles!=null) {
-            		com.redmoon.oa.netdisk.Attachment att = new com.redmoon.oa.netdisk.Attachment();
-            		for (int i=0; i<netdiskFiles.length; i++) {
-            			att = att.getAttachment(StrUtil.toInt(netdiskFiles[i]));
-
-                        String file_netdisk = cfg.get("file_netdisk");
-                        String fullPath = Global.getRealPath() + file_netdisk + "/" + att.getVisualPath() + "/" + att.getDiskName();
-                       
-                        String newName = RandomSecquenceCreator.getId() + "." + StrUtil.getFileExt(att.getDiskName());
-                        String newFullPath = filepath + "/" + newName;
-                        
-                        FileUtil.CopyFile(fullPath, newFullPath);
-                        Attachment att2 = new Attachment();
-                        att2.setDocId(docId);
-                        att2.setName(att.getName());
-                        att2.setDiskName(newName);
-                        att2.setVisualPath(FilePath);
-                        att2.setSize(att.getSize());
-                        att2.setPageNum(pageNum);
-                        att2.setExt(StrUtil.getFileExt(newName));
-                        att2.setOrders(orders);
-                        att2.setUploadDate(new java.util.Date());
-                        re = att2.create();
-                        orders++;
-                        
-                        //获取上传文件路径，生成预览文件
-                        String previewfile=filepath + newName;
-                        Document.createOfficeFilePreviewHTML(previewfile);                        
-            		}
-            	}                             
             }
 
             // 解析content，将其中的base64编码转换成文件
-            content = convertBase64ToImgFile(content, FilePath, docId);
+            content = convertBase64ToImgFile(content, filePath, docId);
 
             PreparedStatement pstmt = conn.prepareStatement(SAVE);
             pstmt.setString(1, content);
             pstmt.setInt(2, docId);
             pstmt.setInt(3, pageNum);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             pstmt.close();
 
             // 更新缓存
@@ -818,12 +646,10 @@ public class DocContent implements java.io.Serializable {
             dcm.refreshUpdate(docId, pageNum);
         } catch (SQLException e) {
             re = false;
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -840,7 +666,7 @@ public class DocContent implements java.io.Serializable {
                 return content;
             }
             else {
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 int lastNodeEnd = 0;
                 for (int k=0; k<nodes.size(); k++) {
                     ImageTag node = (ImageTag) nodes.elementAt(k);
@@ -864,6 +690,9 @@ public class DocContent implements java.io.Serializable {
                             c += node.toHtml();
                             sb.append(c);
                             lastNodeEnd = e;
+
+                            IFileService fileService = SpringUtil.getBean(IFileService.class);
+                            fileService.upload(Global.getRealPath() + filePath + "/" + diskName, filePath, diskName);
 
                             File f = new File(Global.getRealPath() + filePath + "/" + diskName);
                             long size = f.length();
@@ -893,14 +722,15 @@ public class DocContent implements java.io.Serializable {
             }
 
         } catch (ParserException e) {
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         return content;
     }
 
     public static boolean generateImage(String imgStr, String path) {
-        if (imgStr == null)
+        if (imgStr == null) {
             return false;
+        }
         BASE64Decoder decoder = new BASE64Decoder();
         try {
             // 解密
@@ -917,7 +747,7 @@ public class DocContent implements java.io.Serializable {
             out.close();
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.getLog(DocContent.class).error(e);
             return false;
         }
     }
@@ -944,46 +774,36 @@ public class DocContent implements java.io.Serializable {
                           CMSMultiFileUploadBean mfu, int doc_id,
                           String content, int pageNum) throws
             ErrMsgException {
-        String sql = "";
-        String FilePath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
-        // String tempAttachFilePath = application.getRealPath("/") + FilePath +
-        //                            "/";
-        String tempAttachFilePath = Global.getRealPath() + FilePath +
-                                    "/";
-        mfu.setSavePath(tempAttachFilePath); //取得目录
-        File f = new File(tempAttachFilePath);
-        if (!f.isDirectory()) {
-            f.mkdirs();
-        }
-
+        String sql;
+        String visualPath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
         Conn conn = new Conn(connname);
         boolean re = true;
         try {
             // 处理附件
             int ret = mfu.getRet();
             // 如果上传成功
-            if (ret == mfu.RET_SUCCESS) {
+            if (ret == FileUpload.RET_SUCCESS) {
                 // 处理HTMLCODE中的文件
-                mfu.writeFile(false); // 用文件本来的名称命名文件
                 Vector files = mfu.getFiles();
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
+
                 java.util.Enumeration e = files.elements();
-                String filepath = "";
-                sql = "";
                 while (e.hasMoreElements()) {
                     FileInfo fi = (FileInfo) e.nextElement();
-                    filepath = FilePath + "/" + fi.getName();
+                    fileService.write(fi, visualPath, false);
                     sql =
                             "insert into cms_images (id,path,mainkey,kind,subkey,ext) values (" +
-                            SequenceManager.nextID(SequenceManager.CMS_IMAGES) + "," + StrUtil.sqlstr(filepath) + "," + docId +
+                            SequenceManager.nextID(SequenceManager.CMS_IMAGES) + "," + StrUtil.sqlstr(visualPath + "/" + fi.getName()) + "," + docId +
                             ",'document'," + this.pageNum + "," + StrUtil.sqlstr(StrUtil.getFileExt(fi.getName())) + ")";
                     conn.executeUpdate(sql);
                 }
-            } else
+            } else {
                 throw new ErrMsgException("上传失败！ret=" + ret);
+            }
 
             re = createWithoutFile(application, mfu, doc_id, content, pageNum);
         } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("create:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -993,13 +813,13 @@ public class DocContent implements java.io.Serializable {
         return re;
     }
 
-    private Vector attachments = new Vector();
+    private Vector<Attachment> attachments = new Vector<>();
 
     public Vector getTitleImages() {
         return titleImages;
     }
 
-    private Vector titleImages = new Vector();
+    private Vector<Attachment> titleImages = new Vector<>();
 
     public Vector getAttachments() {
         return attachments;
@@ -1026,19 +846,17 @@ public class DocContent implements java.io.Serializable {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, newname);
             pstmt.setInt(2, attachId);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 // 更新缓存
                 DocContentCacheMgr dcm = new DocContentCacheMgr();
                 dcm.refreshUpdate(docId, pageNum);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }
@@ -1061,13 +879,10 @@ public class DocContent implements java.io.Serializable {
                 }
             }
         } catch (SQLException e) {
-            logger.error("getMaxOrders:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("getMaxOrders:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return maxorders;
     }
@@ -1076,7 +891,7 @@ public class DocContent implements java.io.Serializable {
         Attachment attach = new Attachment(attachId);
         boolean re = false;
         int orders = attach.getOrders();
-        if (direction.equals("up")) {
+        if ("up".equals(direction)) {
             if (orders == 1)
                 return true;
             else {
@@ -1127,7 +942,7 @@ public class DocContent implements java.io.Serializable {
             pstmt.setInt(1, doc_id);
             pstmt.setString(2, content);
             pstmt.setInt(3, pageNum);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
 
             if (re) {
                 // 更新缓存
@@ -1136,11 +951,9 @@ public class DocContent implements java.io.Serializable {
             }
         } catch (SQLException e) {
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }    
@@ -1159,7 +972,7 @@ public class DocContent implements java.io.Serializable {
             pstmt.setString(1, content);
             pstmt.setInt(2, docId);
             pstmt.setInt(3, pageNum);
-            re = conn.executePreUpdate() == 1 ? true : false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 // 更新缓存
                 DocContentCacheMgr dcm = new DocContentCacheMgr();
@@ -1167,11 +980,9 @@ public class DocContent implements java.io.Serializable {
             }
         } catch (SQLException e) {
             LogUtil.getLog(getClass()).error(StrUtil.trace(e));
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
         return re;
     }

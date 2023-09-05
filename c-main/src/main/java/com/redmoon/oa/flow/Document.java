@@ -12,8 +12,9 @@ import cn.js.fan.security.SecurityUtil;
 import cn.js.fan.util.ErrMsgException;
 import cn.js.fan.util.StrUtil;
 import cn.js.fan.web.Global;
+import com.cloudwebsoft.framework.util.LogUtil;
 import com.redmoon.kit.util.FileInfo;
-import org.apache.log4j.Logger;
+import com.redmoon.oa.base.IAttachment;
 import com.redmoon.oa.db.SequenceManager;
 
 /**
@@ -47,9 +48,7 @@ public class Document implements java.io.Serializable, ITagSupport {
     public static final int EXAMINE_NOT = 0; // 未审核
     public static final int EXAMINE_NOTPASS = 1; // 未通过
     public static final int EXAMINE_PASS = 2; //　审核通过
-
-    transient Logger logger = Logger.getLogger(Document.class.getName());
-
+    
     private static final String INSERT_DOCUMENT =
             "INSERT into flow_document (id, title, class1, type, voteoption, voteresult, nick, keywords, isrelateshow, can_comment, hit, template_id, parent_code, examine, isNew, author, flowTypeCode, modifiedDate, flow_id) VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?)";
 
@@ -68,7 +67,7 @@ public class Document implements java.io.Serializable, ITagSupport {
     public Document() {
         connname = Global.getDefaultDB();
         if (connname.equals(""))
-            logger.info("Document:默认数据库名为空！");
+            LogUtil.getLog(getClass()).info("Document:默认数据库名为空！");
     }
 
     /**
@@ -78,15 +77,14 @@ public class Document implements java.io.Serializable, ITagSupport {
      */
     public Document(int id) {
         connname = Global.getDefaultDB();
-        if (connname.equals(""))
-            logger.info("Directory:默认数据库名为空！");
+        if ("".equals(connname)) {
+            LogUtil.getLog(getClass()).info("Directory:默认数据库名为空！");
+        }
         this.id = id;
         loadFromDB();
     }
 
     public void renew() {
-        if (logger==null)
-            logger = Logger.getLogger(Document.class.getName());
     }
 
     /**
@@ -106,20 +104,11 @@ public class Document implements java.io.Serializable, ITagSupport {
             create(code, title, content, 0, "", "", nick, leaf.getTemplateId(), nick);
             this.id = getFirstIDByCode(code);
             // 更改目录中的doc_id
-            //logger.info("id=" + id);
+            //LogUtil.getLog(getClass()).info("id=" + id);
             leaf.setDocID(id);
             leaf.update();
         }
         return id;
-    }
-
-    public void delDocumentByDirCode(String code) throws ErrMsgException {
-        Vector v = getDocumentsByDirCode(code);
-        Iterator ir = v.iterator();
-        while (ir.hasNext()) {
-            Document doc = (Document) ir.next();
-            doc.del();
-        }
     }
 
     public Vector getDocumentsByDirCode(String code) {
@@ -136,7 +125,7 @@ public class Document implements java.io.Serializable, ITagSupport {
                }
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -167,7 +156,7 @@ public class Document implements java.io.Serializable, ITagSupport {
                 return rs.getInt(1);
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         } finally {
             if (rs != null) {
                 try {
@@ -251,7 +240,7 @@ public class Document implements java.io.Serializable, ITagSupport {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list: " + e.getMessage());
+            LogUtil.getLog(getClass()).error("list: " + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -274,97 +263,6 @@ public class Document implements java.io.Serializable, ITagSupport {
         return class1;
     }
 
-    public synchronized boolean UpdateWithoutFile(ServletContext application,CMSMultiFileUploadBean mfu) throws
-            ErrMsgException {
-        //取得表单中域的信息
-        String dir_code = StrUtil.getNullStr(mfu.getFieldValue("dir_code"));
-        author = StrUtil.getNullString(mfu.getFieldValue("author"));
-        title = StrUtil.getNullString(mfu.getFieldValue("title"));
-        //logger.info("FilePath=" + FilePath);
-        String strCanComment = StrUtil.getNullStr(mfu.getFieldValue(
-                "canComment"));
-        if (strCanComment.equals(""))
-            canComment = false;
-        else if (strCanComment.equals("1"))
-            canComment = true;
-        String strIsHome = StrUtil.getNullString(mfu.getFieldValue("isHome"));
-        if (strIsHome.equals(""))
-            isHome = false;
-        else if (strIsHome.equals("false"))
-            isHome = false;
-        else if (strIsHome.equals("true"))
-            isHome = true;
-        else
-            isHome = false;
-        String strexamine = mfu.getFieldValue("examine");
-        int oldexamine = examine;
-        examine = Integer.parseInt(strexamine);
-        String strisnew = StrUtil.getNullStr(mfu.getFieldValue("isNew"));
-        if (StrUtil.isNumeric(strisnew))
-            isNew = Integer.parseInt(strisnew);
-        else
-            isNew = 0;
-
-        keywords = StrUtil.getNullStr(mfu.getFieldValue("keywords"));
-        String strisRelateShow = StrUtil.getNullStr(mfu.getFieldValue("isRelateShow"));
-        int intisRelateShow = 0;
-        if (StrUtil.isNumeric(strisRelateShow)) {
-            intisRelateShow = Integer.parseInt(strisRelateShow);
-            if (intisRelateShow==1)
-                isRelateShow = true;
-        }
-
-        flowTypeCode = StrUtil.getNullString(mfu.getFieldValue("flowTypeCode"));
-
-        Conn conn = new Conn(connname);
-        PreparedStatement pstmt = null;
-        try {
-            //更新文件内容
-            pstmt = conn.prepareStatement(SAVE_DOCUMENT);
-            pstmt.setString(1, title);
-            pstmt.setInt(2, canComment ? 1 : 0);
-            pstmt.setBoolean(3, isHome);
-            pstmt.setTimestamp(4, new Timestamp(new java.util.Date().getTime()));
-            pstmt.setInt(5, examine);
-            pstmt.setString(6, keywords);
-            pstmt.setInt(7, intisRelateShow);
-            pstmt.setInt(8, templateId);
-            pstmt.setString(9, dir_code);
-            pstmt.setInt(10, isNew);
-            pstmt.setString(11, author);
-            pstmt.setString(12, flowTypeCode);
-            pstmt.setInt(13, id);
-            conn.executePreUpdate();
-            // 更新缓存
-            DocCacheMgr dcm = new DocCacheMgr();
-            if (oldexamine==examine) {
-                dcm.refreshUpdate(id);
-            }
-            else {
-                dcm.refreshUpdate(id, class1, parentCode);
-            }
-
-            // 如果是更改了类别
-            if (!dir_code.equals(class1)) {
-                dcm.refreshChangeDirCode(class1, dir_code);
-            }
-
-            // 更新内容
-            DocContent dc = new DocContent();
-            dc = dc.getDocContent(id, 1);
-            dc.saveWithoutFile(application, mfu);
-        } catch (SQLException e) {
-            logger.error("UpdateWithoutFile:" + e.getMessage());
-            throw new ErrMsgException("服务器内部错！");
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-        return true;
-    }
-
     public synchronized boolean UpdateIsHome(boolean isHome) throws
             ErrMsgException {
         String sql = "update flow_document set isHome=? where id=?";
@@ -380,7 +278,7 @@ public class Document implements java.io.Serializable, ITagSupport {
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -406,7 +304,7 @@ public class Document implements java.io.Serializable, ITagSupport {
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -469,99 +367,11 @@ public class Document implements java.io.Serializable, ITagSupport {
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
             re = false;
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
+            conn.close();
         }
-        return re;
-    }
-
-    public synchronized boolean UpdateSummary(ServletContext application, CMSMultiFileUploadBean mfu) throws
-            ErrMsgException {
-        String isuploadfile = StrUtil.getNullString(mfu.getFieldValue(
-                "isuploadfile"));
-        // logger.info("filepath=" + mfu.getFieldValue("filepath"));
-        if (isuploadfile.equals("false"))
-            return UpdateSummaryWithoutFile(application, mfu);
-
-        String FilePath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
-        //文件路径修改为从CONFIG_CWS.XML文件获取
-        //String tempAttachFilePath = application.getRealPath("/") + FilePath + "/";
-        String tempAttachFilePath = Global.getRealPath() + FilePath + "/";
-        mfu.setSavePath(tempAttachFilePath); //取得目录
-        File f = new File(tempAttachFilePath);
-        if (!f.isDirectory()) {
-            f.mkdirs();
-        }
-
-        boolean re = false;
-        ResultSet rs = null;
-        Conn conn = new Conn(connname);
-        try {
-            //删除图像文件
-            String sql = "select path from flow_cms_images where mainkey=" + SQLFilter.sqlstr(String.valueOf(id))  +
-                         " and kind='document' and subkey=" + 0 + "";
-
-            rs = conn.executeQuery(sql);
-            if (rs != null) {
-                String fpath = "";
-                while (rs.next()) {
-                    fpath = rs.getString(1);
-                    if (fpath != null) {
-                        File virtualFile = new File(fpath);
-                        virtualFile.delete();
-                    }
-                }
-
-            }
-            if (rs != null) {
-                rs.close();
-                rs = null;
-            }
-            //从数据库中删除图像
-            sql = "delete from flow_cms_images where mainkey=" + SQLFilter.sqlstr(String.valueOf(id))  +
-                  " and kind='document' and subkey=" + 0 + "";
-            conn.executeUpdate(sql);
-
-            // 处理图片
-            int ret = mfu.getRet();
-            if (ret == 1) {
-                mfu.writeFile(false);
-                Vector files = mfu.getFiles();
-                // logger.info("files size=" + files.size());
-                java.util.Enumeration e = files.elements();
-                String filepath = "";
-                sql = "";
-                while (e.hasMoreElements()) {
-                    FileInfo fi = (FileInfo) e.nextElement();
-                    filepath = mfu.getSavePath() + fi.getName();
-                    sql = "insert into flow_cms_images (path,mainkey,kind,subkey) values (" +
-                            StrUtil.sqlstr(filepath) + "," + SQLFilter.sqlstr(String.valueOf(id)) +
-                            ",'document'," + 0 + ")";
-                    conn.executeUpdate(sql);
-                }
-            } else
-                throw new ErrMsgException("上传失败！ret=" + ret);
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
-                rs = null;
-            }
-
-            re = UpdateSummaryWithoutFile(application, mfu);
-        } catch (Exception e) {
-            logger.error("UpdateSummary:" + e.getMessage());
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-
         return re;
     }
 
@@ -573,7 +383,7 @@ public class Document implements java.io.Serializable, ITagSupport {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, templateId);
             pstmt.setInt(2, id);
-            re = conn.executePreUpdate()==1?true:false;
+            re = conn.executePreUpdate() == 1;
             if (re) {
                 // 更新缓存
                 DocCacheMgr dcm = new DocCacheMgr();
@@ -581,259 +391,12 @@ public class Document implements java.io.Serializable, ITagSupport {
             }
         }
         catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
         }
         finally {
-            if (conn!=null) {
-                conn.close(); conn = null;
-            }
+            conn.close();
         }
         return re;
-    }
-
-    public synchronized boolean Update(ServletContext application,
-                                       CMSMultiFileUploadBean mfu) throws
-            ErrMsgException {
-        String isuploadfile = StrUtil.getNullString(mfu.getFieldValue(
-                "isuploadfile"));
-        // logger.info("filepath=" + mfu.getFieldValue("filepath"));
-        if (isuploadfile.equals("false"))
-            return UpdateWithoutFile(application, mfu);
-
-        // 取得表单中域的信息
-        String dir_code = StrUtil.getNullStr(mfu.getFieldValue("dir_code"));
-        author = StrUtil.getNullString(mfu.getFieldValue("author"));
-        title = StrUtil.getNullString(mfu.getFieldValue("title"));
-        String strIsHome = StrUtil.getNullString(mfu.getFieldValue("isHome"));
-        if (strIsHome.equals(""))
-            isHome = false;
-        else if (strIsHome.equals("false"))
-            isHome = false;
-        else if (strIsHome.equals("true"))
-            isHome = true;
-        else
-            isHome = false;
-        String strexamine = mfu.getFieldValue("examine");
-        int oldexamine = examine;
-        examine = Integer.parseInt(strexamine);
-        keywords = StrUtil.getNullStr(mfu.getFieldValue("keywords"));
-        String strisRelateShow = StrUtil.getNullStr(mfu.getFieldValue("isRelateShow"));
-        int intisRelateShow = 0;
-        if (StrUtil.isNumeric(strisRelateShow)) {
-            intisRelateShow = Integer.parseInt(strisRelateShow);
-            if (intisRelateShow==1)
-                isRelateShow = true;
-        }
-
-        String strisnew = StrUtil.getNullStr(mfu.getFieldValue("isNew"));
-        if (StrUtil.isNumeric(strisnew))
-            isNew = Integer.parseInt(strisnew);
-        else
-            isNew = 0;
-        String strCanComment = StrUtil.getNullStr(mfu.getFieldValue(
-                "canComment"));
-        if (strCanComment.equals(""))
-            canComment = false;
-        else if (strCanComment.equals("1"))
-            canComment = true;
-
-        flowTypeCode = StrUtil.getNullStr(mfu.getFieldValue("flowTypeCode"));
-
-        Conn conn = new Conn(connname);
-        ResultSet rs = null;
-        PreparedStatement pstmt = null;
-        try {
-            //更新文件内容
-            pstmt = conn.prepareStatement(SAVE_DOCUMENT);
-            pstmt.setString(1, title);
-            pstmt.setInt(2, canComment ? 1 : 0);
-            pstmt.setBoolean(3, isHome);
-            pstmt.setTimestamp(4, new Timestamp(new java.util.Date().getTime()));
-            pstmt.setInt(5, examine);
-            pstmt.setString(6, keywords);
-            pstmt.setInt(7, intisRelateShow);
-            pstmt.setInt(8, templateId);
-            pstmt.setString(9, dir_code);
-            pstmt.setInt(10, isNew);
-            pstmt.setString(11, author);
-            pstmt.setString(12, flowTypeCode);
-            pstmt.setInt(13, id);
-            conn.executePreUpdate();
-            // 更新缓存
-            DocCacheMgr dcm = new DocCacheMgr();
-            if (oldexamine==examine) {
-                dcm.refreshUpdate(id);
-            }
-            else {
-                dcm.refreshUpdate(id, class1, parentCode);
-            }
-            // 如果是更改了类别
-            if (!dir_code.equals(class1)) {
-                dcm.refreshChangeDirCode(class1, dir_code);
-            }
-
-            // 更新第一页的内容
-            DocContent dc = new DocContent();
-            dc = dc.getDocContent(id, 1);
-            dc.save(application, mfu);
-        } catch (SQLException e) {
-            logger.error("update:" + e.getMessage());
-            throw new ErrMsgException("服务器内部错！");
-        } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
-                rs = null;
-            }
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-        return true;
-    }
-
-    public boolean create(ServletContext application,
-                          CMSMultiFileUploadBean mfu, String nick) throws
-            ErrMsgException {
-        String isuploadfile = StrUtil.getNullString(mfu.getFieldValue(
-                "isuploadfile"));
-
-        // 取得表单中域的信息
-        author = StrUtil.getNullString(mfu.getFieldValue("author"));
-        title = StrUtil.getNullString(mfu.getFieldValue("title"));
-        content = StrUtil.getNullString(mfu.getFieldValue("htmlcode"));
-        String dir_code = StrUtil.getNullStr(mfu.getFieldValue("dir_code"));
-        keywords = StrUtil.getNullStr(mfu.getFieldValue("keywords"));
-        String strisRelateShow = StrUtil.getNullStr(mfu.getFieldValue("isRelateShow"));
-        int intisRelateShow = 0;
-        if (StrUtil.isNumeric(strisRelateShow)) {
-            intisRelateShow = Integer.parseInt(strisRelateShow);
-            if (intisRelateShow==1)
-                isRelateShow = true;
-        }
-
-        String strexamine = StrUtil.getNullStr(mfu.getFieldValue("examine"));
-        if (StrUtil.isNumeric(strexamine)) {
-            examine = Integer.parseInt(strexamine);
-        }
-        else
-            examine = 0;
-
-        String strisnew = StrUtil.getNullStr(mfu.getFieldValue("isNew"));
-        if (StrUtil.isNumeric(strisnew))
-            isNew = Integer.parseInt(strisnew);
-        else
-            isNew = 0;
-
-        flowTypeCode = StrUtil.getNullStr(mfu.getFieldValue("flowTypeCode"));
-
-        // 检查目录节点中是否允许插入文章
-        Directory dir = new Directory();
-        Leaf lf = dir.getLeaf(dir_code);
-        if (lf==null || !lf.isLoaded()) {
-            throw new ErrMsgException("节点：" + dir_code + "不存在！");
-        }
-        if (lf.getType() == 0)
-            throw new ErrMsgException("对不起，该目录不包含具体内容，请选择正确的目录项！");
-        if (lf.getType() == 1) {
-            if (getFirstIDByCode(dir_code) != -1)
-                throw new ErrMsgException("该目录节点为文章节点，且文章已经被创建！");
-        }
-
-        String strCanComment = StrUtil.getNullStr(mfu.getFieldValue(
-                "canComment"));
-        if (strCanComment.equals(""))
-            canComment = false;
-        else if (strCanComment.equals("1"))
-            canComment = true;
-        //logger.info("strCanComment=" + strCanComment);
-        String strtid = StrUtil.getNullStr(mfu.getFieldValue("templateId"));
-        if (StrUtil.isNumeric(strtid))
-            templateId = Integer.parseInt(strtid);
-
-        // 投票处理
-        String isvote = mfu.getFieldValue("isvote");
-        String[] voptions = null;
-        type = 0; // 类型1表示为投票
-        String voteresult = "", votestr = "";
-        if (isvote != null && isvote.equals("1")) {
-            type = 1;
-
-            String voteoption = mfu.getFieldValue("vote").trim();
-            if (!voteoption.equals("")) {
-                voptions = voteoption.split("\\r\\n");
-            }
-            if (voteoption.indexOf("|") != -1)
-                throw new ErrMsgException("投票选项中不能包含|");
-
-            int len = voptions.length;
-            for (int k = 0; k < len; k++) {
-                if (voteresult.equals("")) {
-                    voteresult = "0";
-                    votestr = voptions[k];
-                } else {
-                    voteresult += "|" + "0";
-                    votestr += "|" + voptions[k];
-                }
-            }
-        }
-
-        // 清缓存
-        DocCacheMgr dcm = new DocCacheMgr();
-        dcm.refreshCreate(dir_code, lf.getParentCode());
-
-        // 如果不上传文件
-        if (isuploadfile.equals("false"))
-            return create(dir_code, title, content, type, votestr, voteresult,
-                          nick, templateId, author);
-
-        this.id = (int) SequenceManager.nextID(SequenceManager.OA_DOCUMENT_FLOW);
-
-        Conn conn = new Conn(connname);
-        PreparedStatement pstmt = null;
-        try {
-            // 插入文章标题及相关设置
-            parentCode = lf.getParentCode();
-            pstmt = conn.prepareStatement(INSERT_DOCUMENT);
-            pstmt.setInt(1, id);
-            pstmt.setString(2, title);
-            pstmt.setString(3, dir_code);
-            pstmt.setInt(4, type);
-            pstmt.setString(5, votestr);
-            pstmt.setString(6, voteresult);
-            pstmt.setString(7, nick);
-            pstmt.setString(8, keywords);
-            pstmt.setInt(9, intisRelateShow);
-            pstmt.setInt(10, canComment?1:0);
-            pstmt.setInt(11, templateId);
-            pstmt.setString(12, parentCode);
-            pstmt.setInt(13, examine);
-            pstmt.setInt(14, isNew);
-            pstmt.setString(15, author);
-            pstmt.setString(16, flowTypeCode);
-            pstmt.setTimestamp(17, new Timestamp(new java.util.Date().getTime()));
-            pstmt.setLong(18, flowId);
-            conn.executePreUpdate();
-
-            pstmt.close();
-            pstmt = null;
-
-            // 插入文章中的内容
-            DocContent dc = new DocContent();
-            dc.create(application, mfu, id, content, 1);
-        } catch (SQLException e) {
-            logger.error("create:" + e.getMessage());
-            throw new ErrMsgException("服务器内部错！");
-        } finally {
-            if (conn != null) {
-                conn.close();
-                conn = null;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -877,8 +440,8 @@ public class Document implements java.io.Serializable, ITagSupport {
             // dc.create(id, content);
 
         } catch (SQLException e) {
-            logger.error("create2:" + e.getMessage());
-            e.printStackTrace();
+            LogUtil.getLog(getClass()).error("create2:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
         } finally {
             if (conn != null) {
                 conn.close();
@@ -928,13 +491,13 @@ public class Document implements java.io.Serializable, ITagSupport {
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshDel(id, class1, parentCode);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             return false;
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {e.printStackTrace();}
+                } catch (SQLException e) {LogUtil.getLog(getClass()).error(e);}
                 rs = null;
             }
             if (conn != null) {
@@ -955,7 +518,7 @@ public class Document implements java.io.Serializable, ITagSupport {
             pstmt.setInt(1, id);
             rs = conn.executePreQuery();
             if (!rs.next()) {
-                logger.error("文档 " + id +
+                LogUtil.getLog(getClass()).error("文档 " + id +
                              " 在数据库中未找到.");
             } else {
                 this.title = rs.getString(1);
@@ -982,7 +545,7 @@ public class Document implements java.io.Serializable, ITagSupport {
                 loaded = true; // 已初始化
             }
         } catch (SQLException e) {
-            logger.error("loadFromDB:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("loadFromDB:" + e.getMessage());
         } finally {
             /*
             if (pstmt != null) {
@@ -1102,13 +665,13 @@ public class Document implements java.io.Serializable, ITagSupport {
             String sql = "update flow_document set voteresult=" +
                          StrUtil.sqlstr(result)
                          + " where id=" + id;
-            logger.info(sql);
+            LogUtil.getLog(getClass()).info(sql);
             re = conn.executeUpdate(sql) == 1 ? true : false;
             // 更新缓存
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error("vote:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("vote:" + e.getMessage());
         } finally {
             if (conn != null) {
                 conn.close();
@@ -1206,60 +769,12 @@ public class Document implements java.io.Serializable, ITagSupport {
     }
 
     public String getFlowTypeCode() {
-        return flowTypeCode;
+        return getDirCode();
+        // return flowTypeCode;
     }
 
     private int hit = 0;
     private int templateId = NOTEMPLATE;
-
-    public boolean AddContentPage(ServletContext application,
-                                  CMSMultiFileUploadBean mfu, String content) throws
-            ErrMsgException {
-        String action = StrUtil.getNullStr(mfu.getFieldValue("action"));
-        int afterpage = -1;
-        if (action.equals("insertafter")) {
-            String insafter = StrUtil.getNullStr(mfu.getFieldValue("afterpage"));
-            if (StrUtil.isNumeric(insafter))
-                afterpage = Integer.parseInt(insafter);
-        }
-
-        int pageNo = 1;
-        if (afterpage!=-1)
-            pageNo = afterpage + 1;
-        else
-            pageNo = pageCount + 1;
-        System.out.println("pageNo=" + pageNo);
-
-        String isuploadfile = StrUtil.getNullString(mfu.getFieldValue(
-                "isuploadfile"));
-        DocContent dc = new DocContent();
-        if (isuploadfile.equals("false")) {
-            if (dc.createWithoutFile(application, mfu, id, content, pageNo)) {
-                pageCount++;
-                return UpdatePageCount(pageCount);
-            }
-        }
-        else {
-            if (dc.create(application, mfu, id, content, pageNo)) {
-                pageCount++;
-                return UpdatePageCount(pageCount);
-            }
-        }
-        return false;
-    }
-
-    public boolean EditContentPage(ServletContext application,
-                                                CMSMultiFileUploadBean mfu) throws ErrMsgException {
-        String strpageNum = StrUtil.getNullStr(mfu.getFieldValue("pageNum"));
-        int pageNum = Integer.parseInt(strpageNum);
-
-        DocContent dc = new DocContent();
-        dc = dc.getDocContent(id, pageNum);
-        dc.setContent(content);
-        dc.save(application, mfu);
-
-        return true;
-    }
 
     public synchronized boolean UpdatePageCount(int pagecount) throws
             ErrMsgException {
@@ -1277,7 +792,7 @@ public class Document implements java.io.Serializable, ITagSupport {
             DocCacheMgr dcm = new DocCacheMgr();
             dcm.refreshUpdate(id);
         } catch (SQLException e) {
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e.getMessage());
             throw new ErrMsgException("服务器内部错！");
         } finally {
             if (conn != null) {
@@ -1291,13 +806,28 @@ public class Document implements java.io.Serializable, ITagSupport {
     private int pageCount = 1;
     private String parentCode;
 
-    public Vector<Attachment> getAttachments(int pageNum) {
+    public Vector<IAttachment> getAttachments(int pageNum) {
         DocContent dc = new DocContent();
         dc = dc.getDocContent(id, pageNum);
         if (dc==null) {
             return null;
         }
         return dc.getAttachments();
+    }
+
+    /**
+     * 判断是否已有附件被盖章
+     * @param
+     * @return
+     */
+    public boolean isSealed() {
+        Vector<IAttachment> v = getAttachments(1);
+        for (IAttachment a : v) {
+            if (a.isSealed()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Attachment getAttachment(int pageNum, int att_id) {
@@ -1321,7 +851,13 @@ public class Document implements java.io.Serializable, ITagSupport {
 
     private int isNew = 0;
     private String author;
+
+    /**
+     * 暂无用，流程类型存于class1字段中
+     */
+    @Deprecated
     private String flowTypeCode = "";
+
     private long flowId = 0;
 
 	public long getFlowId() {

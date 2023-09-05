@@ -120,8 +120,7 @@ public class RoleUser {
     		try {
 				jt.executeUpdate(sql);
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
 			}
     		
     		this.orders = ru.getOrders();
@@ -133,8 +132,7 @@ public class RoleUser {
     		try {
 				jt.executeUpdate(sql);
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
 			}    	
     		this.orders = ru.getOrders() + 1;
     		re = save();
@@ -316,8 +314,7 @@ public class RoleUser {
             ps.setString(3, roleCode);
             re = conn.executePreUpdate()==1;
         } catch (SQLException e) {
-        	LogUtil.getLog(getClass()).error(e.getMessage());
-        	e.printStackTrace();
+            LogUtil.getLog(getClass()).error(e);
         }
         finally {
             if (conn!=null) {

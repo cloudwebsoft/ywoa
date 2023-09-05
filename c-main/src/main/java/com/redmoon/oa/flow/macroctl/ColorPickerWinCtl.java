@@ -23,25 +23,36 @@ public class ColorPickerWinCtl extends AbstractMacroCtl {
     public ColorPickerWinCtl() {
     }
 
-    public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
-    	String val = StrUtil.getNullStr(ff.getValue());
+    @Override
+	public String convertToHTMLCtl(HttpServletRequest request, FormField ff) {
+		String pageType = (String)request.getAttribute("pageType");
+		String val = StrUtil.getNullStr(ff.getValue());
     	String bgclr = "";
     	if (!"".equals(val)) {
     		bgclr = "background-color:" + val;
     	}
+		String style = "";
+		if (!"".equals(ff.getCssWidth())) {
+			style = "style='width:" + ff.getCssWidth() + "'";
+		} else {
+			style = "style='width:130px'";
+		}
     	String str = "";   	
-    	str += "<div id='" + ff.getName() + "_show' name='" + ff.getName() + "_show' style='display:inline-block;vertical-align:middle; width:16px; height:16px; border:1px solid #cccccc;" + bgclr + "'></div>";
-        str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' type='hidden' value='" + val + "'/>";
-    	str += "<script>\n";
-    	str += "$('#" + ff.getName() + "_show').bigColorpicker(function(el,color){\n";
-    		str += "$(el).css(\"background-color\",color);\n";
-    		str += "$('#" + ff.getName() + "').val(color);\n";
-    	str += "});\n";
-        str += "</script>\n";
+    	str += "<div id='" + ff.getName() + "_show' name='" + ff.getName() + "_show' style='display:inline-block;vertical-align:middle; width:16px; height:16px; border:1px solid #cccccc;cursor:pointer;" + bgclr + ";margin-right:5px;'></div>";
+        str += "<input id='" + ff.getName() + "' name='" + ff.getName() + "' " + style + " value='" + val + "'/>";
+    	if ((pageType!=null && !pageType.contains("show")) && ff.isEditable()) {
+			str += "<script>\n";
+			str += "$(findObj('" + ff.getName() + "_show')).bigColorpicker(function(el,color){\n";
+			str += "$(el).css(\"background-color\",color);\n";
+			str += "$(findObj('" + ff.getName() + "')).val(color);\n";
+			str += "});\n";
+			str += "</script>\n";
+		}
         return str;
     }
     
-    public String getDisableCtlScript(FormField ff, String formElementId) {
+    @Override
+	public String getDisableCtlScript(FormField ff, String formElementId) {
     	String displayVal = "";
 /*    	if (!"".equals(ff.getValue())) {
         	String bgclr = "background-color:" + ff.getValue();
@@ -52,25 +63,30 @@ public class ColorPickerWinCtl extends AbstractMacroCtl {
         return str;
     }    
     
+	@Override
 	public String getReplaceCtlWithValueScript(FormField ff) {
 		String displayVal = "";
 		return "ReplaceCtlWithValue('" + ff.getName() + "', '" + ff.getType()
 				+ "','" + displayVal + "');\n";
 	}
 
-    public String getControlType() {
+    @Override
+	public String getControlType() {
         return "text";
     }
 
-    public String getControlValue(String userName, FormField ff) {
+    @Override
+	public String getControlValue(String userName, FormField ff) {
         return ff.getValue();
     }
 
-    public String getControlText(String userName, FormField ff) {
+    @Override
+	public String getControlText(String userName, FormField ff) {
         return ff.getValue();
     }
 
-    public String getControlOptions(String userName, FormField ff) {
+    @Override
+	public String getControlOptions(String userName, FormField ff) {
         return "";
     }
     
@@ -81,18 +97,15 @@ public class ColorPickerWinCtl extends AbstractMacroCtl {
      * @param fieldValue String
      * @return String
      */
-    public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
-    	String str = "";
-    	if (!fieldValue.equals("")) {
-        	String bgclr = "";
-        	if (!"".equals(fieldValue)) {
-        		bgclr = "background-color:" + fieldValue;
-        		str += "<div style='display:inline-block; width:16px; height:16px; " + bgclr + "'></div>";
-        	}
-    	}
-    	return str;
+    @Override
+	public String converToHtml(HttpServletRequest request, FormField ff, String fieldValue) {
+    	return fieldValue;
     }
- 
+
+    @Override
+	public String getValueForExport(HttpServletRequest request, FormField ff, String fieldValue) {
+    	return fieldValue;
+	}
     
 }
 

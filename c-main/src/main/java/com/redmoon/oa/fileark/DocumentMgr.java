@@ -10,6 +10,9 @@ import javax.servlet.http.HttpServletRequest;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudweb.oa.api.IMsgProducer;
+import com.cloudweb.oa.api.IWorkflowProService;
+import com.cloudweb.oa.api.IWorkflowUtil;
+import com.cloudweb.oa.service.IFileService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudweb.oa.utils.SpringUtil;
 import com.redmoon.oa.Config;
@@ -21,8 +24,6 @@ import com.redmoon.oa.sms.SMSFactory;
 import com.redmoon.oa.ui.DesktopMgr;
 import com.redmoon.oa.ui.DesktopUnit;
 import com.redmoon.oa.ui.PortalDb;
-import org.apache.log4j.Logger;
-
 import bsh.EvalError;
 import bsh.Interpreter;
 import cn.js.fan.base.IPrivilege;
@@ -44,9 +45,9 @@ import com.redmoon.oa.fileark.plugin.base.IPluginDocumentAction;
 import com.redmoon.oa.message.MessageDb;
 import com.redmoon.oa.pvg.Privilege;
 import com.redmoon.oa.util.BeanShellUtil;
+import com.redmoon.oa.util.Pdf2Html;
 
 public class DocumentMgr {
-    Logger logger = Logger.getLogger(DocumentMgr.class.getName());
     public static final int EXAMINE_FLOW_ID_NONE = -1;
     private int examineFlowId = EXAMINE_FLOW_ID_NONE;
 
@@ -107,7 +108,7 @@ public class DocumentMgr {
         // mfu.setValidExtname(ext);
         
 		// 20170814 fgf
-		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
+		com.redmoon.oa.Config cfg = com.redmoon.oa.Config.getInstance();
 		String exts = cfg.get("filearkFileExt").replaceAll("，", ",");
 		if (exts.equals("*")) {
 			exts = "";
@@ -118,7 +119,7 @@ public class DocumentMgr {
         }
 		
         int ret = 0;
-        // logger.info("ret=" + ret);
+        // LogUtil.getLog(getClass()).info("ret=" + ret);
         try {
         	// mfu.setDebug(true);
             ret = mfu.doUpload(application, request);
@@ -127,7 +128,7 @@ public class DocumentMgr {
                 throw new ErrMsgException(mfu.getErrMessage());
             }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
             throw new ErrMsgException(e.getMessage());
         }
         return mfu;
@@ -293,7 +294,7 @@ public class DocumentMgr {
         dirCode = dir_code;
         Document doc = new Document();
 
-        // logger.info("op=" + op);
+        // LogUtil.getLog(getClass()).info("op=" + op);
         boolean isValid = false;
         if (op.equals("contribute")) { // || privilege.isValid(request)) { //isAdmin(user, pwdmd5)) {
             isValid = true;
@@ -543,6 +544,7 @@ public class DocumentMgr {
             att.setDocId(wf.getDocument().getID());
             att.setCreator(userName);
             att.setCreateDate(new Date());
+            att.setFlowId(wf.getId());
             att.create();
         }
 
@@ -570,11 +572,12 @@ public class DocumentMgr {
                     nextwa.save();
                 }
             } catch (MatchUserException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
         StringBuffer sb = new StringBuffer();
-        wm.finishActionSingle(request, mad, userName, sb);
+        IWorkflowProService workflowProService = SpringUtil.getBean(IWorkflowProService.class);
+        workflowProService.finishActionSingle(request, mad, userName, sb);
         if (sb.length()>0) {
             throw new ErrMsgException(sb.toString());
         }
@@ -646,7 +649,6 @@ public class DocumentMgr {
 
         if (userList.size() > 0) {
             try {
-                IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                 boolean mqIsOpen = cfg.getBooleanProperty("mqIsOpen");
                 UserDb user = new UserDb();
                 String actionType = MessageDb.ACTION_FILEARK_NEW;
@@ -670,15 +672,19 @@ public class DocumentMgr {
                 if (mqIsOpen) {
                     String[] arr = new String[userList.size()];
                     userList.toArray(arr);
+                    IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                     msgProducer.sendSysMsg(arr, t, c, actionType, actionSubType, action);
                 } else {
                     MessageDb md = new MessageDb();
-                    md.sendSysMsg((String[]) userList.toArray(), t, c, actionType, actionSubType, action);
+                    String[] arr = new String[userList.size()];
+                    userList.toArray(arr);
+                    md.sendSysMsg(arr, t, c, actionType, actionSubType, action);
                 }
 
                 if (isToMobile) {
                     if (com.redmoon.oa.sms.SMSFactory.isUseSMS()) {
                         if (mqIsOpen) {
+                            IMsgProducer msgProducer = SpringUtil.getBean(IMsgProducer.class);
                             msgProducer.sendSmsBatch((String[]) userList.toArray(), t, ConstUtil.USER_SYSTEM);
                         } else {
                             IMsgUtil imu = SMSFactory.getMsgUtil();
@@ -687,7 +693,7 @@ public class DocumentMgr {
                     }
                 }
             } catch (ErrMsgException e) {
-                e.printStackTrace();
+                LogUtil.getLog(getClass()).error(e);
             }
         }
     }
@@ -709,7 +715,7 @@ public class DocumentMgr {
 
 				bsh.eval(script);
 			} catch (EvalError e) {
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
     }
@@ -732,7 +738,7 @@ public class DocumentMgr {
 				bsh.eval(script);
 			} catch (EvalError e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LogUtil.getLog(getClass()).error(e);
 			}
 		}
     }    
@@ -859,7 +865,6 @@ public class DocumentMgr {
             DocPollOptionDb mo = mpod.getDocPollOptionDb(id, i);
             String vote_user = StrUtil.getNullString(mo.getString("vote_user"));
             String[] ary = StrUtil.split(vote_user, ",");
-            // System.out.println(getClass() + " ary=" + ary);
             if (ary!=null) {
                 int len2 = ary.length;
                 for (int k=0; k<len2; k++) {
@@ -918,7 +923,7 @@ public class DocumentMgr {
         Document doc = new Document();
         doc = doc.getDocument(doc_id);
 
-        // logger.info("filepath=" + mfu.getFieldValue("filepath"));
+        // LogUtil.getLog(getClass()).info("filepath=" + mfu.getFieldValue("filepath"));
 
         if (op.equals("add")) {
             String content = StrUtil.getNullStr(mfu.getFieldValue(
@@ -933,7 +938,6 @@ public class DocumentMgr {
 
         return false;
     }
-
 
     /**
      * 往文章中插入图片
@@ -952,8 +956,9 @@ public class DocumentMgr {
         fu.setMaxFileSize(Global.FileSize);
 
         String[] ext = new String[] {"flv", "jpg", "jpeg", "gif", "png", "bmp", "swf", "mpg", "asf", "wma", "wmv", "avi", "mov", "mp3", "rm", "ra", "rmvb", "mid", "ram"};
-        if (ext!=null)
+        if (ext!=null) {
             fu.setValidExtname(ext);
+        }
 
         int ret = 0;
         try {
@@ -961,10 +966,11 @@ public class DocumentMgr {
             if (ret!=FileUploadExt.RET_SUCCESS) {
                 throw new ErrMsgException(fu.getErrMessage(request));
             }
-            if (fu.getFiles().size()==0)
+            if (fu.getFiles().size()==0) {
                 throw new ErrMsgException("请上传文件！");
+            }
         } catch (IOException e) {
-            logger.error("doUpload:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("doUpload:" + e.getMessage());
             throw new ErrMsgException(e.getMessage());
         }
 
@@ -976,16 +982,6 @@ public class DocumentMgr {
 		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
 		String attPath = cfg.get("file_folder");
 
-        String filepath = Global.getRealPath() + attPath + "/" +
-                          virtualpath + "/";
-
-        File f = new File(filepath);
-        if (!f.isDirectory()) {
-            f.mkdirs();
-        }
-
-        fu.setSavePath(filepath); // 设置保存的目录
-        // logger.info(filepath);
         String[] re = null;
         Vector v = fu.getFiles();
         Iterator ir = v.iterator();
@@ -996,15 +992,15 @@ public class DocumentMgr {
         if (ir.hasNext()) {
             FileInfo fi = (FileInfo) ir.next();
             // 保存至磁盘相应路径
-            String fname = FileUpload.getRandName() + "." +
-                           fi.getExt();
+            IFileService fileService = SpringUtil.getBean(IFileService.class);
+            fileService.write(fi, attPath + "/" + virtualpath);
+
             // 记录于数据库
             com.redmoon.oa.fileark.Attachment att = new Attachment();
             att.setDiskName(fi.getDiskName());
-            // logger.info(fpath);
             att.setDocId(Attachment.TEMP_DOC_ID);
             att.setName(fi.getName());
-            att.setDiskName(fname);
+            att.setDiskName(fi.getDiskName());
             att.setOrders(orders);
             att.setVisualPath(attPath + "/" + virtualpath);
             att.setUploadDate(new java.util.Date());
@@ -1012,11 +1008,10 @@ public class DocumentMgr {
             att.setExt(StrUtil.getFileExt(fi.getName()));
             att.setEmbedded(true);
             String module = ParamUtil.get(request, "module");
-            if (module.equals("notice")) {
+            if ("notice".equals(module)) {
             	att.setPageNum(1);
             }
             if (att.create()) {
-                fi.write(filepath, fname);
                 re = new String[3];
                 re[0] = "" + att.getId();
 
@@ -1049,7 +1044,7 @@ public class DocumentMgr {
                 throw new ErrMsgException(TheBean.getErrMessage(request));
             }
         } catch (Exception e) {
-            logger.error("uploadDocument:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("uploadDocument:" + e.getMessage());
         }
         if (ret == 1) {
             Document doc = new Document();
@@ -1116,19 +1111,18 @@ public class DocumentMgr {
                 throw new ErrMsgException("目录不存在!");
             }
 
-			String visualPath = StrUtil.getNullString(mfu
-					.getFieldValue("filepath"));
+			String visualPath = StrUtil.getNullString(mfu.getFieldValue("filepath"));
 
 			String FilePath = cfg.get("file_folder");
-			if (!visualPath.equals(""))
-				FilePath += "/" + visualPath;
+			if (!visualPath.equals("")) {
+                FilePath += "/" + visualPath;
+            }
 
 			String attSavePath = Global.getRealPath() + FilePath + "/";
 
 			mfu.setSavePath(attSavePath); // 取得目录
 
-			LogUtil.getLog(getClass()).info(
-					"attSavePath=" + attSavePath);
+			LogUtil.getLog(getClass()).info("attSavePath=" + attSavePath);
 
 			File f = new File(attSavePath);
 			if (!f.isDirectory()) {
@@ -1177,7 +1171,6 @@ public class DocumentMgr {
 							+ cfg.get("file_folder") + "/"
 							+ lfCh.getFilePath() + "/";
 					// 检查物理目录是否存在，如果不存在，则创建
-					// System.out.println(getClass() + savePath +
 					// " cfg.get(\"file_netdisk\")=" +
 					// cfg.get("file_netdisk"));
 					f = new File(savePath);
@@ -1307,9 +1300,10 @@ public class DocumentMgr {
 							+ "/" + visual_Path + "/";
 				}
 
-				fi.write(savePath, true);
-				
-				if(!uploadDirName.equals("")){
+                IFileService fileService = SpringUtil.getBean(IFileService.class);
+                fileService.write(fi, cfg.get("file_folder") + "/"+myVisualPath);
+
+                if(!"".equals(uploadDirName)){
 					//保存文档
 					Document document = new Document();
 					int docId = document.create(fi.getName(),curDirCode,curDirCode,userName);
@@ -1351,7 +1345,7 @@ public class DocumentMgr {
 					att.setSize(fi.getSize());
 					att.setExt(fi.getExt());
 					att.setDocId(docId);
-					att.setFullPath(savePath+fi.getDiskName());
+					// att.setFullPath(savePath+fi.getDiskName());
 					att.setPageNum(1);
 					att.setOrders(1);
 					att.setDownloadCount(0);
@@ -1359,9 +1353,7 @@ public class DocumentMgr {
 					att.setEmbedded(false);
 					att.create();
 				}
-				
-
-				if(uploadDirName.equals("")){
+				else {
 					//Iterator ir1 = attachs.iterator();
 					//while(ir1.hasNext()){
 					//	FileInfo fi1 = (FileInfo) ir1.next();
@@ -1464,50 +1456,49 @@ public class DocumentMgr {
 		return flag;
     }    
     
-	public boolean writeFile(HttpServletRequest request, FileUpload fu)
-			throws ErrMsgException {
+	public boolean writeFile(HttpServletRequest request, FileUpload fu) throws ErrMsgException {
 		String userName = ParamUtil.get(request, "userName");
 		Privilege privilege = new Privilege();
-		if (userName == null || userName.equals("")) {
+		if (userName == null || "".equals(userName)) {
 			userName = privilege.getUser(request);
 		}
 		boolean flag = true;
 		String dirCode = ParamUtil.get(request, "dirCode");
-		Leaf leaf = new Leaf(dirCode);
-		
+
+		boolean canExamine = false;
+        LeafPriv lp = new LeafPriv(dirCode);
+        if (privilege.isUserPrivValid(request, ConstUtil.PRIV_ADMIN) || lp.canUserModify(privilege.getUser(request))) {
+            canExamine = true;
+        }
+
 		com.redmoon.oa.Config cfg = new com.redmoon.oa.Config();
-		//String myVisualPath = leaf.getName();
 		Calendar cal = Calendar.getInstance();
 		String year = "" + (cal.get(Calendar.YEAR));
 		String month = "" + (cal.get(Calendar.MONTH) + 1);
 		String myVisualPath = year + "/" + month;
-		
-		String savePath = Global.getRealPath() + cfg.get("file_folder")
-				+ "/" + myVisualPath + "/";
-		
-		// 如果没有物理文件夹创建
-		File f = new File(savePath);
-		if (!f.isDirectory()) {
-			f.mkdirs();
-		}
+		String savePath = Global.getRealPath() + cfg.get("file_folder") + "/" + myVisualPath + "/";
 
 		if (fu.getRet() == FileUpload.RET_SUCCESS) {
 			Vector<Document> documents = new Vector<Document>();
 			Vector v = fu.getFiles();
 			Iterator ir = v.iterator();
-			// 置路径
-			fu.setSavePath(savePath);
-			// swfupload选择多个文件时是逐个上传的，即每次只上传一个文件，故此处可以用 if (ir.hasNext())
+            IFileService fileService = SpringUtil.getBean(IFileService.class);
+
+            // swfupload选择多个文件时是逐个上传的，即每次只上传一个文件，故此处可以用 if (ir.hasNext())
 			while (ir.hasNext()) {
 				FileInfo fi = (FileInfo) ir.next();
 				
 				//保存文档
 				Document document = new Document();
+				if (canExamine) {
+				    document.setExamine(Document.EXAMINE_PASS);
+                }
 				int docId = document.create(fi.getName(),dirCode,dirCode, userName);
 				documents.addElement(document);
 				
 				// 使用随机名称写入磁盘
-				fi.write(fu.getSavePath(), true);
+                fileService.write(fi, cfg.get("file_folder")+ "/" + myVisualPath);
+
 				Attachment att = new Attachment();
 				
 				String name = fi.getName();
@@ -1535,15 +1526,11 @@ public class DocumentMgr {
 				
 				att.setName(name);
 				att.setDiskName(fi.getDiskName());
-				cal = Calendar.getInstance();
-				year = "" + (cal.get(Calendar.YEAR));
-				month = "" + (cal.get(Calendar.MONTH) + 1);
-				String visual_Path = year + "/" + month;
-				att.setVisualPath(cfg.get("file_folder")+ "/" +visual_Path);
+				att.setVisualPath(cfg.get("file_folder")+ "/" + myVisualPath);
 				att.setSize(fi.getSize());
 				att.setExt(fi.getExt());
 				att.setDocId(docId);
-				att.setFullPath(fu.getSavePath() + fi.getDiskName());
+				// att.setFullPath(fu.getSavePath() + fi.getDiskName());
 				att.setPageNum(1);
 				att.setOrders(1);
 				att.setDownloadCount(0);
@@ -1553,17 +1540,22 @@ public class DocumentMgr {
 
 				// 生成html预览
                 boolean canOfficeFilePreview = cfg.getBooleanProperty("canOfficeFilePreview");
+                boolean canPdfFilePreview = cfg.getBooleanProperty("canPdfFilePreview");
+                String ext = StrUtil.getFileExt(att.getDiskName());
+                String previewfile = savePath + att.getDiskName();
                 if (canOfficeFilePreview) {
-                    String previewfile = savePath + att.getDiskName();
-                    String ext = StrUtil.getFileExt(att.getDiskName());
                     if (ext.equals("doc") || ext.equals("docx") || ext.equals("xls") || ext.equals("xlsx")) {
                         Document.createOfficeFilePreviewHTML(previewfile);
+                    }
+                }
+                if (canPdfFilePreview) {
+                    if ("pdf".equals(ext)) {
+                        Pdf2Html.createPreviewHTML(previewfile);
                     }
                 }
 			}
 
 			launchScriptOnAdd(request, privilege.getUser(request), documents);
-
 		} else {
 			flag = false;
 		}

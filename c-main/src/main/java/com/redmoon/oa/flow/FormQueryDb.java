@@ -46,6 +46,7 @@ public class FormQueryDb extends ObjectDb {
         load();
     }
 
+    @Override
     public void initDB() {
         tableName = "form_query";
         primaryKey = new PrimaryKey("id", PrimaryKey.TYPE_INT);
@@ -60,6 +61,7 @@ public class FormQueryDb extends ObjectDb {
                      tableName + " where id=?";
     }
 
+    @Override
     public ObjectDb getObjectRaw(PrimaryKey pk) {
         return new FormQueryDb(pk.getIntValue());
     }
@@ -68,6 +70,7 @@ public class FormQueryDb extends ObjectDb {
         return (FormQueryDb) getObjectDb(new Integer(id));
     }
 
+    @Override
     public boolean create() throws ErrMsgException {
         Conn conn = null;
         boolean re = false;
@@ -117,8 +120,7 @@ public class FormQueryDb extends ObjectDb {
                 aqc.refreshCreate();
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("create:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("插入FormQuery时出错！");
         } finally {
             conn.close();
@@ -167,14 +169,14 @@ public class FormQueryDb extends ObjectDb {
             pstmt.setString(18, scripts);
             pstmt.setInt(19, script?1:0);
             pstmt.setInt(20, id);
-            re = conn.executePreUpdate() > 0 ? true : false;
+            re = conn.executePreUpdate() > 0;
             if (re) {
                 FormQueryCache aqc = new FormQueryCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 aqc.refreshSave(primaryKey);
             }
         } catch (SQLException e) {
-            logger.error("save:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("save:" + e.getMessage());
             throw new ErrMsgException("更新FormQuery时出错！");
         } finally {
             conn.close();
@@ -224,10 +226,10 @@ public class FormQueryDb extends ObjectDb {
                 script = rs.getInt(22)==1;
 
                 loaded = true;
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
             }
         } catch (SQLException e) {
-            logger.error("load:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("load:" + e.getMessage());
         } finally {
             conn.close();
         }
@@ -241,15 +243,14 @@ public class FormQueryDb extends ObjectDb {
         try {
             pstmt = conn.prepareStatement(QUERY_DEL);
             pstmt.setInt(1, id);
-            re = conn.executePreUpdate() > 0 ? true : false;
+            re = conn.executePreUpdate() > 0;
             if (re) {
                 FormQueryCache aqc = new FormQueryCache(this);
-                primaryKey.setValue(new Integer(id));
+                primaryKey.setValue(id);
                 aqc.refreshDel(primaryKey);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("del:" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("删除FormQuery时出错！");
         } finally {
             conn.close();
@@ -299,8 +300,7 @@ public class FormQueryDb extends ObjectDb {
                 } while (rs.next());
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            logger.error(e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException("数据库出错！");
         } finally {
             conn.close();
@@ -318,7 +318,7 @@ public class FormQueryDb extends ObjectDb {
             ri = rmconn.executeQuery(sqlOfQuery);
         }
         catch (Exception e) {
-            logger.error("getResultIterator" + e.getMessage());
+            LogUtil.getLog(getClass()).error("getResultIterator" + e.getMessage());
             throw new ErrMsgException(e.getMessage());
         }
         return ri;
@@ -332,8 +332,7 @@ public class FormQueryDb extends ObjectDb {
             ri = rmconn.executeQuery(sqlOfQuery, curPage, pageSize);
         }
         catch (SQLException e) {
-            e.printStackTrace();
-            logger.error("getResultIterator" + e.getMessage());
+            LogUtil.getLog(getClass()).error(e);
             throw new ErrMsgException(e.getMessage());
         }
         return ri;
@@ -354,7 +353,7 @@ public class FormQueryDb extends ObjectDb {
                 }
             }
         } catch (SQLException e) {
-            logger.error("list:" + e.getMessage());
+            LogUtil.getLog(getClass()).error("list:" + e.getMessage());
         } finally {
             conn.close();
         }

@@ -3,7 +3,6 @@
 <%@page import="cn.js.fan.util.ParamUtil" %>
 <%@ page import="cn.js.fan.util.StrUtil" %>
 <%@ page import="com.redmoon.oa.address.AddressDb" %>
-<%@ page import="cn.sendsms.smpp.Address" %>
 <%
     Privilege pvg = new Privilege();
     if (!pvg.auth(request)) {
@@ -11,8 +10,9 @@
         return;
     }
     String skey = pvg.getSkey();
+    boolean isUniWebview = ParamUtil.getBoolean(request, "isUniWebview", false);
 
-    int type = ParamUtil.getInt(request, "type", AddressDb.TYPE_USER);
+    int type = ParamUtil.getInt(request, "type", AddressDb.TYPE_PUBLIC);
     String title;
     if (type == AddressDb.TYPE_USER) {
         title = "我的通讯录";
@@ -139,15 +139,23 @@
 <script src="../js/mui.indexedlist.js"></script>
 <script type="text/javascript" src="../js/mui.address.wx.js"></script>
 <script type="text/javascript" charset="utf-8">
-    if(!mui.os.plus) {
+    var isUniWebview = <%=isUniWebview%>;
+
+    if(!mui.os.plus || isUniWebview) {
         // 必须删除，而不能是隐藏，否则mui-bar-nav ~ mui-content中的padding-top会使得位置下移
         $('.mui-bar').remove();
     }
 
+    mui.init({
+        keyEventBind: {
+            backbutton: !isUniWebview //关闭back按键监听
+        }
+    });
+
     mui.ready(function () {
         var list = document.getElementById('list');
         list.style.height = document.body.offsetHeight + 'px';
-        var op = {"skey": "<%=skey%>", "type": <%=type%>};
+        var op = {"skey": "<%=skey%>", "type": <%=type%>, "isUniWebview": isUniWebview};
         window.addr = new mui.Address(list, op);
         window.addr.addrInit();
     })

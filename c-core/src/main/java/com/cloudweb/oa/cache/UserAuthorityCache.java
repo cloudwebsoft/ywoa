@@ -7,7 +7,7 @@ import com.cloudweb.oa.service.IUserAuthorityService;
 import com.cloudweb.oa.utils.ConstUtil;
 import com.cloudwebsoft.framework.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jcs.access.exception.CacheException;
+import org.apache.commons.jcs3.access.exception.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +40,6 @@ public class UserAuthorityCache extends ObjCache {
         List<String> list = null;
         boolean isNotExist = false;
         try {
-            long t = System.currentTimeMillis();
             list = (List) RMCache.getInstance().getFromGroup(PREFIX_USER + userName, group);
             if (null != list) {
                 // 防穿透
@@ -61,11 +60,10 @@ public class UserAuthorityCache extends ObjCache {
                     list = (List) RMCache.getInstance().getFromGroup(PREFIX_USER + userName, group);
                     if (null == list) {
                         list = userAuthorityService.getUserAuthorities(userName);
-                        if (null == list) {
+                        if (list.size() == 0) {
                             isNotExist = true;
                             // throw new RuntimeException("This data could not be empty. code=" + code);
                             // 将代表null值的menu置于缓存，如置menu.name为 &&，且通常置到期时间为5分钟
-                            list = new ArrayList<>();
                             list.add(ConstUtil.CACHE_NONE);
                             RMCache.getInstance().putInGroup(PREFIX_USER + userName, group, list, ConstUtil.CACHE_NONE_EXPIRE);
                         } else {
@@ -84,11 +82,10 @@ public class UserAuthorityCache extends ObjCache {
                         list = (List) RMCache.getInstance().getFromGroup(PREFIX_USER + userName, group);
                         if (null == list) {
                             list = userAuthorityService.getUserAuthorities(userName);
-                            if (null == list) {
+                            if (list.size() == 0) {
                                 isNotExist = true;
                                 // throw new RuntimeException("This data could not be empty. code=" + code);
                                 // 将代表null值的menu置于缓存，如置menu.name为 &&，且通常置到期时间为5分钟
-                                list = new ArrayList<>();
                                 list.add(ConstUtil.CACHE_NONE);
                                 RMCache.getInstance().putInGroup(PREFIX_USER + userName, group, list, ConstUtil.CACHE_NONE_EXPIRE);
                             } else {
@@ -105,10 +102,8 @@ public class UserAuthorityCache extends ObjCache {
                         list = getUserAuthorities(userName);
                     }
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (CacheException e) {
-                e.printStackTrace();
+            } catch (InterruptedException | CacheException e) {
+                LogUtil.getLog(getClass()).error(e);
             } finally {
                 if (Global.isCluster() && Global.getInstance().isUseRedis()) {
                     distributedLock.unlock(getClass().getName(), indentifier);

@@ -1,0 +1,440 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>通知-详情</title>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + 'css/common/common.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/css/message/message.css'}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{${skinPath} + '/jquery-ui/jquery-ui-1.10.4.css'}"/>
+    <link rel="stylesheet" href="../js/layui/css/layui.css" media="all">
+    <style>
+        .reply_div {
+            margin: 0 auto;
+            width: 96%;
+            font-family: "microsoft yahei";
+            font-size: 14px;
+            border: 10px solid #efefef;
+        }
+
+        .reply_title_div {
+            margin: 10px;
+        }
+
+        .con_btn {
+            color: white;
+            background-color: #85c4f0;
+            text-align: center;
+            font-weight: bold;
+            line-height: 20px;
+            padding-right: 10px;
+            padding-left: 10px;
+            height: 24px;
+            border: 1px solid #85c4f0;
+            cursor: pointer;
+            -moz-border-radius: 3px;
+            -webkit-border-radius: 3px;
+            border-radius: 3px;
+        }
+
+        .reply_title {
+            font-weight: bold;
+        }
+
+        .reply_btn {
+            float: right;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .myTextarea {
+            display: block;
+            overflow: hidden;
+            width: 100%;
+            font-size: 14px;
+            line-height: 24px;
+            text-indent: 1em;
+            border: solid 1px #ffa200;
+            -moz-border-radius: 5px;
+            -webkit-border-radius: 5px;
+            border-radius: 5px;
+            margin: 10px 0px;
+            height: 48px;
+        }
+
+        ul li {
+            list-style: none;
+        }
+
+        .org_btn {
+            background: #ffc24d;
+            border: 0;
+        }
+
+        .right {
+            float: right;
+        }
+
+        .reply_date {
+            margin-left: 20px
+        }
+
+        .clearfix {
+            zoom: 1;
+        }
+
+        .clearfix:before, .clearfix:after {
+            content: '';
+            display: table;
+        }
+
+        .clearfix:after {
+            clear: both;
+        }
+
+        .reply_ul li {
+            font-size: 14px;
+            margin: 10px;
+            margin-bottom: 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #EEEEEE;
+        }
+
+        .reply_name {
+            color: #85c4f0;
+        }
+
+        .tips {
+            background-color: #FFE081;
+            margin: 0 auto;
+            font-size: 14px;
+            color: #ab701b;
+            padding-top: 10px;
+            position: absolute;
+            top: 0;
+            margin-top: 10px;
+            margin-right: 10px;
+            width: 100%;
+            padding-bottom: 10px;
+            text-align: center;
+
+        }
+
+        .tips .icon_close {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            right: 0;
+            top: 0;
+
+            background: url(../images/close.png) no-repeat;
+        }
+
+        .li_re_content {
+            padding: 5px;
+            word-break: break-all;
+        }
+
+        .user-item {
+            float: left;
+            width: 80px;
+            margin: 5px 0;
+        }
+
+        .attImg {
+            border: none;
+            max-width: 800px;
+            cursor: pointer;
+        }
+        .mybtn {
+            background-color: #87c3f1 !important;
+            font-weight: bold;
+            text-align: center;
+            line-height: 35px;
+            height: 35px;
+            width: 120px;
+            padding-right: 8px;
+            padding-left: 8px;
+            -moz-border-radius: 3px;
+            -webkit-border-radius: 3px;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #fff;
+            border-top-width: 0;
+            border-right-width: 0;
+            border-bottom-width: 0;
+            border-left-width: 0;
+            border-top-style: none;
+            border-right-style: none;
+            border-bottom-style: none;
+            border-left-style: none;
+        }
+    </style>
+    <script src="../inc/common.js"></script>
+    <script src="../inc/upload.js"></script>
+    <script src="../js/jquery-1.9.1.min.js"></script>
+    <script src="../js/jquery-migrate-1.2.1.min.js"></script>
+    <script src="../js/jquery-ui/jquery-ui-1.10.4.min.js"></script>
+    <script src="../js/jquery.form.js"></script>
+    <script src="../js/jquery-alerts/jquery.alerts.js" type="text/javascript"></script>
+    <script src="../js/jquery-alerts/cws.alerts.js" type="text/javascript"></script>
+    <link href="../js/jquery-alerts/jquery.alerts.css" rel="stylesheet" type="text/css" media="screen"/>
+    <script type="text/javascript" charset="utf-8" src="../ueditor/js/ueditor/ueditor.config.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../ueditor/js/ueditor/ueditor.all.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../ueditor/js/ueditor/lang/zh-cn/zh-cn.js"></script>
+    <link type="text/css" rel="stylesheet" href="../ueditor/js/ueditor/third-party/video-js/video-js.css"/>
+    <script language="javascript" type="text/javascript" src="../ueditor/js/ueditor/third-party/video-js/video.js"></script>
+    <script language="javascript" type="text/javascript" src="../ueditor/js/ueditor/third-party/video-js/html5media.min.js"></script>
+    <link href="../js/jquery-showLoading/showLoading.css" rel="stylesheet" media="screen" />
+    <script type="text/javascript" src="../js/jquery-showLoading/jquery.showLoading.js"></script>
+    <script src="../js/layui/layui.js" charset="utf-8"></script>
+    <script th:inline="javascript">
+        var uEditor;
+
+        function loadMenu() {
+            if (parent.leftFrame != null) {
+                parent.leftFrame.location.href = "left_menu.jsp";
+            }
+
+            var toolbarsCfg = [
+                'fullscreen', 'undo', 'redo', '|',
+                'bold', 'italic', 'underline', '|', 'forecolor',
+                'rowspacingtop', 'rowspacingbottom', 'lineheight', '|',
+                'customstyle', 'paragraph', 'fontfamily', 'fontsize', '|',
+                'justifyleft', 'justifycenter', 'justifyright', 'justifyjustify'
+            ];
+            uEditor = UE.getEditor('myEditor', {
+                initialContent: '<span style="color:gray;font-size:14px;">快速回复</span>',//初始化编辑器的内容
+                toolleipi: true,//是否显示，设计器的 toolbars
+                textarea: 'content',
+                enableAutoSave: false,
+                //选择自己需要的工具按钮名称,此处仅选择如下五个
+                toolbars: [toolbarsCfg],
+                //focus时自动清空初始化时的内容
+                //autoClearinitialContent:true,
+                //关闭字数统计
+                wordCount: false,
+                //关闭elementPath
+                elementPathEnabled: false,
+                //默认的编辑区域高度
+                initialFrameHeight: 150
+                ///,iframeCssUrl:"css/bootstrap/css/bootstrap.css" //引入自身 css使编辑器兼容你网站css
+                //更多其他参数，请参考ueditor.config.js中的配置项
+            });
+
+            uEditor.addListener('focus', function () {
+                var content = uEditor.getContentTxt();
+                if (content == "快速回复") {
+                    uEditor.setContent("");
+                }
+            });
+            uEditor.addListener('blur', function () {
+                var content = uEditor.getContent();
+                if (content == "") {
+                    uEditor.setContent("<span style='color:gray;font-size:14px;'>快速回复</span>");
+                }
+            });
+        }
+
+        function form_onsubmit() {
+            errmsg = "";
+            if (uEditor.getContentTxt() == "" || uEditor.getContentTxt() == '快速回复')
+                errmsg += "请填写内容！\n"
+
+            if (errmsg != "") {
+                layer.msg(errmsg);
+                return false;
+            } else {
+                return true;
+            }
+        }
+    </script>
+</head>
+<body onload="loadMenu()">
+<div th:if="${notice.isForcedResponse==1 && notice.notReplied}" class="tips">
+    <span class="icon_close"></span>
+    该通知须回复
+</div>
+<div id="treeBackground" class="treeBackground"></div>
+<table cellspacing="0" cellpadding="0" width="100%">
+    <tbody>
+    <tr>
+        <td class="tdStyle_1" style="border: none">
+            <img src="../images/left/icon-notice.gif"/>
+            <a href="list.do">通知公告</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<table width="100%" border="0" class="tabStyle_1 percent98"
+       style="table-layout: fixed; word-wrap: break-word; margin-top: 15px;">
+    <tr>
+        <td colspan=2 align="center" valign="middle" class="tabStyle_1_title">
+            [(${notice.title})]
+        </td>
+    </tr>
+    <tr>
+        <td colspan=2 valign="top">
+            <div class="msgContent">
+                <div style="margin: 10px 0px 15px 0px; text-align: center">
+                    发布者：[(${notice.user.realName})]
+                    发布日期：[(${notice.createDate})]
+                </div>
+                <div style="line-height: 1.5">[(${notice.content})]
+                </div>
+                <div style="margin-top: 10px">
+                    <a th:if="${notice.flowId>0}" href="javascript:;" onclick="addTab('流程消息', 'flowShowPage.do?flowId=[(${notice.flowId})]')">
+                        <span style="color:blue">查看流程</span>
+                    </a>
+                </div>
+                <div th:each="att : ${notice.oaNoticeAttList}">
+                    <img src="../images/attach2.gif" width="17" height="17"/>
+                    <a target="_blank" th:href="'getFile.do?noticeId=' + ${notice.id} + '&attachId=' + ${att.id}">
+                        [(${att.name})]
+                    </a>
+                    <div th:if="${att.image}" style="margin-top: 10px">
+                        <img class="attImg" th:src="@{'/showImg.do?path=' + ${att.visualPath} + '/' + ${att.diskName}}" title="点击查看原图" th:onclick="window.open('../showImg.do?path=' + [(${att.visualPath})] + '/' + [(${att.diskName})])"/>
+                    </div>
+                </div>
+                <th:block th:if="${notice.isShow and ((isNoticeAll or isNoticeMgr) or (myUserName eq notice.userName))}">
+                    <div style="margin-top: 15px">
+                        已查看通知的用户：[(${readedListLength})]人
+                        <br/>
+                        <th:block th:each="rep : ${readedList}">
+                            <div class='user-item'><a href="javascript:;" th:onclick="addTab('[(${rep.user.realName})]', 'user_info.jsp?userName=[(${rep.user.name})]')">[(${rep.user.realName})]</a></div>
+                        </th:block>
+                    </div>
+                    <br/>
+                    <div style="clear: both; padding-top: 5px">
+                        未查看通知的用户：[(${notReadedListLength})]人
+                        <br/>
+                        <th:block th:each="rep : ${notReadedList}">
+                            <div class='user-item'><a href="javascript:;" th:onclick="addTab('[(${rep.user.realName})]', 'user_info.jsp?userName=[(${rep.user.name})]')">[(${rep.user.realName})]</a></div>
+                        </th:block>
+                    </div>
+                </th:block>
+            </div>
+        </td>
+    </tr>
+</table>
+<form name="form2" id="form2" action="" method="post" enctype="multipart/form-data">
+    <div style="display: none; width: 100%">
+        <table width="98%">
+            <tr>
+                <td colspan="2" class="showMsg_Table_td" style="width: 100%; border:none">
+                    <div id="myEditor" style="height: 100px; width: 100%"></div>
+                    <input type="hidden" id="noticeid" name="noticeid" th:value="${notice.id}"/>
+                    <input type="hidden" id="uName" name="uName" th:value="${myUserName}"/>
+                    <input type="hidden" id="isShow" name="isShow" th:value="${notice.isShow}"/>
+                </td>
+            </tr>
+            <tr class="message_style_tr">
+                <td colspan="2" class="showMsg_Table_td" align="center" style="border: none">
+                    <input name="button" type="submit" value="确定" style="margin-top: 10px" class="blue_btn_90"/>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div th:if="${notice.isReply==1}" class="reply_div">
+    <div class="reply_title_div clearfix">
+        <span class="reply_title">
+        回复
+        </span>
+        <th:block th:if="${canReply}">
+            <textarea name="myReplyTextareaContent" id="myReplyTextareaContent" class="myTextarea"></textarea>
+            <input type="button" name="hf" class="con_btn org_btn right btnReply" value="回复" th:noticeId="${notice.id}"/>
+            <div style="clear:both"></div>
+        </th:block>
+        <ul class="reply_ul" th:if="${!canReply && myReply != null}">
+            <li>
+                <div>
+                    <span class="reply_name">[(${myReply.user.realName})]</span>
+                    <span class="reply_date">
+                        [(${#temporals.format(myReply.replyTime, "yyyy-MM-dd HH:mm:ss")})]
+                    </span>
+                </div>
+                <div class="li_re_content">[(${myReply.content})]</div>
+            </li>
+        </ul>
+    </div>
+    <ul class="reply_ul" th:if="${isNoticeAll || isNoticeMgr}">
+        <li th:each="reply : ${replyList}" th:if="${reply.user.name ne myUserName}">
+            <div>
+                <span class="reply_name">[(${reply.user.realName})]</span>
+                <span class="reply_date">
+                    [(${#temporals.format(reply.replyTime, "yyyy-MM-dd HH:mm:ss")})]
+                </span>
+            </div>
+            <div class="li_re_content">[(${reply.content})]
+            </div>
+        </li>
+    </ul>
+</div>
+
+</body>
+<script  th:inline="javascript">
+    $(document).ready(function () {
+        $(".icon_close").click(function () {
+            $(".tips").hide();
+
+        })
+
+        $(".btnReply").click(function () {
+            var myTextarea = $(".myTextarea").val();
+            var noticeId = $(this).attr("noticeId");
+            var data = {"content": myTextarea, "noticeId": noticeId}
+            $.ajax({
+                type: "post",
+                url: "reply/reply.do",
+                data: data,
+                dataType: "json",
+                beforeSend: function (XMLHttpRequest) {
+                    $("body").showLoading();
+                },
+                complete: function (XMLHttpRequest, status) {
+                    $("body").hideLoading();
+                },
+                success: function (data, status) {
+                    var res = data.ret;
+                    if (res == 1) {
+                        layer.alert("操作成功", {
+                            btn: ['确定'],
+                            yes: function() {
+                                window.location.reload();
+                            }
+                        });
+                    } else {
+                        layer.msg(data.msg);
+                    }
+                },
+                error: function () {
+                    layer.msg("操作失败！");
+                }
+            });
+        })
+
+        var options = {
+            success: showResponse,  // post-submit callback
+            beforeSubmit: form_onsubmit,
+            url: "show.do?op=reply&noticeid=${notice.id}&${myUserName}&isShow=${notice.isShow}"
+        };
+        $('#form2').submit(function () {
+            $(this).ajaxSubmit(options);
+            return false;
+        });
+    });
+
+    function showResponse(data) {
+        data = $.parseJSON(data);
+        if (data.ret == "1") {
+            layer.msg(data.msg);
+            window.location.href = "show.do?isShow=" + [[${notice.isShow}]] + "&id=" + $("#noticeid").val();
+        }
+    }
+</script>
+</html>
