@@ -89,15 +89,6 @@ export const mainOutRoutes: AppRouteModule[] = [
       title: '跳转',
     },
   },
-  {
-    path: '/obsFile',
-    name: 'ObsFile',
-    component: () => import('/@/views/pages/obsManagement/obsFile.vue'),
-    meta: {
-      orderNo: 10,
-      title: 'obs',
-    },
-  },
 ];
 
 export const mainOutRouteNames = mainOutRoutes.map((item) => item.name);
